@@ -1,41 +1,48 @@
-Source: grass
+Source: grass5.7
 Section: science
 Priority: optional
-Maintainer: Federico Di Gregorio <fog@debian.org>
-Uploaders: Francesco Paolo Lovergine <frankie@debian.org>
-Build-depends: flex, bison, libreadline4-dev, libncurses5-dev, postgresql-dev, debhelper (>> 3), libtiff3g-dev, libgd2-dev, tcl8.3-dev, tk8.3-dev, fftw-dev, dpatch, xlibmesa-gl-dev, xlibmesa-glu-dev, libfreetype6-dev, autoconf2.13, autotools-dev, libgdal1-dev, rman
+Maintainer: Steve Halasz <debian@adkgis.org>
+Build-depends: flex, bison, libreadline4-dev, libncurses5-dev, postgresql-dev, debhelper (>= 4.0.2), libtiff4-dev, libgd2-xpm-dev, tcl8.3-dev, tk8.3-dev, fftw-dev, xlibmesa-gl-dev, xlibmesa-glu-dev, libfreetype6-dev, autoconf2.13, autotools-dev, libgdal1-dev, proj (>= 4.4.7), postgresql-dev, postgresql-client, unixodbc-dev, doxygen
 Standards-Version: 3.6.1
 
-Package: grass
+Package: grass5.7
+Section: science
 Architecture: any
-Depends: ${shlibs:Depends},csh|c-shell
+Depends: ${shlibs:Depends}, csh|c-shell, libgrass5.7
 Suggests: proj, grass-doc, gdal-bin
-Description: Geographic Resources Analysis Support System
- GRASS is a Geographic Information System (GIS) used for data
+Description: GRASS GIS Development Version
+ Geographic Resources Analysis Support System, commonly referred to as
+ GRASS, is a Geographic Information System (GIS) used for data
  management, image processing, graphics production, spatial modeling,
- and visualization of many types of data. Originally written by the
- U.S. Army Construction Engineering Research Laboratories (USA-CERL)
- branch of the US Army Corp of Engineers as a tool for land management
- and environmental planning by the military, GRASS has evolved into a
- powerful utility with a wide range of applications in many different
- areas of scientific research. GRASS is currently used in academic and
- commercial settings around the world, as well as many governmental
- agencies including NASA, NOAA, USDA, the National Park Service, the
- U.S. Census Bureau, USGS, and many environmental consulting companies.
+ and visualization of many types of data. GRASS is currently used in 
+ academic and commercial settings around the world, as well as many 
+ governmental agencies including NASA, NOAA, USDA, the National Park 
+ Service, the U.S. Census Bureau, USGS, and many environmental
+ consulting companies.
 
-Package: grass-doc
-Architecture: all
-Description: Geographic Resources Analysis Support System documentation
- GRASS is a Geographic Information System (GIS) used for data
+Package: libgrass5.7
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, grass5.7
+Description: GRASS GIS development version libraries
+ Geographic Resources Analysis Support System, commonly referred to as
+ GRASS, is a Geographic Information System (GIS) used for data
  management, image processing, graphics production, spatial modeling,
- and visualization of many types of data. Originally written by the
- U.S. Army Construction Engineering Research Laboratories (USA-CERL)
- branch of the US Army Corp of Engineers as a tool for land management
- and environmental planning by the military, GRASS has evolved into a
- powerful utility with a wide range of applications in many different
- areas of scientific research. GRASS is currently used in academic and
- commercial settings around the world, as well as many governmental
- agencies including NASA, NOAA, USDA, the National Park Service, the
- U.S. Census Bureau, USGS, and many environmental consulting companies.
+ and visualization of many types of data.
  .
- This package contains HTML and PDF documentation for the GRASS system.
+ These libraries enable access to and manipulation of GRASS data sets.
+
+Package: libgrass5.7-dev
+Section: libdevel
+Architecture: any
+Depends: ${shlibs:Depends}, libgrass5.7
+Description: GRASS GIS library development version development files
+ Geographic Resources Analysis Support System, commonly referred to as
+ GRASS, is a Geographic Information System (GIS) used for data
+ management, image processing, graphics production, spatial modeling,
+ and visualization of many types of data.
+ .
+ This package contains the header files for developing with GRASS.
+ Install this package if you wish to develop software that manipulates
+ GRASS data sets.
+

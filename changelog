@@ -1,155 +1,51 @@
-grass (5.0.3-4) unstable; urgency=low
+grass5.7 (5.7.0-4) unstable; urgency=low
 
-  * Reverted to tcl8.3 linking due to compatibility problems with thread-enabled Tcl.
-    Other proposed patches apparently do not work.
-    (closes: #248105)
-  * Actually use DEB_BUILD_GNU_TYPE for configure as mentioned in the comment
-    and managing manpages correctly for !i386 too. Thanks Goswin von Brederlow.
-    (closes: #251629)
+  * Add grass57 man page
+  * Make etc/water/seg executable
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Tue,  8 Jun 2004 11:53:29 +0200
+ -- Steve Halasz <debian@adkgis.org>  Tue, 12 Oct 2004 11:18:55 -0400
 
-grass (5.0.3-3) unstable; urgency=low
+grass5.7 (5.7.0-3) unstable; urgency=low
 
-  * Added libreadline4-dev build-dep (closes: #232981)
-  * Added libgdal linking:
-  	+ debian/control: added libgdal1-dev build-dep
-        + debian/rules: added --with-gdal
-   (closes: #234275)
-  * Added gdal-bin as suggested (closes: #220861)
-  * Now managing correctly manpages. Upstream provides preformatted ones, now
-    using rman to reconvert to nroff sources.
-    (closes: #216293, #159379)
+  * Split out separate libgrass5.7 and libgrass5.7-dev packages
+  * Add grass libs dir to ld.so.conf. Make sure it is removed too.
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Sat, 20 Mar 2004 20:19:47 +0100
+ -- Steve Halasz <debian@adkgis.org>  Wed, 22 Sep 2004 00:36:12 -0400
 
-grass (5.0.3-2) unstable; urgency=low
+grass5.7 (5.7.0-2) unstable; urgency=low
 
-  The "Check twice before releasing" release.
+  * silence executable-not-elf-or-script lintian warning by making most tcl 
+    scripts not executable
+  * silence interpreter-not-absolute lintian warning by inserting absolute path in 
+    shebang
+  * make tcltkgrass/main/tksys.tcl executable
 
-  (Federico)
+ -- Steve Halasz <debian@adkgis.org>  Fri,  3 Sep 2004 11:38:18 -0400
 
-  * Changes to debian/rules as suggested by Markus Neteler:
-    + added dh_shlibdeps to generate dependencies
-    + --without-blas, --without-lapack: both not needed because the
-      module using them was never finished (also removed the Build-deps)
-    + --without-dbm: dbm is not used in grass, it is a fake dependency
-      (also removed gdbm patch)
-    + Markus said:
-    
-      AFAIK there is no GRASS module which uses that.
-      The only existing module was written by me and never submitted, as
-      the lapack/blas implementation is still incomplete (someone who left
-      the project did it for me). So it's to come thenext ten years...
-    
-      It's a nice unrequired dependency, nearly as useless as dbm at time
-      and for the foreseeable future.
+grass5.7 (5.7.0-1) unstable; urgency=low
 
-  * manpages are still lost somewhere in time during the install step.
-    
- -- Federico Di Gregorio <fog@initd.org>  Thu, 15 Jan 2004 16:59:33 +0100
-  
-grass (5.0.3-1) unstable; urgency=low
+  * install files to locations prescribed by debian policy
+  * fix paths hardcoded during build using script from 5.0.3 package
+  * change package name to enable concurrent install with stable grass package
+  * patch configure.in and d.text.freetype to deal with freetype.h weirdness
+  * build as non-native package
+  * clean binary files not removed by 'make clean'
 
-    The "Release soon" release (Francesco P. Lovergine).
+ -- Steve Halasz <debian@adkgis.org>  Wed,  1 Sep 2004 10:39:27 -0400
 
-    - New upstream version (closes: #208449, #214496).
-    - Copyright file cleaned of outdated (and bad) licenses.
-    - Policy bumped to 3.6.1.
-    - Added me as co-maintainer.
-    - Added dpatch support.
-    	+ debian/rules
-        + debian/control
-      	Patches currently applied:
-      		+ configure.in (run autoconf2.13 for any modification!!)
-                    	o use gdbm_compat dbm compatibility funcs
-                        o avoid freetype.h check
-                + freetype
-                        o freetype.h should not be included as is, see
-                          freetype/freetype.h
+grass (57-2) unstable; urgency=low
 
-    - Changed config.status in configure-stamp to follow normal
-      conventions. Other targets changed as consequence.
-      	+ debian/control
-    - CVS-enabled debian/ dir
-    - Changed download site. Added citation of GPL license copy
-      in /usr/share/common-licenses (policy).
-      	+ debian/copyright
-    - Include dir for freetype2 is /usr/include/freetype2/freetype
-    	+ debian/rules
-    - Added build-deps in control file:
-    	+ libgdbm-dev for --with-dbm
-    	+ libreadline4-dev for --with-readline
-    	+ xlibmesa-glu-dev for --with-opengl
-    	+ libfreetype6-dev for --with-freetype
-        + bison
-        + flex
-        + libncurses5-dev
-    - Removed autoconf build-dep in control file.
-    - Fixed debian/fixscripts.sh
-    - Added autotools-dev build-dep and updating of config.guess and
-      config.guess in rules file.
+  * fixes for rules file by Giuseppe Dia <giusedia@libero.it>
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Mon,  5 Jan 2004 19:24:22 +0100
+  * fixes for Debian built. Joint work with Paolo Brunetti <brunetti@itc.it> 
+    and Donato Minati <minati@itc.it>
 
-grass (5.0.2-1) unstable; urgency=low
-  
-  * New upstream version (Closes: #179537).
-  * Added "proj" to suggestions (Closes: #200403).
-  * Updated Build-depends (Closes: #189874).
-  * Fixed some more interpreter-not-absolute lintian errors.
-  * Documentation splitted into grass-doc package (Closes: #159377)
-  * Updated standards to 3.6.0.
-  * Updated build scripts to DH_COMPAT=4.
-  * Build against tcl/tk 8.4 (Closes: #206844).
-  * Patches configure.in to look for libgdbm_compat (Closes: #203834).
+ -- Markus Neteler <neteler@itc.it>  Tue, 11 Nov 2003 17:59:04 +0100 
 
- -- Federico Di Gregorio <fog@initd.org>  Fri, 29 Aug 2003 15:50:02 +0200
-  
-grass (4.99+5.0.0pre4-1) unstable; urgency=low
-  
-  * Removed postgres support until I get enough time to fix the sources
-    and configure.in.  
-  * Enables freetype2 support.
-  * Fixed documentation being in /ust/share/doc/html instead of
-    /usr/share/doc/grass.
-  * New upstream release.
-  
- -- Federico Di Gregorio <fog@debian.org>  Wed,  5 Jun 2002 17:33:46 +0200
-  
-grass (4.99+5.0.0pre3-2) unstable; urgency=low
+grass (57-1) unstable; urgency=low
 
-  * Applied patch from James R. Van Zandt.
-  
- -- Federico Di Gregorio <fog@initd.org>  Fri, 5 Apr 2002 10:51:05 +0200
-  
-grass (4.99+5.0.0pre3-1) unstable; urgency=low
+  * Initial Release. Control file based on GRASS 5.0.2 deb from 
+    Giuseppe Dia <giusedia@libero.it>
 
-  * Changed verion numbering scheme to include real GRASS version number.
-  * Enabled PostgreSQL, OpenGL and "with-ipc" build options.
-  
- -- Federico Di Gregorio <fog@initd.org>  Fri, 25 Jan 2002 03:15:29 +0100
-  
-grass (4.99b8-3) unstable; urgency=low
-
-  * Added PostgreSQL interface and NVIZ 2.2. g3d still does not compile
-    'cause of a missing header. 
-  * Changed copyright file to GRASS one (my fault, i copied some files
-    from python-popy package and the PoPy copyright slipped in...)
-  
- -- Federico Di Gregorio <fog@debian.org>  Wed, 18 Oct 2000 15:32:01 +0200
-
-grass (4.99b8-2) unstable; urgency=low
-
-  * Added manpages (rewrote the man mangler from start to cope with
-    GRASS passion to pre-format manpages into feline ones.
-
- -- Federico Di Gregorio <fog@debian.org>  Tue, 17 Oct 2000 17:29:01 +0200
-
-grass (4.99b8-1) unstable; urgency=low
-
-  * Initial Release.
-
- -- Federico Di Gregorio <fog@debian.org>  Tue, 17 Oct 2000 11:29:45 +0200
-
+ -- Markus Neteler <neteler@itc.it>  Mon, 10 Nov 2003 17:59:04 +0100
 

@@ -1,53 +1,38 @@
-#!/bin/sh -e
-## freetype.dpatch by Francesco Paolo Lovergine <frankie@debian.org>
+#! /bin/sh -e
+## freetype.dpatch by  <debian@adkgis.org>
 ##
 ## All lines beginning with `## DP:' are a description of the patch.
 ## DP: No description.
 
-if [ $# -ne 1 ]; then
-    echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
+if [ $# -lt 1 ]; then
+    echo "`basename $0`: script expects -patch|-unpatch as argument" >&2
     exit 1
 fi
 
 [ -f debian/patches/00patch-opts ] && . debian/patches/00patch-opts
-patch_opts="${patch_opts:--f --no-backup-if-mismatch}"
+patch_opts="${patch_opts:--f --no-backup-if-mismatch} ${2:+-d $2}"
 
 case "$1" in
-       -patch) patch $patch_opts -p1 < $0;;
-       -unpatch) patch $patch_opts -p1 -R < $0;;
-        *)
-                echo >&2 "`basename $0`: script expects -patch|-unpatch as argument"
-                exit 1;;
+    -patch) patch -p1 ${patch_opts} < $0;;
+    -unpatch) patch -R -p1 ${patch_opts} < $0;;
+    *)
+        echo "`basename $0`: script expects -patch|-unpatch as argument" >&2
+        exit 1;;
 esac
 
 exit 0
 
 @DPATCH@
-diff -urNad /home/frankie/debian/mypkgs/grass/grass-5.0.3/src/display/d.text.freetype/main.c grass-5.0.3/src/display/d.text.freetype/main.c
---- /home/frankie/debian/mypkgs/grass/grass-5.0.3/src/display/d.text.freetype/main.c	2003-10-13 11:20:29.000000000 +0200
-+++ grass-5.0.3/src/display/d.text.freetype/main.c	2004-01-05 16:55:29.000000000 +0100
-@@ -28,7 +28,10 @@
- #ifdef HAVE_ICONV_H
+diff -urNad /home/steve/projects/qgis/debian/grass57/grass-5.7.0/display/d.text.freetype/main.c grass-5.7.0/display/d.text.freetype/main.c
+--- /home/steve/projects/qgis/debian/grass57/grass-5.7.0/display/d.text.freetype/main.c	2004-06-17 10:02:02.000000000 -0400
++++ grass-5.7.0/display/d.text.freetype/main.c	2004-08-06 12:01:05.000000000 -0400
+@@ -30,7 +30,8 @@
  #include <iconv.h>
  #endif
+ 
 -#include <freetype/freetype.h>
-+
 +#include <ft2build.h>
 +#include FT_FREETYPE_H
-+
  #include "gis.h"
  #include "display.h"
  #include "raster.h"
-diff -urNad /home/frankie/debian/mypkgs/grass/grass-5.0.3/src/display/d.text.freetype/vflib/main.c grass-5.0.3/src/display/d.text.freetype/vflib/main.c
---- /home/frankie/debian/mypkgs/grass/grass-5.0.3/src/display/d.text.freetype/vflib/main.c	2003-02-09 12:57:57.000000000 +0100
-+++ grass-5.0.3/src/display/d.text.freetype/vflib/main.c	2004-01-05 16:54:56.000000000 +0100
-@@ -31,7 +31,8 @@
- #endif
- 
- #ifndef	VFlib
--#include <freetype/freetype.h>
-+#include <ft2build.h>
-+#include FT_FREETYPE_H
- #else
- #include <VFlib-3_6.h>
- #endif
