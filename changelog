@@ -1,0 +1,94 @@
+grass (5.0.3-1) unstable; urgency=low
+
+  * (Francesco P. Lovergine)
+
+    - New upstream version.
+    - Policy bumped to 3.6.1.
+    - Added me as co-maintainer.
+    - Added dpatch support.
+    	+ debian/rules
+        + debian/control
+      	Patches currently applied:
+      		+ configure.in to use gdbm_compat dbm compatibility funcs
+    - Changed config.status in configure-stamp to follow normal
+      conventions. Other targets changed as consequence.
+      	+ debian/control
+    - CVS-enabled debian/ dir
+    - Changed download site. Added citation of GPL license copy
+      in /usr/share/common-licenses (policy).
+      	+ debian/copyright
+    - Include dir for freetype2 is /usr/include/freetype2/freetype
+    	+ debian/rules
+    - Added build-deps in control file:
+    	+ libgdbm-dev for --with-dbm
+    	+ libreadline4-dev for --with-readline
+    	+ xlibmesa-glu-dev for --with-opengl
+    	+ libfreetype6-dev for --with-freetype
+        + bison
+        + flex
+        + ncurses5-dev
+    - Removed autoconf build-dep in control file.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 18 Nov 2003 16:22:33 +0100
+
+grass (5.0.2-1) unstable; urgency=low
+  
+  * New upstream version (Closes: #179537).
+  * Added "proj" to suggestions (Closes: #200403).
+  * Updated Build-depends (Closes: #189874).
+  * Fixed some more interpreter-not-absolute lintian errors.
+  * Documentation splitted into grass-doc package (Closes: #159377)
+  * Updated standards to 3.6.0.
+  * Updated build scripts to DH_COMPAT=4.
+  * Build against tcl/tk 8.4 (Closes: #206844).
+  * Patches configure.in to look for libgdbm_compat (Closes: #203834).
+
+ -- Federico Di Gregorio <fog@initd.org>  Fri, 29 Aug 2003 15:50:02 +0200
+  
+grass (4.99+5.0.0pre4-1) unstable; urgency=low
+  
+  * Removed postgres support until I get enough time to fix the sources
+    and configure.in.  
+  * Enables freetype2 support.
+  * Fixed documentation being in /ust/share/doc/html instead of
+    /usr/share/doc/grass.
+  * New upstream release.
+  
+ -- Federico Di Gregorio <fog@debian.org>  Wed,  5 Jun 2002 17:33:46 +0200
+  
+grass (4.99+5.0.0pre3-2) unstable; urgency=low
+
+  * Applied patch from James R. Van Zandt.
+  
+ -- Federico Di Gregorio <fog@initd.org>  Fri, 5 Apr 2002 10:51:05 +0200
+  
+grass (4.99+5.0.0pre3-1) unstable; urgency=low
+
+  * Changed verion numbering scheme to include real GRASS version number.
+  * Enabled PostgreSQL, OpenGL and "with-ipc" build options.
+  
+ -- Federico Di Gregorio <fog@initd.org>  Fri, 25 Jan 2002 03:15:29 +0100
+  
+grass (4.99b8-3) unstable; urgency=low
+
+  * Added PostgreSQL interface and NVIZ 2.2. g3d still does not compile
+    'cause of a missing header. 
+  * Changed copyright file to GRASS one (my fault, i copied some files
+    from python-popy package and the PoPy copyright slipped in...)
+  
+ -- Federico Di Gregorio <fog@debian.org>  Wed, 18 Oct 2000 15:32:01 +0200
+
+grass (4.99b8-2) unstable; urgency=low
+
+  * Added manpages (rewrote the man mangler from start to cope with
+    GRASS passion to pre-format manpages into feline ones.
+
+ -- Federico Di Gregorio <fog@debian.org>  Tue, 17 Oct 2000 17:29:01 +0200
+
+grass (4.99b8-1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Federico Di Gregorio <fog@debian.org>  Tue, 17 Oct 2000 11:29:45 +0200
+
+
