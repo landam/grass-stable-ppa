@@ -1,8 +1,13 @@
 grass (5.7.0-6) unstable; urgency=low
 
+  * link /usr/bin/grass to /usr/bin/grass57
   * debian/control
     - edits to description
     - create grass-doc package
+    - don't have libgrass depend on grass
+  * debian/rules
+    - install to /usr/lib/grass instead of /usr/lib/grass57
+    - run dh_shlibdeps
 
  -- Steve Halasz <debian@adkgis.org>  Wed,  1 Dec 2004 18:39:04 -0500
 

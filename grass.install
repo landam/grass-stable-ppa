@@ -1,9 +1,8 @@
-/usr/bin/grass57
-/usr/lib/grass57/bin
-/usr/lib/grass57/bwidget
-/usr/lib/grass57/docs
-/usr/lib/grass57/driver
-/usr/lib/grass57/etc
-/usr/lib/grass57/fonts
-/usr/lib/grass57/scripts
-/usr/lib/grass57/tcltkgrass
+usr/bin/grass57
+usr/lib/grass/bin
+usr/lib/grass/bwidget
+usr/lib/grass/driver
+usr/lib/grass/etc
+usr/lib/grass/fonts
+usr/lib/grass/scripts
+usr/lib/grass/tcltkgrass

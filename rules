@@ -90,8 +90,8 @@ install: build
 
 	# install grass core into debian/tmp
 	$(MAKE) strip
-	$(MAKE) install INST_DIR=$(CURDIR)/debian/tmp/usr/lib/grass57 \
-		PREFIX=$(CURDIR)/debian/tmp/usr/lib/grass57 \
+	$(MAKE) install INST_DIR=$(CURDIR)/debian/tmp/usr/lib/grass \
+		PREFIX=$(CURDIR)/debian/tmp/usr/lib/grass \
 		BINDIR=$(CURDIR)/debian/tmp/usr/bin
 
 	# fix all the braindead scripts
@@ -99,6 +99,10 @@ install: build
 
 	# fix links
 	debian/fixpaths.sh $(CURDIR)/debian/tmp debian/tmp
+	
+	# move binary files out of /usr/lib
+	#mkdir -p debian/tmp/usr/share/grass/bwidget
+	#mv debian/tmp/usr/lib/grass/bwidget/images debian/tmp/usr/share/grass/bwidget/images
 
 # Build architecture-independent files here.
 binary-indep: build install
@@ -121,7 +125,7 @@ binary-arch: build install
 #	dh_installinit
 #	dh_installcron
 #	dh_installinfo
-	dh_installman -pgrass5.7 debian/grass57.1
+	dh_installman -pgrass debian/grass57.1
 	dh_link
 	dh_strip
 	dh_compress
@@ -130,7 +134,7 @@ binary-arch: build install
 #	dh_python
 	dh_makeshlibs
 	dh_installdeb
-#	dh_shlibdeps
+	dh_shlibdeps
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb

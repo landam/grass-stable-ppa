@@ -9,7 +9,7 @@ CURDIR=$(pwd)
 for x in tcltkgrass/main/tksys.tcl \
     etc/water/seg
 do
-    chmod +x $CURDIR/debian/tmp/usr/lib/grass57/$x
+    chmod +x $CURDIR/debian/tmp/usr/lib/grass/$x
 done
 
 # silence bogus lintian complaint about interpreter-not-absolute
@@ -19,16 +19,16 @@ for x in script_get_line \
     script_file_tools \
     nviz2.2_script
 do
-  f=$CURDIR/debian/tmp/usr/lib/grass57/etc/nviz2.2/scripts/$x
-  sed 's.!\$$(GISBASE).!/usr/lib/grass57.' $f >foo && cat foo >$f
+  f=$CURDIR/debian/tmp/usr/lib/grass/etc/nviz2.2/scripts/$x
+  sed 's.!\$$(GISBASE).!/usr/lib/grass.' $f >foo && cat foo >$f
 done
 
 for x in panel_label.tcl \
     panel_mkdspf.tcl \
     panel_scale.tcl
 do
-  f=$CURDIR/debian/tmp/usr/lib/grass57/etc/nviz2.2/scripts/$x
-  sed 's%!../glnviz.new/nvwish%!/usr/lib/grass57/etc/nviz2.2/glnviz/nvwish%' $f >foo && cat foo >$f
+  f=$CURDIR/debian/tmp/usr/lib/grass/etc/nviz2.2/scripts/$x
+  sed 's%!../glnviz.new/nvwish%!/usr/lib/grass/etc/nviz2.2/glnviz/nvwish%' $f >foo && cat foo >$f
 done
 rm foo
 
@@ -36,7 +36,7 @@ rm foo
 # add shebang to scripts that need it
 for x in etc/copy
 do
-  f=$CURDIR/debian/tmp/usr/lib/grass57/$x
+  f=$CURDIR/debian/tmp/usr/lib/grass/$x
   cp $f foo; echo "#!/bin/sh" >$f; cat foo >>$f
 done
 rm foo
@@ -95,5 +95,5 @@ for x in etc/nviz2.2/scripts/panel_kanimator.tcl \
     etc/nviz2.2/scripts/wirecolorPopup.tcl \
     etc/nviz2.2/scripts/fileBrowser.tcl
 do
-    chmod -x $CURDIR/debian/tmp/usr/lib/grass57/$x
+    chmod -x $CURDIR/debian/tmp/usr/lib/grass/$x
 done

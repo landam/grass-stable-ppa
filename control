@@ -34,7 +34,7 @@ Description: Geographic Resources Analysis Support System documentation
 Package: libgrass5.7
 Section: libs
 Architecture: any
-Depends: ${shlibs:Depends}, grass (= ${Source-Version})
+Depends: ${shlibs:Depends}
 Description: GRASS GIS development libraries
  Geographic Resources Analysis Support System, commonly referred to as
  GRASS, is a Geographic Information System (GIS) used for data
