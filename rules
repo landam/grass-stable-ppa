@@ -39,6 +39,7 @@ configure-stamp: patch-stamp
                     --sharedstatedir=/var \
 		    --enable-socket \
 	            --with-postgres --with-x \
+		    --with-gdal \
 		    --with-freetype --with-readline --with-nls --with-dbm \
 	            --without-glw --without-odbc \
 		    --without-blas --without-lapack --without-dbm \
@@ -67,7 +68,7 @@ build-arch-stamp: build-indep-stamp
 build-indep: build-indep-stamp
 build-indep-stamp:  config.status
 	dh_testdir
-	chmod 755 debian/fixpaths.sh debian/manmangle.sh debian/fixscripts.sh
+	chmod 755 debian/fixpaths.sh debian/fixscripts.sh
 
 clean: true-clean unpatch 
 true-clean:
@@ -121,10 +122,15 @@ install:
 # fix links
 	debian/fixpaths.sh $(CURDIR)/debian/tmp debian/tmp
 
-# install the manpages
-#	rm -fr $(CURDIR)/debian/tmp/usr/share/man
-#	debian/manmangle.sh $(CURDIR)/debian/tmp/usr/share/man
-#	find $(CURDIR)/debian/tmp/usr/share/man -type f | xargs gzip -9
+#
+# install the manpages, converting preformatted ones by rman
+# 
+	mkdir -p $(CURDIR)/debian/tmp/usr/share/man/man1
+	( cd dist.i686-pc-linux-gnu/man; \
+	  for page in man1/*; do \
+	  	rman -f roff $$page >$(CURDIR)/debian/tmp/usr/share/man/$${page}grass; \
+	  done )
+	find $(CURDIR)/debian/tmp/usr/share/man -type f | xargs gzip -9
 
 # some permissions
 	chmod 755 $(CURDIR)/debian/tmp/usr/lib/grass5/etc/help/17.manual/Help.pages/curcsh40

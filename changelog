@@ -1,3 +1,17 @@
+grass (5.0.3-3) unstable; urgency=low
+
+  * Added libreadline4-dev build-dep (closes: #232981)
+  * Added libgdal linking:
+  	+ debian/control: added libgdal1-dev build-dep
+        + debian/rules: added --with-gdal
+   (closes: #234275)
+  * Added gdal-bin as suggested (closes: #220861)
+  * Now managing correctly manpages. Upstream provides preformatted ones, now
+    using rman to reconvert to nroff sources.
+    (closes: #216293, #159379)
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Sat, 20 Mar 2004 20:19:47 +0100
+
 grass (5.0.3-2) unstable; urgency=low
 
   The "Check twice before releasing" release.
@@ -19,19 +33,11 @@ grass (5.0.3-2) unstable; urgency=low
     
       It's a nice unrequired dependency, nearly as useless as dbm at time
       and for the foreseeable future.
-   
-  * Changed URL in debian/copyright, Baylor was not involved in grass
-    development in the last few years and the official home page is
-    http://grass.itc.it/
 
-  (Francesco)
-
-  * Added a missing dh_shlibdeps to rules :-/
-  * Removed autoconf2.13 build-dep. Running it by hand and changing configure
-    patch is preferred.
-
- -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 13 Jan 2004 11:23:23 +0100
- 
+  * manpages are still lost somewhere in time during the install step.
+    
+ -- Federico Di Gregorio <fog@initd.org>  Thu, 15 Jan 2004 16:59:33 +0100
+  
 grass (5.0.3-1) unstable; urgency=low
 
     The "Release soon" release (Francesco P. Lovergine).

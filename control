@@ -3,13 +3,13 @@ Section: science
 Priority: optional
 Maintainer: Federico Di Gregorio <fog@debian.org>
 Uploaders: Francesco Paolo Lovergine <frankie@debian.org>
-Build-depends: flex, bison, libncurses5-dev, postgresql-dev, debhelper (>> 3), libtiff3g-dev, libgd2-dev, tcl8.4-dev, tk8.4-dev, fftw-dev, dpatch, xlibmesa-gl-dev, xlibmesa-glu-dev, libfreetype6-dev, autotools-dev
+Build-depends: flex, bison, libreadline4-dev, libncurses5-dev, postgresql-dev, debhelper (>> 3), libtiff3g-dev, libgd2-dev, tcl8.4-dev, tk8.4-dev, fftw-dev, dpatch, xlibmesa-gl-dev, xlibmesa-glu-dev, libfreetype6-dev, autoconf2.13, autotools-dev, libgdal1-dev, rman
 Standards-Version: 3.6.1
 
 Package: grass
 Architecture: any
 Depends: ${shlibs:Depends},csh|c-shell
-Suggests: proj, grass-doc
+Suggests: proj, grass-doc, gdal-bin
 Description: Geographic Resources Analysis Support System
  GRASS is a Geographic Information System (GIS) used for data
  management, image processing, graphics production, spatial modeling,
