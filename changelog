@@ -1,3 +1,26 @@
+grass (5.7.0-5) unstable; urgency=low
+
+  * debian/control
+    - change package name back to 'grass'
+    - convert to team maintenance with pkg-grass-general@lists.alioth.debian.org
+      as maintainer
+    - add build-deps:
+      + dpatch
+      + libjpeg62-dev
+      + libpng12-dev
+    - remove build-deps:
+      + extra second build-dep on postgresql-dev
+      + libgd2-xpm-dev
+      + postgresql-client
+  * debian/rules:
+    - clean raster/r.terraflow/IOStream/lib/src/libiostream.a
+    - add --with-odbc
+    - add --with-cxx
+    - remove --with-dbm and --without-dbm
+    - remove --with-blas and --with-lapack
+
+ -- Steve Halasz <debian@adkgis.org>  Mon, 29 Nov 2004 18:17:46 -0500
+
 grass5.7 (5.7.0-4) unstable; urgency=low
 
   * Add grass57 man page

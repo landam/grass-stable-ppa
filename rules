@@ -28,23 +28,27 @@ include /usr/share/dpatch/dpatch.make
 config.status: patch configure
 	dh_testdir
 	# Add here commands to configure the package.
-	./configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) \
+	CFLAGS="$(CFLAGS)" ./configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) \
                     --prefix=/usr/lib \
                     --sysconfdir=/etc \
                     --sharedstatedir=/var \
                     --enable-socket \
                     --enable-shared \
-                    --with-postgres --with-x \
+                    --with-postgres \
+                    --with-cxx \
+                    --with-x \
                     --with-gdal \
-                    --with-freetype --with-readline --with-nls --with-dbm \
-                    --without-glw --without-odbc \
-                    --without-blas --without-lapack --without-dbm \
-                    --with-glw-includes=/usr/include \
+                    --with-freetype \
+                    --with-readline \
+                    --with-nls \
+                    --without-glw \
+                    --with-odbc \
+                    --without-blas \
+                    --without-lapack \
+                    --with-glw-includes=/usr/X11R6/include \
                     --with-freetype-includes=/usr/include/freetype2 \
                     --with-tcltk-includes=/usr/include/tcl8.3 \
                     --with-postgres-includes=/usr/include/postgresql \
-                    --with-blas-libs=/usr/lib/atlas \
-                    --with-lapack-libs=/usr/lib/atlas \
 
 build: build-stamp
 
@@ -78,6 +82,7 @@ endif
 	rm -f lib/proj/nad2bin
 	rm -f tools/timer/main.o
 	rm -f raster/r.le/r.le.setup/polytocell/*.o
+	rm -f raster/r.terraflow/IOStream/lib/src/libiostream.a
 
 install: build
 	dh_testdir
