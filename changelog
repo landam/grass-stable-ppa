@@ -8,6 +8,7 @@ grass (5.7.0-5) unstable; urgency=low
       + dpatch
       + libjpeg62-dev
       + libpng12-dev
+      + lesstif2-dev
     - remove build-deps:
       + extra second build-dep on postgresql-dev
       + libgd2-xpm-dev
@@ -16,6 +17,7 @@ grass (5.7.0-5) unstable; urgency=low
     - clean raster/r.terraflow/IOStream/lib/src/libiostream.a
     - add --with-odbc
     - add --with-cxx
+    - add --with-motif
     - remove --with-dbm and --without-dbm
     - remove --with-blas and --with-lapack
 

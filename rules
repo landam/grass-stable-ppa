@@ -39,12 +39,11 @@ config.status: patch configure
                     --with-x \
                     --with-gdal \
                     --with-freetype \
+                    --with-motif \
                     --with-readline \
                     --with-nls \
                     --without-glw \
                     --with-odbc \
-                    --without-blas \
-                    --without-lapack \
                     --with-glw-includes=/usr/X11R6/include \
                     --with-freetype-includes=/usr/include/freetype2 \
                     --with-tcltk-includes=/usr/include/tcl8.3 \
