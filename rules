@@ -41,7 +41,7 @@ configure-stamp: patch-stamp
 	            --with-postgres --with-x \
 		    --with-freetype --with-readline --with-nls --with-dbm \
 	            --without-glw --without-odbc \
-		    --without-blas --without-lapack --without-dbm \ 
+		    --without-blas --without-lapack --without-dbm \
 		    --with-glw-includes=/usr/include \
                     --with-freetype-includes=/usr/include/freetype2 \
 		    --with-tcltk-includes=/usr/include/tcl8.4 \
@@ -84,7 +84,7 @@ true-clean:
 		cp -f /usr/share/misc/config.sub config.sub
 	-test -r /usr/share/misc/config.guess && \
 		cp -f /usr/share/misc/config.guess config.guess
-	
+
 	dh_clean
 
 install:

@@ -5,10 +5,21 @@ grass (5.0.3-2) unstable; urgency=low
   (Federico)
 
   * Changes to debian/rules as suggested by Markus Neteler:
-    - --without-blas, --without-lapack: both not needed because the
+    + added dh_shlibdeps to generate dependencies
+    + --without-blas, --without-lapack: both not needed because the
       module using them was never finished (also removed the Build-deps)
-    - --without-dbm: dbm is not used in grass, it is a fake dependency
+    + --without-dbm: dbm is not used in grass, it is a fake dependency
       (also removed gdbm patch)
+    + Markus said:
+    
+      AFAIK there is no GRASS module which uses that.
+      The only existing module was written by me and never submitted, as
+      the lapack/blas implementation is still incomplete (someone who left
+      the project did it for me). So it's to come thenext ten years...
+    
+      It's a nice unrequired dependency, nearly as useless as dbm at time
+      and for the foreseeable future.
+   
   * Changed URL in debian/copyright, Baylor was not involved in grass
     development in the last few years and the official home page is
     http://grass.itc.it/
