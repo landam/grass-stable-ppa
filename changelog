@@ -1,3 +1,15 @@
+grass (5.7.0+6.0.0beta1-0.dgis.unstable.2) unstable; urgency=low
+
+  * updates to grass60 man page - grass57 -> grass60
+  * link usr/lib/grass/docs/html to usr/share/doc/grass-doc/html
+  * patch to look for epsg codes in /usr/share/proj/epsg
+  * put man pages in grass-doc
+  * debian/control
+    - depend on xterm
+    - remove dependency on csh
+
+ -- Steve Halasz <debian@adkgis.org>  Wed, 19 Jan 2005 09:06:51 -0500
+
 grass (5.7.0+6.0.0beta1-0.dgis.unstable.1) unstable; urgency=low
 
   * New upstream release

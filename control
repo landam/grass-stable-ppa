@@ -9,7 +9,7 @@ Standards-Version: 3.6.1
 Package: grass
 Section: science
 Architecture: any
-Depends: ${shlibs:Depends}, csh|c-shell, libgrass5.7
+Depends: ${shlibs:Depends}, xterm, libgrass5.7
 Suggests: grass-doc, gdal-bin
 Description: Geographic Resources Analysis Support System
  Commonly referred to as GRASS, this is a Geographic Information
