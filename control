@@ -3,7 +3,7 @@ Section: science
 Priority: optional
 Maintainer: Federico Di Gregorio <fog@debian.org>
 Uploaders: Francesco Paolo Lovergine <frankie@debian.org>
-Build-depends: flex, bison, libreadline4-dev, libncurses5-dev, postgresql-dev, debhelper (>> 3), libtiff3g-dev, libgd2-dev, tcl8.4-dev, tk8.4-dev, fftw-dev, dpatch, xlibmesa-gl-dev, xlibmesa-glu-dev, libfreetype6-dev, autoconf2.13, autotools-dev, libgdal1-dev, rman
+Build-depends: flex, bison, libreadline4-dev, libncurses5-dev, postgresql-dev, debhelper (>> 3), libtiff3g-dev, libgd2-dev, tcl8.3-dev, tk8.3-dev, fftw-dev, dpatch, xlibmesa-gl-dev, xlibmesa-glu-dev, libfreetype6-dev, autoconf2.13, autotools-dev, libgdal1-dev, rman
 Standards-Version: 3.6.1
 
 Package: grass

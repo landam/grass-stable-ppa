@@ -17,6 +17,7 @@ export DH_OPTIONS
 # from having to guess our platform (since we know it already)
 DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
 DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+FULL_GNU_NAME       := $(shell sh config.sub $(DEB_BUILD_GNU_TYPE))
 
 CFLAGS = -Wall -g
 
@@ -45,10 +46,12 @@ configure-stamp: patch-stamp
 		    --without-blas --without-lapack --without-dbm \
 		    --with-glw-includes=/usr/include \
                     --with-freetype-includes=/usr/include/freetype2 \
-		    --with-tcltk-includes=/usr/include/tcl8.4 \
+		    --with-tcltk-includes=/usr/include/tcl8.3 \
                     --with-postgres-includes=/usr/include/postgresql \
 	            --with-blas-libs=/usr/lib/atlas \
-	            --with-lapack-libs=/usr/lib/atlas
+	            --with-lapack-libs=/usr/lib/atlas \
+		    --host $(DEB_BUILD_GNU_TYPE)
+
 	touch configure-stamp
 
 build: configure-stamp build-arch build-indep
@@ -126,7 +129,7 @@ install:
 # install the manpages, converting preformatted ones by rman
 # 
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/man/man1
-	( cd dist.i686-pc-linux-gnu/man; \
+	( cd dist.$(FULL_GNU_NAME)/man; \
 	  for page in man1/*; do \
 	  	rman -f roff $$page >$(CURDIR)/debian/tmp/usr/share/man/$${page}grass; \
 	  done )

@@ -1,3 +1,14 @@
+grass (5.0.3-4) unstable; urgency=low
+
+  * Reverted to tcl8.3 linking due to compatibility problems with thread-enabled Tcl.
+    Other proposed patches apparently do not work.
+    (closes: #248105)
+  * Actually use DEB_BUILD_GNU_TYPE for configure as mentioned in the comment
+    and managing manpages correctly for !i386 too. Thanks Goswin von Brederlow.
+    (closes: #251629)
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Tue,  8 Jun 2004 11:53:29 +0200
+
 grass (5.0.3-3) unstable; urgency=low
 
   * Added libreadline4-dev build-dep (closes: #232981)
