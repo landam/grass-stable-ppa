@@ -16,7 +16,8 @@ Description: Geographic Resources Analysis Support System
  System (GIS) used for geospatial data management and analysis,
  image processing, graphics/map production, spatial modeling, and
  visualization. GRASS is currently used in academic and commercial
- settings around the world, as well as by many government agencies.
+ settings around the world, as well as by many government agencies
+ and environmental consulting companies.
 
 Package: grass-doc
 Section: Science
@@ -26,7 +27,8 @@ Description: Geographic Resources Analysis Support System documentation
  System (GIS) used for geospatial data management and analysis,
  image processing, graphics/map production, spatial modeling, and
  visualization. GRASS is currently used in academic and commercial
- settings around the world, as well as by many government agencies.
+ settings around the world, as well as by many government agencies
+ and environmental consulting companies.
  .
  This package contains HTML documentation for the GRASS system.
 
@@ -39,7 +41,8 @@ Description: GRASS GIS development libraries
  System (GIS) used for geospatial data management and analysis,
  image processing, graphics/map production, spatial modeling, and
  visualization. GRASS is currently used in academic and commercial
- settings around the world, as well as by many government agencies.
+ settings around the world, as well as by many government agencies
+ and environmental consulting companies.
  .
  These libraries provide the means to access and manipulate GRASS
  data sets.
@@ -53,7 +56,8 @@ Description: GRASS GIS library development files
  System (GIS) used for geospatial data management and analysis,
  image processing, graphics/map production, spatial modeling, and
  visualization. GRASS is currently used in academic and commercial
- settings around the world, as well as by many government agencies.
+ settings around the world, as well as by many government agencies
+ and environmental consulting companies.
  .
  This package contains the header files for developing with GRASS.
  Install this package if you wish to develop software that manipulates
