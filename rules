@@ -34,6 +34,7 @@ include /usr/share/dpatch/dpatch.make
 configure: configure-stamp
 configure-stamp: patch-stamp
 	dh_testdir
+	autoconf2.13 # configure.in has been patched
 	./configure --prefix=/usr/lib \
 		    --sysconfdir=/etc \
                     --sharedstatedir=/var \
@@ -42,7 +43,7 @@ configure-stamp: patch-stamp
 		    --with-freetype --with-readline --with-nls --with-dbm \
 	            --without-glw --without-odbc \
 		    --with-glw-includes=/usr/include \
-                    --with-freetype-includes=/usr/include/freetype2/freetype \
+                    --with-freetype-includes=/usr/include/freetype2 \
 		    --with-tcltk-includes=/usr/include/tcl8.4 \
                     --with-postgres-includes=/usr/include/postgresql \
 	            --with-blas-libs=/usr/lib/atlas \

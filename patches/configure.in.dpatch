@@ -23,9 +23,9 @@ esac
 exit 0
 
 @DPATCH@
-diff -urNad /users/frankie/debian/mypkgs/grass/grass-5.0.3/configure grass-5.0.3/configure
---- /users/frankie/debian/mypkgs/grass/grass-5.0.3/configure	2003-03-16 13:25:16.000000000 +0100
-+++ grass-5.0.3/configure	2003-11-18 13:30:19.000000000 +0100
+diff -urNad /home/frankie/debian/mypkgs/grass/grass-5.0.3/configure grass-5.0.3/configure
+--- /home/frankie/debian/mypkgs/grass/grass-5.0.3/configure	2004-01-05 15:12:51.000000000 +0100
++++ grass-5.0.3/configure	2004-01-05 15:13:00.000000000 +0100
 @@ -5038,14 +5038,56 @@
  LDFLAGS="$DBMLIBPATH $LDFLAGS"
  
@@ -3343,9 +3343,9 @@ diff -urNad /users/frankie/debian/mypkgs/grass/grass-5.0.3/configure grass-5.0.3
  if test -n "$USE_FFTW" ; then
  	echo "$ac_t""yes" 1>&6
  	BUILD_I_SHAPE="src.contrib/CERL/imagery/i.shape"
-diff -urNad /users/frankie/debian/mypkgs/grass/grass-5.0.3/configure.in grass-5.0.3/configure.in
---- /users/frankie/debian/mypkgs/grass/grass-5.0.3/configure.in	2003-03-16 13:25:19.000000000 +0100
-+++ grass-5.0.3/configure.in	2003-11-18 13:29:12.000000000 +0100
+diff -urNad /home/frankie/debian/mypkgs/grass/grass-5.0.3/configure.in grass-5.0.3/configure.in
+--- /home/frankie/debian/mypkgs/grass/grass-5.0.3/configure.in	2004-01-05 15:12:51.000000000 +0100
++++ grass-5.0.3/configure.in	2004-01-05 15:14:01.000000000 +0100
 @@ -510,9 +510,11 @@
  
  LOC_CHECK_LIBS(dbm, dbminit,DBM,$DBMLIBPATH,DBMLIB,,,[
@@ -3357,4 +3357,16 @@ diff -urNad /users/frankie/debian/mypkgs/grass/grass-5.0.3/configure.in grass-5.
 +])
  
  fi # $USE_DBM
+ 
+@@ -1054,7 +1056,10 @@
+ 
+ LOC_CHECK_INC_PATH(freetype,FreeType,FTINC)
+ 
+-LOC_CHECK_INCLUDES(freetype/freetype.h,FreeType,$FTINC)
++#
++# This test would fail with a recent freetype edition.
++#
++#LOC_CHECK_INCLUDES(freetype/freetype.h,FreeType,$FTINC)
+ 
+ # With FreeType library directory
  
