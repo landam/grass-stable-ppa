@@ -1,3 +1,10 @@
+grass (5.7.0-7) unstable; urgency=low
+
+  * debian/control
+    - edits to description courtesy of hmitaso@unity.ncsu.edu
+
+ -- Steve Halasz <debian@adkgis.org>  Mon, 27 Dec 2004 18:16:41 -0500
+
 grass (5.7.0-6) unstable; urgency=low
 
   * link /usr/bin/grass to /usr/bin/grass57
