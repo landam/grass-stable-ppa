@@ -48,6 +48,7 @@ config.status: patch configure
                     --with-freetype-includes=/usr/include/freetype2 \
                     --with-tcltk-includes=/usr/include/tcl8.3 \
                     --with-postgres-includes=/usr/include/postgresql \
+                    --without-cxx \
 
 build: build-stamp
 

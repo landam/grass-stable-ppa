@@ -2,7 +2,6 @@ usr/bin/grass60
 usr/lib/grass/bin
 usr/lib/grass/bwidget
 usr/lib/grass/docs/nviz/help.tcl
-usr/lib/grass/docs/start usr/share/doc/grass
 usr/lib/grass/driver
 usr/lib/grass/etc
 usr/lib/grass/fonts

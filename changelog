@@ -1,3 +1,30 @@
+grass (5.7.0+6.0.0beta2-1) unstable; urgency=high
+
+  * New upstream release (Closes: #264566)
+    - Safe tmpdir creation (Closes: #287651)
+    - tcltkgrass replaced by d.m (Closes: #282567)
+    - r.in.gdal segfault fixed (Closes: #234275)
+    - r.in.bin segfault fixed (Closes: #259655)
+    - r.lags.1grass.gz: "name" section too long (removed) (Closes: #261726)
+    - raster.html: non explained commands (removed) (Closes: #287590)
+    - i.rectify.html: links to i.vpoints.html work (Closes: #287764)
+    - i.points.html: imagery.ps link fixed (Closes: #287763:)
+  * Help button doc path fixed (Closes: #287591)
+  * Change libgrass0 -> libgrass
+
+ -- Steve Halasz <debian@adkgis.org>  Fri,  4 Feb 2005 15:13:26 -0500
+
+grass (5.7.0+6.0.0beta1+cvs20050203-0.dgis.unstable.1) unstable; urgency=low
+
+  * New upstream version from CVS
+  * Safe tmpdir creation (Closes: #287651)
+  * Build without r.terraflow until it gets tmpdir fixes
+  * Change libgrass5.7 -> libgrass6.0.0beta1
+  * Change maintainer 
+      pkg-grass-general -> pkg-grass-devel@lists.alioth.debian.org
+
+ -- Steve Halasz <debian@adkgis.org>  Thu,  3 Feb 2005 09:28:43 -0500
+
 grass (5.7.0+6.0.0beta1-0.dgis.unstable.2) unstable; urgency=low
 
   * updates to grass60 man page - grass57 -> grass60

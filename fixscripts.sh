@@ -16,10 +16,11 @@ for x in script_get_line \
     script_play \
     script_tools \
     script_file_tools \
-    nviz2.2_script
+    nviz2.2_script \
+    script_get_line
 do
   f=$CURDIR/debian/tmp/usr/lib/grass/etc/nviz2.2/scripts/$x
-  sed 's.!\$$(GISBASE).!/usr/lib/grass.' $f >foo && cat foo >$f
+  sed 's.!nviz.!/usr/lib/grass/bin/nviz.' $f >foo && cat foo >$f
 done
 
 for x in panel_label.tcl \
@@ -44,11 +45,13 @@ rm foo
 # most tcl scripts don't need to be executable
 for x in etc/nviz2.2/scripts/panel_kanimator.tcl \
     etc/nviz2.2/scripts/attPopup.tcl \
+    etc/nviz2.2/scripts/attIsosurfPopup.tcl \
     etc/nviz2.2/scripts/panel_pos.tcl \
     etc/nviz2.2/scripts/panel_vol.tcl \
     etc/nviz2.2/scripts/panelIndex \
     etc/dm/labels.tcl \
     etc/dm/cmd.tcl \
+    etc/dm/menu.tcl \
     etc/nviz2.2/scripts/colorPopup.tcl \
     etc/nviz2.2/scripts/multimapBrowser.tcl \
     etc/nviz2.2/scripts/panel_animation.tcl \
