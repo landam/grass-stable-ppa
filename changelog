@@ -9,11 +9,13 @@ grass (5.0.3-1) unstable; urgency=low
     	+ debian/rules
         + debian/control
       	Patches currently applied:
-      		+ configure.in
-                    	o to use gdbm_compat dbm compatibility funcs
-                	o to check fterrors.h instead of freetype.h header
-                	  due to new upstream libfreetype6-dev release
-                This requires autoconf2.13 running at configure time too.
+      		+ configure.in (run autoconf2.13 for any modification!!)
+                    	o use gdbm_compat dbm compatibility funcs
+                        o avoid freetype.h check 
+                + freetype
+                        o freetype.h should not be included as is, see
+                          freetype/freetype.h
+                        
     - Changed config.status in configure-stamp to follow normal
       conventions. Other targets changed as consequence.
       	+ debian/control
@@ -31,11 +33,10 @@ grass (5.0.3-1) unstable; urgency=low
         + bison
         + flex
         + libncurses5-dev
-        + autoconf2.13
     - Removed autoconf build-dep in control file.
     - Fixed debian/fixscripts.sh
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Mon,  5 Jan 2004 16:01:30 +0100
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Mon,  5 Jan 2004 16:57:34 +0100
 
 grass (5.0.2-1) unstable; urgency=low
   

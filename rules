@@ -34,7 +34,6 @@ include /usr/share/dpatch/dpatch.make
 configure: configure-stamp
 configure-stamp: patch-stamp
 	dh_testdir
-	autoconf2.13 # configure.in has been patched
 	./configure --prefix=/usr/lib \
 		    --sysconfdir=/etc \
                     --sharedstatedir=/var \

@@ -24,8 +24,8 @@ exit 0
 
 @DPATCH@
 diff -urNad /home/frankie/debian/mypkgs/grass/grass-5.0.3/configure grass-5.0.3/configure
---- /home/frankie/debian/mypkgs/grass/grass-5.0.3/configure	2004-01-05 15:12:51.000000000 +0100
-+++ grass-5.0.3/configure	2004-01-05 15:13:00.000000000 +0100
+--- /home/frankie/debian/mypkgs/grass/grass-5.0.3/configure	2003-03-16 13:25:16.000000000 +0100
++++ grass-5.0.3/configure	2004-01-05 18:09:52.000000000 +0100
 @@ -5038,14 +5038,56 @@
  LDFLAGS="$DBMLIBPATH $LDFLAGS"
  
@@ -3159,193 +3159,227 @@ diff -urNad /home/frankie/debian/mypkgs/grass/grass-5.0.3/configure grass-5.0.3/
  case "$with_freetype_includes" in
  y | ye | yes | n | no)
  	{ echo "configure: error: *** You must supply a directory to --with-freetype-includes." 1>&2; exit 1; }
-@@ -11170,15 +11282,15 @@
- do
- ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
- echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
--echo "configure:11174: checking for $ac_hdr" >&5
-+echo "configure:11286: checking for $ac_hdr" >&5
+@@ -11163,56 +11275,16 @@
+ fi
  
- cat > conftest.$ac_ext <<EOF
+ 
+-
+-ac_save_cppflags="$CPPFLAGS"
+-CPPFLAGS="$FTINC $CPPFLAGS"
+-for ac_hdr in freetype/freetype.h
+-do
+-ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
+-echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
+-echo "configure:11174: checking for $ac_hdr" >&5
+-
+-cat > conftest.$ac_ext <<EOF
 -#line 11177 "configure"
-+#line 11289 "configure"
- #include "confdefs.h"
- #include <$ac_hdr>
- EOF
- ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
+-#include "confdefs.h"
+-#include <$ac_hdr>
+-EOF
+-ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
 -{ (eval echo configure:11182: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
-+{ (eval echo configure:11294: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
- ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
- if test -z "$ac_err"; then
-   rm -rf conftest*
-@@ -11212,7 +11324,7 @@
+-ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
+-if test -z "$ac_err"; then
+-  rm -rf conftest*
+-  eval "ac_cv_header_$ac_safe=yes"
+-else
+-  echo "$ac_err" >&5
+-  echo "configure: failed program was:" >&5
+-  cat conftest.$ac_ext >&5
+-  rm -rf conftest*
+-  eval "ac_cv_header_$ac_safe=no"
+-fi
+-rm -f conftest*
+-if eval "test \"`echo '$ac_cv_header_'$ac_safe`\" = yes"; then
+-  echo "$ac_t""yes" 1>&6
+-    ac_tr_hdr=HAVE_`echo $ac_hdr | sed 'y%abcdefghijklmnopqrstuvwxyz./-%ABCDEFGHIJKLMNOPQRSTUVWXYZ___%'`
+-  cat >> confdefs.h <<EOF
+-#define $ac_tr_hdr 1
+-EOF
+- 
+-else
+-  echo "$ac_t""no" 1>&6
+-{ echo "configure: error: *** Unable to locate FreeType includes." 1>&2; exit 1; }
+-
+-fi
+-done
+-
+-CPPFLAGS=$ac_save_cppflags
+-
++#
++# This test would fail with a recent freetype edition.
++#
++#LOC_CHECK_INCLUDES(freetype/freetype.h,FreeType,$FTINC)
+ 
+ # With FreeType library directory
  
  
  echo $ac_n "checking for location of FreeType library""... $ac_c" 1>&6
 -echo "configure:11216: checking for location of FreeType library" >&5
-+echo "configure:11328: checking for location of FreeType library" >&5
++echo "configure:11288: checking for location of FreeType library" >&5
  case "$with_freetype_libs" in
  y | ye | yes | n | no)
  	{ echo "configure: error: *** You must supply a directory to --with-freetype-libs." 1>&2; exit 1; }
-@@ -11237,13 +11349,13 @@
+@@ -11237,13 +11309,13 @@
  
  
  echo $ac_n "checking for FT_Init_FreeType in -lfreetype""... $ac_c" 1>&6
 -echo "configure:11241: checking for FT_Init_FreeType in -lfreetype" >&5
-+echo "configure:11353: checking for FT_Init_FreeType in -lfreetype" >&5
++echo "configure:11313: checking for FT_Init_FreeType in -lfreetype" >&5
  ac_lib_var=`echo freetype'_'FT_Init_FreeType | sed 'y%./+-%__p_%'`
  
  ac_save_LIBS="$LIBS"
  LIBS="-lfreetype  $LIBS"
  cat > conftest.$ac_ext <<EOF
 -#line 11247 "configure"
-+#line 11359 "configure"
++#line 11319 "configure"
  #include "confdefs.h"
  /* Override any gcc2 internal prototype to avoid an error.  */
  /* We use char because int might match the return type of a gcc2
-@@ -11254,7 +11366,7 @@
+@@ -11254,7 +11326,7 @@
  FT_Init_FreeType()
  ; return 0; }
  EOF
 -if { (eval echo configure:11258: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:11370: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
++if { (eval echo configure:11330: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
    rm -rf conftest*
    eval "ac_cv_lib_$ac_lib_var=yes"
  else
-@@ -11295,7 +11407,7 @@
+@@ -11295,7 +11367,7 @@
  
  
  echo $ac_n "checking whether to use NLS""... $ac_c" 1>&6
 -echo "configure:11299: checking whether to use NLS" >&5
-+echo "configure:11411: checking whether to use NLS" >&5
++echo "configure:11371: checking whether to use NLS" >&5
  echo "$ac_t"""$with_nls"" 1>&6
  case "$with_nls" in
  	"no")	USE_NLS=	;;
-@@ -11321,7 +11433,7 @@
+@@ -11321,7 +11393,7 @@
  
  
  echo $ac_n "checking whether to build W11""... $ac_c" 1>&6
 -echo "configure:11325: checking whether to build W11" >&5
-+echo "configure:11437: checking whether to build W11" >&5
++echo "configure:11397: checking whether to build W11" >&5
  if test -n "$USE_W11" ; then
  	echo "$ac_t""yes" 1>&6
  	BUILD_W11="src/display/devices/windows"
-@@ -11334,7 +11446,7 @@
+@@ -11334,7 +11406,7 @@
  
  
  echo $ac_n "checking whether to build XDRIVER""... $ac_c" 1>&6
 -echo "configure:11338: checking whether to build XDRIVER" >&5
-+echo "configure:11450: checking whether to build XDRIVER" >&5
++echo "configure:11410: checking whether to build XDRIVER" >&5
  if test -n "$USE_X11" ; then
  	echo "$ac_t""yes" 1>&6
  	BUILD_XDRIVER="src/display/devices/XDRIVER"
-@@ -11347,7 +11459,7 @@
+@@ -11347,7 +11419,7 @@
  
  
  echo $ac_n "checking whether to build NVIZ""... $ac_c" 1>&6
 -echo "configure:11351: checking whether to build NVIZ" >&5
-+echo "configure:11463: checking whether to build NVIZ" >&5
++echo "configure:11423: checking whether to build NVIZ" >&5
  if test -n "$USE_TOGL" ; then
  	echo "$ac_t""yes" 1>&6
  	BUILD_NVIZ="src.contrib/GMSL/NVIZ2.2"
-@@ -11360,7 +11472,7 @@
+@@ -11360,7 +11432,7 @@
  
  
  echo $ac_n "checking whether to build PNGdriver""... $ac_c" 1>&6
 -echo "configure:11364: checking whether to build PNGdriver" >&5
-+echo "configure:11476: checking whether to build PNGdriver" >&5
++echo "configure:11436: checking whether to build PNGdriver" >&5
  if test -n "$USE_GD" ; then
  	echo "$ac_t""yes" 1>&6
  	BUILD_PNGDRIVER="src/display/devices/PNGdriver"
-@@ -11373,7 +11485,7 @@
+@@ -11373,7 +11445,7 @@
  
  
  echo $ac_n "checking whether to build PostgreSQL programs""... $ac_c" 1>&6
 -echo "configure:11377: checking whether to build PostgreSQL programs" >&5
-+echo "configure:11489: checking whether to build PostgreSQL programs" >&5
++echo "configure:11449: checking whether to build PostgreSQL programs" >&5
  if test -n "$USE_POSTGRES" ; then
  	echo "$ac_t""yes" 1>&6
  	BUILD_POSTGRESQL="src.garden/grass.postgresql"
-@@ -11386,7 +11498,7 @@
+@@ -11386,7 +11458,7 @@
  
  
  echo $ac_n "checking whether to build ODBC library""... $ac_c" 1>&6
 -echo "configure:11390: checking whether to build ODBC library" >&5
-+echo "configure:11502: checking whether to build ODBC library" >&5
++echo "configure:11462: checking whether to build ODBC library" >&5
  if test -n "$USE_ODBC" ; then
  	echo "$ac_t""yes" 1>&6
  	BUILD_ODBC="src/libes/dbmi/drivers/odbc"
-@@ -11399,7 +11511,7 @@
+@@ -11399,7 +11471,7 @@
  
  
  echo $ac_n "checking whether to build xganim""... $ac_c" 1>&6
 -echo "configure:11403: checking whether to build xganim" >&5
-+echo "configure:11515: checking whether to build xganim" >&5
++echo "configure:11475: checking whether to build xganim" >&5
  if test -n "$USE_MOTIF" ; then
  	echo "$ac_t""yes" 1>&6
  	BUILD_XGANIM="src.contrib/GMSL/xganim"
-@@ -11412,7 +11524,7 @@
+@@ -11412,7 +11484,7 @@
  
  
  echo $ac_n "checking whether to build FreeType programs""... $ac_c" 1>&6
 -echo "configure:11416: checking whether to build FreeType programs" >&5
-+echo "configure:11528: checking whether to build FreeType programs" >&5
++echo "configure:11488: checking whether to build FreeType programs" >&5
  if test -n "$USE_FREETYPE" ; then
  	echo "$ac_t""yes" 1>&6
  	BUILD_FREETYPE="src/display/d.text.freetype"
-@@ -11425,7 +11537,7 @@
+@@ -11425,7 +11497,7 @@
  
  
  echo $ac_n "checking whether to build NLS support""... $ac_c" 1>&6
 -echo "configure:11429: checking whether to build NLS support" >&5
-+echo "configure:11541: checking whether to build NLS support" >&5
++echo "configure:11501: checking whether to build NLS support" >&5
  if test -n "$USE_NLS" ; then
  	echo "$ac_t""yes" 1>&6
  	BUILD_NLS="locale"
-@@ -11437,11 +11549,11 @@
+@@ -11437,11 +11509,11 @@
  
  
  echo $ac_n "checking whether to build FFTW programs""... $ac_c" 1>&6
 -echo "configure:11441: checking whether to build FFTW programs" >&5
-+echo "configure:11553: checking whether to build FFTW programs" >&5
++echo "configure:11513: checking whether to build FFTW programs" >&5
  echo "$ac_t""" 1>&6
  
  echo $ac_n "checking whether to build i.fft""... $ac_c" 1>&6
 -echo "configure:11445: checking whether to build i.fft" >&5
-+echo "configure:11557: checking whether to build i.fft" >&5
++echo "configure:11517: checking whether to build i.fft" >&5
  if test -n "$USE_FFTW" ; then
  	echo "$ac_t""yes" 1>&6
  	BUILD_I_FFT="src/imagery/i.fft"
-@@ -11453,7 +11565,7 @@
+@@ -11453,7 +11525,7 @@
  
  
  echo $ac_n "checking whether to build i.zc""... $ac_c" 1>&6
 -echo "configure:11457: checking whether to build i.zc" >&5
-+echo "configure:11569: checking whether to build i.zc" >&5
++echo "configure:11529: checking whether to build i.zc" >&5
  if test -n "$USE_FFTW" ; then
  	echo "$ac_t""yes" 1>&6
  	BUILD_I_ZC="src/imagery/i.zc"
-@@ -11465,7 +11577,7 @@
+@@ -11465,7 +11537,7 @@
  
  
  echo $ac_n "checking whether to build r.surf.fractal""... $ac_c" 1>&6
 -echo "configure:11469: checking whether to build r.surf.fractal" >&5
-+echo "configure:11581: checking whether to build r.surf.fractal" >&5
++echo "configure:11541: checking whether to build r.surf.fractal" >&5
  if test -n "$USE_FFTW" ; then
  	echo "$ac_t""yes" 1>&6
  	BUILD_R_SURF_FRACTAL="src/raster/r.surf.fractal"
-@@ -11477,7 +11589,7 @@
+@@ -11477,7 +11549,7 @@
  
  
  echo $ac_n "checking whether to build i.shape""... $ac_c" 1>&6
 -echo "configure:11481: checking whether to build i.shape" >&5
-+echo "configure:11593: checking whether to build i.shape" >&5
++echo "configure:11553: checking whether to build i.shape" >&5
  if test -n "$USE_FFTW" ; then
  	echo "$ac_t""yes" 1>&6
  	BUILD_I_SHAPE="src.contrib/CERL/imagery/i.shape"
 diff -urNad /home/frankie/debian/mypkgs/grass/grass-5.0.3/configure.in grass-5.0.3/configure.in
---- /home/frankie/debian/mypkgs/grass/grass-5.0.3/configure.in	2004-01-05 15:12:51.000000000 +0100
-+++ grass-5.0.3/configure.in	2004-01-05 15:14:01.000000000 +0100
+--- /home/frankie/debian/mypkgs/grass/grass-5.0.3/configure.in	2003-03-16 13:25:19.000000000 +0100
++++ grass-5.0.3/configure.in	2004-01-05 18:08:57.000000000 +0100
 @@ -510,9 +510,11 @@
  
  LOC_CHECK_LIBS(dbm, dbminit,DBM,$DBMLIBPATH,DBMLIB,,,[
