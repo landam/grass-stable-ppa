@@ -3,6 +3,8 @@
 # this script try to locate all the GRASS script than have something
 # that makes lintian complain and fix them.
 
+CURDIR=$(pwd)
+
 # make these scripts executable
 for x in etc/help/17.manual/Help.pages/curcsh40 \
     tcltkgrass/main/tcltkgrass.tcl \
@@ -46,7 +48,6 @@ for x in etc/r.fea/show.sh \
     scripts/split.sh \
     scripts/show.color.sh \
     scripts/grass.logo.sh \
-    etc/agnps50/display_cell_map.sh \
     scripts/intens.sh \
     scripts/3d.view.sh \
     etc/paint/driver.rsh \
@@ -67,6 +68,7 @@ for x in etc/r.fea/show.sh \
     etc/paint/driver.uninst/ppm \
     etc/i.oif/r.stddev \
     scripts/demo.scripts/outline
+#   etc/agnps50/display_cell_map.sh 
 do
   f=$CURDIR/debian/tmp/usr/lib/grass5/$x
   cp $f foo; echo "#!/bin/sh" >$f; cat foo >>$f

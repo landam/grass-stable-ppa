@@ -33,8 +33,9 @@ grass (5.0.3-1) unstable; urgency=low
         + libncurses5-dev
         + autoconf2.13
     - Removed autoconf build-dep in control file.
+    - Fixed debian/fixscripts.sh
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Mon,  5 Jan 2004 15:03:17 +0100
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Mon,  5 Jan 2004 16:01:30 +0100
 
 grass (5.0.2-1) unstable; urgency=low
   
