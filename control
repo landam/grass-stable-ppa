@@ -1,9 +1,9 @@
 Source: grass
 Section: science
-Priority: optional
+Priority: extra
 Maintainer: Debian GIS Project <pkg-grass-devel@lists.alioth.debian.org>
-Uploaders: Federico Di Gregorio <fog@debian.org>, Francesco Paolo Lovergine <frankie@debian.org>, Steve Halasz <debian@adkgis.org>
-Build-depends: flex, bison, libreadline4-dev, libncurses5-dev, lesstif2-dev, debhelper (>= 4.0.2), dpatch, libtiff4-dev, tcl8.3-dev, tk8.3-dev, fftw-dev, xlibmesa-gl-dev, xlibmesa-glu-dev, libfreetype6-dev, autoconf2.13, autotools-dev, libgdal1-dev, proj (>= 4.4.7), libjpeg62-dev, libpng12-dev, postgresql-dev, unixodbc-dev, doxygen
+Uploaders: Francesco Paolo Lovergine <frankie@debian.org>, Steve Halasz <debian@adkgis.org>
+Build-depends: flex, bison, libreadline4-dev, libncurses5-dev, lesstif2-dev, debhelper (>= 4.0.2), dpatch, libtiff4-dev, tcl8.3-dev, tk8.3-dev, fftw-dev, xlibmesa-gl-dev, xlibmesa-glu-dev, libfreetype6-dev, autoconf2.13, autotools-dev, libgdal1-dev, proj (>= 4.4.7), libjpeg62-dev, libpng12-dev, postgresql-dev, unixodbc-dev, doxygen, fakeroot
 Standards-Version: 3.6.1
 
 Package: grass
@@ -35,7 +35,7 @@ Description: Geographic Resources Analysis Support System documentation
 Package: libgrass
 Section: libs
 Architecture: any
-Depends: ${shlibs:Depends}
+Depends: ${shlibs:Depends}, grass
 Description: GRASS GIS development libraries
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,

@@ -30,9 +30,13 @@ if [ "$1" = "remove" ]; then
       *) die "error comparing \"$ldsoconf.dpkg-tmp\" to \"$ldsoconf\"; cmp" \
         "exited with status $cmp_status" ;;
     esac
-    
-    ldconfig
   fi
 fi
+
+if [ "$1" = "remove" ]; then
+  ldconfig
+fi
+
+#DEBHELPER#
 
 exit 0

@@ -1,3 +1,28 @@
+grass (5.7.0+6.0.0beta2-3) unstable; urgency=low
+
+  * priority optional -> extra 
+
+ -- Steve Halasz <debian@adkgis.org>  Sat,  5 Mar 2005 19:14:47 -0500
+
+grass (5.7.0+6.0.0beta2-2) unstable; urgency=high
+
+  * Apply patch from cvs to prevent accidental deletion of files
+      in the present working directory (Closes: #297731)
+  * Use fakeroot while generating html docs.
+      This fixes a permission problem that prevented
+      most docs and man pages from being created when
+      building with pbuilder. (Closes: #281742, #229086, #242436)
+  * build-depend on fakeroot
+  * make libgrass depend on grass
+  * Remove fog@debian.org from Uploaders. Thanks Federico!
+  * silence erroneous lintian warnings:
+    - postrm-unsafe-ldconfig
+    - maintainer-script-lacks-debhelper-token
+    - postinst-has-useless-call-to-ldconfig
+    - postrm-has-useless-call-to-ldconfig
+
+ -- Steve Halasz <debian@adkgis.org>  Mon, 21 Feb 2005 20:49:22 -0500
+
 grass (5.7.0+6.0.0beta2-1) unstable; urgency=high
 
   * New upstream release (Closes: #264566)
