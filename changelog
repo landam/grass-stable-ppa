@@ -1,7 +1,9 @@
-grass (5.7.0-7) unstable; urgency=low
+grass (5.7.0-6.dgis.unstable.1) unstable; urgency=low
 
   * debian/control
     - edits to description courtesy of hmitaso@unity.ncsu.edu
+    - don't suggest proj. it is already required via ${shlibs:Depends}
+    - put grass-doc in 'science' section rather than 'Science'
 
  -- Steve Halasz <debian@adkgis.org>  Mon, 27 Dec 2004 18:16:41 -0500
 
@@ -94,4 +96,3 @@ grass (57-1) unstable; urgency=low
     Giuseppe Dia <giusedia@libero.it>
 
  -- Markus Neteler <neteler@itc.it>  Mon, 10 Nov 2003 17:59:04 +0100
-
