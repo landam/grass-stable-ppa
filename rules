@@ -23,13 +23,14 @@ ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
 	INSTALL_PROGRAM += -s
 endif
 
-include /usr/share/dpatch/dpatch.make
+#include /usr/share/dpatch/dpatch.make
 
-config.status: patch configure
+config.status: configure
 	dh_testdir
 	# Add here commands to configure the package.
 	CFLAGS="$(CFLAGS)" ./configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) \
                     --prefix=/usr/lib \
+                    --mandir=/usr/share/man \
                     --sysconfdir=/etc \
                     --sharedstatedir=/var \
                     --enable-socket \
@@ -55,14 +56,12 @@ build-stamp:  config.status
 
 	# Add here commands to compile the package.
 	$(MAKE)
-	#/usr/bin/docbook-to-man debian/grass.sgml > grass.1
 
 	chmod 755 debian/fixpaths.sh debian/fixscripts.sh
 
 	touch build-stamp
 
-clean: clean-patched unpatch
-clean-patched:
+clean:
 	dh_testdir
 	dh_testroot
 	rm -f build-stamp 
@@ -100,6 +99,9 @@ install: build
 	# fix links
 	debian/fixpaths.sh $(CURDIR)/debian/tmp debian/tmp
 	
+	# delete extra license file
+	rm -f debian/tmp/usr/lib/grass/etc/license
+    
 	# move binary files out of /usr/lib
 	#mkdir -p debian/tmp/usr/share/grass/bwidget
 	#mv debian/tmp/usr/lib/grass/bwidget/images debian/tmp/usr/share/grass/bwidget/images
@@ -125,7 +127,7 @@ binary-arch: build install
 #	dh_installinit
 #	dh_installcron
 #	dh_installinfo
-	dh_installman -pgrass debian/grass57.1
+	dh_installman -pgrass debian/grass60.1
 	dh_link
 	dh_strip
 	dh_compress

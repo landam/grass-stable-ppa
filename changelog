@@ -1,5 +1,12 @@
+grass (5.7.0+6.0.0beta1-0.dgis.unstable.1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Steve Halasz <debian@adkgis.org>  Wed, 12 Jan 2005 16:46:24 -0500
+
 grass (5.7.0-6.dgis.unstable.1) unstable; urgency=low
 
+  * link usr/share/man/man1/grass.1.gz to usr/share/man/man1/grass57.1.gz
   * debian/control
     - edits to description courtesy of hmitaso@unity.ncsu.edu
     - don't suggest proj. it is already required via ${shlibs:Depends}

@@ -6,8 +6,7 @@
 CURDIR=$(pwd)
 
 # make these scripts executable
-for x in tcltkgrass/main/tksys.tcl \
-    etc/water/seg
+for x in etc/water/seg
 do
     chmod +x $CURDIR/debian/tmp/usr/lib/grass/$x
 done

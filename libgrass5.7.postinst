@@ -4,7 +4,7 @@
 
 set -e
 
-dir="/usr/lib/grass57/lib"
+dir="/usr/lib/grass/lib"
 ldsoconf="/etc/ld.so.conf"
 
 # is the line not already present?
