@@ -1,3 +1,16 @@
+grass (5.0.3-2) unstable; urgency=low
+
+  * Changes to debian/rules as suggested by Markus Neteler:
+    - --without-blas, --without-lapack: both not needed because the
+      module using them was never finished (also removed the Build-deps)
+    - --without-dbm: dbm is not used in grass, it is a fake dependency
+      (also removed gdbm patch)
+  * Changed URL in debian/copyright, Baylor was not involved in grass
+    development in the last few years and the official home page is
+    http://grass.itc.it/
+    
+ --
+  
 grass (5.0.3-1) unstable; urgency=low
 
     The "Release soon" release (Francesco P. Lovergine).

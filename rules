@@ -38,9 +38,10 @@ configure-stamp: patch-stamp
 		    --sysconfdir=/etc \
                     --sharedstatedir=/var \
 		    --enable-socket \
-	            --with-postgres --with-blas --with-lapack --with-x \
+	            --with-postgres --with-x \
 		    --with-freetype --with-readline --with-nls --with-dbm \
 	            --without-glw --without-odbc \
+		    --without-blas --without-lapack --without-dbm \ 
 		    --with-glw-includes=/usr/include \
                     --with-freetype-includes=/usr/include/freetype2 \
 		    --with-tcltk-includes=/usr/include/tcl8.4 \
