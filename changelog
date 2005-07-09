@@ -1,8 +1,9 @@
-grass (5.7.0+6.0.0beta2-3) unstable; urgency=low
+grass (6.0.0-1) unstable; urgency=low
 
-  * priority optional -> extra 
+  * New upstream release
+  * priority optional -> extra
 
- -- Steve Halasz <debian@adkgis.org>  Sat,  5 Mar 2005 19:14:47 -0500
+ -- Steve Halasz <debian@adkgis.org>  Thu, 10 Mar 2005 10:01:07 -0500
 
 grass (5.7.0+6.0.0beta2-2) unstable; urgency=high
 

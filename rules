@@ -108,6 +108,9 @@ install: build
 	# move binary files out of /usr/lib
 	#mkdir -p debian/tmp/usr/share/grass/bwidget
 	#mv debian/tmp/usr/lib/grass/bwidget/images debian/tmp/usr/share/grass/bwidget/images
+	
+	# install lintian overrides
+	install -m 644 debian/libgrass.lintian-overrides debian/libgrass/usr/share/lintian/overrides/libgrass
 
 # Build architecture-independent files here.
 binary-indep: build install

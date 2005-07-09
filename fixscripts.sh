@@ -16,8 +16,7 @@ for x in script_get_line \
     script_play \
     script_tools \
     script_file_tools \
-    nviz2.2_script \
-    script_get_line
+    nviz2.2_script
 do
   f=$CURDIR/debian/tmp/usr/lib/grass/etc/nviz2.2/scripts/$x
   sed 's.!nviz.!/usr/lib/grass/bin/nviz.' $f >foo && cat foo >$f
@@ -44,6 +43,9 @@ rm foo
 # silence executable-not-elf-or-script lintian warning
 # most tcl scripts don't need to be executable
 for x in etc/nviz2.2/scripts/panel_kanimator.tcl \
+    etc/nviz2.2/scripts/panel_scale.tcl \
+    etc/nviz2.2/scripts/structlib.tcl \
+    etc/nviz2.2/scripts/panel_label.tcl \
     etc/nviz2.2/scripts/attPopup.tcl \
     etc/nviz2.2/scripts/attIsosurfPopup.tcl \
     etc/nviz2.2/scripts/panel_pos.tcl \
