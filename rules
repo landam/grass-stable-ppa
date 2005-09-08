@@ -36,6 +36,7 @@ config.status: patch configure
                     --enable-socket \
                     --enable-shared \
                     --with-postgres \
+                    --with-mysql \
                     --with-cxx \
                     --with-x \
                     --with-gdal \
@@ -47,7 +48,8 @@ config.status: patch configure
                     --with-odbc \
                     --with-freetype-includes=/usr/include/freetype2 \
                     --with-tcltk-includes=/usr/include/tcl8.3 \
-                    --with-postgres-includes=/usr/include/postgresql \
+                    --with-postgres-includes=`pg_config --includedir` \
+                    --with-mysql-includes=/usr/include/mysql \
                     --without-cxx \
 
 build: build-stamp
