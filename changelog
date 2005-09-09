@@ -1,5 +1,6 @@
-grass (6.0.0+6.0.1RC2-0.dgis.unstable.1) unstable; urgency=low
+grass (6.0.1-0.dgis.unstable.1) unstable; urgency=low
 
+  [ Steve Halasz ]
   * New upstream release
   * Bump Standards-Version to 3.6.2 without any changes. There
       are architecture independent files in /usr/lib/grass. Still
@@ -13,7 +14,23 @@ grass (6.0.0+6.0.1RC2-0.dgis.unstable.1) unstable; urgency=low
     - use pg_config to locate includes
     - --with-mysql
 
- -- Steve Halasz <debian@adkgis.org>  Thu, 11 Aug 2005 22:46:36 -0400
+  [ Francesco Paolo Lovergine ]
+  
+  * Added versioned dependency for grass vs libgrass and grass-dev
+    (closes: #306497)
+  * Set libpq-dev | postgresql-dev build-dep to retain sarge compatibility.
+    Changed a bit rules file to manage pg_config by $shell feature.
+    (closes: #326044)
+  * Set libglu1-xorg-dev | xlibmesa-glu-dev build-dep to retain sarge compatibility
+  * Ack mysql 4.0+ support 
+    (closes: #317497)
+  * Cleaned commented dhelper methods and other inappropriate
+    comments in rules
+  * libreadline-dev dependency updated
+    (closes: #326350)
+  * Changed changelog release number because of 6.0.1 release on 8/22.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Fri,  9 Sep 2005 10:41:09 +0200
 
 grass (6.0.0+6.0.1RC1-0.dgis.unstable.1) unstable; urgency=low
 
