@@ -82,6 +82,7 @@ endif
 	rm -f tools/timer/main.o
 	rm -f raster/r.le/r.le.setup/polytocell/*.o
 	rm -f raster/r.terraflow/IOStream/lib/src/libiostream.a
+	rm -f debian/grass60.1
 
 install: build
 	dh_testdir
