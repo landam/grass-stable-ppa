@@ -104,6 +104,10 @@ install: build
 	# delete extra license file
 	rm -f debian/tmp/usr/lib/grass/etc/license
     
+	# change section from 1 to .1grass 
+	for m in debian/tmp/usr/lib/grass/man/man1/*.1; do n=`basename $$m .1`; mv $$m debian/tmp/usr/lib/grass/man/man1/$$n.1grass; done
+	for m in debian/tmp/usr/lib/grass/man/man1/*.1grass; do sed -i -e 's/^.TH \(.*\) 1/.TH \1 1grass/' $$m; done
+
 	# move binary files out of /usr/lib
 	#mkdir -p debian/tmp/usr/share/grass/bwidget
 	#mv debian/tmp/usr/lib/grass/bwidget/images debian/tmp/usr/share/grass/bwidget/images

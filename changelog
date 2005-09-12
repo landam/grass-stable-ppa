@@ -1,3 +1,11 @@
+grass (6.0.1-0.dgis.unstable.2) unstable; urgency=low
+
+  [ Francesco Paolo Lovergine ]
+  
+  * Added upstream man pages to grass-doc, in section 1grass.
+
+ -- Francesco P. Lovergine <frankie@debian.org>  Sat, 10 Sep 2005 20:28:15 +0200
+
 grass (6.0.1-0.dgis.unstable.1) unstable; urgency=low
 
   [ Steve Halasz ]
