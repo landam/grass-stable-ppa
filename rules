@@ -105,6 +105,7 @@ install: build
 	rm -f debian/tmp/usr/lib/grass/etc/license
     
 	# change section from 1 to .1grass 
+	mv debian/tmp/usr/lib/grass/man/man1/grass6.1 debian/grass60.1
 	for m in debian/tmp/usr/lib/grass/man/man1/*.1; do n=`basename $$m .1`; mv $$m debian/tmp/usr/lib/grass/man/man1/$$n.1grass; done
 	for m in debian/tmp/usr/lib/grass/man/man1/*.1grass; do sed -i -e 's/^.TH \(.*\) 1/.TH \1 1grass/' $$m; done
 

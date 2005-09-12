@@ -3,7 +3,7 @@ grass (6.0.1-1) unstable; urgency=low
   [ Steve Halasz ]
 
   * New upstream release
-    (closes: #314059, #314063)
+    (closes: #314059, #314063,#317470,#312583)
   * Bump Standards-Version to 3.6.2 without any changes. There
       are architecture independent files in /usr/lib/grass. Still
       need to fix that sometime.
@@ -31,7 +31,8 @@ grass (6.0.1-1) unstable; urgency=low
   * libreadline-dev dependency updated
     (closes: #326350)
   * Changed changelog release number because of 6.0.1 release on 8/22.
-  * Added upstream man pages to grass-doc, in section 1grass.
+  * Added upstream man pages to grass-doc, in section 1grass. Removed Steve's
+    manual and used upstream one for grass main script.
   * Added xterm-fix.dpatch to use x-terminal-emulator instead of xterm in all
     scripts. Changed dependency in xterm | x-terminal-emulator as consequence
     (closes: #315186)
