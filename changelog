@@ -1,15 +1,9 @@
-grass (6.0.1-0.dgis.unstable.2) unstable; urgency=low
-
-  [ Francesco Paolo Lovergine ]
-  
-  * Added upstream man pages to grass-doc, in section 1grass.
-
- -- Francesco P. Lovergine <frankie@debian.org>  Sat, 10 Sep 2005 20:28:15 +0200
-
-grass (6.0.1-0.dgis.unstable.1) unstable; urgency=low
+grass (6.0.1-1) unstable; urgency=low
 
   [ Steve Halasz ]
+
   * New upstream release
+    (closes: #314059, #314063)
   * Bump Standards-Version to 3.6.2 without any changes. There
       are architecture independent files in /usr/lib/grass. Still
       need to fix that sometime.
@@ -23,22 +17,26 @@ grass (6.0.1-0.dgis.unstable.1) unstable; urgency=low
     - --with-mysql
 
   [ Francesco Paolo Lovergine ]
-  
+
   * Added versioned dependency for grass vs libgrass and grass-dev
     (closes: #306497)
   * Set libpq-dev | postgresql-dev build-dep to retain sarge compatibility.
     Changed a bit rules file to manage pg_config by $shell feature.
     (closes: #326044)
   * Set libglu1-xorg-dev | xlibmesa-glu-dev build-dep to retain sarge compatibility
-  * Ack mysql 4.0+ support 
+  * Ack mysql 4.0+ support
     (closes: #317497)
   * Cleaned commented dhelper methods and other inappropriate
     comments in rules
   * libreadline-dev dependency updated
     (closes: #326350)
   * Changed changelog release number because of 6.0.1 release on 8/22.
+  * Added upstream man pages to grass-doc, in section 1grass.
+  * Added xterm-fix.dpatch to use x-terminal-emulator instead of xterm in all
+    scripts. Changed dependency in xterm | x-terminal-emulator as consequence
+    (closes: #315186)
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Fri,  9 Sep 2005 10:41:09 +0200
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 12 Sep 2005 16:48:02 +0200
 
 grass (6.0.0+6.0.1RC1-0.dgis.unstable.1) unstable; urgency=low
 

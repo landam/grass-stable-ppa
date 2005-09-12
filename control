@@ -9,7 +9,7 @@ Standards-Version: 3.6.2
 Package: grass
 Section: science
 Architecture: any
-Depends: ${shlibs:Depends}, xterm, libgrass (= ${Source-Version})
+Depends: ${shlibs:Depends}, xterm | x-terminal-emulator, libgrass (= ${Source-Version})
 Suggests: grass-doc, gdal-bin
 Description: Geographic Resources Analysis Support System
  Commonly referred to as GRASS, this is a Geographic Information
