@@ -23,7 +23,6 @@ do
 done
 
 for x in panel_label.tcl \
-    panel_mkdspf.tcl \
     panel_scale.tcl
 do
   f=$CURDIR/debian/tmp/usr/lib/grass/etc/nviz2.2/scripts/$x
