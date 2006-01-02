@@ -3,7 +3,7 @@ Section: science
 Priority: extra
 Maintainer: Debian GIS Project <pkg-grass-devel@lists.alioth.debian.org>
 Uploaders: Francesco Paolo Lovergine <frankie@debian.org>, Steve Halasz <debian@adkgis.org>
-Build-depends: flex, bison, libreadline5-dev | libreadline-dev, libncurses5-dev, lesstif2-dev, debhelper (>= 4.0.2), dpatch, libtiff4-dev, tcl8.3-dev, tk8.3-dev, fftw-dev, xlibmesa-gl-dev, libglu1-xorg-dev | xlibmesa-glu-dev, libfreetype6-dev, autoconf2.13, autotools-dev, libgdal1-dev, proj (>= 4.4.7), libjpeg62-dev, libpng12-dev, libpq-dev | postgresql-dev, unixodbc-dev, doxygen, fakeroot, libmysqlclient14-dev
+Build-depends: flex, bison, libreadline5-dev | libreadline-dev, libncurses5-dev, lesstif2-dev, debhelper (>= 4.0.2), dpatch, libtiff4-dev, tcl8.3-dev, tk8.3-dev, fftw-dev, xlibmesa-gl-dev, libglu1-xorg-dev | xlibmesa-glu-dev, libfreetype6-dev, autoconf2.13, autotools-dev, libgdal1-dev, proj (>= 4.4.7), libjpeg62-dev, libpng12-dev, libpq-dev | postgresql-dev, unixodbc-dev, doxygen, fakeroot, libmysqlclient15-dev | libmysqlclient14-dev
 Standards-Version: 3.6.2
 
 Package: grass

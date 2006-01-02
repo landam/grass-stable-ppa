@@ -1,3 +1,14 @@
+grass (6.0.1-2) unstable; urgency=low
+
+  [ Francesco Paolo Lovergine ]
+
+  * Transitioned to libmysqlclient15-dev in control (but retained old lib-dev pkg for backports )
+    (closes: #343817)
+  * Transitioned to libgdal1c2a for C++ ABI change. But probably it would need
+    to change again.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Fri, 23 Dec 2005 11:34:58 +0100
+
 grass (6.0.1-1) unstable; urgency=low
 
   [ Steve Halasz ]
