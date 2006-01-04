@@ -1,4 +1,4 @@
-grass (6.0.1-2) unstable; urgency=low
+grass (6.0.1-2) UNRELEASED; urgency=low
 
   [ Francesco Paolo Lovergine ]
 
@@ -7,7 +7,10 @@ grass (6.0.1-2) unstable; urgency=low
   * Transitioned to libgdal1c2a for C++ ABI change. But probably it would need
     to change again.
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Fri, 23 Dec 2005 11:34:58 +0100
+  [ Paul Wise ]
+  * Add homepage to package descriptions
+
+ -- Paul Wise <pabs3@bonedaddy.net>  Wed,  4 Jan 2006 17:47:00 +0800
 
 grass (6.0.1-1) unstable; urgency=low
 

@@ -18,6 +18,8 @@ Description: Geographic Resources Analysis Support System
  visualization. GRASS is currently used in academic and commercial
  settings around the world, as well as by many government agencies
  and environmental consulting companies.
+ .
+  Homepage: http://grass.itc.it
 
 Package: grass-doc
 Section: science
@@ -31,6 +33,8 @@ Description: Geographic Resources Analysis Support System documentation
  and environmental consulting companies.
  .
  This package contains HTML documentation for the GRASS system.
+ .
+  Homepage: http://grass.itc.it/gdp/
 
 Package: libgrass
 Section: libs
@@ -46,6 +50,8 @@ Description: GRASS GIS development libraries
  .
  These libraries provide the means to access and manipulate GRASS
  data sets.
+ .
+  Homepage: http://grass.itc.it
 
 Package: libgrass-dev
 Section: libdevel
@@ -62,3 +68,5 @@ Description: GRASS GIS library development files
  This package contains the header files for developing with GRASS.
  Install this package if you wish to develop software that manipulates
  GRASS data sets.
+ .
+  Homepage: http://grass.itc.it
