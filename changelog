@@ -5,10 +5,14 @@ grass (6.0.1-3) unstable; urgency=low
   * Added NVIZ html help pages to -doc package, previously missing. Thanks Stephan Holl.
   * Re-introduced missing build-indep target in rules for the -doc package.
     This is still sub-optimal...
-  * Added missing libxmu-dev 
+  * Added missing libxmu-dev
     (closes: #350010)
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 31 Jan 2006 13:41:36 +0100
+  [ Paul Wise ]
+  * Fix homepages in package descriptions
+  * Add a watch file
+
+ -- Paul Wise <pabs3@bonedaddy.net>  Fri, 17 Feb 2006 19:10:20 +0800
 
 grass (6.0.1-2) unstable; urgency=low
 
