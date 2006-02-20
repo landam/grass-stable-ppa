@@ -49,23 +49,18 @@ config.status: patch configure
                     --with-mysql-includes=/usr/include/mysql 
 
 build: build-stamp
-
 build-stamp:  config.status
 	dh_testdir
 
-	# Add here commands to compile the package.
-	$(MAKE)
-
+	$(MAKE) 
 	chmod 755 debian/fixpaths.sh debian/fixscripts.sh
 
 	touch build-stamp
 
-#clean:
 clean: clean-patched unpatch
 clean-patched:
 	dh_testdir
 	dh_testroot
-	rm -f build-stamp 
 
 	# Add here commands to clean up after the build process.
 	-$(MAKE) distclean
@@ -75,7 +70,7 @@ endif
 ifneq "$(wildcard /usr/share/misc/config.guess)" ""
 	cp -f /usr/share/misc/config.guess config.guess
 endif
-	dh_clean build-stamp configure-stamp
+	dh_clean build-arch-stamp build-indep-stamp configure-stamp
 
 	rm -f lib/proj/nad2bin
 	rm -f tools/timer/main.o
@@ -83,6 +78,7 @@ endif
 	rm -f raster/r.terraflow/IOStream/lib/src/libiostream.a
 	rm -f debian/grass60.1
 	rm -f error.log
+	rm -rf doxygenhtml lib/vector/html lib/db/html lib/gis/html
 
 install: build
 	dh_testdir
@@ -117,22 +113,21 @@ install: build
 	# install lintian overrides
 	install -m 644 debian/libgrass.lintian-overrides debian/libgrass/usr/share/lintian/overrides/libgrass
 
+	# install module makefile	
+	install -m 644 include/Make/Module.make debian/libgrass-dev/usr/lib/grass/include/Make/Module.make
+
 # Build architecture-independent files here.
 binary-indep: build install
 	dh_testdir -i
 	dh_testroot -i
-	dh_installchangelogs -i ChangeLog_6.0.1.gz
+	dh_installchangelogs -i CHANGES
 	dh_installdocs -i
-	dh_installexamples -i
 	dh_install --sourcedir=debian/tmp -i
-	dh_installman -pgrass debian/grass60.1 -i
 	dh_link -i
 	dh_strip -i
 	dh_compress -i
 	dh_fixperms -i
-	dh_makeshlibs -i
 	dh_installdeb -i
-	dh_shlibdeps -i
 	dh_gencontrol -i
 	dh_md5sums -i
 	dh_builddeb -i
@@ -141,7 +136,7 @@ binary-indep: build install
 binary-arch: build install
 	dh_testdir -a
 	dh_testroot  -a
-	dh_installchangelogs -a ChangeLog_6.0.1.gz
+	dh_installchangelogs -a CHANGES
 	dh_installdocs  -a
 	dh_installexamples  -a
 	dh_install --sourcedir=debian/tmp -a
