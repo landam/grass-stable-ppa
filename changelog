@@ -1,3 +1,13 @@
+grass (6.0.1-4) unstable; urgency=low
+
+  [ Steve Halasz ]
+  
+  * Make libgrass depend on current version of grass.
+    libgrass requires files in the main package and doesn't
+    yet stand alone. 
+
+ -- Steve Halasz <debian@adkgis.org>  Thu, 23 Feb 2006 11:09:59 -0500
+
 grass (6.0.1-3) unstable; urgency=low
 
   [ Francesco Paolo Lovergine ]
