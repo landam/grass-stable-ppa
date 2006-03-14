@@ -22,8 +22,7 @@ endif
 
 include /usr/share/dpatch/dpatch.make
 
-#config.status: configure
-config.status: patch configure
+config-stamp: patch
 	dh_testdir
 	# Add here commands to configure the package.
 	CFLAGS="$(CFLAGS)" ./configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) \
@@ -48,14 +47,27 @@ config.status: patch configure
                     --with-postgres-includes=$(shell pg_config --includedir) \
                     --with-mysql-includes=/usr/include/mysql 
 
+	touch config-stamp
+
+# This target generates arch-dep stuff, unfortunately most doc requires working bins to 
+# be properly generated...
 build: build-stamp
-build-stamp:  config.status
+build-stamp:  config-stamp
 	dh_testdir
 
 	$(MAKE) 
 	chmod 755 debian/fixpaths.sh debian/fixscripts.sh
 
 	touch build-stamp
+
+# This target generates truly arch-indep stuff
+build-indep: build-indep-stamp
+build-indep-stamp: config-stamp
+	dh_testdir
+
+	$(MAKE) htmldocs
+
+	touch build-indep-stamp
 
 clean: clean-patched unpatch
 clean-patched:
@@ -70,7 +82,7 @@ endif
 ifneq "$(wildcard /usr/share/misc/config.guess)" ""
 	cp -f /usr/share/misc/config.guess config.guess
 endif
-	dh_clean build-arch-stamp build-indep-stamp configure-stamp
+	dh_clean build-stamp config-stamp build-indep-stamp
 
 	rm -f lib/proj/nad2bin
 	rm -f tools/timer/main.o
@@ -78,7 +90,9 @@ endif
 	rm -f raster/r.terraflow/IOStream/lib/src/libiostream.a
 	rm -f debian/grass60.1
 	rm -f error.log
-	rm -rf doxygenhtml lib/vector/html lib/db/html lib/gis/html
+	# clean doxygen documentation (programming man)
+	rm -rf doxygenhtml lib/vector/html lib/db/html lib/gis/html \
+		lib/vector/latex lib/db/latex lib/gis/latex 
 
 install: build
 	dh_testdir
@@ -106,18 +120,26 @@ install: build
 	for m in debian/tmp/usr/lib/grass/man/man1/*.1; do n=`basename $$m .1`; mv $$m debian/tmp/usr/lib/grass/man/man1/$$n.1grass; done
 	for m in debian/tmp/usr/lib/grass/man/man1/*.1grass; do sed -i -e 's/^.TH \(.*\) 1/.TH \1 1grass/' $$m; done
 
-	# move binary files out of /usr/lib
-	#mkdir -p debian/tmp/usr/share/grass/bwidget
-	#mv debian/tmp/usr/lib/grass/bwidget/images debian/tmp/usr/share/grass/bwidget/images
-	
 	# install lintian overrides
 	install -m 644 debian/libgrass.lintian-overrides debian/libgrass/usr/share/lintian/overrides/libgrass
 
 	# install module makefile	
 	install -m 644 include/Make/Module.make debian/libgrass-dev/usr/lib/grass/include/Make/Module.make
 
+install-indep: build-indep
+	dh_testdir -i
+	dh_testroot -i
+	install -m 644  -d debian/tmp
+	install -m 644  -d debian/tmp/programming-manual/vector/html \
+			   debian/tmp/programming-manual/db/html \
+			   debian/tmp/programming-manual/gis/html
+			   
+	install -m 644 lib/vector/html/* debian/tmp/programming-manual/vector/html
+	install -m 644 lib/db/html/* debian/tmp/programming-manual/db/html
+	install -m 644 lib/gis/html/* debian/tmp/programming-manual/gis/html
+
 # Build architecture-independent files here.
-binary-indep: build install
+binary-indep: install install-indep 
 	dh_testdir -i
 	dh_testroot -i
 	dh_installchangelogs -i CHANGES
@@ -133,7 +155,7 @@ binary-indep: build install
 	dh_builddeb -i
 
 # Build architecture-dependent files here.
-binary-arch: build install
+binary-arch: install
 	dh_testdir -a
 	dh_testroot  -a
 	dh_installchangelogs -a CHANGES

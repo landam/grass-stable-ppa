@@ -1,3 +1,18 @@
+grass (6.0.2-1) unstable; urgency=low
+
+  [ Francesco Paolo Lovergine ]
+
+  * New upstream release
+    (closes: #328519)
+  * Removed configure.in.dpatch, merged upstream.
+  * Now generates programming manual by doxygen and dot.
+    Added graphviz build-dep in debian/control. 
+    Resulting files belongs to grass-doc.
+  * Rules file revised to clean doxygen doc properly.
+  * Targets revised in rules to adopt a more clean schema of dependencies.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Thu, 23 Feb 2006 10:42:54 +0100
+
 grass (6.0.1-4) unstable; urgency=low
 
   [ Steve Halasz ]
