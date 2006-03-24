@@ -10,11 +10,22 @@ grass (6.0.2-1) unstable; urgency=low
     Resulting files belongs to grass-doc.
   * Rules file revised to clean doxygen doc properly.
   * Targets revised in rules to adopt a more clean schema of dependencies.
+  * Added a group of suggested packages (Thanks Hamish).
+  * New patches added:
+  	fftw3.dpatch: supports FFTW3
+                (cfr. http://grass.itc.it/pipermail/grass-commit/2006-March/021104.html)
+        nviz.dpatch: solves old NVIZ issue with multi-threaded Tcl 8.4.
+                (cfr. http://grass.itc.it/pipermail/grass-commit/2006-March/021104.html)
+  * Moved to tcl8.4-dev and tk8.4 build-deps. Changed tcl path in debian/rules.
+    (closes: #206844)
+  * Moved to fftw3-dev build-dep
 
   [ Paul Wise ]
   * Suggest some packages useful for v.in.e00, v.in.garmin and i.spectral
 
- -- Paul Wise <pabs3@bonedaddy.net>  Thu, 16 Mar 2006 13:12:24 +0800
+  [ Francesco Paolo Lovergine ]
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Fri, 24 Mar 2006 14:12:32 +0100
 
 grass (6.0.1-4) unstable; urgency=low
 
