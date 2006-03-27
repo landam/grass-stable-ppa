@@ -23,8 +23,6 @@ grass (6.0.2-1) unstable; urgency=low
   [ Paul Wise ]
   * Suggest some packages useful for v.in.e00, v.in.garmin and i.spectral
 
-  [ Francesco Paolo Lovergine ]
-
  -- Francesco Paolo Lovergine <frankie@debian.org>  Fri, 24 Mar 2006 14:12:32 +0100
 
 grass (6.0.1-4) unstable; urgency=low

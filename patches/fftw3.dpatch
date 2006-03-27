@@ -6,8 +6,8 @@
 
 @DPATCH@
 diff -urNad grass-6.0.2~/configure grass-6.0.2/configure
---- grass-6.0.2~/configure	2006-03-11 12:06:41.000000000 +0100
-+++ grass-6.0.2/configure	2006-03-24 13:41:14.000000000 +0100
+--- grass-6.0.2~/configure	2006-03-24 15:13:42.000000000 +0100
++++ grass-6.0.2/configure	2006-03-27 23:41:59.000000000 +0200
 @@ -10239,7 +10239,7 @@
  
  ac_save_cppflags="$CPPFLAGS"
@@ -968,8 +968,8 @@ diff -urNad grass-6.0.2~/configure grass-6.0.2/configure
  y | ye | yes | n | no)
  	{ echo "configure: error: *** You must supply a directory to --with-opendwg-libs." 1>&2; exit 1; }
 diff -urNad grass-6.0.2~/configure.in grass-6.0.2/configure.in
---- grass-6.0.2~/configure.in	2006-03-11 12:06:41.000000000 +0100
-+++ grass-6.0.2/configure.in	2006-03-24 13:40:05.000000000 +0100
+--- grass-6.0.2~/configure.in	2006-03-24 15:13:42.000000000 +0100
++++ grass-6.0.2/configure.in	2006-03-27 23:40:32.000000000 +0200
 @@ -933,17 +933,21 @@
  
  LOC_CHECK_INC_PATH(fftw,FFTW,FFTWINC)
@@ -992,3 +992,90 @@ diff -urNad grass-6.0.2~/configure.in grass-6.0.2/configure.in
  
  fi # $USE_FFTW
  
+diff -urNad grass-6.0.2~/lib/gmath/del2g.c grass-6.0.2/lib/gmath/del2g.c
+--- grass-6.0.2~/lib/gmath/del2g.c	2003-10-06 12:13:29.000000000 +0200
++++ grass-6.0.2/lib/gmath/del2g.c	2006-03-27 23:40:32.000000000 +0200
+@@ -16,7 +16,7 @@
+ */
+ #include "config.h"
+ 
+-#if defined(HAVE_FFTW_H) || defined(HAVE_DFFTW_H)
++#if defined(HAVE_FFTW_H) || defined(HAVE_DFFTW_H) || defined(HAVE_FFTW3_H)
+ 
+ #include <stdio.h>
+ #include "gmath.h"
+diff -urNad grass-6.0.2~/lib/gmath/fft.c grass-6.0.2/lib/gmath/fft.c
+--- grass-6.0.2~/lib/gmath/fft.c	2004-11-09 13:24:13.000000000 +0100
++++ grass-6.0.2/lib/gmath/fft.c	2006-03-27 23:40:32.000000000 +0200
+@@ -2,15 +2,22 @@
+ 
+ #include "config.h"
+ 
+-#if defined(HAVE_FFTW_H) || defined(HAVE_DFFTW_H)
++#if defined(HAVE_FFTW_H) || defined(HAVE_DFFTW_H) || defined(HAVE_FFTW3_H)
+ 
+ #ifdef HAVE_FFTW_H
+ #include <fftw.h>
+ #endif
++
+ #ifdef HAVE_DFFTW_H
+ #include <dfftw.h>
+ #endif
+ 
++#ifdef HAVE_FFTW3_H
++#include <fftw3.h>
++#define c_re(c) ((c)[0])
++#define c_im(c) ((c)[1])
++#endif
++
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <math.h>
+@@ -37,7 +44,11 @@
+ 
+ int fft(int i_sign, double *DATA[2], int NN, int dimc, int dimr)
+ {
++#ifdef HAVE_FFTW3_H
++	fftw_plan plan;
++#else
+ 	fftwnd_plan plan;
++#endif
+ 	fftw_complex *data;
+ 	double norm;
+ 	int i;
+@@ -48,9 +59,17 @@
+ 
+ 	for (i = 0; i < NN; i++)
+ 	{
+-		data[i].re = DATA[0][i];
+-		data[i].im = DATA[1][i];
+-	}
++           c_re(data[i]) = DATA[0][i];
++           c_im(data[i]) = DATA[1][i];
++        }
++
++#ifdef HAVE_FFTW3_H
++ 	plan = fftw_plan_dft_2d(dimc, dimr, data, data,(i_sign < 0) ? FFTW_FORWARD : FFTW_BACKWARD, FFTW_ESTIMATE);
++ 
++	fftw_execute(plan);
++ 
++ 	fftw_destroy_plan(plan);
++ #else
+ 
+ 	plan = fftw2d_create_plan(
+ 		dimc, dimr,
+@@ -61,10 +80,12 @@
+ 
+ 	fftwnd_destroy_plan(plan);
+ 
++#endif
++
+ 	for (i = 0; i < NN; i++)
+ 	{
+-		DATA[0][i] = data[i].re * norm;
+-		DATA[1][i] = data[i].im * norm;
++		DATA[0][i] = c_re(data[i]) * norm;
++		DATA[1][i] = c_im(data[i]) * norm;
+ 	}
+ 
+ 	G_free(data);
