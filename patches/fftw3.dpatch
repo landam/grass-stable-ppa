@@ -7,7 +7,7 @@
 @DPATCH@
 diff -urNad grass-6.0.2~/configure grass-6.0.2/configure
 --- grass-6.0.2~/configure	2006-03-24 15:13:42.000000000 +0100
-+++ grass-6.0.2/configure	2006-03-27 23:41:59.000000000 +0200
++++ grass-6.0.2/configure	2006-03-27 23:50:48.000000000 +0200
 @@ -10239,7 +10239,7 @@
  
  ac_save_cppflags="$CPPFLAGS"
@@ -969,7 +969,7 @@ diff -urNad grass-6.0.2~/configure grass-6.0.2/configure
  	{ echo "configure: error: *** You must supply a directory to --with-opendwg-libs." 1>&2; exit 1; }
 diff -urNad grass-6.0.2~/configure.in grass-6.0.2/configure.in
 --- grass-6.0.2~/configure.in	2006-03-24 15:13:42.000000000 +0100
-+++ grass-6.0.2/configure.in	2006-03-27 23:40:32.000000000 +0200
++++ grass-6.0.2/configure.in	2006-03-27 23:48:18.000000000 +0200
 @@ -933,17 +933,21 @@
  
  LOC_CHECK_INC_PATH(fftw,FFTW,FFTWINC)
@@ -992,9 +992,22 @@ diff -urNad grass-6.0.2~/configure.in grass-6.0.2/configure.in
  
  fi # $USE_FFTW
  
+diff -urNad grass-6.0.2~/include/config.h.in grass-6.0.2/include/config.h.in
+--- grass-6.0.2~/include/config.h.in	2005-08-01 12:16:26.000000000 +0200
++++ grass-6.0.2/include/config.h.in	2006-03-27 23:49:12.000000000 +0200
+@@ -137,6 +137,9 @@
+ /* define if jpeglib.h exists */
+ #undef HAVE_JPEGLIB_H
+ 
++/* define if fftw3.h exists */
++#undef HAVE_FFTW3_H
++
+ /* define if fftw.h exists */
+ #undef HAVE_FFTW_H
+ 
 diff -urNad grass-6.0.2~/lib/gmath/del2g.c grass-6.0.2/lib/gmath/del2g.c
 --- grass-6.0.2~/lib/gmath/del2g.c	2003-10-06 12:13:29.000000000 +0200
-+++ grass-6.0.2/lib/gmath/del2g.c	2006-03-27 23:40:32.000000000 +0200
++++ grass-6.0.2/lib/gmath/del2g.c	2006-03-27 23:48:18.000000000 +0200
 @@ -16,7 +16,7 @@
  */
  #include "config.h"
@@ -1006,7 +1019,7 @@ diff -urNad grass-6.0.2~/lib/gmath/del2g.c grass-6.0.2/lib/gmath/del2g.c
  #include "gmath.h"
 diff -urNad grass-6.0.2~/lib/gmath/fft.c grass-6.0.2/lib/gmath/fft.c
 --- grass-6.0.2~/lib/gmath/fft.c	2004-11-09 13:24:13.000000000 +0100
-+++ grass-6.0.2/lib/gmath/fft.c	2006-03-27 23:40:32.000000000 +0200
++++ grass-6.0.2/lib/gmath/fft.c	2006-03-27 23:48:18.000000000 +0200
 @@ -2,15 +2,22 @@
  
  #include "config.h"

@@ -1,3 +1,11 @@
+grass (6.0.2-2) unstable; urgency=low
+
+  [ Francesco Paolo Lovergine ]
+
+  * Sigh, FFTW3 patch revised to integrate two more changes.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 27 Mar 2006 23:45:58 +0200
+
 grass (6.0.2-1) unstable; urgency=low
 
   [ Francesco Paolo Lovergine ]
