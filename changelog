@@ -2,7 +2,7 @@ grass (6.0.2-2) unstable; urgency=low
 
   [ Francesco Paolo Lovergine ]
 
-  * Sigh, FFTW3 patch revised to integrate two more changes.
+  * Sigh, FFTW3 patch revised to integrate three more changes.
 
  -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 27 Mar 2006 23:45:58 +0200
 
@@ -21,7 +21,7 @@ grass (6.0.2-1) unstable; urgency=low
   * Added a group of suggested packages (Thanks Hamish).
   * New patches added:
   	fftw3.dpatch: supports FFTW3
-                (cfr. http://grass.itc.it/pipermail/grass-commit/2006-March/021104.html)
+                (cfr.  http://grass.itc.it/pipermail/grass-commit/2006-March/021112.html-021114.html)
         nviz.dpatch: solves old NVIZ issue with multi-threaded Tcl 8.4.
                 (cfr. http://grass.itc.it/pipermail/grass-commit/2006-March/021104.html)
   * Moved to tcl8.4-dev and tk8.4 build-deps. Changed tcl path in debian/rules.
