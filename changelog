@@ -1,3 +1,12 @@
+grass (6.0.2-3) unstable; urgency=low
+
+  * Change build-dependency on xlibmesa-gl-dev to libgl1-mesa-swx11-dev;
+    fixes FTBFS, patch from Andreas Jochens. Ack NMU.
+    (Closes: #373569)
+  * Policy bumped to 3.7.2, no changes.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Sat, 24 Jun 2006 21:50:19 +0200
+
 grass (6.0.2-2) unstable; urgency=low
 
   [ Francesco Paolo Lovergine ]
