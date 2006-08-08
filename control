@@ -3,13 +3,16 @@ Section: science
 Priority: extra
 Maintainer: Debian GIS Project <pkg-grass-devel@lists.alioth.debian.org>
 Uploaders: Francesco Paolo Lovergine <frankie@debian.org>, Steve Halasz <debian@adkgis.org>
-Build-depends: flex, bison, libreadline5-dev | libreadline-dev, libncurses5-dev, lesstif2-dev, debhelper (>= 4.0.2), dpatch, libtiff4-dev, tcl8.4-dev, tk8.4-dev, fftw3-dev, libxmu-dev, libgl1-mesa-swx11-dev;, libglu1-xorg-dev | xlibmesa-glu-dev, libfreetype6-dev, autoconf2.13, autotools-dev, libgdal1-1.3.1-dev, proj (>= 4.4.7), libjpeg62-dev, libpng12-dev, libpq-dev | postgresql-dev, unixodbc-dev, doxygen, fakeroot, libmysqlclient15-dev | libmysqlclient14-dev, graphviz
+Build-depends: flex, bison, libreadline5-dev | libreadline-dev, libncurses5-dev, lesstif2-dev, debhelper (>= 4.0.2), dpatch, libtiff4-dev, tcl8.4-dev, tk8.4-dev, fftw3-dev, libxmu-dev, libgl1-mesa-swx11-dev, libglu1-xorg-dev | xlibmesa-glu-dev, libfreetype6-dev, autoconf2.13, autotools-dev, libgdal1-1.3.2-dev, proj (>= 4.4.7), libjpeg62-dev, libpng12-dev, libpq-dev | postgresql-dev, unixodbc-dev, doxygen, fakeroot, libmysqlclient15-dev | libmysqlclient14-dev, graphviz
 Standards-Version: 3.7.2
 
 Package: grass
 Section: science
 Architecture: any
-Depends: ${shlibs:Depends}, xterm | x-terminal-emulator, libgrass (= ${Source-Version})
+Depends: ${shlibs:Depends}, xterm | x-terminal-emulator
+Provides: libgrass
+Conflicts: libgrass
+Replaces: libgrass
 Suggests: grass-doc, gdal-bin, e00compr, avce00, gpstrans, gnuplot
 Description: Geographic Resources Analysis Support System
  Commonly referred to as GRASS, this is a Geographic Information
@@ -36,28 +39,14 @@ Description: Geographic Resources Analysis Support System documentation
  .
   Homepage: http://grass.itc.it/gdp/
 
-Package: libgrass
-Section: libs
+Package: grass-dev
+Section: devel
 Architecture: any
 Depends: ${shlibs:Depends}, grass (= ${Source-Version})
-Description: GRASS GIS development libraries
- Commonly referred to as GRASS, this is a Geographic Information
- System (GIS) used for geospatial data management and analysis,
- image processing, graphics/map production, spatial modeling, and
- visualization. GRASS is currently used in academic and commercial
- settings around the world, as well as by many government agencies
- and environmental consulting companies.
- .
- These libraries provide the means to access and manipulate GRASS
- data sets.
- .
-  Homepage: http://grass.itc.it
-
-Package: libgrass-dev
-Section: libdevel
-Architecture: any
-Depends: ${shlibs:Depends}, libgrass (= ${Source-Version})
-Description: GRASS GIS library development files
+Provides: libgrass-dev
+Conflicts: libgrass-dev
+Replaces: libgrass-dev
+Description: GRASS GIS development files
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
  image processing, graphics/map production, spatial modeling, and
@@ -70,3 +59,4 @@ Description: GRASS GIS library development files
  GRASS data sets.
  .
   Homepage: http://grass.itc.it
+

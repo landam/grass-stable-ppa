@@ -112,16 +112,13 @@ install: build
 	# fix links
 	debian/fixpaths.sh $(CURDIR)/debian/tmp debian/tmp
 	
-	# delete extra license file
-	rm -f debian/tmp/usr/lib/grass/etc/license
+	# delete extra license files
+	rm -f debian/tmp/usr/lib/grass/etc/license debian/tmp/usr/lib/grass/bwidget/LICENSE.txt
     
 	# change section from 1 to .1grass 
 	mv debian/tmp/usr/lib/grass/man/man1/grass6.1 debian/grass60.1
 	for m in debian/tmp/usr/lib/grass/man/man1/*.1; do n=`basename $$m .1`; mv $$m debian/tmp/usr/lib/grass/man/man1/$$n.1grass; done
 	for m in debian/tmp/usr/lib/grass/man/man1/*.1grass; do sed -i -e 's/^.TH \(.*\) 1/.TH \1 1grass/' $$m; done
-
-	# install lintian overrides
-	install -m 644 debian/libgrass.lintian-overrides debian/libgrass/usr/share/lintian/overrides/libgrass
 
 	# install module makefile	
 	install -m 644 include/Make/Module.make debian/libgrass-dev/usr/lib/grass/include/Make/Module.make
