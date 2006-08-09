@@ -1,0 +1,321 @@
+grass (6.0.2-4) unstable; urgency=low
+
+  * Moved to libgdal1-1.3.2-dev build-dep, now available.
+  * Removed libgrass bin-package and introduced required conflicts/provides/replaces items to manage upgrades.
+    Removed all related files in debian/
+    (closes: #361962)
+  * Removed another extra license file.
+  * Watch file revised.
+  * Moved libgrass-dev to grass-dev package and changed section.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Tue,  8 Aug 2006 18:24:19 +0200
+
+grass (6.0.2-3) unstable; urgency=low
+
+  * Change build-dependency on xlibmesa-gl-dev to libgl1-mesa-swx11-dev;
+    fixes FTBFS, patch from Andreas Jochens. Ack NMU.
+    (Closes: #373569)
+  * Policy bumped to 3.7.2, no changes.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Sat, 24 Jun 2006 21:50:19 +0200
+
+grass (6.0.2-2) unstable; urgency=low
+
+  [ Francesco Paolo Lovergine ]
+
+  * Sigh, FFTW3 patch revised to integrate three more changes.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 27 Mar 2006 23:45:58 +0200
+
+grass (6.0.2-1) unstable; urgency=low
+
+  [ Francesco Paolo Lovergine ]
+
+  * New upstream release
+    (closes: #328519)
+  * Removed configure.in.dpatch, merged upstream.
+  * Now generates programming manual by doxygen and dot.
+    Added graphviz build-dep in debian/control.
+    Resulting files belongs to grass-doc.
+  * Rules file revised to clean doxygen doc properly.
+  * Targets revised in rules to adopt a more clean schema of dependencies.
+  * Added a group of suggested packages (Thanks Hamish).
+  * New patches added:
+  	fftw3.dpatch: supports FFTW3
+                (cfr.  http://grass.itc.it/pipermail/grass-commit/2006-March/021112.html-021114.html)
+        nviz.dpatch: solves old NVIZ issue with multi-threaded Tcl 8.4.
+                (cfr. http://grass.itc.it/pipermail/grass-commit/2006-March/021104.html)
+  * Moved to tcl8.4-dev and tk8.4 build-deps. Changed tcl path in debian/rules.
+    (closes: #206844)
+  * Moved to fftw3-dev build-dep
+
+  [ Paul Wise ]
+  * Suggest some packages useful for v.in.e00, v.in.garmin and i.spectral
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Fri, 24 Mar 2006 14:12:32 +0100
+
+grass (6.0.1-4) unstable; urgency=low
+
+  [ Steve Halasz ]
+  
+  * Make libgrass depend on current version of grass.
+    libgrass requires files in the main package and doesn't
+    yet stand alone. 
+
+ -- Steve Halasz <debian@adkgis.org>  Thu, 23 Feb 2006 11:09:59 -0500
+
+grass (6.0.1-3) unstable; urgency=low
+
+  [ Francesco Paolo Lovergine ]
+
+  * Added NVIZ html help pages to -doc package, previously missing. Thanks Stephan Holl.
+  * Re-introduced missing build-indep target in rules for the -doc package.
+    This is still sub-optimal...
+  * Added missing libxmu-dev
+    (closes: #350010, #352451)
+  * Added Module.make among -dev files.
+    (closes: #315073)
+  * Added configure.in.dpatch for FTBS on GNU/FreeBSD. Merged correction for configure(1333).
+    (closes: #336498)
+
+  [ Paul Wise ]
+  * Fix homepages in package descriptions
+  * Add a watch file
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Fri, 17 Feb 2006 13:03:03 +0100
+
+grass (6.0.1-2) unstable; urgency=low
+
+  [ Paul Wise ]
+
+  * Add homepage to package descriptions
+
+  [ Francesco Paolo Lovergine ]
+
+  * Transitioned to libmysqlclient15-dev in control (but retained old lib-dev pkg for backports )
+    (closes: #343817)
+  * Transitioned to libgdal1-1.3.1 for new gdal packaging scheme due to C++ ABI/API instability.
+  * Typo with a exceeding ` at configure(1333) corrected (upstream cvs is ok).
+    Issue definitively depends on shell version.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Sun, 22 Jan 2006 23:28:18 +0100
+
+grass (6.0.1-1) unstable; urgency=low
+
+  [ Steve Halasz ]
+
+  * New upstream release
+    (closes: #314059, #314063,#317470,#312583)
+  * Bump Standards-Version to 3.6.2 without any changes. There
+      are architecture independent files in /usr/lib/grass. Still
+      need to fix that sometime.
+  * C++ ABI transition. No explicit changes made.
+  * debian/control
+    - postgresql-dev -> libpq-dev
+    - xlibmesa-glu-dev -> libglu1-xorg-dev
+    - build-dep on libmysqlclient12-dev
+  * debian/rules
+    - use pg_config to locate includes
+    - --with-mysql
+
+  [ Francesco Paolo Lovergine ]
+
+  * Added versioned dependency for grass vs libgrass and grass-dev
+    (closes: #306497)
+  * Set libpq-dev | postgresql-dev build-dep to retain sarge compatibility.
+    Changed a bit rules file to manage pg_config by $shell feature.
+    (closes: #326044)
+  * Set libglu1-xorg-dev | xlibmesa-glu-dev build-dep to retain sarge compatibility
+  * Ack mysql 4.0+ support
+    (closes: #317497)
+  * Cleaned commented dhelper methods and other inappropriate
+    comments in rules
+  * libreadline-dev dependency updated
+    (closes: #326350)
+  * Changed changelog release number because of 6.0.1 release on 8/22.
+  * Added upstream man pages to grass-doc, in section 1grass. Removed Steve's
+    manual and used upstream one for grass main script.
+  * Added xterm-fix.dpatch to use x-terminal-emulator instead of xterm in all
+    scripts. Changed dependency in xterm | x-terminal-emulator as consequence
+    (closes: #315186)
+  * Fixed fixscripts.sh
+  * Removed a --without-cxx in rules which prevented r.terraflow build
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 14 Sep 2005 16:16:57 +0200
+
+grass (6.0.0+6.0.1RC1-0.dgis.unstable.1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Steve Halasz <debian@adkgis.org>  Wed,  3 Aug 2005 14:28:24 -0400
+
+grass (6.0.0-1) unstable; urgency=low
+
+  * New upstream release
+  * priority optional -> extra
+
+ -- Steve Halasz <debian@adkgis.org>  Thu, 10 Mar 2005 10:01:07 -0500
+
+grass (5.7.0+6.0.0beta2-2) unstable; urgency=high
+
+  * Apply patch from cvs to prevent accidental deletion of files
+      in the present working directory (Closes: #297731)
+  * Use fakeroot while generating html docs.
+      This fixes a permission problem that prevented
+      most docs and man pages from being created when
+      building with pbuilder. (Closes: #281742, #229086, #242436)
+  * build-depend on fakeroot
+  * make libgrass depend on grass
+  * Remove fog@debian.org from Uploaders. Thanks Federico!
+  * silence erroneous lintian warnings:
+    - postrm-unsafe-ldconfig
+    - maintainer-script-lacks-debhelper-token
+    - postinst-has-useless-call-to-ldconfig
+    - postrm-has-useless-call-to-ldconfig
+
+ -- Steve Halasz <debian@adkgis.org>  Mon, 21 Feb 2005 20:49:22 -0500
+
+grass (5.7.0+6.0.0beta2-1) unstable; urgency=high
+
+  * New upstream release (Closes: #264566)
+    - Safe tmpdir creation (Closes: #287651)
+    - tcltkgrass replaced by d.m (Closes: #282567)
+    - r.in.gdal segfault fixed (Closes: #234275)
+    - r.in.bin segfault fixed (Closes: #259655)
+    - r.lags.1grass.gz: "name" section too long (removed) (Closes: #261726)
+    - raster.html: non explained commands (removed) (Closes: #287590)
+    - i.rectify.html: links to i.vpoints.html work (Closes: #287764)
+    - i.points.html: imagery.ps link fixed (Closes: #287763:)
+  * Help button doc path fixed (Closes: #287591)
+  * Change libgrass0 -> libgrass
+
+ -- Steve Halasz <debian@adkgis.org>  Fri,  4 Feb 2005 15:13:26 -0500
+
+grass (5.7.0+6.0.0beta1+cvs20050203-0.dgis.unstable.1) unstable; urgency=low
+
+  * New upstream version from CVS
+  * Safe tmpdir creation (Closes: #287651)
+  * Build without r.terraflow until it gets tmpdir fixes
+  * Change libgrass5.7 -> libgrass6.0.0beta1
+  * Change maintainer 
+      pkg-grass-general -> pkg-grass-devel@lists.alioth.debian.org
+
+ -- Steve Halasz <debian@adkgis.org>  Thu,  3 Feb 2005 09:28:43 -0500
+
+grass (5.7.0+6.0.0beta1-0.dgis.unstable.2) unstable; urgency=low
+
+  * updates to grass60 man page - grass57 -> grass60
+  * link usr/lib/grass/docs/html to usr/share/doc/grass-doc/html
+  * patch to look for epsg codes in /usr/share/proj/epsg
+  * put man pages in grass-doc
+  * debian/control
+    - depend on xterm
+    - remove dependency on csh
+
+ -- Steve Halasz <debian@adkgis.org>  Wed, 19 Jan 2005 09:06:51 -0500
+
+grass (5.7.0+6.0.0beta1-0.dgis.unstable.1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Steve Halasz <debian@adkgis.org>  Wed, 12 Jan 2005 16:46:24 -0500
+
+grass (5.7.0-6.dgis.unstable.1) unstable; urgency=low
+
+  * link usr/share/man/man1/grass.1.gz to usr/share/man/man1/grass57.1.gz
+  * debian/control
+    - edits to description courtesy of hmitaso@unity.ncsu.edu
+    - don't suggest proj. it is already required via ${shlibs:Depends}
+    - put grass-doc in 'science' section rather than 'Science'
+
+ -- Steve Halasz <debian@adkgis.org>  Mon, 27 Dec 2004 18:16:41 -0500
+
+grass (5.7.0-6) unstable; urgency=low
+
+  * link /usr/bin/grass to /usr/bin/grass57
+  * debian/control
+    - edits to description
+    - create grass-doc package
+    - don't have libgrass depend on grass
+  * debian/rules
+    - install to /usr/lib/grass instead of /usr/lib/grass57
+    - run dh_shlibdeps
+
+ -- Steve Halasz <debian@adkgis.org>  Wed,  1 Dec 2004 18:39:04 -0500
+
+grass (5.7.0-5) unstable; urgency=low
+
+  * debian/control
+    - change package name back to 'grass'
+    - convert to team maintenance with pkg-grass-general@lists.alioth.debian.org
+      as maintainer
+    - add build-deps:
+      + dpatch
+      + libjpeg62-dev
+      + libpng12-dev
+      + lesstif2-dev
+    - remove build-deps:
+      + extra second build-dep on postgresql-dev
+      + libgd2-xpm-dev
+      + postgresql-client
+  * debian/rules:
+    - clean raster/r.terraflow/IOStream/lib/src/libiostream.a
+    - add --with-odbc
+    - add --with-cxx
+    - add --with-glw
+    - add --with-motif
+    - remove --with-dbm and --without-dbm
+    - remove --with-blas and --with-lapack
+
+ -- Steve Halasz <debian@adkgis.org>  Mon, 29 Nov 2004 18:17:46 -0500
+
+grass5.7 (5.7.0-4) unstable; urgency=low
+
+  * Add grass57 man page
+  * Make etc/water/seg executable
+
+ -- Steve Halasz <debian@adkgis.org>  Tue, 12 Oct 2004 11:18:55 -0400
+
+grass5.7 (5.7.0-3) unstable; urgency=low
+
+  * Split out separate libgrass5.7 and libgrass5.7-dev packages
+  * Add grass libs dir to ld.so.conf. Make sure it is removed too.
+
+ -- Steve Halasz <debian@adkgis.org>  Wed, 22 Sep 2004 00:36:12 -0400
+
+grass5.7 (5.7.0-2) unstable; urgency=low
+
+  * silence executable-not-elf-or-script lintian warning by making most tcl 
+    scripts not executable
+  * silence interpreter-not-absolute lintian warning by inserting absolute path in 
+    shebang
+  * make tcltkgrass/main/tksys.tcl executable
+
+ -- Steve Halasz <debian@adkgis.org>  Fri,  3 Sep 2004 11:38:18 -0400
+
+grass5.7 (5.7.0-1) unstable; urgency=low
+
+  * install files to locations prescribed by debian policy
+  * fix paths hardcoded during build using script from 5.0.3 package
+  * change package name to enable concurrent install with stable grass package
+  * patch configure.in and d.text.freetype to deal with freetype.h weirdness
+  * build as non-native package
+  * clean binary files not removed by 'make clean'
+
+ -- Steve Halasz <debian@adkgis.org>  Wed,  1 Sep 2004 10:39:27 -0400
+
+grass (57-2) unstable; urgency=low
+
+  * fixes for rules file by Giuseppe Dia <giusedia@libero.it>
+
+  * fixes for Debian built. Joint work with Paolo Brunetti <brunetti@itc.it> 
+    and Donato Minati <minati@itc.it>
+
+ -- Markus Neteler <neteler@itc.it>  Tue, 11 Nov 2003 17:59:04 +0100 
+
+grass (57-1) unstable; urgency=low
+
+  * Initial Release. Control file based on GRASS 5.0.2 deb from 
+    Giuseppe Dia <giusedia@libero.it>
+
+ -- Markus Neteler <neteler@itc.it>  Mon, 10 Nov 2003 17:59:04 +0100
