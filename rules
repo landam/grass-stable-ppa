@@ -121,7 +121,7 @@ install: build
 	for m in debian/tmp/usr/lib/grass/man/man1/*.1grass; do sed -i -e 's/^.TH \(.*\) 1/.TH \1 1grass/' $$m; done
 
 	# install module makefile	
-	install -m 644 include/Make/Module.make debian/libgrass-dev/usr/lib/grass/include/Make/Module.make
+	install -m 644 include/Make/Module.make debian/grass-dev/usr/lib/grass/include/Make/Module.make
 
 install-indep: build-indep
 	dh_testdir -i
