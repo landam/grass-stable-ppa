@@ -2,6 +2,7 @@ grass (6.0.2-6) unstable; urgency=low
 
   * Reintroduced /usr/lib/grass/etc/license file, used for versioning.
     (closes: #382484)
+  * Moved priority to optional.
 
  -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 23 Aug 2006 18:31:20 +0200
 
