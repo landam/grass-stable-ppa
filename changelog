@@ -1,3 +1,12 @@
+grass (6.0.2-5) unstable; urgency=low
+
+  * Reintroduced postinst/postrm script for grass in order to add grass
+    library to ld.so.conf and recreating the cache. That's useful when
+    linking external modules essentially, due to the long list of dep libs.
+    For the same reason re-introduced the lintian override.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 23 Aug 2006 15:37:27 +0200
+
 grass (6.0.2-4) unstable; urgency=low
 
   * Moved to libgdal1-1.3.2-dev build-dep, now available.
