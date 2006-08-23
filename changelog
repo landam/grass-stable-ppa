@@ -1,3 +1,10 @@
+grass (6.0.2-6) unstable; urgency=low
+
+  * Reintroduced /usr/lib/grass/etc/license file, used for versioning.
+    (closes: #382484)
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 23 Aug 2006 18:31:20 +0200
+
 grass (6.0.2-5) unstable; urgency=low
 
   * Reintroduced postinst/postrm script for grass in order to add grass

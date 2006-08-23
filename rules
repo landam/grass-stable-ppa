@@ -113,7 +113,7 @@ install: build
 	debian/fixpaths.sh $(CURDIR)/debian/tmp debian/tmp
 	
 	# delete extra license files
-	rm -f debian/tmp/usr/lib/grass/etc/license debian/tmp/usr/lib/grass/bwidget/LICENSE.txt
+	rm -f debian/tmp/usr/lib/grass/bwidget/LICENSE.txt
     
 	# change section from 1 to .1grass 
 	mv debian/tmp/usr/lib/grass/man/man1/grass6.1 debian/grass60.1
