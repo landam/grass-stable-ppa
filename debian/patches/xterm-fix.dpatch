@@ -1,91 +1,254 @@
 #! /bin/sh /usr/share/dpatch/dpatch-run
-## xterm-fix.dpatch by Francesco Paolo Lovergine <frankie@debian.org>
+## htmlgen-fakeroot.dpatch by  <debian@adkgis.org>
 ##
 ## All lines beginning with `## DP:' are a description of the patch.
-## DP: No description.
+## DP: use fakeroot to avoid weird stat/permission problem when
+## DP: building under pbuilder. This was preventing most man
+## DP: pages from being built.
 
 @DPATCH@
-diff -urNad --exclude=CVS --exclude=.svn ./display/d.m/d.m.tcl /tmp/dpep-work.vpKGWW/grass-6.0.1/display/d.m/d.m.tcl
---- ./display/d.m/d.m.tcl	2005-08-01 12:16:25.000000000 +0200
-+++ /tmp/dpep-work.vpKGWW/grass-6.0.1/display/d.m/d.m.tcl	2005-09-12 16:44:23.000000000 +0200
-@@ -92,7 +92,7 @@
+diff -urNad grass-6.1.0~/gui/tcltk/d.m/chart.tcl grass-6.1.0/gui/tcltk/d.m/chart.tcl
+--- grass-6.1.0~/gui/tcltk/d.m/chart.tcl	2006-02-18 12:55:34.000000000 +0100
++++ grass-6.1.0/gui/tcltk/d.m/chart.tcl	2006-08-24 20:02:27.000000000 +0200
+@@ -74,7 +74,7 @@
+ 	global bgcolor
+ 	set mapname $opt($id,map)
+ 	set layernum $opt($id,layer)
+-	exec xterm -bg $bgcolor -title "$mapname columns" \
++	exec x-terminal-emulator -bg $bgcolor -title "$mapname columns" \
+ 		-geometry 40x25-10+30 -sb -hold -e v.info -c map=$mapname \
+ 		layer=$layernum &		
+ }
+diff -urNad grass-6.1.0~/gui/tcltk/d.m/d.m.tcl grass-6.1.0/gui/tcltk/d.m/d.m.tcl
+--- grass-6.1.0~/gui/tcltk/d.m/d.m.tcl	2006-07-31 22:12:37.000000000 +0200
++++ grass-6.1.0/gui/tcltk/d.m/d.m.tcl	2006-08-24 20:02:42.000000000 +0200
+@@ -192,7 +192,7 @@
+ proc term_panel {cmd} {
+ 	global outtext
+     global env
+-    eval exec -- xterm -name xterm-grass -e $env(GISBASE)/etc/grass-run.sh $cmd &
++    eval exec -- x-terminal-emulator -name xterm-grass -e $env(GISBASE)/etc/grass-run.sh $cmd &
+     set str $cmd
+ 	$outtext insert end "$cmd\n"
+ 	$outtext yview end
+@@ -211,7 +211,7 @@
  ###############################################################################
  proc term {cmd args} {
      global env
--    eval exec -- xterm -e $env(GISBASE)/etc/grass-run.sh $cmd $args &
-+    eval exec -- x-terminal-emulator -e $env(GISBASE)/etc/grass-run.sh $cmd $args &
+-    eval exec -- xterm -name xterm-grass -e $env(GISBASE)/etc/grass-run.sh $cmd $args &
++    eval exec -- x-terminal-emulator -name xterm-grass -e $env(GISBASE)/etc/grass-run.sh $cmd $args &
  }
  
- 
-diff -urNad --exclude=CVS --exclude=.svn ./display/d.m/script/d.colors.sh /tmp/dpep-work.vpKGWW/grass-6.0.1/display/d.m/script/d.colors.sh
---- ./display/d.m/script/d.colors.sh	2005-02-28 17:33:21.000000000 +0100
-+++ /tmp/dpep-work.vpKGWW/grass-6.0.1/display/d.m/script/d.colors.sh	2005-09-12 16:45:56.000000000 +0200
+ ###############################################################################
+diff -urNad grass-6.1.0~/gui/tcltk/d.m/script/d.colors.sh grass-6.1.0/gui/tcltk/d.m/script/d.colors.sh
+--- grass-6.1.0~/gui/tcltk/d.m/script/d.colors.sh	2006-04-04 12:33:00.000000000 +0200
++++ grass-6.1.0/gui/tcltk/d.m/script/d.colors.sh	2006-08-24 20:03:06.000000000 +0200
 @@ -35,4 +35,4 @@
    exec g.parser "$0" "$@"
  fi
  
--eval `exec xterm -e d.colors map=$GIS_OPT_input`
-+eval `exec x-terminal-emulator -e d.colors map=$GIS_OPT_input`
-diff -urNad --exclude=CVS --exclude=.svn ./display/d.m/script/r.colors.rules /tmp/dpep-work.vpKGWW/grass-6.0.1/display/d.m/script/r.colors.rules
---- ./display/d.m/script/r.colors.rules	2005-02-28 17:34:46.000000000 +0100
-+++ /tmp/dpep-work.vpKGWW/grass-6.0.1/display/d.m/script/r.colors.rules	2005-09-12 16:46:04.000000000 +0200
+-eval `exec xterm -e d.colors map=$GIS_OPT_INPUT`
++eval `exec x-terminal-emulator -e d.colors map=$GIS_OPT_INPUT`
+diff -urNad grass-6.1.0~/gui/tcltk/d.m/script/d.text.sh grass-6.1.0/gui/tcltk/d.m/script/d.text.sh
+--- grass-6.1.0~/gui/tcltk/d.m/script/d.text.sh	2006-04-04 12:33:00.000000000 +0200
++++ grass-6.1.0/gui/tcltk/d.m/script/d.text.sh	2006-08-24 20:02:55.000000000 +0200
+@@ -83,5 +83,5 @@
+ 
+ echo $cmd
+ 
+-eval `exec xterm -e $cmd`
++eval `exec x-terminal-emulator -e $cmd`
+ 
+diff -urNad grass-6.1.0~/gui/tcltk/d.m/script/r.colors.rules grass-6.1.0/gui/tcltk/d.m/script/r.colors.rules
+--- grass-6.1.0~/gui/tcltk/d.m/script/r.colors.rules	2006-04-04 12:33:00.000000000 +0200
++++ grass-6.1.0/gui/tcltk/d.m/script/r.colors.rules	2006-08-24 20:03:11.000000000 +0200
 @@ -35,4 +35,4 @@
    exec g.parser "$0" "$@"
  fi
  
--eval `exec xterm -e r.colors map=$GIS_OPT_input color=rules`
-+eval `exec x-terminal-emulator -e r.colors map=$GIS_OPT_input color=rules`
-diff -urNad --exclude=CVS --exclude=.svn ./display/d.m/script/r.reclass.rules /tmp/dpep-work.vpKGWW/grass-6.0.1/display/d.m/script/r.reclass.rules
---- ./display/d.m/script/r.reclass.rules	2005-02-28 17:34:51.000000000 +0100
-+++ /tmp/dpep-work.vpKGWW/grass-6.0.1/display/d.m/script/r.reclass.rules	2005-09-12 16:45:11.000000000 +0200
+-eval `exec xterm -e r.colors map=$GIS_OPT_INPUT color=rules`
++eval `exec x-terminal-emulator -e r.colors map=$GIS_OPT_INPUT color=rules`
+diff -urNad grass-6.1.0~/gui/tcltk/d.m/script/r.reclass.rules grass-6.1.0/gui/tcltk/d.m/script/r.reclass.rules
+--- grass-6.1.0~/gui/tcltk/d.m/script/r.reclass.rules	2006-04-04 12:33:00.000000000 +0200
++++ grass-6.1.0/gui/tcltk/d.m/script/r.reclass.rules	2006-08-24 20:02:48.000000000 +0200
 @@ -42,4 +42,4 @@
    exec g.parser "$0" "$@"
  fi
  
--eval `exec xterm -e r.reclass input=$GIS_OPT_input output=$GIS_OPT_output`
-+eval `exec x-terminal-emulator -e r.reclass input=$GIS_OPT_input output=$GIS_OPT_output`
-diff -urNad --exclude=CVS --exclude=.svn ./display/d.m/script/r.recode.rules /tmp/dpep-work.vpKGWW/grass-6.0.1/display/d.m/script/r.recode.rules
---- ./display/d.m/script/r.recode.rules	2005-02-28 17:34:57.000000000 +0100
-+++ /tmp/dpep-work.vpKGWW/grass-6.0.1/display/d.m/script/r.recode.rules	2005-09-12 16:46:16.000000000 +0200
+-eval `exec xterm -e r.reclass input=$GIS_OPT_INPUT output=$GIS_OPT_OUTPUT`
++eval `exec x-terminal-emulator -e r.reclass input=$GIS_OPT_INPUT output=$GIS_OPT_OUTPUT`
+diff -urNad grass-6.1.0~/gui/tcltk/d.m/script/r.recode.rules grass-6.1.0/gui/tcltk/d.m/script/r.recode.rules
+--- grass-6.1.0~/gui/tcltk/d.m/script/r.recode.rules	2006-04-04 12:33:00.000000000 +0200
++++ grass-6.1.0/gui/tcltk/d.m/script/r.recode.rules	2006-08-24 20:03:23.000000000 +0200
 @@ -40,4 +40,4 @@
    exec g.parser "$0" "$@"
  fi
  
--eval `exec xterm -e r.recode input=$GIS_OPT_input output=$GIS_OPT_output` 
-+eval `exec x-terminal-emulator -e r.recode input=$GIS_OPT_input output=$GIS_OPT_output` 
-diff -urNad --exclude=CVS --exclude=.svn ./lib/init/epsg_option.tcl /tmp/dpep-work.vpKGWW/grass-6.0.1/lib/init/epsg_option.tcl
---- ./lib/init/epsg_option.tcl	2005-01-12 15:37:32.000000000 +0100
-+++ /tmp/dpep-work.vpKGWW/grass-6.0.1/lib/init/epsg_option.tcl	2005-09-12 16:42:11.000000000 +0200
-@@ -130,7 +130,7 @@
-                                   if {[file exists $browsedepsg]== 1} {
-                                       if {[file exists $thelocation ]==0} {  
-                                         destroy .optPopup; 
--                                        exec -- xterm -e $env(GISBASE)/etc/make_location_epsg.sh \
-+                                        exec -- x-terminal-emulator -e $env(GISBASE)/etc/make_location_epsg.sh \
-                                             $epsg_code $epsgLocation $database >@stdout 2>@stderr; 
-                                         DialogGen .wrnDlg "WARNING: restart Grass please" warning "WARNING: \
-                                             Please restart Grass in order find the created location in the list (closing it for you now)" \
-diff -urNad --exclude=CVS --exclude=.svn ./scripts/r3.mapcalculator/r3.mapcalculator /tmp/dpep-work.vpKGWW/grass-6.0.1/scripts/r3.mapcalculator/r3.mapcalculator
---- ./scripts/r3.mapcalculator/r3.mapcalculator	2004-11-03 08:40:36.000000000 +0100
-+++ /tmp/dpep-work.vpKGWW/grass-6.0.1/scripts/r3.mapcalculator/r3.mapcalculator	2005-09-12 16:46:46.000000000 +0200
-@@ -130,7 +130,7 @@
- # use old style mapcalc
- 
- if [ $GIS_FLAG_e = 1 ] ; then
--	exec xterm -e r3.mapcalc &
-+	exec x-terminal-emulator -e r3.mapcalc &
- 	exit 0
+-eval `exec xterm -e r.recode input=$GIS_OPT_INPUT output=$GIS_OPT_OUTPUT` 
++eval `exec x-terminal-emulator -e r.recode input=$GIS_OPT_INPUT output=$GIS_OPT_OUTPUT` 
+diff -urNad grass-6.1.0~/gui/tcltk/d.m/script/r.support.sh grass-6.1.0/gui/tcltk/d.m/script/r.support.sh
+--- grass-6.1.0~/gui/tcltk/d.m/script/r.support.sh	2006-04-04 12:33:00.000000000 +0200
++++ grass-6.1.0/gui/tcltk/d.m/script/r.support.sh	2006-08-24 20:03:00.000000000 +0200
+@@ -35,4 +35,4 @@
+   exec g.parser "$0" "$@"
  fi
  
-diff -urNad --exclude=CVS --exclude=.svn ./scripts/r.mapcalculator/r.mapcalculator /tmp/dpep-work.vpKGWW/grass-6.0.1/scripts/r.mapcalculator/r.mapcalculator
---- ./scripts/r.mapcalculator/r.mapcalculator	2004-11-03 08:40:36.000000000 +0100
-+++ /tmp/dpep-work.vpKGWW/grass-6.0.1/scripts/r.mapcalculator/r.mapcalculator	2005-09-12 16:46:34.000000000 +0200
+-eval `exec xterm -e r.support map=$GIS_OPT_INPUT`
++eval `exec x-terminal-emulator -e r.support map=$GIS_OPT_INPUT`
+diff -urNad grass-6.1.0~/gui/tcltk/d.m/thematic.tcl grass-6.1.0/gui/tcltk/d.m/thematic.tcl
+--- grass-6.1.0~/gui/tcltk/d.m/thematic.tcl	2006-02-18 12:55:34.000000000 +0100
++++ grass-6.1.0/gui/tcltk/d.m/thematic.tcl	2006-08-24 20:02:21.000000000 +0200
+@@ -83,7 +83,7 @@
+ 	global bgcolor
+ 	set mapname $opt($id,map)
+ 	set layernum $opt($id,layer)
+-	exec xterm -bg $bgcolor -title "$mapname columns" \
++	exec x-terminal-emulator -bg $bgcolor -title "$mapname columns" \
+ 		-geometry 40x25-10+30 -sb -hold -e v.info -c map=$mapname \
+ 		layer=$layernum &		
+ }
+@@ -92,7 +92,7 @@
+ 	variable opt
+ 	global bgcolor
+ 	set mapname $opt($id,map)
+-	exec xterm -bg $bgcolor -title "$mapname data" \
++	exec x-terminal-emulator -bg $bgcolor -title "$mapname data" \
+ 		-geometry 60x40-10+30 -sb -hold -e db.select table=$mapname &
+ }
+ 
+diff -urNad grass-6.1.0~/gui/tcltk/d.m/vector.tcl grass-6.1.0/gui/tcltk/d.m/vector.tcl
+--- grass-6.1.0~/gui/tcltk/d.m/vector.tcl	2006-06-27 00:16:35.000000000 +0200
++++ grass-6.1.0/gui/tcltk/d.m/vector.tcl	2006-08-24 20:02:02.000000000 +0200
+@@ -154,7 +154,7 @@
+ 	global bgcolor
+ 	set mapname $opt($id,map)
+ 	set layernum $opt($id,field)
+-	exec xterm -bg $bgcolor -title "$mapname columns" \
++	exec x-terminal-emulator -bg $bgcolor -title "$mapname columns" \
+ 		-geometry 40x25-10+30 -sb -hold -e v.info -c map=$mapname \
+ 		layer=$layernum &		
+ }
+@@ -163,7 +163,7 @@
+ 	variable opt
+ 	global bgcolor
+ 	set mapname $opt($id,map)
+-	exec xterm -bg $bgcolor -title "$mapname data" \
++	exec x-terminal-emulator -bg $bgcolor -title "$mapname data" \
+ 		-geometry 60x40-10+30 -sb -hold -e db.select table=$mapname &
+ }
+ 
+diff -urNad grass-6.1.0~/gui/tcltk/gis.m/runandoutput.tcl grass-6.1.0/gui/tcltk/gis.m/runandoutput.tcl
+--- grass-6.1.0~/gui/tcltk/gis.m/runandoutput.tcl	2006-07-22 11:29:48.000000000 +0200
++++ grass-6.1.0/gui/tcltk/gis.m/runandoutput.tcl	2006-08-24 20:04:33.000000000 +0200
+@@ -198,7 +198,7 @@
+ ###############################################################################
+ proc term {cmd args} {
+ 	global env
+-	eval [list exec -- xterm -name xterm-grass -e $env(GISBASE)/etc/grass-run.sh $cmd] $args &
++	eval [list exec -- x-terminal-emulator -name xterm-grass -e $env(GISBASE)/etc/grass-run.sh $cmd] $args &
+ }
+ 
+ ###############################################################################
+diff -urNad grass-6.1.0~/gui/tcltk/gis.m/script/d.colors.sh grass-6.1.0/gui/tcltk/gis.m/script/d.colors.sh
+--- grass-6.1.0~/gui/tcltk/gis.m/script/d.colors.sh	2006-07-07 02:34:32.000000000 +0200
++++ grass-6.1.0/gui/tcltk/gis.m/script/d.colors.sh	2006-08-24 20:03:46.000000000 +0200
+@@ -35,4 +35,4 @@
+   exec g.parser "$0" "$@"
+ fi
+ 
+-exec xterm -e "$GISBASE/etc/grass-run.sh" d.colors "map=$GIS_OPT_INPUT"
++exec x-terminal-emulator -e "$GISBASE/etc/grass-run.sh" d.colors "map=$GIS_OPT_INPUT"
+diff -urNad grass-6.1.0~/gui/tcltk/gis.m/script/d.text.sh grass-6.1.0/gui/tcltk/gis.m/script/d.text.sh
+--- grass-6.1.0~/gui/tcltk/gis.m/script/d.text.sh	2006-07-07 02:34:32.000000000 +0200
++++ grass-6.1.0/gui/tcltk/gis.m/script/d.text.sh	2006-08-24 20:03:34.000000000 +0200
+@@ -83,5 +83,5 @@
+ 
+ echo $cmd
+ 
+-exec xterm -e "$GISBASE/etc/grass-run.sh" $cmd
++exec x-terminal-emulator -e "$GISBASE/etc/grass-run.sh" $cmd
+ 
+diff -urNad grass-6.1.0~/gui/tcltk/gis.m/script/r.colors.rules grass-6.1.0/gui/tcltk/gis.m/script/r.colors.rules
+--- grass-6.1.0~/gui/tcltk/gis.m/script/r.colors.rules	2006-07-07 02:34:32.000000000 +0200
++++ grass-6.1.0/gui/tcltk/gis.m/script/r.colors.rules	2006-08-24 20:03:49.000000000 +0200
+@@ -35,4 +35,4 @@
+   exec g.parser "$0" "$@"
+ fi
+ 
+-exec xterm -e "$GISBASE/etc/grass-run.sh" r.colors "map=$GIS_OPT_INPUT" color=rules
++exec x-terminal-emulator -e "$GISBASE/etc/grass-run.sh" r.colors "map=$GIS_OPT_INPUT" color=rules
+diff -urNad grass-6.1.0~/gui/tcltk/gis.m/script/r.reclass.rules grass-6.1.0/gui/tcltk/gis.m/script/r.reclass.rules
+--- grass-6.1.0~/gui/tcltk/gis.m/script/r.reclass.rules	2006-07-07 02:34:32.000000000 +0200
++++ grass-6.1.0/gui/tcltk/gis.m/script/r.reclass.rules	2006-08-24 20:03:30.000000000 +0200
+@@ -42,4 +42,4 @@
+   exec g.parser "$0" "$@"
+ fi
+ 
+-exec xterm -e "$GISBASE/etc/grass-run.sh" r.reclass "input=$GIS_OPT_INPUT" "output=$GIS_OPT_OUTPUT"
++exec x-terminal-emulator -e "$GISBASE/etc/grass-run.sh" r.reclass "input=$GIS_OPT_INPUT" "output=$GIS_OPT_OUTPUT"
+diff -urNad grass-6.1.0~/gui/tcltk/gis.m/script/r.recode.rules grass-6.1.0/gui/tcltk/gis.m/script/r.recode.rules
+--- grass-6.1.0~/gui/tcltk/gis.m/script/r.recode.rules	2006-07-07 02:34:32.000000000 +0200
++++ grass-6.1.0/gui/tcltk/gis.m/script/r.recode.rules	2006-08-24 20:03:53.000000000 +0200
+@@ -40,4 +40,4 @@
+   exec g.parser "$0" "$@"
+ fi
+ 
+-exec xterm -e "$GISBASE/etc/grass-run.sh" r.recode "input=$GIS_OPT_INPUT" "output=$GIS_OPT_OUTPUT"
++exec x-terminal-emulator -e "$GISBASE/etc/grass-run.sh" r.recode "input=$GIS_OPT_INPUT" "output=$GIS_OPT_OUTPUT"
+diff -urNad grass-6.1.0~/gui/tcltk/gis.m/script/r.support.sh grass-6.1.0/gui/tcltk/gis.m/script/r.support.sh
+--- grass-6.1.0~/gui/tcltk/gis.m/script/r.support.sh	2006-07-22 11:29:48.000000000 +0200
++++ grass-6.1.0/gui/tcltk/gis.m/script/r.support.sh	2006-08-24 20:03:40.000000000 +0200
+@@ -35,4 +35,4 @@
+   exec g.parser "$0" "$@"
+ fi
+ 
+-eval `exec xterm -e r.support map=$GIS_OPT_INPUT`
++eval `exec x-terminal-emulator -e r.support map=$GIS_OPT_INPUT`
+diff -urNad grass-6.1.0~/lib/gtcltk/gronsole.tcl grass-6.1.0/lib/gtcltk/gronsole.tcl
+--- grass-6.1.0~/lib/gtcltk/gronsole.tcl	2006-07-22 11:34:42.000000000 +0200
++++ grass-6.1.0/lib/gtcltk/gronsole.tcl	2006-08-24 20:05:36.000000000 +0200
+@@ -497,7 +497,7 @@
+ 
+ 	Gronsole::annotate $path $cmd [concat xterm $tags]
+ 
+-	exec -- xterm -name xterm-grass -e $env(GISBASE)/etc/grass-run.sh $cmd &
++	exec -- x-terminal-emulator -name xterm-grass -e $env(GISBASE)/etc/grass-run.sh $cmd &
+ 
+ 	update idletasks
+ }
+diff -urNad grass-6.1.0~/lib/init/epsg_option.tcl.in grass-6.1.0/lib/init/epsg_option.tcl.in
+--- grass-6.1.0~/lib/init/epsg_option.tcl.in	2006-05-16 05:49:01.000000000 +0200
++++ grass-6.1.0/lib/init/epsg_option.tcl.in	2006-08-24 20:04:50.000000000 +0200
+@@ -147,7 +147,7 @@
+ 				if {[file exists $browsedepsg]== 1} {
+ 					if {[file exists $thelocation ]==0} {  
+ 						destroy .optPopup; 
+-						exec -- xterm -e $env(GISBASE)/etc/make_location_epsg.sh \
++						exec -- x-terminal-emulator -e $env(GISBASE)/etc/make_location_epsg.sh \
+ 							$epsg_code $epsgLocation $locpath >@stdout 2>@stderr; 
+ 						DialogGen .wrnDlg [G_msg "WARNING: restart GRASS please"] warning \
+ 						[G_msg "WARNING: Please restart GRASS in order find the created location in the list (closing it for you now)"] \
+diff -urNad grass-6.1.0~/scripts/r.mapcalculator/r.mapcalculator grass-6.1.0/scripts/r.mapcalculator/r.mapcalculator
+--- grass-6.1.0~/scripts/r.mapcalculator/r.mapcalculator	2006-08-24 19:57:37.000000000 +0200
++++ grass-6.1.0/scripts/r.mapcalculator/r.mapcalculator	2006-08-24 20:05:42.000000000 +0200
 @@ -137,7 +137,7 @@
  # use old style mapcalc
  
- if [ $GIS_FLAG_e = 1 ] ; then
+ if [ $GIS_FLAG_E = 1 ] ; then
 -	exec xterm -e r.mapcalc &
 +	exec x-terminal-emulator -e r.mapcalc &
+ 	exit 0
+ fi
+ 
+diff -urNad grass-6.1.0~/scripts/r3.mapcalculator/r3.mapcalculator grass-6.1.0/scripts/r3.mapcalculator/r3.mapcalculator
+--- grass-6.1.0~/scripts/r3.mapcalculator/r3.mapcalculator	2006-08-24 19:57:37.000000000 +0200
++++ grass-6.1.0/scripts/r3.mapcalculator/r3.mapcalculator	2006-08-24 20:05:56.000000000 +0200
+@@ -130,7 +130,7 @@
+ # use old style mapcalc
+ 
+ if [ $GIS_FLAG_E = 1 ] ; then
+-	exec xterm -e r3.mapcalc &
++	exec x-terminal-emulator -e r3.mapcalc &
  	exit 0
  fi
  
