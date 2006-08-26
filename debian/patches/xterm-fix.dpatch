@@ -2,9 +2,8 @@
 ## htmlgen-fakeroot.dpatch by  <debian@adkgis.org>
 ##
 ## All lines beginning with `## DP:' are a description of the patch.
-## DP: use fakeroot to avoid weird stat/permission problem when
-## DP: building under pbuilder. This was preventing most man
-## DP: pages from being built.
+## DP: change all xterm occurences in debian x-terminal-emulator
+## DP: wrapper, as managed alternative.
 
 @DPATCH@
 diff -urNad grass-6.1.0~/gui/tcltk/d.m/chart.tcl grass-6.1.0/gui/tcltk/d.m/chart.tcl
