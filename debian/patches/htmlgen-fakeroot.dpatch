@@ -7,15 +7,15 @@
 ## DP: pages from being built.
 
 @DPATCH@
-diff -urNad grass-6.1.0~/include/Make/Html.make grass-6.1.0/include/Make/Html.make
---- grass-6.1.0~/include/Make/Html.make	2006-08-24 19:57:37.000000000 +0200
-+++ grass-6.1.0/include/Make/Html.make	2006-08-24 19:58:02.000000000 +0200
+diff -urNad grass-6.2~beta1~/include/Make/Html.make grass-6.2~beta1/include/Make/Html.make
+--- grass-6.2~beta1~/include/Make/Html.make	2006-08-28 22:31:15.000000000 +0200
++++ grass-6.2~beta1/include/Make/Html.make	2006-08-28 22:35:36.000000000 +0200
 @@ -92,7 +92,7 @@
  	GISBASE=$(GISBASE) \
  	PATH=$(GISBASE)/bin:$$PATH \
  	$(LD_LIBRARY_PATH_VAR)="$(GISBASE)/lib:$($(LD_LIBRARY_PATH_VAR))" \
--	$(1) --html-description | grep -v '</body>\|</html>' > $(PGM).tmp.html ; true
-+	fakeroot $(1) --html-description | grep -v '</body>\|</html>' > $(PGM).tmp.html ; true
+-	LC_ALL=C $(1) --html-description | grep -v '</body>\|</html>' > $(PGM).tmp.html ; true
++	LC_ALL=C fakeroot $(1) --html-description | grep -v '</body>\|</html>' > $(PGM).tmp.html ; true
  
  # html rules for cmd commands
  htmlcmd: htmlcmd1 htmlgen
