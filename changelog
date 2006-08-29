@@ -1,3 +1,9 @@
+grass (6.2~beta1-1) UNRELEASED; urgency=low
+
+  * Development branch 6.2, branching from 6.1
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 28 Aug 2006 22:10:06 +0200
+
 grass (6.1.0-1) UNRELEASED; urgency=low
 
   * Starting development tree for 6.1 version.
