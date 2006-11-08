@@ -1,3 +1,10 @@
+grass (6.2.0-1) experimental; urgency=low
+
+  * New upstream release.
+    (closes: #287589)
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Wed,  8 Nov 2006 22:36:45 +0100
+
 grass (6.2~beta1-1) UNRELEASED; urgency=low
 
   * Development branch 6.2, branching from 6.1
