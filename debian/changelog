@@ -1,3 +1,9 @@
+grass (6.2.1-1) UNRELEASED; urgency=low
+
+  * New upstream release
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 13 Dec 2006 14:02:48 +0100
+
 grass (6.2.0-1) experimental; urgency=low
 
   * New upstream release.
