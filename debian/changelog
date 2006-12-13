@@ -1,19 +1,26 @@
-grass (6.0.2-6) unstable; urgency=low
+grass (6.2.0-1) experimental; urgency=low
 
-  * Reintroduced /usr/lib/grass/etc/license file, used for versioning.
-    (closes: #382484)
-  * Moved priority to optional.
+  * New upstream release.
+    (closes: #287589)
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 23 Aug 2006 18:31:20 +0200
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Wed,  8 Nov 2006 22:36:45 +0100
 
-grass (6.0.2-5) unstable; urgency=low
+grass (6.2~beta1-1) UNRELEASED; urgency=low
 
-  * Reintroduced postinst/postrm script for grass in order to add grass
-    library to ld.so.conf and recreating the cache. That's useful when
-    linking external modules essentially, due to the long list of dep libs.
-    For the same reason re-introduced the lintian override.
+  * Development branch 6.2, branching from 6.1
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 23 Aug 2006 15:37:27 +0200
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 28 Aug 2006 22:10:06 +0200
+
+grass (6.1.0-1) UNRELEASED; urgency=low
+
+  * Starting development tree for 6.1 version.
+  * Removed patches merged upstream: nviz and fftw3.
+  * Revised patches:
+        htmlgen-fakeroot.dpatch
+        xterm-fix.dpatch
+  * Merged changes from 6.0.2-[4..6] branch.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 22 Aug 2006 00:10:11 +0200
 
 grass (6.0.2-4) unstable; urgency=low
 
