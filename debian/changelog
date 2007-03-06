@@ -1,8 +1,11 @@
 grass (6.2.1-1) UNRELEASED; urgency=low
 
   * New upstream release
+  * Added a new versioned build-dep on libgdal1-dev for 1.4.0.
+    Old build-dep is retained for etch compatibility.
+  * Removed obsolete libmysqlclient14-dev build-dep.
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 13 Dec 2006 14:02:48 +0100
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Tue,  6 Mar 2007 10:13:25 +0100
 
 grass (6.2.0-1) experimental; urgency=low
 
