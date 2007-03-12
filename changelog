@@ -1,4 +1,4 @@
-grass (6.2.1-1) UNRELEASED; urgency=low
+grass (6.2.1-1) experimental; urgency=low
 
   * New upstream release
   * Added a new versioned build-dep on libgdal1-dev for 1.4.0.
