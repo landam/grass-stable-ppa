@@ -1,3 +1,9 @@
+grass (6.2.1-2) experimental; urgency=low
+
+  * Fixed watch and grass.links files for grass62
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 21 Mar 2007 10:23:29 +0100
+
 grass (6.2.1-1) experimental; urgency=low
 
   * New upstream release
