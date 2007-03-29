@@ -140,6 +140,9 @@ install: build
 	# install module makefile	
 	install -m 644 include/Make/Module.make debian/grass-dev/usr/lib/grass/include/Make/Module.make
 
+	# install pkg-config file
+	install -m 644 grass.pc debian/grass-dev/usr/share/pkgconfig/grass.pc
+
 install-indep: build-indep
 	dh_testdir -i
 	dh_testroot -i
