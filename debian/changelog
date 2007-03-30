@@ -2,8 +2,9 @@ grass (6.2.1-2) UNRELEASED; urgency=low
 
   * Fixed watch and grass.links files for grass62
   * Install grass.pc file for pkg-config
+  * New patch: www-browser -- Use www-browser as default browser
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Thu, 29 Mar 2007 20:48:53 +0200
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Fri, 30 Mar 2007 15:56:08 +0200
 
 grass (6.2.1-1) experimental; urgency=low
 

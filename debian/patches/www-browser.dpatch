@@ -1,0 +1,65 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## www-browser.dpatch by Francesco Paolo Lovergine <frankie@debian.org>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: Use www-browser as HTML browser, the Debian way
+
+@DPATCH@
+diff -urNad grass-6.2.1~/lib/init/init.sh grass-6.2.1/lib/init/init.sh
+--- grass-6.2.1~/lib/init/init.sh	2006-10-19 13:20:41.000000000 +0200
++++ grass-6.2.1/lib/init/init.sh	2007-03-30 15:54:31.000000000 +0200
+@@ -228,53 +228,7 @@
+ CYGWIN=`uname | grep CYGWIN`
+ 
+ if [ ! "$GRASS_HTML_BROWSER" ] ; then
+-    for i in `echo "$PATH" | sed 's/^:/.:/
+-                                s/::/:.:/g
+-                                s/:$/:./
+-                                s/:/ /g'`
+-    do
+-        if [ -f "$i/htmlview" ] ; then  
+-            GRASS_HTML_BROWSER=htmlview  
+-            break  
+-        elif [ -f "$i/konqueror" ] ; then  
+-            GRASS_HTML_BROWSER=konqueror
+-            break
+-        elif [ -f "$i/mozilla" ] ; then
+-            GRASS_HTML_BROWSER=mozilla
+-            break
+-        elif [ -f "$i/mozilla-firefox" ] ; then
+-            GRASS_HTML_BROWSER=mozilla-firefox
+-            break
+-        elif [ -f "$i/opera" ] ; then
+-            GRASS_HTML_BROWSER=opera
+-            break
+-        elif [ -f "$i/netscape" ] ; then
+-            GRASS_HTML_BROWSER=netscape
+-            break
+-        elif [ "$HOSTTYPE" = "macintosh" -o "$HOSTTYPE" = "powermac" -o "$HOSTTYPE" = "powerpc" ] ; then
+-            GRASS_HTML_BROWSER=open
+-            break
+-        elif [ "$HOSTTYPE" = "arm" ] ; then
+-            GRASS_HTML_BROWSER=dillo
+-            break
+-        elif [ "$HOSTTYPE" = "arm" ] ; then
+-            GRASS_HTML_BROWSER=dillo2
+-            break
+-	elif [ "$CYGWIN" ] ; then
+-	    iexplore="$SYSTEMDRIVE/Program Files/Internet Explorer/iexplore.exe"
+-	    if [ -f "$iexplore" ] ; then
+-		GRASS_HTML_BROWSER=$iexplore
+-	    else
+-		GRASS_HTML_BROWSER="iexplore"
+-	    fi
+-	    break
+-        fi
+-    done
+-fi
+-if [ ! "$GRASS_HTML_BROWSER" ] ; then
+-    echo "Searching for web browser, but neither konqueror, nor mozilla, opera, netscape found."
+-    # so we set konqueror, though, to make lib/gis/parser.c happy:
+-    GRASS_HTML_BROWSER=konqueror
++	GRASS_HTML_BROWSER=www-browser
+ fi
+ export GRASS_HTML_BROWSER
+ 
