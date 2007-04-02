@@ -1,0 +1,20 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## pager.dpatch by Francesco Paolo Lovergine <frankie@debian.org>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: No description.
+
+@DPATCH@
+diff -urNad grass-6.2.1~/lib/init/init.sh grass-6.2.1/lib/init/init.sh
+--- grass-6.2.1~/lib/init/init.sh	2007-04-02 23:39:53.000000000 +0200
++++ grass-6.2.1/lib/init/init.sh	2007-04-02 23:41:37.000000000 +0200
+@@ -173,6 +173,9 @@
+ 
+ # Set some environment variables if they are not set
+ if [ ! "$GRASS_PAGER" ] ; then
++    if [ -x /usr/bin/pager ] ; then
++    	GRASS_PAGER=pager
++    elif
+     if [ -x /bin/more ] || [ -x /usr/bin/more ] ; then
+         GRASS_PAGER=more
+     elif [ -x /bin/less ] || [ -x /usr/bin/less ] ; then
