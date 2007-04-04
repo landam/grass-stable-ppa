@@ -7,8 +7,8 @@
 @DPATCH@
 diff -urNad grass-6.2.1~/lib/init/init.sh grass-6.2.1/lib/init/init.sh
 --- grass-6.2.1~/lib/init/init.sh	2006-10-19 13:20:41.000000000 +0200
-+++ grass-6.2.1/lib/init/init.sh	2007-03-30 15:54:31.000000000 +0200
-@@ -228,53 +228,7 @@
++++ grass-6.2.1/lib/init/init.sh	2007-04-04 15:12:17.000000000 +0200
+@@ -228,53 +228,11 @@
  CYGWIN=`uname | grep CYGWIN`
  
  if [ ! "$GRASS_HTML_BROWSER" ] ; then
@@ -59,7 +59,11 @@ diff -urNad grass-6.2.1~/lib/init/init.sh grass-6.2.1/lib/init/init.sh
 -    echo "Searching for web browser, but neither konqueror, nor mozilla, opera, netscape found."
 -    # so we set konqueror, though, to make lib/gis/parser.c happy:
 -    GRASS_HTML_BROWSER=konqueror
-+	GRASS_HTML_BROWSER=x-www-browser
++	if [ -x /usr/bin/x-www-browser ] ; then
++		GRASS_HTML_BROWSER=x-www-browser
++	elif 
++		GRASS_HTML_BROWSER=true
++	fi
  fi
  export GRASS_HTML_BROWSER
  
