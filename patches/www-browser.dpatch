@@ -7,7 +7,7 @@
 @DPATCH@
 diff -urNad grass-6.2.1~/lib/init/init.sh grass-6.2.1/lib/init/init.sh
 --- grass-6.2.1~/lib/init/init.sh	2006-10-19 13:20:41.000000000 +0200
-+++ grass-6.2.1/lib/init/init.sh	2007-04-04 15:12:17.000000000 +0200
++++ grass-6.2.1/lib/init/init.sh	2007-04-11 10:14:14.000000000 +0200
 @@ -228,53 +228,11 @@
  CYGWIN=`uname | grep CYGWIN`
  
@@ -61,7 +61,7 @@ diff -urNad grass-6.2.1~/lib/init/init.sh grass-6.2.1/lib/init/init.sh
 -    GRASS_HTML_BROWSER=konqueror
 +	if [ -x /usr/bin/x-www-browser ] ; then
 +		GRASS_HTML_BROWSER=x-www-browser
-+	elif 
++	else 
 +		GRASS_HTML_BROWSER=true
 +	fi
  fi
