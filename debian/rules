@@ -42,6 +42,8 @@ config-stamp: patch
                     --with-nls \
                     --with-glw \
                     --with-odbc \
+		    --with-sqlite \
+		    --enable-largefile \
                     --with-freetype-includes=/usr/include/freetype2 \
                     --with-tcltk-includes=/usr/include/tcl8.4 \
                     --with-postgres-includes=$(shell pg_config --includedir) \

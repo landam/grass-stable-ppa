@@ -5,9 +5,9 @@
 ## DP: No description.
 
 @DPATCH@
-diff -urNad grass-6.2.1~/lib/init/init.sh grass-6.2.1/lib/init/init.sh
---- grass-6.2.1~/lib/init/init.sh	2007-04-04 15:12:40.000000000 +0200
-+++ grass-6.2.1/lib/init/init.sh	2007-04-04 15:14:27.000000000 +0200
+diff -urNad grass-6.2.2~/lib/init/init.sh grass-6.2.2/lib/init/init.sh
+--- grass-6.2.2~/lib/init/init.sh	2007-04-11 15:35:35.000000000 +0200
++++ grass-6.2.2/lib/init/init.sh	2007-04-11 15:37:48.000000000 +0200
 @@ -173,10 +173,12 @@
  
  # Set some environment variables if they are not set
@@ -15,7 +15,7 @@ diff -urNad grass-6.2.1~/lib/init/init.sh grass-6.2.1/lib/init/init.sh
 -    if [ -x /bin/more ] || [ -x /usr/bin/more ] ; then
 -        GRASS_PAGER=more
 +    if [ -x /usr/bin/pager ] ; then
-+    	GRASS_PAGER=pager
++     	GRASS_PAGER=pager
      elif [ -x /bin/less ] || [ -x /usr/bin/less ] ; then
          GRASS_PAGER=less
 +    elif [ -x /bin/more ] || [ -x /usr/bin/more ] ; then

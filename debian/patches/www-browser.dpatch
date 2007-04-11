@@ -5,9 +5,9 @@
 ## DP: Use www-browser as HTML browser, the Debian way
 
 @DPATCH@
-diff -urNad grass-6.2.1~/lib/init/init.sh grass-6.2.1/lib/init/init.sh
---- grass-6.2.1~/lib/init/init.sh	2006-10-19 13:20:41.000000000 +0200
-+++ grass-6.2.1/lib/init/init.sh	2007-04-11 10:14:14.000000000 +0200
+diff -urNad grass-6.2.2~/lib/init/init.sh grass-6.2.2/lib/init/init.sh
+--- grass-6.2.2~/lib/init/init.sh	2007-04-11 15:31:19.000000000 +0200
++++ grass-6.2.2/lib/init/init.sh	2007-04-11 15:33:57.000000000 +0200
 @@ -228,53 +228,11 @@
  CYGWIN=`uname | grep CYGWIN`
  
@@ -59,11 +59,11 @@ diff -urNad grass-6.2.1~/lib/init/init.sh grass-6.2.1/lib/init/init.sh
 -    echo "Searching for web browser, but neither konqueror, nor mozilla, opera, netscape found."
 -    # so we set konqueror, though, to make lib/gis/parser.c happy:
 -    GRASS_HTML_BROWSER=konqueror
-+	if [ -x /usr/bin/x-www-browser ] ; then
-+		GRASS_HTML_BROWSER=x-www-browser
++  	if [ -x /usr/bin/x-www-browser ] ; then
++  		GRASS_HTML_BROWSER=x-www-browser
 +	else 
-+		GRASS_HTML_BROWSER=true
-+	fi
++  		GRASS_HTML_BROWSER=true
++  	fi
  fi
  export GRASS_HTML_BROWSER
  
