@@ -47,7 +47,8 @@ config-stamp: patch
                     --with-freetype-includes=/usr/include/freetype2 \
                     --with-tcltk-includes=/usr/include/tcl8.4 \
                     --with-postgres-includes=$(shell pg_config --includedir) \
-                    --with-mysql-includes=/usr/include/mysql 
+                    --with-mysql-includes=/usr/include/mysql \
+		    --with-proj-share=/usr/share/proj
 
 	touch config-stamp
 
