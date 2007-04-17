@@ -5,9 +5,10 @@ grass (6.2.2-1) UNRELEASED; urgency=low
   * Added --enable-largefiles for LFS support.
   * Added sqlite3 support.
   * Moved to debhelper version 5 compatibility.
-  * Set explicitly proj data dir at configuration time. 
+  * Set explicitly proj data dir at configuration time.
+  * Removed too strict versioning in build-dep from gdal (useful for backports).
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Fri, 13 Apr 2007 13:18:24 +0200
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 17 Apr 2007 11:53:27 +0200
 
 grass (6.2.1-3) unstable; urgency=low
 
