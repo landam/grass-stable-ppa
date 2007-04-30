@@ -1,3 +1,10 @@
+grass (6.2.1-3) unstable; urgency=low
+
+  * Fixing www-browser patch.
+    (closes: #418833)
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 30 Apr 2007 16:38:43 +0200
+
 grass (6.2.1-2) unstable; urgency=low
 
   * Fixed watch and grass.links files for grass62
