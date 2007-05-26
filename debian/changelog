@@ -4,6 +4,7 @@ grass (6.2.1-4) unstable; urgency=low
   * Now install a new grass.conf file into /etc/ld.so.conf in order to simplify ls.so configuration at 
     postinst and postrm time. This is also backcompatible with Etch. 
   * Added a new grass.dirs file.
+  * Fixing priority in debian/control.
 
  -- Francesco Paolo Lovergine <frankie@debian.org>  Sat, 26 May 2007 18:46:28 +0200
 

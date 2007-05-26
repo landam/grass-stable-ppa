@@ -1,6 +1,6 @@
 Source: grass
 Section: science
-Priority: optional
+Priority: extra
 Maintainer: Debian GIS Project <pkg-grass-devel@lists.alioth.debian.org>
 Uploaders: Francesco Paolo Lovergine <frankie@debian.org>, Steve Halasz <debian@adkgis.org>
 Build-depends: flex, bison, libreadline5-dev | libreadline-dev, libncurses5-dev, lesstif2-dev, debhelper (>= 4.0.2), dpatch, libtiff4-dev, tcl8.4-dev, tk8.4-dev, fftw3-dev, libxmu-dev, libgl1-mesa-swx11-dev, libglu1-xorg-dev | xlibmesa-glu-dev, libfreetype6-dev, autoconf2.13, autotools-dev, libgdal1-dev (>=1.4.0-1) | libgdal1-1.3.2-dev, proj (>= 4.4.7), libjpeg62-dev, libpng12-dev, libpq-dev | postgresql-dev, unixodbc-dev, doxygen, fakeroot, libmysqlclient15-dev, graphviz
