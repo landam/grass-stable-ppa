@@ -1,12 +1,14 @@
 grass (6.2.1-4) unstable; urgency=low
 
   * Added xterm.dpatch to use x-terminal-emulator instead of xterm.
-  * Now install a new grass.conf file into /etc/ld.so.conf in order to simplify ls.so configuration at 
-    postinst and postrm time. This is also backcompatible with Etch. 
+  * Now install a new grass.conf file into /etc/ld.so.conf in order to simplify ls.so configuration at
+    postinst and postrm time. This is also backcompatible with Etch.
   * Added a new grass.dirs file.
   * Fixing priority in debian/control.
+  * Removed obsolete postgresql-dev build-dependency.
+    (closes: #429969)
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Sat, 26 May 2007 18:46:28 +0200
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Fri, 22 Jun 2007 14:11:16 +0200
 
 grass (6.2.1-3) unstable; urgency=low
 
