@@ -1,4 +1,4 @@
-grass (6.2.2~rc1-1) UNRELEASED; urgency=low
+grass (6.2.2-1) UNRELEASED; urgency=low
 
   * New upstream release.
   * Patchset updated.
@@ -12,6 +12,8 @@ grass (6.2.2~rc1-1) UNRELEASED; urgency=low
   	- New patch xterm.dpatch
         - Added /etc/ld.so.conf.d/grass.conf file instead of adding lib path
           in-line into /etc/ld.so.conf.  
+        - Removed obsolete postgresql-dev build-dep 
+        - Added a new grass.dirs file.
 
  -- Francesco Paolo Lovergine <frankie@debian.org>  Sat, 26 May 2007 19:21:00 +0200
 
