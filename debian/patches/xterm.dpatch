@@ -1,0 +1,19 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## xterm.dpatch by Francesco Paolo Lovergine <frankie@debian.org>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: No description.
+
+@DPATCH@
+diff -urNad grass-6.2.1~/lib/init/grass-xterm-wrapper grass-6.2.1/lib/init/grass-xterm-wrapper
+--- grass-6.2.1~/lib/init/grass-xterm-wrapper	2006-08-31 15:59:08.000000000 +0200
++++ grass-6.2.1/lib/init/grass-xterm-wrapper	2007-05-17 18:30:48.000000000 +0200
+@@ -2,7 +2,7 @@
+ # script to wrap xterm 
+ 
+ if [ -z "$GRASS_XTERM" ] ; then
+-   GRASS_XTERM=xterm
++   GRASS_XTERM=x-terminal-emulator
+ fi
+ 
+ # run command
