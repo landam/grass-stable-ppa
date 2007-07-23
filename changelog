@@ -1,3 +1,9 @@
+grass (6.2.2-2) UNRELEASED; urgency=low
+
+  * Moved priority to optional. Thanks Ganneff.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 23 Jul 2007 17:54:46 +0200
+
 grass (6.2.2-1) unstable; urgency=low
 
   * New upstream release.

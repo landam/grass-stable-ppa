@@ -1,6 +1,6 @@
 Source: grass
 Section: science
-Priority: extra
+Priority: optional
 Maintainer: Debian GIS Project <pkg-grass-devel@lists.alioth.debian.org>
 Uploaders: Francesco Paolo Lovergine <frankie@debian.org>, Steve Halasz <debian@adkgis.org>
 Build-depends: flex, bison, libreadline5-dev | libreadline-dev, libncurses5-dev, lesstif2-dev, debhelper (>= 5), dpatch, 
