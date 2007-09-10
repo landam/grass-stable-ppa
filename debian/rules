@@ -17,7 +17,9 @@ else
 	CFLAGS += -O2
 endif
 ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
-	INSTALL_PROGRAM += -s
+	STRIP = 
+else
+	STRIP = strip
 endif
 
 include /usr/share/dpatch/dpatch.make
@@ -40,7 +42,6 @@ config-stamp: patch
                     --with-motif \
                     --with-readline \
                     --with-nls \
-                    --with-glw \
                     --with-odbc \
 		    --with-sqlite \
 		    --enable-largefile \
@@ -121,7 +122,7 @@ install: build
 	dh_installdirs
 
 	# install grass core into debian/tmp
-	$(MAKE) strip
+	$(MAKE) $(STRIP)
 	$(MAKE) install INST_DIR=$(CURDIR)/debian/tmp/usr/lib/grass \
 		PREFIX=$(CURDIR)/debian/tmp/usr/lib/grass \
 		BINDIR=$(CURDIR)/debian/tmp/usr/bin
