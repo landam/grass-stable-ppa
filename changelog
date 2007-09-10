@@ -1,8 +1,14 @@
-grass (6.2.2-2) UNRELEASED; urgency=low
+grass (6.2.2-2) unstable; urgency=medium
 
   * Moved priority to optional. Thanks Ganneff.
+  * Removed --with-glw in debian/rules because GLw is not used.
+    (closes: #439506)
+  * Obsolete postgresql-dev build-dep has been removed.
+    (closes: #429969)
+  * Fixed handling of nostrip option in DEB_BUILD_OPTIONS
+    (closes: #437105)
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 23 Jul 2007 17:54:46 +0200
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 10 Sep 2007 13:06:08 +0200
 
 grass (6.2.2-1) unstable; urgency=low
 
