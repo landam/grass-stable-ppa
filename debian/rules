@@ -92,7 +92,7 @@ endif
 	rm -f tools/timer/main.o
 	rm -f raster/r.le/r.le.setup/polytocell/*.o
 	rm -f raster/r.terraflow/IOStream/lib/src/libiostream.a
-	rm -f debian/grass62.1
+	rm -f debian/grass63.1
 	rm -f error.log
 	# clean doxygen documentation (programming man)
 	rm -rf doxygenhtml lib/vector/html lib/db/html lib/gis/html \
@@ -137,7 +137,7 @@ install: build
 	rm -f debian/tmp/usr/lib/grass/bwidget/LICENSE.txt
     
 	# change section from 1 to .1grass 
-	mv debian/tmp/usr/lib/grass/man/man1/grass6.1 debian/grass62.1
+	mv debian/tmp/usr/lib/grass/man/man1/grass6.1 debian/grass63.1
 	for m in debian/tmp/usr/lib/grass/man/man1/*.1; do n=`basename $$m .1`; mv $$m debian/tmp/usr/lib/grass/man/man1/$$n.1grass; done
 	for m in debian/tmp/usr/lib/grass/man/man1/*.1grass; do sed -i -e 's/^.TH \(.*\) 1/.TH \1 1grass/' $$m; done
 
@@ -186,7 +186,7 @@ binary-arch: install
 	dh_installdocs  -a
 	dh_installexamples  -a
 	dh_install --sourcedir=debian/tmp -a
-	dh_installman -pgrass debian/grass62.1 -a
+	dh_installman -pgrass debian/grass63.1 -a
 	dh_link -a
 	dh_strip -a
 	dh_compress -a
