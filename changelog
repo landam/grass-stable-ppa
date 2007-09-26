@@ -1,3 +1,13 @@
+grass (6.3~20070922-1) NOT-FOR-RELEASE; urgency=low
+
+  -- THIS IS A NOT FOR RELEASE BRANCH OF THE MAIN DEVELOPMENT TREE --
+
+  * Branching for 6.3 (development series).
+  * Revised all 6.2.2 patches.
+  * This version is usable in both lenny and sid currently.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 26 Sep 2007 12:43:12 +0200
+
 grass (6.2.2-2) unstable; urgency=medium
 
   * Moved priority to optional. Thanks Ganneff.

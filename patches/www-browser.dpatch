@@ -5,18 +5,35 @@
 ## DP: Use www-browser as HTML browser, the Debian way
 
 @DPATCH@
-diff -urNad grass-6.2.2~/lib/init/init.sh grass-6.2.2/lib/init/init.sh
---- grass-6.2.2~/lib/init/init.sh	2007-04-11 15:31:19.000000000 +0200
-+++ grass-6.2.2/lib/init/init.sh	2007-04-11 15:33:57.000000000 +0200
-@@ -228,53 +228,11 @@
- CYGWIN=`uname | grep CYGWIN`
+diff -urNad grass-6.3~20070922~/lib/init/init.sh grass-6.3~20070922/lib/init/init.sh
+--- grass-6.3~20070922~/lib/init/init.sh	2007-09-22 06:20:09.000000000 +0200
++++ grass-6.3~20070922/lib/init/init.sh	2007-09-26 11:29:39.000000000 +0200
+@@ -263,64 +263,11 @@
  
+ # try and find a web browser if one isn't already specified
  if [ ! "$GRASS_HTML_BROWSER" ] ; then
--    for i in `echo "$PATH" | sed 's/^:/.:/
+-
+-    if [ "$MACOSX" ] ; then
+-        # OSX doesn't execute browsers from the shell PATH - route thru a script
+-        GRASS_HTML_BROWSER="$ETC/html_browser_mac.sh"
+-        GRASS_HTML_BROWSER_MACOSX="-b com.apple.helpviewer"
+-        export GRASS_HTML_BROWSER_MACOSX
+-
+-    elif [ "$MINGW" -o "$CYGWIN" ] ; then
+-	# MinGW startup moved to into init.bat
+-	iexplore="$SYSTEMDRIVE/Program Files/Internet Explorer/iexplore.exe"
+-	if [ -f "$iexplore" ] ; then
+-	    GRASS_HTML_BROWSER=$iexplore
+-	else
+-	    GRASS_HTML_BROWSER="iexplore"
+-	fi
+-
+-    else
+-      for i in `echo "$PATH" | sed 's/^:/.:/
 -                                s/::/:.:/g
 -                                s/:$/:./
 -                                s/:/ /g'`
--    do
+-      do
 -        if [ -f "$i/htmlview" ] ; then  
 -            GRASS_HTML_BROWSER=htmlview  
 -            break  
@@ -35,35 +52,29 @@ diff -urNad grass-6.2.2~/lib/init/init.sh grass-6.2.2/lib/init/init.sh
 -        elif [ -f "$i/netscape" ] ; then
 -            GRASS_HTML_BROWSER=netscape
 -            break
--        elif [ "$HOSTTYPE" = "macintosh" -o "$HOSTTYPE" = "powermac" -o "$HOSTTYPE" = "powerpc" ] ; then
--            GRASS_HTML_BROWSER=open
--            break
--        elif [ "$HOSTTYPE" = "arm" ] ; then
+-        elif [ -f "$i/dillo" ] ; then
 -            GRASS_HTML_BROWSER=dillo
 -            break
--        elif [ "$HOSTTYPE" = "arm" ] ; then
--            GRASS_HTML_BROWSER=dillo2
--            break
--	elif [ "$CYGWIN" ] ; then
--	    iexplore="$SYSTEMDRIVE/Program Files/Internet Explorer/iexplore.exe"
--	    if [ -f "$iexplore" ] ; then
--		GRASS_HTML_BROWSER=$iexplore
--	    else
--		GRASS_HTML_BROWSER="iexplore"
--	    fi
--	    break
 -        fi
--    done
+-      done
+-    fi
+-            
+-elif [ "$MACOSX" ] ; then
+-    # OSX doesn't execute browsers from the shell PATH - route thru a script
+-    GRASS_HTML_BROWSER_MACOSX="-b $GRASS_HTML_BROWSER"
+-    export GRASS_HTML_BROWSER_MACOSX
+-    GRASS_HTML_BROWSER="$ETC/html_browser_mac.sh"
 -fi
+-
 -if [ ! "$GRASS_HTML_BROWSER" ] ; then
--    echo "Searching for web browser, but neither konqueror, nor mozilla, opera, netscape found."
--    # so we set konqueror, though, to make lib/gis/parser.c happy:
+-    echo "WARNING: Searched for a web browser, but none found." 1>&2
+-    # even so we set konqueror to make lib/gis/parser.c happy:
 -    GRASS_HTML_BROWSER=konqueror
-+  	if [ -x /usr/bin/x-www-browser ] ; then
-+  		GRASS_HTML_BROWSER=x-www-browser
++   	if [ -x /usr/bin/x-www-browser ] ; then
++   		GRASS_HTML_BROWSER=x-www-browser
 +	else 
-+  		GRASS_HTML_BROWSER=true
-+  	fi
++   		GRASS_HTML_BROWSER=true
++   	fi
  fi
  export GRASS_HTML_BROWSER
  
