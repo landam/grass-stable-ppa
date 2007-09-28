@@ -1,3 +1,11 @@
+grass (6.3~20070922-2) NOT-FOR-RELEASE; urgency=low
+
+  -- THIS IS A NOT FOR RELEASE BRANCH OF THE MAIN DEVELOPMENT TREE --
+
+  * Added Homepage field in debian/control.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Fri, 28 Sep 2007 23:37:46 +0200
+
 grass (6.3~20070922-1) NOT-FOR-RELEASE; urgency=low
 
   -- THIS IS A NOT FOR RELEASE BRANCH OF THE MAIN DEVELOPMENT TREE --
