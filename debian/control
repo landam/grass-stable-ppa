@@ -8,6 +8,7 @@ Build-depends: flex, bison, libreadline5-dev | libreadline-dev, libncurses5-dev,
  libfreetype6-dev, autoconf2.13, autotools-dev, libgdal1-dev (>=1.4.0) | libgdal1-1.3.2-dev, proj (>= 4.4.7), libjpeg62-dev, 
  libpng12-dev, libpq-dev, unixodbc-dev, doxygen, fakeroot, libmysqlclient15-dev, graphviz, libsqlite3-dev 
 Standards-Version: 3.7.2
+Homepage: http://grass.itc.it/
 
 Package: grass
 Section: science
@@ -24,8 +25,6 @@ Description: Geographic Resources Analysis Support System
  visualization. GRASS is currently used in academic and commercial
  settings around the world, as well as by many government agencies
  and environmental consulting companies.
- .
-  Homepage: http://grass.itc.it/
 
 Package: grass-doc
 Section: science
@@ -39,8 +38,6 @@ Description: Geographic Resources Analysis Support System documentation
  and environmental consulting companies.
  .
  This package contains HTML documentation for the GRASS system.
- .
-  Homepage: http://grass.itc.it/gdp/
 
 Package: grass-dev
 Section: devel
@@ -61,6 +58,3 @@ Description: GRASS GIS development files
  This package contains the header files for developing with GRASS.
  Install this package if you wish to develop software that manipulates
  GRASS data sets.
- .
-  Homepage: http://grass.itc.it/
-
