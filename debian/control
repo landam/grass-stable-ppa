@@ -42,7 +42,7 @@ Description: Geographic Resources Analysis Support System documentation
 Package: grass-dev
 Section: devel
 Architecture: any
-Depends: ${shlibs:Depends}, grass (= ${Source-Version})
+Depends: ${shlibs:Depends}, grass (= ${binary:Version})
 Provides: libgrass-dev
 Conflicts: libgrass-dev
 Replaces: libgrass-dev

@@ -2,8 +2,9 @@ grass (6.2.2-3) unstable; urgency=low
 
   NOT YET RELEASED
   * Added the new Homepage field to debian/control.
+  * Updated obsolete ${Source-Version} to ${binary:Version}.
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Fri, 28 Sep 2007 23:34:29 +0200
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 02 Oct 2007 00:03:45 +0200
 
 grass (6.2.2-2) unstable; urgency=medium
 
