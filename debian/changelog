@@ -1,10 +1,16 @@
-grass (6.3~20070922-2) NOT-FOR-RELEASE; urgency=low
+grass (6.3~20070922-1) NOT-FOR-RELEASE; urgency=low
 
   -- THIS IS A NOT FOR RELEASE BRANCH OF THE MAIN DEVELOPMENT TREE --
 
   * Added Homepage field in debian/control.
+  * Revised 6.2.2 patches as needed.
+  * Merges from 6.2.2 tree:
+  	* Removed libgl1-mesa-swx11-dev in debian/control
+        * Removed --with-glx in debian/rules
+        * libglu1-mesa-dev replaces libglu1-xorg-dev which replaced xlibmesa-glu-dev.
+          Kept libglu1-xorg-dev around for sarge backports.
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Fri, 28 Sep 2007 23:37:46 +0200
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Thu, 18 Oct 2007 20:43:08 +0200
 
 grass (6.3~20070922-1) NOT-FOR-RELEASE; urgency=low
 
