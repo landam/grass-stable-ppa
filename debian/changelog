@@ -4,8 +4,10 @@ grass (6.2.2-3) unstable; urgency=low
   * Added the new Homepage field to debian/control.
   * Updated obsolete ${Source-Version} to ${binary:Version}.
   * Fixed lintian error: : debian-rules-ignores-make-clean-error
+  * Moved to new Tcl/Tk policy, introducing default -dev packages build-dependencies as alternative 
+    and still depending on versioned ones for backports.
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 17 Oct 2007 12:32:12 +0200
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 30 Oct 2007 13:56:55 +0100
 
 grass (6.2.2-2) unstable; urgency=medium
 
