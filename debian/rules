@@ -22,6 +22,16 @@ else
 	STRIP = strip
 endif
 
+#
+# This is used to test about the use of default tcl-dev, just
+# useful for backports. To be removed after Lenny.
+#
+ifeq (0,$(shell test -d /usr/include/tcl; echo $$?))
+	TCLINC = /usr/include/tcl
+else
+	TCLINC = /usr/include/tcl8.4
+endif
+
 include /usr/share/dpatch/dpatch.make
 
 config-stamp: patch
@@ -46,7 +56,7 @@ config-stamp: patch
 		    --with-sqlite \
 		    --enable-largefile \
                     --with-freetype-includes=/usr/include/freetype2 \
-                    --with-tcltk-includes=/usr/include/tcl8.4 \
+                    --with-tcltk-includes=$(TCLINC) \
                     --with-postgres-includes=$(shell pg_config --includedir) \
                     --with-mysql-includes=/usr/include/mysql \
 		    --with-proj-share=/usr/share/proj
