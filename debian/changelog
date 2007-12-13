@@ -1,6 +1,7 @@
-grass (6.2.2-3) unstable; urgency=low
+grass (6.2.3-1) unstable; urgency=low
 
-  NOT YET RELEASED
+  * New upstream release.
+    (closes: #455853)
   * Added the new Homepage field to debian/control.
   * Updated obsolete ${Source-Version} to ${binary:Version}.
   * Fixed lintian error: : debian-rules-ignores-make-clean-error
@@ -9,8 +10,9 @@ grass (6.2.2-3) unstable; urgency=low
     Tcl/Tk includes path is found at build time in debian/rules.
   * Now using mysql_config to get MySQL includes path.
   * Policy bumped to 3.7.3
+  * Added private library path at dh_shlibdeps call.
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 11 Dec 2007 22:09:43 +0100
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Thu, 13 Dec 2007 12:49:40 +0100
 
 grass (6.2.2-2) unstable; urgency=medium
 
