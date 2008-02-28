@@ -1,4 +1,4 @@
-grass (6.2.3-2) UNRELEASED; urgency=low
+grass (6.2.3-2) unstable; urgency=low
 
   * Added libfftw3-dev build-dep to reflect current library name.
     (closes: #458232)
