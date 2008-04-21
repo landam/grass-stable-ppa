@@ -9,6 +9,8 @@ Build-depends: flex, bison, libreadline5-dev | libreadline-dev, libncurses5-dev,
  libpng12-dev, libpq-dev, unixodbc-dev, doxygen, fakeroot, libmysqlclient15-dev, graphviz, libsqlite3-dev 
 Standards-Version: 3.7.3
 Homepage: http://grass.osgeo.org/
+Vcs-Browser: http://svn.debian.org/wsvn/pkg-grass/packages/grass/
+Vcs-Svn: svn://svn.debian.org/pkg-grass/packages/grass/
 
 Package: grass
 Section: science
