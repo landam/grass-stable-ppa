@@ -2,8 +2,9 @@ grass (6.2.3-3) UNRELEASED; urgency=low
 
   * Home page field updated.
   * Added Vcs-* fields to debian/control.
+  * Fixated patch rule.
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 21 Apr 2008 11:27:58 +0200
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 21 Apr 2008 17:00:26 +0200
 
 grass (6.2.3-2) unstable; urgency=low
 

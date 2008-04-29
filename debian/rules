@@ -34,7 +34,7 @@ endif
 
 include /usr/share/dpatch/dpatch.make
 
-config-stamp: patch
+config-stamp: patch-stamp
 	dh_testdir
 	# Add here commands to configure the package.
 	CFLAGS="$(CFLAGS)" ./configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) \
