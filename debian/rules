@@ -9,6 +9,9 @@
 DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
 DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 
+BASE_NAME=grass63
+PKG_NAME=grass-preview
+
 CFLAGS=-Wall -g
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
@@ -22,9 +25,19 @@ else
 	STRIP = strip
 endif
 
+#
+# This is used to test about the use of default tcl-dev, just
+# useful for backports. To be removed after Lenny.
+#
+ifeq (0,$(shell test -d /usr/include/tcl; echo $$?))
+	TCLINC = /usr/include/tcl
+else
+	TCLINC = /usr/include/tcl8.4
+endif
+
 include /usr/share/dpatch/dpatch.make
 
-config-stamp: patch
+config-stamp: patch-stamp
 	dh_testdir
 	# Add here commands to configure the package.
 	CFLAGS="$(CFLAGS)" ./configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) \
@@ -46,9 +59,9 @@ config-stamp: patch
 		    --with-sqlite \
 		    --enable-largefile \
                     --with-freetype-includes=/usr/include/freetype2 \
-                    --with-tcltk-includes=/usr/include/tcl8.4 \
+                    --with-tcltk-includes=$(TCLINC) \
                     --with-postgres-includes=$(shell pg_config --includedir) \
-                    --with-mysql-includes=/usr/include/mysql \
+                    --with-mysql-includes=$(shell mysql_config --include|sed -e 's/-I//') \
 		    --with-proj-share=/usr/share/proj
 
 	touch config-stamp
@@ -79,7 +92,8 @@ clean-patched:
 	dh_testroot
 
 	# Add here commands to clean up after the build process.
-	-$(MAKE) distclean
+	[ ! -f $(CURDIR)/include/Make/Platform.make ] || $(MAKE) distclean
+
 ifneq "$(wildcard /usr/share/misc/config.sub)" ""
 	cp -f /usr/share/misc/config.sub config.sub
 endif
@@ -92,7 +106,7 @@ endif
 	rm -f tools/timer/main.o
 	rm -f raster/r.le/r.le.setup/polytocell/*.o
 	rm -f raster/r.terraflow/IOStream/lib/src/libiostream.a
-	rm -f debian/grass63.1
+	rm -f debian/$(BASE_NAME).1
 	rm -f error.log
 	# clean doxygen documentation (programming man)
 	rm -rf doxygenhtml lib/vector/html lib/db/html lib/gis/html \
@@ -123,8 +137,8 @@ install: build
 
 	# install grass core into debian/tmp
 	$(MAKE) $(STRIP)
-	$(MAKE) install INST_DIR=$(CURDIR)/debian/tmp/usr/lib/grass \
-		PREFIX=$(CURDIR)/debian/tmp/usr/lib/grass \
+	$(MAKE) install INST_DIR=$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME) \
+		PREFIX=$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME) \
 		BINDIR=$(CURDIR)/debian/tmp/usr/bin
 
 	# fix all the braindead scripts
@@ -134,21 +148,21 @@ install: build
 	debian/fixpaths.sh $(CURDIR)/debian/tmp debian/tmp
 	
 	# delete extra license files
-	rm -f debian/tmp/usr/lib/grass/bwidget/LICENSE.txt
+	rm -f debian/tmp/usr/lib/$(BASE_NAME)/bwidget/LICENSE.txt
     
 	# change section from 1 to .1grass 
-	mv debian/tmp/usr/lib/grass/man/man1/grass6.1 debian/grass63.1
-	for m in debian/tmp/usr/lib/grass/man/man1/*.1; do n=`basename $$m .1`; mv $$m debian/tmp/usr/lib/grass/man/man1/$$n.1grass; done
-	for m in debian/tmp/usr/lib/grass/man/man1/*.1grass; do sed -i -e 's/^.TH \(.*\) 1/.TH \1 1grass/' $$m; done
+	mv debian/tmp/usr/lib/$(BASE_NAME)/man/man1/grass6.1 debian/$(BASE_NAME).1
+	for m in debian/tmp/usr/lib/$(BASE_NAME)/man/man1/*.1; do n=`basename $$m .1`; mv $$m debian/tmp/usr/lib/$(BASE_NAME)/man/man1/$$n.1grass; done
+	for m in debian/tmp/usr/lib/$(BASE_NAME)/man/man1/*.1grass; do sed -i -e 's/^.TH \(.*\) 1/.TH \1 1grass/' $$m; done
 
 	# install module makefile	
-	install -m 644 include/Make/Module.make debian/grass-dev/usr/lib/grass/include/Make/Module.make
+	install -m 644 include/Make/Module.make debian/$(PKG_NAME)-dev/usr/lib/$(BASE_NAME)/include/Make/Module.make
 
 	# install pkg-config file
-	install -m 644 grass.pc debian/grass-dev/usr/share/pkgconfig/grass.pc
+	install -m 644 grass.pc debian/$(PKG_NAME)-dev/usr/share/pkgconfig/$(BASE_NAME).pc
 
 	# install ld.so file
-	install -m 644 debian/grass.conf debian/grass/etc/ld.so.conf.d/grass.conf
+	install -m 644 debian/grass.conf debian/$(PKG_NAME)/etc/ld.so.conf.d/$(BASE_NAME).conf
 
 install-indep: build-indep
 	dh_testdir -i
@@ -169,7 +183,7 @@ binary-indep: install install-indep
 	dh_installchangelogs -i CHANGES
 	dh_installdocs -i
 	dh_install --sourcedir=debian/tmp -i
-	dh_link -i
+#	dh_link -i
 	dh_strip -i
 	dh_compress -i
 	dh_fixperms -i
@@ -186,17 +200,17 @@ binary-arch: install
 	dh_installdocs  -a
 	dh_installexamples  -a
 	dh_install --sourcedir=debian/tmp -a
-	dh_installman -pgrass debian/grass63.1 -a
-	dh_link -a
+	dh_installman -p$(PKG_NAME) debian/$(BASE_NAME).1 -a
+#	dh_link -a
 	dh_strip -a
 	dh_compress -a
 	dh_fixperms -a
 	dh_makeshlibs -a -a
 	dh_installdeb -a
-	dh_shlibdeps -a
+	dh_shlibdeps -a -l$(CURDIR)/debian/$(PKG_NAME)/usr/lib/$(BASE_NAME)/lib
 	dh_gencontrol -a
 	dh_md5sums -a
 	dh_builddeb -a
 
 binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary install
+.PHONY: build clean binary-indep binary-arch binary install patch unpatch

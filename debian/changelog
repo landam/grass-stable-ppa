@@ -1,3 +1,18 @@
+grass-preview (6.3.0-1) UNRELEASED; urgency=low
+
+  * Changing source package name to grass-preview.
+    Starting from this release the package is tought to co-exist with the
+    stable 6.2 branch (6.2.3).
+  * Merged changes from stable branches:
+  	- Vcs-* fields in debian/control.
+        - Current list of build-deps.
+        - Tcl policy changes.
+  * Revised current patchset to reflect changes in source code.
+  * Removed obsolete NEWS file.
+  * Updated TODO to document missing wxwidget GUI.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Thu, 10 Jul 2008 13:08:59 +0200
+
 grass (6.3~20070922-1) NOT-FOR-RELEASE; urgency=low
 
   -- THIS IS A NOT FOR RELEASE BRANCH OF THE MAIN DEVELOPMENT TREE --

@@ -4,3 +4,7 @@ Maintainers TODO list
 The grass 'etc' directory contains a mixed arch/non-arch depending mess of files. They should
 be automatically classified in the install target and moved to /var/lib/grass or /usr/lib/grass, 
 leaving symlinks to do not break things.
+
+Current preview version does not build the new wxwidget GUI due to missing non-experimental
+support of WxWidget 2.8 and its python bindings. For the same reason python build-deps
+are missing.
