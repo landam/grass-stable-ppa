@@ -1,14 +1,14 @@
 #! /bin/sh /usr/share/dpatch/dpatch-run
-## www-browser.dpatch by Francesco Paolo Lovergine <frankie@debian.org>
+## www-browser.dpatch by Hamish Bowman <hamish-guest alioth.debian.org>
 ##
 ## All lines beginning with `## DP:' are a description of the patch.
 ## DP: Use www-browser as HTML browser, the Debian way
 
 @DPATCH@
-diff -urNad grass-preview-6.3.0~/lib/init/init.sh grass-preview-6.3.0/lib/init/init.sh
---- grass-preview-6.3.0~/lib/init/init.sh	2008-04-21 13:55:30.000000000 +0200
-+++ grass-preview-6.3.0/lib/init/init.sh	2008-04-21 14:01:49.000000000 +0200
-@@ -268,67 +268,11 @@
+diff -urNad grass6_devel/lib/init/init.sh.6.4svn grass6_devel/lib/init/init.sh
+--- grass6_devel/lib/init/init.sh.ORIG	2008-10-31 02:26:25.000000000 +1300
++++ grass6_devel/lib/init/init.sh	2008-10-31 02:16:53.000000000 +1300
+@@ -315,53 +315,11 @@
  
  # try and find a web browser if one isn't already specified
  if [ ! "$GRASS_HTML_BROWSER" ] ; then
@@ -29,39 +29,29 @@ diff -urNad grass-preview-6.3.0~/lib/init/init.sh grass-preview-6.3.0/lib/init/i
 -	fi
 -
 -    else
--      for i in `echo "$PATH" | sed 's/^:/.:/
+-      # the usual suspects
+-      BROWSERS="htmlview konqueror mozilla mozilla-firefox firefox opera netscape dillo"
+-      for BROWSER in $BROWSERS ; do
+-	for i in `echo "$PATH" | sed 's/^:/.:/
 -                                s/::/:.:/g
 -                                s/:$/:./
 -                                s/:/ /g'`
--      do
--        if [ -f "$i/htmlview" ] ; then  
--            GRASS_HTML_BROWSER=htmlview  
--            break  
--        elif [ -f "$i/konqueror" ] ; then  
--            GRASS_HTML_BROWSER=konqueror
+-	do
+-	  if [ -f "$i/$BROWSER" ] ; then  
+-            GRASS_HTML_BROWSER="$BROWSER"
 -            break
--        elif [ -f "$i/mozilla" ] ; then
--            GRASS_HTML_BROWSER=mozilla
--            break
--        elif [ -f "$i/mozilla-firefox" ] ; then
--            GRASS_HTML_BROWSER=mozilla-firefox
--            break
--        elif [ -f "$i/firefox" ] ; then
--            GRASS_HTML_BROWSER=firefox
--            break
--        elif [ -f "$i/opera" ] ; then
--            GRASS_HTML_BROWSER=opera
--            break
--        elif [ -f "$i/netscape" ] ; then
--            GRASS_HTML_BROWSER=netscape
--            break
--        elif [ -f "$i/dillo" ] ; then
--            GRASS_HTML_BROWSER=dillo
--            break
--        fi
+-	  fi
+-	done
+-	if [ -n "$GRASS_HTML_BROWSER" ] ; then
+-	   break
++	if [ -x /usr/bin/x-www-browser ] ; then
++		GRASS_HTML_BROWSER=x-www-browser
++	else 
++		GRASS_HTML_BROWSER=true
+ 	fi
 -      done
 -    fi
--            
+-   
 -elif [ "$MACOSX" ] ; then
 -    # OSX doesn't execute browsers from the shell PATH - route thru a script
 -    GRASS_HTML_BROWSER_MACOSX="-b $GRASS_HTML_BROWSER"
@@ -73,11 +63,6 @@ diff -urNad grass-preview-6.3.0~/lib/init/init.sh grass-preview-6.3.0/lib/init/i
 -    echo "WARNING: Searched for a web browser, but none found." 1>&2
 -    # even so we set konqueror to make lib/gis/parser.c happy:
 -    GRASS_HTML_BROWSER=konqueror
-+    	if [ -x /usr/bin/x-www-browser ] ; then
-+    		GRASS_HTML_BROWSER=x-www-browser
-+ 	else 
-+    		GRASS_HTML_BROWSER=true
-+    	fi
  fi
  export GRASS_HTML_BROWSER
  

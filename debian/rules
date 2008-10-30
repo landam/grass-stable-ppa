@@ -9,7 +9,7 @@
 DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
 DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 
-BASE_NAME=grass63
+BASE_NAME=grass64
 PKG_NAME=grass-preview
 
 CFLAGS=-Wall -g

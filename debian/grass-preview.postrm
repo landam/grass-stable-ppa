@@ -5,7 +5,7 @@
 set -e
 
 if [ "$1" = "remove" ]; then
-  rm -f /etc/ld.so.conf.d/grass63.conf
+  rm -f /etc/ld.so.conf.d/grass64.conf
   ldconfig
 fi
 

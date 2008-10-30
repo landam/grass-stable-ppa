@@ -6,7 +6,7 @@ set -e
 
 # Removes obsolete path in the main ld.so configuration file.
 # This should be removed post-lenny.
-dir="/usr/lib/grass63/lib"
+dir="/usr/lib/grass64/lib"
 ldsoconf="/etc/ld.so.conf"
 # is the line present?
 if fgrep -qsx "$dir" "$ldsoconf"; then
