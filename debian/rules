@@ -62,7 +62,8 @@ config-stamp: patch-stamp
                     --with-tcltk-includes=$(TCLINC) \
                     --with-postgres-includes=$(shell pg_config --includedir) \
                     --with-mysql-includes=$(shell mysql_config --include|sed -e 's/-I//') \
-		    --with-proj-share=/usr/share/proj
+		    --with-proj-share=/usr/share/proj \
+		    --with-wxwidgets=/usr/bin/wx-config
 
 	touch config-stamp
 

@@ -1,4 +1,4 @@
-grass-preview (6.3.0-1) UNRELEASED; urgency=low
+grass-preview (6.3.0-1) experimental; urgency=low
 
   * Changing source package name to grass-preview.
     Starting from this release the package is tought to co-exist with the
@@ -9,7 +9,7 @@ grass-preview (6.3.0-1) UNRELEASED; urgency=low
         - Tcl policy changes.
   * Revised current patchset to reflect changes in source code.
   * Removed obsolete NEWS file.
-  * Updated TODO to document missing wxwidget GUI.
+  * Added wxpython support for the new GUI.
 
  -- Francesco Paolo Lovergine <frankie@debian.org>  Thu, 10 Jul 2008 13:08:59 +0200
 

@@ -6,7 +6,7 @@ Uploaders: Francesco Paolo Lovergine <frankie@debian.org>, Steve Halasz <debian@
 Build-depends: flex, bison, libreadline5-dev | libreadline-dev, libncurses5-dev, lesstif2-dev, debhelper (>= 5), dpatch, 
  libtiff4-dev, tcl-dev (>= 8.4) | tcl8.4-dev, tk-dev (>= 8.4) | tk8.4-dev, libfftw3-dev|fftw3-dev, libxmu-dev, libglu1-mesa-dev | libglu1-xorg-dev, 
  libfreetype6-dev, autoconf2.13, autotools-dev, libgdal1-dev (>=1.4.0) | libgdal1-1.3.2-dev, proj (>= 4.4.7), libjpeg62-dev, 
- libpng12-dev, libpq-dev, unixodbc-dev, doxygen, fakeroot, libmysqlclient15-dev, graphviz, libsqlite3-dev 
+ libpng12-dev, libpq-dev, unixodbc-dev, doxygen, fakeroot, libmysqlclient15-dev, graphviz, libsqlite3-dev, python-wxgtk2.8
 Standards-Version: 3.7.3
 Homepage: http://grass.osgeo.org/
 Vcs-Browser: http://svn.debian.org/wsvn/pkg-grass/packages/grass/
