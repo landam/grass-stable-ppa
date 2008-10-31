@@ -1,3 +1,14 @@
+grass-preview (6.4~20081031-1) experimental; urgency=low
+
+  -- THIS IS A NOT FOR RELEASE BRANCH OF THE MAIN DEVELOPMENT TREE --
+
+  * Update patches and names from 6.3 to 6.4svn
+  * Update project URL and home address
+  * Enable Cairo rendering support
+  * Python support for new wx vdigit module (still need build-deps??)
+
+ -- Hamish Bowman <hamish-guest alioth.debian org>  Fri, 31 Oct 2008 17:20:04 +1300
+
 grass-preview (6.3.0-1) experimental; urgency=low
 
   * Changing source package name to grass-preview.
