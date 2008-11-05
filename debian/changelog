@@ -9,9 +9,11 @@ grass-preview (6.3.0-1) experimental; urgency=low
         - Tcl policy changes.
   * Revised current patchset to reflect changes in source code.
   * Removed obsolete NEWS file.
-  * Added wxpython support for the new GUI.
+  * Added wxpython support for the new GUI. Note that 2.8 is required.
+  * grass-preview-doc conflicts with grass-doc. 
+  * Policy bumped to 3.8.0
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Thu, 10 Jul 2008 13:08:59 +0200
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 05 Nov 2008 15:38:50 +0100
 
 grass (6.3~20070922-1) NOT-FOR-RELEASE; urgency=low
 
