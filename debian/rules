@@ -63,7 +63,8 @@ config-stamp: patch-stamp
                     --with-postgres-includes=$(shell pg_config --includedir) \
                     --with-mysql-includes=$(shell mysql_config --include|sed -e 's/-I//') \
 		    --with-proj-share=/usr/share/proj \
-		    --with-wxwidgets=/usr/bin/wx-config \
+		    --with-wx=/usr/lib/wx/config/gtk2-unicode-release-2.8 \
+		    --with-wxwidgets \
 		    --with-python=/usr/bin/python2.5-config \
 		    --with-cairo
 

@@ -1,5 +1,6 @@
 grass-preview (6.4~20081031-1) experimental; urgency=low
 
+  [ Hamish Bowman ]
   -- THIS IS A NOT FOR RELEASE BRANCH OF THE MAIN DEVELOPMENT TREE --
 
   * Update patches and names from 6.3 to 6.4svn
@@ -7,7 +8,15 @@ grass-preview (6.4~20081031-1) experimental; urgency=low
   * Enable Cairo rendering support
   * Python support for new wx vdigit module (still need build-deps??)
 
- -- Hamish Bowman <hamish-guest alioth.debian org>  Fri, 31 Oct 2008 17:20:04 +1300
+  [ Francesco Paolo Lovergine ]
+
+  Merged with changes in 6.3 preview tree:
+
+  * Added libwxgtk2.8-dev build dep.
+  * Changed configuration for successful building with wxwidget 2.8
+  * Policy bumped to 3.8.0
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 05 Nov 2008 15:46:32 +0100
 
 grass-preview (6.3.0-1) experimental; urgency=low
 
