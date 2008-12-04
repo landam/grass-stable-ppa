@@ -2,7 +2,7 @@
 ## xterm.dpatch by Francesco Paolo Lovergine <frankie@debian.org>
 ##
 ## All lines beginning with `## DP:' are a description of the patch.
-## DP: No description.
+## DP: prefer to let alternatives chose the xterm used
 
 @DPATCH@
 diff -urNad grass-preview-6.3.0~/lib/init/grass-xterm-wrapper grass-preview-6.3.0/lib/init/grass-xterm-wrapper

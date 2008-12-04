@@ -2,7 +2,16 @@
 ## pager.dpatch by Francesco Paolo Lovergine <frankie@debian.org>
 ##
 ## All lines beginning with `## DP:' are a description of the patch.
-## DP: No description.
+## DP: As per debian wishes, choose the pager based on what 'pager' is
+## DP: set to rather than the default of 'more'.
+## DP: Problem with this patch: the default pager is usually 'less', which
+## DP: is rather inappropriate for use with g.list where output is usally
+## DP: less than 25 lines and it is useful to have the text remain on the
+## DP: terminal after the pager is finished. IMO (HB) this is a diservice
+## DP: to the user, who would be better served keeping the default as
+## DP: 'more', or if that is unacceptable to debian, then use 'cat' and
+## DP: have no pager turned on by default.
+## DP: Note this in README.Debian??
 
 @DPATCH@
 diff -urNad grass-6.3~20070922~/lib/init/init.sh grass-6.3~20070922/lib/init/init.sh
