@@ -1,0 +1,41 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## instdir.dpatch by Francesco Paolo Lovergine <frankie@debian.org>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: No description.
+
+@DPATCH@
+diff -urNad grass-6.4.0~rc3~/configure grass-6.4.0~rc3/configure
+--- grass-6.4.0~rc3~/configure	2009-01-26 16:53:36.000000000 +0100
++++ grass-6.4.0~rc3/configure	2009-02-16 17:26:24.000000000 +0100
+@@ -1298,7 +1298,7 @@
+ if test -n "$MACOSX_APP" ; then
+     INSTDIR='${prefix}'"/GRASS-${GRASS_VERSION_MAJOR}.${GRASS_VERSION_MINOR}.app/Contents/MacOS"
+ else
+-    INSTDIR='${prefix}'"/grass-${GRASS_VERSION_MAJOR}.${GRASS_VERSION_MINOR}.${GRASS_VERSION_RELEASE}"
++    INSTDIR='${prefix}'"/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}"
+ fi
+ 
+ 
+diff -urNad grass-6.4.0~rc3~/grass.pc.in grass-6.4.0~rc3/grass.pc.in
+--- grass-6.4.0~rc3~/grass.pc.in	2008-12-19 21:30:09.000000000 +0100
++++ grass-6.4.0~rc3/grass.pc.in	2009-02-16 17:28:12.000000000 +0100
+@@ -1,12 +1,12 @@
+ # Package Information for pkg-config
+ 
+-prefix=@prefix@/grass-@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@.@GRASS_VERSION_RELEASE@
+-exec_prefix=@prefix@/grass-@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@.@GRASS_VERSION_RELEASE@
+-libdir=@prefix@/grass-@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@.@GRASS_VERSION_RELEASE@/lib
+-includedir=@prefix@/grass-@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@.@GRASS_VERSION_RELEASE@/include
++prefix=@prefix@/grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@
++exec_prefix=@prefix@/grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@
++libdir=@prefix@/grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@/lib
++includedir=@prefix@/grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@/include
+ 
+ Name: GRASS
+ Description: GRASS GIS
+ Version: @GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@.@GRASS_VERSION_RELEASE@
+-Libs: -L@prefix@/grass-@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@.@GRASS_VERSION_RELEASE@/lib -lgrass_I -lgrass_vask -lgrass_gmath -lgrass_gis -lgrass_datetime -lgrass_gproj -lgrass_vect -lgrass_dbmibase -lgrass_dbmiclient
+-Cflags: -I@prefix@/grass-@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@.@GRASS_VERSION_RELEASE@/include
++Libs: -L@prefix@/grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@/lib -lgrass_I -lgrass_vask -lgrass_gmath -lgrass_gis -lgrass_datetime -lgrass_gproj -lgrass_vect -lgrass_dbmibase -lgrass_dbmiclient
++Cflags: -I@prefix@/grass@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@/include
