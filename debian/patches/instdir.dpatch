@@ -2,7 +2,7 @@
 ## instdir.dpatch by Francesco Paolo Lovergine <frankie@debian.org>
 ##
 ## All lines beginning with `## DP:' are a description of the patch.
-## DP: No description.
+## DP: Modifies destination directory to use the grass<major><minor> simplified schema.
 
 @DPATCH@
 diff -urNad grass-6.4.0~rc3~/configure grass-6.4.0~rc3/configure

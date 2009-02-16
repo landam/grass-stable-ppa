@@ -1,4 +1,4 @@
-grass-preview (6.4.0~rc3-1) unstable; urgency=low
+grass (6.4.0~rc3-1) unstable; urgency=low
 
   * New upstream pre-release for next stable. 
     From now on all grass-related directories are versionend to allow people installing
