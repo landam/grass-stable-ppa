@@ -1,3 +1,42 @@
+grass-preview (6.4.0~rc3-1) unstable; urgency=low
+
+  * New upstream pre-release for next stable. 
+    From now on all grass-related directories are versionend to allow people installing
+    packaged unofficial/testing versions.
+  * Removing Tcl Lenny related code in debian/rules. 
+  * Some minor clean-ups in debian/rules.
+  * Obsolete NEWS file removed.
+  * Debhelper level moved to 7, now using dh_prep.
+  * Removed ld.so file installation. Grass programs must be called under Grass environment,
+    so it is pointless and can be dangerous when different versions are installed. This
+    is also true for Qgis and its Grass plugin. As consequence postinst and postrm files 
+    have been removed as obsolete.
+
+  * Merging relevant changes in the stable 6.2.3 tree with the 
+    experimental DebianGis series:
+
+  	From 6.2.3-3:
+  	o Added Vcs-* fields to debian/control.
+        o Fixated patch rule.
+
+        From 6.2.3-2:
+        o Added libfftw3-dev build-dep to reflect current library name.
+          (it closed: #458232)
+        o Upstream already fixed v.db.update as suggested.
+          (it closed: #434897)
+
+        From: 6.2.3-1:
+  	o Added the new Homepage field to debian/control.
+  	o Updated obsolete ${Source-Version} to ${binary:Version}.
+  	o Fixed lintian error: : debian-rules-ignores-make-clean-error
+  	o Moved to new Tcl/Tk policy, introducing default -dev packages build-dependencies as alternative
+    	  and still depending on versioned ones for backports. For backports the
+    	  Tcl/Tk includes path is found at build time in debian/rules.
+  	o Now using mysql_config to get MySQL includes path.
+  	o Added private library path at dh_shlibdeps call.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 16 Feb 2009 13:28:23 +0100
+
 grass-preview (6.4~20081031-1) experimental; urgency=low
 
   [ Hamish Bowman ]
