@@ -29,7 +29,8 @@ TCLINC = /usr/include/tcl
 
 include /usr/share/dpatch/dpatch.make
 
-config-stamp: patch
+configure: patch config.status
+config.status: 
 	dh_testdir
 	# Add here commands to configure the package.
 	CFLAGS="$(CFLAGS)" ./configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) \
@@ -64,8 +65,8 @@ config-stamp: patch
 
 # This target generates arch-dep stuff, unfortunately most doc requires working bins to 
 # be properly generated...
-build: build-stamp
-build-stamp:  config-stamp
+build: configure build-stamp
+build-stamp:  
 	dh_testdir
 
 	$(MAKE) 
@@ -74,15 +75,15 @@ build-stamp:  config-stamp
 	touch $@
 
 # This target generates truly arch-indep stuff
-build-indep: build-indep-stamp
-build-indep-stamp: config-stamp
+build-indep: configure build-indep-stamp
+build-indep-stamp: 
 	dh_testdir
 
 	$(MAKE) htmldocs
 
 	touch $@
 
-clean: clean-patched unpatch
+clean: clean-patched unpatch 
 clean-patched:
 	dh_testdir
 	dh_testroot
@@ -203,4 +204,4 @@ binary-arch: install
 	dh_builddeb -a
 
 binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary install patch unpatch
+.PHONY: build clean binary-indep binary-arch binary install patch unpatch configure clean-patched
