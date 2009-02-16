@@ -18,7 +18,7 @@ Section: science
 Architecture: any
 Depends: ${shlibs:Depends}, xterm | x-terminal-emulator
 Suggests: grass-doc, gdal-bin, e00compr, avce00, gpstrans, gnuplot, grass-doc
-Description: Geographic Resources Analysis Support System (Technology Preview)
+Description: Geographic Resources Analysis Support System 
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
  image processing, graphics/map production, spatial modeling, and
@@ -32,7 +32,7 @@ Architecture: all
 Conflicts: grass-doc
 Replaces: grass-doc
 Provides: grass-doc
-Description: Geographic Resources Analysis Support System (Technology Preview) documentation
+Description: Geographic Resources Analysis Support System documentation
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
  image processing, graphics/map production, spatial modeling, and
@@ -47,7 +47,7 @@ Section: devel
 Architecture: any
 Depends: ${shlibs:Depends}, grass (= ${binary:Version})
 Suggests: pkg-config
-Description: GRASS GIS (Technology preview) development files
+Description: GRASS GIS development files
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
  image processing, graphics/map production, spatial modeling, and
