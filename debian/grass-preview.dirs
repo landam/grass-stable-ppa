@@ -1,0 +1,6 @@
+etc/ld.so.conf.d
+usr/lib/grass64
+/usr/bin
+/usr/lib/grass64
+/usr/share/doc/grass64
+/usr/share/man

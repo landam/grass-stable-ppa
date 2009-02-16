@@ -1,35 +1,61 @@
-grass (6.2.3-3) UNRELEASED; urgency=low
+grass-preview (6.4~20081031-1) experimental; urgency=low
 
-  * Home page field updated.
-  * Added Vcs-* fields to debian/control.
-  * Fixated patch rule.
+  [ Hamish Bowman ]
+  -- THIS IS A NOT FOR RELEASE BRANCH OF THE MAIN DEVELOPMENT TREE --
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 21 Apr 2008 17:00:26 +0200
+  * Update patches and names from 6.3 to 6.4svn
+  * Update project URL and home address
+  * Enable Cairo rendering support
+  * Python support for new wx vdigit module (still need build-deps??)
 
-grass (6.2.3-2) unstable; urgency=low
+  [ Francesco Paolo Lovergine ]
 
-  * Added libfftw3-dev build-dep to reflect current library name.
-    (closes: #458232)
-  * Upstream already fixed v.db.update as suggested.
-    (closes: #434897)
+  Merged with changes in 6.3 preview tree:
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Thu, 31 Jan 2008 17:02:23 +0100
+  * Added libwxgtk2.8-dev build dep.
+  * Changed configuration for successful building with wxwidget 2.8
+  * Policy bumped to 3.8.0
 
-grass (6.2.3-1) unstable; urgency=low
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 05 Nov 2008 15:46:32 +0100
 
-  * New upstream release.
-    (closes: #455853)
-  * Added the new Homepage field to debian/control.
-  * Updated obsolete ${Source-Version} to ${binary:Version}.
-  * Fixed lintian error: : debian-rules-ignores-make-clean-error
-  * Moved to new Tcl/Tk policy, introducing default -dev packages build-dependencies as alternative
-    and still depending on versioned ones for backports. For backports the
-    Tcl/Tk includes path is found at build time in debian/rules.
-  * Now using mysql_config to get MySQL includes path.
-  * Policy bumped to 3.7.3
-  * Added private library path at dh_shlibdeps call.
+grass-preview (6.3.0-1) experimental; urgency=low
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Thu, 13 Dec 2007 12:49:40 +0100
+  * Changing source package name to grass-preview.
+    Starting from this release the package is tought to co-exist with the
+    stable 6.2 branch (6.2.3).
+  * Merged changes from stable branches:
+  	- Vcs-* fields in debian/control.
+        - Current list of build-deps.
+        - Tcl policy changes.
+  * Revised current patchset to reflect changes in source code.
+  * Removed obsolete NEWS file.
+  * Added wxpython support for the new GUI.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Thu, 10 Jul 2008 13:08:59 +0200
+
+grass (6.3~20070922-1) NOT-FOR-RELEASE; urgency=low
+
+  -- THIS IS A NOT FOR RELEASE BRANCH OF THE MAIN DEVELOPMENT TREE --
+
+  * Added Homepage field in debian/control.
+  * Revised 6.2.2 patches as needed.
+  * Merges from 6.2.2 tree:
+  	* Removed libgl1-mesa-swx11-dev in debian/control
+        * Removed --with-glx in debian/rules
+        * libglu1-mesa-dev replaces libglu1-xorg-dev which replaced xlibmesa-glu-dev.
+          Kept libglu1-xorg-dev around for sarge backports.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Thu, 18 Oct 2007 20:43:08 +0200
+
+grass (6.3~20070922-1) NOT-FOR-RELEASE; urgency=low
+
+  -- THIS IS A NOT FOR RELEASE BRANCH OF THE MAIN DEVELOPMENT TREE --
+
+  * Branching for 6.3 (development series).
+  * Revised all 6.2.2 patches.
+  * This version is usable in both lenny and sid currently.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 26 Sep 2007 12:43:12 +0200
 
 grass (6.2.2-2) unstable; urgency=medium
 

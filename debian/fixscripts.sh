@@ -8,7 +8,7 @@ CURDIR=$(pwd)
 # make these scripts executable
 for x in etc/water/seg
 do
-    chmod +x $CURDIR/debian/tmp/usr/lib/grass/$x
+    chmod +x $CURDIR/debian/tmp/usr/lib/grass64/$x
 done
 
 # silence bogus lintian complaint about interpreter-not-absolute
@@ -18,15 +18,15 @@ for x in script_get_line \
     script_file_tools \
     nviz2.2_script
 do
-  f=$CURDIR/debian/tmp/usr/lib/grass/etc/nviz2.2/scripts/$x
-  sed 's.!nviz.!/usr/lib/grass/bin/nviz.' $f >foo && cat foo >$f
+  f=$CURDIR/debian/tmp/usr/lib/grass64/etc/nviz2.2/scripts/$x
+  sed 's.!nviz.!/usr/lib/grass64/bin/nviz.' $f >foo && cat foo >$f
 done
 
 for x in panel_label.tcl \
     panel_scale.tcl
 do
-  f=$CURDIR/debian/tmp/usr/lib/grass/etc/nviz2.2/scripts/$x
-  sed 's%!../glnviz.new/nvwish%!/usr/lib/grass/etc/nviz2.2/glnviz/nvwish%' $f >foo && cat foo >$f
+  f=$CURDIR/debian/tmp/usr/lib/grass64/etc/nviz2.2/scripts/$x
+  sed 's%!../glnviz.new/nvwish%!/usr/lib/grass64/etc/nviz2.2/glnviz/nvwish%' $f >foo && cat foo >$f
 done
 rm foo
 
@@ -34,7 +34,7 @@ rm foo
 # add shebang to scripts that need it
 for x in etc/copy
 do
-  f=$CURDIR/debian/tmp/usr/lib/grass/$x
+  f=$CURDIR/debian/tmp/usr/lib/grass64/$x
   cp $f foo; echo "#!/bin/sh" >$f; cat foo >>$f
 done
 rm foo
@@ -98,5 +98,5 @@ for x in etc/nviz2.2/scripts/panel_kanimator.tcl \
     etc/nviz2.2/scripts/wirecolorPopup.tcl \
     etc/nviz2.2/scripts/fileBrowser.tcl
 do
-    chmod -x $CURDIR/debian/tmp/usr/lib/grass/$x
+    chmod -x $CURDIR/debian/tmp/usr/lib/grass64/$x
 done

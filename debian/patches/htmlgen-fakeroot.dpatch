@@ -7,15 +7,15 @@
 ## DP: pages from being built.
 
 @DPATCH@
-diff -urNad grass-6.2.2~/include/Make/Html.make grass-6.2.2/include/Make/Html.make
---- grass-6.2.2~/include/Make/Html.make	2007-04-11 15:29:16.000000000 +0200
-+++ grass-6.2.2/include/Make/Html.make	2007-04-11 15:30:48.000000000 +0200
-@@ -92,7 +92,7 @@
- 	GISBASE=$(GISBASE) \
- 	PATH=$(GISBASE)/bin:$$PATH \
- 	$(LD_LIBRARY_PATH_VAR)="$(GISBASE)/lib:$($(LD_LIBRARY_PATH_VAR))" \
--	LC_ALL=C $(1) --html-description | grep -v '</body>\|</html>' > $(PGM).tmp.html ; true
-+	LC_ALL=C fakeroot $(1) --html-description | grep -v '</body>\|</html>' > $(PGM).tmp.html ; true
+diff -urNad grass-6.3~20070922~/include/Make/Html.make grass-6.3~20070922/include/Make/Html.make
+--- grass-6.3~20071013~/include/Make/Html.make	2007-10-16 09:51:23.000000000 +0200
++++ grass-6.3~20071013/include/Make/Html.make	2007-10-16 10:05:27.000000000 +0200
+@@ -34,7 +34,7 @@
+ 	GISBASE=$(RUN_GISBASE) \
+ 	PATH="$(BIN):$$PATH" \
+ 	$(LD_LIBRARY_PATH_VAR)="$(BIN):$(ARCH_LIBDIR):$($(LD_LIBRARY_PATH_VAR))" \
+-	LC_ALL=C $(1) --html-description < /dev/null | grep -v '</body>\|</html>' > $(PGM).tmp.html ; true
++	LC_ALL=C $(1) fakeroot --html-description < /dev/null | grep -v '</body>\|</html>' > $(PGM).tmp.html ; true
  
- # html rules for cmd commands
- htmlcmd: htmlcmd1 htmlgen
+ $(HTMLDIR)/$(PGM).html: $(HTMLSRC)
+ 	if [ "$(HTMLSRC)" != "" ] ; then $(call htmldesc,$<) ; fi

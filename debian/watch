@@ -1,2 +1,2 @@
 version=2
-http://grass.osgeo.org/grass62/source/grass-([\d\.]*).tar.gz debian uupdate
+http://grass.osgeo.org/grass64/source/grass-([\d\.]*).tar.gz debian uupdate

@@ -2,18 +2,18 @@
 ## xterm.dpatch by Francesco Paolo Lovergine <frankie@debian.org>
 ##
 ## All lines beginning with `## DP:' are a description of the patch.
-## DP: No description.
+## DP: prefer to let alternatives chose the xterm used
 
 @DPATCH@
-diff -urNad grass-6.2.1~/lib/init/grass-xterm-wrapper grass-6.2.1/lib/init/grass-xterm-wrapper
---- grass-6.2.1~/lib/init/grass-xterm-wrapper	2006-08-31 15:59:08.000000000 +0200
-+++ grass-6.2.1/lib/init/grass-xterm-wrapper	2007-05-17 18:30:48.000000000 +0200
-@@ -2,7 +2,7 @@
- # script to wrap xterm 
+diff -urNad grass-preview-6.3.0~/lib/init/grass-xterm-wrapper grass-preview-6.3.0/lib/init/grass-xterm-wrapper
+--- grass-preview-6.3.0~/lib/init/grass-xterm-wrapper	2008-04-12 01:26:58.000000000 +0200
++++ grass-preview-6.3.0/lib/init/grass-xterm-wrapper	2008-04-21 14:09:45.000000000 +0200
+@@ -3,7 +3,7 @@
  
  if [ -z "$GRASS_XTERM" ] ; then
--   GRASS_XTERM=xterm
-+   GRASS_XTERM=x-terminal-emulator
- fi
- 
- # run command
+    # find a working xterm or xterm compatible executable
+-   TERM_TRY="xterm rxvt x-terminal-emulator"
++   TERM_TRY="x-terminal-emulator rxvt xterm"
+    for TERM_PROG in $TERM_TRY ; do
+       if [ -x "`which $TERM_PROG`" ] ; then
+          GRASS_XTERM="$TERM_PROG"
