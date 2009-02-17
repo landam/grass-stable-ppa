@@ -45,7 +45,7 @@ Description: Geographic Resources Analysis Support System documentation
 Package: grass-dev
 Section: devel
 Architecture: any
-Depends: ${shlibs:Depends}, grass (= ${binary:Version})
+Depends: grass (= ${binary:Version})
 Suggests: pkg-config
 Description: GRASS GIS development files
  Commonly referred to as GRASS, this is a Geographic Information

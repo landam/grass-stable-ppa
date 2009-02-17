@@ -13,6 +13,7 @@ grass (6.4.0~rc3-1) unstable; urgency=low
     is also true for Qgis and its Grass plugin. As consequence postinst and postrm files 
     have been removed as obsolete.
   * Fixed htmlgen-fakeroot.dpatch, incredibly broken without notice. 
+  * Cleaned debian/control.
 
   * Merging relevant changes in the stable 6.2.3 tree with the experimental DebianGis series:
 
