@@ -15,7 +15,7 @@ diff -urNad grass-6.3~20070922~/include/Make/Html.make grass-6.3~20070922/includ
  	PATH="$(BIN):$$PATH" \
  	$(LD_LIBRARY_PATH_VAR)="$(BIN):$(ARCH_LIBDIR):$($(LD_LIBRARY_PATH_VAR))" \
 -	LC_ALL=C $(1) --html-description < /dev/null | grep -v '</body>\|</html>' > $(PGM).tmp.html ; true
-+	LC_ALL=C $(1) fakeroot --html-description < /dev/null | grep -v '</body>\|</html>' > $(PGM).tmp.html ; true
++	LC_ALL=C fakeroot $(1) --html-description < /dev/null | grep -v '</body>\|</html>' > $(PGM).tmp.html ; true
  
  $(HTMLDIR)/$(PGM).html: $(HTMLSRC)
  	if [ "$(HTMLSRC)" != "" ] ; then $(call htmldesc,$<) ; fi

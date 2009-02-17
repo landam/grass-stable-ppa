@@ -12,6 +12,7 @@ grass (6.4.0~rc3-1) unstable; urgency=low
     so it is pointless and can be dangerous when different versions are installed. This
     is also true for Qgis and its Grass plugin. As consequence postinst and postrm files 
     have been removed as obsolete.
+  * Fixed htmlgen-fakeroot.dpatch, incredibly broken without notice. 
 
   * Merging relevant changes in the stable 6.2.3 tree with the experimental DebianGis series:
 
@@ -30,7 +31,7 @@ grass (6.4.0~rc3-1) unstable; urgency=low
   	o Now using mysql_config to get MySQL includes path.
   	o Added private library path at dh_shlibdeps call.
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 16 Feb 2009 13:28:23 +0100
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 17 Feb 2009 12:00:13 +0100
 
 grass-preview (6.4~20081031-1) experimental; urgency=low
 
