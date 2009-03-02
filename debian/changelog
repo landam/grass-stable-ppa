@@ -1,8 +1,9 @@
-grass (6.4.0~rc3-2) UNRELEASED; urgency=low
+grass (6.4.0~rc3-2) unstable; urgency=low
 
   * NOT RELEASED YET
+  * Fixed instdir.dpatch for the right include directory in the pkg-config file.
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 17 Feb 2009 15:15:50 +0100
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 02 Mar 2009 17:44:44 +0100
 
 grass (6.4.0~rc3-1) unstable; urgency=low
 
