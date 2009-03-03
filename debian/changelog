@@ -1,9 +1,9 @@
 grass (6.4.0~rc3-2) unstable; urgency=low
 
-  * NOT RELEASED YET
+  * Removed obsolete etc/ld.so.conf.d directory in debian/grass.dirs.
   * Fixed instdir.dpatch for the right include directory in the pkg-config file.
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 02 Mar 2009 17:44:44 +0100
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 03 Mar 2009 18:11:23 +0100
 
 grass (6.4.0~rc3-1) unstable; urgency=low
 
