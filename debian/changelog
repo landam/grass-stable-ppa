@@ -2,8 +2,9 @@ grass (6.4.0~rc3-3) unstable; urgency=low
 
   * NOT RELEASED YET
   * Fixed debian/watch to see also RC versions. Not perfect but working.
+  * Added xml2 among Suggestes in debian/control.
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 04 Mar 2009 22:45:46 +0100
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 09 Mar 2009 19:23:24 +0100
 
 grass (6.4.0~rc3-2) unstable; urgency=low
 
