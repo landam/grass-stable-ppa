@@ -3,6 +3,7 @@ grass (6.4.0~rc3-3) unstable; urgency=low
   * NOT RELEASED YET
   * Fixed debian/watch to see also RC versions. Not perfect but working.
   * Added xml2 and other r.in.wms related among Suggestes in debian/control.
+  * Moved build-dep from proj to libproj-dev | proj.
 
  -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 09 Mar 2009 21:14:49 +0100
 
