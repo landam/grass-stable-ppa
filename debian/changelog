@@ -4,8 +4,9 @@ grass (6.4.0~rc3-3) unstable; urgency=low
   * Fixed debian/watch to see also RC versions. Not perfect but working.
   * Added xml2 and other r.in.wms related among Suggestes in debian/control.
   * Moved build-dep from proj to libproj-dev | proj.
+  * Grass-doc section set to doc instead of science.
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 09 Mar 2009 21:14:49 +0100
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Sat, 21 Mar 2009 10:42:08 +0100
 
 grass (6.4.0~rc3-2) unstable; urgency=low
 

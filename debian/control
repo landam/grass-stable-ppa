@@ -27,7 +27,7 @@ Description: Geographic Resources Analysis Support System
  and environmental consulting companies.
 
 Package: grass-doc
-Section: science
+Section: doc
 Architecture: all
 Conflicts: grass-doc
 Replaces: grass-doc
