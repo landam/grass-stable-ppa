@@ -157,7 +157,7 @@ install: build
 	# install pkg-config file
 	install -m 644 grass.pc debian/$(PKG_NAME)-dev/usr/share/pkgconfig/$(BASE_NAME).pc
 
-	ln -fs /usr/lib/$(shell echo `gdal-config --libs|cut -d' ' -f2|sed -e 's/-l/lib/'`.so) \
+	ln -fs /usr/lib/$(shell objdump -p /usr/lib/`gdal-config --libs|cut -d' ' -f2|sed -e 's/-l/lib/'`.so|grep SONAME|cut -d' ' -f18) \
 		debian/tmp/usr/lib/$(BASE_NAME)/lib/libgdal.so
 
 install-indep: build-indep
