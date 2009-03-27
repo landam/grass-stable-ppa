@@ -15,6 +15,8 @@ grass (6.4.0~rc3-3) unstable; urgency=low
     plugins: mixing fluxes^Wversions is evil, and currently gdal-grass could 
     be installed with the wrong grass release.
   * Now fixscripts.sh get automagically grass version for its paths.
+  * Now all debian/ files are templated against grass version, to avoid
+    changing paths all around for every new major release.
 
  -- Francesco Paolo Lovergine <frankie@debian.org>  Fri, 27 Mar 2009 14:41:07 +0100
 
