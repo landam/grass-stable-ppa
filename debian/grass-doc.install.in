@@ -1,0 +1,5 @@
+usr/lib/grass@VERSION@/docs/html usr/share/doc/grass-doc
+usr/lib/grass@VERSION@/man/man1 usr/share/man
+programming-manual/db usr/share/doc/grass-doc/programming-manual/html
+programming-manual/gis usr/share/doc/grass-doc/programming-manual/html
+programming-manual/vector usr/share/doc/grass-doc/programming-manual/html

@@ -9,7 +9,8 @@
 DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
 DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 
-BASE_NAME=grass64
+VERSION=$(shell echo `head -2 $(CURDIR)/include/VERSION`|sed -e 's/ //')
+BASE_NAME=grass$(VERSION)
 PKG_NAME=grass
 
 CFLAGS=-Wall -g
@@ -28,6 +29,11 @@ endif
 TCLINC = /usr/include/tcl
 
 include /usr/share/dpatch/dpatch.make
+
+templates: $(patsubst %.in,%,$(wildcard debian/*.in))
+
+debian/% :: debian/%.in
+	sed -e 's/@VERSION@/$(VERSION)/' $< >$@
 
 configure: patch config.status
 config.status: 
@@ -83,7 +89,7 @@ build-indep-stamp:
 
 	touch $@
 
-clean: clean-patched unpatch 
+clean: templates clean-patched unpatch 
 clean-patched:
 	dh_testdir
 	dh_testroot

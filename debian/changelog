@@ -1,7 +1,7 @@
 grass (6.4.0~rc3-3) unstable; urgency=low
 
   * NOT RELEASED.
-  * Fixed debian/watch to see also RC versions. Not perfect but working.
+  * Fixed debian/watch to see also RC versions. Not perfect but it works.
   * Added xml2 and other r.in.wms related among Suggests in debian/control.
   * Added proj-bin among Suggests in debian/control.
   * Moved build-dep from proj to libproj-dev.
@@ -9,8 +9,14 @@ grass (6.4.0~rc3-3) unstable; urgency=low
   * Added a libgdal.so link to the system GDAL shlib, to allow external raster/vector
     support to work.
   * Policy bumped to 3.8.1, without changes.
+  * Introduced grassVERSION and grassVERSION-dev Provides and debian/control.in 
+    templates to get grass major.minor versions automagically. 
+    The new field is useful to introduce per-version dependency in external 
+    plugins: mixing fluxes^Wversions is evil, and currently gdal-grass could 
+    be installed with the wrong grass release.
+  * Now fixscripts.sh get automagically grass version for its paths.
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 23 Mar 2009 16:41:02 +0100
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Fri, 27 Mar 2009 14:41:07 +0100
 
 grass (6.4.0~rc3-2) unstable; urgency=low
 
