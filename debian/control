@@ -18,6 +18,7 @@ Section: science
 Architecture: any
 Depends: ${shlibs:Depends}, xterm | x-terminal-emulator
 Suggests: grass-doc, gdal-bin, proj-bin, e00compr, avce00, gpstrans, gnuplot, grass-doc, xml2, wget | curl
+Recommends: python (>= 2.5), python-numpy
 Provides: grass64
 Description: Geographic Resources Analysis Support System 
  Commonly referred to as GRASS, this is a Geographic Information

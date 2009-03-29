@@ -1,6 +1,5 @@
 grass (6.4.0~rc3-3) unstable; urgency=low
 
-  * NOT RELEASED.
   * Fixed debian/watch to see also RC versions. Not perfect but it works.
   * Added xml2 and other r.in.wms related among Suggests in debian/control.
   * Added proj-bin among Suggests in debian/control.
@@ -15,10 +14,12 @@ grass (6.4.0~rc3-3) unstable; urgency=low
     plugins: mixing fluxes^Wversions is evil, and currently gdal-grass could 
     be installed with the wrong grass release.
   * Now fixscripts.sh get automagically grass version for its paths.
+  * Added new files to fixscripts.sh to avoid a bounce of lintian warnings.
   * Now all debian/ files are templated against grass version, to avoid
     changing paths all around for every new major release.
+  * Now recommended python and python-numpy.
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Fri, 27 Mar 2009 14:41:07 +0100
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Sun, 29 Mar 2009 16:31:34 +0200
 
 grass (6.4.0~rc3-2) unstable; urgency=low
 

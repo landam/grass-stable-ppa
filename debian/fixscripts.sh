@@ -33,12 +33,21 @@ rm foo
 
 # silence lintian warning executable-not-elf-or-script
 # add shebang to scripts that need it
-for x in etc/copy
-do
-  f=$CURDIR/debian/tmp/usr/lib/grass$VERSION/$x
-  cp $f foo; echo "#!/bin/sh" >$f; cat foo >>$f
+#for x in etc/copy
+#do
+#  f=$CURDIR/debian/tmp/usr/lib/grass$VERSION/$x
+#  cp $f foo; echo "#!/bin/sh" >$f; cat foo >>$f
+#done
+#rm foo
+
+# silence lintian warning script-not-executable
+for x in etc/dm/tksys.tcl \
+    etc/gem/skeleton/post \
+    etc/gem/skeleton/uninstall \
+    etc/gm/animate.tcl
+do 
+    chmod +x $CURDIR/debian/tmp/usr/lib/grass$VERSION/$x
 done
-rm foo
 
 # silence executable-not-elf-or-script lintian warning
 # most tcl scripts don't need to be executable
