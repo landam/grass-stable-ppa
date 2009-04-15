@@ -1,2 +1,2 @@
-version=2
-http://grass.osgeo.org/grass64/source/grass-([\d\.]*(RC\d)?).tar.gz debian uupdate
+version=3
+http://grass.osgeo.org/grass64/source/grass-([\d\.]*(?:RC\d){0,1}).tar.gz

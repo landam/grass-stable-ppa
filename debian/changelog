@@ -1,9 +1,11 @@
-grass (6.4.0~rc3-4) UNRELEASED; urgency=low
+grass (6.4.0~rc4-1) unstable; urgency=low
 
   * NOT RELEASED YET
+  * New upstream release candidate.
   * Added Suggests: python-opengl and python-wxgtk2.8 for the new wx interface.
+  * Changed again debian/watch file.
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Sun, 29 Mar 2009 17:48:46 +0200
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 15 Apr 2009 16:18:35 +0200
 
 grass (6.4.0~rc3-3) unstable; urgency=low
 
