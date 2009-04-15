@@ -64,7 +64,7 @@ config.status:
 		    --with-proj-share=/usr/share/proj \
 		    --with-wx=/usr/lib/wx/config/gtk2-unicode-release-2.8 \
 		    --with-wxwidgets \
-		    --with-python=/usr/bin/python2.5-config \
+		    --with-python=/usr/bin/python-config \
 		    --with-cairo
 
 	touch $@
