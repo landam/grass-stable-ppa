@@ -17,8 +17,8 @@ Package: grass
 Section: science
 Architecture: any
 Depends: ${shlibs:Depends}, xterm | x-terminal-emulator
-Suggests: grass-doc, gdal-bin, proj-bin, e00compr, avce00, gpstrans, gnuplot, grass-doc, xml2, wget | curl,
- python-opengl, python-wxgtk2.8
+Suggests: grass-doc, gdal-bin, proj-bin, e00compr, avce00, gpsbabel, gpstrans,
+ gnuplot, grass-doc, xml2, wget | curl, python-opengl, python-wxgtk2.8
 Recommends: python (>= 2.5), python-numpy
 Provides: grass64
 Description: Geographic Resources Analysis Support System 

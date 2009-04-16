@@ -5,6 +5,7 @@ grass (6.4.0~rc4-1) unstable; urgency=low
   * Added Suggests: python-opengl and python-wxgtk2.8 for the new wx interface.
   * Changed again debian/watch file.
   * Moved to versioned defaults (build-)deps for python.
+  * Added Suggests: gpsbabel for v.in.gpsbabel and v.out.gpsbabel.
 
  -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 15 Apr 2009 16:25:53 +0200
 
