@@ -1,6 +1,5 @@
 grass (6.4.0~rc4-1) unstable; urgency=low
 
-  * NOT RELEASED YET
   * New upstream release candidate.
   * Added Suggests: python-opengl and python-wxgtk2.8 for the new wx interface.
   * Changed again debian/watch file.
