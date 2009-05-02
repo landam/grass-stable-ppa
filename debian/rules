@@ -62,8 +62,7 @@ config.status:
                     --with-postgres-includes=$(shell pg_config --includedir) \
                     --with-mysql-includes=$(shell mysql_config --include|sed -e 's/-I//') \
 		    --with-proj-share=/usr/share/proj \
-		    --with-wx=/usr/lib/wx/config/gtk2-unicode-release-2.8 \
-		    --with-wxwidgets \
+		    --with-wxwidgets=/usr/lib/wx/config/gtk2-unicode-release-2.8 \
 		    --with-python=/usr/bin/python-config \
 		    --with-cairo
 
