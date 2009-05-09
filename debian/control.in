@@ -48,7 +48,7 @@ Description: Geographic Resources Analysis Support System documentation
 Package: grass-dev
 Section: devel
 Architecture: any
-Depends: grass (= ${binary:Version})
+Depends: grass (= ${binary:Version}), libproj-dev
 Suggests: pkg-config
 Provides: grass@VERSION@-dev
 Description: GRASS GIS development files

@@ -1,7 +1,8 @@
-grass (6.4.0~rc4-2) unstable; urgency=low
+grass (6.4.0~rc4-2) unstable; urgency=high
 
-  * NOT RELEASED YET
   * Removed superfluous /usr/share/doc/grass<version> empty directory.
+  * Added libproj-dev to grass-dev reqs.
+    (closes: #527655)
 
  -- Francesco Paolo Lovergine <frankie@debian.org>  Sat, 18 Apr 2009 01:04:36 +0200
 
