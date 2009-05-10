@@ -20,7 +20,7 @@ Depends: ${shlibs:Depends}, xterm | x-terminal-emulator
 Suggests: grass-doc, gdal-bin, proj-bin, e00compr, avce00, gpsbabel, gpstrans,
  gnuplot, grass-doc, xml2, wget | curl, python-opengl, python-wxgtk2.8
 Recommends: python (>= 2.5), python-numpy
-Provides: grass64
+Provides: grass
 Description: Geographic Resources Analysis Support System 
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
@@ -50,7 +50,7 @@ Section: devel
 Architecture: any
 Depends: grass (= ${binary:Version}), libproj-dev
 Suggests: pkg-config
-Provides: grass64-dev
+Provides: grass-dev
 Description: GRASS GIS development files
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
