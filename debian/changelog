@@ -3,8 +3,9 @@ grass (6.4.0~rc4-2) unstable; urgency=high
   * Removed superfluous /usr/share/doc/grass<version> empty directory.
   * Added libproj-dev to grass-dev reqs.
     (closes: #527655)
+  * Added proj-bin as build-dep for nad2bin at configuration time.
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Sat, 18 Apr 2009 01:04:36 +0200
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Sun, 10 May 2009 11:16:47 +0200
 
 grass (6.4.0~rc4-1) unstable; urgency=low
 
