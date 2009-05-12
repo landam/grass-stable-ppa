@@ -9,6 +9,7 @@ Build-depends: flex, bison, libreadline5-dev, libncurses5-dev, lesstif2-dev, deb
  libpng12-dev, libpq-dev, unixodbc-dev, doxygen, fakeroot, libmysqlclient15-dev, graphviz, libsqlite3-dev, python-wxgtk2.8,
  libcairo2-dev, libwxgtk2.8-dev, python-dev (>= 2.5), swig
 Standards-Version: 3.8.1
+Build-Conflicts: wx2.6-headers
 Homepage: http://grass.osgeo.org/
 Vcs-Browser: http://svn.debian.org/wsvn/pkg-grass/packages/grass/
 Vcs-Svn: svn://svn.debian.org/pkg-grass/packages/grass/

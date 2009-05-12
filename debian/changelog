@@ -1,3 +1,12 @@
+grass (6.4.0~rc4-3) UNRELEASED; urgency=low
+
+  * Added a build-conflicts against wx2.6-headers in debian/control.in
+    (closes: #526200)
+  * [PATCH] gcc44.dpatch: added a missing std header for gcc 4.4.
+    (closes: #526204)
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 12 May 2009 18:09:18 +0200
+
 grass (6.4.0~rc4-2) unstable; urgency=high
 
   * Removed superfluous /usr/share/doc/grass<version> empty directory.
