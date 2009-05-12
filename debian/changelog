@@ -1,4 +1,4 @@
-grass (6.4.0~rc4-3) UNRELEASED; urgency=low
+grass (6.4.0~rc4-3) unstable; urgency=medium
 
   * Added a build-conflicts against wx2.6-headers in debian/control.in
     (closes: #526200)
