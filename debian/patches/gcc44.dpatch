@@ -1,0 +1,18 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## gcc44.dpatch by Francesco Paolo Lovergine <frankie@debian.org>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: No description.
+
+@DPATCH@
+diff -urNad grass-6.4.0~rc4~/imagery/i.atcorr/Output.h grass-6.4.0~rc4/imagery/i.atcorr/Output.h
+--- grass-6.4.0~rc4~/imagery/i.atcorr/Output.h	2008-12-19 21:29:50.000000000 +0100
++++ grass-6.4.0~rc4/imagery/i.atcorr/Output.h	2009-05-12 18:13:06.000000000 +0200
+@@ -1,6 +1,7 @@
+ #ifndef MY_OUTPUT_H
+ #define MY_OUTPUT_H
+ 
++#include <cstdio>
+ #include <iostream>
+ #include <sstream>
+ #include <string>
