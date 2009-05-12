@@ -4,8 +4,9 @@ grass (6.4.0~rc4-3) UNRELEASED; urgency=low
     (closes: #526200)
   * [PATCH] gcc44.dpatch: added a missing std header for gcc 4.4.
     (closes: #526204)
+  * Added ghostscript among Recommends in debian/control.in.
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 12 May 2009 18:09:18 +0200
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 12 May 2009 20:50:40 +0200
 
 grass (6.4.0~rc4-2) unstable; urgency=high
 
