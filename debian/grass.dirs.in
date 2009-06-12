@@ -1,5 +1,5 @@
 usr/lib/grass@VERSION@
-/usr/bin
-/usr/lib/grass@VERSION@
-/usr/share/doc/grass
-/usr/share/man
+usr/bin
+usr/share/doc/grass
+usr/share/man
+usr/share/icons
