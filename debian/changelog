@@ -2,7 +2,10 @@ grass (6.4.0~rc5-2) unstable; urgency=low
 
   * NOT RELEASED YET
   * Added a grass menu item (Hamish).
-  * Added a grass.menu.in template.
+  * Added a grass.menu.in template with related icon.
+  * Added a simple x-grass wrapper to allow running grass without a pre-running
+    controlling terminal. At least it works within ordinary WMs launchers.
+    (closes: #503371)
 
  -- Francesco Paolo Lovergine <frankie@debian.org>  Fri, 12 Jun 2009 10:32:40 +0200
 

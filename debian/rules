@@ -165,6 +165,9 @@ install: build
 	# install icon file for debian menu system
 	install -m 644 debian/grass.xpm debian/usr/share/icons/$(BASE_NAME).xpm
 
+	# install x-grass wrapper script
+	install -m 755 debian/x-grass debian/usr/bin/x-grass
+
 	ln -fs /usr/lib/$(shell objdump -p /usr/lib/`gdal-config --libs|cut -d' ' -f2|sed -e 's/-l/lib/'`.so|grep SONAME|cut -d' ' -f18) \
 		debian/tmp/usr/lib/$(BASE_NAME)/lib/libgdal.so
 

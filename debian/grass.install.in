@@ -6,3 +6,5 @@ usr/lib/grass@VERSION@/etc
 usr/lib/grass@VERSION@/fonts
 usr/lib/grass@VERSION@/scripts
 usr/lib/grass@VERSION@/lib
+usr/share/icons
+usr/bin/x-grass
