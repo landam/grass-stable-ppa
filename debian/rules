@@ -201,6 +201,7 @@ binary-arch: install
 	dh_installdocs  -a
 	dh_installexamples  -a
 	dh_install -a
+	dh_installmenu -a
 	dh_installman -p$(PKG_NAME) debian/$(BASE_NAME).1 -a
 	dh_link -a
 	dh_strip -a

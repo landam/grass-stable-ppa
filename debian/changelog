@@ -1,3 +1,11 @@
+grass (6.4.0~rc5-2) unstable; urgency=low
+
+  * NOT RELEASED YET
+  * Added a grass menu item (Hamish).
+  * Added a grass.menu.in template.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Fri, 12 Jun 2009 10:32:40 +0200
+
 grass (6.4.0~rc5-1) unstable; urgency=low
 
   * New upstream release candidate.
