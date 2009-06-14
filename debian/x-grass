@@ -1,16 +1,16 @@
 #!/bin/sh
 #
-# This is a wrapper to call GRASS without a running xterm.
+# This is a wrapper to call GRASS without a running (x)terminal.
 #
 
-if [ "$DISPLAY" != "" ]; then
-	if [ $(tty) != "" ]; then
+if [ -n "$DISPLAY" ]; then
+	if [ -n "$(tty)" ]; then
 		exec /usr/bin/grass "$@"
 	else
 		exec x-terminal-emulator -e /bin/sh -c "/usr/bin/grass $@" 
 	fi
 else
-	if [ $(tty) != "" ]; then
+	if [ -n "$(tty)" ]; then
 		exec /usr/bin/grass "$@"
 	fi
 fi
