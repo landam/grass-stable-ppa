@@ -5,8 +5,10 @@ grass (6.4.0~rc5-2) unstable; urgency=low
   * Added a simple x-grass wrapper to allow running grass without a pre-running
     controlling terminal. At least it works within ordinary WMs launchers.
     (closes: #503371)
+  * Added newlocation.dpatch patch to manage correctly new locations.
+    (closes: #533738)
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Fri, 12 Jun 2009 10:32:40 +0200
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 13 Jul 2009 13:34:03 +0200
 
 grass (6.4.0~rc5-1) unstable; urgency=low
 
