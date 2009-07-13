@@ -6,8 +6,8 @@
 
 @DPATCH@
 diff -urNad grass-6.4.0~rc5~/general/g.region/printwindow.c grass-6.4.0~rc5/general/g.region/printwindow.c
---- grass-6.4.0~rc5~/general/g.region/printwindow.c	2008-12-19 21:30:09.000000000 +0100
-+++ grass-6.4.0~rc5/general/g.region/printwindow.c	2009-07-13 13:32:55.000000000 +0200
+--- grass-6.4.0~rc5~/general/g.region/printwindow.c	2009-07-13 13:35:34.000000000 +0200
++++ grass-6.4.0~rc5/general/g.region/printwindow.c	2009-07-13 14:29:28.000000000 +0200
 @@ -23,7 +23,7 @@
      double longitude, latitude;
  
@@ -18,8 +18,17 @@ diff -urNad grass-6.4.0~rc5~/general/g.region/printwindow.c grass-6.4.0~rc5/gene
  	x = window->proj;
  
 diff -urNad grass-6.4.0~rc5~/lib/gis/wind_format.c grass-6.4.0~rc5/lib/gis/wind_format.c
---- grass-6.4.0~rc5~/lib/gis/wind_format.c	2009-06-06 07:16:37.000000000 +0200
-+++ grass-6.4.0~rc5/lib/gis/wind_format.c	2009-07-13 13:32:00.000000000 +0200
+--- grass-6.4.0~rc5~/lib/gis/wind_format.c	2009-07-13 13:35:34.000000000 +0200
++++ grass-6.4.0~rc5/lib/gis/wind_format.c	2009-07-13 14:29:57.000000000 +0200
+@@ -18,7 +18,7 @@
+ #include <grass/gis.h>
+ 
+ 
+-static int format_double(double, char *);
++static void format_double(double , char *, int );
+ 
+ 
+ /**
 @@ -37,9 +37,10 @@
  {
      if (projection == PROJECTION_LL)
