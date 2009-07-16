@@ -1,3 +1,9 @@
+grass (6.4.0~rc4-3~bpo50+1) lenny-backports; urgency=low
+
+  * Backported to lenny.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Thu, 16 Jul 2009 14:55:29 +0200
+
 grass (6.4.0~rc4-3) unstable; urgency=medium
 
   * Added a build-conflicts against wx2.6-headers in debian/control.in
