@@ -3,12 +3,12 @@ Section: science
 Priority: optional
 Maintainer: Debian GIS Project <pkg-grass-devel@lists.alioth.debian.org>
 Uploaders: Francesco Paolo Lovergine <frankie@debian.org>
-Build-depends: flex, bison, libreadline5-dev, libncurses5-dev, lesstif2-dev, debhelper (>= 7), dpatch, 
+Build-depends: flex, bison,libreadline-dev | libreadline5-dev, libncurses5-dev, lesstif2-dev, debhelper (>= 7), dpatch, 
  libtiff4-dev, tcl-dev (>= 8.4), tk-dev (>= 8.4), libfftw3-dev, libxmu-dev, libglu1-mesa-dev | libglu1-xorg-dev, 
  libfreetype6-dev, autoconf2.13, autotools-dev, libgdal1-dev (>= 1.5.0), libproj-dev, proj-bin, libjpeg62-dev, 
  libpng12-dev, libpq-dev, unixodbc-dev, doxygen, fakeroot, libmysqlclient15-dev, graphviz, libsqlite3-dev, python-wxgtk2.8,
  libcairo2-dev, libwxgtk2.8-dev, python-dev (>= 2.5), swig
-Standards-Version: 3.8.1
+Standards-Version: 3.8.3
 Build-Conflicts: wx2.6-headers
 Homepage: http://grass.osgeo.org/
 Vcs-Browser: http://svn.debian.org/wsvn/pkg-grass/packages/grass/
@@ -21,7 +21,7 @@ Depends: ${shlibs:Depends}, xterm | x-terminal-emulator
 Suggests: grass-doc, gdal-bin, proj-bin, e00compr, avce00, gpsbabel, gpstrans,
  gnuplot, xml2, wget | curl, python-opengl, python-wxgtk2.8
 Recommends: python (>= 2.5), python-numpy, ghostscript
-Provides: grass@VERSION@
+Provides: grass@ABI@
 Description: Geographic Resources Analysis Support System 
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,

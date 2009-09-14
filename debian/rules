@@ -10,6 +10,7 @@ DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
 DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 
 VERSION=$(shell echo `head -2 $(CURDIR)/include/VERSION`|sed -e 's/ //')
+ABI=$(shell echo `head -3 $(CURDIR)/include/VERSION`|sed -e 's/ //g' -e 's/RC/-/')
 BASE_NAME=grass$(VERSION)
 PKG_NAME=grass
 
@@ -30,10 +31,14 @@ TCLINC = /usr/include/tcl
 
 include /usr/share/dpatch/dpatch.make
 
+versions: 
+	@echo "Version: $(VERSION)"
+	@echo "ABI: $(ABI)"
+
 templates: $(patsubst %.in,%,$(wildcard debian/*.in))
 
 debian/% :: debian/%.in
-	sed -e 's/@VERSION@/$(VERSION)/' $< >$@
+	sed -e 's/@VERSION@/$(VERSION)/' -e 's/@ABI@/$(ABI)/' $< >$@
 
 configure: patch config.status
 config.status: 
@@ -221,4 +226,4 @@ binary-arch: install
 	dh_builddeb -a
 
 binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary install patch unpatch configure clean-patched
+.PHONY: build clean binary-indep binary-arch binary install patch unpatch configure clean-patched versions
