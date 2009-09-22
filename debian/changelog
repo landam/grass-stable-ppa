@@ -5,7 +5,7 @@ grass (6.4.0~rc5-3) unstable; urgency=low
   * Now provides a strict versioned ABI string, which changes at every new
     release. See http://www.mail-archive.com/grass-dev@lists.osgeo.org/msg10312.html
     for a discussion about GIS_H_VERSION. This trick should hopefully avoid
-    unoticed breakages for plugins and Qgis. Basically, forces rebuilding of
+    unnoticed breakages for plugins and Qgis. Basically, forces rebuilding of
     gdal-grass or qgis at every new Grass release.
 
  -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 14 Sep 2009 15:11:57 +0200
