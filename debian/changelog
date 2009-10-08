@@ -1,3 +1,14 @@
+grass (6.4.0~rc5+39438-1) unstable; urgency=low
+
+  * New upstream snapshot taken from 6.4 branch. 
+  * Removed patch newlocation.dpatch, merged upstream.
+  * Grass is currently not compatible with swig 1.3.39, which causes wxpython
+    generalized misfunctioning. Added a swig.dpatch python to pre-build some 
+    swig stuff with 1.3.36.
+    (closes: #549867)
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Thu, 08 Oct 2009 10:11:02 +0200
+
 grass (6.4.0~rc5-3) unstable; urgency=low
 
   * Build-dep on libreadline-dev with more preference againtst libreadline5-dev.
