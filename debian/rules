@@ -180,13 +180,16 @@ install-indep: build-indep
 	dh_testdir -i
 	dh_testroot -i
 	install -m 644  -d debian/tmp
-	install -m 644  -d debian/tmp/programming-manual/vector/html \
-			   debian/tmp/programming-manual/db/html \
-			   debian/tmp/programming-manual/gis/html
+	install -m 644  -d debian/tmp/programming-manual/vector/html/search \
+			   debian/tmp/programming-manual/db/html/search \
+			   debian/tmp/programming-manual/gis/html/search 
 			   
-	install -m 644 lib/vector/html/* debian/tmp/programming-manual/vector/html
-	install -m 644 lib/db/html/* debian/tmp/programming-manual/db/html
-	install -m 644 lib/gis/html/* debian/tmp/programming-manual/gis/html
+	-install -m 644 lib/vector/html/* debian/tmp/programming-manual/vector/html
+	-install -m 644 lib/vector/html/search/* debian/tmp/programming-manual/vector/html/search
+	-install -m 644 lib/db/html/* debian/tmp/programming-manual/db/html
+	-install -m 644 lib/db/html/search/* debian/tmp/programming-manual/db/html/search
+	-install -m 644 lib/gis/html/* debian/tmp/programming-manual/gis/html
+	-install -m 644 lib/gis/html/search/* debian/tmp/programming-manual/gis/html/search
 
 # Build architecture-independent files here.
 binary-indep: install install-indep 
