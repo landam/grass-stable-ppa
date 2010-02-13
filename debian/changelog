@@ -1,3 +1,9 @@
+grass (6.4.0~rc5+40109-2) unstable; urgency=low
+
+  * Suggest NetPBM used by NVIZ max. PPM export
+
+ -- Hamish Bowman <hamish_b@yahoo.com>  Sat, 13 Feb 2010 15:52:43 +1300
+
 grass (6.4.0~rc5+40109-1) unstable; urgency=low
 
   * New upstream snapshot taken from 6.4 branch. 
