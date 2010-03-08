@@ -1,13 +1,14 @@
 grass (6.4.0~rc5+40109-2) unstable; urgency=low
 
   * Suggest NetPBM used by NVIZ max. PPM export
+  * Fixed typo in past debian/changelog entry.
 
  -- Hamish Bowman <hamish_b@yahoo.com>  Sat, 13 Feb 2010 15:52:43 +1300
 
 grass (6.4.0~rc5+40109-1) unstable; urgency=low
 
   * New upstream snapshot taken from 6.4 branch. 
-  * Fixed debian/rules to manage subdir installationis for the programming manual.
+  * Fixed debian/rules to manage subdir installations for the programming manual.
 
  -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 22 Dec 2009 15:40:55 +0100
 
