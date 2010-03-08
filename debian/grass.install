@@ -6,5 +6,6 @@ usr/lib/grass64/etc
 usr/lib/grass64/fonts
 usr/lib/grass64/scripts
 usr/lib/grass64/lib
+usr/lib/grass64/locale
 usr/share/icons
 usr/bin/x-grass
