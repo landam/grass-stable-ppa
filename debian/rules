@@ -155,7 +155,7 @@ install: build
 	
 	# delete extra license files
 	rm -f debian/tmp/usr/lib/$(BASE_NAME)/bwidget/LICENSE.txt
-    
+
 	# change section from 1 to .1grass 
 	mv debian/tmp/usr/lib/$(BASE_NAME)/man/man1/grass6.1 debian/$(BASE_NAME).1
 	for m in debian/tmp/usr/lib/$(BASE_NAME)/man/man1/*.1; do n=`basename $$m .1`; mv $$m debian/tmp/usr/lib/$(BASE_NAME)/man/man1/$$n.1grass; done
