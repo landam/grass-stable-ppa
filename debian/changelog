@@ -1,10 +1,10 @@
-grass (6.4.0~rc5+41348-1) unstable; urgency=low
+grass (6.4.0~rc5+41380-1) unstable; urgency=low
 
   [ Hamish Bowman ]
   * Suggest NetPBM used by NVIZ max. PPM export.
 
   [ Francesco Paolo Lovergine ]
-  * New upstream release with many localization fixes.
+  * New upstream snapshot with many localization fixes.
   * Fixed typo in past debian/changelog entry.
   * Added missing locale/ directory to debian/grass.install.in.
     (closes: #563255)
