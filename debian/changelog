@@ -7,8 +7,9 @@ grass (6.4.0~rc5+41380-1) unstable; urgency=low
   * New upstream snapshot with many localization fixes.
   * Fixed typo in past debian/changelog entry.
   * Added missing locale/ directory to debian/grass.install.in.
-  * Policy bumped to 3.8.4, no changes.
     (closes: #563255)
+  * Policy bumped to 3.8.4, no changes.
+  * Vcs-* fields now point to trunk.
 
  -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 08 Mar 2010 16:44:08 +0100
 
