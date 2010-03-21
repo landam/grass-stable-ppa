@@ -1,4 +1,4 @@
-grass (6.4.0~rc6-1) unstable; urgency=low
+grass (6.4.0~rc6-1) unstable; urgency=medium
 
   * New upstream pre-release with an important proj fix.
   * Added ${misc:Depends} to grass-{dev,doc} to make lintian happy.
