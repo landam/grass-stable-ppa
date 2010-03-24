@@ -1,3 +1,9 @@
+grass (6.4.0~rc6-2) experimental; urgency=low
+
+  * Explicitly set Tcl to >= 8.5 to force transition to new tcltk-defaults.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 24 Mar 2010 23:52:45 +0100
+
 grass (6.4.0~rc6-1) unstable; urgency=medium
 
   * New upstream pre-release with an important proj fix.
