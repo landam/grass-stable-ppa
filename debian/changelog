@@ -1,3 +1,9 @@
+grass (6.4.0~rc6+42329-1) unstable; urgency=low
+
+  * New upstream snapshot with some fixes in modules.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 24 May 2010 16:47:55 +0200
+
 grass (6.4.0~rc6-1) unstable; urgency=medium
 
   * New upstream pre-release with an important proj fix.
