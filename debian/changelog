@@ -7,6 +7,8 @@ grass (6.4.0~rc6+42329-2) unstable; urgency=low
         + gcs.dpatch: fix a proj description in a .csv file for a specific CRS.
         + g.extension.dpatch: added Markus g.extension script to download and
           eventually install extension from GRASS svn add-ons repo.
+        + scripts.dpatch: some plain fixes to some shell scripts: m.proj,
+          r.mask, v.in.gpsbabel, v.in.mapgen. r.regression.line.
 
  -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 21 Sep 2010 14:27:53 +0200
 
