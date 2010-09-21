@@ -4,3 +4,6 @@ pager
 xterm
 instdir
 swig
+localization
+doc
+gcs

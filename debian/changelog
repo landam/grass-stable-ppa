@@ -1,3 +1,13 @@
+grass (6.4.0~rc6+42329-2) unstable; urgency=low
+
+  * Merging main fixes taken from final 6.4.0 release. The big patch has been
+    splitted in a few sub-patches for specific improvements.
+        + localization.dpatch: updates to .po files.
+        + doc.dpatch: various documentation fixes with update to main URL too. 
+        + gcs.dpatch: fix a proj description in a .csv file for a specific CRS.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 21 Sep 2010 14:27:53 +0200
+
 grass (6.4.0~rc6+42329-1) unstable; urgency=low
 
   * New upstream snapshot with some fixes in modules.
