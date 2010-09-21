@@ -9,8 +9,11 @@ grass (6.4.0~rc6+42329-2) unstable; urgency=low
           eventually install extension from GRASS svn add-ons repo.
         + scripts.dpatch: some plain fixes to some shell scripts: m.proj,
           r.mask, v.in.gpsbabel, v.in.mapgen. r.regression.line.
+  * Added missing docs used by GUIs: AUTHORS, contributors CSV files, 
+    COPYING and a symlink to GPL-2 license in /usr/share/common-licenses.
+    Thanks AlanB and Hamish.
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 21 Sep 2010 14:27:53 +0200
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 21 Sep 2010 16:45:05 +0200
 
 grass (6.4.0~rc6+42329-1) unstable; urgency=low
 
