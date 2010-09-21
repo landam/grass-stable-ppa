@@ -5,6 +5,8 @@ grass (6.4.0~rc6+42329-2) unstable; urgency=low
         + localization.dpatch: updates to .po files.
         + doc.dpatch: various documentation fixes with update to main URL too. 
         + gcs.dpatch: fix a proj description in a .csv file for a specific CRS.
+        + g.extension.dpatch: added Markus g.extension script to download and
+          eventually install extension from GRASS svn add-ons repo.
 
  -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 21 Sep 2010 14:27:53 +0200
 
