@@ -4,11 +4,25 @@ grass (6.4.0~rc6+42329-2) unstable; urgency=low
     splitted in a few sub-patches for specific improvements.
         + localization.dpatch: updates to .po files.
         + doc.dpatch: various documentation fixes with update to main URL too. 
-        + gcs.dpatch: fix a proj description in a .csv file for a specific CRS.
+        + gcs.dpatch: Port GDAL's http://trac.osgeo.org/gdal/changeset/19810 
+              to fix missing towsg84 for EPSG codes: 3120 2172 2173 2174 2175 
+              3333 3334 3335 3329 3330 3331 3332 3328 4179. 
+              It also forces ETRS89 datum to be
+              interpreted as 0,0,0,0,0,0,0 instead of 0.000,0.000,0.000 (i.e.
+              overrides the datum.table ETRS89 setting, too). More info:
+              http://lists.osgeo.org/pipermail/grass-dev/2010-June/050918.html,
+              http://trac.osgeo.org/gdal/ticket/3579.
         + g.extension.dpatch: added Markus g.extension script to download and
           eventually install extension from GRASS svn add-ons repo.
         + scripts.dpatch: some plain fixes to some shell scripts: m.proj,
           r.mask, v.in.gpsbabel, v.in.mapgen. r.regression.line.
+        + g.proj: only split at space characters if there is a + character
+                  following
+        + clean_nodes: in Vlib fixes segfault when cleaning small angles 
+                   at nodes
+        + read_sig.c: catch empty sig files
+        + convert.c: added non-standard datum name lookup
+        + r.grow.distance: bugfix for distance calculation
   * Added missing docs used by GUIs: AUTHORS, contributors CSV files, 
     COPYING and a symlink to GPL-2 license in /usr/share/common-licenses.
     Those files need to be symlinked in GISBASE to be found at run-time.

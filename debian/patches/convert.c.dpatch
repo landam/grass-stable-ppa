@@ -1,0 +1,19 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## convert.c.dpatch by Francesco Paolo Lovergine <frankie@debian.org>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: No description.
+
+@DPATCH@
+diff -urNad '--exclude=CVS' '--exclude=.svn' '--exclude=.git' '--exclude=.arch' '--exclude=.hg' '--exclude=_darcs' '--exclude=.bzr' grass-6.4.0~rc6+42329~/lib/proj/convert.c grass-6.4.0~rc6+42329/lib/proj/convert.c
+--- grass-6.4.0~rc6+42329~/lib/proj/convert.c	2010-03-15 14:27:23.000000000 +0100
++++ grass-6.4.0~rc6+42329/lib/proj/convert.c	2010-09-28 11:42:02.000000000 +0200
+@@ -744,6 +744,8 @@
+     "Militar_Geographische_Institut",
+     "Potsdam_Datum_83",
+     "Deutsches_Hauptdreiecksnetz",
++    "South_American_1969",
++    "South_American_Datum_1969",
+     NULL
+ };
+ 

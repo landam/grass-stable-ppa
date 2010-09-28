@@ -1,0 +1,20 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## read_sig.c.dpatch by Francesco Paolo Lovergine <frankie@debian.org>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: No description.
+
+@DPATCH@
+diff -urNad '--exclude=CVS' '--exclude=.svn' '--exclude=.git' '--exclude=.arch' '--exclude=.hg' '--exclude=_darcs' '--exclude=.bzr' grass-6.4.0~rc6+42329~/imagery/i.smap/shapiro/read_sig.c grass-6.4.0~rc6+42329/imagery/i.smap/shapiro/read_sig.c
+--- grass-6.4.0~rc6+42329~/imagery/i.smap/shapiro/read_sig.c	2010-03-15 14:28:18.000000000 +0100
++++ grass-6.4.0~rc6+42329/imagery/i.smap/shapiro/read_sig.c	2010-09-28 11:34:11.000000000 +0200
+@@ -26,6 +26,9 @@
+     if (I_ReadSigSet(fd, S) < 0 || Ref.nfiles != S->nbands)
+ 	G_fatal_error(_("Signature file <%s> is invalid"), parms->sigfile);
+ 
++    if (S->ClassSig == NULL || S->title == NULL)
++	G_fatal_error(_("Signature file <%s> is empty"), parms->sigfile);
++
+     fclose(fd);
+ 
+     return 0;

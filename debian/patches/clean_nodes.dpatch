@@ -1,0 +1,38 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## clean_nodes.dpatch by Francesco Paolo Lovergine <frankie@debian.org>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: No description.
+
+@DPATCH@
+diff -urNad '--exclude=CVS' '--exclude=.svn' '--exclude=.git' '--exclude=.arch' '--exclude=.hg' '--exclude=_darcs' '--exclude=.bzr' grass-6.4.0~rc6+42329~/lib/vector/Vlib/clean_nodes.c grass-6.4.0~rc6+42329/lib/vector/Vlib/clean_nodes.c
+--- grass-6.4.0~rc6+42329~/lib/vector/Vlib/clean_nodes.c	2010-03-15 14:27:12.000000000 +0100
++++ grass-6.4.0~rc6+42329/lib/vector/Vlib/clean_nodes.c	2010-09-28 11:30:43.000000000 +0200
+@@ -162,6 +162,10 @@
+ 			Vect_line_delete_point(Points, Points->n_points - 1);	/* last */
+ 		    }
+ 
++            /* It may happen that it is one line: node could be deleted,
++             * in that case we have to read the node coords first */
++            Vect_get_node_coor(Map, node, &nx, &ny, &nz);
++
+ 		    if (Points->n_points > 1) {
+ 			new_short_line =
+ 			    Vect_rewrite_line(Map, abs(short_line),
+@@ -200,7 +204,6 @@
+ 			type = GV_LINE;
+ 		    }
+ 
+-		    Vect_get_node_coor(Map, node, &nx, &ny, &nz);
+ 		    Vect_reset_line(Points);
+ 		    Vect_append_point(Points, nx, ny, nz);
+ 		    Vect_append_point(Points, x, y, z);
+@@ -242,7 +245,7 @@
+ 		angle1 = angle2;
+ 	    }
+ 
+-	    if (clean)
++        if (clean || !Vect_node_alive(Map, node))
+ 		break;
+ 	}
+     }
