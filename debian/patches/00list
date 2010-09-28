@@ -13,3 +13,6 @@ clean_nodes
 read_sig.c
 convert.c
 r.grow.distance
+geom.c
+flythrough
+filldepr.cc

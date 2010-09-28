@@ -1,0 +1,22 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## filldepr.cc.dpatch by Francesco Paolo Lovergine <frankie@debian.org>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: No description.
+
+@DPATCH@
+diff -urNad '--exclude=CVS' '--exclude=.svn' '--exclude=.git' '--exclude=.arch' '--exclude=.hg' '--exclude=_darcs' '--exclude=.bzr' grass-6.4.0~rc6+42329~/raster/r.terraflow/filldepr.cc grass-6.4.0~rc6+42329/raster/r.terraflow/filldepr.cc
+--- grass-6.4.0~rc6+42329~/raster/r.terraflow/filldepr.cc	2010-03-15 14:26:24.000000000 +0100
++++ grass-6.4.0~rc6+42329/raster/r.terraflow/filldepr.cc	2010-09-28 12:15:26.000000000 +0200
+@@ -128,8 +128,10 @@
+   boundaryType* nextedge;
+   elevation_type h;
+   cclabel_type u, v, ur, vr;
++  /* no write op to boundaryStr, no need to call stream_len() each time */
++  off_t nitems = boundaryStr->stream_len();
+   boundaryStr->seek(0);
+-  for (size_t i=0; i< boundaryStr->stream_len(); i++) {
++  for (off_t i=0; i< nitems; i++) {
+ 
+     /*read next edge*/
+     ae = boundaryStr->read_item(&nextedge);

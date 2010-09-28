@@ -23,6 +23,9 @@ grass (6.4.0~rc6+42329-2) unstable; urgency=low
         + read_sig.c: catch empty sig files
         + convert.c: added non-standard datum name lookup
         + r.grow.distance: bugfix for distance calculation
+        + geom.c: fixes bug for min_area
+        + flythrough: fixes NVIZ fly mode on 64bit. See #46 from upstream trac.
+        + filldepr.cc: r.terraflow: backport fix for #1006 from upstream trac.
   * Added missing docs used by GUIs: AUTHORS, contributors CSV files, 
     COPYING and a symlink to GPL-2 license in /usr/share/common-licenses.
     Those files need to be symlinked in GISBASE to be found at run-time.
