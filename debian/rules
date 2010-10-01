@@ -222,7 +222,7 @@ binary-arch: install
 		    usr/share/doc/grass/COPYING usr/lib/$(BASE_NAME)/COPYING \
 		    usr/share/common-licenses/GPL-2 usr/lib/$(BASE_NAME)/GPL.TXT
 	dh_strip -a
-	dh_compress -a
+	dh_compress -a -XAUTHORS
 	dh_fixperms -a
 	dh_makeshlibs -a -a
 	dh_installdeb -a
