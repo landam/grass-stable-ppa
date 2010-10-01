@@ -14,8 +14,13 @@ grass (6.4.0~rc6+42329-2) unstable; urgency=low
               http://trac.osgeo.org/gdal/ticket/3579.
         + g.extension.dpatch: added Markus g.extension script to download and
           eventually install extension from GRASS svn add-ons repo.
-        + scripts.dpatch: some plain fixes to some shell scripts: m.proj,
-          r.mask, v.in.gpsbabel, v.in.mapgen. r.regression.line.
+        + scripts.dpatch: some fixes to a blounce of scripts: 
+                m.proj - added GUI section
+                r.mask - allow r.mask to work in GISDBASE
+                v.in.gpsbabel - fixed broken awk statement
+                v.in.mapgen - better describe what v.in.mapgen will load
+                r.regression.line -  rename variable from italian so it 
+                     doesn't get confused with median, add F-test to key
         + g.proj: only split at space characters if there is a + character
                   following
         + clean_nodes: in Vlib fixes segfault when cleaning small angles 
