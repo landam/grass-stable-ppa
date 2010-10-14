@@ -8,6 +8,12 @@ grass (6.4.0-1) experimental; urgency=low
   * Policy bumped to 3.9.1. No changes required.
   * Added libgdal1-dev dep to grass-dev list of dependencies.
     (closes: #598706)
+  * Merged from 6.4.0~rc6+42329-3:
+         Added missing docs used by GUIs: AUTHORS, contributors CSV files,
+         COPYING and a symlink to GPL-2 license in /usr/share/common-licenses.
+         Those files need to be symlinked in GISBASE to be found at run-time.
+         Thanks AlanB and Hamish for pointing the problem.
+         (closes: #594492)
 
  -- Francesco Paolo Lovergine <frankie@debian.org>  Thu, 14 Oct 2010 16:08:06 +0200
 
