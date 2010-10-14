@@ -1,3 +1,16 @@
+grass (6.4.0-1) experimental; urgency=low
+
+  * New upstream final release.
+  * Note that now default interface is the wx one, so (wx)python related suggestions
+    have been promoted to proper dependencies. For the same reason I would
+    consider cut/paste problems of the past Tk interface obsolete.
+    (closes: #305249)
+  * Policy bumped to 3.9.1. No changes required.
+  * Added libgdal1-dev dep to grass-dev list of dependencies.
+    (closes: #598706)
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Thu, 14 Oct 2010 16:08:06 +0200
+
 grass (6.4.0~rc6+42329-2) experimental; urgency=low
 
   * Now builds against Tcl/Tk 8.5.
