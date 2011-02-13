@@ -4,11 +4,11 @@ Priority: optional
 Maintainer: Debian GIS Project <pkg-grass-devel@lists.alioth.debian.org>
 Uploaders: Francesco Paolo Lovergine <frankie@debian.org>
 Build-depends: flex, bison,libreadline-dev | libreadline5-dev, libncurses5-dev, lesstif2-dev, debhelper (>= 7), dpatch, 
- libtiff4-dev, tcl-dev (>= 8.4), tk-dev (>= 8.4), libfftw3-dev, libxmu-dev, libglu1-mesa-dev | libglu1-xorg-dev, 
+ libtiff4-dev, tcl-dev (>= 8.5), tk-dev (>= 8.5), libfftw3-dev, libxmu-dev, libglu1-mesa-dev | libglu1-xorg-dev, 
  libfreetype6-dev, autoconf2.13, autotools-dev, libgdal1-dev (>= 1.5.0), libproj-dev, proj-bin, libjpeg62-dev, 
  libpng12-dev, libpq-dev, unixodbc-dev, doxygen, fakeroot, libmysqlclient15-dev, graphviz, libsqlite3-dev, python-wxgtk2.8,
  libcairo2-dev, libwxgtk2.8-dev, python-dev (>= 2.5), swig
-Standards-Version: 3.8.4
+Standards-Version: 3.9.1
 Build-Conflicts: wx2.6-headers
 Homepage: http://grass.osgeo.org/
 Vcs-Browser: http://svn.debian.org/wsvn/pkg-grass/packages/grass/trunk
@@ -17,11 +17,12 @@ Vcs-Svn: svn://svn.debian.org/pkg-grass/packages/grass/trunk
 Package: grass
 Section: science
 Architecture: any
-Depends: ${shlibs:Depends}, xterm | x-terminal-emulator, ${misc:Depends}
+Depends: ${shlibs:Depends}, xterm | x-terminal-emulator, python (>= 2.5), python-numpy,
+ python-opengl, python-wxgtk2.8, ${misc:Depends}
 Suggests: grass-doc, gdal-bin, proj-bin, e00compr, avce00, gpsbabel, gpstrans,
- gnuplot, xml2, wget | curl, python-opengl, python-wxgtk2.8, netpbm
-Recommends: python (>= 2.5), python-numpy, ghostscript
-Provides: grass640+42329
+ gnuplot, xml2, wget | curl, netpbm
+Recommends: ghostscript
+Provides: grass640
 Description: Geographic Resources Analysis Support System 
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
@@ -33,9 +34,6 @@ Description: Geographic Resources Analysis Support System
 Package: grass-doc
 Section: doc
 Architecture: all
-Conflicts: grass-doc
-Replaces: grass-doc
-Provides: grass-doc
 Depends: ${misc:Depends}
 Description: Geographic Resources Analysis Support System documentation
  Commonly referred to as GRASS, this is a Geographic Information
@@ -50,7 +48,7 @@ Description: Geographic Resources Analysis Support System documentation
 Package: grass-dev
 Section: devel
 Architecture: any
-Depends: grass (= ${binary:Version}), libproj-dev, ${misc:Depends}
+Depends: grass (= ${binary:Version}), libproj-dev, libgdal1-dev, ${misc:Depends}
 Suggests: pkg-config
 Provides: grass64-dev
 Description: GRASS GIS development files

@@ -1,3 +1,23 @@
+grass (6.4.0-2) unstable; urgency=low
+
+  * Merged from experimental.
+    (closes: #594492)
+  * Removed pre-release patches inserted in the squeeze latest upload.
+  * New upstream final release 6.4.0.
+  * Note that now default interface is the wx one, so (wx)python related suggestions
+    have been promoted to proper dependencies. For the same reason I would
+    consider cut/paste problems of the past Tk interface obsolete.
+    (closes: #305249)
+  * Policy bumped to 3.9.1. No changes required.
+  * Added libgdal1-dev dep to grass-dev list of dependencies.
+    (closes: #598706)
+  * Merged from 6.4.0~rc6+42329-3:
+  * Now builds against Tcl/Tk >= 8.5.
+    (closes: #582595)
+  * Removed obsolete grass-doc conflicts/replaces.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Sun, 13 Feb 2011 19:09:03 +0100
+
 grass (6.4.0~rc6+42329-3) unstable; urgency=low
 
   * Merging main fixes taken from final 6.4.0 release. The big patch has been

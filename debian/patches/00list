@@ -4,15 +4,3 @@ pager
 xterm
 instdir
 swig
-localization
-doc
-gcs
-g.extension
-g.proj
-clean_nodes
-read_sig.c
-convert.c
-r.grow.distance
-geom.c
-flythrough
-filldepr.cc
