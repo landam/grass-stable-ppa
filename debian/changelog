@@ -1,6 +1,6 @@
 grass (6.4.0-2) unstable; urgency=low
 
-  * Merged from experimental.
+  * Merged from 6.4.0-1 in experimental.
     (closes: #594492)
   * Removed pre-release patches inserted in the squeeze latest upload.
   * New upstream final release 6.4.0.
