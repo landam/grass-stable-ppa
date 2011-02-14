@@ -29,8 +29,6 @@ endif
 
 TCLINC = /usr/include/tcl
 
-include /usr/share/dpatch/dpatch.make
-
 versions: 
 	@echo "Version: $(VERSION)"
 	@echo "ABI: $(ABI)"
@@ -40,7 +38,7 @@ templates: $(patsubst %.in,%,$(wildcard debian/*.in))
 debian/% :: debian/%.in
 	sed -e 's/@VERSION@/$(VERSION)/' -e 's/@ABI@/$(ABI)/' $< >$@
 
-configure: patch config.status
+configure: config.status
 config.status: 
 	dh_testdir
 	# Add here commands to configure the package.
@@ -93,8 +91,8 @@ build-indep-stamp:
 
 	touch $@
 
-clean: templates clean-patched unpatch 
-clean-patched:
+clean: templates true-clean 
+true-clean:
 	dh_testdir
 	dh_testroot
 
@@ -232,4 +230,4 @@ binary-arch: install
 	dh_builddeb -a
 
 binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary install patch unpatch configure clean-patched versions
+.PHONY: build clean binary-indep binary-arch binary install configure true-clean versions

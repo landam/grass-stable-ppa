@@ -3,7 +3,7 @@ Section: science
 Priority: optional
 Maintainer: Debian GIS Project <pkg-grass-devel@lists.alioth.debian.org>
 Uploaders: Francesco Paolo Lovergine <frankie@debian.org>
-Build-depends: flex, bison,libreadline-dev | libreadline5-dev, libncurses5-dev, lesstif2-dev, debhelper (>= 7), dpatch, 
+Build-depends: flex, bison,libreadline-dev | libreadline5-dev, libncurses5-dev, lesstif2-dev, debhelper (>= 7), 
  libtiff4-dev, tcl-dev (>= 8.5), tk-dev (>= 8.5), libfftw3-dev, libxmu-dev, libglu1-mesa-dev | libglu1-xorg-dev, 
  libfreetype6-dev, autoconf2.13, autotools-dev, libgdal1-dev (>= 1.5.0), libproj-dev, proj-bin, libjpeg62-dev, 
  libpng12-dev, libpq-dev, unixodbc-dev, doxygen, fakeroot, libmysqlclient15-dev, graphviz, libsqlite3-dev, python-wxgtk2.8,
@@ -11,8 +11,8 @@ Build-depends: flex, bison,libreadline-dev | libreadline5-dev, libncurses5-dev, 
 Standards-Version: 3.9.1
 Build-Conflicts: wx2.6-headers
 Homepage: http://grass.osgeo.org/
-Vcs-Browser: http://svn.debian.org/wsvn/pkg-grass/packages/grass/trunk
-Vcs-Svn: svn://svn.debian.org/pkg-grass/packages/grass/trunk
+Vcs-Browser: http://git.debian.org/?p=pkg-grass/grass.git
+Vcs-Git: git://git.debian.org/git/pkg-grass/grass.git
 
 Package: grass
 Section: science
