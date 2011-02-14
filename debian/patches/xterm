@@ -1,0 +1,13 @@
+Index: grass/lib/init/grass-xterm-wrapper
+===================================================================
+--- grass.orig/lib/init/grass-xterm-wrapper	2011-02-14 17:15:01.000000000 +0100
++++ grass/lib/init/grass-xterm-wrapper	2011-02-14 17:28:38.000000000 +0100
+@@ -3,7 +3,7 @@
+ 
+ if [ -z "$GRASS_XTERM" ] ; then
+    # find a working xterm or xterm compatible executable
+-   TERM_TRY="xterm rxvt x-terminal-emulator"
++   TERM_TRY="x-terminal-emulator rxvt xterm"
+    for TERM_PROG in $TERM_TRY ; do
+       if [ -x "`which $TERM_PROG`" ] ; then
+          GRASS_XTERM="$TERM_PROG"

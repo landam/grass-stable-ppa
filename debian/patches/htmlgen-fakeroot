@@ -1,0 +1,13 @@
+Index: grass/include/Make/Html.make
+===================================================================
+--- grass.orig/include/Make/Html.make	2011-02-14 17:15:01.000000000 +0100
++++ grass/include/Make/Html.make	2011-02-14 17:27:03.000000000 +0100
+@@ -34,7 +34,7 @@
+ 	GISBASE=$(RUN_GISBASE) \
+ 	PATH="$(BIN):$$PATH" \
+ 	$(LD_LIBRARY_PATH_VAR)="$(BIN):$(ARCH_LIBDIR):$($(LD_LIBRARY_PATH_VAR))" \
+-	LC_ALL=C $(1) --html-description < /dev/null | grep -v '</body>\|</html>' > $(PGM).tmp.html ; true
++	LC_ALL=C fakeroot $(1) --html-description < /dev/null | grep -v '</body>\|</html>' > $(PGM).tmp.html ; true
+ 
+ $(HTMLDIR)/$(PGM).html: $(HTMLSRC)
+ 	if [ "$(HTMLSRC)" != "" ] ; then $(call htmldesc,$<) ; fi

@@ -1,14 +1,8 @@
-#! /bin/sh /usr/share/dpatch/dpatch-run
-## www-browser.dpatch by Hamish Bowman <hamish-guest alioth.debian.org>
-##
-## All lines beginning with `## DP:' are a description of the patch.
-## DP: Use www-browser as HTML browser, the Debian way
-
-@DPATCH@
-diff -urNad grass6_devel/lib/init/init.sh.6.4svn grass6_devel/lib/init/init.sh
---- grass6_devel/lib/init/init.sh.ORIG	2008-10-31 02:26:25.000000000 +1300
-+++ grass6_devel/lib/init/init.sh	2008-10-31 02:16:53.000000000 +1300
-@@ -315,53 +315,11 @@
+Index: grass/lib/init/init.sh
+===================================================================
+--- grass.orig/lib/init/init.sh	2011-02-14 17:15:01.000000000 +0100
++++ grass/lib/init/init.sh	2011-02-14 17:28:01.000000000 +0100
+@@ -325,53 +325,11 @@
  
  # try and find a web browser if one isn't already specified
  if [ ! "$GRASS_HTML_BROWSER" ] ; then

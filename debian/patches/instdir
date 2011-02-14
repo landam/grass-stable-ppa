@@ -1,14 +1,8 @@
-#! /bin/sh /usr/share/dpatch/dpatch-run
-## instdir.dpatch by Francesco Paolo Lovergine <frankie@debian.org>
-##
-## All lines beginning with `## DP:' are a description of the patch.
-## DP: Modifies destination directory to use the grass<major><minor> simplified schema.
-
-@DPATCH@
-diff -urNad grass-6.4.0~rc3~/configure grass-6.4.0~rc3/configure
---- grass-6.4.0~rc3~/configure	2009-03-02 17:41:55.000000000 +0100
-+++ grass-6.4.0~rc3/configure	2009-03-02 17:42:36.000000000 +0100
-@@ -1298,7 +1298,7 @@
+Index: grass/configure
+===================================================================
+--- grass.orig/configure	2011-02-14 17:15:00.000000000 +0100
++++ grass/configure	2011-02-14 17:28:52.000000000 +0100
+@@ -1392,7 +1392,7 @@
  if test -n "$MACOSX_APP" ; then
      INSTDIR='${prefix}'"/GRASS-${GRASS_VERSION_MAJOR}.${GRASS_VERSION_MINOR}.app/Contents/MacOS"
  else
@@ -17,9 +11,10 @@ diff -urNad grass-6.4.0~rc3~/configure grass-6.4.0~rc3/configure
  fi
  
  
-diff -urNad grass-6.4.0~rc3~/grass.pc.in grass-6.4.0~rc3/grass.pc.in
---- grass-6.4.0~rc3~/grass.pc.in	2009-03-02 17:41:55.000000000 +0100
-+++ grass-6.4.0~rc3/grass.pc.in	2009-03-02 17:44:06.000000000 +0100
+Index: grass/grass.pc.in
+===================================================================
+--- grass.orig/grass.pc.in	2011-02-14 17:15:00.000000000 +0100
++++ grass/grass.pc.in	2011-02-14 17:28:52.000000000 +0100
 @@ -1,12 +1,12 @@
  # Package Information for pkg-config
  

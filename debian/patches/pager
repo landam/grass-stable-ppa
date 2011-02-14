@@ -1,0 +1,19 @@
+Index: grass/lib/init/init.sh
+===================================================================
+--- grass.orig/lib/init/init.sh	2011-02-14 17:28:01.000000000 +0100
++++ grass/lib/init/init.sh	2011-02-14 17:28:23.000000000 +0100
+@@ -276,10 +276,12 @@
+ 
+ # Set some environment variables if they are not set
+ if [ ! "$GRASS_PAGER" ] ; then
+-    if [ -x /bin/more ] || [ -x /usr/bin/more ] ; then
+-        GRASS_PAGER=more
++    if [ -x /usr/bin/pager ] ; then
++      	GRASS_PAGER=pager
+     elif [ -x /bin/less ] || [ -x /usr/bin/less ] ; then
+         GRASS_PAGER=less
++    elif [ -x /bin/more ] || [ -x /usr/bin/more ] ; then
++         GRASS_PAGER=more
+     elif [ "$MINGW" ] ; then
+         GRASS_PAGER=more
+     else
