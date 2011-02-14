@@ -1,0 +1,53 @@
+<H2>DESCRIPTION</H2>
+
+<EM>v.label.sa</EM> makes a label-file from a GRASS vector map
+with labels created from attributes in the attached table. The labels are
+placed in as optimal place as possible. The label file has the same syntax
+as the one created by <A HREF="v.label.html">v.label</A>
+
+
+<H2>EXAMPLE</H2>
+
+North Carolina example:
+<p>
+<div class="code"><pre>
+# get font names:
+d.font -L
+
+v.label.sa roadsmajor labels=roads_labels column=ROAD_NAME color=red \
+           background=white size=250 font=Vera
+
+# set region:
+g.region rast=lsat7_2002_10 -p
+
+# display:
+d.rgb b=lsat7_2002_10 g=lsat7_2002_20 r=lsat7_2002_30
+d.vect roadsmajor col=yellow
+d.labels roads_labels
+</pre></div>
+
+<p>
+<center>
+<img src="v_label_sa.jpg" alt="Road labeling with v.label.sa"><br>
+<i>Road labeling with v.label.sa (Raleigh, North Carolina, USA, area)</i>
+</center>
+
+
+<H2>REFERENCES</H2>
+Edmondson, Christensen, Marks and Shieber: A General Cartographic
+Labeling Algorithm, Cartographica, Vol. 33, No. 4, Winter 1996, pp. 13-23
+The algorithm works by the principle of Simulated Annealing.
+
+<H2>SEE ALSO</H2>
+<EM>
+<A HREF="v.labels.html">d.label</A><br>
+<A HREF="d.labels.html">d.labels</A><br>
+<A HREF="ps.map.html">ps.map</A>
+<A href="http://en.wikipedia.org/wiki/Simulated_Annealing">Wikipedia article on simulated annealing</A>
+</EM><br>
+
+<H2>AUTHOR</H2>
+Wolf Bergenheim
+<br>
+<p><i>Last changed: $Date: 2009-09-02 23:22:20 +0200 (Wed, 02 Sep 2009) $</i>
+
