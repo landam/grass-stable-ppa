@@ -41,6 +41,16 @@ debian/% :: debian/%.in
 configure: config.status
 config.status: 
 	dh_testdir
+
+ifneq "$(wildcard /usr/share/misc/config.sub)" ""
+	cp -f config.sub config.sub.original
+	cp -f /usr/share/misc/config.sub config.sub
+endif
+ifneq "$(wildcard /usr/share/misc/config.guess)" ""
+	cp -f config.guess config.guess.original
+	cp -f /usr/share/misc/config.guess config.guess
+endif
+
 	# Add here commands to configure the package.
 	CFLAGS="$(CFLAGS)" ./configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) \
                     --prefix=/usr/lib \
@@ -76,37 +86,33 @@ config.status:
 build: configure build-stamp
 build-stamp:  
 	dh_testdir
-
 	$(MAKE) 
 	chmod 755 debian/fixpaths.sh debian/fixscripts.sh
-
 	touch $@
 
 # This target generates truly arch-indep stuff
 build-indep: configure build-indep-stamp
 build-indep-stamp: 
 	dh_testdir
-
 	$(MAKE) htmldocs
-
 	touch $@
 
 clean: templates true-clean 
 true-clean:
 	dh_testdir
 	dh_testroot
-
+	
+ifneq "$(wildcard /usr/share/misc/config.sub.original)" ""
+	mv -f config.sub.original config.sub
+endif
+ifneq "$(wildcard /usr/share/misc/config.guess.original)" ""
+	mv -f config.guess.original config.guess
+endif
+	
 	# Add here commands to clean up after the build process.
 	[ ! -f $(CURDIR)/include/Make/Platform.make ] || $(MAKE) distclean
-
-ifneq "$(wildcard /usr/share/misc/config.sub)" ""
-	[ ! -f $(CURDIR)/configure.in ] || cp -f /usr/share/misc/config.sub config.sub
-endif
-ifneq "$(wildcard /usr/share/misc/config.guess)" ""
-	[ ! -f $(CURDIR)/configure.in ] || cp -f /usr/share/misc/config.guess config.guess
-endif
 	dh_clean 
-
+	
 	rm -f lib/proj/nad2bin
 	rm -f tools/timer/main.o
 	rm -f raster/r.le/r.le.setup/polytocell/*.o

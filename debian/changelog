@@ -17,8 +17,29 @@ grass (6.4.0-2) unstable; urgency=low
   * Removed obsolete grass-doc conflicts/replaces.
   * Moved to source format 3.0 and quilt patch support.
   * Moved from svn to git and updated Vcs-* fields in debian/control* as due.
+  * Merged experimental changelogs.
+  * Now saves and restores upstream config.{sub|guess} to avoid annoying warnings.
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 14 Feb 2011 17:35:56 +0100
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 16 Feb 2011 16:34:50 +0100
+
+grass (6.4.0-1) experimental; urgency=low
+
+  * New upstream final release.
+  * Note that now default interface is the wx one, so (wx)python related suggestions
+    have been promoted to proper dependencies. For the same reason I would
+    consider cut/paste problems of the past Tk interface obsolete.
+    (closes: #305249)
+  * Policy bumped to 3.9.1. No changes required.
+  * Added libgdal1-dev dep to grass-dev list of dependencies.
+    (closes: #598706)
+  * Merged from 6.4.0~rc6+42329-3:
+         Added missing docs used by GUIs: AUTHORS, contributors CSV files,
+         COPYING and a symlink to GPL-2 license in /usr/share/common-licenses.
+         Those files need to be symlinked in GISBASE to be found at run-time.
+         Thanks AlanB and Hamish for pointing the problem.
+         (closes: #594492)
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Thu, 14 Oct 2010 16:08:06 +0200
 
 grass (6.4.0~rc6+42329-3) unstable; urgency=low
 
@@ -59,6 +80,14 @@ grass (6.4.0~rc6+42329-3) unstable; urgency=low
     Thanks AlanB and Hamish for pointing the problem.
 
  -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 21 Sep 2010 16:45:05 +0200
+
+grass (6.4.0~rc6+42329-2) experimental; urgency=low
+
+  * Now builds against Tcl/Tk 8.5.
+    (closes: #582595)
+  * Removed obsolete grass-doc conflicts/replaces.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 01 Jun 2010 14:38:01 +0200
 
 grass (6.4.0~rc6+42329-1) unstable; urgency=low
 
