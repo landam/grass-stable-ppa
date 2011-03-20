@@ -1,6 +1,10 @@
 #include <string.h>
 #include <stdlib.h>
+
+#ifndef __MINGW32__
 #include <projects.h>
+#endif
+
 #include <grass/gis.h>
 #include <grass/gprojects.h>
 #include <grass/glocale.h>
@@ -173,13 +177,13 @@ int print_window(struct Cell_head *window, int print_flag)
 	    fprintf(stdout, "cells=%lld\n",
 		    (long long)window->rows * window->cols);
 	    if (print_flag & PRINT_3D)
-		fprintf(stdout, "3dcells=%lld\n",
+		fprintf(stdout, "cells3=%lld\n",
 			(long long)window->rows3 * window->cols3 *
 			window->depths);
 #else
 	    fprintf(stdout, "cells=%ld\n", (long)window->rows * window->cols);
 	    if (print_flag & PRINT_3D)
-		fprintf(stdout, "3dcells=%ld\n",
+		fprintf(stdout, "cells3=%ld\n",
 			(long)window->rows3 * window->cols3 * window->depths);
 #endif
 	}
@@ -217,14 +221,14 @@ int print_window(struct Cell_head *window, int print_flag)
 	    fprintf(stdout, "%-*s %lld\n", width, "cells:",
 		    (long long)window->rows * window->cols);
 	    if (print_flag & PRINT_3D)
-		fprintf(stdout, "%-*s %lld\n", width, "3dcells:",
+		fprintf(stdout, "%-*s %lld\n", width, "cells3:",
 			(long long)window->rows3 * window->cols3 *
 			window->depths);
 #else
 	    fprintf(stdout, "%-*s %ld\n", width, "cells:",
 		    (long)window->rows * window->cols);
 	    if (print_flag & PRINT_3D)
-		fprintf(stdout, "%-*s %ld\n", width, "3dcells:",
+		fprintf(stdout, "%-*s %ld\n", width, "cells3:",
 			(long)window->rows3 * window->cols3 * window->depths);
 #endif
 	}
@@ -467,6 +471,21 @@ int print_window(struct Cell_head *window, int print_flag)
 	    }
 	}
     }
+
+
+    /* flag.gmt_style */
+    if (print_flag & PRINT_GMT)
+	fprintf(stdout, "%s/%s/%s/%s\n", west, east, south, north);
+
+    /* flag.wms_style */
+    if (print_flag & PRINT_WMS) {
+	G_format_northing(window->north, north, -1);
+	G_format_northing(window->south, south, -1);
+	G_format_easting(window->east, east, -1);
+	G_format_easting(window->west, west, -1);
+	fprintf(stdout, "bbox=%s,%s,%s,%s\n", west, south, east, north);
+    }
+
 
     /* flag.nangle */
     if (print_flag & PRINT_NANGLE) {

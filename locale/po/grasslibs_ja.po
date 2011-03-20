@@ -12,13 +12,14 @@ msgid ""
 msgstr ""
 "Project-Id-Version: grasslibs_ja\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-08-29 11:42+0200\n"
-"PO-Revision-Date: 2010-03-03 13:31+0900\n"
-"Last-Translator: AkiraTaniguchi <taniguti@apptec.co.jp>\n"
+"POT-Creation-Date: 2011-01-06 22:57+0100\n"
+"PO-Revision-Date: 2010-09-08 17:33+0100\n"
+"Last-Translator: Akira Taniguchi <taniguti@apptec.co.jp>\n"
 "Language-Team: Japanese <grass-translations@lists.osgeo.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: ja\n"
 "X-Generator: KBabel 1.9.1\n"
 
 #: ../lib/raster/rem_io.c:40
@@ -125,6 +126,10 @@ msgstr "シンボルを見つける/開くことができません '%s'"
 #, c-format
 msgid "Incorrect symbol color: '%s', using default."
 msgstr "不適当なシンボルカラーです: '%s', デフォルト値を使用してください."
+
+#: ../lib/cairodriver/Draw_bitmap.c:47
+msgid "Cairo_draw_bitmap: Failed to create source"
+msgstr ""
 
 #: ../lib/proj/get_proj.c:150
 #, c-format
@@ -654,103 +659,103 @@ msgstr "無効な深度値"
 msgid "Top must be larger than Bottom"
 msgstr "降順"
 
-#: ../lib/gis/parser.c:331
+#: ../lib/gis/parser.c:340
 msgid "WHERE conditions of SQL statement without 'where' keyword"
 msgstr " 'where'句なしの SQL文のWHEREコンディション"
 
-#: ../lib/gis/parser.c:332
+#: ../lib/gis/parser.c:341
 msgid "Example: income < 1000 and inhab >= 10000"
 msgstr "例: 収入 < 1000 かつ 住人 >= 10000"
 
-#: ../lib/gis/parser.c:340
+#: ../lib/gis/parser.c:349
 msgid "Table name"
 msgstr "テーブル名"
 
-#: ../lib/gis/parser.c:349
+#: ../lib/gis/parser.c:358
 msgid "Driver name"
 msgstr "ドライバー名"
 
-#: ../lib/gis/parser.c:358
+#: ../lib/gis/parser.c:367
 msgid "Database name"
 msgstr "データベース名"
 
-#: ../lib/gis/parser.c:367
+#: ../lib/gis/parser.c:376
 msgid "Name of attribute column"
 msgstr "属性列名"
 
-#: ../lib/gis/parser.c:376
+#: ../lib/gis/parser.c:385
 msgid "Name of attribute column(s)"
 msgstr "属性列名"
 
-#: ../lib/gis/parser.c:387
+#: ../lib/gis/parser.c:396
 msgid "Name of input imagery group"
 msgstr "入力する画像グループ名"
 
-#: ../lib/gis/parser.c:395
+#: ../lib/gis/parser.c:404
 msgid "Name of input imagery subgroup"
 msgstr "入力する画像サブグループ名"
 
-#: ../lib/gis/parser.c:405 ../lib/gis/parser.c:430
+#: ../lib/gis/parser.c:414 ../lib/gis/parser.c:439
 msgid "Name of input raster map"
 msgstr "入力するラスターマップ名"
 
-#: ../lib/gis/parser.c:414 ../lib/gis/parser.c:439
+#: ../lib/gis/parser.c:423 ../lib/gis/parser.c:448
 msgid "Name of input raster map(s)"
 msgstr "入力するラスターマップ名"
 
-#: ../lib/gis/parser.c:422
+#: ../lib/gis/parser.c:431
 msgid "Name for output raster map"
 msgstr "出力するラスターマップ名"
 
-#: ../lib/gis/parser.c:447
+#: ../lib/gis/parser.c:456
 msgid "Name of base raster map"
 msgstr "基本ラスターマップ名"
 
-#: ../lib/gis/parser.c:455
+#: ../lib/gis/parser.c:464
 msgid "Name of cover raster map"
 msgstr "重ねるラスターマップ名"
 
-#: ../lib/gis/parser.c:463
+#: ../lib/gis/parser.c:472
 msgid "Name of elevation raster map"
 msgstr "標高ラスターマップ名"
 
-#: ../lib/gis/parser.c:472
+#: ../lib/gis/parser.c:481
 msgid "Name of elevation raster map(s)"
 msgstr "標高ラスターマップ名"
 
-#: ../lib/gis/parser.c:482 ../lib/gis/parser.c:507
+#: ../lib/gis/parser.c:491 ../lib/gis/parser.c:516
 msgid "Name of input raster3d map"
 msgstr "入力する3Dラスターマップ名"
 
-#: ../lib/gis/parser.c:491 ../lib/gis/parser.c:516
+#: ../lib/gis/parser.c:500 ../lib/gis/parser.c:525
 msgid "Name of input raster3d map(s)"
 msgstr "入力する3Dラスターマップ名"
 
-#: ../lib/gis/parser.c:499
+#: ../lib/gis/parser.c:508
 msgid "Name for output raster3d map"
 msgstr "出力する3Dラスターマップ名"
 
-#: ../lib/gis/parser.c:526 ../lib/gis/parser.c:551
+#: ../lib/gis/parser.c:535 ../lib/gis/parser.c:560
 msgid "Name of input vector map"
 msgstr "入力するベクトルマップ名"
 
-#: ../lib/gis/parser.c:535 ../lib/gis/parser.c:560
+#: ../lib/gis/parser.c:544 ../lib/gis/parser.c:569
 msgid "Name of input vector map(s)"
 msgstr "入力するベクトルマップ名"
 
-#: ../lib/gis/parser.c:543
+#: ../lib/gis/parser.c:552
 msgid "Name for output vector map"
 msgstr "出力するベクトルマップ名"
 
-#: ../lib/gis/parser.c:569
+#: ../lib/gis/parser.c:578 ../lib/gis/parser.c:587
 msgid "Feature type"
 msgstr "フィーチャタイプ"
 
-#: ../lib/gis/parser.c:576
+#: ../lib/gis/parser.c:594
 msgid "Layer number"
 msgstr "レイヤー数"
 
-#: ../lib/gis/parser.c:578
+#: ../lib/gis/parser.c:596
 msgid ""
 "A single vector map can be connected to multiple database tables. This "
 "number determines which table to use."
@@ -758,73 +763,75 @@ msgstr ""
 "単独のベクトルマップは複数のデータベーステーブルと接続されます。この数は使用"
 "するテーブルによって決定します。"
 
-#: ../lib/gis/parser.c:587
+#: ../lib/gis/parser.c:605
 msgid "Category value"
 msgstr "カテゴリー値"
 
-#: ../lib/gis/parser.c:594
+#: ../lib/gis/parser.c:612
 msgid "Category values"
 msgstr "カテゴリー値"
 
-#: ../lib/gis/parser.c:595 ../lib/gis/parser.c:609
+#: ../lib/gis/parser.c:613 ../lib/gis/parser.c:627
 msgid "Example: 1,3,7-9,13"
 msgstr "例: 1,3,7-9,13"
 
-#: ../lib/gis/parser.c:601
+#: ../lib/gis/parser.c:619
 msgid "Feature id"
 msgstr "フィーチャ id"
 
-#: ../lib/gis/parser.c:608
+#: ../lib/gis/parser.c:626
 msgid "Feature ids"
 msgstr "フィーチャ ids"
 
-#: ../lib/gis/parser.c:619
-msgid "Name of input file"
+#: ../lib/gis/parser.c:637
+#, fuzzy
+msgid "Path to input file"
 msgstr "入力するファイル名"
 
-#: ../lib/gis/parser.c:627
-msgid "Name for output file"
+#: ../lib/gis/parser.c:645
+#, fuzzy
+msgid "Path for output file"
 msgstr "出力するファイル名"
 
-#: ../lib/gis/parser.c:635
+#: ../lib/gis/parser.c:653
 msgid "Field separator"
 msgstr "フィールドセパレーター"
 
-#: ../lib/gis/parser.c:646
+#: ../lib/gis/parser.c:664
 msgid "Color"
 msgstr "色"
 
-#: ../lib/gis/parser.c:647
+#: ../lib/gis/parser.c:665
 msgid "Either a standard color name or R:G:B triplet"
 msgstr "標準色名あるいは赤：緑：青"
 
-#: ../lib/gis/parser.c:656
+#: ../lib/gis/parser.c:674
 msgid "Background color"
 msgstr "背景の色"
 
-#: ../lib/gis/parser.c:658
+#: ../lib/gis/parser.c:676
 msgid "Either a standard GRASS color, R:G:B triplet, or \"none\""
 msgstr "標準のGRASSカラー、赤：緑：青、あるいは \"none\""
 
-#: ../lib/gis/parser.c:799
+#: ../lib/gis/parser.c:817
 #, c-format
 msgid "BUG in descriptions, option '%s' in <%s> does not exist"
 msgstr "説明内のバグ, <%s>内のオプション '%s' は存在しません"
 
-#: ../lib/gis/parser.c:901
+#: ../lib/gis/parser.c:919
 msgid "Use either --quiet or --verbose flag, not both. Assuming --verbose."
 msgstr " --quiet --verboseのいずれかを使用します。 --verboseと仮定します"
 
-#: ../lib/gis/parser.c:915
+#: ../lib/gis/parser.c:933
 msgid "Use either --quiet or --verbose flag, not both. Assuming --quiet."
 msgstr " --quiet --verboseのいずれかを使用します。 --quietと仮定します"
 
-#: ../lib/gis/parser.c:945
+#: ../lib/gis/parser.c:963
 #, c-format
 msgid "Sorry <%s> is not a valid option\n"
 msgstr "<%s> オプションは無効です\n"
 
-#: ../lib/gis/parser.c:1050
+#: ../lib/gis/parser.c:1067
 #, c-format
 msgid ""
 "\n"
@@ -833,7 +840,7 @@ msgstr ""
 "\n"
 "説明:\n"
 
-#: ../lib/gis/parser.c:1057
+#: ../lib/gis/parser.c:1074
 #, c-format
 msgid ""
 "\n"
@@ -842,7 +849,7 @@ msgstr ""
 "\n"
 "キーワード:\n"
 
-#: ../lib/gis/parser.c:1061
+#: ../lib/gis/parser.c:1078
 #, c-format
 msgid ""
 "\n"
@@ -853,7 +860,7 @@ msgstr ""
 "用例:\n"
 " "
 
-#: ../lib/gis/parser.c:1129
+#: ../lib/gis/parser.c:1146
 #, c-format
 msgid ""
 "\n"
@@ -862,20 +869,20 @@ msgstr ""
 "\n"
 "フラッグ:\n"
 
-#: ../lib/gis/parser.c:1152 ../lib/gis/parser.c:1476 ../lib/gis/parser.c:1636
-#: ../lib/gis/parser.c:1924
+#: ../lib/gis/parser.c:1169 ../lib/gis/parser.c:1493 ../lib/gis/parser.c:1653
+#: ../lib/gis/parser.c:1941
 msgid "Allow output files to overwrite existing files"
 msgstr "既存のファイルに上書きする"
 
-#: ../lib/gis/parser.c:1154 ../lib/gis/parser.c:1484 ../lib/gis/parser.c:1640
+#: ../lib/gis/parser.c:1171 ../lib/gis/parser.c:1501 ../lib/gis/parser.c:1657
 msgid "Verbose module output"
 msgstr "詳細モジュール出力"
 
-#: ../lib/gis/parser.c:1155 ../lib/gis/parser.c:1491 ../lib/gis/parser.c:1643
+#: ../lib/gis/parser.c:1172 ../lib/gis/parser.c:1508 ../lib/gis/parser.c:1660
 msgid "Quiet module output"
 msgstr "モジュールを出力"
 
-#: ../lib/gis/parser.c:1160
+#: ../lib/gis/parser.c:1177
 #, c-format
 msgid ""
 "\n"
@@ -884,80 +891,80 @@ msgstr ""
 "\n"
 "パラメータ:\n"
 
-#: ../lib/gis/parser.c:1183
+#: ../lib/gis/parser.c:1200
 #, c-format
 msgid "  %*s   default: %s\n"
 msgstr "  %*s   デフォルト: %s\n"
 
-#: ../lib/gis/parser.c:1527
+#: ../lib/gis/parser.c:1544
 msgid "NAME"
 msgstr "名前"
 
-#: ../lib/gis/parser.c:1540
+#: ../lib/gis/parser.c:1557
 msgid "KEYWORDS"
 msgstr "キーワード"
 
-#: ../lib/gis/parser.c:1545
+#: ../lib/gis/parser.c:1562
 msgid "SYNOPSIS"
 msgstr "概要"
 
-#: ../lib/gis/parser.c:1613
+#: ../lib/gis/parser.c:1630
 msgid "Flags"
 msgstr "フラッグ"
 
-#: ../lib/gis/parser.c:1651
+#: ../lib/gis/parser.c:1668
 msgid "Parameters"
 msgstr "パラメータ"
 
-#: ../lib/gis/parser.c:1691
+#: ../lib/gis/parser.c:1708
 msgid "Options"
 msgstr "オプション"
 
-#: ../lib/gis/parser.c:1697
+#: ../lib/gis/parser.c:1714
 msgid "Default"
 msgstr "デフォルト"
 
-#: ../lib/gis/parser.c:1926
+#: ../lib/gis/parser.c:1943
 msgid "Allow overwrite"
 msgstr "上書き"
 
-#: ../lib/gis/parser.c:1934
+#: ../lib/gis/parser.c:1951
 msgid "Run with minimal output messages"
 msgstr "最小限の出力メッセージで実行"
 
-#: ../lib/gis/parser.c:1936
+#: ../lib/gis/parser.c:1953
 msgid "Run quietly"
 msgstr "実行"
 
-#: ../lib/gis/parser.c:1969
+#: ../lib/gis/parser.c:1986
 msgid "Unable to spawn the 'wish' program"
 msgstr " 'wish'プログラムを作成できません"
 
-#: ../lib/gis/parser.c:1988
+#: ../lib/gis/parser.c:2005
 msgid "Unable to determine program name"
 msgstr "プログラム名を決定できません"
 
-#: ../lib/gis/parser.c:2045
+#: ../lib/gis/parser.c:2062
 #, c-format
 msgid "  %*s   options: "
 msgstr "  %*s   オプション: "
 
-#: ../lib/gis/parser.c:2090 ../lib/gis/parser.c:2105
+#: ../lib/gis/parser.c:2107 ../lib/gis/parser.c:2122
 #, c-format
 msgid "Sorry, <%c> is not a valid flag\n"
 msgstr "<%c> フラッグは無効です\n"
 
-#: ../lib/gis/parser.c:2171
+#: ../lib/gis/parser.c:2188
 #, c-format
 msgid "Sorry, <%s=> is ambiguous\n"
 msgstr "<%s=>は不明瞭です\n"
 
-#: ../lib/gis/parser.c:2177
+#: ../lib/gis/parser.c:2194
 #, c-format
 msgid "Sorry, <%s> is not a valid parameter\n"
 msgstr "<%s> パラメータは無効です\n"
 
-#: ../lib/gis/parser.c:2258
+#: ../lib/gis/parser.c:2275
 #, c-format
 msgid ""
 "\n"
@@ -966,12 +973,12 @@ msgstr ""
 "\n"
 "エラー: パラメータの無効な範囲の構文 <%s>\n"
 
-#: ../lib/gis/parser.c:2259
+#: ../lib/gis/parser.c:2276
 #, c-format
 msgid "       Presented as: %s\n"
 msgstr "       存在します: %s\n"
 
-#: ../lib/gis/parser.c:2263
+#: ../lib/gis/parser.c:2280
 #, c-format
 msgid ""
 "\n"
@@ -980,12 +987,12 @@ msgstr ""
 "\n"
 "エラー: 値<%s>はパラメーターの範囲外です<%s>\n"
 
-#: ../lib/gis/parser.c:2265
+#: ../lib/gis/parser.c:2282
 #, c-format
 msgid "       Legal range: %s\n"
 msgstr "       有効な領域: %s\n"
 
-#: ../lib/gis/parser.c:2268
+#: ../lib/gis/parser.c:2285
 #, c-format
 msgid ""
 "\n"
@@ -994,18 +1001,17 @@ msgstr ""
 "\n"
 "エラー: パラメータ値が見つかりません <%s>\n"
 
-#: ../lib/gis/parser.c:2416
-#, c-format
+#: ../lib/gis/parser.c:2433
+#, fuzzy, c-format
 msgid ""
-"\n"
 "ERROR: Required parameter <%s> not set:\n"
-"    (%s).\n"
+"\t(%s)\n"
 msgstr ""
 "\n"
 "エラー: 必要なパラメータ <%s> が設定されていません:\n"
 "    (%s).\n"
 
-#: ../lib/gis/parser.c:2511
+#: ../lib/gis/parser.c:2528
 #, c-format
 msgid ""
 "\n"
@@ -1014,17 +1020,17 @@ msgstr ""
 "\n"
 "エラー: オプション <%s> は%dの倍数でなければなりません\n"
 
-#: ../lib/gis/parser.c:2513
+#: ../lib/gis/parser.c:2530
 #, c-format
 msgid "       You provided %d items:\n"
 msgstr "        %d アイテムを提供しました:\n"
 
-#: ../lib/gis/parser.c:2569
+#: ../lib/gis/parser.c:2586
 #, c-format
 msgid "ERROR: option <%s>: <%s> exists.\n"
 msgstr "エラー: オプション <%s>: <%s> 存在します.\n"
 
-#: ../lib/gis/parser.c:2624
+#: ../lib/gis/parser.c:2641
 #, c-format
 msgid ""
 "\n"
@@ -1033,7 +1039,7 @@ msgstr ""
 "\n"
 "フラッグ: 次のフラッグに設定する?\n"
 
-#: ../lib/gis/parser.c:2638
+#: ../lib/gis/parser.c:2655
 #, c-format
 msgid ""
 "\n"
@@ -1042,51 +1048,51 @@ msgstr ""
 "\n"
 "オプション:   %s\n"
 
-#: ../lib/gis/parser.c:2639
+#: ../lib/gis/parser.c:2656
 #, c-format
 msgid "     key: %s\n"
 msgstr "     キー: %s\n"
 
-#: ../lib/gis/parser.c:2641
+#: ../lib/gis/parser.c:2658
 #, c-format
 msgid "  format: %s\n"
 msgstr "  フォーマット: %s\n"
 
-#: ../lib/gis/parser.c:2643
+#: ../lib/gis/parser.c:2660
 #, c-format
 msgid " default: %s\n"
 msgstr " デフォルト: %s\n"
 
-#: ../lib/gis/parser.c:2644
+#: ../lib/gis/parser.c:2661
 #, c-format
 msgid "required: %s\n"
 msgstr "要求: %s\n"
 
-#: ../lib/gis/parser.c:2646
+#: ../lib/gis/parser.c:2663
 #, c-format
 msgid "multiple: %s\n"
 msgstr "複数: %s\n"
 
-#: ../lib/gis/parser.c:2648
+#: ../lib/gis/parser.c:2665
 #, c-format
 msgid " options: %s\n"
 msgstr " オプション: %s\n"
 
-#: ../lib/gis/parser.c:2661
+#: ../lib/gis/parser.c:2678
 #, c-format
 msgid "enter option > "
 msgstr "オプションを開く >  "
 
-#: ../lib/gis/parser.c:2678 ../lib/gis/parser.c:2688
+#: ../lib/gis/parser.c:2695 ../lib/gis/parser.c:2705
 msgid "   Try again? "
 msgstr "   再試行?  "
 
-#: ../lib/gis/parser.c:2686
+#: ../lib/gis/parser.c:2703
 #, c-format
 msgid "Sorry, %s is not accepted.\n"
 msgstr " %s は承認できません.\n"
 
-#: ../lib/gis/parser.c:2696
+#: ../lib/gis/parser.c:2713
 #, c-format
 msgid ""
 "\n"
@@ -1097,11 +1103,11 @@ msgstr ""
 "選択しました:\n"
 "  %s\n"
 
-#: ../lib/gis/parser.c:2697
+#: ../lib/gis/parser.c:2714
 msgid "Is this correct? "
 msgstr "これで間違いないですか?  "
 
-#: ../lib/gis/parser.c:2762
+#: ../lib/gis/parser.c:2779
 msgid "to accept the default"
 msgstr "デフォルトの許可"
 
@@ -1481,7 +1487,7 @@ msgstr "出力するラスターマップ名 <%s> は無効なマップ名です
 #: ../lib/ogsf/gsd_legend.c:238 ../lib/ogsf/Gs3.c:126 ../lib/ogsf/Gs3.c:201
 #: ../lib/ogsf/Gs3.c:286 ../lib/ogsf/Gs3.c:359 ../lib/ogsf/Gs3.c:475
 #: ../lib/ogsf/Gs3.c:572 ../lib/ogsf/Gs3.c:639 ../lib/ogsf/Gs3.c:696
-#: ../lib/ogsf/Gs3.c:766 ../lib/ogsf/Gs3.c:835 ../lib/ogsf/Gp3.c:54
+#: ../lib/ogsf/Gs3.c:767 ../lib/ogsf/Gs3.c:837 ../lib/ogsf/Gp3.c:54
 #, c-format
 msgid "Raster map <%s> not found"
 msgstr "ラスターマップ <%s> が見つかりません"
@@ -1796,7 +1802,7 @@ msgstr "ロケーション << %s >> は利用できません"
 
 #: ../lib/gis/myname.c:50
 msgid "This location has no description."
-msgstr ""
+msgstr "このロケーションには詳細情報がありません"
 
 #: ../lib/gis/debug.c:74
 #, c-format
@@ -2509,6 +2515,54 @@ msgstr "ドライバー <%s> でデータベース <%s> を開けません"
 msgid "Unable to select record from table <%s> (key %s, where %s)"
 msgstr "表 <%s> (key %s, where %s) からレコードを選択できません"
 
+#: ../lib/vector/Vlib/geos.c:53 ../lib/vector/Vlib/read.c:99
+msgid "vector map is not opened"
+msgstr "ベクトルマップは開かれていません"
+
+#: ../lib/vector/Vlib/geos.c:56
+#, fuzzy, c-format
+msgid ""
+"Vect_read_line_geos(): feature id %d is not reasonable (max features in "
+"vector map <%s>: %d)"
+msgstr ""
+"Vect_read_line(): フィーチャー id %d は適切ではありません (ベクトルマップ <%"
+"s> における最大のフィーチャ: %d)"
+
+#: ../lib/vector/Vlib/geos.c:61
+#, fuzzy
+msgid "only native format supported"
+msgstr "このフォーマット/レベルはサポートされていません"
+
+#: ../lib/vector/Vlib/geos.c:66 ../lib/vector/Vlib/geos.c:256
+#: ../lib/vector/Vlib/read_nat.c:136
+msgid "Attempt to read dead line"
+msgstr "不要なラインを読み込みます"
+
+#: ../lib/vector/Vlib/geos.c:91
+#, c-format
+msgid "Vect_read_area_geos(): unable to read area id %d"
+msgstr ""
+
+#: ../lib/vector/Vlib/geos.c:105
+#, c-format
+msgid "Vect_read_area_geos(): unable to read isle id %d of area id %d"
+msgstr ""
+
+#: ../lib/vector/Vlib/geos.c:203
+#, fuzzy, c-format
+msgid "Unable to read line offset %ld"
+msgstr " ライン %d を読み込めません"
+
+#: ../lib/vector/Vlib/geos.c:410
+#, fuzzy, c-format
+msgid "Attempt to read points of nonexistent area id %d"
+msgstr "存在しないエリアのポイントを読もうとしています"
+
+#: ../lib/vector/Vlib/geos.c:470
+#, fuzzy, c-format
+msgid "Unable to read feature id %d"
+msgstr "フィーチャー %d を書き込めません"
+
 #: ../lib/vector/Vlib/rewind.c:35 ../lib/vector/Vlib/build.c:31
 #: ../lib/vector/Vlib/read.c:30 ../lib/vector/Vlib/write.c:53
 #: ../lib/vector/Vlib/write.c:59 ../lib/vector/Vlib/close.c:38
@@ -2746,10 +2800,6 @@ msgstr "ヘッドにおいて破損した行: %s"
 msgid "Unknown keyword %s in vector head"
 msgstr "ベクトルヘッドにおける不明なキーワード %s"
 
-#: ../lib/vector/Vlib/read.c:99
-msgid "vector map is not opened"
-msgstr "ベクトルマップは開かれていません"
-
 #: ../lib/vector/Vlib/read.c:102
 #, c-format
 msgid ""
@@ -2816,6 +2866,16 @@ msgstr "島を接続しています..."
 #: ../lib/vector/Vlib/build_nat.c:629
 msgid "Attaching centroids..."
 msgstr "セントロイドを接続しています..."
+
+#: ../lib/vector/Vlib/merge_lines.c:192
+#, c-format
+msgid "%d boundaries merged"
+msgstr ""
+
+#: ../lib/vector/Vlib/merge_lines.c:193
+#, c-format
+msgid "%d new boundaries"
+msgstr ""
 
 #: ../lib/vector/Vlib/buffer2.c:376
 msgid "Line is not looped"
@@ -3050,12 +3110,12 @@ msgstr "ポリゴンにポイントを見つけられません"
 msgid "conditions failed"
 msgstr "条件は失敗しました"
 
-#: ../lib/vector/Vlib/break_lines.c:115 ../lib/vector/Vlib/break_lines.c:370
+#: ../lib/vector/Vlib/break_lines.c:370
 #, c-format
 msgid "Intersections: %5d"
 msgstr "交差: %5d"
 
-#: ../lib/vector/Vlib/remove_areas.c:92
+#: ../lib/vector/Vlib/remove_areas.c:94
 msgid "Area is composed of dead boundary"
 msgstr "エリアは不要な境界で構成されています"
 
@@ -3127,10 +3187,6 @@ msgstr "ベクトルマップからフィーチャー%d を修復できません
 #, c-format
 msgid "Unable to close vector <%s>"
 msgstr "ベクトル <%s> を閉じれません"
-
-#: ../lib/vector/Vlib/read_nat.c:136
-msgid "Attempt to read dead line"
-msgstr "不要なラインを読み込みます"
 
 #: ../lib/vector/Vlib/open.c:100
 #, c-format
@@ -3311,7 +3367,12 @@ msgstr "配列されていないフィーチャー %d は無視されました"
 msgid "OGR feature without ID ignored"
 msgstr "IDが無視されていないOGRフィーチャー"
 
-#: ../lib/vector/Vlib/line.c:60 ../lib/ogsf/gsd_img_mpeg.c:317
+#: ../lib/vector/Vlib/line.c:60 ../lib/rst/interp_float/segmen2d.c:175
+#: ../lib/rst/interp_float/segmen2d.c:181
+#: ../lib/rst/interp_float/segmen2d.c:187
+#: ../lib/rst/interp_float/segmen2d.c:197
+#: ../lib/rst/interp_float/interp2d.c:119
+#: ../lib/rst/interp_float/interp2d.c:125 ../lib/ogsf/gsd_img_mpeg.c:317
 msgid "Out of memory"
 msgstr "メモリ不足"
 
@@ -3332,59 +3393,54 @@ msgstr "(feature id %d) にカテゴリー %d をセットできません"
 msgid "Unknown query tool"
 msgstr "不明な問い合わせツール"
 
-#: ../lib/nviz/render.c:108
+#: ../lib/nviz/render.c:104
 msgid "Bad server connection"
 msgstr "サーバ接続がよくありません"
 
-#: ../lib/nviz/render.c:117
+#: ../lib/nviz/render.c:113
 msgid "Unable to create rendering context"
 msgstr "レンダリングコンテキストを作成できません"
 
-#: ../lib/nviz/lights.c:144
+#: ../lib/nviz/lights.c:174
 msgid "Unable to define new light"
 msgstr "新しいライトを定義できません"
 
-#: ../lib/nviz/position.c:50
+#: ../lib/nviz/position.c:56
 msgid "Unable to set focus"
 msgstr "フォーカスを設置できません"
 
-#: ../lib/nviz/nviz.c:76
+#: ../lib/nviz/nviz.c:103
 #, c-format
 msgid "Invalid color (%s), using \"white\" as default"
 msgstr "不正なカラー (%s), \"白\" をデフォルト値として使用しています"
 
-#: ../lib/nviz/change_view.c:108
-#, c-format
-msgid "Invalid view position coordinates, using %f,%f"
-msgstr "不正な視点位置座標,用法は %f,%f"
-
-#: ../lib/nviz/map_obj.c:65
+#: ../lib/nviz/map_obj.c:59
 msgid "Maximum surfaces loaded!"
 msgstr "これ以上サーフェスをロードできません!"
 
-#: ../lib/nviz/map_obj.c:94
+#: ../lib/nviz/map_obj.c:88
 msgid "Maximum vector line maps loaded!"
 msgstr "これ以上ベクトルラインマップをロードできません!"
 
-#: ../lib/nviz/map_obj.c:103 ../lib/nviz/map_obj.c:134
+#: ../lib/nviz/map_obj.c:97 ../lib/nviz/map_obj.c:128
 #, c-format
 msgid "Error loading vector map <%s>"
 msgstr "ベクトルマップ <%s> をロードできません"
 
-#: ../lib/nviz/map_obj.c:122
+#: ../lib/nviz/map_obj.c:116
 msgid "Maximum vector point maps loaded!"
 msgstr "これ以上ベクトルポイントマップをロードできません!"
 
-#: ../lib/nviz/map_obj.c:149
+#: ../lib/nviz/map_obj.c:143
 msgid "Maximum volumes loaded!"
 msgstr "これ以上ロードできません!"
 
-#: ../lib/nviz/map_obj.c:158
+#: ../lib/nviz/map_obj.c:152
 #, c-format
 msgid "Error loading 3d raster map <%s>"
 msgstr "3D ラスターマップ <%s> をロードできません"
 
-#: ../lib/nviz/map_obj.c:166
+#: ../lib/nviz/map_obj.c:160
 msgid "Nviz_new_map_obj(): unsupported data type"
 msgstr "Nviz_new_map_obj(): サポートされていないデータタイプ"
 
@@ -3896,13 +3952,26 @@ msgstr "ヤコビ -- 反復 %5i エラー %g\n"
 msgid "SOR -- iteration %5i error %g\n"
 msgstr "SOR -- イテレーション %5i エラー %g\n"
 
-#: ../lib/rst/interp_float/segmen2d.c:113
+#: ../lib/rst/interp_float/output2d.c:125
+#, c-format
+msgid "First change your cols number to nsizc %d %d"
+msgstr ""
+
+#: ../lib/rst/interp_float/segmen2d.c:111
+#, fuzzy
 msgid ""
-"taking too long to find points for interpolation--please change the region "
+"Taking too long to find points for interpolation - please change the region "
 "to area where your points are. Continuing calculations..."
 msgstr ""
 "補間のポイントを見つけるのに時間がかかりすぎています--領域をポイントのあるエ"
 "リアに変更してください. 引き続き計算しています..."
+
+#: ../lib/rst/interp_float/interp2d.c:212
+#, c-format
+msgid ""
+"Overshoot - increase in tension suggested. Overshoot occures at (%d,%d) "
+"cell. Z-value %f, zmin %f, zmax %f."
+msgstr ""
 
 #: ../lib/rst/interp_float/input2d.c:47
 #, c-format
@@ -3914,64 +3983,65 @@ msgid "Bitmap mask created"
 msgstr "ビットマップ マスクは作成されました"
 
 #: ../lib/rst/interp_float/vinput2d.c:73
-msgid "Vector is not 3D"
-msgstr "ベクトルは3Dではありません"
+#, fuzzy, c-format
+msgid "Vector map <%s> is not 3D"
+msgstr "ベクトルマップ <%s> が見つかりません"
 
 #: ../lib/rst/interp_float/vinput2d.c:76
 msgid "Loading data from attribute table ..."
 msgstr "属性テ-ブルからデータをロードしています ..."
 
 #: ../lib/rst/interp_float/vinput2d.c:94
+#: ../lib/rst/interp_float/vinput2d.c:108 ../lib/db/dbmi_client/copy_tab.c:248
 #, c-format
-msgid "Cannot find z column <%s> (please verify name, e.g. with v.info)"
-msgstr "z 列 <%s> が見つかりません(名前を確認してください、 e.g. with v.info)"
+msgid "Column <%s> not found"
+msgstr "列 <%s> は見つかりませんでした"
 
 #: ../lib/rst/interp_float/vinput2d.c:97
-msgid "Column type of z column is not supported (must be integer or double)"
-msgstr "z列の列型はサポートされていません (整数型か倍でなければなりません)"
-
-#: ../lib/rst/interp_float/vinput2d.c:108
-msgid "Cannot read column type of smooth column"
-msgstr "スムース列のタイプを読み込めません"
-
 #: ../lib/rst/interp_float/vinput2d.c:110
-msgid "Column type of smooth column (datetime) is not supported"
-msgstr "スムース列 (日時) のタイプはサポートされていません"
-
-#: ../lib/rst/interp_float/vinput2d.c:112
-msgid "Column type of s column is not supported (must be integer or double)"
+#, fuzzy, c-format
+msgid "Data type of column <%s> must be numeric"
 msgstr ""
-" s列の列タイプはサポートされていません (整数または倍数でなければなりません)"
+"データ型 of 列 <%s> のデータタイプはサポートされていません (数字でなければな"
+"らない)"
 
-#: ../lib/rst/interp_float/vinput2d.c:123
-msgid "Reading lines from vector map ... "
+#: ../lib/rst/interp_float/vinput2d.c:121
+#, fuzzy
+msgid "Reading features from vector map ..."
 msgstr "ベクトルマップからラインを読み込んでいます ...  "
 
-#: ../lib/rst/interp_float/vinput2d.c:155
-#: ../lib/rst/interp_float/vinput2d.c:273
+#: ../lib/rst/interp_float/vinput2d.c:153
+#: ../lib/rst/interp_float/vinput2d.c:270
 #, c-format
 msgid "Database record for cat %d not found"
 msgstr "cat %d のデータベースレコードは見つかりませんでした"
 
-#: ../lib/rst/interp_float/vinput2d.c:236
-msgid "Reading nodes from vector map ... "
+#: ../lib/rst/interp_float/vinput2d.c:171
+#: ../lib/rst/interp_float/vinput2d.c:288
+msgid "Negative value of smoothing detected: sm must be >= 0"
+msgstr ""
+
+#: ../lib/rst/interp_float/vinput2d.c:233
+#, fuzzy
+msgid "Reading nodes from vector map ..."
 msgstr "ベクトルマップからノードを読み込んでいます ...  "
 
-#: ../lib/rst/interp_float/vinput2d.c:318
-msgid "strip exists with insufficient data"
+#: ../lib/rst/interp_float/vinput2d.c:314
+#, fuzzy
+msgid "Strip exists with insufficient data"
 msgstr "stripは不十分なデータと存在します"
 
-#: ../lib/rst/interp_float/vinput2d.c:333
-#, c-format
-msgid "there are points outside specified 2D/3D region--ignored %d points"
+#: ../lib/rst/interp_float/vinput2d.c:328
+#, fuzzy, c-format
+msgid "There are points outside specified 2D/3D region - %d points ignored"
 msgstr "指定された2D/3D 領域外にポイントがあります--無視された %d ポイント"
 
-#: ../lib/rst/interp_float/vinput2d.c:336
-#, c-format
-msgid "ignoring %d points -- too dense"
+#: ../lib/rst/interp_float/vinput2d.c:331
+#, fuzzy, c-format
+msgid "Ignoring %d points (too dense)"
 msgstr "ポイント %d を無視しています -- 密集しすぎです"
 
-#: ../lib/rst/interp_float/vinput2d.c:340
+#: ../lib/rst/interp_float/vinput2d.c:335
 #, c-format
 msgid ""
 "%d points given for interpolation (after thinning) is less than given NPMIN=%"
@@ -3979,7 +4049,18 @@ msgid ""
 msgstr ""
 "補間 に与えられた %d ポイント(菲薄化後) は 与えられたNPMIN=%d　より少ないです"
 
-#: ../lib/rst/interp_float/vinput2d.c:358
+#: ../lib/rst/interp_float/vinput2d.c:340
+msgid "Zero points in the given region"
+msgstr ""
+
+#: ../lib/rst/interp_float/vinput2d.c:345
+#, c-format
+msgid ""
+"Segmentation parameters set to invalid values: npmin= %d, segmax= %d for "
+"smooth connection of segments, npmin > segmax (see manual)"
+msgstr ""
+
+#: ../lib/rst/interp_float/vinput2d.c:351
 #, c-format
 msgid ""
 "There are less than %d points for interpolation. No segmentation is "
@@ -3988,9 +4069,35 @@ msgstr ""
 "補間のポイントは %d 以下です. より速いセットsegmax=%d (マニュアル参照)でのプ"
 "ログラム実行にセグメント化は必要ではありません"
 
-#: ../lib/rst/interp_float/vinput2d.c:399
-msgid "some points outside of region -- will ignore..."
+#: ../lib/rst/interp_float/vinput2d.c:355
+#, fuzzy, c-format
+msgid "Number of points from vector map %d"
+msgstr "入力するベクトルマップ名"
+
+#: ../lib/rst/interp_float/vinput2d.c:356
+#, fuzzy, c-format
+msgid "Number of points outside of 2D/3D region %d"
+msgstr "領域外のセントロイドの数: %d"
+
+#: ../lib/rst/interp_float/vinput2d.c:358
+#, fuzzy, c-format
+msgid "Number of points being used %d"
+msgstr "ポイントの数: %d"
+
+#: ../lib/rst/interp_float/vinput2d.c:391
+#, fuzzy
+msgid "Some points outside of region (ignored)"
 msgstr "いくつかのポイントは領域外です -- 無視します..."
+
+#: ../lib/rst/interp_float/vinput2d.c:397
+#, fuzzy
+msgid "Unable to allocate memory"
+msgstr "メモリを配分できません\n"
+
+#: ../lib/rst/interp_float/vinput2d.c:405
+#, fuzzy, c-format
+msgid "Unable to insert %f,%f,%f a = %d"
+msgstr "フィーチャー %d を書き込めません"
 
 #: ../lib/g3d/g3dparam.c:52
 msgid "Data type used in the output file"
@@ -4229,12 +4336,12 @@ msgstr "ラスターマップ <%s> をロードしています..."
 msgid "Color table range doesn't match data (mincol=%d, maxcol=%d"
 msgstr "カラーテーブルの範囲がデータと一致しません (mincol=%d, maxcol=%d"
 
-#: ../lib/ogsf/Gs3.c:709 ../lib/ogsf/Gs3.c:780
+#: ../lib/ogsf/Gs3.c:709 ../lib/ogsf/Gs3.c:781
 #, c-format
 msgid "Translating colors from raster map <%s>..."
 msgstr "ラスターマップ <%s> からカラーを転換しています..."
 
-#: ../lib/ogsf/Gs3.c:1018
+#: ../lib/ogsf/Gs3.c:1020
 msgid "View not saved by this program,there may be some inconsistancies"
 msgstr ""
 "このプログラムにビューは保存されていません,　不一致がある可能性があります"
@@ -4257,22 +4364,32 @@ msgstr "ベクトルマップ <%s>を読み込みました (%d features)"
 msgid "Bitmap mismatch"
 msgstr "ビットマップは不一致です "
 
-#: ../lib/ogsf/GS2.c:1638
+#: ../lib/ogsf/GS2.c:1193
+#, c-format
+msgid "no category info"
+msgstr ""
+
+#: ../lib/ogsf/GS2.c:1212
+#, c-format
+msgid "no data"
+msgstr ""
+
+#: ../lib/ogsf/GS2.c:1635
 #, c-format
 msgid "Raster map <%s> is outside of current region. Load failed."
 msgstr "ラスターマップ <%s> はこの領域外です. ロードに失敗しました."
 
-#: ../lib/ogsf/GS2.c:1716 ../lib/ogsf/GS2.c:1722 ../lib/ogsf/GS2.c:1730
-#: ../lib/ogsf/GS2.c:1739 ../lib/ogsf/GS2.c:1747 ../lib/ogsf/GS2.c:1757
-#: ../lib/ogsf/GS2.c:1805
+#: ../lib/ogsf/GS2.c:1713 ../lib/ogsf/GS2.c:1719 ../lib/ogsf/GS2.c:1727
+#: ../lib/ogsf/GS2.c:1736 ../lib/ogsf/GS2.c:1744 ../lib/ogsf/GS2.c:1754
+#: ../lib/ogsf/GS2.c:1802
 msgid "GS_load_att_map(): Out of memory. Unable to load map"
 msgstr "GS_load_att_map(): メモリ不足. マップをロードできません"
 
-#: ../lib/ogsf/GS2.c:1833
+#: ../lib/ogsf/GS2.c:1830
 msgid "Loading failed"
 msgstr "読み込みに失敗しました"
 
-#: ../lib/ogsf/GS2.c:1837
+#: ../lib/ogsf/GS2.c:1834
 msgid "Error finding range"
 msgstr "範囲が見つかりません"
 
@@ -4373,7 +4490,6 @@ msgid "Login file corrupted"
 msgstr "ログインファイルが破損しています"
 
 #: ../lib/db/dbmi_base/default_name.c:127
-#, fuzzy
 msgid "Programmer error"
 msgstr "プログラムのエラー"
 
@@ -4408,11 +4524,6 @@ msgstr "テーブル <%s> は既にデータベース <%s> に存在します"
 #, c-format
 msgid "Column <%s> is not integer"
 msgstr "列 <%s> は整数型ではありません"
-
-#: ../lib/db/dbmi_client/copy_tab.c:248
-#, c-format
-msgid "Column <%s> not found"
-msgstr "列 <%s> は見つかりませんでした"
 
 #: ../lib/db/dbmi_client/copy_tab.c:251
 #, c-format
@@ -4753,6 +4864,30 @@ msgstr "グループ <%s> のサブグループ <%s> は空です\n"
 #, c-format
 msgid "subgroup <%s> of group <%s> references the following raster maps\n"
 msgstr "グループ <%s> のサブグループ <%s> は次のラスターマップを参照します\n"
+
+#~ msgid "Invalid view position coordinates, using %f,%f"
+#~ msgstr "不正な視点位置座標,用法は %f,%f"
+
+#~ msgid "Vector is not 3D"
+#~ msgstr "ベクトルは3Dではありません"
+
+#~ msgid "Cannot find z column <%s> (please verify name, e.g. with v.info)"
+#~ msgstr ""
+#~ "z 列 <%s> が見つかりません(名前を確認してください、 e.g. with v.info)"
+
+#~ msgid "Column type of z column is not supported (must be integer or double)"
+#~ msgstr "z列の列型はサポートされていません (整数型か倍でなければなりません)"
+
+#~ msgid "Cannot read column type of smooth column"
+#~ msgstr "スムース列のタイプを読み込めません"
+
+#~ msgid "Column type of smooth column (datetime) is not supported"
+#~ msgstr "スムース列 (日時) のタイプはサポートされていません"
+
+#~ msgid "Column type of s column is not supported (must be integer or double)"
+#~ msgstr ""
+#~ " s列の列タイプはサポートされていません (整数または倍数でなければなりませ"
+#~ "ん)"
 
 #~ msgid "Unknown Location"
 #~ msgstr "不明なロケーション"

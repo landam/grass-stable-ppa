@@ -1,7 +1,7 @@
-wxPython GRASS Graphical User Interface
-=======================================
+wxPython GRASS Graphical User Interface (wxGUI)
+===============================================
 
-$Date: 2009-09-20 17:00:44 +0200 (Sun, 20 Sep 2009) $
+$Date: 2010-10-14 17:39:14 +0200 (Thu, 14 Oct 2010) $
 
 1 - REQUIREMENTS
 
@@ -66,7 +66,7 @@ GRASS_GUI: wxpython
 
 or easier start new GRASS session with -wxpython switch.
 
-$ grass64 -wxpython
+$ grass65 -wxpython
 
 
 3 - STARTUP FROM GRASS TERMINAL
@@ -98,7 +98,7 @@ $~ export PATH=scripts/:$PATH
 
 Start GRASS:
 
-$~ grass64 ~/grassdata/spearfish60/user1
+$~ grass65 ~/grassdata/spearfish60/user1
 
 Use command p.mon (shell script in gui/scripts directory) to start map
 display:
@@ -138,9 +138,12 @@ environment variable, e.g.
 $ export GRASS_WX_DEBUG=3
 
 
-6 - EXTENSIONS - VECTOR DIGITIZER AND 3D VIEWER
+6 - VECTOR DIGITIZER
 
-To enable digitizer you need to compile 'vdigit' or 'nviz'
-component. Note that you must configure GRASS with C++ (--with-cxx),
-Python (--with-python) and wxWidgets (--with-wxwidgets) support.
+To enable digitizer you need to compile 'vdigit' component. Note that
+you must configure GRASS with C++ (--with-cxx), Python (--with-python)
+and wxWidgets (--with-wxwidgets) support.
 
+$ cd gui/wxpython/vdigit
+$ make
+$ make install

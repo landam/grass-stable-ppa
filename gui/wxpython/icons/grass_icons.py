@@ -23,6 +23,7 @@ IconsGrass = {
     "query"      : 'gui-query.gif',
     "zoom_back"  : 'gui-zoom_back.gif',
     "zoommenu"   : 'gui-mapzoom.gif',
+    "zoom_extent" : wx.ART_ERROR, # FIXME
     "savefile"   : 'file-save.gif',
     "printmap"   : 'file-print.gif',
     "overlay"    : 'gui-overlay.gif',
@@ -48,17 +49,19 @@ IconsGrass = {
     "digDispAttr" : 'display.attributes.gif',
     ## general
     "digUndo" : wx.ART_ERROR, # FIXME
-    "digSettings" : 'settings.gif',
     "digAdditionalTools" : wx.ART_ERROR, # FIXME
     # layer manager
     "newdisplay" : 'gui-startmon.gif',
-    "workspaceNew" : 'file-new.gif',
-    "workspaceLoad" : 'file-new.gif', # change the icon if possible
-    "workspaceOpen" : 'file-open.gif',
-    "workspaceSave" : 'file-save.gif',
+    "fileNew"    : 'file-new.gif',
+    "fileLoad"   : 'file-new.gif', 
+    "fileOpen"   : 'file-open.gif',
+    "fileSave"   : 'file-save.gif',
+    "fileImport" : 'file-new.gif',
     "addrast"    : 'element-cell.gif',
+    "rastmisc"   : 'module-d.shadedmap.gif',
     "addrast3d"  : 'element-grid3.gif',
     "addvect"    : 'element-vector.gif',
+    "vectmisc"   : 'module-d.vect.thematic.gif',
     "addcmd"     : 'gui-cmd.gif',
     "addgrp"     : 'gui-group.gif',
     "addovl"     : 'module-d.grid.gif',
@@ -79,6 +82,7 @@ IconsGrass = {
     "addbarscale": 'module-d.barscale.gif',
     "addlegend"  : 'module-d.legend.gif',
     "quit"       : 'gui-exit.gif',
+    "modeler"    : wx.ART_ERROR,
     # analyze raster
     "analyze"    : 'gui-rastanalyze.gif',
     "measure"    : 'gui-measure.gif',
@@ -89,7 +93,6 @@ IconsGrass = {
     # profile 
     "profile"    : 'gui-profile.gif',
     "transect"   : 'gui-profiledefine.gif',
-    # "profiledraw": 'gui-profiledraw.gif',
     "profiledraw" : 'gui-display.gif',
     "profileopt" : 'gui-profileopt.gif',
     # georectify
@@ -97,12 +100,29 @@ IconsGrass = {
     'grGcpSet'     : 'gui-gcpset.gif',
     'grGeorect'    : 'gui-georect.gif',
     'grGcpRms'     : 'gui-rms.gif',
-    'grGcpRefresh' : 'gui-display.gif',
     "grGcpSave"    : 'file-save.gif', 
     "grGcpAdd"     : wx.ART_NEW, # FIXME
     "grGcpDelete"  : wx.ART_DELETE, # FIXME
     "grGcpReload"  : 'gui-redraw.gif',
-    "grSettings"   : 'edit-color.gif', 
-    # nviz 
-    "nvizSettings" : 'edit-color.gif',   
+    # modeler
+    "modelActionAdd" : wx.ART_ERROR,
+    "modelDataAdd"   : wx.ART_ERROR,
+    "modelRelation"  : wx.ART_ERROR,
+    "modelRun"       : wx.ART_ERROR,
+    "modelValidate"  : wx.ART_ERROR,
+    "imageSave"      : wx.ART_ERROR,
+    "pythonSave"     : wx.ART_ERROR,
+    "modelProperties" : wx.ART_ERROR,
+    "modelVariables" : wx.ART_ERROR,
+    # 3d view
+    "nvizView"       : wx.ART_ERROR,
+    "nvizSurface"    : wx.ART_ERROR,
+    "nvizVector"     : wx.ART_ERROR,
+    "nvizVolume"     : wx.ART_ERROR,
+    "nvizLight"      : wx.ART_ERROR,
+    "nvizFringe"     : wx.ART_ERROR,
+    # various
+    "settings"       : 'edit-color.gif',
+    "redraw"         : 'gui-display.gif',
+    "help"           : wx.ART_ERROR,
     }

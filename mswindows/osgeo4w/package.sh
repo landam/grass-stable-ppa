@@ -2,46 +2,103 @@
 
 set -e
 
+PWD="$(pwd)"
+
 if ! [ -d mswindows ]; then
 	echo Start from GRASS toplevel dir
 	exit 1
 fi
 
-export OSGEO4W_ROOT_MSYS=/c/OSGeo4W
-export PATH=.:/c/mingw/bin:/usr/local/bin:/bin:$OSGEO4W_ROOT_MSYS/bin:/c/WINDOWS/system32:/c/WINDOWS:/c/WINDOWS/System32/Wbem
+if ! [ -d /tmp ]; then 
+    mkdir /tmp 
+    if ! [ -d /tmp ]; then 
+ 	echo /tmp does not exists 
+ 	exit 1 
+    fi 
+fi 
 
-version() {
-	(
-		read MAJOR
-		read MINOR
-		read PATCH
-		echo $MAJOR.$MINOR.$PATCH
-	) <include/VERSION
+export PACKAGE=${1:-1} 
+export OSGEO4W_ROOT_MSYS="/c/OSGeo4W"
+export OSGEO4W_ROOT="C:\\\OSGeo4W"
+export PATH=.:/c/mingw/bin:/usr/local/bin:/bin:$OSGEO4W_ROOT_MSYS/bin:/c/WINDOWS/system32:/c/WINDOWS:/c/WINDOWS/System32/Wbem:/c/Subversion:$PWD/mswindows/osgeo4w
+
+T0=$(date +%s) 
+LT=$T0 
+CS="" 
+
+log() { 
+    local D T 
+    NOW=$(date) 
+    T=$(date +%s) 
+    
+    if [ -n "$CS" ]; then 
+        local D H M S 
+ 	(( S=T-$LT )) 
+ 	(( M=S/60 )); (( S=S%60 )) 
+ 	(( H=M/60 )); (( M=M%60 )) 
+ 	(( D=H/24 )); (( H=H%24 )) 
+ 	
+ 	echo -n "$NOW: FINISHED $CS AFTER " 
+ 	(( D>0 )) && echo -n "${D}d" 
+ 	(( H>0 )) && echo -n "${H}h" 
+ 	(( M>0 )) && echo -n "${M}m" 
+ 	echo "${S}s" 
+    fi 
+    
+    CS="$@" 
+    LT=$T 
+    if [ -n "$CS" ]; then 
+        echo $NOW: STARTING $CS 
+    elif [ -n "$T0" ]; then 
+ 	CS="COMPLETE RUN" 
+ 	LT=$T0 
+ 	T0="" 
+ 	log 
+    fi 
 }
 
-export VERSION=$(version)
-export PACKAGE=3
+exec 3<include/VERSION 
+read MAJOR <&3 
+read MINOR <&3 
+read PATCH <&3 
 
+export VERSION=$MAJOR.$MINOR.$PATCH 
 
-(
-echo
-echo
-echo
+export GRASS_PYTHON="/c/OSGeo4W/bin/python.exe"
+export PYTHONHOME="/c/OSGeo4W/apps/Python25"
+
+if [ -f mswindows/osgeo4w/package.log ]; then 
+    i=0 
+    while [ -f mswindows/osgeo4w/package.log.$i ]; do 
+ 	(( i++ )) 
+    done 
+    mv mswindows/osgeo4w/package.log mswindows/osgeo4w/package.log.$i 
+fi 
+
+exec 3>&1 >> mswindows/osgeo4w/package.log 2>&1 
+
+[ -d mswindows/osgeo4w/lib ] || mkdir mswindows/osgeo4w/lib 
+cp -uv $OSGEO4W_ROOT_MSYS/lib/sqlite3_i.lib mswindows/osgeo4w/lib/libsqlite3.a 
+cp -uv $OSGEO4W_ROOT_MSYS/lib/proj.lib mswindows/osgeo4w/lib/libproj.a 
+cp -uv $OSGEO4W_ROOT_MSYS/lib/libtiff_i.lib mswindows/osgeo4w/lib/libtiff.a 
+cp -uv $OSGEO4W_ROOT_MSYS/lib/libpq.lib mswindows/osgeo4w/lib/libpq.a 
+cp -uv $OSGEO4W_ROOT_MSYS/lib/jpeg_i.lib mswindows/osgeo4w/lib/libjpeg.a 
+cp -uv $OSGEO4W_ROOT_MSYS/lib/zlib.lib mswindows/osgeo4w/lib/libz.a 
 
 if ! [ -f mswindows/osgeo4w/configure-stamp ]; then
 
 	if [ -e include/Make/Grass.make ] ; then
-	    echo $(date): STARTING make distclean
+	    log make distclean
 	    make distclean
 	fi
 
-	echo $(date): STARTING configure
+	log configure
 	./configure \
-		--with-libs="$OSGEO4W_ROOT_MSYS/apps/gdal-16/lib $OSGEO4W_ROOT_MSYS/lib" \
-		--with-includes="$OSGEO4W_ROOT_MSYS/apps/gdal-16/include $OSGEO4W_ROOT_MSYS/include" \
-		--exec-prefix=$OSGEO4W_ROOT_MSYS/bin \
+		--with-libs="$OSGEO4W_ROOT_MSYS/lib $PWD/mswindows/osgeo4w/lib" \
+		--with-includes=$OSGEO4W_ROOT_MSYS/include \
 		--libexecdir=$OSGEO4W_ROOT_MSYS/bin \
 		--prefix=$OSGEO4W_ROOT_MSYS/apps/grass \
+	        --bindir=$OSGEO4W_ROOT_MSYS/bin \
 		--includedir=$OSGEO4W_ROOT_MSYS/include \
 		--disable-x --without-x \
 		--with-cxx \
@@ -51,7 +108,8 @@ if ! [ -f mswindows/osgeo4w/configure-stamp ]; then
 		--with-fftw \
 		--with-freetype \
 		--with-proj-share=$OSGEO4W_ROOT_MSYS/share/proj \
-		--with-gdal=$OSGEO4W_ROOT_MSYS/bin/gdal-config \
+		--with-gdal=$PWD/mswindows/osgeo4w/gdal-config \
+		--with-geos=$PWD/mswindows/osgeo4w/geos-config \
 		--with-tcltk \
 		--with-sqlite \
 		--with-postgres \
@@ -64,78 +122,64 @@ if ! [ -f mswindows/osgeo4w/configure-stamp ]; then
 	touch mswindows/osgeo4w/configure-stamp
 fi
 
-echo $(date): STARTING make
-make || make
+log make 
+make -k || ( cat error.log >&3 && false ) 
 
-echo $(date): STARTING make install
+log make install
 make install
 
-echo $(date): STARTING cleanup
-mv $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/lib/*.$VERSION.dll $OSGEO4W_ROOT_MSYS/bin
-rm $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/lib/*.dll
-
-mv $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/include/grass/config.h $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/include/grass/config.h.mingw
+log cleanup
+mv $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/include/grass/config.h \
+    $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/include/grass/config.h.mingw
 cp mswindows/osgeo4w/config.h.switch $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/include/grass/config.h
 cp mswindows/osgeo4w/config.h.vc $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/include/grass
-cp mswindows/osgeo4w/grass64.bat.tmpl $OSGEO4W_ROOT_MSYS/bin/grass64.bat.tmpl
-cp mswindows/osgeo4w/ini.bat.tmpl $OSGEO4W_ROOT_MSYS/etc/ini/grass.bat.tmpl
-cp mswindows/osgeo4w/postinstall.bat $OSGEO4W_ROOT_MSYS/etc/postinstall/grass.bat
-cp mswindows/osgeo4w/preremove.bat $OSGEO4W_ROOT_MSYS/etc/preremove/grass.bat
-#cp /c/mingw/bin/libgnurx-0.dll $OSGEO_ROOT_MSYS/bin
-#cp /c/mingw/bin/libiconv-2.dll $OSGEO_ROOT_MSYS/bin
-#cp /c/mingw/bin/libintl-8.dll $OSGEO_ROOT_MSYS/bin
+sed -e "s#@VERSION@#$VERSION#g" -e "s#@OSGEO4W_ROOT@#$OSGEO4W_ROOT#g" \
+    mswindows/osgeo4w/grass.bat.tmpl >$OSGEO4W_ROOT_MSYS/bin/grass$MAJOR$MINOR.bat
+sed -e "s#@VERSION@#$VERSION#g" -e "s#@OSGEO4W_ROOT_MSYS@#$OSGEO4W_ROOT#g" \
+    mswindows/osgeo4w/env.bat.tmpl >$OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/etc/env.bat
+sed -e "s#@VERSION@#$VERSION#g" -e "s#@POSTFIX@#$MAJOR$MINOR#g" \
+    mswindows/osgeo4w/postinstall.bat >$OSGEO4W_ROOT_MSYS/etc/postinstall/grass$MAJOR$MINOR.bat 
+sed -e "s#@VERSION@#$VERSION#g" -e "s#@POSTFIX@#$MAJOR$MINOR#g" \
+    mswindows/osgeo4w/preremove.bat >$OSGEO4W_ROOT_MSYS/etc/preremove/grass$MAJOR$MINOR.bat 
 
-P=$(pwd -W)
-P=${P//\//\\\\}\\\\dist.i686-pc-mingw32
+if [ -f /c/mingw/bin/libgnurx-0.dll ]; then
+    cp /c/mingw/bin/libgnurx-0.dll $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/bin 
+    cp /c/mingw/bin/libiconv-2.dll $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/bin 
+    cp /c/mingw/bin/libintl-8.dll $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/bin
+fi
 
-sed -e "s#$P#@osgeo4w@#" $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/etc/fontcap >$OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/etc/fontcap.tmpl
-sed -e "s#$P#@osgeo4w_msys@#" $OSGEO4W_ROOT_MSYS/apps/grass/bin/grass64 >$OSGEO4W_ROOT_MSYS/apps/grass/bin/grass64.tmpl
-rm $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/etc/fontcap 
+# P="$(pwd -W)"
+# P="${P//\//\\\\}\\\\dist.i686-pc-mingw32"
 
-#echo $(date): STARTING building vc libraries
-#sh mswindows/osgeo4w/mklibs.sh $OSGEO4W_ROOT_MSYS/bin/*.$VERSION.dll
-#mv mswindows/osgeo4w/vc/grass*.lib $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/lib
-#
-#set -x
-#echo $(date): BUILDING GDAL GRASS plugins
-#cmd /c 'mswindows\\osgeo4w\\gdalplugins.cmd $VERSION'
-#
-#echo $(date): CREATING packages in $(PDIR)
-#mkdir -p package/grass-devel package/grass-devel-mingw package/grass-devel-vc package/grass
-#
-#PDIR=$PWD/package
-#cd $OSGEO4W_ROOT_MSYS
-#tar -cjf $PDIR/grass-devel/grass-devel-$VERSION-$PACKAGE.tar.bz2 \
-#	apps/grass/grass-$VERSION/include
-#
-#tar -cjf $PDIR/grass-devel-mingw/grass-devel-mingw-$VERSION-$PACKAGE.tar.bz2 \
-#	apps/grass/grass-$VERSION/lib/libgrass*.a
-#
-#tar -cjf $PDIR/grass-devel-vc/grass-devel-vc-$VERSION-$PACKAGE.tar.bz2 \
-#	apps/grass/grass-$VERSION/lib/*.lib
-#
-#tar -cjf $PDIR/grass/grass-$VERSION-$PACKAGE.tar.bz2 \
-#	apps/grass/bin/grass64.tmpl \
-#	apps/grass/grass-$VERSION/authors \
-#	apps/grass/grass-$VERSION/bin/ \
-#	apps/grass/grass-$VERSION/bwidget/ \
-#	apps/grass/grass-$VERSION/changes \
-#	apps/grass/grass-$VERSION/copying \
-#	apps/grass/grass-$VERSION/docs \
-#	apps/grass/grass-$VERSION/driver \
-#	apps/grass/grass-$VERSION/etc \
-#	apps/grass/grass-$VERSION/gpl.txt \
-#	apps/grass/grass-$VERSION/requirements.html \
-#	apps/grass/grass-$VERSION/scripts \
-#	bin/libgnurx-0.dll \
-#	bin/libiconv-2.dll \
-#	bin/libintl-8.dll \
-#	bin/grass64.bat.tmpl \
-#	bin/libgrass_*.$VERSION.dll \
-#	etc/ini/grass.bat \
-#	etc/postinstall/grass.bat \
-#	etc/preremove/grass.bat
+# sed -e "s#$P#@osgeo4w@#g" $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/etc/fontcap >$OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/etc/fontcap.tmpl
+# rm "$OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/etc/fontcap"
 
-echo $(date): END
+if [ -n "$1" ]; then
+    log building vc libraries 
+    sh mswindows/osgeo4w/mklibs.sh $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/bin/*.$VERSION.dll 
+    mv mswindows/osgeo4w/vc/grass*.lib $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/lib 
+    
+    # log BUILDING GDAL GRASS plugins 
+    # $COMSPEC /c "mswindows\\osgeo4w\\gdalplugins.cmd $VERSION" 
+    
+    log CREATING PACKAGES 
+    mkdir -p package/grass$MAJOR$MINOR 
+    
+    PDIR=$PWD/package
+    cd $OSGEO4W_ROOT_MSYS 
+    
+    tar -cjf $PDIR/grass$MAJOR$MINOR/grass-$VERSION-$PACKAGE.tar.bz2 \
+    apps/grass/grass-$VERSION \
+    bin/grass$MAJOR$MINOR.bat \
+    bin/grass$MAJOR$MINOR \
+    etc/postinstall/grass$MAJOR$MINOR.bat \
+    etc/preremove/grass$MAJOR$MINOR.bat
+    
+    cd $PDIR/.. 
+    svn diff >/tmp/grass-$VERSION.diff
+    tar -C /tmp -cjf $PDIR/grass$MAJOR$MINOR/grass-$VERSION-$PACKAGE-src.tar.bz2 grass-$VERSION.diff 
+fi
 
-) | tee -a mswindows/osgeo4w/package.log
+log 
+
+exit 0

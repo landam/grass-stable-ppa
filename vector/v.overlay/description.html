@@ -39,10 +39,35 @@ v.db.connect map=outputmap table=binput.dbf field=3
 it! Therefore it is advisable to copy tables from ainput and binput first and
 connect the copied tables to the output map.-->
 
-<h2>EXAMPLE</h2>
+<h2>EXAMPLE POLYGON TO POLYGON UNION</h2>
 <div class="code"><pre>
-v.overlay ainput=lake binput=province output=lakeXprovince
+v.overlay ainput=lake binput=province output=lakeXprovince operator=or
 </pre></div>
+
+<h2>EXAMPLE LINE TO POLYGON CLIPPING</h2>
+
+Using the North Carolina sample dataset, we clip the roads map to the area
+of city of Raleigh:
+<div class="code"><pre>
+g.region vect=zipcodes_wake
+
+# extract Raleigh city
+v.extract in=zipcodes_wake out=raleigh \
+            where="ZIPNAME = 'RALEIGH'"
+
+# clip road network to city polygon:
+v.overlay ainput=roadsmajor atype=line binput=raleigh \
+            out=roadsmajor_raleigh operator=and
+</pre></div>
+
+<center>
+<img src="v_overlay_area_lines.png" alt="GRASS v.overlay: Line to polygon clipping"><BR>
+<table border=0 width=590>
+<tr><td><center>
+<i>v.overlay: Line to polygon clipping</i>
+</center></td></tr>
+</table>
+</center>
 
 
 <h2>SEE ALSO</h2>
@@ -56,4 +81,4 @@ v.overlay ainput=lake binput=province output=lakeXprovince
 
 Radim Blazek, ITC-Irst, Trento, Italy
 
-<p><i>Last changed: $Date: 2007-10-25 05:32:55 +0200 (Thu, 25 Oct 2007) $</i>
+<p><i>Last changed: $Date: 2011-02-09 15:57:16 +0100 (Wed, 09 Feb 2011) $</i>

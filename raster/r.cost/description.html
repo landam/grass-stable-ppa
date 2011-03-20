@@ -30,13 +30,13 @@ All non-NULL cells are considered to be starting points.
 Each <em>x,y</em> <b>coordinate</b> pair gives the geographic location of a
 point from which the transportation cost should be figured. As many points as
 desired can be entered by the user. These starting points can also be read
-from a vector points file through the <b>start_sites</b> option or from a
+from a vector points file through the <b>start_points</b> option or from a
 raster map through the <b>start_rast</b> option.
 <p>
 <em>r.cost</em> will stop cumulating costs when either <b>max_cost</b> is reached,
 or one of the stop points given with <b>stop_coordinates</b> is reached.
 Alternatively, the stop points can be read from a vector points file with the
-<b>stop_sites</b> option. During execution, once the cumulative cost to all 
+<b>stop_points</b> option. During execution, once the cumulative cost to all 
 stopping points has been determined, processing stops.
 
 Both sites read from a vector points file and those given on the command line
@@ -118,7 +118,7 @@ resolution can be found using <em><a href="g.region.html">g.region</a></em>.
 This problem doesn't arise with floating point maps.
 
 
-<h4>Algorithm notes</h4>
+<h3>Algorithm notes</h3>
 
 The fundamental approach to calculating minimum travel cost is as
 follows:<p> The user generates a raster map indicating the cost of
@@ -199,7 +199,7 @@ only one) starting location(s). Cells surrounded by asterisks are
 those that are different between operations using and not using the
 Knight's move (<b>-k</b>) option.
 
-<h4>Output analysis</h4>
+<h3>Output analysis</h3>
 
 The output map can be viewed, for example, as an elevation model in which
 the starting location(s) is/are the lowest point(s). Outputs from  <em>r.cost</em>
@@ -209,7 +209,7 @@ and the <em>r.cost</em> starting location(s). The two programs, when
 used together, generate least-cost paths or corridors between any two
 map locations (cells). 
 
-<h4>Shortest distance surfaces</h4>
+<h3>Shortest distance surfaces</h3>
 The <em>r.cost</em> module allows for computing the shortest distance 
 of each pixel from raster lines, such as determining the shortest distances
 of households to the nearby road. For this cost surfaces with cost value 1 are
@@ -257,4 +257,4 @@ U.S.Army Construction Engineering Research Laboratory
 Pierre de Mouveaux (pmx@audiovu.com) 
 </p>
 
-<p><i>Last changed: $Date: 2008-05-16 21:09:06 +0200 (Fri, 16 May 2008) $</i>
+<p><i>Last changed: $Date: 2010-11-13 13:02:26 +0100 (Sat, 13 Nov 2010) $</i>

@@ -38,8 +38,8 @@
 static const char *GRASS_copyright __attribute__ ((unused))
     = "GRASS GNU GPL licensed Software";
 
-#define GIS_H_VERSION "$Revision: 37101 $"
-#define GIS_H_DATE    "$Date: 2009-05-10 13:35:38 +0200 (Sun, 10 May 2009) $"
+#define GIS_H_VERSION "$Revision: 43636 $"
+#define GIS_H_DATE    "$Date: 2010-09-22 22:18:42 +0200 (Wed, 22 Sep 2010) $"
 
 #define G_gisinit(pgm) G__gisinit(GIS_H_VERSION, (pgm))
 #define G_no_gisinit() G__no_gisinit(GIS_H_VERSION)
@@ -187,6 +187,7 @@ static const char *GRASS_copyright __attribute__ ((unused))
     G_OPT_V_MAP,		/* old input vector map */
     G_OPT_V_MAPS,		/* old input vector maps */
     G_OPT_V_TYPE,		/* primitive type */
+    G_OPT_V3_TYPE,		/* primitive type, 2D and 3D */
     G_OPT_V_FIELD,		/* layer number (layers used to be called fields) */
     G_OPT_V_CAT,		/* one category */
     G_OPT_V_CATS,		/* more categories */
@@ -454,7 +455,7 @@ struct Quant
 struct Categories
 {
     CELL ncats;			/* total number of categories              */
-    CELL num;			/* the highest cell values. Only exists    
+    CELL num;			/* the highest cell values. Only exists
 				   for backwards compatibility = (CELL)
 				   max_fp_values in quant rules          */
     char *title;		/* name of data layer                      */

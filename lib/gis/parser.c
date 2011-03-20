@@ -1,12 +1,12 @@
-
-/**
- * \file parser.c
+/*!
+ * \file gis/parser.c
  *
  * \brief GIS Library - Argument parsing functions.
  *
  * Parses the command line provided through argc and argv.  Example:
  * Assume the previous calls:
  *
+ * \code
  *  opt1 = G_define_option() ;
  *  opt1->key        = "map",
  *  opt1->type       = TYPE_STRING,
@@ -29,28 +29,37 @@
  *  opt3->answer     = "12345.67",
  *  opt3->options    = "0-99999",
  *  opt3->description= "Number to test parser" ;
+ * \endcode
  *
  * G_parser() will respond to the following command lines as described:
  *
+ * \verbatim
  * command      (No command line arguments)
+ * \endverbatim
  *    Parser enters interactive mode.
  *
+ * \verbatim
  * command map=map.name
+ * \endverbatim
  *    Parser will accept this line.  Map will be set to "map.name", the
  *    'a' and 'b' flags will remain off and the num option will be set
  *    to the default of 5.
  *
+ * \verbatim
  * command -ab map=map.name num=9
  * command -a -b map=map.name num=9
  * command -ab map.name num=9
  * command map.name num=9 -ab
  * command num=9 -a map=map.name -b
+ * \endverbatim
  *    These are all treated as acceptable and identical. Both flags are
  *    set to on, the map option is "map.name" and the num option is "9".
  *    Note that the "map=" may be omitted from the command line if it
  *    is part of the first option (flags do not count).
  *
+ * \verbatim
  * command num=12
+ * \endverbatim
  *    This command line is in error in two ways.  The user will be told
  *    that the "map" option is required and also that the number 12 is
  *    out of range.  The acceptable range (or list) will be printed.
@@ -60,7 +69,7 @@
  * This program is free software under the GNU General Public License
  * (>=v2). Read the file COPYING that comes with GRASS for details.
  *
- * \author Radim Blazek
+ * \author Original author CERL; enhancements: Radim Blazek
  *
  * \date 2003-2009
  *
@@ -289,7 +298,7 @@ struct Option *G_define_option(void)
 }
 
 
-/**
+/*!
  * \brief Create standardised Option structure.
  *
  * This function will create a standardised Option structure
@@ -568,6 +577,15 @@ struct Option *G_define_standard_option(int opt)
 	Opt->options = "point,line,boundary,centroid,area";
 	Opt->description = _("Feature type");
 	break;
+    case G_OPT_V3_TYPE:
+	Opt->key = "type";
+	Opt->type = TYPE_STRING;
+	Opt->required = NO;
+	Opt->multiple = YES;
+	Opt->answer = "point,line,boundary,centroid,area,face,kernel";
+	Opt->options = "point,line,boundary,centroid,area,face,kernel";
+	Opt->description = _("Feature type");
+	break;
     case G_OPT_V_FIELD:
 	Opt->key = "layer";
 	Opt->type = TYPE_INTEGER;
@@ -616,7 +634,7 @@ struct Option *G_define_standard_option(int opt)
 	Opt->key_desc = "name";
 	Opt->required = YES;
 	Opt->gisprompt = "old_file,file,input";
-	Opt->description = _("Name of input file");
+	Opt->description = _("Name to input file");
 	break;
     case G_OPT_F_OUTPUT:
 	Opt->key = "output";
@@ -839,7 +857,7 @@ int G_parser(int argc, char **argv)
 	}
     }
     else if (argc < 2 && isatty(0)) {
-	G_usage();
+      	G_usage();
 	return -1;
     }
     else if (argc >= 2) {
@@ -883,6 +901,12 @@ int G_parser(int argc, char **argv)
 
 	while (--argc) {
 	    ptr = *(++argv);
+
+	    if (strcmp(ptr, "help") == 0 ||
+		strcmp(ptr, "-help") == 0 || strcmp(ptr, "--help") == 0) {
+		G_usage();
+		exit(EXIT_SUCCESS);
+	    }
 
 	    /* Overwrite option */
 	    if (strcmp(ptr, "--o") == 0 || strcmp(ptr, "--overwrite") == 0) {
@@ -949,14 +973,14 @@ int G_parser(int argc, char **argv)
 	}
     }
 
+    /* Split options where multiple answers are OK */
+    split_opts();
+
     /* Run the gui if it was specifically requested */
     if (force_gui) {
 	G_gui();
 	return -1;
     }
-
-    /* Split options where multiple answers are OK */
-    split_opts();
 
     /* Check multiple options */
     error += check_multiple_opts();
@@ -967,8 +991,7 @@ int G_parser(int argc, char **argv)
 
     /* Make sure all required options are set */
     error += check_required();
-
-
+    
     if (error) {
 	if (G_verbose() > G_verbose_min())
 	    G_usage();
@@ -1754,7 +1777,7 @@ static void G_script(void)
     fprintf(fp, "#  GNU General Public License for more details.\n");
     fprintf(fp, "#\n");
     fprintf(fp,
-	    "#############################################################################/\n");
+	    "############################################################################\n");
 
     fprintf(fp, "#%%Module\n");
     if (module_info.label)
@@ -1972,7 +1995,7 @@ static void G_gui_tcltk(void)
 
     generate_tcl(fp);
 
-    G_pclose(fp);
+    pclose(fp);
 }
 
 /**
@@ -1989,7 +2012,7 @@ static void G_gui_wx(void)
 
     sprintf(script, "%s/etc/wxpython/gui_modules/menuform.py",
 	    getenv("GISBASE"));
-    G_spawn(getenv("GRASS_PYTHON"), getenv("GRASS_PYTHON"), script, pgm_name, NULL);
+    G_spawn(getenv("GRASS_PYTHON"), getenv("GRASS_PYTHON"), script, G_recreate_command(), NULL);
 }
 
 /**
@@ -2007,7 +2030,7 @@ static void G_gui(void)
     if (!gui) {
 	gui = G_getenv("GRASS_GUI");
     }
-    
+
     if (gui && (strcmp(gui, "tcltk") == 0 || strcmp(gui, "oldtcltk") == 0))
 	G_gui_tcltk();
     else
@@ -2413,7 +2436,7 @@ static int check_required(void)
     while (opt != NULL) {
 	if (opt->required && opt->answer == NULL) {
 	    fprintf(stderr,
-		    _("\nERROR: Required parameter <%s> not set:\n    (%s).\n"),
+		    _("ERROR: Required parameter <%s> not set:\n\t(%s)\n"),
 		    opt->key, (opt->label ? opt->label : opt->description) );
 	    err++;
 	}
@@ -2846,7 +2869,7 @@ char *G_recreate_command(void)
 
     opt = &first_option;
     while (opt != '\0') {
-	if (opt->answer != '\0' && opt->answers[0] != NULL) {
+	if (opt->answer != '\0' && opt->answers && opt->answers[0] != NULL) {
 	    slen = strlen(opt->key) + strlen(opt->answers[0]) + 4;	/* +4 for: ' ' = " " */
 	    if (len + slen >= nalloced) {
 		nalloced += (nalloced + 1024 > len + slen) ? 1024 : slen + 1;

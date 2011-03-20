@@ -28,6 +28,7 @@ rem are used to run scripts on Windows
 if "%GRASS_ADDON_PATH%"=="" set PATH=%WINGISBASE%\bin;%WINGISBASE%\lib;%PATH%
 if not "%GRASS_ADDON_PATH%"=="" set PATH=%WINGISBASE%\bin;%WINGISBASE%\lib;%GRASS_ADDON_PATH%;%PATH%
 
+set GIS_LOCK=1
 set GRASS_VERSION=GRASS_VERSION_NUMBER
 if "%HOME%"=="" set HOME=%USERPROFILE%
 set WINGISRC=%HOME%\.grassrc6
@@ -48,7 +49,7 @@ if "%GRASS_SH%"=="" set GRASS_SH=c:\msys\1.0\bin\sh.exe
 
 rem Should do something with "assoc .html" and ftype here but would require
 rem a new g.manual.bat too so leaving it like this for now...
-if "%GRASS_HTML_BROWSER%"=="" set GRASS_HTML_BROWSER=%SYSTEMDRIVE%/PROGRA~1/INTERN~1/IEXPLORE.EXE
+if "%GRASS_HTML_BROWSER%"=="" set GRASS_HTML_BROWSER=explorer
 
 if "%GRASS_PROJSHARE%"=="" set GRASS_PROJSHARE=CONFIG_PROJSHARE
 
@@ -92,8 +93,8 @@ if "%GRASS_GUI%" == "" (
   g.gisenv "set=GRASS_GUI=%GRASS_GUI%"
 )
 
-rem Set tcltk as default if not specified elsewhere
-if "%GRASS_GUI%"=="" set GRASS_GUI=tcltk
+rem Set wxGUI as default if not specified elsewhere
+if "%GRASS_GUI%"=="" set GRASS_GUI=wxpython
 
 rem Clean out old .tmp files from the mapset
 if "%HAVE_GISRC%"=="true" (

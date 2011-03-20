@@ -9,7 +9,7 @@
  * PURPOSE:      Change current mapset, optionally adding it
  *               if the mapset does not exist.
  *               
- * COPYRIGHT:    (C) 2004 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2004, 2010 by the GRASS Development Team
  *
  *               This program is free software under the 
  *               GNU General Public License (>=v2). 
@@ -46,39 +46,46 @@ int main(int argc, char *argv[])
 
     module = G_define_module();
     module->keywords = _("general, settings");
-    module->description = _("Change current mapset.");
-
+    module->label = _("Changes current mapset.");
+    module->description = _("Optionally create new mapset or list available mapsets in given location.");
+    
     mapset_opt = G_define_option();
     mapset_opt->key = "mapset";
     mapset_opt->type = TYPE_STRING;
     mapset_opt->required = NO;
     mapset_opt->multiple = NO;
-    mapset_opt->description = _("New MAPSET name");
+    mapset_opt->description = _("Name of mapset where to switch");
+    mapset_opt->guisection = _("Settings");
 
     location_opt = G_define_option();
     location_opt->key = "location";
     location_opt->type = TYPE_STRING;
     location_opt->required = NO;
     location_opt->multiple = NO;
-    location_opt->description = _("New LOCATION name (not location path)");
+    location_opt->description = _("Location name (not location path)");
+    location_opt->guisection = _("Settings");
 
     gisdbase_opt = G_define_option();
     gisdbase_opt->key = "gisdbase";
     gisdbase_opt->type = TYPE_STRING;
     gisdbase_opt->required = NO;
     gisdbase_opt->multiple = NO;
+    gisdbase_opt->key_desc = "path";
     gisdbase_opt->description =
-	_("New GISDBASE (full path to the directory where the new location is)");
-
+	_("GIS data directory (full path to the directory where the new location is)");
+    gisdbase_opt->guisection = _("Settings");
+    
     f_add = G_define_flag();
     f_add->key = 'c';
     f_add->description = _("Create mapset if it doesn't exist");
     f_add->answer = FALSE;
+    f_add->guisection = _("Create");
 
     f_list = G_define_flag();
     f_list->key = 'l';
     f_list->description = _("List available mapsets");
-
+    f_list->guisection = _("Print");
+    
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
@@ -189,7 +196,7 @@ int main(int argc, char *argv[])
 
     /* Clean temporary directory */
     sprintf(path, "%s/etc/clean_temp", G_gisbase());
-    G_message(_("Cleaning up temporary files..."));
+    G_verbose_message(_("Cleaning up temporary files..."));
     G_spawn(path, "clean_temp", NULL);
 
     /* Reset variables */
@@ -203,20 +210,23 @@ int main(int argc, char *argv[])
 
     G_free(mapset_old_path);
 
-    G_warning(_("Your shell continues to use the history for the old mapset"));
+    G_important_message(_("Your shell continues to use the history for the old mapset"));
 
     if ((shell = getenv("SHELL"))) {
 	if (strstr(shell, "bash")) {
-	    G_message(_("You can switch the history by commands:\n"
-			"history -w; history -r %s/.bash_history; HISTFILE=%s/.bash_history"),
-		      mapset_new_path, mapset_new_path);
+	    G_important_message(_("You can switch the history by commands:\n"
+				  "history -w; history -r %s/.bash_history; HISTFILE=%s/.bash_history"),
+				mapset_new_path, mapset_new_path);
 	}
 	else if (strstr(shell, "tcsh")) {
-	    G_message(_("You can switch the history by commands:\n"
-			"history -S; history -L %s/.history; setenv histfile=%s/.history"),
-		      mapset_new_path, mapset_new_path);
+	    G_important_message(_("You can switch the history by commands:\n"
+				  "history -S; history -L %s/.history; setenv histfile=%s/.history"),
+				mapset_new_path, mapset_new_path);
 	}
     }
+
+    G_message(_("Your current mapset is <%s>"), mapset_new);
+    
     G_free(mapset_new_path);
 
     return (EXIT_SUCCESS);

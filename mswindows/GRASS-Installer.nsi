@@ -3,7 +3,7 @@
 ;GRASS Installer for Windows
 ;Written by Marco Pasetti
 ;Updated for OSGeo4W by Colin Nielsen, Helmut Kudrnovsky, and Martin Landa
-;Last Update: $Id: GRASS-Installer.nsi 43393 2010-09-03 14:16:13Z martinl $
+;Last Update: $Id: GRASS-Installer.nsi 45600 2011-03-07 18:08:48Z martinl $
 ;Mail to: grass-dev@lists.osgeo.org 
 
 ;----------------------------------------------------------------------------------------------------------------------------
@@ -31,17 +31,17 @@ SetCompressorDictSize 64
 
 ;Version variables
 
-!define RELEASE_VERSION_NUMBER "6.4.0"
+!define RELEASE_VERSION_NUMBER "6.4.1"
 !define RELEASE_SVN_REVISION "36599"
 !define RELEASE_BINARY_REVISION "1"
 !define RELEASE_GRASS_COMMAND "grass64"
-!define RELEASE_GRASS_BASE "GRASS-64"
+!define RELEASE_GRASS_BASE "GRASS 6.4"
 
 !define DEVEL_VERSION_NUMBER "6.4.SVN"
 !define DEVEL_SVN_REVISION "36599"
 !define DEVEL_BINARY_REVISION "1"
 !define DEVEL_GRASS_COMMAND "grass64svn"
-!define DEVEL_GRASS_BASE "GRASS-64-SVN"
+!define DEVEL_GRASS_BASE "GRASS 6.4.SVN"
 
 ;----------------------------------------------------------------------------------------------------------------------------
 
@@ -86,7 +86,7 @@ SetCompressorDictSize 64
 
 !define PUBLISHER "GRASS Development Team"
 !define WEB_SITE "http://grass.osgeo.org"
-!define WIKI_PAGE "http://grass.osgeo.org/wiki/Main_Page"
+!define WIKI_PAGE "http://grass.osgeo.org/wiki"
 
 ;----------------------------------------------------------------------------------------------------------------------------
 
@@ -500,7 +500,7 @@ Section "GRASS" SecGRASS
 	FileWrite $0 'set GISBASE=$INSTALL_DIR$\r$\n'
 	FileWrite $0 '$\r$\n'
 	FileWrite $0 'rem set path to freetype dll$\r$\n'
-	FileWrite $0 'set FREETYPEBASE=$INSTALL_DIR\extralib$\r$\n'
+	FileWrite $0 'set FREETYPEBASE=$INSTALL_DIR\extralib;$INSTALL_DIR\lib$\r$\n'
 	FileWrite $0 '$\r$\n'
 	FileWrite $0 'rem set dependecies path$\r$\n'
 	FileWrite $0 'set PATH=%FREETYPEBASE%;%PATH%$\r$\n'
@@ -631,7 +631,6 @@ Section "GRASS" SecGRASS
 	FileWrite $0 'rem #########################################################################$\r$\n'
 	FileWrite $0 'rem #$\r$\n'
 	FileWrite $0 'rem # File dynamically created by NSIS installer script;$\r$\n'
-	FileWrite $0 'rem # Written by Marco Pasetti;$\r$\n'
 	FileWrite $0 'rem #$\r$\n'
 	FileWrite $0 'rem #########################################################################$\r$\n'
 	FileWrite $0 'rem #$\r$\n'
@@ -639,42 +638,19 @@ Section "GRASS" SecGRASS
 	FileWrite $0 'rem #$\r$\n'
 	FileWrite $0 'rem #########################################################################$\r$\n'
 	FileWrite $0 '$\r$\n'
-	FileWrite $0 'rem *******Environment variables***********$\r$\n'
-	FileWrite $0 '$\r$\n'
 	FileWrite $0 'rem Set GRASS Installation Directory Variable$\r$\n'
-	FileWrite $0 'set GRASSDIR=$INSTALL_DIR$\r$\n'
+	FileWrite $0 'set GISBASE=$INSTALL_DIR$\r$\n'
 	FileWrite $0 '$\r$\n'
-	FileWrite $0 'rem Directory where your .grassrc6 file will be stored$\r$\n'
-	FileWrite $0 'set HOME=%USERPROFILE%$\r$\n'
-	FileWrite $0 '$\r$\n'
-	FileWrite $0 'rem Name of the wish (Tk) executable$\r$\n'	
-	FileWrite $0 'set GRASS_WISH=wish.exe$\r$\n'
-	FileWrite $0 '$\r$\n'
-	FileWrite $0 'rem Path to the shell command$\r$\n'	 
-	FileWrite $0 'set GRASS_SH=%GRASSDIR%\msys\bin\sh.exe$\r$\n'
-	FileWrite $0 '$\r$\n'
-	FileWrite $0 'rem Set Path to utilities (libraries and bynaries) used by GRASS$\r$\n'
-	FileWrite $0 'set PATH=%GRASSDIR%\msys\bin;%PATH%$\r$\n'
-	FileWrite $0 'set PATH=%GRASSDIR%\extrabin;%GRASSDIR%\extralib;%PATH%$\r$\n'
-	FileWrite $0 'set PATH=%GRASSDIR%\tcl-tk\bin;%GRASSDIR%\sqlite\bin;%GRASSDIR%\gpsbabel;%PATH%$\r$\n'
 	${If} $R_HKLM_INSTALL_PATH != ""
 	FileWrite $0 'set PATH=$R_HKLM_INSTALL_PATH\bin;%PATH%$\r$\n'
+	FileWrite $0 '$\r$\n'
 	${EndIf}
 	${If} $R_HKCU_INSTALL_PATH != ""
 	FileWrite $0 'set PATH=$R_HKCU_INSTALL_PATH\bin;%PATH%$\r$\n'
+	FileWrite $0 '$\r$\n'
 	${EndIf}
+	FileWrite $0 'call "%GISBASE%\etc\env.bat"$\r$\n'
 	FileWrite $0 '$\r$\n'
-	FileWrite $0 'rem Set Path to default web browser$\r$\n'	
-	FileWrite $0 'set GRASS_HTML_BROWSER=explorer$\r$\n'
-	FileWrite $0 '$\r$\n'
-	FileWrite $0 'rem Path to the proj files (notably the epsg projection list)$\r$\n'	
-	FileWrite $0 'set GRASS_PROJSHARE=%GRASSDIR%\proj$\r$\n'
-	FileWrite $0 '$\r$\n'
-	FileWrite $0 'rem Path to the python directory$\r$\n'
-	FileWrite $0 'set PYTHONHOME=%GRASSDIR%\Python25$\r$\n'
-	FileWrite $0 'if "x%GRASS_PYTHON%" == "x" set GRASS_PYTHON=python$\r$\n'
-	FileWrite $0 '$\r$\n'
-	FileWrite $0 'set WINGISBASE=%GRASSDIR%$\r$\n'
 	FileWrite $0 '"%WINGISBASE%\etc\Init.bat" %*'
 	FileClose $0
 	done_create_grass_command.bat:
@@ -777,9 +753,23 @@ Section "GRASS" SecGRASS
 	FileWrite $0 '   export GRASS_PYTHON$\r$\n'
 	FileWrite $0 'fi$\r$\n'
 	FileWrite $0 '$\r$\n'
+	FileWrite $0 '# Set to default web browser$\r$\n'
+	FileWrite $0 'GRASS_HTML_BROWSER=explorer$\r$\n'
+	FileWrite $0 'export GRASS_HTML_BROWSER$\r$\n'
+	FileWrite $0 '$\r$\n'
 	FileWrite $0 '# Set the GRASS_PROJSHARE variable$\r$\n'
 	FileWrite $0 'GRASS_PROJSHARE="$INSTALL_DIR\proj"$\r$\n'
 	FileWrite $0 'export GRASS_PROJSHARE$\r$\n'
+	FileWrite $0 '$\r$\n'
+	FileWrite $0 '# Set the GDAL_DATA variable$\r$\n'
+	FileWrite $0 'GDAL_DATA="$INSTALL_DIR\share\gdal"$\r$\n'
+	FileWrite $0 'export GDAL_DATA$\r$\n'
+	FileWrite $0 '# Set the PROJ_LIB variable$\r$\n'
+	FileWrite $0 'PROJ_LIB="$INSTALL_DIR\proj"$\r$\n'
+	FileWrite $0 'export PROJ_LIB $\r$\n'
+	FileWrite $0 '# Set the GEOTIFF_CSV variable$\r$\n'
+	FileWrite $0 'GEOTIFF_CSV="$INSTALL_DIR\share\epsg_csv"$\r$\n'
+	FileWrite $0 'export GEOTIFF_CSV $\r$\n'
 	FileWrite $0 '$\r$\n'
 	FileWrite $0 'exec "$$GISBASE/etc/Init.sh" "$$@"'
 	FileClose $0
@@ -913,46 +903,9 @@ SectionEnd
 ;Uninstaller Section
 
 Section "Uninstall"
-
-	;remove files
-	Delete "$INSTDIR\Uninstall-GRASS.exe"
-	Delete "$INSTDIR\GPL.TXT"
-	Delete "$INSTDIR\AUTHORS"
-	Delete "$INSTDIR\CHANGES"
-	Delete "$INSTDIR\COPYING"	
-	Delete "$INSTDIR\${GRASS_COMMAND}.bat"
-	Delete "$INSTDIR\GRASS-WebSite.url"	
-	Delete "$INSTDIR\WinGRASS-README.url"
-	Delete "$INSTDIR\REQUIREMENTS.html"
-	Delete "$INSTDIR\README.html"
-	Delete "$INSTDIR\contributors.csv"	
-	Delete "$INSTDIR\translators.csv"	
-	
-	;remove folders
-	RMDir /r "$INSTDIR\bin"
-	RMDir /r "$INSTDIR\bwidget"
-	RMDir /r "$INSTDIR\docs"
-	RMDir /r "$INSTDIR\driver"
-	RMDir /r "$INSTDIR\etc"
-	RMDir /r "$INSTDIR\extrabin"
-	RMDir /r "$INSTDIR\extralib"
-	RMDir /r "$INSTDIR\fonts"
-	RMDir /r "$INSTDIR\gpsbabel"
-	RMDir /r "$INSTDIR\icons"
-	RMDir /r "$INSTDIR\include"
-	RMDir /r "$INSTDIR\lib"
-	RMDir /r "$INSTDIR\locale"
-	RMDir /r "$INSTDIR\msys"
-	RMDir /r "$INSTDIR\proj"
-	RMDir /r "$INSTDIR\Python25"
-	RMDir /r "$INSTDIR\scripts"
-	RMDir /r "$INSTDIR\sqlite"
-	RMDir /r "$INSTDIR\tcl-tk"
-	RMDir /r "$INSTDIR\tools"	
-	
-	;if empty, remove the install folder
-	RMDir "$INSTDIR"
-	
+	;remove files & folders
+	RMDir /r "$INSTDIR"
+		
 	;remove the Desktop ShortCut
 	SetShellVarContext current
 	Delete "$DESKTOP\GRASS ${VERSION_NUMBER}.lnk"

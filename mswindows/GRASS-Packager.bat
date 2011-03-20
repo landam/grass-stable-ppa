@@ -5,7 +5,7 @@ rem Self Contained GRASS Automated Packager
 rem -----------------------------------------------------------------------------------------------------------------------
 rem Edited by: Marco Pasetti
 rem Revised for OSGeo4W by: Colin Nielsen, Helmut Kudrnovsky, and Martin Landa
-rem Last Update: $Id: GRASS-Packager.bat 40819 2010-02-04 09:38:33Z hamish $
+rem Last Update: $Id: GRASS-Packager.bat 45598 2011-03-07 17:44:44Z martinl $
 rem -----------------------------------------------------------------------------------------------------------------------
 
 rem --------------------------------------------------------------------------------------------------------------------------
@@ -15,9 +15,11 @@ rem ----------------------------------------------------------------------------
 set OSGEO4W_DIR=c:\osgeo4w
 
 rem set PACKAGE_DIR=.\GRASS-64-Release-Package
-set PACKAGE_DIR=.\GRASS-64-Dev-Package
-rem set GRASS_PREFIX=%OSGEO4W_DIR%\apps\grass\grass-6.4.0
-set GRASS_PREFIX=%OSGEO4W_DIR%\apps\grass\grass-6.4.0svn
+set PACKAGE_DIR=.\GRASS-64-Devel-Package
+rem set GRASS_PREFIX=%OSGEO4W_DIR%\apps\grass\grass-6.4.1
+set GRASS_PREFIX=%OSGEO4W_DIR%\apps\grass\grass-6.4.1svn
+
+set SVN_PATH=c:\Subversion
 
 @echo.
 @echo -----------------------------------------------------------------------------------------------------------------------
@@ -45,10 +47,19 @@ xcopy %GRASS_PREFIX% %PACKAGE_DIR% /S/V/F
 mkdir %PACKAGE_DIR%\extralib
 
 copy %OSGEO4W_DIR%\bin\*.dll %PACKAGE_DIR%\extralib
+del %PACKAGE_DIR%\extralib\libgrass_*6.4.0*.dll
 del %PACKAGE_DIR%\extralib\libgrass_*6.5*.dll
 del %PACKAGE_DIR%\extralib\libgrass_*7.0*.dll
 del %PACKAGE_DIR%\extralib\Qt*4.dll
 rem copy %OSGEO4W_DIR%\pgsql\lib\libpq.dll %PACKAGE_DIR%\extralib
+
+@echo.
+@echo -----------------------------------------------------------------------------------------------------------------------
+@echo Move GRASS libs from extralib to lib
+@echo -----------------------------------------------------------------------------------------------------------------------
+@echo.
+
+move %PACKAGE_DIR%\extralib\libgrass_*.dll %PACKAGE_DIR%\lib
 
 @echo.
 @echo -----------------------------------------------------------------------------------------------------------------------
@@ -59,7 +70,6 @@ rem copy %OSGEO4W_DIR%\pgsql\lib\libpq.dll %PACKAGE_DIR%\extralib
 mkdir %PACKAGE_DIR%\extrabin
 
 copy %OSGEO4W_DIR%\bin\*.exe %PACKAGE_DIR%\extrabin
-del %PACKAGE_DIR%\extrabin\svn*.exe
 
 @echo.
 @echo -----------------------------------------------------------------------------------------------------------------------
@@ -105,6 +115,25 @@ rem copy %OSGEO4W_DIR%\libexpat.dll %PACKAGE_DIR%\gpsbabel
 @echo.
 
 xcopy %OSGEO4W_DIR%\share\proj %PACKAGE_DIR%\proj /S/V/F/I
+
+@echo.
+@echo -----------------------------------------------------------------------------------------------------------------------
+@echo Copy shared GDAL files to PACKAGE_DIR\share\gdal
+@echo -----------------------------------------------------------------------------------------------------------------------
+@echo.
+
+mkdir %PACKAGE_DIR%\share
+mkdir %PACKAGE_DIR%\share\gdal
+xcopy %OSGEO4W_DIR%\share\gdal %PACKAGE_DIR%\share\gdal /S/V/F/I
+
+@echo.
+@echo -----------------------------------------------------------------------------------------------------------------------
+@echo Copy shared GEOTIFF files to PACKAGE_DIR\share\epsg_csv
+@echo -----------------------------------------------------------------------------------------------------------------------
+@echo.
+
+mkdir %PACKAGE_DIR%\share\epsg_csv
+xcopy %OSGEO4W_DIR%\share\epsg_csv %PACKAGE_DIR%\share\epsg_csv /S/V/F/I
 
 @echo.
 @echo -----------------------------------------------------------------------------------------------------------------------
@@ -177,6 +206,24 @@ xcopy %OSGEO4W_DIR%\apps\Python25\include %PACKAGE_DIR%\Python25\include /S/V/F/
 xcopy %OSGEO4W_DIR%\apps\Python25\Lib %PACKAGE_DIR%\Python25\Lib /S/V/F/I
 xcopy %OSGEO4W_DIR%\apps\Python25\libs %PACKAGE_DIR%\Python25\libs /S/V/F/I
 xcopy %OSGEO4W_DIR%\apps\Python25\Scripts %PACKAGE_DIR%\Python25\Scripts /S/V/F/I
+
+@echo.
+@echo -----------------------------------------------------------------------------------------------------------------------
+@echo Copy Subversion content to PACKAGE_DIR\extrabin & PACKAGE_DIR\extralib
+@echo -----------------------------------------------------------------------------------------------------------------------
+@echo.
+
+copy %SVN_PATH%\svn.exe %PACKAGE_DIR%\extrabin
+copy %SVN_PATH%\*.dll %PACKAGE_DIR%\extralib
+
+
+@echo.
+@echo -----------------------------------------------------------------------------------------------------------------------
+@echo Copy env.bat
+@echo -----------------------------------------------------------------------------------------------------------------------
+@echo.
+
+copy env.bat %PACKAGE_DIR%\etc
 
 @echo.
 @echo -----------------------------------------------------------------------------------------------------------------------

@@ -83,7 +83,7 @@ option add *activeBackground gray80 widgetDefault
 option add *font -*-helvetica-medium-r-normal-*-12-*-iso8859-1 widgetDefault
 option add *Label.font -*-helvetica-bold-r-normal-*-12-*-iso8859-1
 option add *label.font -*-helvetica-medium-r-normal-*-12-*-iso8859-1
-option add *Label.foreground "medium blue"
+option add *Label.foreground "khaki4"
 option add *label.foreground "black"
 option add *Radiobutton.relief flat
 option add *Checkbutton.relief flat
@@ -106,6 +106,6 @@ option add *menubutton.indicatoron 1
 option add *menubutton.borderwidth 1
 option add *button.borderWidth 1
 
-
-
-
+# All supported point types
+set Nv_(siteshapes) [list {x} {sphere} {diamond} {cube} {box} {gyro} {aster} {histogram} ]
+set Nv_(siteshape_names) [list [G_msg "x"] [G_msg "sphere"] [G_msg "diamond"] [G_msg "cube"] [G_msg "box"] [G_msg "gyro"] [G_msg "aster"] [G_msg "histogram"]]

@@ -269,7 +269,9 @@ void #db_calloc (int n, int m)
 
 void #db_malloc (int n)
 
-void #db_realloc (void s, int n)
+void #db_realloc (void *s, int n)
+
+void #db_free (void *s, int n)
 
 
 \subsection DB_case_routines DB case routines
@@ -799,5 +801,5 @@ Text based on: R. Blazek, M. Neteler, and R. Micarelli. The new GRASS 5.1
  
 GRASS 6 Vector Architecture: \ref Vector_Library
 
-Last change: $Date: 2008-08-08 11:11:14 +0200 (Fri, 08 Aug 2008) $
+Last change: $Date: 2011-03-02 12:33:10 +0100 (Wed, 02 Mar 2011) $
 */

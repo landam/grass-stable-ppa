@@ -6,7 +6,7 @@ coordinates of points whose locations have been randomly
 determined.  The program locates these randomly generated
 vector points (sites) within the current geographic region and mask (if
 any), on non-NULL category value data areas within a
-user-specified raster map layer.  If the user sets the
+user-specified raster map layer. If the user sets the
 <b>-z</b> flag, points will be randomly generated across all
 cells (even those with NULL values).
 
@@ -35,6 +35,11 @@ when <b>-z</b> is used). <br>
 If a <em>cover</em> map is additionally specified, a second
 column  <em>covervalue</em> is populated with raster values from
 the <em>cover</em> map.
+
+<p>
+If the user sets the <b>-b</b> flag, vector points are written without
+topology to minimize the required resources. This is suitable input
+to <em>v.surf.rst</em> and other vector modules.
 
 <p>
 The user may specify the quantity of random locations to be
@@ -108,9 +113,12 @@ parameter.
 
 <h2>SEE ALSO</h2>
 
-<em><a href="g.region.html">g.region</a></em><br>
-<em><a href="r.reclass.html">r.reclass</a></em><br>
-<em><a href="v.random.html">v.random</a></em><br>
+<em>
+<a href="g.region.html">g.region</a><br>
+<a href="r.reclass.html">r.reclass</a><br>
+<a href="v.random.html">v.random</a><br>
+<a href="v.surf.rst.html">v.surf.rst</a>
+</em>
 
 
 <h2>AUTHOR</h2>
@@ -124,4 +132,4 @@ Modified for GRASS 5.0 by Eric G. Miller
 Cover map support by Markus Neteler, 2007
 
 <p>
-<i>Last changed: $Date: 2008-07-14 20:03:49 +0200 (Mon, 14 Jul 2008) $</i>
+<i>Last changed: $Date: 2010-09-21 15:06:44 +0200 (Tue, 21 Sep 2010) $</i>

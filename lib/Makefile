@@ -4,6 +4,7 @@ MODULE_TOPDIR = ..
 SUBDIRS = \
 	datetime \
 	gis \
+	external \
 	gmath \
 	linkm \
 	driver \
@@ -16,7 +17,6 @@ SUBDIRS = \
 	db \
 	vask \
 	edit \
-	external \
 	fonts \
 	gtcltk \
 	form \
@@ -58,11 +58,7 @@ ifneq ($(strip $(CXX)),)
     SUBDIRS += iostream
 endif
 
-#doxygen:
-DOXNAME=grass
-
 include $(MODULE_TOPDIR)/include/Make/Dir.make
-include $(MODULE_TOPDIR)/include/Make/Doxygen.make
 
 default: headers
 	$(MAKE) subdirs

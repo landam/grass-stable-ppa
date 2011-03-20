@@ -136,7 +136,7 @@ r.mapcalc "manning = if(elevation.10m, 0.05, null())"
 r.mapcalc "infilt  = if(elevation.10m, 0.0, null())"
 
 # simulate
-r.sim.water elevin=elevation.10m elev_dxin=elev_dx elev_dyin=elev_dy \
+r.sim.water elevin=elevation.10m dxin=elev_dx dyin=elev_dy \
             rain=rain manin=manning infil=infilt \
             nwalk=5000000 depth=depth
 
@@ -220,4 +220,4 @@ Kluwer Academic/Plenum Publishers, pp. 321-347.
 The International Series in Engineering and Computer Science: Volume 773. Springer New York Inc, p. 406.
 </ul>
 
-<p><i>Last changed: $Date: 2010-01-31 17:53:06 +0100 (Sun, 31 Jan 2010) $</i>
+<p><i>Last changed: $Date: 2010-11-28 23:18:09 +0100 (Sun, 28 Nov 2010) $</i>
