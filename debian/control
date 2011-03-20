@@ -22,7 +22,7 @@ Depends: ${shlibs:Depends}, xterm | x-terminal-emulator, python (>= 2.5), python
 Suggests: grass-doc, gdal-bin, proj-bin, e00compr, avce00, gpsbabel, gpstrans,
  gnuplot, xml2, wget | curl, netpbm
 Recommends: ghostscript
-Provides: grass640
+Provides: grass641~rc2
 Description: Geographic Resources Analysis Support System 
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
