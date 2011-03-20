@@ -1,6 +1,6 @@
 How to release GRASS binaries and source code
 
-$Date: 2010-08-27 09:18:57 +0200 (Fri, 27 Aug 2010) $
+$Date: 2010-10-21 22:24:20 +0200 (Thu, 21 Oct 2010) $
 
 Note: This text contains *some* rules only applicable to the
       development coordinators at CEA (currently Markus Neteler).
@@ -105,8 +105,8 @@ Contents
 
 
  o Store the source tarball (twice) in (use scp -p FILES grass:):
-    SERVER1=download.osgeo.org:/osgeo/download/grass/grass$MAJOR$MINOR/source/
-    SERVER2=grass.osgeo.org:/osgeo/grass/grass-web-public/grass$MAJOR$MINOR/source/
+    SERVER1=grass.osgeo.org:/osgeo/grass/grass-web-public/grass$MAJOR$MINOR/source/
+    SERVER2=download.osgeo.org:/osgeo/download/grass/grass$MAJOR$MINOR/source/
     echo $SERVER1
     echo $SERVER2
 
@@ -135,10 +135,10 @@ Contents
       - download new source code package, compile with most settings
       -  cd dist.$ARCH/docs/html
          echo www/grass$MAJOR$MINOR/manuals/html$MAJOR${MINOR}_user/
-         scp -r * neteler@download.osgeo.org:/osgeo/download/grass$MAJOR$MINOR/manuals/html$MAJOR${MINOR}_user/
-         scp -r * neteler@grass.osgeo.org:/osgeo/download/grass$MAJOR$MINOR/manuals/html$MAJOR${MINOR}_user/
+         scp -r * neteler@grass.osgeo.org:/osgeo/grass/grass-web-public/grass$MAJOR$MINOR/manuals/html$MAJOR${MINOR}_user/
+         scp -r * neteler@download.osgeo.org:/osgeo/download/grass/grass$MAJOR$MINOR/manuals/html$MAJOR${MINOR}_user/
 
- o stable release: update cronjob 'cron_grass64_release_src_snapshot.sh' to next but one
+ o stable release: update cronjob 'cron_grass6_releasebranch_64_src_snapshot.sh' to next but one
                    release tag for the differences
 
 2. Tell others about it:
@@ -178,28 +178,31 @@ Contents
    mfeilner@linuxnewmedia.de
    info@harzer.de
    info@j-geoinfo.net
+   editor@newsblaze.com
+   pr@geocomm.com
 
  Web:
    http://slashgeo.org/submit.pl
    http://freshmeat.net/projects/grass/?highlight=GRASS (update, MN)
    http://linuxtoday.com/contribute.php3
+   https://www.osor.eu/projects/grassgis (update, MN)
    http://www.newsforge.com/submit.pl
-   http://osx.macnn.com/    (email to "contact" -> news tips)
-   http://www.giscafe.com/submit_material/submit_options.php#Press (MN)
+   http://www.macnn.com/contact/newstips/1
+   http://www10.giscafe.com/submit_material/submit_options.php#Press (MN)
    http://www.freegis.org   (update, MN)
    http://www.blinkgeo.com (markusN)
-   http://www.directionsmag.com/pressreleases.php (News -> Post Press Release)
+   http://www.directionsmag.com/pressreleases/ (News -> Post Press Release)
    http://www.gnu.org/directory/science/geography/grass.html
    http://www.kde-apps.org/content/show.php?content=19776
    http://www.opendesktop.org/content/show.php?content=19776
    http://news.eoportal.org/share_news.html (MN) 
             -> Share your news with the EO community
    http://www.osdir.com/Downloads+index-req-viewsdownload-sid-206.phtml
-   http://www.foss4g.org/FOSS4G/modules.php?name=Submit_News
    http://groups.google.com/group/Remote-Sensing-GIS-for-a-New-World
    http://groups.google.com/group/comp.infosystems.gis
    http://www.heise.de/software/download/edit_7105 (update, MN)
 
+   See also: http://grass.osgeo.org/wiki/Contact_Databases
    ... anywhere else? Please add here.
 
 ###########################################

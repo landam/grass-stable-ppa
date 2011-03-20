@@ -150,6 +150,7 @@ int new_line_update(void *closure, int sxn, int syn, int button)
     struct new_line *nl = closure;
     double x = D_d_to_u_col(sxn);
     double y = D_d_to_u_row(syn);
+    double dist;
 
     G_debug(3, "button = %d x = %d = %f y = %d = %f", button, sxn, x, syn, y);
 
@@ -157,9 +158,11 @@ int new_line_update(void *closure, int sxn, int syn, int button)
 	Tool_next = TOOL_NOTHING;
 	return 1;
     }
+    
+    if (button > 3) /* Do nothing on mouse scroll */
+	return 0;
 
-    if (nl->type & GV_POINTS) {
-	/* We can get here with button = 1 or 2 -> the same write point */
+    if (nl->type & GV_POINTS && (button == 1 ||  button == 2)) {
 	snap(&x, &y);
 	Vect_append_point(nl->Points, x, y, 0);
 
@@ -170,8 +173,21 @@ int new_line_update(void *closure, int sxn, int syn, int button)
     else {			/* GV_LINES */
 	/* Button may be 1,2,3 */
 	if (button == 1) {	/* New point */
-	    snap(&x, &y);
-	    Vect_append_point(nl->Points, x, y, 0);
+	    if (snap(&x, &y) == 0) {
+		/* If not snapping to other features, try to snap to lines start.
+		 * Allows to create area of single boundary. */
+		if (nl->Points->n_points > 2) {
+		    dist = Vect_points_distance(nl->Points->x[0], nl->Points->y[0], 0, x, y, 0, WITHOUT_Z);
+		    if (dist < get_thresh()) {
+			x = nl->Points->x[0];
+			y = nl->Points->y[0];
+		    }
+		}
+	    }
+	    if (Vect_append_point(nl->Points, x, y, 0) == -1) {
+		G_warning("Out of memory! Point not added.");
+		return 0;
+	    }
 
 	    if (nl->type == GV_LINE)
 		symb_set_driver_color(SYMB_LINE);
@@ -207,7 +223,7 @@ int new_line_update(void *closure, int sxn, int syn, int button)
 		set_mode(MOUSE_POINT);
 	    }
 	}
-	else {			/* button = 3 -> write the line and quit */
+	else if (button == 3) {		/* write the line and quit */
 	    if (nl->Points->n_points > 1) {
 		/* Before the line is written, we must check if connected to existing nodes, if yes,
 		 * such nodes must be add to update list before! the line is written (areas/isles */

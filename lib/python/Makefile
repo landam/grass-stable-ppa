@@ -9,12 +9,13 @@ PYDIR = $(ETC)/python
 GDIR = $(PYDIR)/grass
 DSTDIR = $(GDIR)/script
 
-MODULES = core db raster vector
+MODULES = core db raster vector array setup
 
 PYFILES := $(patsubst %,$(DSTDIR)/%.py,$(MODULES) __init__)
 
 default: $(DSTDIR)
 	$(MAKE) $(PYFILES)
+EXTRA_CLEAN_FILES = setup.py
 
 $(PYDIR):
 	test -d $@ || $(MKDIR) -p $@
@@ -29,5 +30,10 @@ $(DSTDIR): $(GDIR)
 $(DSTDIR)/%: %
 	$(INSTALL_DATA) $< $@
 
+setup.py: setup.py.sed
+	sed \
+	-e 's#@LD_LIBRARY_PATH_VAR@#$(LD_LIBRARY_PATH_VAR)#' \
+	$< > $@
+
 #doxygen:
-DOXNAME=grasspython
+DOXNAME = python

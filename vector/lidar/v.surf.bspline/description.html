@@ -81,15 +81,9 @@ the true point value and the estimated from the interpolation for a fixed series
 of <b><i>lambda_i</i></b> values. No vector nor raster output will be created
 when cross-validation is selected. 
 
-<p>
-A raster output map ("<b><i>raster=</i></b>") of more than 2000x2000 (4 mill)
-cells is not allowed. If an output map would exceed this size, an error message
-is generated.
-
-
 <h2>EXAMPLES</h2>
 
-<h4>Basic interpolation</h4>
+<h3>Basic interpolation</h3>
 
 <div class="code"><pre>
 v.surf.bspline input=point_vector output=interpolate_surface type=bicubic
@@ -139,12 +133,6 @@ this reason, vector map output "<b><i>output=</i></b>" is not permitted with the
 DBF driver. There are no problems with the raster map output from the DBF
 driver.
 
-<p>
-At this time, sparse vector input ("<b><i>sparse=</i></b>") can only be used
-with interpolation from 3D vector z-coordinates (<a href="http://trac.osgeo.org/grass/ticket/96">trac #96</a>).
-<p>
-
-
 <h2>SEE ALSO</h2>
 
 <em><a
@@ -181,4 +169,4 @@ Antolin R. and Brovelli M.A., 2007, LiDAR data Filtering with GRASS GIS for the
 Determination of Digital Terrain Models. Proceedings of Jornadas de SIG Libre,
 Girona, Espa&ntilde;a. CD ISBN: 978-84-690-3886-9 <br>
 
-<p><i>Last changed: $Date: 2009-03-25 08:37:29 +0100 (Wed, 25 Mar 2009) $</i>
+<p><i>Last changed: $Date: 2011-01-18 20:56:10 +0100 (Tue, 18 Jan 2011) $</i>

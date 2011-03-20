@@ -67,7 +67,7 @@ fi
 
 # save command line
 if [ "$1" != "@ARGS_PARSED@" ] ; then
-    CMDLINE="`basename $0`"
+    CMDLINE=`basename "$0"`
     for arg in "$@" ; do
         CMDLINE="$CMDLINE \"$arg\""
     done
@@ -75,7 +75,7 @@ if [ "$1" != "@ARGS_PARSED@" ] ; then
     exec g.parser "$0" "$@"
 fi
 
-PROG=`basename $0`
+PROG=`basename "$0"`
 
 #### check if we have awk
 if [ ! -x "`which awk`" ] ; then
@@ -99,14 +99,14 @@ if [ ! "$file" ] ; then
    exit 1
 fi
 
-table=`v.db.connect map="$GIS_OPT_MAP" -g fs=";" | grep -w "^$GIS_OPT_LAYER" | awk -F ";" '{print $2}'`
+table=`v.db.connect map="$GIS_OPT_MAP" -gl fs="|" layer="$GIS_OPT_LAYER" | cut -f2 -d'|'`
 if [ -z "$table" ] ; then
    g.message -e 'There is no table connected to this map! Run v.db.connect or v.db.addtable first.'
    exit 1
 fi
 
-database=`v.db.connect map="$GIS_OPT_MAP" -g fs=";" | grep -w "^$GIS_OPT_LAYER" | awk -F ";" '{print $4}'`
-driver=`v.db.connect map="$GIS_OPT_MAP" -g fs=";" | grep -w "^$GIS_OPT_LAYER" | awk -F ";" '{print $5}'`
+database=`v.db.connect map="$GIS_OPT_MAP" -gl fs="|" layer="$GIS_OPT_LAYER" | cut -f4 -d'|'`
+driver=`v.db.connect map="$GIS_OPT_MAP" -gl fs="|" layer="$GIS_OPT_LAYER" | cut -f5 -d'|'`
 
 # checking column types
 coltype=`v.info -c map="$GIS_OPT_MAP" layer=$GIS_OPT_LAYER --quiet | grep -w "$GIS_OPT_COLUMN" | cut -d'|' -f1`
@@ -128,9 +128,11 @@ else
 fi
 
 if [ -n "$GIS_OPT_WHERE" ] ; then
+    g.message -v message="SQL: \"UPDATE $table SET $GIS_OPT_COLUMN=$value WHERE $GIS_OPT_WHERE\""
     echo "UPDATE $table SET $GIS_OPT_COLUMN=$value WHERE $GIS_OPT_WHERE" |
        db.execute database="${database}" driver=${driver}
 else
+    g.message -v message="SQL: \"UPDATE $table SET $GIS_OPT_COLUMN=$value\""
     echo "UPDATE $table SET $GIS_OPT_COLUMN=$value" | \
        db.execute database="${database}" driver=${driver}
 fi

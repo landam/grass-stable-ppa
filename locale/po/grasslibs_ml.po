@@ -7,13 +7,14 @@ msgid ""
 msgstr ""
 "Project-Id-Version: grasslibs_ml\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-08-29 11:42+0200\n"
+"POT-Creation-Date: 2011-01-06 22:57+0100\n"
 "PO-Revision-Date: 2010-08-24 11:31+0530\n"
 "Last-Translator: Mohammed Rashad <rashadkm@gmail.com>\n"
 "Language-Team: GRASS Malayalam Translation Team <rashadkm@gmail.com>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: \n"
 "X-Poedit-Language: Malayalam\n"
 "X-Poedit-Country: INDIA\n"
 
@@ -119,6 +120,10 @@ msgstr "ചിഹ്ന ഫയൽ കാണാനോ/തുറക്കാനോ
 #, c-format
 msgid "Incorrect symbol color: '%s', using default."
 msgstr "തെറ്റായ ചിഹ്ന നിറം: '%s'"
+
+#: ../lib/cairodriver/Draw_bitmap.c:47
+msgid "Cairo_draw_bitmap: Failed to create source"
+msgstr ""
 
 #: ../lib/proj/get_proj.c:150
 #, c-format
@@ -631,189 +636,189 @@ msgstr ""
 msgid "Top must be larger than Bottom"
 msgstr ""
 
-#: ../lib/gis/parser.c:331
+#: ../lib/gis/parser.c:340
 msgid "WHERE conditions of SQL statement without 'where' keyword"
 msgstr ""
 
-#: ../lib/gis/parser.c:332
+#: ../lib/gis/parser.c:341
 msgid "Example: income < 1000 and inhab >= 10000"
 msgstr ""
 
-#: ../lib/gis/parser.c:340
+#: ../lib/gis/parser.c:349
 msgid "Table name"
 msgstr ""
 
-#: ../lib/gis/parser.c:349
+#: ../lib/gis/parser.c:358
 msgid "Driver name"
 msgstr ""
 
-#: ../lib/gis/parser.c:358
+#: ../lib/gis/parser.c:367
 msgid "Database name"
 msgstr ""
 
-#: ../lib/gis/parser.c:367
+#: ../lib/gis/parser.c:376
 msgid "Name of attribute column"
 msgstr ""
 
-#: ../lib/gis/parser.c:376
+#: ../lib/gis/parser.c:385
 msgid "Name of attribute column(s)"
 msgstr ""
 
-#: ../lib/gis/parser.c:387
+#: ../lib/gis/parser.c:396
 msgid "Name of input imagery group"
 msgstr ""
 
-#: ../lib/gis/parser.c:395
+#: ../lib/gis/parser.c:404
 msgid "Name of input imagery subgroup"
 msgstr ""
 
-#: ../lib/gis/parser.c:405 ../lib/gis/parser.c:430
+#: ../lib/gis/parser.c:414 ../lib/gis/parser.c:439
 msgid "Name of input raster map"
 msgstr ""
 
-#: ../lib/gis/parser.c:414 ../lib/gis/parser.c:439
+#: ../lib/gis/parser.c:423 ../lib/gis/parser.c:448
 msgid "Name of input raster map(s)"
 msgstr ""
 
-#: ../lib/gis/parser.c:422
+#: ../lib/gis/parser.c:431
 msgid "Name for output raster map"
 msgstr ""
 
-#: ../lib/gis/parser.c:447
+#: ../lib/gis/parser.c:456
 msgid "Name of base raster map"
 msgstr ""
 
-#: ../lib/gis/parser.c:455
+#: ../lib/gis/parser.c:464
 msgid "Name of cover raster map"
 msgstr ""
 
-#: ../lib/gis/parser.c:463
+#: ../lib/gis/parser.c:472
 msgid "Name of elevation raster map"
 msgstr ""
 
-#: ../lib/gis/parser.c:472
+#: ../lib/gis/parser.c:481
 msgid "Name of elevation raster map(s)"
 msgstr ""
 
-#: ../lib/gis/parser.c:482 ../lib/gis/parser.c:507
+#: ../lib/gis/parser.c:491 ../lib/gis/parser.c:516
 msgid "Name of input raster3d map"
 msgstr ""
 
-#: ../lib/gis/parser.c:491 ../lib/gis/parser.c:516
+#: ../lib/gis/parser.c:500 ../lib/gis/parser.c:525
 msgid "Name of input raster3d map(s)"
 msgstr ""
 
-#: ../lib/gis/parser.c:499
+#: ../lib/gis/parser.c:508
 msgid "Name for output raster3d map"
 msgstr ""
 
-#: ../lib/gis/parser.c:526 ../lib/gis/parser.c:551
+#: ../lib/gis/parser.c:535 ../lib/gis/parser.c:560
 msgid "Name of input vector map"
 msgstr ""
 
-#: ../lib/gis/parser.c:535 ../lib/gis/parser.c:560
+#: ../lib/gis/parser.c:544 ../lib/gis/parser.c:569
 msgid "Name of input vector map(s)"
 msgstr ""
 
-#: ../lib/gis/parser.c:543
+#: ../lib/gis/parser.c:552
 msgid "Name for output vector map"
 msgstr ""
 
-#: ../lib/gis/parser.c:569
+#: ../lib/gis/parser.c:578 ../lib/gis/parser.c:587
 msgid "Feature type"
 msgstr ""
 
-#: ../lib/gis/parser.c:576
+#: ../lib/gis/parser.c:594
 msgid "Layer number"
 msgstr ""
 
-#: ../lib/gis/parser.c:578
+#: ../lib/gis/parser.c:596
 msgid ""
 "A single vector map can be connected to multiple database tables. This "
 "number determines which table to use."
 msgstr ""
 
-#: ../lib/gis/parser.c:587
+#: ../lib/gis/parser.c:605
 msgid "Category value"
 msgstr ""
 
-#: ../lib/gis/parser.c:594
+#: ../lib/gis/parser.c:612
 msgid "Category values"
 msgstr ""
 
-#: ../lib/gis/parser.c:595 ../lib/gis/parser.c:609
+#: ../lib/gis/parser.c:613 ../lib/gis/parser.c:627
 msgid "Example: 1,3,7-9,13"
 msgstr ""
 
-#: ../lib/gis/parser.c:601
+#: ../lib/gis/parser.c:619
 msgid "Feature id"
 msgstr ""
 
-#: ../lib/gis/parser.c:608
+#: ../lib/gis/parser.c:626
 msgid "Feature ids"
 msgstr ""
 
-#: ../lib/gis/parser.c:619
-msgid "Name of input file"
+#: ../lib/gis/parser.c:637
+msgid "Path to input file"
 msgstr ""
 
-#: ../lib/gis/parser.c:627
-msgid "Name for output file"
+#: ../lib/gis/parser.c:645
+msgid "Path for output file"
 msgstr ""
 
-#: ../lib/gis/parser.c:635
+#: ../lib/gis/parser.c:653
 msgid "Field separator"
 msgstr ""
 
-#: ../lib/gis/parser.c:646
+#: ../lib/gis/parser.c:664
 msgid "Color"
 msgstr ""
 
-#: ../lib/gis/parser.c:647
+#: ../lib/gis/parser.c:665
 msgid "Either a standard color name or R:G:B triplet"
 msgstr ""
 
-#: ../lib/gis/parser.c:656
+#: ../lib/gis/parser.c:674
 msgid "Background color"
 msgstr ""
 
-#: ../lib/gis/parser.c:658
+#: ../lib/gis/parser.c:676
 msgid "Either a standard GRASS color, R:G:B triplet, or \"none\""
 msgstr ""
 
-#: ../lib/gis/parser.c:799
+#: ../lib/gis/parser.c:817
 #, c-format
 msgid "BUG in descriptions, option '%s' in <%s> does not exist"
 msgstr ""
 
-#: ../lib/gis/parser.c:901
+#: ../lib/gis/parser.c:919
 msgid "Use either --quiet or --verbose flag, not both. Assuming --verbose."
 msgstr ""
 
-#: ../lib/gis/parser.c:915
+#: ../lib/gis/parser.c:933
 msgid "Use either --quiet or --verbose flag, not both. Assuming --quiet."
 msgstr ""
 
-#: ../lib/gis/parser.c:945
+#: ../lib/gis/parser.c:963
 #, c-format
 msgid "Sorry <%s> is not a valid option\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:1050
+#: ../lib/gis/parser.c:1067
 #, c-format
 msgid ""
 "\n"
 "Description:\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:1057
+#: ../lib/gis/parser.c:1074
 #, c-format
 msgid ""
 "\n"
 "Keywords:\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:1061
+#: ../lib/gis/parser.c:1078
 #, c-format
 msgid ""
 "\n"
@@ -821,221 +826,220 @@ msgid ""
 " "
 msgstr ""
 
-#: ../lib/gis/parser.c:1129
+#: ../lib/gis/parser.c:1146
 #, c-format
 msgid ""
 "\n"
 "Flags:\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:1152 ../lib/gis/parser.c:1476 ../lib/gis/parser.c:1636
-#: ../lib/gis/parser.c:1924
+#: ../lib/gis/parser.c:1169 ../lib/gis/parser.c:1493 ../lib/gis/parser.c:1653
+#: ../lib/gis/parser.c:1941
 msgid "Allow output files to overwrite existing files"
 msgstr ""
 
-#: ../lib/gis/parser.c:1154 ../lib/gis/parser.c:1484 ../lib/gis/parser.c:1640
+#: ../lib/gis/parser.c:1171 ../lib/gis/parser.c:1501 ../lib/gis/parser.c:1657
 msgid "Verbose module output"
 msgstr ""
 
-#: ../lib/gis/parser.c:1155 ../lib/gis/parser.c:1491 ../lib/gis/parser.c:1643
+#: ../lib/gis/parser.c:1172 ../lib/gis/parser.c:1508 ../lib/gis/parser.c:1660
 msgid "Quiet module output"
 msgstr ""
 
-#: ../lib/gis/parser.c:1160
+#: ../lib/gis/parser.c:1177
 #, c-format
 msgid ""
 "\n"
 "Parameters:\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:1183
+#: ../lib/gis/parser.c:1200
 #, c-format
 msgid "  %*s   default: %s\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:1527
+#: ../lib/gis/parser.c:1544
 msgid "NAME"
 msgstr ""
 
-#: ../lib/gis/parser.c:1540
+#: ../lib/gis/parser.c:1557
 msgid "KEYWORDS"
 msgstr ""
 
-#: ../lib/gis/parser.c:1545
+#: ../lib/gis/parser.c:1562
 msgid "SYNOPSIS"
 msgstr ""
 
-#: ../lib/gis/parser.c:1613
+#: ../lib/gis/parser.c:1630
 msgid "Flags"
 msgstr ""
 
-#: ../lib/gis/parser.c:1651
+#: ../lib/gis/parser.c:1668
 msgid "Parameters"
 msgstr ""
 
-#: ../lib/gis/parser.c:1691
+#: ../lib/gis/parser.c:1708
 msgid "Options"
 msgstr ""
 
-#: ../lib/gis/parser.c:1697
+#: ../lib/gis/parser.c:1714
 msgid "Default"
 msgstr ""
 
-#: ../lib/gis/parser.c:1926
+#: ../lib/gis/parser.c:1943
 msgid "Allow overwrite"
 msgstr ""
 
-#: ../lib/gis/parser.c:1934
+#: ../lib/gis/parser.c:1951
 msgid "Run with minimal output messages"
 msgstr ""
 
-#: ../lib/gis/parser.c:1936
+#: ../lib/gis/parser.c:1953
 msgid "Run quietly"
 msgstr ""
 
-#: ../lib/gis/parser.c:1969
+#: ../lib/gis/parser.c:1986
 msgid "Unable to spawn the 'wish' program"
 msgstr ""
 
-#: ../lib/gis/parser.c:1988
+#: ../lib/gis/parser.c:2005
 msgid "Unable to determine program name"
 msgstr ""
 
-#: ../lib/gis/parser.c:2045
+#: ../lib/gis/parser.c:2062
 #, c-format
 msgid "  %*s   options: "
 msgstr ""
 
-#: ../lib/gis/parser.c:2090 ../lib/gis/parser.c:2105
+#: ../lib/gis/parser.c:2107 ../lib/gis/parser.c:2122
 #, c-format
 msgid "Sorry, <%c> is not a valid flag\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:2171
+#: ../lib/gis/parser.c:2188
 #, c-format
 msgid "Sorry, <%s=> is ambiguous\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:2177
+#: ../lib/gis/parser.c:2194
 #, c-format
 msgid "Sorry, <%s> is not a valid parameter\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:2258
+#: ../lib/gis/parser.c:2275
 #, c-format
 msgid ""
 "\n"
 "ERROR: illegal range syntax for parameter <%s>\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:2259
+#: ../lib/gis/parser.c:2276
 #, c-format
 msgid "       Presented as: %s\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:2263
+#: ../lib/gis/parser.c:2280
 #, c-format
 msgid ""
 "\n"
 "ERROR: value <%s> out of range for parameter <%s>\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:2265
+#: ../lib/gis/parser.c:2282
 #, c-format
 msgid "       Legal range: %s\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:2268
+#: ../lib/gis/parser.c:2285
 #, c-format
 msgid ""
 "\n"
 "ERROR: Missing value for parameter <%s>\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:2416
+#: ../lib/gis/parser.c:2433
 #, c-format
 msgid ""
-"\n"
 "ERROR: Required parameter <%s> not set:\n"
-"    (%s).\n"
+"\t(%s)\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:2511
+#: ../lib/gis/parser.c:2528
 #, c-format
 msgid ""
 "\n"
 "ERROR: option <%s> must be provided in multiples of %d\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:2513
+#: ../lib/gis/parser.c:2530
 #, c-format
 msgid "       You provided %d items:\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:2569
+#: ../lib/gis/parser.c:2586
 #, c-format
 msgid "ERROR: option <%s>: <%s> exists.\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:2624
+#: ../lib/gis/parser.c:2641
 #, c-format
 msgid ""
 "\n"
 "FLAG: Set the following flag?\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:2638
+#: ../lib/gis/parser.c:2655
 #, c-format
 msgid ""
 "\n"
 "OPTION:   %s\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:2639
+#: ../lib/gis/parser.c:2656
 #, c-format
 msgid "     key: %s\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:2641
+#: ../lib/gis/parser.c:2658
 #, c-format
 msgid "  format: %s\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:2643
+#: ../lib/gis/parser.c:2660
 #, c-format
 msgid " default: %s\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:2644
+#: ../lib/gis/parser.c:2661
 #, c-format
 msgid "required: %s\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:2646
+#: ../lib/gis/parser.c:2663
 #, c-format
 msgid "multiple: %s\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:2648
+#: ../lib/gis/parser.c:2665
 #, c-format
 msgid " options: %s\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:2661
+#: ../lib/gis/parser.c:2678
 #, c-format
 msgid "enter option > "
 msgstr ""
 
-#: ../lib/gis/parser.c:2678 ../lib/gis/parser.c:2688
+#: ../lib/gis/parser.c:2695 ../lib/gis/parser.c:2705
 msgid "   Try again? "
 msgstr ""
 
-#: ../lib/gis/parser.c:2686
+#: ../lib/gis/parser.c:2703
 #, c-format
 msgid "Sorry, %s is not accepted.\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:2696
+#: ../lib/gis/parser.c:2713
 #, c-format
 msgid ""
 "\n"
@@ -1043,11 +1047,11 @@ msgid ""
 "  %s\n"
 msgstr ""
 
-#: ../lib/gis/parser.c:2697
+#: ../lib/gis/parser.c:2714
 msgid "Is this correct? "
 msgstr ""
 
-#: ../lib/gis/parser.c:2762
+#: ../lib/gis/parser.c:2779
 msgid "to accept the default"
 msgstr ""
 
@@ -1408,7 +1412,7 @@ msgstr ""
 #: ../lib/ogsf/gsd_legend.c:238 ../lib/ogsf/Gs3.c:126 ../lib/ogsf/Gs3.c:201
 #: ../lib/ogsf/Gs3.c:286 ../lib/ogsf/Gs3.c:359 ../lib/ogsf/Gs3.c:475
 #: ../lib/ogsf/Gs3.c:572 ../lib/ogsf/Gs3.c:639 ../lib/ogsf/Gs3.c:696
-#: ../lib/ogsf/Gs3.c:766 ../lib/ogsf/Gs3.c:835 ../lib/ogsf/Gp3.c:54
+#: ../lib/ogsf/Gs3.c:767 ../lib/ogsf/Gs3.c:837 ../lib/ogsf/Gp3.c:54
 #, c-format
 msgid "Raster map <%s> not found"
 msgstr "റാസ്റ്റെർ മാപ്പ് <%s> കണ്മാനില്ല"
@@ -2402,6 +2406,51 @@ msgstr "ഡേറ്റാബേയ്സ് <%s> തുറക്കൻ പറ�
 msgid "Unable to select record from table <%s> (key %s, where %s)"
 msgstr ""
 
+#: ../lib/vector/Vlib/geos.c:53 ../lib/vector/Vlib/read.c:99
+msgid "vector map is not opened"
+msgstr "വെക്റ്റർ മാപ്പ് തുറന്നിട്ടില്ല"
+
+#: ../lib/vector/Vlib/geos.c:56
+#, c-format
+msgid ""
+"Vect_read_line_geos(): feature id %d is not reasonable (max features in "
+"vector map <%s>: %d)"
+msgstr ""
+
+#: ../lib/vector/Vlib/geos.c:61
+msgid "only native format supported"
+msgstr ""
+
+#: ../lib/vector/Vlib/geos.c:66 ../lib/vector/Vlib/geos.c:256
+#: ../lib/vector/Vlib/read_nat.c:136
+msgid "Attempt to read dead line"
+msgstr ""
+
+#: ../lib/vector/Vlib/geos.c:91
+#, fuzzy, c-format
+msgid "Vect_read_area_geos(): unable to read area id %d"
+msgstr "വെക്റ്റർ മാപ്പ് വായിക്കാൻ പട്ടുന്നില്ല"
+
+#: ../lib/vector/Vlib/geos.c:105
+#, c-format
+msgid "Vect_read_area_geos(): unable to read isle id %d of area id %d"
+msgstr ""
+
+#: ../lib/vector/Vlib/geos.c:203
+#, fuzzy, c-format
+msgid "Unable to read line offset %ld"
+msgstr "വെക്റ്റർ മാപ്പ് വായിക്കാൻ പട്ടുന്നില്ല"
+
+#: ../lib/vector/Vlib/geos.c:410
+#, c-format
+msgid "Attempt to read points of nonexistent area id %d"
+msgstr ""
+
+#: ../lib/vector/Vlib/geos.c:470
+#, fuzzy, c-format
+msgid "Unable to read feature id %d"
+msgstr "വെക്റ്റർ മാപ്പ് വായിക്കാൻ പട്ടുന്നില്ല"
+
 #: ../lib/vector/Vlib/rewind.c:35 ../lib/vector/Vlib/build.c:31
 #: ../lib/vector/Vlib/read.c:30 ../lib/vector/Vlib/write.c:53
 #: ../lib/vector/Vlib/write.c:59 ../lib/vector/Vlib/close.c:38
@@ -2633,10 +2682,6 @@ msgstr ""
 msgid "Unknown keyword %s in vector head"
 msgstr ""
 
-#: ../lib/vector/Vlib/read.c:99
-msgid "vector map is not opened"
-msgstr "വെക്റ്റർ മാപ്പ് തുറന്നിട്ടില്ല"
-
 #: ../lib/vector/Vlib/read.c:102
 #, c-format
 msgid ""
@@ -2698,6 +2743,16 @@ msgstr "ദ്വീപുകൾ കൂട്ടിചേർക്കുന്�
 
 #: ../lib/vector/Vlib/build_nat.c:629
 msgid "Attaching centroids..."
+msgstr ""
+
+#: ../lib/vector/Vlib/merge_lines.c:192
+#, c-format
+msgid "%d boundaries merged"
+msgstr ""
+
+#: ../lib/vector/Vlib/merge_lines.c:193
+#, c-format
+msgid "%d new boundaries"
 msgstr ""
 
 #: ../lib/vector/Vlib/buffer2.c:376
@@ -2920,12 +2975,12 @@ msgstr "ബഹുഭുജക്ഷേത്രത്തിൽ ബിന്ദ�
 msgid "conditions failed"
 msgstr "നിബന്ദനകളിൽ പാളിച്ച"
 
-#: ../lib/vector/Vlib/break_lines.c:115 ../lib/vector/Vlib/break_lines.c:370
+#: ../lib/vector/Vlib/break_lines.c:370
 #, c-format
 msgid "Intersections: %5d"
 msgstr ""
 
-#: ../lib/vector/Vlib/remove_areas.c:92
+#: ../lib/vector/Vlib/remove_areas.c:94
 msgid "Area is composed of dead boundary"
 msgstr ""
 
@@ -2989,10 +3044,6 @@ msgstr ""
 #, c-format
 msgid "Unable to close vector <%s>"
 msgstr "വെക്റ്റർ അടയ്ക്കാൻ പറ്റുന്നില്ല <%s>"
-
-#: ../lib/vector/Vlib/read_nat.c:136
-msgid "Attempt to read dead line"
-msgstr ""
 
 #: ../lib/vector/Vlib/open.c:100
 #, c-format
@@ -3163,7 +3214,12 @@ msgstr ""
 msgid "OGR feature without ID ignored"
 msgstr ""
 
-#: ../lib/vector/Vlib/line.c:60 ../lib/ogsf/gsd_img_mpeg.c:317
+#: ../lib/vector/Vlib/line.c:60 ../lib/rst/interp_float/segmen2d.c:175
+#: ../lib/rst/interp_float/segmen2d.c:181
+#: ../lib/rst/interp_float/segmen2d.c:187
+#: ../lib/rst/interp_float/segmen2d.c:197
+#: ../lib/rst/interp_float/interp2d.c:119
+#: ../lib/rst/interp_float/interp2d.c:125 ../lib/ogsf/gsd_img_mpeg.c:317
 msgid "Out of memory"
 msgstr ""
 
@@ -3184,59 +3240,54 @@ msgstr ""
 msgid "Unknown query tool"
 msgstr ""
 
-#: ../lib/nviz/render.c:108
+#: ../lib/nviz/render.c:104
 msgid "Bad server connection"
 msgstr ""
 
-#: ../lib/nviz/render.c:117
+#: ../lib/nviz/render.c:113
 msgid "Unable to create rendering context"
 msgstr ""
 
-#: ../lib/nviz/lights.c:144
+#: ../lib/nviz/lights.c:174
 msgid "Unable to define new light"
 msgstr ""
 
-#: ../lib/nviz/position.c:50
+#: ../lib/nviz/position.c:56
 msgid "Unable to set focus"
 msgstr ""
 
-#: ../lib/nviz/nviz.c:76
+#: ../lib/nviz/nviz.c:103
 #, c-format
 msgid "Invalid color (%s), using \"white\" as default"
 msgstr ""
 
-#: ../lib/nviz/change_view.c:108
-#, c-format
-msgid "Invalid view position coordinates, using %f,%f"
-msgstr ""
-
-#: ../lib/nviz/map_obj.c:65
+#: ../lib/nviz/map_obj.c:59
 msgid "Maximum surfaces loaded!"
 msgstr ""
 
-#: ../lib/nviz/map_obj.c:94
+#: ../lib/nviz/map_obj.c:88
 msgid "Maximum vector line maps loaded!"
 msgstr ""
 
-#: ../lib/nviz/map_obj.c:103 ../lib/nviz/map_obj.c:134
+#: ../lib/nviz/map_obj.c:97 ../lib/nviz/map_obj.c:128
 #, c-format
 msgid "Error loading vector map <%s>"
 msgstr ""
 
-#: ../lib/nviz/map_obj.c:122
+#: ../lib/nviz/map_obj.c:116
 msgid "Maximum vector point maps loaded!"
 msgstr ""
 
-#: ../lib/nviz/map_obj.c:149
+#: ../lib/nviz/map_obj.c:143
 msgid "Maximum volumes loaded!"
 msgstr ""
 
-#: ../lib/nviz/map_obj.c:158
+#: ../lib/nviz/map_obj.c:152
 #, c-format
 msgid "Error loading 3d raster map <%s>"
 msgstr ""
 
-#: ../lib/nviz/map_obj.c:166
+#: ../lib/nviz/map_obj.c:160
 msgid "Nviz_new_map_obj(): unsupported data type"
 msgstr ""
 
@@ -3687,10 +3738,22 @@ msgstr ""
 msgid "SOR -- iteration %5i error %g\n"
 msgstr ""
 
-#: ../lib/rst/interp_float/segmen2d.c:113
+#: ../lib/rst/interp_float/output2d.c:125
+#, c-format
+msgid "First change your cols number to nsizc %d %d"
+msgstr ""
+
+#: ../lib/rst/interp_float/segmen2d.c:111
 msgid ""
-"taking too long to find points for interpolation--please change the region "
+"Taking too long to find points for interpolation - please change the region "
 "to area where your points are. Continuing calculations..."
+msgstr ""
+
+#: ../lib/rst/interp_float/interp2d.c:212
+#, c-format
+msgid ""
+"Overshoot - increase in tension suggested. Overshoot occures at (%d,%d) "
+"cell. Z-value %f, zmin %f, zmax %f."
 msgstr ""
 
 #: ../lib/rst/interp_float/input2d.c:47
@@ -3703,79 +3766,115 @@ msgid "Bitmap mask created"
 msgstr ""
 
 #: ../lib/rst/interp_float/vinput2d.c:73
-msgid "Vector is not 3D"
-msgstr ""
+#, fuzzy, c-format
+msgid "Vector map <%s> is not 3D"
+msgstr "വെക്റ്റർ മാപ്പ് തുറന്നിട്ടില്ല"
 
 #: ../lib/rst/interp_float/vinput2d.c:76
 msgid "Loading data from attribute table ..."
 msgstr ""
 
 #: ../lib/rst/interp_float/vinput2d.c:94
+#: ../lib/rst/interp_float/vinput2d.c:108 ../lib/db/dbmi_client/copy_tab.c:248
 #, c-format
-msgid "Cannot find z column <%s> (please verify name, e.g. with v.info)"
-msgstr ""
+msgid "Column <%s> not found"
+msgstr "കളം കണ്മനില്ല <%s>"
 
 #: ../lib/rst/interp_float/vinput2d.c:97
-msgid "Column type of z column is not supported (must be integer or double)"
-msgstr ""
-
-#: ../lib/rst/interp_float/vinput2d.c:108
-msgid "Cannot read column type of smooth column"
-msgstr ""
-
 #: ../lib/rst/interp_float/vinput2d.c:110
-msgid "Column type of smooth column (datetime) is not supported"
+#, c-format
+msgid "Data type of column <%s> must be numeric"
 msgstr ""
 
-#: ../lib/rst/interp_float/vinput2d.c:112
-msgid "Column type of s column is not supported (must be integer or double)"
-msgstr ""
+#: ../lib/rst/interp_float/vinput2d.c:121
+#, fuzzy
+msgid "Reading features from vector map ..."
+msgstr "ബിന്ദുവിന്റെ എണ്ണം: %d"
 
-#: ../lib/rst/interp_float/vinput2d.c:123
-msgid "Reading lines from vector map ... "
-msgstr ""
-
-#: ../lib/rst/interp_float/vinput2d.c:155
-#: ../lib/rst/interp_float/vinput2d.c:273
+#: ../lib/rst/interp_float/vinput2d.c:153
+#: ../lib/rst/interp_float/vinput2d.c:270
 #, c-format
 msgid "Database record for cat %d not found"
 msgstr ""
 
-#: ../lib/rst/interp_float/vinput2d.c:236
-msgid "Reading nodes from vector map ... "
+#: ../lib/rst/interp_float/vinput2d.c:171
+#: ../lib/rst/interp_float/vinput2d.c:288
+msgid "Negative value of smoothing detected: sm must be >= 0"
 msgstr ""
 
-#: ../lib/rst/interp_float/vinput2d.c:318
-msgid "strip exists with insufficient data"
+#: ../lib/rst/interp_float/vinput2d.c:233
+#, fuzzy
+msgid "Reading nodes from vector map ..."
+msgstr "ബിന്ദുവിന്റെ എണ്ണം: %d"
+
+#: ../lib/rst/interp_float/vinput2d.c:314
+msgid "Strip exists with insufficient data"
 msgstr ""
 
-#: ../lib/rst/interp_float/vinput2d.c:333
+#: ../lib/rst/interp_float/vinput2d.c:328
+#, fuzzy, c-format
+msgid "There are points outside specified 2D/3D region - %d points ignored"
+msgstr "ബിന്ദുവിന്റെ എണ്ണം: %d"
+
+#: ../lib/rst/interp_float/vinput2d.c:331
 #, c-format
-msgid "there are points outside specified 2D/3D region--ignored %d points"
+msgid "Ignoring %d points (too dense)"
 msgstr ""
 
-#: ../lib/rst/interp_float/vinput2d.c:336
-#, c-format
-msgid "ignoring %d points -- too dense"
-msgstr ""
-
-#: ../lib/rst/interp_float/vinput2d.c:340
+#: ../lib/rst/interp_float/vinput2d.c:335
 #, c-format
 msgid ""
 "%d points given for interpolation (after thinning) is less than given NPMIN=%"
 "d"
 msgstr ""
 
-#: ../lib/rst/interp_float/vinput2d.c:358
+#: ../lib/rst/interp_float/vinput2d.c:340
+msgid "Zero points in the given region"
+msgstr ""
+
+#: ../lib/rst/interp_float/vinput2d.c:345
+#, c-format
+msgid ""
+"Segmentation parameters set to invalid values: npmin= %d, segmax= %d for "
+"smooth connection of segments, npmin > segmax (see manual)"
+msgstr ""
+
+#: ../lib/rst/interp_float/vinput2d.c:351
 #, c-format
 msgid ""
 "There are less than %d points for interpolation. No segmentation is "
 "necessary, to run the program faster set segmax=%d (see manual)"
 msgstr ""
 
-#: ../lib/rst/interp_float/vinput2d.c:399
-msgid "some points outside of region -- will ignore..."
-msgstr ""
+#: ../lib/rst/interp_float/vinput2d.c:355
+#, fuzzy, c-format
+msgid "Number of points from vector map %d"
+msgstr "ബിന്ദുവിന്റെ എണ്ണം: %d"
+
+#: ../lib/rst/interp_float/vinput2d.c:356
+#, fuzzy, c-format
+msgid "Number of points outside of 2D/3D region %d"
+msgstr "ബിന്ദുവിന്റെ എണ്ണം: %d"
+
+#: ../lib/rst/interp_float/vinput2d.c:358
+#, fuzzy, c-format
+msgid "Number of points being used %d"
+msgstr "ബിന്ദുവിന്റെ എണ്ണം: %d"
+
+#: ../lib/rst/interp_float/vinput2d.c:391
+#, fuzzy
+msgid "Some points outside of region (ignored)"
+msgstr "ബിന്ദുവിന്റെ എണ്ണം: %d"
+
+#: ../lib/rst/interp_float/vinput2d.c:397
+#, fuzzy
+msgid "Unable to allocate memory"
+msgstr "വെക്റ്റർ അടയ്ക്കാൻ പറ്റുന്നില്ല <%s>"
+
+#: ../lib/rst/interp_float/vinput2d.c:405
+#, fuzzy, c-format
+msgid "Unable to insert %f,%f,%f a = %d"
+msgstr "വെക്റ്റർ മാപ്പ് വായിക്കാൻ പട്ടുന്നില്ല"
 
 #: ../lib/g3d/g3dparam.c:52
 msgid "Data type used in the output file"
@@ -4009,12 +4108,12 @@ msgstr ""
 msgid "Color table range doesn't match data (mincol=%d, maxcol=%d"
 msgstr ""
 
-#: ../lib/ogsf/Gs3.c:709 ../lib/ogsf/Gs3.c:780
+#: ../lib/ogsf/Gs3.c:709 ../lib/ogsf/Gs3.c:781
 #, c-format
 msgid "Translating colors from raster map <%s>..."
 msgstr ""
 
-#: ../lib/ogsf/Gs3.c:1018
+#: ../lib/ogsf/Gs3.c:1020
 msgid "View not saved by this program,there may be some inconsistancies"
 msgstr ""
 
@@ -4036,22 +4135,32 @@ msgstr ""
 msgid "Bitmap mismatch"
 msgstr ""
 
-#: ../lib/ogsf/GS2.c:1638
+#: ../lib/ogsf/GS2.c:1193
+#, c-format
+msgid "no category info"
+msgstr ""
+
+#: ../lib/ogsf/GS2.c:1212
+#, c-format
+msgid "no data"
+msgstr ""
+
+#: ../lib/ogsf/GS2.c:1635
 #, c-format
 msgid "Raster map <%s> is outside of current region. Load failed."
 msgstr ""
 
-#: ../lib/ogsf/GS2.c:1716 ../lib/ogsf/GS2.c:1722 ../lib/ogsf/GS2.c:1730
-#: ../lib/ogsf/GS2.c:1739 ../lib/ogsf/GS2.c:1747 ../lib/ogsf/GS2.c:1757
-#: ../lib/ogsf/GS2.c:1805
+#: ../lib/ogsf/GS2.c:1713 ../lib/ogsf/GS2.c:1719 ../lib/ogsf/GS2.c:1727
+#: ../lib/ogsf/GS2.c:1736 ../lib/ogsf/GS2.c:1744 ../lib/ogsf/GS2.c:1754
+#: ../lib/ogsf/GS2.c:1802
 msgid "GS_load_att_map(): Out of memory. Unable to load map"
 msgstr ""
 
-#: ../lib/ogsf/GS2.c:1833
+#: ../lib/ogsf/GS2.c:1830
 msgid "Loading failed"
 msgstr ""
 
-#: ../lib/ogsf/GS2.c:1837
+#: ../lib/ogsf/GS2.c:1834
 msgid "Error finding range"
 msgstr ""
 
@@ -4185,11 +4294,6 @@ msgstr "ഈ ടേബിൾ <%s> ഡേറ്റാബേയ്സിൽ ഉണ�
 #, c-format
 msgid "Column <%s> is not integer"
 msgstr "കളം <%s> അക്കമല്ല"
-
-#: ../lib/db/dbmi_client/copy_tab.c:248
-#, c-format
-msgid "Column <%s> not found"
-msgstr "കളം കണ്മനില്ല <%s>"
 
 #: ../lib/db/dbmi_client/copy_tab.c:251
 #, c-format
@@ -4527,37 +4631,9 @@ msgid "subgroup <%s> of group <%s> references the following raster maps\n"
 msgstr ""
 
 #, fuzzy
-#~ msgid "Unable to read line offset %ld"
-#~ msgstr "വെക്റ്റർ മാപ്പ് വായിക്കാൻ പട്ടുന്നില്ല"
-
-#, fuzzy
-#~ msgid "Unable to read feature id %d"
-#~ msgstr "വെക്റ്റർ മാപ്പ് വായിക്കാൻ പട്ടുന്നില്ല"
-
-#, fuzzy
 #~ msgid "Unable to load data from database"
 #~ msgstr "ടേബിൾ നിന്ന് ഡേറ്റ എടുക്കാൻ പറ്റുന്നില്ല <%s>"
 
 #, fuzzy
 #~ msgid "Unable to open select cursor: %s"
 #~ msgstr "ഫയൽ തുറക്കൻ പറ്റുന്നില്ല %s"
-
-#, fuzzy
-#~ msgid "Vector map <%s> is not 3D"
-#~ msgstr "വെക്റ്റർ മാപ്പ് തുറന്നിട്ടില്ല"
-
-#, fuzzy
-#~ msgid "Number of points from vector map %d"
-#~ msgstr "ബിന്ദുവിന്റെ എണ്ണം: %d"
-
-#, fuzzy
-#~ msgid "Number of points outside of 2D/3D region %d"
-#~ msgstr "ബിന്ദുവിന്റെ എണ്ണം: %d"
-
-#, fuzzy
-#~ msgid "Number of points being used %d"
-#~ msgstr "ബിന്ദുവിന്റെ എണ്ണം: %d"
-
-#, fuzzy
-#~ msgid "Unable to allocate memory"
-#~ msgstr "വെക്റ്റർ അടയ്ക്കാൻ പറ്റുന്നില്ല <%s>"

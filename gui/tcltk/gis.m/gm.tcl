@@ -70,6 +70,12 @@ if {[catch {set mapset [exec g.gisenv get=MAPSET]} error]} {
 	exit 1
 }
 
+# if any of those is empty, there's no reason to continue. it's a failure.
+if { $gisdbase=={} || $location_name=={} || $mapset=={} } {
+	GmLib::errmsg [G_msg "GISDBASE or LOCATION_NAME or MAPSET is empty. \
+	This is a fatal error. gis.m can not work without proper settings."]
+	exit 1
+}
 
 # path to icons for GIS Manager
 set iconpath [file join "$env(GISBASE)" "etc" "gui" "icons" "grass"]
@@ -146,7 +152,7 @@ namespace eval Gm {
 	variable selectedfont
 	variable encoding
 	global array filename ;# mon
-
+        variable last_directory ;# last save/load dir for reuse
 }
 
 
@@ -271,7 +277,11 @@ proc Gm::create { } {
 			Gm::cleanup}
 	}
 
-
+        if { [info exists env(HOME)] } {
+                set Gm::last_directory $env(HOME)
+        } else {
+                set Gm::last_directory [pwd]
+        }
 
 }
 
@@ -513,6 +523,21 @@ proc Gm::cleanup { } {
 
 };
 
+# Provides remote exit call. Used by GRASS exit to close all session's gis.m instances.
+# Argument session_id is exit caller's GIS_LOCK variable.
+proc Gm::remoteExit { session_id } {
+	global env
+	if {$env(GIS_LOCK) == $session_id} Gm::quit
+}
+
+# Provides exit from gis.m. May also do some clean-up, save-settings et.al.
+proc Gm::quit { } {
+	global env
+	
+	# It's unsafe to call exit during Destroy event
+	after idle [list destroy .]
+}
+
 ###############################################################################
 
 proc main {argc argv} {
@@ -538,7 +563,7 @@ proc main {argc argv} {
 		Gm::SaveFileBox
     }
     bind . <$keycontrol-Key-q> {
-		exit
+		Gm::quit
 	}
     bind . <$keycontrol-Key-w> {
 		GmTree::FileClose {}
@@ -562,6 +587,9 @@ proc main {argc argv} {
     }
 }
 
+wm protocol . WM_DELETE_WINDOW {
+	Gm::quit
+}
 
 main $argc $argv
 wm geom . [wm geom .]

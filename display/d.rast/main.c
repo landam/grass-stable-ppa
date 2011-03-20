@@ -49,13 +49,12 @@ int main(int argc, char **argv)
 
     module = G_define_module();
     module->keywords = _("display, raster");
-    module->description =
-	_("Displays and overlays raster map layers "
-	  "in the active display frame on the graphics monitor.");
-
+    module->description = _("Displays user-specified raster map in the active "
+			    "graphics frame.");
+    
     /* set up command line */
     map = G_define_standard_option(G_OPT_R_MAP);
-    map->description = _("Raster map to be displayed");
+    map->description = _("Name of raster map to be displayed");
 
     catlist = G_define_option();
     catlist->key = "catlist";
@@ -82,10 +81,12 @@ int main(int argc, char **argv)
     bg->gisprompt = GISPROMPT_COLOR;
     bg->required = NO;
     bg->description = _("Background color (for null)");
+    bg->guisection = _("Null cells");
 
     flag_o = G_define_flag();
     flag_o->key = 'o';
     flag_o->description = _("Overlay (non-null values only)");
+    flag_o->guisection = _("Null cells");
 
     flag_i = G_define_flag();
     flag_i->key = 'i';

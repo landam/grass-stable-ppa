@@ -29,17 +29,11 @@ BINDIR=			${UNIX_BIN}
 # Shell commands
 MAKE_DIR_CMD=		mkdir -p -m 755
 
-# Extra commands
-HTML2PDF=		htmldoc --footer d.1
-GRASS_PDFDIR=		$(GISBASE)/docs/pdf
-
-
-DIRS = \
+SUBDIRS = \
 	lib \
 	db \
 	display \
 	doc \
-	gem \
 	general \
 	gui \
 	imagery \
@@ -55,7 +49,9 @@ DIRS = \
 	man \
 	macosx
 
-SUBDIRS = $(DIRS)
+ifeq ($(strip $(MINGW)),)
+	SUBDIRS += gem
+endif
 
 ifneq ($(strip $(HAVE_NLS)),)
 	LOCALE=1
@@ -63,7 +59,7 @@ else
 	LOCALE=0
 endif
 
-FILES = AUTHORS COPYING CHANGES REQUIREMENTS.html GPL.TXT
+FILES = AUTHORS COPYING CHANGES REQUIREMENTS.html contributors.csv  contributors_extra.csv  translators.csv GPL.TXT
 
 BIN_DIST_FILES = $(FILES) \
 	grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}.tmp \
@@ -78,6 +74,11 @@ BIN_DIST_FILES = $(FILES) \
 	man \
 	scripts \
 	tools
+
+DOXNAME=grass
+
+include $(MODULE_TOPDIR)/include/Make/Docs.make
+include $(MODULE_TOPDIR)/include/Make/Doxygen.make
 
 default: builddemolocation
 	@echo "GRASS GIS compilation log"     > $(ERRORLOG)
@@ -171,7 +172,9 @@ cleandistdirs:
 	-rm -rf ${ARCH_DISTDIR}/demolocation/ 2>/dev/null
 	-rm -rf ${ARCH_DISTDIR}/tcltkgrass/  2>/dev/null
 	-rm -rf ${ARCH_DISTDIR}/tools/       2>/dev/null
-	-rm -f ${ARCH_DISTDIR}/AUTHORS ${ARCH_DISTDIR}/CHANGES ${ARCH_DISTDIR}/REQUIREMENTS.html ${ARCH_DISTDIR}/COPYING ${ARCH_DISTDIR}/GPL.TXT ${ARCH_DISTDIR}/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}.tmp 2>/dev/null
+	-rm -f ${ARCH_DISTDIR}/AUTHORS ${ARCH_DISTDIR}/CHANGES ${ARCH_DISTDIR}/REQUIREMENTS.html ${ARCH_DISTDIR}/COPYING ${ARCH_DISTDIR}/GPL.TXT \
+		${ARCH_DISTDIR}/contributors.csv ${ARCH_DISTDIR}/contributors_extra.csv  ${ARCH_DISTDIR}/translators.csv \
+		${ARCH_DISTDIR}/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}.tmp 2>/dev/null
 	-rmdir ${ARCH_DISTDIR}
 	-rm -f ${ARCH_BINDIR}/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR} 2>/dev/null
 	-rm -f ${ARCH_BINDIR}/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}.bat 2>/dev/null
@@ -181,7 +184,7 @@ cleandistdirs:
 cleanscriptstrings:
 	rm -f locale/scriptstrings/*.c 2>/dev/null
 
-clean: cleandistdirs cleanscriptstrings
+clean: cleandistdirs cleanscriptstrings cleandocs
 	@list='$(SUBDIRS)'; \
 	for subdir in $$list; do \
 		$(MAKE) -C $$subdir clean; \
@@ -196,7 +199,8 @@ libsclean: cleandistdirs
 distclean: clean
 	-rm -f config.cache config.log config.status config.status.${ARCH} 2>/dev/null
 	-rm -f ChangeLog ChangeLog.bak $(ERRORLOG) grass.pc
-	-rm -f include/config.h include/version.h include/winname.h include/Make/Grass.make include/Make/Platform.make 2>/dev/null
+	-rm -f include/config.h include/version.h include/winname.h include/Make/Grass.make 2>/dev/null
+	-rm -f include/Make/Platform.make include/Make/Doxyfile_arch_html include/Make/Doxyfile_arch_latex 2>/dev/null
 
 strip: FORCE
 	@ if [ ! -f ${ARCH_BINDIR}/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR} ] ; then \
@@ -263,12 +267,8 @@ real-install: FORCE
 	test -d ${INST_DIR} || ${MAKE_DIR_CMD} ${INST_DIR}
 	@##### test -d ${INST_DIR}/dev || ${MAKE_DIR_CMD} ${INST_DIR}/dev
 	test -d ${BINDIR} || ${MAKE_DIR_CMD} ${BINDIR}
-	-sed -e "s#^GISBASE.*#GISBASE=${INST_DIR}#" ${ARCH_BINDIR}/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR} > ${BINDIR}/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}
+	-sed -e "s#GISBASE=.*#GISBASE=${INST_DIR}#" ${ARCH_BINDIR}/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR} > ${BINDIR}/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}
 	-chmod a+x ${BINDIR}/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}
-ifneq ($(strip $(MINGW)),)
-	-sed -e "s#WINGISBASE=.*#WINGISBASE=${INST_DIR}#" ${ARCH_BINDIR}/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}.bat > ${BINDIR}/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}.bat
-	-chmod a+x ${BINDIR}/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}.bat
-endif
 	-cd ${GISBASE} ; tar cBf - $(FILES) | (cd ${INST_DIR} ; tar xBf - ) 2>/dev/null
 	-cd ${GISBASE} ; tar cBf - bin | (cd ${INST_DIR} ; tar xBf - ) 2>/dev/null
 	-cd ${GISBASE} ; tar cBf - bwidget | (cd ${INST_DIR} ; tar xBf - ) 2>/dev/null
@@ -276,7 +276,9 @@ endif
 	-cd ${GISBASE} ; tar cBf - driver | (cd ${INST_DIR} ; tar xBf - ) 2>/dev/null
 	-cd ${GISBASE} ; tar cBf - etc | (cd ${INST_DIR} ; tar xBf - ) 2>/dev/null
 	-cd ${GISBASE} ; tar cBf - fonts | (cd ${INST_DIR} ; tar xBf - ) 2>/dev/null
+ifeq ($(strip $(MINGW)),)
 	-cd ${GISBASE} ; tar cBf - man | (cd ${INST_DIR} ; tar xBf - ) 2>/dev/null
+endif
 	-cd ${GISBASE} ; tar cBf - scripts | (cd ${INST_DIR} ; tar xBf - ) 2>/dev/null
 	-cd ${GISBASE} ; tar cBf - tools | (cd ${INST_DIR} ; tar xBf - ) 2>/dev/null
 	if [ ${LOCALE} -eq 1 ] ; then cd ${GISBASE} ; tar cBf - locale | (cd ${INST_DIR} ; tar xBf - ) 2>/dev/null ; fi
@@ -292,9 +294,11 @@ endif
 	-sed 's#'${GISBASE}'#'${INST_DIR}'#g' ${GISBASE}/etc/fontcap > ${INST_DIR}/etc/fontcap
 	@##### -chmod -R 1777 ${INST_DIR}/locks 2>/dev/null
 	-chmod -R a+rX ${INST_DIR} 2>/dev/null
+ifeq ($(strip $(MINGW)),)
 	@#GEM installation
 	-tar cBf - gem/skeleton | (cd ${INST_DIR}/etc ; tar xBf - ) 2>/dev/null
 	-${INSTALL} gem/gem$(GRASS_VERSION_MAJOR)$(GRASS_VERSION_MINOR) ${BINDIR} 2>/dev/null
+endif
 	@# enable OSX Help Viewer
 	@if [ "`cat include/Make/Platform.make | grep -i '^ARCH.*darwin'`" ] ; then /bin/ln -sfh "${INST_DIR}/docs/html" /Library/Documentation/Help/GRASS-${GRASS_VERSION_MAJOR}.${GRASS_VERSION_MINOR} ; fi
 
@@ -370,97 +374,6 @@ srclibsdist: FORCE distclean
 	tar chvfz grass-lib-${GRASS_VERSION_MAJOR}.${GRASS_VERSION_MINOR}.${GRASS_VERSION_RELEASE}.tar.gz ./grass-lib-${GRASS_VERSION_MAJOR}.${GRASS_VERSION_MINOR}.${GRASS_VERSION_RELEASE}/* --exclude=CVS
 	-rm -r ./grass-lib-${GRASS_VERSION_MAJOR}.${GRASS_VERSION_MINOR}.${GRASS_VERSION_RELEASE}
 	@ echo "Distribution source package: grass-lib-${GRASS_VERSION_MAJOR}.${GRASS_VERSION_MINOR}.${GRASS_VERSION_RELEASE}.tar.gz ready."
-
-# generate docs as single HTML document:
-htmldocs-single:
-	(cd lib/ ; $(MAKE) cleandocs ; $(MAKE) htmldocs-single)
-	(cd rfc/ ; $(MAKE) cleandocs ; $(MAKE) htmldocs-single)
-	(cd gui/wxpython/ ; $(MAKE) cleandocs ; $(MAKE) htmldocs-single)
-
-# generate docs as multiple HTML documents:
-htmldocs:
-	(cd lib/db/ ; $(MAKE) cleandocs ; $(MAKE) htmldocs)
-	(cd lib/g3d/ ; $(MAKE) cleandocs ; $(MAKE) htmldocs)
-	(cd lib/gis/ ; $(MAKE) cleandocs ; $(MAKE) htmldocs)
-	(cd lib/gmath/ ; $(MAKE) cleandocs ; $(MAKE) htmldocs)
-	(cd lib/gpde/ ; $(MAKE) cleandocs ; $(MAKE) htmldocs)
-	(cd lib/ogsf/ ; $(MAKE) cleandocs ; $(MAKE) htmldocs)
-	(cd lib/proj/ ; $(MAKE) cleandocs ; $(MAKE) htmldocs)
-	(cd lib/python/ ; $(MAKE) cleandocs ; $(MAKE) htmldocs)
-	(cd lib/segment/; $(MAKE) cleandocs ; $(MAKE) htmldocs)
-	(cd lib/vector/ ; $(MAKE) cleandocs ; $(MAKE) htmldocs)
-	(cd lib/vector/dglib/ ; $(MAKE) cleandocs ; $(MAKE) htmldocs)
-	(cd rfc/ ; $(MAKE) cleandocs ; $(MAKE) htmldocs)
-	(cd gui/wxpython/ ; $(MAKE) cleandocs ; $(MAKE) htmldocs)
-
-packagehtmldocs: htmldocs
-	tar chvfz grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}refman_`date '+%Y_%m_%d'`_html.tar.gz lib/db/html lib/g3d/html lib/gis/html lib/gmath/html lib/gpde/html lib/proj/html lib/python/html lib/ogsf/html lib/segment/html lib/vector/html lib/vector/dglib/html gui/wxpython/html rfc/html
-
-#alternatively, the docs can be generated as single PDF document (see doxygen FAQ for 'TeX capacity exceeded'):
-#  (cd lib/ ; make pdfdocs)
-
-pdfdocs:
-	(cd lib/db/ ; $(MAKE) cleandocs ; $(MAKE) pdfdocs)
-	(cd lib/g3d/ ; $(MAKE) cleandocs ; $(MAKE) pdfdocs)
-	(cd lib/gis/ ; $(MAKE) cleandocs ; $(MAKE) pdfdocs)
-	(cd lib/gmath/ ; $(MAKE) cleandocs ; $(MAKE) pdfdocs)
-	(cd lib/gpde/ ; $(MAKE) cleandocs ; $(MAKE) pdfdocs)
-	(cd lib/ogsf/ ; $(MAKE) cleandocs ; $(MAKE) pdfdocs)
-	(cd lib/proj/ ; $(MAKE) cleandocs ; $(MAKE) pdfdocs)
-	(cd lib/python/ ; $(MAKE) cleandocs ; $(MAKE) pdfdocs)
-	(cd lib/segment/; $(MAKE) cleandocs ; $(MAKE) pdfdocs)
-	(cd lib/vector/ ; $(MAKE) cleandocs ; $(MAKE) pdfdocs)
-	(cd lib/vector/dglib/ ; $(MAKE) cleandocs ; $(MAKE) pdfdocs)
-	(cd gui/wxpython/ ; $(MAKE) cleandocs ; $(MAKE) pdfdocs)
-	(cd rfc/ ; $(MAKE) cleandocs ; $(MAKE) pdfdocs)
-	@echo "Written PDF docs in: lib/db/latex/, lib/g3d/latex/, lib/gis/latex/, lib/gmath/latex/ lib/gpde/latex/ lib/ogsf/latex/, lib/proj/latex/, lib/python/latex/, lib/segment/latex/, lib/vector/latex/, lib/vector/dglib/latex/, gui/wxpython/, rfc/latex/"
-
-cleandocs:
-	(cd lib/db/ ; $(MAKE) cleandocs)
-	(cd lib/g3d/ ; $(MAKE) cleandocs)
-	(cd lib/gis/ ; $(MAKE) cleandocs)
-	(cd lib/gmath/ ; $(MAKE) cleandocs)
-	(cd lib/gpde/ ; $(MAKE) cleandocs)
-	(cd lib/ogsf/ ; $(MAKE) cleandocs)
-	(cd lib/proj/ ; $(MAKE) cleandocs)
-	(cd lib/python/ ; $(MAKE) cleandocs)
-	(cd lib/segment/; $(MAKE) cleandocs)
-	(cd lib/vector/ ; $(MAKE) cleandocs)
-	(cd lib/vector/dglib/ ; $(MAKE) cleandocs)
-	(cd lib/ ; $(MAKE) cleandocs)
-	(cd gui/wxpython/ ; $(MAKE) cleandocs)
-	(cd rfc/ ; $(MAKE) cleandocs)
-
-html2pdfdoc:
-	@ echo "Light PDF document from modules' HTML documentation"
-	@ # http://www.htmldoc.org
-	@test -d $(GRASS_PDFDIR) || mkdir -p $(GRASS_PDFDIR)
-	(cd ${ARCH_DISTDIR}/docs/html ; $(HTML2PDF) --webpage --no-links database.html display.html general.html imagery.html misc.html photo.html postscript.html raster.html raster3D.html vector.html -f $(GRASS_PDFDIR)/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}commands.pdf)
-
-html2pdfdoccomplete:
-	@ echo "Complete PDF document from modules' HTML documentation"
-	@ # http://www.htmldoc.org
-	@test -d $(GRASS_PDFDIR) || mkdir -p $(GRASS_PDFDIR)
-	(cd ${ARCH_DISTDIR}/docs/html ; $(HTML2PDF) --webpage database.html db.*.html -f $(GRASS_PDFDIR)/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}database.pdf)
-	(cd ${ARCH_DISTDIR}/docs/html ; $(HTML2PDF) --webpage display.html d.*.html -f $(GRASS_PDFDIR)/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}display.pdf)
-	(cd ${ARCH_DISTDIR}/docs/html ; $(HTML2PDF) --webpage general.html g.*.html -f $(GRASS_PDFDIR)/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}general.pdf)
-	(cd ${ARCH_DISTDIR}/docs/html ; $(HTML2PDF) --webpage imagery.html i.*.html -f $(GRASS_PDFDIR)/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}imagery.pdf)
-	(cd ${ARCH_DISTDIR}/docs/html ; $(HTML2PDF) --webpage misc.html m.*.html -f $(GRASS_PDFDIR)/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}misc.pdf)
-	(cd ${ARCH_DISTDIR}/docs/html ; $(HTML2PDF) --webpage photo.html i.ortho*.html photo*.html -f $(GRASS_PDFDIR)/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}photo.pdf)
-	(cd ${ARCH_DISTDIR}/docs/html ; $(HTML2PDF) --webpage postscript.html ps.*.html -f $(GRASS_PDFDIR)/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}postscript.pdf)
-	(cd ${ARCH_DISTDIR}/docs/html ; $(HTML2PDF) --webpage raster.html r.*.html -f $(GRASS_PDFDIR)/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}raster.pdf)
-	(cd ${ARCH_DISTDIR}/docs/html ; $(HTML2PDF) --webpage raster3D.html r3.*.html -f $(GRASS_PDFDIR)/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}raster3d.pdf)
-	(cd ${ARCH_DISTDIR}/docs/html ; $(HTML2PDF) --webpage vector.html v*.html -f $(GRASS_PDFDIR)/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}vector.pdf)
-
-changelog:
-	@ echo "creating ChangeLog file (following 'trunk' only)..."
-	@ # svn2cl creates a GNU style ChangeLog file:
-	@ # http://ch.tudelft.nl/~arthur/svn2cl/
-	@if [ ! -x "`which svn2cl`" ] ; then \
-		echo "\"svn2cl\" is required, please install first from http://ch.tudelft.nl/~arthur/svn2cl/" ;	exit 1 ; \
-	fi
-	sh svn2cl ./ChangeLog
-
 
 builddemolocation:
 	test -d ${ARCH_DISTDIR} || ${MAKE_DIR_CMD} ${ARCH_DISTDIR}

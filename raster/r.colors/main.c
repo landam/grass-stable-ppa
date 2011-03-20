@@ -32,6 +32,14 @@
 static char **rules;
 static int nrules;
 
+static int cmp(const void *aa, const void *bb)
+{
+    char *const *a = (char *const *)aa;
+    char *const *b = (char *const *)bb;
+    
+    return strcmp(*a, *b);
+}
+
 static void scan_rules(void)
 {
     char path[GPATH_MAX];
@@ -46,6 +54,8 @@ static void scan_rules(void)
     rules[nrules++] = G_store("grey.eq");
     rules[nrules++] = G_store("grey.log");
     rules[nrules++] = G_store("rules");
+
+    qsort(rules, nrules, sizeof(char *), cmp);
 }
 
 static char *rules_list(void)
@@ -273,11 +283,16 @@ int main(int argc, char **argv)
     if (interactive && (style || rules || cmap))
 	G_fatal_error(_("Interactive mode is incompatible with \"color\", \"rules\", and \"raster\" options"));
 
-    if ((style && (cmap || rules)) || (cmap && rules))
-	G_fatal_error(_("\"color\", \"rules\", and \"raster\" options are mutually exclusive"));
+    if ((style && (cmap || rules)) || (cmap && rules)) {
+	if ((style && rules && !cmap) && strcmp(style, "rules") == 0)
+	    style = NULL;
+	else
+	    G_fatal_error(
+		_("\"color\", \"rules\", and \"raster\" options are mutually exclusive"));
+    }
 
     /* handle rules="-" (from stdin) by translating that to colors=rules */
-    /* this method should not be ported to GRASS 7 where color=rules DNE */
+    /* this method should not be ported to GRASS 7 verbatim, as color=rules DNE */
     if (rules && strcmp(rules, "-") == 0) {
 	style = G_store("rules");
 	rules = NULL;
@@ -305,8 +320,10 @@ int main(int argc, char **argv)
     /*if (have_colors >= 0)
        G_free_colors(&colors); */
 
-    if (have_colors > 0 && !overwrite)
-	exit(EXIT_SUCCESS);
+    if (have_colors > 0 && !overwrite) {
+	G_warning(_("Color table exists. Exiting."));
+	exit(EXIT_FAILURE);
+    }
 
     G_suppress_warnings(0);
 

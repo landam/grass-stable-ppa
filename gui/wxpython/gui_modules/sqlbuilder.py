@@ -40,8 +40,8 @@ import wx
 
 import grass.script as grass
 
-import dbm
 import gcmd
+import dbm_base
 
 class SQLFrame(wx.Frame):
     """!SQL Frame class"""
@@ -66,7 +66,7 @@ class SQLFrame(wx.Frame):
         
         # db info
         self.layer = layer
-        self.dbInfo = dbm.VectorDBInfo(self.vectmap)
+        self.dbInfo = dbm_base.VectorDBInfo(self.vectmap)
         self.tablename = self.dbInfo.GetTable(self.layer)
         self.driver, self.database = self.dbInfo.GetDbSettings(self.layer)
         
@@ -183,7 +183,7 @@ class SQLFrame(wx.Frame):
         databasebox = wx.StaticBox(parent = self.panel, id = wx.ID_ANY,
                                    label = " %s " % _("Database connection"))
         databaseboxsizer = wx.StaticBoxSizer(databasebox, wx.VERTICAL)
-        databaseboxsizer.Add(item=dbm.createDbInfoDesc(self.panel, self.dbInfo, layer = self.layer),
+        databaseboxsizer.Add(item=dbm_base.createDbInfoDesc(self.panel, self.dbInfo, layer = self.layer),
                              proportion=1,
                              flag=wx.EXPAND | wx.ALL,
                              border=3)
@@ -293,14 +293,12 @@ class SQLFrame(wx.Frame):
         
         querystring = "SELECT %s FROM %s" % (column, self.tablename)
         
-        cmd = gcmd.Command(['db.select',
-                            '-c',
-                            'table=%s' % self.tablename,
-                            'sql=%s' % querystring,
-                            'database=%s' % self.database,
-                            'driver=%s' % self.driver])
+        data = grass.db_select(table = self.tablename,
+                               sql = querystring,
+                               database = self.database,
+                               driver = self.driver)
         i = 0
-        for line in cmd.ReadStdOutput():
+        for line in data:
             if justsample and i < 256 or \
                not justsample:
                 self.list_values.Append(line.strip())

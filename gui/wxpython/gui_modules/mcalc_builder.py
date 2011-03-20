@@ -13,6 +13,7 @@ This program is free software under the GNU General Public License
 
 @author Michael Barton, Arizona State University
 @author Martin Landa <landa.martin gmail.com>
+@author Tim Michelsen (load/save expression)
 """
 
 import os
@@ -23,6 +24,8 @@ import globalvar
 if not os.getenv("GRASS_WXBUNDLED"):
     globalvar.CheckForWx()
 import wx
+
+import grass.script as grass
 
 import gcmd
 import gselect
@@ -35,21 +38,31 @@ from preferences import globalSettings as UserSettings
 
 class MapCalcFrame(wx.Frame):
     """!Mapcalc Frame class. Calculator-style window to create and run
-    r(3).mapcalc statements
+    r(3).mapcalc statements.
     """
-    def __init__(self, parent, id = wx.ID_ANY, title = _('Map calculator'), 
-                 rast3d = False, style = wx.DEFAULT_FRAME_STYLE | wx.RESIZE_BORDER, **kwargs):
+    def __init__(self, parent, cmd, id = wx.ID_ANY,
+                 style = wx.DEFAULT_FRAME_STYLE | wx.RESIZE_BORDER, **kwargs):
         self.parent = parent
         if self.parent:
             self.log = self.parent.GetLogWindow()
         else:
             self.log = None
         
-        self.rast3d = rast3d
+        # grass command
+        self.cmd = cmd
+
+        if self.cmd == 'r.mapcalc':
+            self.rast3d = False
+            title = _('GRASS GIS Raster Map Calculator')
+        if self.cmd == 'r3.mapcalc':
+            self.rast3d = True
+            title = _('GRASS GIS 3D Raster Map Calculator')
+            
         wx.Frame.__init__(self, parent, id = id, title = title, **kwargs)
         self.SetIcon(wx.Icon(os.path.join(globalvar.ETCICONDIR, 'grass.ico'), wx.BITMAP_TYPE_ICO))
         
         self.panel = wx.Panel(parent = self, id = wx.ID_ANY)
+        self.CreateStatusBar()
         
         #
         # variables
@@ -118,12 +131,17 @@ class MapCalcFrame(wx.Frame):
         #
         # Buttons
         #
-        self.btn_clear = wx.Button(parent = self.panel, id = wx.ID_CLEAR)
+        self.btn_clear = wx.Button(parent = self.panel, id = wx.ID_CLEAR, label = _("Cl&ear"))
         self.btn_help = wx.Button(parent = self.panel, id = wx.ID_HELP)
         self.btn_run = wx.Button(parent = self.panel, id = wx.ID_ANY, label = _("&Run"))
         self.btn_run.SetDefault()
         self.btn_close = wx.Button(parent = self.panel, id = wx.ID_CLOSE)
-
+        self.btn_save = wx.Button(parent = self.panel, id = wx.ID_SAVE)
+        self.btn_save.SetToolTipString(_('Save expression to file'))
+        self.btn_load = wx.Button(parent = self.panel, id = wx.ID_ANY,
+                                  label = _("&Load"))
+        self.btn_load.SetToolTipString(_('Load expression from file'))
+        
         self.btn = dict()        
         self.btn['pow'] = wx.Button(parent = self.panel, id = wx.ID_ANY, label = "^")
         self.btn['pow'].SetToolTipString(_('exponent'))
@@ -201,6 +219,12 @@ class MapCalcFrame(wx.Frame):
                                     style = wx.CB_DROPDOWN |
                                     wx.CB_READONLY | wx.TE_PROCESS_ENTER)
         
+        self.addbox = wx.CheckBox(parent=self.panel,
+                                  label=_('Add created raster map into layer tree'), style = wx.NO_BORDER)
+        self.addbox.SetValue(UserSettings.Get(group='cmd', key='addNewLayer', subkey='enabled'))
+        if not self.parent or self.parent.GetName() != 'LayerManager':
+            self.addbox.Hide()
+        
         #
         # Bindings
         #
@@ -211,11 +235,15 @@ class MapCalcFrame(wx.Frame):
         self.btn_clear.Bind(wx.EVT_BUTTON, self.OnClear)
         self.btn_run.Bind(wx.EVT_BUTTON, self.OnMCalcRun)
         self.btn_help.Bind(wx.EVT_BUTTON, self.OnHelp)
+        self.btn_save.Bind(wx.EVT_BUTTON, self.OnSaveExpression)
+        self.btn_load.Bind(wx.EVT_BUTTON, self.OnLoadExpression)
         
         self.mapselect.Bind(wx.EVT_TEXT, self.OnSelect)
         self.function.Bind(wx.EVT_COMBOBOX, self.OnSelect)
         self.function.Bind(wx.EVT_TEXT_ENTER, self.OnSelect)
-        
+        self.newmaptxt.Bind(wx.EVT_TEXT, self.OnUpdateStatusBar)
+        self.text_mcalc.Bind(wx.EVT_TEXT, self.OnUpdateStatusBar)
+
         self._layout()
 
         self.SetMinSize(self.GetBestSize())
@@ -274,11 +302,17 @@ class MapCalcFrame(wx.Frame):
                          span = (1,1), flag = wx.ALIGN_RIGHT)
         
         buttonSizer4 = wx.BoxSizer(wx.HORIZONTAL)
-        buttonSizer4.Add(item = self.btn_close,
+        buttonSizer4.AddSpacer(10)
+        buttonSizer4.Add(item = self.btn_load,
+                         flag = wx.ALL, border = 5)
+        buttonSizer4.Add(item = self.btn_save,
+                         flag = wx.ALL, border = 5)                         
+        buttonSizer4.AddSpacer(30)
+        buttonSizer4.Add(item = self.btn_help,
                          flag = wx.ALL, border = 5)
         buttonSizer4.Add(item = self.btn_run,
                          flag = wx.ALL, border = 5)
-        buttonSizer4.Add(item = self.btn_help,
+        buttonSizer4.Add(item = self.btn_close,
                          flag = wx.ALL, border = 5)
         
         operatorSizer.Add(item = buttonSizer1, proportion = 0,
@@ -290,7 +324,7 @@ class MapCalcFrame(wx.Frame):
                          flag = wx.TOP | wx.BOTTOM | wx.RIGHT, border = 5)
         
         controlSizer.Add(item = operatorSizer, proportion = 1,
-                         flag = wx.RIGHT, border = 5)
+                         flag = wx.RIGHT | wx.EXPAND, border = 5)
         controlSizer.Add(item = operandSizer, proportion = 0,
                          flag = wx.EXPAND)
 
@@ -305,13 +339,16 @@ class MapCalcFrame(wx.Frame):
                   flag = wx.EXPAND | wx.LEFT | wx.RIGHT,
                   border = 5)
         sizer.Add(item = buttonSizer4, proportion = 0,
-                  flag = wx.ALIGN_RIGHT | wx.ALL, border = 1)
+                  flag = wx.ALIGN_RIGHT | wx.ALL, border = 3)
+        if self.addbox.IsShown():
+            sizer.Add(item = self.addbox, proportion = 0,
+                      flag = wx.LEFT | wx.RIGHT,
+                      border = 5)
         
-        self.panel.SetAutoLayout(True)        
+        self.panel.SetAutoLayout(True)
         self.panel.SetSizer(sizer)
         sizer.Fit(self.panel)
         
-        self.Fit()
         self.Layout()
         
     def AddMark(self,event):
@@ -350,8 +387,14 @@ class MapCalcFrame(wx.Frame):
         """
         item = event.GetString()
         self._addSomething(item)
+
+    def OnUpdateStatusBar(self, event):
+        """!Update statusbar text"""
+        self.SetStatusText("r.mapcalc '%s = %s'" % (self.newmaptxt.GetValue(),
+                                                    self.text_mcalc.GetValue()))
+        event.Skip()
         
-    def _addSomething(self,what):
+    def _addSomething(self, what):
         """!Inserts operators, map names, and functions into text area
         """
         self.text_mcalc.SetFocus()
@@ -373,6 +416,8 @@ class MapCalcFrame(wx.Frame):
         newmcalcstr += ' ' + mcalcstr[position:]
         
         self.text_mcalc.SetValue(newmcalcstr)
+        if what == '()':
+            position_offset -= 1
         self.text_mcalc.SetInsertionPoint(position + position_offset)
         self.text_mcalc.Update()
         
@@ -381,32 +426,98 @@ class MapCalcFrame(wx.Frame):
         """
         name = self.newmaptxt.GetValue().strip()
         if not name:
-            gcmd.GMessage(parent = self,
-                          message = _("You must enter the name of a new map to create"),
-                          msgType = 'info')
+            gcmd.GError(parent = self,
+                        message = _("You must enter the name of a new map to create"))
             return
         
         if not self.text_mcalc.GetValue().strip():
-            gcmd.GMessage(parent = self,
-                          message = _("You must enter a mapcalc statement to create a new map"),
-                          msgType = 'info')
+            gcmd.GError(parent = self,
+                        message = _("You must enter a mapcalc statement to create a new map"))
             return
         
         mctxt = self.text_mcalc.GetValue().strip().replace("\n"," ")
         mctxt = mctxt.replace(" " , "")
-        if self.rast3d:
-            prg = 'r3.mapcalc'
-        else:
-            prg = 'r.mapcalc'
-
+        
         if self.log:
-            cmd = [prg, str('%s = %s' % (name, mctxt))]
-            self.log.RunCmd(cmd)
+            cmd = [self.cmd, str('%s = %s' % (name, mctxt))]
+            self.log.RunCmd(cmd, onDone = self.OnDone)
             self.parent.Raise()
         else:
-            gcmd.RunCommand(prg,
+            gcmd.RunCommand(self.cmd,
                             "%s=%s" % (name, mctxt))
         
+    def OnDone(self, cmd, returncode):
+        """!Add create map to the layer tree"""
+        if not self.addbox.IsChecked():
+            return
+        name = self.newmaptxt.GetValue().strip() + '@' + grass.gisenv()['MAPSET']
+        mapTree = self.parent.GetLayerTree()
+        if not mapTree.GetMap().GetListOfLayers(l_name = name):
+            mapTree.AddLayer(ltype = 'raster',
+                             lname = name,
+                             lcmd = ['d.rast', 'map=%s' % name],
+                             multiple = False)
+        
+        display = self.parent.GetLayerTree().GetMapDisplay()
+        if display and display.IsAutoRendered():
+            display.GetWindow().UpdateMap(render = True)
+        
+    def OnSaveExpression(self, event):
+        """!Saves expression to file
+        """
+        mctxt = self.newmaptxt.GetValue() + ' = ' + self.text_mcalc.GetValue() + os.linesep
+        
+        #dialog
+        dlg = wx.FileDialog(parent = self,
+                            message = _("Choose a file name to save the expression"),
+                            wildcard = _("Expression file (*)|*"),
+                            style = wx.SAVE | wx.FD_OVERWRITE_PROMPT)
+        if dlg.ShowModal() == wx.ID_OK:
+            path = dlg.GetPath()
+            if not path:
+                dlg.Destroy()
+                return
+            
+            try:
+                fobj = open(path, 'w')
+                fobj.write(mctxt)
+            finally:
+                fobj.close()
+        
+        dlg.Destroy()
+
+    def OnLoadExpression(self, event):
+        """!Load expression from file
+        """
+        dlg = wx.FileDialog(parent = self,
+                            message = _("Choose a file name to load the expression"),
+                            wildcard = _("Expression file (*)|*"),
+                            style = wx.OPEN)
+        if dlg.ShowModal() == wx.ID_OK:
+            path = dlg.GetPath()
+            if not path:
+                dlg.Destroy()
+                return
+
+            try:
+                fobj = open(path,'r')
+                mctxt = fobj.read()
+            finally:
+                fobj.close()
+            
+            try:
+                result, exp = mctxt.split('=', 1)
+            except ValueError:
+                result = ''
+                exp = mctxt
+            
+            self.newmaptxt.SetValue(result.strip())
+            self.text_mcalc.SetValue(exp.strip())
+            self.text_mcalc.SetFocus()
+            self.text_mcalc.SetInsertionPointEnd()
+        
+        dlg.Destroy()
+                
     def OnClear(self, event):
         """!Clears text area
         """
@@ -415,7 +526,7 @@ class MapCalcFrame(wx.Frame):
     def OnHelp(self, event):
         """!Launches r.mapcalc help
         """
-        gcmd.RunCommand('g.manual', entry = 'r.mapcalc')
+        gcmd.RunCommand('g.manual', parent = self, entry = self.cmd)
         
     def OnClose(self,event):
         """!Close window"""
@@ -423,7 +534,7 @@ class MapCalcFrame(wx.Frame):
 
 if __name__ == "__main__":
     app = wx.App(0)
-    frame = MapCalcFrame(None)
+    frame = MapCalcFrame(parent = None, cmd = 'r.mapcalc')
     frame.Show()
     app.MainLoop()
 

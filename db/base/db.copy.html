@@ -45,15 +45,15 @@ db.copy from_driver=pg  from_database="host=localhost,dbname=meteo" \
 <div class="code"><pre>
 db.copy from_driver=dbf from_database=$HOME/grassdata/spearfish60/user1/dbf \
    from_table=ammprv to_driver=sqlite \
-   to_database=$HOME/grassdata/spearfish60/user1/mysqlite.db to_table=ammprv
+   to_database=$HOME/grassdata/spearfish60/user1/sqlite.db to_table=ammprv
 
 # convenient viewer:
-sqlitebrowser $HOME/grassdata/spearfish60/user1/mysqlite.db
+sqlitebrowser $HOME/grassdata/spearfish60/user1/sqlite.db
 </pre></div>
 
 <h3>SQLite -> DBF</h3>
 <div class="code"><pre>
-db.copy from_driver=sqlite from_database=$HOME/grassdata/spearfish60/user1/mysqlite.db \
+db.copy from_driver=sqlite from_database=$HOME/grassdata/spearfish60/user1/sqlite.db \
    from_table=ammprv to_driver=dbf to_database=$HOME/grassdata/spearfish60/user1/dbf \
    to_table=ammprv
 </pre></div>
@@ -72,4 +72,4 @@ db.copy from_driver=sqlite from_database=$HOME/grassdata/spearfish60/user1/mysql
 Radim Blazek, ITC-irst, Trento, Italy
 
 <p>
-<i>Last changed: $Date: 2007-06-05 08:01:36 +0200 (Tue, 05 Jun 2007) $</i>
+<i>Last changed: $Date: 2010-12-14 12:21:58 +0100 (Tue, 14 Dec 2010) $</i>

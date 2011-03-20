@@ -160,10 +160,11 @@ OPENGLWINC          = @OPENGLWINC@
 OPENGLLIB           = @OPENGLLIB@
 OPENGLULIB          = @OPENGLULIB@
 OPENGLWM            = @OPENGLWM@
-#USE_GLWM            = @USE_GLWM@
+# USE_GLWM            = @USE_GLWM@
 OPENGL_X11          = @OPENGL_X11@
 OPENGL_AQUA         = @OPENGL_AQUA@
 OPENGL_WINDOWS      = @OPENGL_WINDOWS@
+USE_OPENGL          = @USE_OPENGL@
 
 #tcl/tk stuff
 TCLINCDIR           = @TCLINCDIR@
@@ -189,6 +190,11 @@ GDALCFLAGS          = @GDAL_CFLAGS@
 USE_GDAL            = @USE_GDAL@
 USE_OGR             = @USE_OGR@
 
+#GEOS
+GEOSLIBS            = @GEOS_LIBS@
+GEOSCFLAGS          = @GEOS_CFLAGS@
+USE_GEOS            = @USE_GEOS@
+
 #FreeType:
 FTINC               = @FTINC@
 FTLIB               = @FTLIB@
@@ -211,6 +217,7 @@ CAIROLIB            = @CAIROLIB@
 USE_CAIRO           = @USE_CAIRO@
 
 #Python
+PYTHON              = python
 PYTHONINC           = @PYTHONINC@
 PYTHONCFLAGS        = @PYTHONCFLAGS@
 PYTHONLDFLAGS       = @PYTHONLDFLAGS@
@@ -243,8 +250,8 @@ HAVE_SOCKET         = @HAVE_SOCKET@
 
 MINGW		    = @MINGW32@
 MACOSX_APP	    = @MACOSX_APP@
-MACOSX_ARCHS    = @MACOSX_ARCHS@
-MACOSX_SDK      = @MACOSX_SDK@
+MACOSX_ARCHS        = @MACOSX_ARCHS@
+MACOSX_SDK          = @MACOSX_SDK@
 
 # Cross compilation
 CROSS_COMPILING = @CROSS_COMPILING@ 

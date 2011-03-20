@@ -1,6 +1,6 @@
 """!@package grass.script.core
 
-@brief GRASS Python scripting module
+@brief GRASS Python scripting module (core functions)
 
 Core functions to be used in Python scripts.
 
@@ -29,10 +29,12 @@ import types
 import re
 import atexit
 import subprocess
+import shutil
+import codecs
 
 # i18N
 import gettext
-gettext.install('grassmods', os.path.join(os.getenv("GISBASE"), 'locale'), unicode=True)
+gettext.install('grasslibs', os.path.join(os.getenv("GISBASE"), 'locale'), unicode=True)
 
 # subprocess wrapper that uses shell on Windows
 
@@ -55,8 +57,15 @@ class Popen(subprocess.Popen):
 PIPE = subprocess.PIPE
 STDOUT = subprocess.STDOUT
 
-fatal_exit = True # abort on fatal()
-debug_level = 0   # DEBUG level
+class ScriptException(Exception):
+    def __init__(self, msg):
+        self.value = msg
+    
+    def __str__(self):
+        return repr(self.value)
+        
+raise_on_error = False # raise exception instead of calling fatal()
+debug_level = 0        # DEBUG level
 
 def call(*args, **kwargs):
     return Popen(*args, **kwargs).wait()
@@ -87,11 +96,11 @@ def make_command(prog, flags = "", overwrite = False, quiet = False, verbose = F
     @endcode
 
     @param prog GRASS module
-    @param flags flags to be used
-    @param overwrite True to enable overwriting the output (--o)
-    @param quiet run quietly (--q)
-    @param verbose run verbosely (--v)
-    @param options
+    @param flags flags to be used (given as a string)
+    @param overwrite True to enable overwriting the output (<tt>--o</tt>)
+    @param quiet True to run quietly (<tt>--q</tt>)
+    @param verbose True to run verbosely (<tt>--v</tt>)
+    @param options module's parameters
 
     @return list of arguments
     """
@@ -130,12 +139,12 @@ def start_command(prog, flags = "", overwrite = False, quiet = False, verbose = 
     \endcode
     
     @param prog GRASS module
-    @param flags flags to be used
-    @param overwrite True to enable overwriting the output (--o)
-    @param quiet run quietly (--q)
-    @param verbose run verbosely (--v)
-    @param kwargs
-
+    @param flags flags to be used (given as a string)
+    @param overwrite True to enable overwriting the output (<tt>--o</tt>)
+    @param quiet True to run quietly (<tt>--q</tt>)
+    @param verbose True to run verbosely (<tt>--v</tt>)
+    @param kwargs module's parameters
+    
     @return Popen object
     """
     options = {}
@@ -155,20 +164,20 @@ def start_command(prog, flags = "", overwrite = False, quiet = False, verbose = 
     return Popen(args, **popts)
 
 def run_command(*args, **kwargs):
-    """!Passes all arguments to start_command, then waits for the process to
+    """!Passes all arguments to start_command(), then waits for the process to
     complete, returning its exit code. Similar to subprocess.call(), but
     with the make_command() interface.
 
-    @param args
-    @param kwargs
+    @param args list of unnamed arguments (see start_command() for details)
+    @param kwargs list of named arguments (see start_command() for details)
 
-    @return exit code
+    @return exit code (0 for success)
     """
     ps = start_command(*args, **kwargs)
     return ps.wait()
 
 def pipe_command(*args, **kwargs):
-    """!Passes all arguments to start_command, but also adds
+    """!Passes all arguments to start_command(), but also adds
     "stdout = PIPE". Returns the Popen object.
 
     \code
@@ -184,8 +193,8 @@ def pipe_command(*args, **kwargs):
     MONITOR='x0';
     \endcode
     
-    @param args
-    @param kwargs
+    @param args list of unnamed arguments (see start_command() for details)
+    @param kwargs list of named arguments (see start_command() for details)
 
     @return Popen object
     """
@@ -193,12 +202,12 @@ def pipe_command(*args, **kwargs):
     return start_command(*args, **kwargs)
 
 def feed_command(*args, **kwargs):
-    """!Passes all arguments to start_command, but also adds
+    """!Passes all arguments to start_command(), but also adds
     "stdin = PIPE". Returns the Popen object.
 
-    @param args
-    @param kwargs
-
+    @param args list of unnamed arguments (see start_command() for details)
+    @param kwargs list of named arguments (see start_command() for details)
+    
     @return Popen object
     """
     kwargs['stdin'] = PIPE
@@ -208,9 +217,9 @@ def read_command(*args, **kwargs):
     """!Passes all arguments to pipe_command, then waits for the process to
     complete, returning its stdout (i.e. similar to shell `backticks`).
 
-    @param args
-    @param kwargs
-
+    @param args list of unnamed arguments (see start_command() for details)
+    @param kwargs list of named arguments (see start_command() for details)
+    
     @return stdout
     """
     ps = pipe_command(*args, **kwargs)
@@ -227,9 +236,9 @@ def parse_command(*args, **kwargs):
     parse_command(..., parse = (grass.parse_key_val, { 'sep' : ':' }))
     @endcode
 
-    @param args
-    @param kwargs
-
+    @param args list of unnamed arguments (see start_command() for details)
+    @param kwargs list of named arguments (see start_command() for details)
+    
     @return parsed module output
     """
     parse = None
@@ -251,8 +260,8 @@ def write_command(*args, **kwargs):
     """!Passes all arguments to feed_command, with the string specified
     by the 'stdin' argument fed to the process' stdin.
 
-    @param args
-    @param kwargs
+    @param args list of unnamed arguments (see start_command() for details)
+    @param kwargs list of named arguments (see start_command() for details)
 
     @return return code
     """
@@ -266,12 +275,13 @@ def exec_command(prog, flags = "", overwrite = False, quiet = False, verbose = F
     """!Interface to os.execvpe(), but with the make_command() interface.
 
     @param prog GRASS module
-    @param flags flags to be used
-    @param overwrite True to enable overwriting the output (--o)
-    @param quiet run quietly (--q)
-    @param verbose run verbosely (--v)
-    @param env environment variable (default os.environ)
-    @param kwargs
+    @param flags flags to be used (given as a string)
+    @param overwrite True to enable overwriting the output (<tt>--o</tt>)
+    @param quiet True to run quietly (<tt>--q</tt>)
+    @param verbose True to run verbosely (<tt>--v</tt>)
+    @param env directory with enviromental variables
+    @param kwargs module's parameters
+
     """
     args = make_command(prog, flags, overwrite, quiet, verbose, **kwargs)
     if env == None:
@@ -281,45 +291,37 @@ def exec_command(prog, flags = "", overwrite = False, quiet = False, verbose = F
 # interface to g.message
 
 def message(msg, flag = None):
-    """!Display a message using g.message
+    """!Display a message using `g.message`
 
     @param msg message to be displayed
     @param flag flags (given as string)
-
-    @return g.message's exit code
     """
     run_command("g.message", flags = flag, message = msg)
 
 def debug(msg, debug = 1):
-    """!Display a debugging message using g.message -d
+    """!Display a debugging message using `g.message -d`
 
     @param msg debugging message to be displayed
     @param debug debug level (0-5)
-
-    @return g.message's exit code
     """
     run_command("g.message", flags = 'd', message = msg, debug = debug)
     
 def verbose(msg):
-    """!Display a verbose message using g.message -v
+    """!Display a verbose message using `g.message -v`
     
     @param msg verbose message to be displayed
-
-    @return g.message's exit code
     """
     message(msg, flag = 'v')
 
 def info(msg):
-    """!Display an informational message using g.message -i
+    """!Display an informational message using `g.message -i`
 
     @param msg informational message to be displayed
-
-    @return g.message's exit code
     """
     message(msg, flag = 'i')
 
 def percent(i, n, s):
-    """!Display a progress info message using g.message -p
+    """!Display a progress info message using `g.message -p`
     
     @code
     message(_("Percent complete..."))
@@ -332,50 +334,49 @@ def percent(i, n, s):
     @param i current item
     @param n total number of items
     @param s increment size
-    
-    @return g.message's exit code
     """
     message("%d %d %d" % (i, n, s), flag = 'p')
 
 def warning(msg):
-    """!Display a warning message using g.message -w
+    """!Display a warning message using `g.message -w`
 
     @param msg warning message to be displayed
-
-    @return g.message's exit code
     """
     message(msg, flag = 'w')
 
 def error(msg):
-    """!Display an error message using g.message -e
+    """!Display an error message using `g.message -e`
 
+    Raise exception when on_error is 'raise'.
+    
     @param msg error message to be displayed
-
-    @return g.message's exit code
     """
-    message(msg, flag = 'e')
+    global raise_on_error
+    if raise_on_error:
+        raise ScriptException(msg)
+    else:
+        message(msg, flag = 'e')
 
 def fatal(msg):
-    """!Display an error message using g.message -e, then abort
-
+    """!Display an error message using `g.message -e`, then abort
+    
     @param msg error message to be displayed
-
-    @return g.message's exit code
     """
     error(msg)
+    sys.exit(1)
     
-    global fatal_exit
-    if fatal_exit:
-        sys.exit(1)
-    
-def set_fatal_exit(exit = True):
-    """!Set fatal_exit variable
+def set_raise_on_error(raise_exp = True):
+    """!Define behaviour on error (error() called)
 
-    @param exit True to abort on fatal() otherwise just error message
-    is printed"""
-    global fatal_exit
-    fatal_exit = exit
+    @param raise_exp True to raise ScriptException instead of calling
+    error()
     
+    @return current status
+    """
+    global raise_on_error
+    tmp_raise = raise_on_error
+    raise_on_error = raise_exp
+
 # interface to g.parser
 
 def _parse_opts(lines):
@@ -418,11 +419,11 @@ def parser():
     if not os.getenv("GISBASE"):
         print >> sys.stderr, "You must be in GRASS GIS to run this program."
         sys.exit(1)
-
+    
     cmdline = [basename(sys.argv[0])]
     cmdline += ['"' + arg + '"' for arg in sys.argv[1:]]
     os.environ['CMDLINE'] = ' '.join(cmdline)
-
+    
     argv = sys.argv[:]
     name = argv[0]
     if not os.path.isabs(name):
@@ -430,14 +431,14 @@ def parser():
 	    argv[0] = os.path.abspath(name)
 	else:
 	    argv[0] = os.path.join(sys.path[0], name)
-
+    
     p = Popen(['g.parser', '-s'] + argv, stdout = PIPE)
     s = p.communicate()[0]
     lines = s.splitlines()
-
+    
     if not lines or lines[0].rstrip('\r\n') != "@ARGS_PARSED@":
 	sys.stdout.write(s)
-	sys.exit()
+	sys.exit(1)
 
     return _parse_opts(lines[1:])
 
@@ -446,6 +447,14 @@ def parser():
 def tempfile():
     """!Returns the name of a temporary file, created with g.tempfile."""
     return read_command("g.tempfile", pid = os.getpid()).strip()
+
+def tempdir():
+    """!Returns the name of a temporary dir, created with g.tempfile."""
+    tmp = read_command("g.tempfile", pid = os.getpid()).strip()
+    try_remove(tmp)
+    os.mkdir(tmp)
+    
+    return tmp
 
 # key-value parsers
 
@@ -571,15 +580,20 @@ def find_file(name, element = 'cell', mapset = None):
 # interface to g.list
 
 def list_grouped(type):
-    """!Returns the output from running g.list, as a dictionary where the keys
-    are mapset names and the values are lists of maps in that mapset. Example:
+    """!List elements grouped by mapsets.
 
-    \code
+    Returns the output from running g.list, as a dictionary where the
+    keys are mapset names and the values are lists of maps in that
+    mapset. Example:
+
+    @code
     >>> grass.list_grouped('rast')['PERMANENT']
     ['aspect', 'erosion1', 'quads', 'soils', 'strm.dist', ...
-    \endcode
+    @endcode
     
-    @param type element type
+    @param type element type (rast, vect, rast3d, region, ...)
+
+    @return directory of mapsets/elements
     """
     dashes_re = re.compile("^----+$")
     mapset_re = re.compile("<(.*)>")
@@ -597,30 +611,6 @@ def list_grouped(type):
 	    continue
         if mapset:
             result[mapset].extend(line.split())
-    return result
-
-def mlist_grouped(type, mapset = None, pattern = None):
-    """!Returns the output from running g.mlist, as a dictionary where the keys
-    are mapset names and the values are lists of maps in that mapset. 
-
-    @param type element type
-    @param mapset mapset name (default all mapset in search path)
-    @param pattern pattern string
-    """
-    result = {}
-    mapset_element = None
-    for line in read_command("g.mlist", flags="m",
-                             type = type, mapset = mapset, pattern = pattern).splitlines():
-        try:
-            map, mapset_element = line.split('@')
-        except ValueError:
-            print >> sys.stderr, "Invalid element '%s'" % line
-            continue
-        
-        if result.has_key(mapset_element):
-            result[mapset_element].append(map)
-        else:
-	    result[mapset_element] = [map, ]
     
     return result
 
@@ -631,35 +621,93 @@ def _concat(xs):
     return result
 
 def list_pairs(type):
-    """!Returns the output from running g.list, as a list of (map, mapset)
+    """!List of elements as tuples.
+
+    Returns the output from running g.list, as a list of (map, mapset)
     pairs. Example:
 
-    \code
+    @code
     >>> grass.list_pairs('rast')
     [('aspect', 'PERMANENT'), ('erosion1', 'PERMANENT'), ('quads', 'PERMANENT'), ...
-    \endcode
-
-    @param type element type
-
+    @endcode
+    
+    @param type element type (rast, vect, rast3d, region, ...)
+    
     @return list of tuples (map, mapset)
     """
     return _concat([[(map, mapset) for map in maps]
 		    for mapset, maps in list_grouped(type).iteritems()])
 
 def list_strings(type):
-    """!Returns the output from running g.list, as a list of qualified
+    """!List of elements as strings.
+
+    Returns the output from running g.list, as a list of qualified
     names. Example:
 
-    \code
+    @code
     >>> grass.list_strings('rast')
     ['aspect@PERMANENT', 'erosion1@PERMANENT', 'quads@PERMANENT', 'soils@PERMANENT', ...
-    \endcode
+    @endcode
 
     @param type element type
     
     @return list of strings ('map@@mapset')
     """
     return ["%s@%s" % pair for pair in list_pairs(type)]
+
+# interface to g.mlist
+
+def mlist(type, pattern = None, mapset = None):
+    """!List of elements
+
+    @param type element type (rast, vect, rast3d, region, ...)
+    @param pattern pattern string
+    @param mapset mapset name (if not given use search path)
+
+    @return list of elements
+    """
+    result = list()
+    for line in read_command("g.mlist",
+                             type = type,
+                             pattern = pattern,
+                             mapset = mapset).splitlines():
+        result.append(line.strip())
+    
+    return result
+    
+def mlist_grouped(type, pattern = None):
+    """!List of elements grouped by mapsets.
+
+    Returns the output from running g.mlist, as a dictionary where the
+    keys are mapset names and the values are lists of maps in that
+    mapset. Example:
+
+    @code
+    >>> grass.mlist_grouped('rast', pattern='r*')['PERMANENT']
+    ['railroads', 'roads', 'rstrct.areas', 'rushmore']
+    @endcode
+    
+    @param type element type (rast, vect, rast3d, region, ...)
+    @param pattern pattern string
+
+    @return directory of mapsets/elements
+    """
+    result = dict()
+    mapset_element = None
+    for line in read_command("g.mlist", flags = "m",
+                             type = type, pattern = pattern).splitlines():
+        try:
+            map, mapset_element = line.split('@')
+        except ValueError:
+            warning(_("Invalid element '%s'") % line)
+            continue
+        
+        if result.has_key(mapset_element):
+            result[mapset_element].append(map)
+        else:
+	    result[mapset_element] = [map, ]
+    
+    return result
 
 # color parsing
 
@@ -723,7 +771,7 @@ def verbosity():
     if vbstr:
 	return int(vbstr)
     else:
-	return 0
+	return 2
 
 ## various utilities, not specific to GRASS
 
@@ -747,19 +795,25 @@ def basename(path, ext = None):
 # find a program (replacement for "which")
 
 def find_program(pgm, args = []):
-    """!Attempt to run a program, with optional arguments. Return False
-    if the attempt failed due to a missing executable, True otherwise
+    """!Attempt to run a program, with optional arguments. 
 
     @param pgm program name
     @param args list of arguments
+
+    @return False if the attempt failed due to a missing executable
+    @return True otherwise
     """
     nuldev = file(os.devnull, 'w+')
     try:
-	call([pgm] + args, stdin = nuldev, stdout = nuldev, stderr = nuldev)
-	found = True
+	ret = call([pgm] + args, stdin = nuldev, stdout = nuldev, stderr = nuldev)
+        if ret == 0:
+            found = True
+        else:
+            found = False
     except:
 	found = False
     nuldev.close()
+    
     return found
 
 # try to remove a file, without complaints
@@ -768,7 +822,7 @@ def try_remove(path):
     """!Attempt to remove a file; no exception is generated if the
     attempt fails.
 
-    @param path path
+    @param path path to file to remove
     """
     try:
 	os.remove(path)
@@ -781,12 +835,12 @@ def try_rmdir(path):
     """!Attempt to remove a directory; no exception is generated if the
     attempt fails.
 
-    @param path path
+    @param path path to directory to remove
     """
     try:
 	os.rmdir(path)
     except:
-	pass
+	shutil.rmtree(path, ignore_errors = True)
 
 def float_or_dms(s):
     """!Convert DMS to float.
@@ -862,6 +916,158 @@ def command_info(cmd):
                 
     return cmdinfo
 
+# interface to g.mapsets
+
+def mapsets(accessible = True):
+    """!List accessible mapsets (mapsets in search path)
+
+    @param accessible False to list all mapsets in the location
+
+    @return list of mapsets
+    """
+    if accessible:
+        flags = 'p'
+    else:
+        flags = 'l'
+    mapsets = read_command('g.mapsets',
+                           flags = flags,
+                           fs = 'newline',
+                           quiet = True)
+    if not mapsets:
+        fatal(_("Unable to list mapsets"))
+        
+    return mapsets.splitlines()
+
+# interface to `g.proj -c`
+
+def create_location(dbase, location,
+                    epsg = None, proj4 = None, filename = None, wkt = None,
+                    datum = None, desc = None):
+    """!Create new location
+
+    Raise ScriptException on error.
+    
+    @param dbase path to GRASS database
+    @param location location name to create
+    @param epgs if given create new location based on EPSG code
+    @param proj4 if given create new location based on Proj4 definition
+    @param filename if given create new location based on georeferenced file
+    @param wkt if given create new location based on WKT definition (path to PRJ file)
+    @param datum datum transformation parameters (used for epsg and proj4)
+    @param desc description of the location (creates MYNAME file)
+    """
+    gisdbase = None
+    if epsg or proj4 or filename or wkt:
+        gisdbase = gisenv()['GISDBASE']
+        run_command('g.gisenv',
+                    set = 'GISDBASE=%s' % dbase)
+    if not os.path.exists(dbase):
+            os.mkdir(dbase)
+    
+    kwargs = dict()
+    if datum:
+        kwargs['datum'] = datum
+    
+    if epsg:
+        ps = pipe_command('g.proj',
+                          quiet = True,
+                          flags = 'c',
+                          epsg = epsg,
+                          location = location,
+                          stderr = PIPE,
+                          **kwargs)
+    elif proj4:
+        ps = pipe_command('g.proj',
+                          quiet = True,
+                          flags = 'c',
+                          proj4 = proj4,
+                          location = location,
+                          stderr = PIPE,
+                          **kwargs)
+    elif filename:
+        ps = pipe_command('g.proj',
+                          quiet = True,
+                          flags = 'c',
+                          georef = filename,
+                          location = location,
+                          stderr = PIPE)
+    elif wkt:
+        ps = pipe_command('g.proj',
+                          quiet = True,
+                          flags = 'c',
+                          wkt = wktfile,
+                          location = location,
+                          stderr = PIPE)
+    else:
+        _create_location_xy(dbase, location)
+    
+    if epsg or proj4 or filename or wkt:
+        error = ps.communicate()[1]
+        run_command('g.gisenv',
+                    set = 'GISDBASE=%s' % gisdbase)
+        
+        if ps.returncode != 0 and error:
+            raise ScriptException(repr(error))
+
+    try:
+        fd = codecs.open(os.path.join(dbase, location,
+                                      'PERMANENT', 'MYNAME'),
+                         encoding = 'utf-8', mode = 'w')
+        if desc:
+            fd.write(desc + os.linesep)
+        else:
+            fd.write(os.linesep)
+        fd.close()
+    except OSError, e:
+        raise ScriptException(repr(e))
+        
+def _create_location_xy(database, location):
+    """!Create unprojected location
+
+    Raise ScriptException on error.
+    
+    @param database GRASS database where to create new location
+    @param location location name
+    """
+    cur_dir = os.getcwd()
+    try:
+        os.chdir(database)
+        os.mkdir(location)
+        os.mkdir(os.path.join(location, 'PERMANENT'))
+        
+        # create DEFAULT_WIND and WIND files
+        regioninfo = ['proj:       0',
+                      'zone:       0',
+                      'north:      1',
+                      'south:      0',
+                      'east:       1',
+                      'west:       0',
+                      'cols:       1',
+                      'rows:       1',
+                      'e-w resol:  1',
+                      'n-s resol:  1',
+                      'top:        1',
+                      'bottom:     0',
+                      'cols3:      1',
+                      'rows3:      1',
+                      'depths:     1',
+                      'e-w resol3: 1',
+                      'n-s resol3: 1',
+                      't-b resol:  1']
+        
+        defwind = open(os.path.join(location,
+                                    "PERMANENT", "DEFAULT_WIND"), 'w')
+        for param in regioninfo:
+            defwind.write(param + '%s' % os.linesep)
+        defwind.close()
+            
+        shutil.copy(os.path.join(location, "PERMANENT", "DEFAULT_WIND"),
+                    os.path.join(location, "PERMANENT", "WIND"))
+        
+        os.chdir(cur_dir)
+    except OSError, e:
+        raise ScriptException(repr(e))
+    
 # get debug_level
 if find_program('g.gisenv', ['--help']):
     debug_level = int(gisenv().get('DEBUG', 0))

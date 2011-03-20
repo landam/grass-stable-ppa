@@ -1,10 +1,12 @@
 MODULE_TOPDIR = ../../..
 
 FILES = wxGUI \
-	wxGUI.Vector_Digitizing_Tool \
+	wxGUI.Vector_Digitizer \
 	wxGUI.Attribute_Table_Manager \
 	wxGUI.Nviz \
-	wxGUI.Icons
+	wxGUI.Icons \
+	wxGUI.Modeler \
+	wxGUI.GCP_Manager
 
 include $(MODULE_TOPDIR)/include/Make/Platform.make
 include $(MODULE_TOPDIR)/include/Make/Grass.make

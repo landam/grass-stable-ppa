@@ -61,17 +61,21 @@ int main(int argc, char *argv[])
 
     module = G_define_module();
     module->keywords = _("imagery, image transformation, PCA");
-    module->description = _("Principal components analysis (pca) program "
+    module->description = _("Principal components analysis (PCA) "
 			    "for image processing.");
 
     /* Define options */
     opt_in = G_define_standard_option(G_OPT_R_INPUTS);
     opt_in->description = _("Name of two or more input raster maps");
 
-    opt_out = G_define_standard_option(G_OPT_R_OUTPUT);
+    opt_out = G_define_option();
     opt_out->label = _("Base name for output raster maps");
     opt_out->description =
 	_("A numerical suffix will be added for each component map");
+    opt_out->key = "output_prefix";
+    opt_out->type = TYPE_STRING;
+    opt_out->key_desc = "string";
+    opt_out->required = YES;
 
     opt_scale = G_define_option();
     opt_scale->key = "rescale";
@@ -79,9 +83,12 @@ int main(int argc, char *argv[])
     opt_scale->key_desc = "min,max";
     opt_scale->required = NO;
     opt_scale->answer = "0,255";
+    opt_scale->label =
+	_("Rescaling range for output maps");
     opt_scale->description =
-	_("Rescaling range for output maps (for no rescaling use 0,0)");
-
+	_("For no rescaling use 0,0");
+    opt_scale->guisection = _("Rescale");
+    
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
@@ -248,12 +255,11 @@ static int calc_mu(int *fds, double *mu, int bands)
 	if ((rowbuf = G_allocate_raster_buf(maptype)) == NULL)
 	    G_fatal_error(_("Unable allocate memory for row buffer"));
 
-	G_verbose_message(_("Computing means for band %d..."), i + 1);
+	G_message(_("Computing means for band %d..."), i + 1);
 	for (row = 0; row < rows; row++) {
 	    void *ptr = rowbuf;
 
-	    if(G_verbose() > G_verbose_std())
-		G_percent(row, rows - 1, 2);
+	    G_percent(row, rows - 1, 2);
 
 	    if (G_get_raster_row(fds[i], rowbuf, row, maptype) < 0)
 		G_fatal_error(_("Unable to read raster map row %d"), row);
@@ -298,13 +304,12 @@ static int calc_covariance(int *fds, double **covar, double *mu, int bands)
 	if ((rowbuf1 = G_allocate_raster_buf(maptype)) == NULL)
 	    G_fatal_error(_("Unable allocate memory for row buffer"));
 
-	G_verbose_message(_("Computing row %d of covariance matrix..."),
-			  j + 1);
+	G_message(_("Computing row %d (of %d) of covariance matrix..."),
+		  j + 1, bands);
 	for (row = 0; row < rows; row++) {
 	    void *ptr1, *ptr2;
 
-	    if(G_verbose() > G_verbose_std())
-		G_percent(row, rows - 1, 2);
+	    G_percent(row, rows - 1, 2);
 
 	    if (G_get_raster_row(fds[j], rowbuf1, row, maptype) < 0)
 		G_fatal_error(_("Unable to read raster map row %d"), row);
@@ -387,7 +392,7 @@ write_pca(double **eigmat, int *inp_fd, char *out_basename,
 
 	sprintf(name, "%s.%d", out_basename, i + 1);
 
-	G_verbose_message(_("Transforming <%s>..."), name);
+	G_message(_("Transforming <%s>..."), name);
 
 	/* open a new file for output */
 	if (scale)
@@ -406,7 +411,7 @@ write_pca(double **eigmat, int *inp_fd, char *out_basename,
 	    int row, col;
 
 	    if (scale && (pass == PASSES)) {
-		G_verbose_message(_("Rescaling <%s> to range %d,%d..."),
+		G_message(_("Rescaling <%s> to range %d,%d..."),
 			  name, scale_min, scale_max);
 
 		old_range = max - min;
@@ -416,8 +421,7 @@ write_pca(double **eigmat, int *inp_fd, char *out_basename,
 	    for (row = 0; row < rows; row++) {
 		void *rowptr;
 
-		if(G_verbose() > G_verbose_std())
-		    G_percent(row, rows, 2);
+		G_percent(row, rows, 2);
 
 		/* reset d_buf */
 		for (col = 0; col < cols; col++)
@@ -519,8 +523,7 @@ write_pca(double **eigmat, int *inp_fd, char *out_basename,
 		}
 	    }
 
-	    if(G_verbose() > G_verbose_std())
-		G_percent(row, rows, 2);
+	    G_percent(row, rows, 2);
 
 	    /* close output file */
 	    if (pass == PASSES)

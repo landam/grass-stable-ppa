@@ -6,7 +6,7 @@
  *               update to FP by Huidae Cho <grass4u gmail.com> 2001
  *               added solpos algorithm feature by Markus Neteler 2001
  *               Brad Douglas <rez touchofmadness.com>, Glynn Clements <glynn gclements.plus.com>,
- *               Hamish Bowman <hamish_nospam yahoo.com>, Paul Kelly <paul-grass stjohnspoint.co.uk>
+ *               Hamish Bowman <hamish_b yahoo.com>, Paul Kelly <paul-grass stjohnspoint.co.uk>
  * PURPOSE:      
  * COPYRIGHT:    (C) 1999-2006 by the GRASS Development Team
  *
@@ -41,14 +41,15 @@
 
 #define MAIN
 
-#include "global.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include <grass/gis.h>
-#include "solpos00.h"
 #include <grass/glocale.h>
+
+#include "global.h"
+#include "solpos00.h"
 
 /* to be displayed in r.sunmask */
 static char *SOLPOSVERSION = "11 April 2001";
@@ -58,12 +59,6 @@ extern struct posdata pd, *pdat;	/* declare a posdata struct and a pointer for
 					   allocated dynamically with G_malloc) */
 struct Cell_head window;
 
-
-/*
-   #define      RASTER_VALUE_FUNC
- */
-
-
 union RASTER_PTR
 {
     void *v;
@@ -72,15 +67,10 @@ union RASTER_PTR
     DCELL *d;
 };
 
-
 #ifdef	RASTER_VALUE_FUNC
-
 double raster_value(union RASTER_PTR buf, int data_type, int col);
-
 #else
-
 #define	raster_value(buf, data_type, col)	((double)(data_type == CELL_TYPE ? buf.c[col] : (data_type == FCELL_TYPE ? buf.f[col] : buf.d[col])))
-
 #endif
 
 int main(int argc, char *argv[])
@@ -122,36 +112,24 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster");
-    module->description =
-	_("Calculates cast shadow areas from sun position and DEM. Either "
-	  "A: exact sun position is specified, or B: date/time to calculate "
-	  "the sun position by r.sunmask itself.");
-
-    parm.opt1 = G_define_option();
-    parm.opt1->key = "elev";
-    parm.opt1->type = TYPE_STRING;
-    parm.opt1->required = YES;
-    parm.opt1->multiple = NO;
-    parm.opt1->gisprompt = "old,cell,raster";
-    parm.opt1->description = _("Name of elevation raster map");
-
-    parm.opt2 = G_define_option();
-    parm.opt2->key = "output";
-    parm.opt2->type = TYPE_STRING;
-    parm.opt2->required = YES;
-    parm.opt2->multiple = NO;
-    parm.opt2->gisprompt = "new,cell,raster";
-    parm.opt2->description = _("Output raster map having shadows");
-
+    module->keywords = _("raster, sun position");
+    module->label = _("Calculates cast shadow areas from sun position and elevation raster map.");
+    module->description = _("Either exact sun position (A) is specified, or date/time to calculate "
+			    "the sun position (B) by r.sunmask itself.");
+    
+    parm.opt1 = G_define_standard_option(G_OPT_R_ELEV);
+    
+    parm.opt2 = G_define_standard_option(G_OPT_R_OUTPUT);
+    parm.opt2->required = NO;
+    
     parm.opt3 = G_define_option();
     parm.opt3->key = "altitude";
     parm.opt3->type = TYPE_DOUBLE;
     parm.opt3->required = NO;
     parm.opt3->options = "0-89.999";
     parm.opt3->description =
-	_("A: altitude of the sun above horizon, degrees");
-    parm.opt3->guisection = _("By_position");
+	_("Altitude of the sun above horizon, degrees (A)");
+    parm.opt3->guisection = _("Position");
 
     parm.opt4 = G_define_option();
     parm.opt4->key = "azimuth";
@@ -159,78 +137,89 @@ int main(int argc, char *argv[])
     parm.opt4->required = NO;
     parm.opt4->options = "0-360";
     parm.opt4->description =
-	_("A: azimuth of the sun from the north, degrees");
-    parm.opt4->guisection = _("By_position");
+	_("Azimuth of the sun from the north, degrees (A)");
+    parm.opt4->guisection = _("Position");
 
     parm.year = G_define_option();
     parm.year->key = "year";
     parm.year->type = TYPE_INTEGER;
     parm.year->required = NO;
-    parm.year->description = _("B: year (1950..2050)");
-    parm.year->guisection = _("By_time");
+    parm.year->description = _("Year (B)");
+    parm.year->options = "1950-2050";
+    parm.year->guisection = _("Time");
 
     parm.month = G_define_option();
     parm.month->key = "month";
     parm.month->type = TYPE_INTEGER;
     parm.month->required = NO;
-    parm.month->description = _("B: month (0..12)");
-    parm.month->guisection = _("By_time");
+    parm.month->description = _("Month (B)");
+    parm.month->options = "0-12";
+    parm.month->guisection = _("Time");
 
     parm.day = G_define_option();
     parm.day->key = "day";
     parm.day->type = TYPE_INTEGER;
     parm.day->required = NO;
-    parm.day->description = _("B: day (0..31)");
-    parm.day->guisection = _("By_time");
+    parm.day->description = _("Day (B)");
+    parm.day->options = "0-31";
+    parm.day->guisection = _("Time");
 
     parm.hour = G_define_option();
     parm.hour->key = "hour";
     parm.hour->type = TYPE_INTEGER;
     parm.hour->required = NO;
-    parm.hour->description = _("B: hour (0..24)");
-    parm.hour->guisection = _("By_time");
+    parm.hour->description = _("Hour (B)");
+    parm.hour->options = "0-24";
+    parm.hour->guisection = _("Time");
 
     parm.minutes = G_define_option();
     parm.minutes->key = "minute";
     parm.minutes->type = TYPE_INTEGER;
     parm.minutes->required = NO;
-    parm.minutes->description = _("B: minutes (0..60)");
-    parm.minutes->guisection = _("By_time");
+    parm.minutes->description = _("Minutes (B)");
+    parm.minutes->options = "0-60";
+    parm.minutes->guisection = _("Time");
 
     parm.seconds = G_define_option();
     parm.seconds->key = "second";
     parm.seconds->type = TYPE_INTEGER;
     parm.seconds->required = NO;
-    parm.seconds->description = _("B: seconds (0..60)");
-    parm.seconds->guisection = _("By_time");
+    parm.seconds->description = _("Seconds (B)");
+    parm.seconds->options = "0-60";
+    parm.seconds->guisection = _("Time");
 
     parm.timezone = G_define_option();
     parm.timezone->key = "timezone";
     parm.timezone->type = TYPE_INTEGER;
     parm.timezone->required = NO;
-    parm.timezone->description =
-	_("B: timezone (east positive, offset from GMT, also use to adjust daylight savings)");
-    parm.timezone->guisection = _("By_time");
+    parm.timezone->label =
+	_("Timezone");
+    parm.timezone->description = _("East positive, offset from GMT, also use to adjust daylight savings");
+    parm.timezone->guisection = _("Time");
 
     parm.east = G_define_option();
     parm.east->key = "east";
     parm.east->key_desc = "value";
     parm.east->type = TYPE_STRING;
     parm.east->required = NO;
-    parm.east->description =
-	_("East coordinate (point of interest, default: map center)");
+    parm.east->label =
+	_("Easting coordinate (point of interest)");
+    parm.east->description = _("Default: map center");
+    parm.east->guisection = _("Position");
 
     parm.north = G_define_option();
     parm.north->key = "north";
     parm.north->key_desc = "value";
     parm.north->type = TYPE_STRING;
     parm.north->required = NO;
-    parm.north->description =
-	_("North coordinate (point of interest, default: map center)");
+    parm.north->label =
+	_("Northing coordinate (point of interest)");
+    parm.north->description = _("Default: map center");
+    parm.north->guisection = _("Position");
 
     flag1 = G_define_flag();
     flag1->key = 'z';
-    flag1->description = _("Zero is a real elevation");
+    flag1->description = _("Don't ignore zero elevation");
 
     flag2 = G_define_flag();
     flag2->key = 'v';
@@ -240,11 +229,13 @@ int main(int argc, char *argv[])
     flag3 = G_define_flag();
     flag3->key = 's';
     flag3->description = _("Calculate sun position only and exit");
-
+    flag3->guisection = _("Print");
+    
     flag4 = G_define_flag();
     flag4->key = 'g';
     flag4->description =
 	_("Print the sun position output in shell script style");
+    flag4->guisection = _("Print");
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
@@ -257,16 +248,16 @@ int main(int argc, char *argv[])
     if (!parm.north->answer || !parm.east->answer) {
 	north = (window.north - window.south) / 2. + window.south;
 	east = (window.west - window.east) / 2. + window.east;
-	G_message(_("Using map center coordinates: %f %f"), east, north);
+	G_verbose_message(_("Using map center coordinates: %f %f"), east, north);
     }
     else {			/* user defined east, north: */
 
 	sscanf(parm.north->answer, "%lf", &north);
 	sscanf(parm.east->answer, "%lf", &east);
 	if (strlen(parm.east->answer) == 0)
-	    G_fatal_error(_("Empty east coordinate specified!"));
+	    G_fatal_error(_("Empty east coordinate specified"));
 	if (strlen(parm.north->answer) == 0)
-	    G_fatal_error(_("Empty north coordinate specified!"));
+	    G_fatal_error(_("Empty north coordinate specified"));
     }
 
     /* check which method to use for sun position:
@@ -285,19 +276,19 @@ int main(int argc, char *argv[])
 	locparms = 0;
 
     if (solparms && locparms)	/* both defined */
-	G_fatal_error(_("Either define sun position or location/date/time parameters."));
+	G_fatal_error(_("Either define sun position or location/date/time parameters"));
 
     if (!solparms && !locparms)	/* nothing defined */
-	G_fatal_error(_("Neither sun position nor east/north, date/time/timezone definition are complete."));
+	G_fatal_error(_("Neither sun position nor east/north, date/time/timezone definition are complete"));
 
     /* if here, one definition was complete */
     if (locparms) {
-	G_message(_("Calculating sun position... (using solpos (V. %s) from NREL)\n"),
+	G_message(_("Calculating sun position... (using solpos (V. %s) from NREL)"),
 		  SOLPOSVERSION);
 	use_solpos = 1;
     }
     else {
-	G_message(_("Using user defined sun azimuth, altitude settings (ignoring eventual other values)\n"));
+	G_message(_("Using user defined sun azimuth, altitude settings (ignoring eventual other values)"));
 	use_solpos = 0;
     }
 
@@ -333,8 +324,8 @@ int main(int argc, char *argv[])
     if (use_solpos) {
 	G_debug(3, "\nlat:%f  long:%f", north, east);
 	retval =
-	    G_calc_solar_position(east, north, timezone, year, month, day,
-				  hour, minutes, seconds);
+	    calc_solar_position(east, north, timezone, year, month, day,
+				hour, minutes, seconds);
 
 	/* Remove +0.5 above if you want round-down instead of round-to-nearest */
 	sretr = (int)floor(pdat->sretr);	/* sunrise */
@@ -352,7 +343,7 @@ int main(int argc, char *argv[])
 	if (retval == 0) {	/* error check */
 	    if (flag2->answer || (flag3->answer && !flag2->answer)) {
 		if (flag4->answer) {
-		    fprintf(stdout, "date=%d.%02d.%02d\n", pdat->year,
+		    fprintf(stdout, "date=%d/%02d/%02d\n", pdat->year,
 			    pdat->month, pdat->day);
 		    fprintf(stdout, "daynum=%d\n", pdat->daynum);
 		    fprintf(stdout, "time=%02i:%02i:%02i\n", pdat->hour,
@@ -376,24 +367,24 @@ int main(int argc, char *argv[])
 		    }
 		}
 		else {
-		    G_message(_(" %d.%02d.%02d, daynum %d, time: %02i:%02i:%02i (decimal time: %f)\n"),
-			      pdat->year, pdat->month, pdat->day,
-			      pdat->daynum, pdat->hour, pdat->minute,
-			      pdat->second,
-			      pdat->hour + (pdat->minute * 100.0 / 60.0 +
-					    pdat->second * 100.0 / 3600.0) /
-			      100.);
-		    G_message(_(" long: %f, lat: %f, timezone: %f\n"),
-			      pdat->longitude, pdat->latitude,
-			      pdat->timezone);
-		    G_message(_(" Solar position: sun azimuth: %f,\n   sun angle above horz.(refraction corrected): %f\n"),
-			      pdat->azim, pdat->elevref);
-
+		    fprintf(stdout, "%d/%02d/%02d, daynum: %d, time: %02i:%02i:%02i (decimal time: %f)\n",
+			    pdat->year, pdat->month, pdat->day,
+			    pdat->daynum, pdat->hour, pdat->minute,
+			    pdat->second,
+			    pdat->hour + (pdat->minute * 100.0 / 60.0 +
+					  pdat->second * 100.0 / 3600.0) /
+			    100.);
+		    fprintf(stdout, "long: %f, lat: %f, timezone: %f\n",
+			    pdat->longitude, pdat->latitude,
+			    pdat->timezone);
+		    fprintf(stdout, "Solar position: sun azimuth: %f, sun angle above horz. (refraction corrected): %f\n",
+			    pdat->azim, pdat->elevref);
+		    
 		    if (sretr / 60 <= 24.0) {
-			G_message(_(" Sunrise time (without refraction): %02d:%02d:%02d\n"),
-				  sretr / 60, sretr % 60, sretr_sec);
-			G_message(_(" Sunset time  (without refraction): %02d:%02d:%02d\n"),
-				  ssetr / 60, ssetr % 60, ssetr_sec);
+			fprintf(stdout, "Sunrise time (without refraction): %02d:%02d:%02d\n",
+				sretr / 60, sretr % 60, sretr_sec);
+			fprintf(stdout, "Sunset time  (without refraction): %02d:%02d:%02d\n",
+				ssetr / 60, ssetr % 60, ssetr_sec);
 		    }
 		}
 	    }
@@ -417,37 +408,39 @@ int main(int argc, char *argv[])
 	G_debug(3, "current_time:%f sunrise:%f", current_time, sunrise);
 	if ((current_time < sunrise)) {
 	    if (sretr / 60 <= 24.0)
-		G_message(_("Time (%02i:%02i:%02i) is before sunrise (%02d:%02d:%02d)!\n"),
+		G_message(_("Time (%02i:%02i:%02i) is before sunrise (%02d:%02d:%02d)"),
 			  pdat->hour, pdat->minute, pdat->second, sretr / 60,
 			  sretr % 60, sretr_sec);
 	    else
-		G_message(_("Time (%02i:%02i:%02i) is before sunrise!\n"),
+		G_message(_("Time (%02i:%02i:%02i) is before sunrise"),
 			  pdat->hour, pdat->minute, pdat->second);
 
 	    G_warning(_("Nothing to calculate. Please verify settings."));
 	}
 	if ((current_time > sunset)) {
 	    if (sretr / 60 <= 24.0)
-		G_message(_("Time (%02i:%02i:%02i) is after sunset (%02d:%02d:%02d)!\n"),
+		G_message(_("Time (%02i:%02i:%02i) is after sunset (%02d:%02d:%02d)"),
 			  pdat->hour, pdat->minute, pdat->second, ssetr / 60,
 			  ssetr % 60, ssetr_sec);
 	    else
-		G_message(_("Time (%02i:%02i:%02i) is after sunset!\n"),
+		G_message(_("Time (%02i:%02i:%02i) is after sunset"),
 			  pdat->hour, pdat->minute, pdat->second);
 	    G_warning(_("Nothing to calculate. Please verify settings."));
 	}
     }
 
     if (flag3->answer && (use_solpos == 1)) {	/* we only want the sun position */
-	G_message(_("No map calculation requested. Finished.\n"));
 	exit(EXIT_SUCCESS);
     }
     else if (flag3->answer && (use_solpos == 0)) {
 	/* are you joking ? */
-	G_message(_("You already know the sun position.\n"));
+	G_message(_("You already know the sun position"));
 	exit(EXIT_SUCCESS);
     }
 
+    if (!outname)
+	G_fatal_error(_("Option <%s> required"), parm.opt2->key);
+    
     /* Search for output layer in all mapsets ? yes. */
     mapset = G_find_cell2(name, "");
 
@@ -463,7 +456,7 @@ int main(int argc, char *argv[])
 
     if (data_type == CELL_TYPE) {
 	if ((G_read_range(name, mapset, &range)) < 0)
-	    G_fatal_error(_("Can't open range file for %s"), name);
+	    G_fatal_error(_("Unable to open range file for raster map <%s>"), name);
 	G_get_range_min_max(&range, &min, &max);
 	dmin = (double)min;
 	dmax = (double)max;
@@ -480,13 +473,13 @@ int main(int argc, char *argv[])
     row1 = 0;
 
     G_message(_("Calculating shadows from DEM..."));
-
     while (row1 < window.rows) {
 	G_percent(row1, window.rows, 2);
 	col1 = 0;
 	drow = -1;
 	if (G_get_raster_row(elev_fd, elevbuf.v, row1, data_type) < 0)
-	    G_fatal_error(_("Can't read row in input elevation map"));
+	    G_fatal_error(_("Unable to read raster map <%s> row %d"),
+			  name, row1);
 
 	while (col1 < window.cols) {
 	    dvalue = raster_value(elevbuf, data_type, col1);
@@ -533,6 +526,7 @@ int main(int argc, char *argv[])
 	G_put_raster_row(output_fd, outbuf.c, CELL_TYPE);
 	row1 += 1;
     }
+    G_percent(1, 1, 1);
 
     G_close_cell(output_fd);
     G_close_cell(elev_fd);
@@ -546,7 +540,6 @@ int main(int argc, char *argv[])
     hist.edlinecnt = 3;
     G_write_history(outname, &hist);
 
-    G_done_msg(" ");
     exit(EXIT_SUCCESS);
 }
 
