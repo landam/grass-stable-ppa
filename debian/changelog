@@ -1,8 +1,9 @@
 grass (6.4.1~rc2-1) unstable; urgency=low
 
   * New upstream release candidate.
+  * Removed patch swig: obsolete.
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Sun, 20 Mar 2011 10:56:46 +0100
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 23 Mar 2011 16:20:03 +0100
 
 grass (6.4.0-2) unstable; urgency=low
 
