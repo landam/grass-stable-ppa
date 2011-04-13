@@ -5,7 +5,7 @@ rem Self Contained GRASS Automated Packager
 rem -----------------------------------------------------------------------------------------------------------------------
 rem Edited by: Marco Pasetti
 rem Revised for OSGeo4W by: Colin Nielsen, Helmut Kudrnovsky, and Martin Landa
-rem Last Update: $Id: GRASS-Packager.bat 45598 2011-03-07 17:44:44Z martinl $
+rem Last Update: $Id: GRASS-Packager.bat 45749 2011-03-25 00:25:20Z hamish $
 rem -----------------------------------------------------------------------------------------------------------------------
 
 rem --------------------------------------------------------------------------------------------------------------------------
@@ -68,6 +68,7 @@ move %PACKAGE_DIR%\extralib\libgrass_*.dll %PACKAGE_DIR%\lib
 @echo.
 
 mkdir %PACKAGE_DIR%\extrabin
+mkdir %PACKAGE_DIR%\extrabin\gdalplugins
 
 copy %OSGEO4W_DIR%\bin\*.exe %PACKAGE_DIR%\extrabin
 
@@ -147,6 +148,7 @@ mkdir %PACKAGE_DIR%\tcl-tk\include
 mkdir %PACKAGE_DIR%\tcl-tk\lib
 mkdir %PACKAGE_DIR%\tcl-tk\lib\tcl8.5
 mkdir %PACKAGE_DIR%\tcl-tk\lib\tk8.5
+mkdir %PACKAGE_DIR%\tcl-tk\lib\tcl8.5\encoding
 
 xcopy %OSGEO4W_DIR%\bin\tclpip85.dll %PACKAGE_DIR%\tcl-tk\bin /S/V/F/I
 xcopy %OSGEO4W_DIR%\bin\tcl85.dll %PACKAGE_DIR%\tcl-tk\bin /S/V/F/I
@@ -164,6 +166,7 @@ copy %OSGEO4W_DIR%\include\ttkDecls.h %PACKAGE_DIR%\tcl-tk\include
 
 copy %OSGEO4W_DIR%\lib\tcl8.5\*.tcl %PACKAGE_DIR%\tcl-tk\lib\tcl8.5
 copy %OSGEO4W_DIR%\lib\tcl8.5\tclIndex %PACKAGE_DIR%\tcl-tk\lib\tcl8.5
+copy %OSGEO4W_DIR%\lib\tcl8.5\encoding\*.enc %PACKAGE_DIR%\tcl-tk\lib\tcl8.5\encoding
 
 copy %OSGEO4W_DIR%\lib\tk8.5\*.tcl %PACKAGE_DIR%\tcl-tk\lib\tk8.5
 copy %OSGEO4W_DIR%\lib\tk8.5\tclIndex %PACKAGE_DIR%\tcl-tk\lib\tk8.5
