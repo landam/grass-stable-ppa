@@ -88,8 +88,6 @@ build-stamp:
 	dh_testdir
 	$(MAKE) 
 	chmod 755 debian/fixpaths.sh debian/fixscripts.sh
-	# build vdigit too
-	$(MAKE) -C gui/wxpython/vdigit
 	touch $@
 
 # This target generates truly arch-indep stuff
@@ -153,12 +151,6 @@ install: build
 		INST_DIR=$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME) \
 		PREFIX=$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME) \
 		BINDIR=$(CURDIR)/debian/tmp/usr/bin
-	# install vdigit
-	$(MAKE) -C gui/wxpython/vdigit install \
-		INST_DIR=$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME) \
-		PREFIX=$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME) \
-		BINDIR=$(CURDIR)/debian/tmp/usr/bin
-
 
 	# fix all the braindead scripts
 	debian/fixscripts.sh
