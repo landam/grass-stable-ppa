@@ -1,3 +1,9 @@
+grass (6.4.1-2) unstable; urgency=low
+
+  * Enabled wx vdigit explicitly.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Thu, 14 Apr 2011 15:23:30 +0200
+
 grass (6.4.1-1) unstable; urgency=low
 
   * New upstream version.

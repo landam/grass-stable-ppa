@@ -86,7 +86,7 @@ endif
 build: configure build-stamp
 build-stamp:  
 	dh_testdir
-	$(MAKE) 
+	$(MAKE) && $(MAKE) -C $(CURDIR)/gui/wxpython/vdigit
 	chmod 755 debian/fixpaths.sh debian/fixscripts.sh
 	touch $@
 
@@ -148,6 +148,10 @@ install: build
 	# install grass core into debian/tmp
 	$(MAKE) $(STRIP)
 	$(MAKE) install \
+		INST_DIR=$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME) \
+		PREFIX=$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME) \
+		BINDIR=$(CURDIR)/debian/tmp/usr/bin
+	$(MAKE) -C $(CURDIR)/gui/wxpython/vdigit install_vdigit \
 		INST_DIR=$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME) \
 		PREFIX=$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME) \
 		BINDIR=$(CURDIR)/debian/tmp/usr/bin
