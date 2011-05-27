@@ -7,5 +7,7 @@ usr/lib/grass64/fonts
 usr/lib/grass64/scripts
 usr/lib/grass64/lib
 usr/lib/grass64/locale
-usr/share/icons
+usr/share/icons/hicolor/32x32
+gui/icons/grass-48x48.png /usr/share/icons/hicolor/48x48/grass64.png
+gui/icons/grass.desktop /usr/share/applications
 usr/bin/x-grass
