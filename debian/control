@@ -20,7 +20,7 @@ Architecture: any
 Depends: ${shlibs:Depends}, xterm | x-terminal-emulator, python (>= 2.5), python-numpy,
  python-opengl, python-wxgtk2.8, ${misc:Depends}
 Suggests: gdal-bin, proj-bin, e00compr, avce00, gpsbabel, gpstrans,
- gnuplot, xml2, wget | curl, netpbm, ghostscript, python-imaging
+ gnuplot, xml2, wget | curl, netpbm, ghostscript, python-imaging, python-rpy2
 Recommends: grass-doc, python-wxgtk2.8
 Provides: grass641
 Description: Geographic Resources Analysis Support System 
