@@ -171,8 +171,8 @@ install: build
 		debian/$(PKG_NAME)-dev/usr/lib/$(BASE_NAME)/include/Make/Module.make
 
 	# adjust from build-server build dir to end-user's install dir
-	sed -i -e 's+^\(GRASS_HOME[ ]*=\) .*+\1 $${INST_DIR}+' \
-		-e 's+^\(RUN_GISBASE[ ]*=\) .*+\1 $${INST_DIR}+' \
+	sed -i -e "s+^\(GRASS_HOME[ ]*=\) .*+\1 /usr/lib/$(BASE_NAME)+" \
+		-e "s+^\(RUN_GISBASE[ ]*=\) .*+\1 /usr/lib/$(BASE_NAME)+" \
 		debian/tmp/usr/lib/$(BASE_NAME)/include/Make/Platform.make
 
 	# install helper scripts for building addon man pages
