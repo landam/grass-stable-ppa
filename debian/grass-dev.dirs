@@ -1,3 +1,5 @@
 usr/lib/grass64/include
 usr/lib/grass64/include/Make
+usr/lib/grass64/tools
+usr/lib/grass64/tools/g.html2man
 usr/share/pkgconfig

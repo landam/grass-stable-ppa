@@ -3,8 +3,10 @@ grass (6.4.1-2) unstable; urgency=low
   [ Hamish Bowman ]
   * Desktop icon cleanup.
   * Recommend wx; suggest gs, python-imaging, python-rpy2.
+  * Remove more obsolete swig references.
+  * grass-dev: further support for building add-ons.
 
- -- Hamish Bowman <hamish_b@yahoo.com>  Sun, 29 May 2011 14:16:22 +1200
+ -- Hamish Bowman <hamish_b@yahoo.com>  Mon, 12 Sep 2011 19:48:52 +1200
 
 grass (6.4.1-1) unstable; urgency=low
 
