@@ -190,12 +190,12 @@ install: build
 		debian/tmp/usr/bin
 	# is there a better way to make these exist?
 	mkdir -p debian/tmp/usr/share/icons/hicolor/32x32/apps
-	mkdir -p debian/tmp/usr/share/icons/hicolor/48x48
+	mkdir -p debian/tmp/usr/share/icons/hicolor/48x48/apps
 	mkdir -p debian/tmp/usr/share/applications
 	install -m 644 debian/grass.xpm \
 		debian/tmp/usr/share/icons/hicolor/32x32/apps/$(BASE_NAME).xpm
 	install -m 644 gui/icons/grass-48x48.png \
-		debian/tmp/usr/share/icons/hicolor/48x48/$(BASE_NAME).png
+		debian/tmp/usr/share/icons/hicolor/48x48/apps/$(BASE_NAME).png
 	install -m 644 gui/icons/grass.desktop \
 		debian/tmp/usr/share/applications/$(BASE_NAME).desktop
 	# 6.4.1 shipped with "grass65" as the Exec target
