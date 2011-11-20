@@ -1,5 +1,4 @@
 usr/lib/grass@VERSION@/include
 usr/lib/grass@VERSION@/include/Make
 usr/lib/grass@VERSION@/tools
-usr/lib/grass@VERSION@/tools/g.html2man
 usr/share/pkgconfig

@@ -179,7 +179,7 @@ install: build
 	install -m 755 tools/mkhtml.sh \
 		debian/$(PKG_NAME)-dev/usr/lib/$(BASE_NAME)/tools/mkhtml.sh
 	install -m 755 tools/g.html2man/g.html2man \
-		debian/$(PKG_NAME)-dev/usr/lib/$(BASE_NAME)/tools/g.html2man/g.html2man
+		debian/$(PKG_NAME)-dev/usr/lib/$(BASE_NAME)/tools/g.html2man
 
 	# install pkg-config file
 	install -m 644 grass.pc debian/$(PKG_NAME)-dev/usr/share/pkgconfig/$(BASE_NAME).pc
