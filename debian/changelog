@@ -9,6 +9,7 @@ grass (6.4.1-2) unstable; urgency=low
   [ Francesco Paolo Lovergine ]
   * Now reset debian/rules to use wx-config current alternative.
     (closes: #655799)
+  * Now added python-support to manage compiled python modules.
 
  -- Francesco Paolo Lovergine <frankie@debian.org>  Thu, 19 Jan 2012 14:04:52 +0100
 

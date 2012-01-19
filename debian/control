@@ -7,7 +7,7 @@ Build-depends: flex, bison, libreadline-dev | libreadline6-dev, libncurses5-dev,
  libtiff4-dev, tcl-dev (>= 8.5), tk-dev (>= 8.5), libfftw3-dev, libxmu-dev, libglu1-mesa-dev | libglu1-xorg-dev, 
  libfreetype6-dev, autoconf2.13, autotools-dev, libgdal1-dev (>= 1.5.0), libproj-dev, proj-bin, libjpeg-dev, 
  libpng12-dev, libpq-dev, unixodbc-dev, doxygen, fakeroot, libmysqlclient15-dev, graphviz, libsqlite3-dev, python-wxgtk2.8,
- libcairo2-dev, libwxgtk2.8-dev, python-dev (>= 2.5), swig, python-support (>= 0.7.1)
+ libcairo2-dev, libwxgtk2.8-dev, python-dev (>= 2.5), python-support (>= 0.7.1)
 Standards-Version: 3.9.2
 Build-Conflicts: wx2.6-headers
 Homepage: http://grass.osgeo.org/
@@ -48,8 +48,7 @@ Description: Geographic Resources Analysis Support System documentation
 Package: grass-dev
 Section: devel
 Architecture: any
-Depends: grass (= ${binary:Version}), libproj-dev, libgdal1-dev, ${misc:Depends}
-Recommends: fakeroot, subversion
+Depends: grass (= ${binary:Version}), fakeroot, libproj-dev, libgdal1-dev, ${misc:Depends}
 Suggests: pkg-config
 Provides: grass64-dev
 Description: GRASS GIS development files
