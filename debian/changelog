@@ -1,3 +1,17 @@
+grass (6.4.1-2) unstable; urgency=low
+
+  [ Hamish Bowman ]
+  * Desktop icon cleanup.
+  * Recommend wx; suggest gs, python-imaging, python-rpy2.
+  * Remove more obsolete swig references.
+  * grass-dev: further support for building add-ons.
+
+  [ Francesco Paolo Lovergine ]
+  * Now reset debian/rules to use wx-config current alternative.
+    (closes: #655799)
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Thu, 19 Jan 2012 14:04:52 +0100
+
 grass (6.4.1-1) unstable; urgency=low
 
   * New upstream version.
