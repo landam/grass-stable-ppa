@@ -6,3 +6,18 @@ files. They should be automatically classified in the install target and
 moved to /var/lib/grass or /usr/lib/grass, leaving symlinks so to not
 break things.
 
+
+Package re-org:
+
+Move the programmers' manual out of grass-doc and into a new grass-doc-dev
+package, suggested by both grass-dev and grass-doc.
+   /usr/share/doc/grass-doc/programming-manual/
+
+Move $GISBASE/etc/gui/ dm/ gm/ gtcltk/ wxpython/ nviz2.2/ v.digit/ form/
+into a separate grass-gui package, so that packages like QGIS don't
+have to install wxPython etc. as well.
+
+Move remaining contents of the grass binary package into grass-core,
+and make the 'grass' binary package a virtual one depending on both
+grass-core and grass-gui, and recommending grass-doc.
+
