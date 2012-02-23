@@ -3,11 +3,32 @@ Section: science
 Priority: optional
 Maintainer: Debian GIS Project <pkg-grass-devel@lists.alioth.debian.org>
 Uploaders: Francesco Paolo Lovergine <frankie@debian.org>
-Build-depends: flex, bison, libreadline-dev | libreadline6-dev, libncurses5-dev, lesstif2-dev, debhelper (>= 8), 
- libtiff4-dev, tcl-dev (>= 8.5), tk-dev (>= 8.5), libfftw3-dev, libxmu-dev, libglu1-mesa-dev | libglu1-xorg-dev, 
- libfreetype6-dev, autoconf2.13, autotools-dev, libgdal1-dev (>= 1.5.0), libproj-dev, proj-bin, libjpeg-dev, 
- libpng12-dev, libpq-dev, unixodbc-dev, doxygen, fakeroot, libmysqlclient15-dev, graphviz, libsqlite3-dev, python-wxgtk2.8,
- libcairo2-dev, libwxgtk2.8-dev, python-dev (>= 2.5), python-support (>= 0.7.1)
+Build-depends:
+  autoconf2.13, autotools-dev,
+  debhelper (>= 8), 
+  doxygen,
+  fakeroot,
+  flex, bison,
+  graphviz,
+  lesstif2-dev,
+  libcairo2-dev,
+  libfftw3-dev,
+  libfreetype6-dev,
+  libgdal1-dev (>= 1.5.0),
+  libglu1-mesa-dev | libglu1-xorg-dev, 
+  libjpeg-dev, libpng12-dev, libtiff4-dev,
+  libmysqlclient15-dev,
+  libncurses5-dev,
+  libpq-dev,
+# proj-bin needed for nad2bin during config
+  libproj-dev, proj-bin,
+  libreadline-dev | libreadline6-dev,
+  libsqlite3-dev,
+  libxmu-dev,
+  python-dev (>= 2.5), python-support (>= 0.7.1),
+  python-wxgtk2.8, libwxgtk2.8-dev,
+  tcl-dev (>= 8.5), tk-dev (>= 8.5),
+  unixodbc-dev
 Standards-Version: 3.9.2
 Build-Conflicts: wx2.6-headers
 Homepage: http://grass.osgeo.org/
@@ -16,12 +37,50 @@ Vcs-Git: git://git.debian.org/git/pkg-grass/grass.git
 
 Package: grass
 Section: science
+Architecture: all
+Depends: grass-core, grass-gui
+Recommends: grass-doc
+Suggests: grass-dev
+Description: Geographic Resources Analysis Support System 
+ Commonly referred to as GRASS, this is a Geographic Information
+ System (GIS) used for geospatial data management and analysis,
+ image processing, graphics/map production, spatial modeling, and
+ visualization. GRASS is currently used in academic and commercial
+ settings around the world, as well as by many government agencies
+ and environmental consulting companies.
+ .
+ Install this virtual package useful to get a full GRASS system.
+
+Package: grass-core
+Section: science
 Architecture: any
-Depends: ${shlibs:Depends}, xterm | x-terminal-emulator, python (>= 2.5), python-numpy,
- python-opengl, python-wxgtk2.8, ${misc:Depends}
-Suggests: grass-doc, gdal-bin, proj-bin, e00compr, avce00, gpsbabel, gpstrans,
- gnuplot, xml2, wget | curl, netpbm
-Recommends: ghostscript, python-wxgtk2.8
+Depends:
+  ${shlibs:Depends},
+  python (>= 2.5),
+# numpy used by the GRASS Python Library
+  python-numpy,
+  ${misc:Depends}
+Recommends:
+# cs2cs used by m.proj, gdalinfo+gdal_translate used by a number of scripts
+  gdal-bin, proj-bin
+Suggests:
+  grass-doc, grass-gui, grass-dev,
+# used by v.in.e00
+  e00compr, avce00,
+# used by i.spectral
+  gnuplot,
+# used by v.in.gpsbabel
+  gpsbabel,
+# used by v.in.garmin
+  gpstrans,
+# used by NVIZ, d.out.gpsdrive
+  netpbm,
+# used by v.kridge
+  python-rpy2,
+# used by r.in.wms, v.in.wfs, g.extension
+  wget | curl,
+# used by r.in.wms
+  xml2
 Provides: grass@ABI@
 Description: Geographic Resources Analysis Support System 
  Commonly referred to as GRASS, this is a Geographic Information
@@ -30,11 +89,38 @@ Description: Geographic Resources Analysis Support System
  visualization. GRASS is currently used in academic and commercial
  settings around the world, as well as by many government agencies
  and environmental consulting companies.
+ .
+ This package contains the core processing components, but not the GUI.
+
+Package: grass-gui
+Section: science
+Architecture: any
+Depends: grass-core,
+  python-wxgtk2.8,
+# pyGL needed for wxNviz
+  python-opengl,
+  xterm | x-terminal-emulator,
+  ${misc:Depends}
+Recommends:
+# gs needed for wxPsmap PDF export
+  ghostscript,
+# PIL needed for wxPsmap preview
+  python-imaging
+Description: Geographic Resources Analysis Support System 
+ Commonly referred to as GRASS, this is a Geographic Information
+ System (GIS) used for geospatial data management and analysis,
+ image processing, graphics/map production, spatial modeling, and
+ visualization. GRASS is currently used in academic and commercial
+ settings around the world, as well as by many government agencies
+ and environmental consulting companies.
+ .
+ This package contains the GRASS GUIs.
 
 Package: grass-doc
 Section: doc
 Architecture: all
 Depends: ${misc:Depends}
+Suggests: grass, grass-dev-doc
 Description: Geographic Resources Analysis Support System documentation
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
@@ -45,12 +131,33 @@ Description: Geographic Resources Analysis Support System documentation
  .
  This package contains HTML documentation for the GRASS system.
 
+Package: grass-dev-doc
+Section: doc
+Architecture: all
+Depends: ${misc:Depends}
+Suggests: grass
+Description: Geographic Resources Analysis Support System documentation
+ Commonly referred to as GRASS, this is a Geographic Information
+ System (GIS) used for geospatial data management and analysis,
+ image processing, graphics/map production, spatial modeling, and
+ visualization. GRASS is currently used in academic and commercial
+ settings around the world, as well as by many government agencies
+ and environmental consulting companies.
+ .
+ This package contains the HTML version of the GRASS Programmers' Manual.
+
 Package: grass-dev
 Section: devel
 Architecture: any
-Depends: grass (= ${binary:Version}), libproj-dev, libgdal1-dev, ${misc:Depends}
+Depends:
+  grass-core (= ${binary:Version}),
+# fakeroot used by patches/htmlgen-fakeroot; see changelog entry for 5.7.0+6.0.0beta2-2
+  fakeroot,
+  libproj-dev, libgdal1-dev,
+  ${misc:Depends}
+# Subversion is needed by g.extension, a primary motivator for installing the grass-dev pkg
 Recommends: subversion
-Suggests: pkg-config
+Suggests: grass-dev-doc, pkg-config
 Provides: grass@VERSION@-dev
 Description: GRASS GIS development files
  Commonly referred to as GRASS, this is a Geographic Information
@@ -62,4 +169,4 @@ Description: GRASS GIS development files
  .
  This package contains the header files for developing with GRASS.
  Install this package if you wish to develop software that manipulates
- GRASS data sets.
+ GRASS data sets or install addons using the g.extension module.
