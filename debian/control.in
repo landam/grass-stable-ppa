@@ -73,7 +73,7 @@ Suggests:
   gpsbabel,
 # used by v.in.garmin
   gpstrans,
-# used by NVIZ, d.out.gpsdrive
+# used by NVIZ, d.out.gpsdrive, r.out.mpeg
   netpbm,
 # used by v.kridge
   python-rpy2,
