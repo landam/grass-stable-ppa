@@ -1,6 +1,5 @@
 usr/bin/grass@VERSION@
 usr/lib/grass@VERSION@/bin
-usr/lib/grass@VERSION@/bwidget
 usr/lib/grass@VERSION@/driver
 usr/lib/grass@VERSION@/etc
 usr/lib/grass@VERSION@/fonts
