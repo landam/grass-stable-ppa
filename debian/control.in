@@ -41,7 +41,7 @@ Architecture: all
 Depends: grass-core, grass-gui
 Recommends: grass-doc
 Suggests: grass-dev
-Description: Geographic Resources Analysis Support System 
+Description: GRASS GIS (The Geographic Resources Analysis Support System)
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
  image processing, graphics/map production, spatial modeling, and
@@ -82,7 +82,7 @@ Suggests:
 # used by r.in.wms
   xml2
 Provides: grass@ABI@
-Description: Geographic Resources Analysis Support System 
+Description: GRASS GIS core components
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
  image processing, graphics/map production, spatial modeling, and
@@ -95,7 +95,9 @@ Description: Geographic Resources Analysis Support System
 Package: grass-gui
 Section: science
 Architecture: any
-Depends: grass-core,
+Depends: ${shlibs:Depends},
+  grass-core,
+  python,
   python-wxgtk2.8,
 # pyGL needed for wxNviz
   python-opengl,
@@ -106,7 +108,7 @@ Recommends:
   ghostscript,
 # PIL needed for wxPsmap preview
   python-imaging
-Description: Geographic Resources Analysis Support System 
+Description: GRASS GIS graphical user interfaces
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
  image processing, graphics/map production, spatial modeling, and
@@ -121,7 +123,7 @@ Section: doc
 Architecture: all
 Depends: ${misc:Depends}
 Suggests: grass, grass-dev-doc
-Description: Geographic Resources Analysis Support System documentation
+Description: GRASS GIS user documentation
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
  image processing, graphics/map production, spatial modeling, and
@@ -136,7 +138,7 @@ Section: doc
 Architecture: all
 Depends: ${misc:Depends}
 Suggests: grass
-Description: Geographic Resources Analysis Support System documentation
+Description: The GRASS GIS Programmers' Manual
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
  image processing, graphics/map production, spatial modeling, and
