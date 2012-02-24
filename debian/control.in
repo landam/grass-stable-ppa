@@ -49,7 +49,7 @@ Description: GRASS GIS (The Geographic Resources Analysis Support System)
  settings around the world, as well as by many government agencies
  and environmental consulting companies.
  .
- Install this virtual package useful to get a full GRASS system.
+ Install this virtual package to get a full GRASS system.
 
 Package: grass-core
 Section: science
