@@ -1,5 +1,6 @@
 grass (6.4.2-1) unstable; urgency=low
 
+  [ M. Hamish Bowman ]
   * Packaged new upstream version.
   * Reorganize binary packages, new: grass-core, grass-gui, grass-dev-doc.
   * Patch g.extension.sh to check for the needed grass-dev package.
@@ -12,7 +13,12 @@ grass (6.4.2-1) unstable; urgency=low
     (closes: #615667)
   * Policy bumped to 3.9.3, using metapackages archive section for 'grass'.
 
- -- M. Hamish Bowman <hamish_b@yahoo.com>  Sat, 25 Feb 2012 22:49:50 +1300
+  [ Francesco Paolo Lovergine ]
+  * Moved to use TIFF 4.0.1 instead of the legacy flavor.
+  * B-D updated to libmysqlclient-dev to pickup current version.
+    (closes: #650361)
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Sat, 25 Feb 2012 18:55:41 +0100
 
 grass (6.4.1-2) unstable; urgency=low
 

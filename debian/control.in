@@ -16,8 +16,8 @@ Build-depends:
   libfreetype6-dev,
   libgdal1-dev (>= 1.5.0),
   libglu1-mesa-dev | libglu1-xorg-dev, 
-  libjpeg-dev, libpng12-dev, libtiff4-dev,
-  libmysqlclient15-dev,
+  libjpeg-dev, libpng12-dev, libtiff5-dev,
+  libmysqlclient-dev,
   libncurses5-dev,
   libpq-dev,
 # proj-bin needed for nad2bin during config

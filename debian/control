@@ -16,7 +16,7 @@ Build-depends:
   libfreetype6-dev,
   libgdal1-dev (>= 1.5.0),
   libglu1-mesa-dev | libglu1-xorg-dev, 
-  libjpeg-dev, libpng12-dev, libtiff4-dev,
+  libjpeg-dev, libpng12-dev, libtiff5-dev,
   libmysqlclient-dev,
   libncurses5-dev,
   libpq-dev,
@@ -25,25 +25,23 @@ Build-depends:
   libreadline-dev | libreadline6-dev,
   libsqlite3-dev,
   libxmu-dev,
-#install optipng if compressing the PNG images in the programmers' manual
-#  optipng,
   python-dev (>= 2.5), python-support (>= 0.7.1),
   python-wxgtk2.8, libwxgtk2.8-dev,
   tcl-dev (>= 8.5), tk-dev (>= 8.5),
   unixodbc-dev
-Standards-Version: 3.9.3
+Standards-Version: 3.9.2
 Build-Conflicts: wx2.6-headers
 Homepage: http://grass.osgeo.org/
 Vcs-Browser: http://git.debian.org/?p=pkg-grass/grass.git
 Vcs-Git: git://git.debian.org/git/pkg-grass/grass.git
 
 Package: grass
-Section: metapackages
+Section: science
 Architecture: all
 Depends: grass-core, grass-gui
 Recommends: grass-doc
 Suggests: grass-dev
-Description: Geographic Resources Analysis Support System (GRASS GIS)
+Description: GRASS GIS (The Geographic Resources Analysis Support System)
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
  image processing, graphics/map production, spatial modeling, and
@@ -83,7 +81,7 @@ Suggests:
   wget | curl,
 # used by r.in.wms
   xml2
-Provides: grass642
+Provides: grass641
 Description: GRASS GIS core components
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
@@ -138,9 +136,9 @@ Description: GRASS GIS user documentation
 Package: grass-dev-doc
 Section: doc
 Architecture: all
-Depends: ${misc:Depends}, libjs-jquery
+Depends: ${misc:Depends}
 Suggests: grass
-Description: GRASS GIS Programmers' Manual
+Description: The GRASS GIS Programmers' Manual
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
  image processing, graphics/map production, spatial modeling, and
