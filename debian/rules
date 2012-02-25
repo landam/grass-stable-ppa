@@ -233,7 +233,6 @@ install-indep: build-indep
 	-install -m 644 ./html/* debian/tmp/programming-manual/html
 	-install -m 644 ./html/search/* debian/tmp/programming-manual/html/search
 	-rm -f debian/tmp/programming-manual/html/jquery.js
-	done
 
 # Build architecture-independent files here.
 binary-indep: install install-indep 
