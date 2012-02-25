@@ -4,6 +4,8 @@
  *
  * \brief Decimal precision functions.
  *
+ * (C) 1999-2009 by the GRASS Development Team 
+ * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or (at
@@ -16,11 +18,11 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
  * \author GRASS GIS Development Team
  *
- * \date 1999-2006
+ * \date 1999-2009
  */
 
 #include <grass/vask.h>

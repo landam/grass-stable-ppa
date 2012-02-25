@@ -11,7 +11,7 @@ Classes:
  - GListBox
  - StartUp
 
-(C) 2006-2010 by the GRASS Development Team
+(C) 2006-2011 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -26,25 +26,25 @@ import glob
 import shutil
 import copy
 import platform
+import codecs
 
 ### i18N
 import gettext
 gettext.install('grasswxpy', os.path.join(os.getenv("GISBASE"), 'locale'), unicode = True)
 
 from gui_modules import globalvar
-if not os.getenv("GRASS_WXBUNDLED"):
-    globalvar.CheckForWx()
-
-import gui_modules.goutput
-from gui_modules.ghelp import HelpFrame
-from gui_modules.gcmd  import GMessage
-
 import wx
 import wx.html
 import wx.lib.rcsizer as rcs
 import wx.lib.filebrowsebutton as filebrowse
 import wx.lib.mixins.listctrl as listmix
 import wx.lib.scrolledpanel as scrolled
+
+from gui_modules import goutput
+from gui_modules.ghelp import HelpFrame
+from gui_modules.gcmd  import GMessage, GError
+
+sys.stderr = codecs.getwriter('utf8')(sys.stderr)
 
 class GRASSStartup(wx.Frame):
     """!GRASS start-up screen"""
@@ -54,7 +54,7 @@ class GRASSStartup(wx.Frame):
         # GRASS variables
         #
         self.gisbase  = os.getenv("GISBASE")
-        self.grassrc  = self._read_grassrc()
+        self.grassrc  = self._readGisRC()
         self.gisdbase = self.GetRCValue("GISDBASE")
 
         #
@@ -79,7 +79,7 @@ class GRASSStartup(wx.Frame):
         #
         # image
         try:
-            name = os.path.join(globalvar.ETCDIR, "gui", "images", "gintro.gif")
+            name = os.path.join(globalvar.ETCIMGDIR, "startup_banner.gif")
             self.hbitmap = wx.StaticBitmap(self.panel, wx.ID_ANY,
                                            wx.Bitmap(name = name,
                                                      type = wx.BITMAP_TYPE_GIF))
@@ -89,9 +89,9 @@ class GRASSStartup(wx.Frame):
         # labels
         ### crashes when LOCATION doesn't exist
         versionFile = open(os.path.join(globalvar.ETCDIR, "VERSIONNUMBER"))
-        grassVersion = versionFile.readline().replace('%s' % os.linesep, '').strip()
+        grassVersion = versionFile.readline().split(' ')[0].rstrip('\n')
         versionFile.close()
-
+        
         self.select_box = wx.StaticBox (parent = self.panel, id = wx.ID_ANY,
                                         label = " %s " % _("Choose project location and mapset"))
 
@@ -376,34 +376,34 @@ class GRASSStartup(wx.Frame):
 
         self.Layout()
 
-    def _read_grassrc(self):
+    def _readGisRC(self):
         """
         Read variables from $HOME/.grassrc6 file
         """
 
         grassrc = {}
-
+        
         gisrc = os.getenv("GISRC")
-
+        
         if gisrc and os.path.isfile(gisrc):
             try:
                 rc = open(gisrc, "r")
                 for line in rc.readlines():
                     key, val = line.split(":", 1)
-                    grassrc[key.strip()] = val.strip()
+                    grassrc[key.strip()] = utils.DecodeString(val.strip())
             finally:
                 rc.close()
         
         return grassrc
 
     def GetRCValue(self, value):
-        "Return GRASS variable (read from GISRC)"""
-
+        """!Return GRASS variable (read from GISRC)
+        """
         if self.grassrc.has_key(value):
             return self.grassrc[value]
         else:
             return None
-
+        
     def OnWizard(self, event):
         """!Location wizard started"""
         from gui_modules import location_wizard
@@ -585,28 +585,25 @@ class GRASSStartup(wx.Frame):
     def UpdateMapsets(self, location):
         """!Update list of mapsets"""
         self.FormerMapsetSelection = wx.NOT_FOUND # for non-selectable item
-
+        
         self.listOfMapsetsSelectable = list()
         self.listOfMapsets = utils.GetListOfMapsets(self.gisdbase, location)
-         
+        
         self.lbmapsets.Clear()
-
+        
         # disable mapset with denied permission
         locationName = os.path.basename(location)
-
-        try:
-            ret = gcmd.RunCommand('g.mapset',
-                                  read = True,
-                                  flags = 'l',
-                                  location = locationName,
-                                  gisdbase = self.gisdbase)
+        
+        ret = gcmd.RunCommand('g.mapset',
+                              read = True,
+                              flags = 'l',
+                              location = locationName,
+                              gisdbase = self.gisdbase)
             
-            if not ret:
-                raise gcmd.CmdError("")
-            
+        if ret:
             for line in ret.splitlines():
-                self.listOfMapsetsSelectable +=  line.split(' ')
-        except:
+                self.listOfMapsetsSelectable += line.split(' ')
+        else:
             gcmd.RunCommand("g.gisenv",
                             set = "GISDBASE=%s" % self.gisdbase)
             gcmd.RunCommand("g.gisenv",
@@ -619,7 +616,6 @@ class GRASSStartup(wx.Frame):
         disabled = []
         idx = 0
         for mapset in self.listOfMapsets:
-            mapset = utils.UnicodeString(mapset)
             if mapset not in self.listOfMapsetsSelectable or \
                     os.path.isfile(os.path.join(self.gisdbase,
                                                 locationName,
@@ -641,7 +637,7 @@ class GRASSStartup(wx.Frame):
                                             self.listOfLocations[self.lblocations.GetSelection()]))
         else:
             self.listOfMapsets = []
-
+        
         disabled = []
         idx = 0
         try:
@@ -736,15 +732,55 @@ class GRASSStartup(wx.Frame):
 
     def OnStart(self, event):
         """'Start GRASS' button clicked"""
+        dbase    = self.tgisdbase.GetValue()
+        location = self.listOfLocations[self.lblocations.GetSelection()]
+        mapset   = self.listOfMapsets[self.lbmapsets.GetSelection()]
+        
+        lockfile = os.path.join(dbase, location, mapset, '.gislock')
+        if os.path.isfile(lockfile):
+            dlg = wx.MessageDialog(parent = self,
+                                   message = _("GRASS is already running in selected mapset <%(mapset)s>\n"
+                                               "(file %(lock)s found).\n\n"
+                                               "Concurrent use not allowed.\n\n"
+                                               "Do you want to try to remove .gislock (note that you "
+                                               "need permission for this operation) and continue?") % 
+                                   { 'mapset' : mapset, 'lock' : lockfile },
+                                   caption = _("Lock file found"),
+                                   style = wx.YES_NO | wx.NO_DEFAULT |
+                                   wx.ICON_QUESTION | wx.CENTRE)
+            
+            ret = dlg.ShowModal()
+            dlg.Destroy()
+            if ret == wx.ID_YES:
+                dlg1 = wx.MessageDialog(parent = self,
+                                        message = _("ARE YOU REALLY SURE?\n\n"
+                                                    "If you really are running another GRASS session doing this "
+                                                    "could corrupt your data. Have another look in the processor "
+                                                    "manager just to be sure..."),
+                                        caption = _("Lock file found"),
+                                        style = wx.YES_NO | wx.NO_DEFAULT |
+                                        wx.ICON_QUESTION | wx.CENTRE)
+                
+                ret = dlg1.ShowModal()
+                dlg1.Destroy()
+                
+                if ret == wx.ID_YES:
+                    try:
+                        os.remove(lockfile)
+                    except IOError, e:
+                        GError(_("Unable to remove '%(lock)s'.\n\n"
+                                 "Details: %(reason)s") % { 'lock' : lockfile, 'reason' : e})
+                else:
+                    return
+            else:
+                return
+        
         gcmd.RunCommand("g.gisenv",
-                        set = "GISDBASE=%s" % \
-                            self.tgisdbase.GetValue())
+                        set = "GISDBASE=%s" % dbase)
         gcmd.RunCommand("g.gisenv",
-                        set = "LOCATION_NAME=%s" % \
-                            self.listOfLocations[self.lblocations.GetSelection()])
+                        set = "LOCATION_NAME=%s" % location)
         gcmd.RunCommand("g.gisenv",
-                        set = "MAPSET=%s" % \
-                            self.listOfMapsets[self.lbmapsets.GetSelection()])
+                        set = "MAPSET=%s" % mapset)
         
         self.Destroy()
         sys.exit(0)

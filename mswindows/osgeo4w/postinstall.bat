@@ -1,15 +1,15 @@
 set ICON=%OSGEO4W_ROOT%\apps\grass\grass-@VERSION@\etc\gui\icons\grass.ico
-set BATCH=%OSGEO4W_ROOT%\bin\grass@POSTFIX@.bat
-textreplace -std -t "%OSGEO4W_ROOT%"\bin\grass@POSTFIX@-env.bat 
-textreplace -std -t "%OSGEO4W_ROOT%"\bin\grass@POSTFIX@.bat 
-textreplace -std -t "%OSGEO4W_ROOT%"\bin\grass@POSTFIX@ 
-textreplace -std -t "%OSGEO4W_ROOT%"\apps\grass\grass-@VERSION@\etc\fontcap 
+set BATCH=%OSGEO4W_ROOT%\bin\@GRASS_EXECUTABLE@.bat
+textreplace -std -t "%OSGEO4W_ROOT%"\bin\@GRASS_EXECUTABLE@.bat
+textreplace -std -t "%OSGEO4W_ROOT%"\bin\@GRASS_EXECUTABLE@
+textreplace -std -t "%OSGEO4W_ROOT%"\apps\grass\grass-@VERSION@\etc\fontcap
 
 mkdir "%OSGEO4W_STARTMENU%\GRASS GIS @VERSION@" 
-xxmklink "%OSGEO4W_STARTMENU%\GRASS GIS @VERSION@\wxPython @VERSION@.lnk"   "%BATCH%" "-wxpython" \ "wxPython interface" 1 "%ICON%" 
-xxmklink "%OSGEO4W_STARTMENU%\GRASS GIS @VERSION@\TclTkx @VERSION@.lnk"     "%BATCH%" "-tcltk" \ "Tcl/Tk interface" 1 "%ICON%" 
-xxmklink "%OSGEO4W_STARTMENU%\GRASS GIS @VERSION@\Text @VERSION@.lnk"       "%BATCH%" "-text" \ "Text interface" 1 "%ICON%" 
+xxmklink "%OSGEO4W_STARTMENU%\GRASS GIS @VERSION@\GRASS @VERSION@ GUI.lnk" "%BATCH%" "-wx" \ "Launch GRASS GIS @VERSION@ with wxGUI" 1 "%ICON%" 
+xxmklink "%OSGEO4W_STARTMENU%\GRASS GIS @VERSION@\GRASS @VERSION@ Old TclTk GUI.lnk" "%BATCH%" "-tcltk" \ "Launch GRASS GIS @VERSION@ with the old TclTk GUI" 1 "%ICON%" 
+xxmklink "%OSGEO4W_STARTMENU%\GRASS GIS @VERSION@\GRASS @VERSION@ Command Line.lnk" "%BATCH%" "-text" \ "Launch GRASS GIS @VERSION@ in text mode" 1 "%ICON%" 
 
-xxmklink "%ALLUSERSPROFILE%\Desktop\GRASS GIS @VERSION@ (wxpython).lnk" "%BATCH%" "-wxpython" \ "wxPython" 1 "%ICON%" 
-xxmklink "%ALLUSERSPROFILE%\Desktop\GRASS GIS @VERSION@ (TclTk).lnk" "%BATCH%" "-tcltk" \ "Tcl/Tk" 1 "%ICON%" 
-xxmklink "%ALLUSERSPROFILE%\Desktop\GRASS GIS @VERSION@ (Text).lnk" "%BATCH%" "-text" \ "Text interface" 1 "%ICON%" 
+xxmklink "%ALLUSERSPROFILE%\Desktop\GRASS GIS @VERSION@.lnk" "%BATCH%" "-wx" \ "Launch GRASS GIS @VERSION@ with wxGUI" 1 "%ICON%" 
+
+del "%OSGEO4W_ROOT%"\bin\@GRASS_EXECUTABLE@.bat.tmpl
+del "%OSGEO4W_ROOT%"\bin\@GRASS_EXECUTABLE@.tmpl

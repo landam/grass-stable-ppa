@@ -192,7 +192,9 @@ int Vect_get_num_nodes(struct Map_info *);
 int Vect_get_num_primitives(struct Map_info *, int);
 int Vect_get_num_lines(struct Map_info *);
 int Vect_get_num_areas(struct Map_info *);
+int Vect_get_num_kernels(struct Map_info *);
 int Vect_get_num_faces(struct Map_info *);
+int Vect_get_num_volumes(struct Map_info *);
 int Vect_get_num_islands(struct Map_info *);
 int Vect_get_line_box(struct Map_info *, int, BOUND_BOX *);
 int Vect_get_area_box(struct Map_info *, int, BOUND_BOX *);
@@ -368,6 +370,11 @@ int Vect_net_nearest_nodes(struct Map_info *, double, double, double, int,
 int Vect_net_shortest_path_coor(struct Map_info *, double, double, double,
 				double, double, double, double, double,
 				double *, struct line_pnts *, struct ilist *,
+				struct line_pnts *, struct line_pnts *,
+				double *, double *);
+int Vect_net_shortest_path_coor2(struct Map_info *, double, double, double,
+				double, double, double, double, double,
+				double *, struct line_pnts *, struct ilist *, struct ilist *,
 				struct line_pnts *, struct line_pnts *,
 				double *, double *);
 

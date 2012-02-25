@@ -7,8 +7,9 @@
  * (>=v2). Read the file COPYING that comes with GRASS for details.
  *
  * \author Radim Blazek
+ * \author Support for multiple connections by Markus Metz
  *
- * \date 2005-2007
+ * \date 2005-2011
  */
 
 #include <stdlib.h>
@@ -87,6 +88,9 @@ int db__driver_open_database(dbHandle * handle)
 	return DB_FAILED;
     }
 
+    /* set the sqlite busy handler */
+    sqlite3_busy_handler(sqlite, sqlite_busy_callback, NULL);
+
     return DB_OK;
 }
 
@@ -102,7 +106,8 @@ int db__driver_close_database(void)
     G_debug(3, "db_close_database()");
 
     init_error();
-    sqlite3_close(sqlite);
+    if (sqlite3_close(sqlite) == SQLITE_BUSY)
+	G_fatal_error(_("SQLite database connection is still busy"));
 
     return DB_OK;
 }

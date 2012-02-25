@@ -3,10 +3,10 @@
 ############################################################################
 #
 # MODULE:       g.extension
-# AUTHOR(S):   	Markus Neteler
+# AUTHOR(S):   	Markus Neteler, Hamish Bowman, and Martin Landa
 # PURPOSE:      Tool to download and install extensions from GRASS Addons SVN into
 #               local GRASS installation
-# COPYRIGHT:    (C) 2009-2010 by the Markus Neteler, GRASS Development Team
+# COPYRIGHT:    (C) 2009-2012 by Markus Neteler, and the GRASS Development Team
 #
 #               This program is free software under the GNU General Public
 #               License (>=v2). Read the file COPYING that comes with GRASS
@@ -14,13 +14,11 @@
 #
 #############################################################################
 
-
 #%Module
 #% label: Tool to maintain GRASS extensions in local GRASS installation.
 #% description: Downloads, installs extensions from GRASS Addons SVN repository into local GRASS installation or removes installed extensions.
 #% keywords: general, extensions
 #%End
-
 #%option
 #% key: extension
 #% type: string
@@ -43,14 +41,14 @@
 #% key_desc: url
 #% description: SVN Addons repository URL
 #% required: yes
-#% answer: https://svn.osgeo.org/grass/grass-addons
+#% answer: http://svn.osgeo.org/grass/grass-addons/grass6
 #%end
 #%option
 #% key: prefix
 #% type: string
 #% key_desc: path
 #% description: Prefix where to install extension
-#% answer: $GISBASE
+#% answer: $GRASS_ADDON_PATH
 #% required: no
 #%end
 #%flag
@@ -61,6 +59,10 @@
 #%flag
 #% key: s
 #% description: Install system-wide (may need system administrator rights)
+#%end
+#%flag
+#% key: u
+#% description: Install system-wide using sudo
 #%end
 
 
@@ -143,7 +145,7 @@ expand_module_class_name()
   elif [ "$1" = "r" ]  ; then
     echo "raster"
   elif [ "$1" = "r3" ]  ; then
-    echo "raster3D"
+    echo "raster3d"
 #  elif [ "$1" = "s" ]  ; then
 #    echo "sites"
   elif [ "$1" = "v" ]  ; then
@@ -213,25 +215,50 @@ if [ "$PREFIX" = '$GRASS_ADDON_PATH' ] ; then
 	## will GRASS_ADDON_ETC help for man/ and docs/ ?
 	## maybe have g.manual search in GRASS_ADDON_ETC/../ ?  :-/
 	mkdir -p ~/.grass6/addons
-	GRASS_ADDON_PATH=~/.grass6/addons
+	GRASS_ADDON_PATH1=~/.grass6/addons
+    else
+	GRASS_ADDON_PATH1=`echo "$GRASS_ADDON_PATH" | cut -f1 -d:`
     fi
-    PREFIX="$GRASS_ADDON_PATH"
-elif [ "$PREFIX" = '$GISBASE' ] || [ $GIS_FLAG_S -eq 1 ] ; then
+    PREFIX="$GRASS_ADDON_PATH1"
+elif [ "$PREFIX" = '$GISBASE' ] || [ $GIS_FLAG_S -eq 1 ] || [ $GIS_FLAG_U -eq 1 ] ; then
    SYSADMIN=1
    PREFIX="$GISBASE"
+
+   # just to make later tests happy
+   if [ $GIS_FLAG_S -eq 0 ] && [ $GIS_FLAG_U -eq 1 ] ; then
+      GIS_FLAG_S=1
+   fi
 fi
 
 
 if [ -d "$PREFIX" ] ; then
     MYINST_DIR="$PREFIX"
 else
-    g.message -e "'$PREFIX' does not exist"
-    exit 1
+    g.message -w "'$PREFIX' does not exist. Creating ..."
+    mkdir -p "$PREFIX"
+    if [ $? -ne 0 ] || [ ! -d "$PREFIX" ] ; then
+	g.message -e "Unable to create '$PREFIX' directory"
+	exit 1
+    fi
+    MYINST_DIR="$PREFIX"
 fi
 
 if [ ! -w "$PREFIX" -a $SYSADMIN -ne 1 ] ; then
     g.message -e "'$PREFIX' is not writable (are you logged in as the system administator?)"
     exit 1
+fi
+
+# make doesn't like spaces in path names, issue a warning if we see one:
+GLOOM="The build which follows will likely fail."
+if [ `echo "$GISBASE" | grep -c ' '` -gt 0 ] ; then
+    g.message -w "The GRASS program path: [$GISBASE] contains a space. $GLOOM"
+fi
+if [ `echo "$PREFIX" | grep -c ' '` -gt 0 ] ; then
+    g.message -w "The specified install path: [$PREFIX] contains a space. $GLOOM"
+fi
+if [ `echo "$TMPDIR" | grep -c ' '` -gt 0 ] ; then
+    # a problem because $MAPSET/.tmp/ is used as the compile dir
+    g.message -w "The path to your GIS data: [`g.gisenv GISDBASE`] may contain a space. $GLOOM"
 fi
 
 
@@ -244,7 +271,7 @@ if [ "$GIS_OPT_OPERATION" = "remove" ] ; then
    if test -f "$MYINST_DIR/scripts/$MODULE" ; then
        rm -f "$MYINST_DIR/scripts/$MODULE"
    fi
-   if test -h "$MYINST_DIR/$MODULE" ; then
+   if test -e "$MYINST_DIR/$MODULE" ; then
        rm -f "$MYINST_DIR/$MODULE"
    fi
    if test -f "${MYINST_DIR}/docs/html/${MODULE}.html" ; then
@@ -254,10 +281,14 @@ if [ "$GIS_OPT_OPERATION" = "remove" ] ; then
    if test -f "${MYINST_DIR}/man/man1/${MODULE}.1" ; then
        rm -f "${MYINST_DIR}/man/man1/${MODULE}.1"
    fi
+   if test -f "$MYINST_DIR/docs/man/man1/$MODULE.1" ; then
+       rm -f "$MYINST_DIR/docs/man/man1/$MODULE.1"
+   fi
 
    exit 0
 fi
 
+g.message message=""
 g.message -d "svn co [$SVNURL_ADDONS]/[$MODULECLASS]/[$MODULE]"
 
 cd "$TMPDIR"
@@ -271,7 +302,42 @@ fi
 
 cd "$TMPDIR/$MODULE"
 g.message message="Compiling <$MODULE>..."
-make MODULE_TOPDIR="$GISBASE"
+
+if [ -n "$MACHTYPE" ] ; then
+   DIST_DIR="dist.$MACHTYPE"
+elif [ -x "`which arch`" ] ; then
+   DIST_DIR="dist.`arch`"
+else 
+   DIST_DIR="dist.unknown"
+fi
+
+# set up a demolocation so --html-description works
+GVER=`echo "$GRASS_VERSION" | cut -f1,2 -d'.' | sed -e 's/\.//'`
+mkdir -p "$TMPDIR/$DIST_DIR/demolocation/PERMANENT"
+cat << EOF > "$TMPDIR/$DIST_DIR/demolocation/.grassrc$GVER"
+GISDBASE: $TMPDIR/$DIST_DIR
+LOCATION_NAME: demolocation
+MAPSET: PERMANENT
+GRASS_DB_ENCODING: utf-8
+DEBUG: 0
+GRASS_GUI: text
+EOF
+
+# $INST_NOW helps compile and install modules directly into $(INST_DIR)
+# without having to install whole distribution even after modifying only
+# one module. It will update both $(GRASS_HOME)/dist.$(ARCH) and $(INST_DIR).
+#   see $GISBASE/include/Make/Grass.make
+### actually this may not be needed anymore ###
+INST_NOW=true
+export INST_NOW
+
+make MODULE_TOPDIR="$GISBASE" \
+   ARCH_INC="'-I$GISBASE/include' '-I${MYINST_DIR}/include' '-I$TMPDIR/$DIST_DIR/include'" \
+   ARCH_LIBPATH="'-L$GISBASE/lib' '-L${MYINST_DIR}/lib' '-L$TMPDIR/$DIST_DIR/lib'" \
+   ARCH_LIBDIR="$GISBASE/lib" \
+   ARCH_DISTDIR="$TMPDIR/$DIST_DIR" \
+   ARCH_BINDIR="$TMPDIR/$DIST_DIR/bin"
+
 if [ $? -ne 0 ] ; then
    g.message -e message="Compilation failed, sorry. Please check above error messages."
    cleanup
@@ -286,31 +352,49 @@ else
       PROGTYPE=bin
    fi
    # can we write? Install dir present?
-   if test ! -d "${MYINST_DIR}" ; then
-      mkdir -p "${MYINST_DIR}"
+   if test ! -d "$MYINST_DIR" ; then
+      mkdir -p "$MYINST_DIR"
    fi
-   if test ! -d "${MYINST_DIR}/$PROGTYPE" ; then
-      mkdir -p "${MYINST_DIR}/$PROGTYPE"
+   if test ! -d "$MYINST_DIR/$PROGTYPE" ; then
+      mkdir -p "$MYINST_DIR/$PROGTYPE"
    fi
-   if test ! -d "${MYINST_DIR}/docs/html" ; then
-      mkdir -p "${MYINST_DIR}/docs/html"
+   if test ! -d "$MYINST_DIR/docs/html" ; then
+      mkdir -p "$MYINST_DIR/docs/html"
    fi
-   if test ! -d "${MYINST_DIR}/man/man1" ; then
-      mkdir -p "${MYINST_DIR}/man/man1"
+   if test ! -d "$MYINST_DIR/man/man1" ; then
+      mkdir -p "$MYINST_DIR/man/man1"
    fi
 
    if [ $SYSADMIN -eq 1 ] ; then
-      if test -f "${MYINST_DIR}/$PROGTYPE/${MODULE}" ; then
-         g.message "You need to enter the root password to remove the previous version of ${MODULE}:"
-         su -c "rm -f \"${MYINST_DIR}/$PROGTYPE/${MODULE}\""
+      if test -f "$MYINST_DIR/$PROGTYPE/$MODULE" ; then
+         if [ $GIS_FLAG_U -eq 1 ] ; then
+            g.message "You may need to enter your password to remove an earlier copy of $MODULE:"
+            sudo rm -f "$MYINST_DIR/$PROGTYPE/$MODULE"
+         else
+            g.message "You need to enter the root password to remove an earlier copy of $MODULE:"
+            su -c "rm -f \"$MYINST_DIR/$PROGTYPE/$MODULE\""
+         fi
       fi
-      g.message "You need to enter the root password next to install ${MODULE}:"
-      su -c "make MODULE_TOPDIR="$GISBASE" INST_DIR="$MYINST_DIR" install"
+      if [ $GIS_FLAG_U -eq 1 ] ; then
+         g.message "You may need to enter your password to install $MODULE:"
+
+         sudo make MODULE_TOPDIR="$GISBASE" \
+	     ARCH_DISTDIR="$TMPDIR/$DIST_DIR" \
+	     INST_DIR="$MYINST_DIR" install
+      else
+         g.message "You need to enter the root password to install $MODULE:"
+
+         su -c "make MODULE_TOPDIR=\"$GISBASE\" ARCH_DISTDIR=\"$TMPDIR/$DIST_DIR\" INST_DIR=\"$MYINST_DIR\" install"
+      fi
    else
-      if test -f "${MYINST_DIR}/$PROGTYPE/${MODULE}" ; then
-         rm -f "${MYINST_DIR}/$PROGTYPE/${MODULE}"
+      if test -f "$MYINST_DIR/$PROGTYPE/$MODULE" ; then
+         g.message -w "Replacing previously built <$MODULE>"
+         rm -f "$MYINST_DIR/$PROGTYPE/$MODULE"
       fi
-      make MODULE_TOPDIR="$GISBASE" INST_DIR="$MYINST_DIR" install
+
+      make MODULE_TOPDIR="$GISBASE" \
+           ARCH_DISTDIR="$TMPDIR/$DIST_DIR" \
+	   INST_DIR="$MYINST_DIR" install
    fi
 
    if [ $? -ne 0 ] ; then
@@ -319,24 +403,46 @@ else
       exit 1
    fi
 
-   if [ ! -x "${MYINST_DIR}/$PROGTYPE/${MODULE}" ] ; then
+   if [ -e "$MYINST_DIR/$PROGTYPE/$MODULE.py" ] ; then
+      # drop the .py from python scripts
+      mv "$MYINST_DIR/$PROGTYPE/$MODULE.py" "$MYINST_DIR/$PROGTYPE/$MODULE"
+      mv "$MYINST_DIR/man/man1/$MODULE.py.1" "$MYINST_DIR/man/man1/$MODULE.1"
+      mv "$MYINST_DIR/docs/html/$MODULE.py.html" "$MYINST_DIR/docs/html/$MODULE.html"
+   fi
+
+   if [ ! -x "$MYINST_DIR/$PROGTYPE/$MODULE" ] ; then
      g.message -e "Module did not install properly"
      cleanup
      exit 1
    fi
 
-   if [ "$MYINST_DIR" = "$GRASS_ADDON_PATH" ] ; then
-      # symlink into path which is actually in the $PATH
-      ln -sf "$MYINST_DIR/$PROGTYPE/$MODULE" "$MYINST_DIR/"
-   fi
+   if [ "$MYINST_DIR" = "$GRASS_ADDON_PATH1" ] || [ "$MYINST_DIR" = ~/.grass6/addons ] ; then
+	# move bin/ and script/ into ../, then rmdir if they are empty
+	mv "$MYINST_DIR/$PROGTYPE/$MODULE" "$MYINST_DIR/"
+	if [ `ls -a "$MYINST_DIR/$PROGTYPE" | wc -l` -le 2 ] ; then
+	   rmdir "$MYINST_DIR/$PROGTYPE"
+	fi
+	# and move the man page into docs/
+	if [ -e "$MYINST_DIR/man/man1/$MODULE.1" ] ; then
+	   mkdir -p "$MYINST_DIR/docs/man/man1"
+	   mv "$MYINST_DIR/man/man1/$MODULE.1" "$MYINST_DIR/docs/man/man1/"
+	   if [ `ls -a "$MYINST_DIR/man/man1" | wc -l` -le 2 ] ; then
+	      rmdir "$MYINST_DIR/man/man1"
+	      if [ `ls -a "$MYINST_DIR/man" | wc -l` -le 2 ] ; then
+		 rmdir "$MYINST_DIR/man"
+	      fi
+	   fi
+	fi
+    fi
 fi
 
 cleanup
 
 g.message message=""
-g.message message="Installation of <$MODULE> in <$MYINST_DIR> successfully finished."
+g.message message="Installation of <$MODULE> in <$MYINST_DIR> complete."
 
 if [ -n "$ADDON_PATH_EMPTY" ] && [ "$GIS_FLAG_S" -eq 0 ] ; then
+   g.message message=""
    g.message -w message='This add-on module will not function until you set the GRASS_ADDON_PATH environment variable (see "g.manual variables")'
 fi
 

@@ -3,7 +3,7 @@
 ;GRASS Installer for Windows
 ;Written by Marco Pasetti
 ;Updated for OSGeo4W by Colin Nielsen, Helmut Kudrnovsky, and Martin Landa
-;Last Update: $Id: GRASS-Installer.nsi 45600 2011-03-07 18:08:48Z martinl $
+;Last Update: $Id: GRASS-Installer.nsi 50739 2012-02-09 10:28:30Z martinl $
 ;Mail to: grass-dev@lists.osgeo.org 
 
 ;----------------------------------------------------------------------------------------------------------------------------
@@ -31,17 +31,17 @@ SetCompressorDictSize 64
 
 ;Version variables
 
-!define RELEASE_VERSION_NUMBER "6.4.1"
-!define RELEASE_SVN_REVISION "36599"
-!define RELEASE_BINARY_REVISION "1"
-!define RELEASE_GRASS_COMMAND "grass64"
-!define RELEASE_GRASS_BASE "GRASS 6.4"
-
-!define DEVEL_VERSION_NUMBER "6.4.SVN"
-!define DEVEL_SVN_REVISION "36599"
-!define DEVEL_BINARY_REVISION "1"
-!define DEVEL_GRASS_COMMAND "grass64svn"
-!define DEVEL_GRASS_BASE "GRASS 6.4.SVN"
+!define SVN_REVISION "36599"
+!define BINARY_REVISION "1"
+!if ${INSTALLER_TYPE} == "Release"
+	!define VERSION_NUMBER "6.4.2"
+	!define GRASS_COMMAND "grass64"
+	!define GRASS_BASE "GRASS 6.4.2"
+!else
+	!define VERSION_NUMBER "6.4.2svn"
+	!define GRASS_COMMAND "grass64svn"
+	!define GRASS_BASE "GRASS 6.4.2svn"
+!endif
 
 ;----------------------------------------------------------------------------------------------------------------------------
 
@@ -58,26 +58,15 @@ SetCompressorDictSize 64
 
 ;Set the installer variables, depending on the selected version to build
 
+!define PACKAGE_FOLDER ".\GRASS-64-Package"
 !if ${INSTALLER_TYPE} == "Release"
-	!define VERSION_NUMBER "${RELEASE_VERSION_NUMBER}"
-	!define SVN_REVISION "${RELEASE_SVN_REVISION}"
-	!define BINARY_REVISION "${RELEASE_BINARY_REVISION}"
-	!define GRASS_COMMAND "${RELEASE_GRASS_COMMAND}"
-	!define GRASS_BASE "${RELEASE_GRASS_BASE}"
 	!define INSTALLER_NAME "WinGRASS-${VERSION_NUMBER}-${BINARY_REVISION}-Setup.exe"
 	!define DISPLAYED_NAME "GRASS ${VERSION_NUMBER}-${BINARY_REVISION}"
-	!define CHECK_INSTALL_NAME "GRASS"
-	!define PACKAGE_FOLDER ".\GRASS-64-Release-Package"
-!else if ${INSTALLER_TYPE} == "Devel"
-	!define VERSION_NUMBER "${DEVEL_VERSION_NUMBER}"
-	!define SVN_REVISION "${DEVEL_SVN_REVISION}"
-	!define BINARY_REVISION "${DEVEL_BINARY_REVISION}"
-	!define GRASS_COMMAND "${DEVEL_GRASS_COMMAND}"
-	!define GRASS_BASE "${DEVEL_GRASS_BASE}"
+	!define CHECK_INSTALL_NAME "GRASS 64"
+!else
 	!define INSTALLER_NAME "WinGRASS-${VERSION_NUMBER}-r${SVN_REVISION}-${BINARY_REVISION}-Setup.exe"
 	!define DISPLAYED_NAME "GRASS ${VERSION_NUMBER}-r${SVN_REVISION}-${BINARY_REVISION}"
 	!define CHECK_INSTALL_NAME "GRASS 64 SVN"
-	!define PACKAGE_FOLDER ".\GRASS-64-Devel-Package"
 !endif
 
 ;----------------------------------------------------------------------------------------------------------------------------
@@ -500,13 +489,13 @@ Section "GRASS" SecGRASS
 	FileWrite $0 'set GISBASE=$INSTALL_DIR$\r$\n'
 	FileWrite $0 '$\r$\n'
 	FileWrite $0 'rem set path to freetype dll$\r$\n'
-	FileWrite $0 'set FREETYPEBASE=$INSTALL_DIR\extralib;$INSTALL_DIR\lib$\r$\n'
+	FileWrite $0 'set FREETYPEBASE=$INSTALL_DIR\extralib;$INSTALL_DIR\msys\bin;$INSTALL_DIR\lib$\r$\n'
 	FileWrite $0 '$\r$\n'
 	FileWrite $0 'rem set dependecies path$\r$\n'
 	FileWrite $0 'set PATH=%FREETYPEBASE%;%PATH%$\r$\n'
 	FileWrite $0 '$\r$\n'
 	FileWrite $0 'rem run g.mkfontcap outside a grass session$\r$\n'
-	FileWrite $0 '"%GISBASE%\bin\g.mkfontcap.exe"$\r$\n'
+	FileWrite $0 '"%GISBASE%\bin\g.mkfontcap.exe" -o$\r$\n'
 	FileWrite $0 'exit$\r$\n'
 	FileClose $0
 	done_create_run_gmkfontcap.bat:
@@ -554,7 +543,7 @@ Section "GRASS" SecGRASS
 	
 	;HKEY_LOCAL_MACHINE Install entries
 	;Set the Name, Version and Revision of GRASS + PublisherInfo + InstallPath	
-	WriteRegStr HKLM "Software\${GRASS_BASE}" "Name" "GRASS"
+	WriteRegStr HKLM "Software\${GRASS_BASE}" "Name" "GRASS 6.4"
 	WriteRegStr HKLM "Software\${GRASS_BASE}" "VersionNumber" "${VERSION_NUMBER}"
 	WriteRegStr HKLM "Software\${GRASS_BASE}" "SvnRevision" "${SVN_REVISION}"
 	WriteRegStr HKLM "Software\${GRASS_BASE}" "BinaryRevision" "${BINARY_REVISION}"
@@ -563,7 +552,7 @@ Section "GRASS" SecGRASS
 	WriteRegStr HKLM "Software\${GRASS_BASE}" "InstallPath" "$INSTALL_DIR"
 	
 	;HKEY_LOCAL_MACHINE Uninstall entries
-	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${GRASS_BASE}" "DisplayName" "GRASS"
+	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${GRASS_BASE}" "DisplayName" "GRASS 6.4"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${GRASS_BASE}" "UninstallString" "$INSTALL_DIR\Uninstall-GRASS.exe"
 	
 	!if ${INSTALLER_TYPE} == "Release"
@@ -583,34 +572,31 @@ Section "GRASS" SecGRASS
 	;Create the Desktop Shortcut
 	SetShellVarContext current
 	
-	CreateShortCut "$DESKTOP\GRASS ${VERSION_NUMBER}.lnk" "$INSTALL_DIR\${GRASS_COMMAND}.bat" "-wxpython"\
-	"$INSTALL_DIR\icons\GRASS.ico" "" SW_SHOWMINIMIZED "" "Launch GRASS ${VERSION_NUMBER} with the new wxPython GUI"
-
-	CreateShortCut "$DESKTOP\GRASS ${VERSION_NUMBER} with MSYS.lnk" "$INSTALL_DIR\msys\msys.bat" "/grass/bin/${GRASS_COMMAND} -wxpython"\
-	"$INSTALL_DIR\icons\GRASS_MSys.ico" "" SW_SHOWNORMAL "" "Launch GRASS ${VERSION_NUMBER} with the new wxPython GUI and a MSYS UNIX terminal"
- 
+	CreateShortCut "$DESKTOP\GRASS ${VERSION_NUMBER}.lnk" "$INSTALL_DIR\${GRASS_COMMAND}.bat" "-wx"\
+	"$INSTALL_DIR\icons\GRASS.ico" "" SW_SHOWMINIMIZED "" "Launch GRASS ${VERSION_NUMBER} with wxGUI"
+	
 	;Create the Windows Start Menu Shortcuts
 	SetShellVarContext all
 	
 	CreateDirectory "$SMPROGRAMS\${GRASS_BASE}"
 	
-	CreateShortCut "$SMPROGRAMS\${GRASS_BASE}\GRASS Old TclTk GUI.lnk" "$INSTALL_DIR\${GRASS_COMMAND}.bat" "-tcltk"\
+	CreateShortCut "$SMPROGRAMS\${GRASS_BASE}\GRASS ${VERSION_NUMBER} Old TclTk GUI.lnk" "$INSTALL_DIR\${GRASS_COMMAND}.bat" "-tcltk"\
 	"$INSTALL_DIR\icons\GRASS_tcltk.ico" "" SW_SHOWMINIMIZED "" "Launch GRASS ${VERSION_NUMBER} with the old TclTk GUI"
 
-	CreateShortCut "$SMPROGRAMS\${GRASS_BASE}\GRASS ${VERSION_NUMBER}.lnk" "$INSTALL_DIR\${GRASS_COMMAND}.bat" "-wxpython"\
-	"$INSTALL_DIR\icons\GRASS.ico" "" SW_SHOWMINIMIZED "" "Launch GRASS ${VERSION_NUMBER} with the new wxPython GUI"
+	CreateShortCut "$SMPROGRAMS\${GRASS_BASE}\GRASS ${VERSION_NUMBER} GUI.lnk" "$INSTALL_DIR\${GRASS_COMMAND}.bat" "-wx"\
+	"$INSTALL_DIR\icons\GRASS.ico" "" SW_SHOWMINIMIZED "" "Launch GRASS ${VERSION_NUMBER} with wxGUI"
 
-	CreateShortCut "$SMPROGRAMS\${GRASS_BASE}\GRASS Command Line.lnk" "$INSTALL_DIR\${GRASS_COMMAND}.bat" "-text"\
-	"$INSTALL_DIR\icons\GRASS_CMD.ico" "" SW_SHOWNORMAL "" "Launch GRASS in text mode"
+	CreateShortCut "$SMPROGRAMS\${GRASS_BASE}\GRASS ${VERSION_NUMBER} GUI with MSYS.lnk" "$INSTALL_DIR\msys\msys.bat" "/grass/${GRASS_COMMAND}.sh -wx"\
+	"$INSTALL_DIR\icons\GRASS_MSys.ico" "" SW_SHOWNORMAL "" "Launch GRASS ${VERSION_NUMBER} with wxGUI and a MSYS UNIX terminal"
+	
+	CreateShortCut "$SMPROGRAMS\${GRASS_BASE}\GRASS ${VERSION_NUMBER} Command Line.lnk" "$INSTALL_DIR\${GRASS_COMMAND}.bat" "-text"\
+	"$INSTALL_DIR\icons\GRASS_CMD.ico" "" SW_SHOWNORMAL "" "Launch GRASS ${VERSION_NUMBER} in text mode"
 	
 	CreateShortCut "$SMPROGRAMS\${GRASS_BASE}\MSYS UNIX Console.lnk" "$INSTALL_DIR\msys\msys.bat" ""\
 	"$INSTALL_DIR\icons\MSYS_Custom_Icon.ico" "" SW_SHOWNORMAL "" "Open a MSYS UNIX console"
 	
 	CreateShortCut "$SMPROGRAMS\${GRASS_BASE}\GRASS Web Site.lnk" "$INSTALL_DIR\GRASS-WebSite.url" ""\
 	"$INSTALL_DIR\icons\GRASS_Web.ico" "" SW_SHOWNORMAL "" "Visit the GRASS website"
-	
-	CreateShortCut "$SMPROGRAMS\${GRASS_BASE}\GRASS ${VERSION_NUMBER} with MSYS.lnk" "$INSTALL_DIR\msys\msys.bat" "/grass/bin/${GRASS_COMMAND} -wxpython"\
-	"$INSTALL_DIR\icons\GRASS_MSys.ico" "" SW_SHOWNORMAL "" "Launch GRASS ${VERSION_NUMBER} with the new wxPython GUI and a MSYS UNIX terminal"
 	
 ; FIXME: ship the WinGrass release notes .html file instead of URL
 ; http://trac.osgeo.org/grass/browser/grass-web/trunk/grass64/binary/mswindows/native/README.html?format=raw
@@ -620,7 +606,7 @@ Section "GRASS" SecGRASS
 		"$INSTALL_DIR\icons\WinGRASS.ico" "" SW_SHOWNORMAL "" "Visit the WinGRASS Project Web Page"
 	!endif
 	
-	CreateShortCut "$SMPROGRAMS\${GRASS_BASE}\Uninstall GRASS.lnk" "$INSTALL_DIR\Uninstall-GRASS.exe" ""\
+	CreateShortCut "$SMPROGRAMS\${GRASS_BASE}\Uninstall GRASS ${VERSION_NUMBER}.lnk" "$INSTALL_DIR\Uninstall-GRASS.exe" ""\
 	"$INSTALL_DIR\Uninstall-GRASS.exe" "" SW_SHOWNORMAL "" "Uninstall GRASS ${VERSION_NUMBER}"
 	
 	;Create the grass_command.bat
@@ -651,7 +637,9 @@ Section "GRASS" SecGRASS
 	${EndIf}
 	FileWrite $0 'call "%GISBASE%\etc\env.bat"$\r$\n'
 	FileWrite $0 '$\r$\n'
-	FileWrite $0 '"%WINGISBASE%\etc\Init.bat" %*'
+	FileWrite $0 'cd "%USERPROFILE%"'
+	FileWrite $0 '$\r$\n'
+	FileWrite $0 '"%GISBASE%\etc\Init.bat" %*'
 	FileClose $0
 	done_create_grass_command.bat:
 	
@@ -700,7 +688,7 @@ Section "GRASS" SecGRASS
   
 	;create the $INSTALL_DIR\bin grass_command
 	ClearErrors
-	FileOpen $0 $INSTALL_DIR\bin\${GRASS_COMMAND} w
+	FileOpen $0 $INSTALL_DIR\${GRASS_COMMAND}.sh w
 	IfErrors done_create_grass_command
 	FileWrite $0 '#! /bin/sh$\r$\n'
 	FileWrite $0 '#########################################################################$\r$\n'
@@ -744,9 +732,9 @@ Section "GRASS" SecGRASS
 	FileWrite $0 'PATH="$$GISBASE/tcl-tk/bin:$$GISBASE/sqlite/bin:$$GISBASE/gpsbabel:$$PATH"$\r$\n'
 	FileWrite $0 'export PATH$\r$\n'
 	FileWrite $0 '# Set the PYTHONPATH variable$\r$\n'
-	FileWrite $0 'PYTHONPATH="$$GISBASE/etc/python:$$GISBASE/Python25:$$PYTHONPATH"$\r$\n'
+	FileWrite $0 'PYTHONPATH="$$GISBASE/etc/python:$$GISBASE/Python27:$$PYTHONPATH"$\r$\n'
 	FileWrite $0 'export PYTHONPATH$\r$\n'
-	FileWrite $0 'PYTHONHOME="$INSTALL_DIR\Python25"$\r$\n'
+	FileWrite $0 'PYTHONHOME="$INSTALL_DIR\Python27"$\r$\n'
 	FileWrite $0 'export PYTHONHOME$\r$\n'
 	FileWrite $0 'if [ -z "$$GRASS_PYTHON" ] ; then$\r$\n'
 	FileWrite $0 '   GRASS_PYTHON=python$\r$\n'
@@ -771,6 +759,8 @@ Section "GRASS" SecGRASS
 	FileWrite $0 'GEOTIFF_CSV="$INSTALL_DIR\share\epsg_csv"$\r$\n'
 	FileWrite $0 'export GEOTIFF_CSV $\r$\n'
 	FileWrite $0 '$\r$\n'
+	FileWrite $0 'cd "$USERPROFILE"'
+	FileWrite $0 '$\r$\n' 
 	FileWrite $0 'exec "$$GISBASE/etc/Init.sh" "$$@"'
 	FileClose $0
 	done_create_grass_command:
@@ -796,18 +786,23 @@ Section "GRASS" SecGRASS
 	;replace \ with / in $GIS_DATABASE
 	${StrReplace} "$UNIX_LIKE_GIS_DATABASE_PATH" "\" "/" "$GIS_DATABASE"
   
-	;create $PROFILE\.grassrc6
-	SetShellVarContext current
-	ClearErrors
-	FileOpen $0 $PROFILE\.grassrc6 w
-	IfErrors done_create_.grassrc6
-	FileWrite $0 'GISDBASE: $UNIX_LIKE_GIS_DATABASE_PATH$\r$\n'
-	FileWrite $0 'LOCATION_NAME: demolocation$\r$\n'
-	FileWrite $0 'MAPSET: PERMANENT$\r$\n'
-	FileClose $0	
-	done_create_.grassrc6:
+	SetShellVarContext current  
+	${If} ${FileExists} "$APPDATA\GRASS6\grassrc6"
+	      DetailPrint "File $APPDATA\GRASS6\grassrc6 already exists. Skipping."
+	${Else}
+	      ;create $APPDATA\GRASS6\grassrc6
+	      ClearErrors
+	      CreateDirectory	$APPDATA\GRASS6
+	      FileOpen $0 $APPDATA\GRASS6\grassrc6 w
+	      IfErrors done_create_grass6_rc
+	      FileWrite $0 'GISDBASE: $UNIX_LIKE_GIS_DATABASE_PATH$\r$\n'
+	      FileWrite $0 'LOCATION_NAME: demolocation$\r$\n'
+	      FileWrite $0 'MAPSET: PERMANENT$\r$\n'
+	      FileClose $0	
+	      done_create_grass6_rc:
+	${EndIf}
 	
-	CopyFiles $PROFILE\.grassrc6 $INSTALL_DIR\msys\home\$USERNAME
+	CopyFiles $APPDATA\GRASS6\grassrc6 $INSTALL_DIR\msys\home\$USERNAME\.grassrc6
                  
 SectionEnd
 
@@ -915,10 +910,14 @@ Section "Uninstall"
 	SetShellVarContext all
 	RMDir /r "$SMPROGRAMS\${GRASS_BASE}"
 	
-	;remove the .grassrc6 file
-	SetShellVarContext current
-	Delete "$PROFILE\.grassrc6"	
-
+	;remove the $APPDATA\GRASS6 folder
+	;disabled, don't remove user settings
+	;SetShellVarContext current
+	;RMDir /r "$APPDATA\GRASS6"	
+	;${If} ${FileExists} "$APPDATA\GRASS6\addons\*.*"
+	;      RMDir /r "$APPDATA\GRASS6\addons"
+	;${EndIf}
+	
 	;remove the Registry Entries
 	DeleteRegKey HKLM "Software\${GRASS_BASE}"
 	DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${GRASS_BASE}"

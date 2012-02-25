@@ -6,8 +6,6 @@
  *
  *   This program is free software under the GPL (>=v2)
  *   Read the COPYING file that comes with GRASS for details.
- *       
- * \BUGS: please send bugs reports to pallecch@cli.di.unipi.it
  *
  */
 
@@ -53,6 +51,7 @@ int main(int argc, char *argv[])
     return calculateIndex(conf->answer, patchAreaDistributionRANGE, NULL,
 			  raster->answer, output->answer);
 }
+
 int patchAreaDistributionRANGE(int fd, char **par, area_des ad,
 			       double *result)
 {

@@ -129,10 +129,23 @@ are provided.
 <p>
 <em>r.proj</em> supports general datum transformations, making use of the
 <em>PROJ.4</em> co-ordinate system translation library.
-</p>
+
 
 <h2>NOTES</h2>
 
+If <b>output</b> is not specified it is set to be the same as input map
+name.
+
+<br>
+If <b>mapset</b> is not specified, its name is assumed to be the same
+as the current mapset's name.
+
+<br>
+If <b>dbase</b> is not specified it is assumed to be the current
+database. The user only has to specify <b>dbase</b> if the source
+location is stored in another separate GRASS database.
+
+<p>
 To avoid excessive time consumption when reprojecting a map the region and 
 resolution of the target location should be set appropriately beforehand.
 A simple way to do this is to generate a vector "box" map of the region in  
@@ -220,8 +233,8 @@ The 'gdalwarp' and 'gdal_translate' utilities are available from the
 Martin Schroeder, University of Heidelberg, Germany<p>
 Man page text from S.J.D. Cox, AGCRC, CSIRO Exploration &amp; Mining, Nedlands, WA
 <p>
-Updated by <a href="mailto:morten@ngb.se">Morten Hulden</a>
+Updated by <a href="mailto:morten@untamo.net">Morten Hulden</a>
 <p>
 Datum tranformation support and cleanup by Paul Kelly
 
-<p><i>Last changed: $Date: 2010-09-21 15:01:31 +0200 (Tue, 21 Sep 2010) $</i>
+<p><i>Last changed: $Date: 2012-01-16 09:13:29 +0100 (Mon, 16 Jan 2012) $</i>

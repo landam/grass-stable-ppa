@@ -1,4 +1,4 @@
-$Date: 2008-01-06 12:42:32 +0100 (Sun, 06 Jan 2008) $
+$Date: 2012-02-05 21:39:18 +0100 (Sun, 05 Feb 2012) $
 
 NOTE: Please improve this list!
 
@@ -184,7 +184,7 @@ please take care of following rules:
 
 15. In case of questions feel free to contact the developers at the above
     mailing list.
-    http://www.grass-gis.org/devel/index.php#submission
+    http://grass.osgeo.org/devel/index.php#submission
 
 
 16. Try to evaluate things only once. Tcl compiles the program to bytecode which

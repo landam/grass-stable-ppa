@@ -42,7 +42,7 @@ used, topology is not build at the end.
 <h3>Feature selection</h3>
 
 Vector features can be selected in several ways:
-<ul>
+</ul>
     <li><b>ids</b> - using internal (unique) feature id's</li>
     <li><b>cats</b> - using category numbers</li>
     <li><b>coords</b> - using x,y coordinate pairs (center of bounding
@@ -54,7 +54,7 @@ Vector features can be selected in several ways:
 </ul>
 
 Additional parameters for vector feature specification are:
-<ul>
+</ul>
     <li><b>layer</b> - layer number (currently used only
     with <b>cats</b> or <b>where</b> option)</li>
     <li><b>thresh</b> - threshold distance used for selecting vector
@@ -63,7 +63,7 @@ Additional parameters for vector feature specification are:
 
 <h3>Tool description</h3>
 
-<ul>
+</ul>
     <li><b>create</b> - Create new (empty) vector map
     (see <em><a href="v.in.ascii.html">v.in.ascii</a></em>). Optionally vector
     features (in GRASS ASCII standard format) can be read from
@@ -186,6 +186,9 @@ Add point to the vector map (without header):
 echo "P 1 1
  640794 214874
  1 1" | v.edit -n tool=add map=vectmap
+
+# insert new row for each category in attribute table if doesn't exist yet
+v.to.db map=vectmap option=cat
 </pre></div>
 
 Add new features read from standard input:
@@ -414,16 +417,16 @@ v.edit a2 tool=zbulk bbox=586121.25049368,4911970.21547109,603092.60466035,49270
 <h2>SEE ALSO</h2>
 
 <em>
-<a HREF="v.in.ascii.html">v.in.ascii</a>,
-<a HREF="v.info.html">v.info</a>,
-<a HREF="v.build.html">v.build</a>,
-<a HREF="v.clean.html">v.clean</a>,
-<a HREF="v.digit.html">v.digit</a>,
-<a HREF="v.extrude.html">v.extrude</a>
+<a href="v.in.ascii.html">v.in.ascii</a>,
+<a href="v.info.html">v.info</a>,
+<a href="v.build.html">v.build</a>,
+<a href="v.clean.html">v.clean</a>,
+<a href="v.digit.html">v.digit</a>,
+<a href="v.extrude.html">v.extrude</a>
 </em>
 
 <p>
-See also <em><a href="wxGUI.Vector_Digitizing_Tool.html">wxGUI vector digitizing tool</a></em>.
+See also <em><a href="wxGUI.Vector_Digitizer.html">wxGUI vector digitizing tool</a></em>.
 
 <h2>AUTHOR</h2>
 
@@ -432,4 +435,4 @@ Various updates: Jachym Cepicky, Mendel University of Agriculture and Forestry i
 Martin Landa, FBK-irst (formerly ITC-irst), Trento, Italy
 
 <p>
-<i>Last changed: $Date: 2008-05-17 11:31:21 +0200 (Sat, 17 May 2008) $</i>
+<i>Last changed: $Date: 2011-12-12 17:41:01 +0100 (Mon, 12 Dec 2011) $</i>

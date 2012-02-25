@@ -18,6 +18,7 @@ all:
 	@echo '   make pot        create grass.pot (containing original messages)'
 	@echo '   make update-po  merge new messages into existing *.po files'
 	@echo '   make mo         create the *.mo files'
+	@echo '   make verify     verify the *.po files'
 
 # Directory for installing tcl .msg files:
 MSG_DIR = $(ARCH_DISTDIR)/etc/msgs
@@ -79,6 +80,12 @@ update-po:
 		fi \
 		done
 	@echo "Be careful with SVN commits as .po file updates must be syncronized with the individual translators."
+
+verify:
+	@cd ./po/ ; for po in `ls *_*.po 2>/dev/null` ; do \
+		echo "----- $$po:" ; \
+		msgfmt -c $$po; \
+	done
 
 libs_FILES := $(patsubst po/grasslibs_%.po,$(MO_DIR)/%/LC_MESSAGES/grasslibs.mo,$(wildcard po/grasslibs_*.po)) 
 $(MO_DIR)/%/LC_MESSAGES/grasslibs.mo: po/grasslibs_%.po 

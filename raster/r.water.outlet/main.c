@@ -44,8 +44,8 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
+    module->keywords = _("raster, hydrology");
     module->description = _("Watershed basin creation program.");
-    module->keywords = _("raster");
     
     opt1 = G_define_option();
     opt1->key = "drainage";
@@ -148,6 +148,8 @@ int main(int argc, char *argv[])
     for (row = 0; row < nrows; row++) {
 	for (col = 0; col < ncols; col++) {
 	    cell_buf[col] = bas[SEG_INDEX(ba_seg, row, col)];
+	    if (cell_buf[col] == 0)
+		G_set_null_value(&cell_buf[col], 1, CELL_TYPE);
 	}
 	G_put_raster_row(basin_fd, cell_buf, CELL_TYPE);
     }

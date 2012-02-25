@@ -19,7 +19,7 @@
  **
  **You should have received a copy of the GNU General Public License
  **along with this program; if not, write to the Free Software
- **Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA
+ **Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  **
  **  version 13 for GRASS5.0
  **  FP related bugs in slope length output fixed by Helena oct. 1999)
@@ -408,11 +408,11 @@ int main(int argc, char *argv[])
 	G_fatal_error(_("Unable to get current region"));
 
     module = G_define_module();
-    module->keywords = "raster";
+    module->keywords = _("raster, hydrology");
     module->description =
 	_("Construction of slope curves (flowlines), flowpath lengths, "
 	  "and flowline densities (upslope areas) from a raster "
-	  "digital elevation model (DEM)");
+	  "digital elevation model (DEM).");
 
     larger = ((region.cols < region.rows) ? region.rows : region.cols);
     default_skip = (larger < 50) ? 1 : (int)(larger / 50);

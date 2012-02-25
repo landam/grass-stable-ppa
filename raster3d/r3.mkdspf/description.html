@@ -1,4 +1,4 @@
-<H2>DESCRIPTION</H2>
+<h2>DESCRIPTION</h2>
 
 Creates a display file from an existing grid3 file according to
 specified threshold levels.  The display file is a display list
@@ -8,41 +8,41 @@ are ignored.  <I>Min</I> or <I>max</I> may be used alone or together
 to specify a sub-range of the data.  The <I>step</I>
 parameter is given precedence over <I>tnum</I>.
 
-<H3>Flags:</H3>
-<DL>
-<DT><B>-q</B>
-<DD>Suppress progress report &amp; min/max information
+<h3>Flags:</h3>
+<dl>
+<dt><b>-q</b>
+<dd>Suppress progress report &amp; min/max information
 
-<DT><B>-f</B>
-<DD>Use flat shading rather than gradient
-</DL>
+<dt><b>-f</b>
+<dd>Use flat shading rather than gradient
+</dl>
 
-<H3>Parameters:</H3>
-<DL>
-<DT><B>grid3</B>
-<DD>Name of an existing 3D raster map
+<h3>Parameters:</h3>
+<dl>
+<dt><b>grid3</b>
+<dd>Name of an existing 3D raster map
 
-<DT><B>dspf</B>
-<DD>Name of output display file
+<dt><b>dspf</b>
+<dd>Name of output display file
 
-<DT><B>levels</B>
-<DD>List of thresholds for isosurfaces
+<dt><b>levels</b>
+<dd>List of thresholds for isosurfaces
 
-<DT><B>min</B>
-<DD>Minimum isosurface level
+<dt><b>min</b>
+<dd>Minimum isosurface level
 
-<DT><B>max</B>
-<DD>Maximum isosurface level
+<dt><b>max</b>
+<dd>Maximum isosurface level
 
-<DT><B>step</B>
-<DD>Positive increment between isosurface levels
+<dt><b>step</b>
+<dd>Positive increment between isosurface levels
 
-<DT><B>tnum</B>
-<DD>Number of isosurface threshold levels
-<DD>Default: 7
-</DL>
+<dt><b>tnum</b>
+<dd>Number of isosurface threshold levels
+<dd>Default: 7
+</dl>
 
-<H2>Example:</H2>
+<h2>Example:</h2>
 With grid3 data (<I>phdata</I>) in the range 3-7, 
 we only want to see isosurface values for the range 4-6.  
 Any of these commands will produce the same results:<br>
@@ -52,7 +52,7 @@ r3.mkdspf phdata dspf=iso levels=4.0,4.5,5.0,5.5,6.0
 r3.mkdspf phdata dspf=iso min=4.0 max=6.0 step=0.5
 </pre>
 
-<H2>NOTE</H2>
+<h2>NOTE</h2>
 Currently the grid3 file must be in the user's mapset since the 
 display files being created are specific to particular grid3 
 files and are contained in directories under them.  
@@ -60,9 +60,9 @@ We should create a mechanism where users
 may make display files from others' grid3 files without having to
 copy them to their mapset.  
 
-<H2>AUTHOR</H2>
+<h2>AUTHOR</h2>
 <SIGNATURE>Bill Brown,
-<A HREF="mailto:brown@gis.uiuc.edu">bbrown@gis.uiuc.edu</A>
+<a href="mailto:brown@gis.uiuc.edu">bbrown@gis.uiuc.edu</a>
 </SIGNATURE>
 
-<p><i>Last changed: $Date: 2010-09-24 14:00:12 +0200 (Fri, 24 Sep 2010) $</i>
+<p><i>Last changed: $Date: 2011-11-08 12:29:50 +0100 (Tue, 08 Nov 2011) $</i>

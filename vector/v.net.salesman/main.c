@@ -94,7 +94,7 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, networking");
+    module->keywords = _("vector, network, salesman");
     module->label =
 	_("Creates a cycle connecting given nodes (Traveling salesman problem).");
     module->description =
@@ -204,7 +204,6 @@ int main(int argc, char **argv)
     }
 
     costs = (COST **) G_malloc(ncities * sizeof(COST *));
-    costs = (COST **) G_malloc((ncities - 1) * sizeof(COST *));
     for (i = 0; i < ncities; i++) {
 	costs[i] = (COST *) G_malloc(ncities * sizeof(COST));
     }

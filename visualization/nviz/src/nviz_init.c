@@ -50,7 +50,7 @@ static int parse_command(Nv_data * data, Tcl_Interp * interp,	/* Current interpr
      */
 
     module = G_define_module();
-    module->keywords = _("raster, vector, visualization");
+    module->keywords = _("visualization, raster, vector, raster3d");
     module->description =
 	_("nviz - Visualization and animation tool for GRASS data.");
 
@@ -549,7 +549,7 @@ int Ninitdata(Tcl_Interp *interp,	/* Current interpreter. */
 
     argc = Ngetargs(interp, &cmd, &argv0, &argv);
 
-    G_gisinit(argv0);
+    G_gisinit("nviz");
 
     GS_libinit();
 

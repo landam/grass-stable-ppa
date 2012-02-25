@@ -24,7 +24,7 @@
 *               for details.
 *
 * Changes
-*		 Morten Hulden <morten@ngb.se>, Aug 2000:
+*		 Morten Hulden <morten@untamo.net>, Aug 2000:
 *		 - aborts if input map is outside current location.
 *		 - can handle projections (conic, azimuthal etc) where 
 *		 part of the map may fall into areas where south is 
@@ -285,9 +285,9 @@ int main(int argc, char **argv)
 	int i;
 	char **list;
 	G_verbose_message(_("Checking location <%s> mapset <%s>"),
-			  inlocation->answer, imapset->answer);
+			  inlocation->answer, setname);
 	list = G_list(G_ELEMENT_RASTER, G__getenv("GISDBASE"),
-		      G__getenv("LOCATION_NAME"), imapset->answer);
+		      G__getenv("LOCATION_NAME"), setname);
 	for (i = 0; list[i]; i++) {
 	    fprintf(stdout, "%s\n", list[i]);
 	}

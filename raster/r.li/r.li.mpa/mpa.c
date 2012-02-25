@@ -7,8 +7,6 @@
  *
  *   This program is free software under the GPL (>=v2)
  *   Read the COPYING file that comes with GRASS for details.
- *       
- *       \BUGS: please send bugs reports to pallecch@cli.di.unipi.it
  *
  */
 
@@ -175,6 +173,7 @@ int calculate(int fd, area_des ad, double *result)
     }
     return RLI_OK;
 }
+
 int calculateD(int fd, area_des ad, double *result)
 {
     DCELL *buf;

@@ -6,7 +6,7 @@
 List of classes:
  - VectorDBInfo
 
-(C) 2007-2010 by the GRASS Development Team
+(C) 2007-2011 by the GRASS Development Team
 
 This program is free software under the GNU General Public
 License (>=v2). Read the file COPYING that comes with GRASS
@@ -28,10 +28,13 @@ import grass.script as grass
 
 def unicodeValue(value):
     """!Encode value"""
+    if type(value) == types.UnicodeType:
+        return value
+    
     enc = UserSettings.Get(group = 'atm', key = 'encoding', subkey = 'value')
     if enc:
         value = unicode(value, enc)
-    elif os.environ.has_key('GRASS_DB_ENCODING'):
+    elif 'GRASS_DB_ENCODING' in os.environ:
         value = unicode(value, os.environ['GRASS_DB_ENCODING'])
     else:
         try:
@@ -94,7 +97,7 @@ class VectorDBInfo(gselect.VectorDBInfo):
                                  coord = (float(queryCoords[0]), float(queryCoords[1])),
                                  distance = float(qdist))
 
-        if len(data) < 1:
+        if len(data) < 1 or 'Table' not in data[0]:
             return None
         
         # process attributes
@@ -134,7 +137,7 @@ class VectorDBInfo(gselect.VectorDBInfo):
             sql = "SELECT %s FROM %s" % (cols, table)
         else:
             sql = "SELECT %s FROM %s WHERE %s" % (cols, table, where)
-
+        
         ret = gcmd.RunCommand('db.select',
                               parent = self,
                               read = True,

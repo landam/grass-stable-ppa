@@ -7,6 +7,7 @@ Classes:
  - MenuData
  - ManagerData
  - ModelerData
+ - PsMapData
 
 Usage:
 @code
@@ -19,7 +20,7 @@ where <i>action</i>:
  - commands
  - dump
 
-(C) 2007-2010 by the GRASS Development Team
+(C) 2007-2011 by the GRASS Development Team
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
 
@@ -27,6 +28,7 @@ This program is free software under the GNU General Public License
 @author Yann Chemin <yann.chemin gmail.com>
 @author Martin Landa <landa.martin gmail.com>
 @author Glynn Clements
+@author Anna Kratochvilova <anna.kratochvilova fsv.cvut.cz>
 """
 
 import os
@@ -233,6 +235,19 @@ class ModelerData(MenuData):
 	    filename = os.path.join(etcwxdir, 'xml', 'menudata_modeler.xml')
         
         MenuData.__init__(self, filename)
+
+class PsMapData(MenuData):
+    def __init__(self, path = None):
+        """!Menu for Cartographic Composer (psmap.py)
+        
+        @path path to XML to be read (None for menudata_psmap.xml)
+        """
+        if not path:
+            gisbase = os.getenv('GISBASE')
+            global etcwxdir
+        path = os.path.join(etcwxdir, 'xml', 'menudata_psmap.xml')
+        
+        MenuData.__init__(self, path)
 
 if __name__ == "__main__":
     import sys

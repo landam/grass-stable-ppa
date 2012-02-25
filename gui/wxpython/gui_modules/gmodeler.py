@@ -13,6 +13,7 @@ Classes:
  - ModelData
  - ModelDataDialog
  - ModelRelation
+ - ModelRelationDialog
  - ProcessModelFile
  - WriteModelFile
  - PreferencesDialog
@@ -32,7 +33,7 @@ Classes:
  - ModelConditionDialog
  - WritePythonFile
 
-(C) 2010 by the GRASS Development Team
+(C) 2010-2011 by the GRASS Development Team
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
 
@@ -41,7 +42,6 @@ This program is free software under the GNU General Public License
 
 import os
 import sys
-import shlex
 import time
 import traceback
 import getpass
@@ -57,8 +57,6 @@ except ImportError:
     import elementtree.ElementTree as etree # Python <= 2.4
 
 import globalvar
-if not os.getenv("GRASS_WXBUNDLED"):
-    globalvar.CheckForWx()
 import wx
 import wx.lib.ogl             as ogl
 import wx.lib.flatnotebook    as FN
@@ -74,12 +72,13 @@ import utils
 import goutput
 import gselect
 from debug        import Debug
-from gcmd         import GMessage, GException, GWarning, GError
+from gcmd         import GMessage, GException, GWarning, GError, RunCommand
 from gdialogs     import ElementDialog, GetImageHandlers
 from preferences  import PreferencesBaseDialog, globalSettings as UserSettings
 from ghelp        import SearchModuleWindow
 
 from grass.script import core as grass
+from grass.script import task as gtask
 
 class Model(object):
     """!Class representing the model"""
@@ -136,7 +135,21 @@ class Model(object):
             return len(self.GetItems(objType = ModelAction))
         
         return len(self.GetItems())
-    
+
+    def GetNextId(self):
+        """!Get next id (data ignored)
+
+        @return next id to be used (default: 1)
+        """
+        if len(self.items) < 1:
+            return 1
+        
+        currId = self.items[-1].GetId()
+        if currId > 0:
+            return currId + 1
+        
+        return 1
+
     def GetProperties(self):
         """!Get model properties"""
         return self.properties
@@ -184,6 +197,12 @@ class Model(object):
                 else:
                     relList.append(rel.GetFrom())
         
+        elif isinstance(item, ModelLoop):
+            for rel in item.GetRelations():
+                relList.append(rel)
+            for action in self.GetItems():
+                action.UnSetBlock(item)
+        
         return relList, upList
     
     def FindAction(self, aId):
@@ -198,11 +217,19 @@ class Model(object):
     def GetData(self):
         """!Get list of data items"""
         result = list()
+        dataItems = self.GetItems(objType = ModelData)
+        
         for action in self.GetItems(objType = ModelAction):
             for rel in action.GetRelations():
                 dataItem = rel.GetData()
                 if dataItem not in result:
                     result.append(dataItem)
+                if dataItem in dataItems:
+                    dataItems.remove(dataItem)
+        
+        # standalone data
+        if dataItems:
+            result += dataItems
         
         return result
 
@@ -296,15 +323,18 @@ class Model(object):
             for rel in data['rels']:
                 actionItem = self.FindAction(rel['id'])
                 if rel['dir'] == 'from':
-                    relation = ModelRelation(dataItem, actionItem, rel['name'])
+                    relation = ModelRelation(parent = self, fromShape = dataItem,
+                                             toShape = actionItem, param = rel['name'])
                 else:
-                    relation = ModelRelation(actionItem, dataItem, rel['name'])
+                    relation = ModelRelation(parent = self, fromShape = actionItem,
+                                             toShape = dataItem, param = rel['name'])
                 relation.SetControlPoints(rel['points'])
                 actionItem.AddRelation(relation)
                 dataItem.AddRelation(relation)
-            
-            dataItem.Update()
-                   
+
+            if self.canvas:
+                dataItem.Update()
+           
         # load loops
         for loop in gxmXml.loops:
             loopItem = ModelLoop(parent = self, 
@@ -358,7 +388,7 @@ class Model(object):
         """!Add item to the list"""
         iId = newItem.GetId()
         
-        i   = 0
+        i  = 0
         for item in self.items:
             if item.GetId() > iId:
                 self.items.insert(i, newItem)
@@ -379,19 +409,116 @@ class Model(object):
         error string"""
         errList = list()
         for action in self.GetItems(objType = ModelAction):
-            task = menuform.GUI().ParseCommand(cmd = action.GetLog(string = False),
-                                               show = None)
+            task = menuform.GUI(show = None).ParseCommand(cmd = action.GetLog(string = False))
             errList += task.getCmdError()
-
+        
         return errList
 
-    def Run(self, log, onDone):
-        """!Run model"""
-        for action in self.actions:
-            if not action.IsEnabled():
+    def RunAction(self, item, params, log, onDone, statusbar = None):
+        """!Run given action
+
+        @param item action item
+        @param params parameters dict
+        @param log logging window
+        @param onDone on-done method
+        @param statusbar wx.StatusBar instance or None
+        """
+        name = item.GetName()
+        if name in params:
+            paramsOrig = item.GetParams(dcopy = True)
+            item.MergeParams(params[name])
+        
+        if statusbar:
+            statusbar.SetStatusText(_('Running model...'), 0)
+        log.RunCmd(command = item.GetLog(string = False),
+                   onDone = onDone)
+        
+        if name in params:
+            item.SetParams(paramsOrig)
+        
+    def Run(self, log, onDone, parent = None):
+        """!Run model
+
+        @param log logging window (see goutput.GMConsole)
+        @param onDone on-done method
+        @param parent window for messages or None
+        """
+        if self.GetNumItems() < 1:
+            GMessage(parent = parent,
+                     message = _('Model is empty. Nothing to run.'))
+            return
+        
+        statusbar = None
+        if isinstance(parent, wx.Frame):
+            statusbar = parent.GetStatusBar()
+        
+        # validation
+        if statusbar:
+            statusbar.SetStatusText(_('Validating model...'), 0)
+        errList = self.Validate()
+        if statusbar:
+            statusbar.SetStatusText('', 0)
+        if errList:
+            dlg = wx.MessageDialog(parent = parent,
+                                   message = _('Model is not valid. Do you want to '
+                                               'run the model anyway?\n\n%s') % '\n'.join(errList),
+                                   caption = _("Run model?"),
+                                   style = wx.YES_NO | wx.NO_DEFAULT |
+                                   wx.ICON_QUESTION | wx.CENTRE)
+            ret = dlg.ShowModal()
+            if ret != wx.ID_YES:
+                return
+        
+        # parametrization
+        params = self.Parameterize()
+        if params:
+            dlg = ModelParamDialog(parent = parent,
+                                   params = params)
+            dlg.CenterOnParent()
+            
+            ret = dlg.ShowModal()
+            if ret != wx.ID_OK:
+                dlg.Destroy()
+                return
+            
+            err = dlg.GetErrors()
+            if err:
+                GError(parent = self, message = unicode('\n'.join(err)))
+                return
+        
+        log.cmdThread.SetId(-1)
+        for item in self.GetItems():
+            if not item.IsEnabled():
                 continue
-            log.RunCmd(command = action.GetLog(string = False),
-                       onDone = onDone)
+            if isinstance(item, ModelAction):
+                if item.GetBlockId():
+                    continue
+                self.RunAction(item, params, log, onDone)
+            elif isinstance(item, ModelLoop):
+                cond = item.GetText()
+                # substitute variables in condition
+                variables = self.GetVariables()
+                for variable in variables:
+                    pattern = re.compile('%' + variable)
+                    if pattern.search(cond):
+                        value = variables[variable].get('value', '')
+                        vtype = variables[variable].get('type', 'string')
+                        if vtype == 'string':
+                            value = '"' + value + '"'
+                        cond = pattern.sub(value, cond)
+                # split condition
+                condVar, condText = re.split('\s*in\s*', cond)
+                
+                for action in item.GetItems():
+                    for vars()[condVar] in eval(condText):
+                        if not isinstance(action, ModelAction) or \
+                                not action.IsEnabled():
+                            continue
+                        
+                            self.RunAction(action, params, log, onDone)
+                
+        if params:
+            dlg.Destroy()
         
     def DeleteIntermediateData(self, log):
         """!Detele intermediate data"""
@@ -498,14 +625,14 @@ class Model(object):
             params = action.GetParams()
             for f in params['flags']:
                 if f.get('parameterized', False):
-                    if not result.has_key(name):
+                    if name not in result:
                         result[name] = { 'flags' : list(),
                                          'params': list(),
                                          'idx'   : idx }
                     result[name]['flags'].append(f)
             for p in params['params']:
                 if p.get('parameterized', False):
-                    if not result.has_key(name):
+                    if name not in result:
                         result[name] = { 'flags' : list(),
                                          'params': list(),
                                          'idx'   : idx }
@@ -518,7 +645,7 @@ class Model(object):
     
 class ModelFrame(wx.Frame):
     def __init__(self, parent, id = wx.ID_ANY,
-                 title = _("GRASS GIS Graphical Modeler"), **kwargs):
+                 title = _("GRASS GIS Graphical Modeler (experimental prototype)"), **kwargs):
         """!Graphical modeler main window
         
         @param parent parent window
@@ -551,14 +678,9 @@ class ModelFrame(wx.Frame):
         
         self.statusbar = self.CreateStatusBar(number = 1)
         
-        if globalvar.hasAgw:
-            self.notebook = FN.FlatNotebook(parent = self, id = wx.ID_ANY,
-                                            agwStyle = FN.FNB_FANCY_TABS | FN.FNB_BOTTOM |
-                                            FN.FNB_NO_NAV_BUTTONS | FN.FNB_NO_X_BUTTON)
-        else:
-            self.notebook = FN.FlatNotebook(parent = self, id = wx.ID_ANY,
-                                            style = FN.FNB_FANCY_TABS | FN.FNB_BOTTOM |
-                                            FN.FNB_NO_NAV_BUTTONS | FN.FNB_NO_X_BUTTON)
+        self.notebook = menuform.GNotebook(parent = self,
+                                           style = FN.FNB_FANCY_TABS | FN.FNB_BOTTOM |
+                                           FN.FNB_NO_NAV_BUTTONS | FN.FNB_NO_X_BUTTON)
         
         self.canvas = ModelCanvas(self)
         self.canvas.SetBackgroundColour(wx.WHITE)
@@ -570,14 +692,13 @@ class ModelFrame(wx.Frame):
         
         self.itemPanel = ItemPanel(parent = self)
         
-        self.goutput = goutput.GMConsole(parent = self, pageid = 3,
-                                         notebook = self.notebook)
+        self.goutput = goutput.GMConsole(parent = self, notebook = self.notebook)
         
-        self.notebook.AddPage(self.canvas, text=_('Model'))
-        self.notebook.AddPage(self.itemPanel, text=_('Items'))
-        self.notebook.AddPage(self.variablePanel, text=_('Variables'))
-        self.notebook.AddPage(self.goutput, text=_('Command output'))
-        wx.CallAfter(self.notebook.SetSelection, 0)
+        self.notebook.AddPage(page = self.canvas, text=_('Model'), name = 'model')
+        self.notebook.AddPage(page = self.itemPanel, text=_('Items'), name = 'items')
+        self.notebook.AddPage(page = self.variablePanel, text=_('Variables'), name = 'variables')
+        self.notebook.AddPage(page = self.goutput, text=_('Command output'), name = 'output')
+        wx.CallAfter(self.notebook.SetSelectionByName, 'model')
         wx.CallAfter(self.ModelChanged, False)
 
         self.Bind(wx.EVT_CLOSE, self.OnCloseWindow)
@@ -634,7 +755,7 @@ class ModelFrame(wx.Frame):
         
     def OnVariables(self, event):
         """!Switch to variables page"""
-        self.notebook.SetSelection(2)
+        self.notebook.SetSelectionByName('variables')
         
     def OnRemoveItem(self, event):
         """!Remove shape
@@ -714,9 +835,9 @@ class ModelFrame(wx.Frame):
             log.RunCmd(['g.manual',
                         'entry=wxGUI.Modeler'])
         else:
-            gcmd.RunCommand('g.manual',
-                            quiet = True,
-                            entry = 'wxGUI.Modeler')
+            RunCommand('g.manual',
+                       quiet = True,
+                       entry = 'wxGUI.Modeler')
         
     def OnModelProperties(self, event):
         """!Model properties dialog"""
@@ -792,6 +913,8 @@ class ModelFrame(wx.Frame):
         self.canvas.GetDiagram().DeleteAllShapes()
         self.model.Reset()
         self.canvas.Refresh()
+        self.itemPanel.Update()
+        self.variablePanel.Reset()
         
         # no model file loaded
         self.modelFile = None
@@ -911,86 +1034,7 @@ class ModelFrame(wx.Frame):
         
     def OnRunModel(self, event):
         """!Run entire model"""
-        if self.model.GetNumItems() < 1:
-            GMessage(parent = self, 
-                     message = _('Model is empty. Nothing to run.'))
-            return
-        
-        # validation
-        errList = self._validateModel()
-        if errList:
-            dlg = wx.MessageDialog(parent = self,
-                                   message = _('Model is not valid. Do you want to '
-                                               'run the model anyway?\n\n%s') % '\n'.join(errList),
-                                   caption=_("Run model?"),
-                                   style = wx.YES_NO | wx.NO_DEFAULT |
-                                   wx.ICON_QUESTION | wx.CENTRE)
-            ret = dlg.ShowModal()
-            if ret != wx.ID_YES:
-                return
-        
-        # parametrization
-        params = self.model.Parameterize()
-        if params:
-            dlg = ModelParamDialog(parent = self,
-                                   params = params)
-            dlg.CenterOnParent()
-            
-            ret = dlg.ShowModal()
-            if ret != wx.ID_OK:
-                dlg.Destroy()
-                return
-        
-            err = dlg.GetErrors()
-            if err:
-                GError(parent = self,
-                       message = unicode('\n'.join(err)))
-                return
-        
-        self.goutput.cmdThread.SetId(-1)
-        for item in self.model.GetItems():
-            if not item.IsEnabled():
-                continue
-            if isinstance(item, ModelAction):
-                if item.GetBlockId():
-                    continue
-                self._runAction(item, params)
-            elif isinstance(item, ModelLoop):
-                cond = item.GetText()
-                # substitute variables in condition
-                variables = self.model.GetVariables()
-                for variable in variables:
-                    pattern = re.compile('%' + variable)
-                    if pattern.search(cond):
-                        value = variables[variable].get('value', '')
-                        vtype = variables[variable].get('type', 'string')
-                        if vtype == 'string':
-                            value = '"' + value + '"'
-                        cond = pattern.sub(value, cond)
-                # split condition
-                condVar, condText = re.split('\s*in\s*', cond)
-                
-                for action in item.GetItems():
-                    for vars()[condVar] in eval(condText):
-                        if isinstance(action, ModelAction):
-                            self._runAction(action, params)
-        
-        if params:
-            dlg.Destroy()
-        
-    def _runAction(self, item, params):
-        """!Run given action"""
-        name = item.GetName()
-        if params.has_key(name):
-            paramsOrig = item.GetParams(dcopy = True)
-            item.MergeParams(params[name])
-            
-        self.SetStatusText(_('Running model...'), 0)
-        self.goutput.RunCmd(command = item.GetLog(string = False),
-                            onDone = self.OnDone)
-            
-        if params.has_key(name):
-            item.SetParams(paramsOrig)
+        self.model.Run(self.goutput, self.OnDone, parent = self)
         
     def OnDone(self, cmd, returncode):
         """!Computation finished"""
@@ -1003,7 +1047,10 @@ class ModelFrame(wx.Frame):
                      message = _('Model is empty. Nothing to validate.'))
             return
         
-        errList = self._validateModel()
+        
+        self.SetStatusText(_('Validating model...'), 0)
+        errList = self.model.Validate()
+        self.SetStatusText('', 0)
         
         if errList:
             GWarning(parent = self,
@@ -1116,16 +1163,6 @@ class ModelFrame(wx.Frame):
         
         self.SetStatusText(_("Model exported to <%s>") % filename)
 
-    def _validateModel(self):
-        """!Validate model"""
-        self.SetStatusText(_('Validating model...'), 0)
-        
-        errList = self.model.Validate()
-        
-        self.SetStatusText('', 0)
-        
-        return errList
-    
     def OnDefineRelation(self, event):
         """!Define relation between data and action items"""
         self.canvas.SetCursor(self.cursors["cross"])
@@ -1188,7 +1225,7 @@ class ModelFrame(wx.Frame):
             return
         
         action = ModelAction(self.model, cmd = cmd, x = width/2, y = height/2,
-                             id = self.model.GetNumItems() + 1)
+                             id = self.model.GetNextId())
         overwrite = self.model.GetProperties().get('overwrite', None)
         if overwrite is not None:
             action.GetTask().set_flag('overwrite', overwrite)
@@ -1205,10 +1242,13 @@ class ModelFrame(wx.Frame):
         
         # show properties dialog
         win = action.GetPropDialog()
-        if not win and action.GetLog(string = False):
-            module = menuform.GUI().ParseCommand(action.GetLog(string = False),
-                                                 completed = (self.GetOptData, action, action.GetParams()),
-                                                 parentframe = self, show = True)
+        if not win:
+            if len(action.GetLog(string = False)) > 1:
+                self.GetOptData(dcmd = action.GetLog(string = False), layer = action,
+                                params = action.GetParams(), propwin = None)
+            else:
+                menuform.GUI(parent = self, show = True).ParseCommand(action.GetLog(string = False),
+                                                                      completed = (self.GetOptData, action, action.GetParams()))
         elif win and not win.IsShown():
             win.Show()
         
@@ -1217,19 +1257,30 @@ class ModelFrame(wx.Frame):
         
     def OnAddData(self, event):
         """!Add data item to model
-
-        @todo
         """
         # add action to canvas
         width, height = self.canvas.GetSize()
         data = ModelData(self, x = width/2, y = height/2)
+       
+        dlg = ModelDataDialog(parent = self, shape = data)
+        data.SetPropDialog(dlg)
+        dlg.CentreOnParent()
+        ret = dlg.ShowModal()
+        dlg.Destroy()
+        if ret != wx.ID_OK:
+            return
+        
+        data.Update()
         self.canvas.diagram.AddShape(data)
         data.Show(True)
         
+        self.ModelChanged()
+        
         self._addEvent(data)
-        # self.model.AddData(data)
+        self.model.AddItem(data)
         
         self.canvas.Refresh()
+        
         
     def OnHelp(self, event):
         """!Display manual page"""
@@ -1243,7 +1294,8 @@ class ModelFrame(wx.Frame):
         info.SetIcon(wx.Icon(os.path.join(globalvar.ETCICONDIR, 'grass.ico'), wx.BITMAP_TYPE_ICO))
         info.SetName(_('wxGUI Graphical Modeler'))
         info.SetWebSite('http://grass.osgeo.org')
-        info.SetDescription(_('(C) 2010 by the GRASS Development Team\n\n') + 
+        year = grass.version()['date']
+        info.SetDescription(_('(C) 2010-%s by the GRASS Development Team\n\n') % year + 
                             '\n'.join(textwrap.wrap(_('This program is free software under the GNU General Public License'
                                                       '(>=v2). Read the file COPYING that comes with GRASS for details.'), 75)))
         
@@ -1252,23 +1304,6 @@ class ModelFrame(wx.Frame):
     def GetOptData(self, dcmd, layer, params, propwin):
         """!Process action data"""
         if params: # add data items
-            for p in params['params']:
-                if p.get('prompt', '') in ('raster', 'vector', 'raster3d'):
-                    try:
-                        name, mapset = p.get('value', '').split('@', 1)
-                    except (ValueError, IndexError):
-                        continue
-                    
-                    if mapset != grass.gisenv()['MAPSET']:
-                        continue
-                    
-                    # don't use fully qualified names
-                    p['value'] = p.get('value', '').split('@')[0]
-                    for idx in range(1, len(dcmd)):
-                        if p.get('name', '') in dcmd[idx]:
-                            dcmd[idx] = p.get('name', '') + '=' + p.get('value', '')
-                            break
-            
             width, height = self.canvas.GetSize()
             x = [width/2 + 200, width/2 - 200]
             for p in params['params']:
@@ -1285,9 +1320,11 @@ class ModelFrame(wx.Frame):
                                                p.get('prompt', ''))
                     if data:
                         if p.get('age', 'old') == 'old':
-                            rel = ModelRelation(data, layer, p.get('name', ''))
+                            rel = ModelRelation(parent = self, fromShape = data,
+                                                toShape = layer, param = p.get('name', ''))
                         else:
-                            rel = ModelRelation(layer, data, p.get('name', ''))
+                            rel = ModelRelation(parent = self, fromShape = layer,
+                                                toShape = data, param = p.get('name', ''))
                         layer.AddRelation(rel)
                         data.AddRelation(rel)
                         self.AddLine(rel)
@@ -1302,9 +1339,11 @@ class ModelFrame(wx.Frame):
                     data.Show(True)
                                                             
                     if p.get('age', 'old') == 'old':
-                        rel = ModelRelation(data, layer, p.get('name', ''))
+                        rel = ModelRelation(parent = self, fromShape = data,
+                                            toShape = layer, param = p.get('name', ''))
                     else:
-                        rel = ModelRelation(layer, data, p.get('name', ''))
+                        rel = ModelRelation(parent = self, fromShape = layer,
+                                            toShape = data, param = p.get('name', ''))
                     layer.AddRelation(rel)
                     data.AddRelation(rel)
                     self.AddLine(rel)
@@ -1313,7 +1352,7 @@ class ModelFrame(wx.Frame):
             # valid ?
             valid = True
             for p in params['params']:
-                if p.get('required', 'no') != 'no' and \
+                if p.get('required', False) and \
                         p.get('value', '') == '' and \
                         p.get('default', '') == '':
                     valid = False
@@ -1467,7 +1506,7 @@ class ModelFrame(wx.Frame):
         loop.Clear()
         
         for item in items:
-            rel = ModelRelation(parent, item)
+            rel = ModelRelation(parent = self, fromShape = parent, toShape = item)
             dx = item.GetX() - parent.GetX()
             dy = item.GetY() - parent.GetY()
             loop.AddRelation(rel)
@@ -1479,7 +1518,7 @@ class ModelFrame(wx.Frame):
         
         # close loop
         item = loop.GetItems()[-1]
-        rel = ModelRelation(item, loop)
+        rel = ModelRelation(parent = self, fromShape = item, toShape = loop)
         loop.AddRelation(rel)
         self.AddLine(rel)
         dx = (item.GetX() - loop.GetX()) + loop.GetWidth() / 2 + 50
@@ -1514,7 +1553,8 @@ class ModelFrame(wx.Frame):
         dy     = condition.GetY()
         for branch in items.keys():
             for item in items[branch]:
-                rel = ModelRelation(parent, item)
+                rel = ModelRelation(parent = self, fromShape = parent,
+                                    toShape = item)
                 condition.AddRelation(rel)
                 self.AddLine(rel)
                 rel.MakeLineControlPoints(0)
@@ -1561,7 +1601,7 @@ class ModelCanvas(ogl.ShapeCanvas):
             remList, upList = self.parent.GetModel().RemoveItem(shape)
             shape.Select(False)
             diagram.RemoveShape(shape)
-            del shape
+            shape.__del__()
             for item in remList:
                 diagram.RemoveShape(item)
                 item.__del__()
@@ -1673,8 +1713,7 @@ class ModelAction(ModelObject, ogl.RectangleShape):
             height = UserSettings.Get(group='modeler', key='action', subkey=('size', 'height'))
         
         if cmd:
-            self.task = menuform.GUI().ParseCommand(cmd = cmd,
-                                                    show = None)
+            self.task = menuform.GUI(show = None).ParseCommand(cmd = cmd)
         else:
             if task:
                 self.task = task
@@ -1705,8 +1744,8 @@ class ModelAction(ModelObject, ogl.RectangleShape):
             color = UserSettings.Get(group='modeler', key='action',
                                      subkey=('color', 'running'))
         elif not self.isEnabled:
-            color = UserSettings.Get(group='modeler', key='action',
-                                     subkey=('color', 'disabled'))
+            color = UserSettings.Get(group='modeler', key='disabled',
+                                     subkey='color')
         elif self.isValid:
             color = UserSettings.Get(group='modeler', key='action',
                                      subkey=('color', 'valid'))
@@ -1751,7 +1790,8 @@ class ModelAction(ModelObject, ogl.RectangleShape):
 
     def GetLog(self, string = True):
         """!Get logging info"""
-        cmd = self.task.getCmd(ignoreErrors = True)
+        cmd = self.task.getCmd(ignoreErrors = True, ignoreRequired = True)
+        
         # substitute variables
         variables = self.parent.GetVariables()
         fparams = self.parent.GetVariables(params = True)
@@ -1814,11 +1854,11 @@ class ModelAction(ModelObject, ogl.RectangleShape):
         
     def MergeParams(self, params):
         """!Merge dictionary of parameters"""
-        if params.has_key('flags'):
+        if 'flags' in params:
             for f in params['flags']:
                 self.task.set_flag(f['name'],
                                    f.get('value', False))
-        if params.has_key('params'):
+        if 'params' in params:
             for p in params['params']:
                 self.task.set_param(p['name'],
                                     p.get('value', ''))
@@ -1831,8 +1871,9 @@ class ModelAction(ModelObject, ogl.RectangleShape):
     def SetParameterized(self, isparameterized):
         """!Set action parameterized"""
         self.isParameterized = isparameterized
-        self._setPen()
-
+        if self.parent.GetCanvas():                
+            self._setPen()
+        
     def IsParameterized(self):
         """!Check if action is parameterized"""
         return self.isParameterized
@@ -1869,7 +1910,7 @@ class ModelData(ModelObject, ogl.EllipseShape):
         @param fname, tname list of parameter names from / to
         @param value  value
         @param prompt type of GIS element
-        @param width, height dimension of the shape
+        @param width,height dimension of the shape
         """
         ModelObject.__init__(self)
         
@@ -1921,7 +1962,7 @@ class ModelData(ModelObject, ogl.EllipseShape):
         if name:
             return '/'.join(name) + '=' + self.value + ' (' + self.prompt + ')'
         else:
-            return _('unknown')
+            return self.value + ' (' + self.prompt + ')'
 
     def GetName(self):
         """!Get list of names"""
@@ -1935,12 +1976,22 @@ class ModelData(ModelObject, ogl.EllipseShape):
         """!Get prompt"""
         return self.prompt
 
+    def SetPrompt(self, prompt):
+        """!Set prompt
+        
+        @param prompt
+        """
+        self.prompt = prompt
+        
     def GetValue(self):
         """!Get value"""
         return self.value
 
     def SetValue(self, value):
-        """!Set value"""
+        """!Set value
+
+        @param value
+        """
         self.value = value
         self._setText()
         for direction in ('from', 'to'):
@@ -1950,17 +2001,9 @@ class ModelData(ModelObject, ogl.EllipseShape):
                 else:
                     action = rel.GetFrom()
                 
-                task = menuform.GUI().ParseCommand(cmd = action.GetLog(string = False),
-                                                   show = None)
+                task = menuform.GUI(show = None).ParseCommand(cmd = action.GetLog(string = False))
                 task.set_param(rel.GetName(), self.value)
                 action.SetParams(params = task.get_options())
-        
-    def AddName(self, name, direction):
-        """!Record new name (parameter)
-
-        @param direction direction - 'from' or 'to'
-        """
-        self.name[direction].append(name)
         
     def GetPropDialog(self):
         """!Get properties dialog"""
@@ -1973,17 +2016,17 @@ class ModelData(ModelObject, ogl.EllipseShape):
     def _setBrush(self):
         """!Set brush"""
         if self.prompt == 'raster':
-            color = UserSettings.Get(group='modeler', key='data',
-                                     subkey=('color', 'raster'))
+            color = UserSettings.Get(group = 'modeler', key = 'data',
+                                     subkey = ('color', 'raster'))
         elif self.prompt == 'raster3d':
-            color = UserSettings.Get(group='modeler', key='data',
-                                     subkey=('color', 'raster3d'))
+            color = UserSettings.Get(group = 'modeler', key = 'data',
+                                     subkey = ('color', 'raster3d'))
         elif self.prompt == 'vector':
-            color = UserSettings.Get(group='modeler', key='data',
-                                     subkey=('color', 'vector'))
+            color = UserSettings.Get(group = 'modeler', key = 'data',
+                                     subkey = ('color', 'vector'))
         else:
-            color = UserSettings.Get(group='modeler', key='action',
-                                     subkey=('color', 'invalid'))
+            color = UserSettings.Get(group = 'modeler', key = 'action',
+                                     subkey = ('color', 'invalid'))
         wxColor = wx.Color(color[0], color[1], color[2])
         self.SetBrush(wx.Brush(wxColor))
         
@@ -2001,11 +2044,11 @@ class ModelData(ModelObject, ogl.EllipseShape):
                     break
 
         if isParameterized:
-            width = int(UserSettings.Get(group='modeler', key='action',
-                                         subkey=('width', 'parameterized')))
+            width = int(UserSettings.Get(group = 'modeler', key = 'action',
+                                         subkey = ('width', 'parameterized')))
         else:
-            width = int(UserSettings.Get(group='modeler', key='action',
-                                         subkey=('width', 'default')))
+            width = int(UserSettings.Get(group = 'modeler', key = 'action',
+                                         subkey = ('width', 'default')))
         pen = self.GetPen()
         pen.SetWidth(width)
         self.SetPen(pen)
@@ -2034,19 +2077,11 @@ class ModelDataDialog(ElementDialog):
                  style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER):
         self.parent = parent
         self.shape = shape
-        prompt = shape.GetPrompt()
         
-        if prompt == 'raster':
-            label = _('Name of raster map:')
-        elif prompt == 'vector':
-            label = _('Name of vector map:')
-        else:
-            label = _('Name of element:')
-        
-        ElementDialog.__init__(self, parent, title, label = label)
-        
-        self.element = gselect.Select(parent = self.panel, id = wx.ID_ANY,
-                                      size = globalvar.DIALOG_GSELECT_SIZE,
+        label, etype = self._getLabel()
+        ElementDialog.__init__(self, parent, title, label = label, etype = etype)
+                
+        self.element = gselect.Select(parent = self.panel,
                                       type = prompt)
         self.element.SetValue(shape.GetValue())
         
@@ -2061,6 +2096,19 @@ class ModelDataDialog(ElementDialog):
         self._layout()
         self.SetMinSize(self.GetSize())
         
+    def _getLabel(self):
+        etype = False
+        prompt = self.shape.GetPrompt()
+        if prompt == 'raster':
+            label = _('Name of raster map:')
+        elif prompt == 'vector':
+            label = _('Name of vector map:')
+        else:
+            etype = True
+            label = _('Name of element:')
+
+        return label, etype
+    
     def _layout(self):
         """!Do layout"""
         self.dataSizer.Add(self.element, proportion=0,
@@ -2072,14 +2120,29 @@ class ModelDataDialog(ElementDialog):
     def OnOK(self, event):
         """!Ok pressed"""
         self.shape.SetValue(self.GetElement())
+        if self.etype:
+            elem = self.GetType()
+            if elem == 'rast':
+                self.shape.SetPrompt('raster')
+            elif elem == 'vect':
+                self.shape.SetPrompt('raster')
+        
         self.parent.canvas.Refresh()
         self.parent.SetStatusText('', 0)
-        self.OnCancel(event)
+        self.shape.SetPropDialog(None)
         
+        if self.IsModal():
+            event.Skip() 
+        else:
+            self.Destroy()
+    
     def OnCancel(self, event):
         """!Cancel pressed"""
         self.shape.SetPropDialog(None)
-        self.Destroy()
+        if self.IsModal():
+            event.Skip()
+        else:
+            self.Destroy()
         
 class ModelEvtHandler(ogl.ShapeEvtHandler):
     """!Model event handler class"""
@@ -2102,9 +2165,24 @@ class ModelEvtHandler(ogl.ShapeEvtHandler):
                 drel['from'] = shape
             elif drel['to'] is None:
                 drel['to'] = shape
-                rel = ModelRelation(drel['from'], drel['to'])
-                drel['from'].AddRelation(rel)
-                self.frame.AddLine(rel)
+                rel = ModelRelation(parent = self.frame, fromShape = drel['from'],
+                                    toShape = drel['to'])
+                dlg = ModelRelationDialog(parent = self.frame,
+                                          shape = rel)
+                if dlg.IsValid():
+                    ret = dlg.ShowModal()
+                    if ret == wx.ID_OK:
+                        option = dlg.GetOption()
+                        rel.SetName(option)
+                        drel['from'].AddRelation(rel)
+                        drel['to'].AddRelation(rel)
+                        drel['from'].Update()
+                        params = { 'params' : [{ 'name' : option,
+                                                 'value' : drel['from'].GetValue()}] }
+                        drel['to'].MergeParams(params)
+                        self.frame.AddLine(rel)
+                
+                    dlg.Destroy()
                 del self.frame.defineRelation
         
         if shape.Selected():
@@ -2139,9 +2217,8 @@ class ModelEvtHandler(ogl.ShapeEvtHandler):
         self.frame.ModelChanged()
         shape = self.GetShape()
         if isinstance(shape, ModelAction):
-            module = menuform.GUI().ParseCommand(shape.GetLog(string = False),
-                                                 completed = (self.frame.GetOptData, shape, shape.GetParams()),
-                                                 parentframe = self.frame, show = True)
+            module = menuform.GUI(parent = self.frame, show = True).ParseCommand(shape.GetLog(string = False),
+                                                                                 completed = (self.frame.GetOptData, shape, shape.GetParams()))
         
         elif isinstance(shape, ModelData):
             dlg = ModelDataDialog(parent = self.frame, shape = shape)
@@ -2223,56 +2300,56 @@ class ModelEvtHandler(ogl.ShapeEvtHandler):
         
     def OnRightClick(self, x, y, keys = 0, attachment = 0):
         """!Right click -> pop-up menu"""
-        if not hasattr (self, "popupID1"):
-            self.popupID1 = wx.NewId()
-            self.popupID2 = wx.NewId()
-            self.popupID3 = wx.NewId()
-            self.popupID4 = wx.NewId()
-
+        if not hasattr (self, "popupID"):
+            self.popupID = dict()
+            for key in ('remove', 'enable', 'addPoint',
+                        'delPoint', 'intermediate', 'props', 'id'):
+                self.popupID[key] = wx.NewId()
+        
         # record coordinates
         self.x = x
         self.y = y
         
         shape = self.GetShape()
         popupMenu = wx.Menu()
-        popupMenu.Append(self.popupID1, text=_('Remove'))
-        self.frame.Bind(wx.EVT_MENU, self.OnRemove, id = self.popupID1)
-        if isinstance(shape, ModelAction):
+        popupMenu.Append(self.popupID['remove'], text=_('Remove'))
+        self.frame.Bind(wx.EVT_MENU, self.OnRemove, id = self.popupID['remove'])
+        if isinstance(shape, ModelAction) or isinstance(shape, ModelLoop):
             if shape.IsEnabled():
-                popupMenu.Append(self.popupID3, text=_('Disable'))
-                self.frame.Bind(wx.EVT_MENU, self.OnDisable, id = self.popupID3)
+                popupMenu.Append(self.popupID['enable'], text=_('Disable'))
+                self.frame.Bind(wx.EVT_MENU, self.OnDisable, id = self.popupID['enable'])
             else:
-                popupMenu.Append(self.popupID3, text=_('Enable'))
-                self.frame.Bind(wx.EVT_MENU, self.OnEnable, id = self.popupID3)
+                popupMenu.Append(self.popupID['enable'], text=_('Enable'))
+                self.frame.Bind(wx.EVT_MENU, self.OnEnable, id = self.popupID['enable'])
         
         if isinstance(shape, ModelRelation):
             popupMenu.AppendSeparator()
-            popupMenu.Append(self.popupID2, text=_('Add control point'))
-            self.frame.Bind(wx.EVT_MENU, self.OnAddPoint, id = self.popupID2)
-            popupMenu.Append(self.popupID3, text=_('Remove control point'))
-            self.frame.Bind(wx.EVT_MENU, self.OnRemovePoint, id = self.popupID3)
+            popupMenu.Append(self.popupID['addPoint'], text=_('Add control point'))
+            self.frame.Bind(wx.EVT_MENU, self.OnAddPoint, id = self.popupID['addPoint'])
+            popupMenu.Append(self.popupID['delPoint'], text=_('Remove control point'))
+            self.frame.Bind(wx.EVT_MENU, self.OnRemovePoint, id = self.popupID['delPoint'])
             if len(shape.GetLineControlPoints()) == 2:
-                popupMenu.Enable(self.popupID3, False)
+                popupMenu.Enable(self.popupID['delPoint'], False)
         
         if isinstance(shape, ModelData) and '@' not in shape.GetValue():
             popupMenu.AppendSeparator()
-            popupMenu.Append(self.popupID3, text=_('Intermediate'),
+            popupMenu.Append(self.popupID['intermediate'], text=_('Intermediate'),
                              kind = wx.ITEM_CHECK)
             if self.GetShape().IsIntermediate():
-                popupMenu.Check(self.popupID3, True)
+                popupMenu.Check(self.popupID['intermediate'], True)
             
-            self.frame.Bind(wx.EVT_MENU, self.OnIntermediate, id = self.popupID3)
+            self.frame.Bind(wx.EVT_MENU, self.OnIntermediate, id = self.popupID['intermediate'])
             
         if isinstance(shape, ModelData) or \
                 isinstance(shape, ModelAction) or \
                 isinstance(shape, ModelLoop):
             popupMenu.AppendSeparator()
-            popupMenu.Append(self.popupID2, text=_('Properties'))
-            self.frame.Bind(wx.EVT_MENU, self.OnProperties, id = self.popupID2)
+            popupMenu.Append(self.popupID['props'], text=_('Properties'))
+            self.frame.Bind(wx.EVT_MENU, self.OnProperties, id = self.popupID['props'])
         
         if isinstance(shape, ModelAction):
-            popupMenu.Append(self.popupID4, text=_('Change ID'))
-            self.frame.Bind(wx.EVT_MENU, self.OnChangeId, id = self.popupID3)
+            popupMenu.Append(self.popupID['id'], text=_('Change ID'))
+            self.frame.Bind(wx.EVT_MENU, self.OnChangeId, id = self.popupID['id'])
         
         self.frame.PopupMenu(popupMenu)
         popupMenu.Destroy()
@@ -2283,15 +2360,15 @@ class ModelEvtHandler(ogl.ShapeEvtHandler):
     
     def OnDisable(self, event):
         """!Disable action"""
-        action = self.GetShape()
-        action.Enable(False)
-        self.frame.ModelChanged()
-        self.frame.canvas.Refresh()
-
+        self._onEnable(False)
+        
     def OnEnable(self, event):
         """!Disable action"""
-        action = self.GetShape()
-        action.Enable(True)
+        self._onEnable(True)
+        
+    def _onEnable(self, enable):
+        shape = self.GetShape()
+        shape.Enable(enable)
         self.frame.ModelChanged()
         self.frame.canvas.Refresh()
         
@@ -2359,7 +2436,7 @@ class ModelSearchDialog(wx.Dialog):
         self.btnOk.SetDefault()
         self.btnOk.Enable(False)
 
-        self.cmd_prompt.Bind(wx.EVT_CHAR, self.OnText)
+        self.cmd_prompt.Bind(wx.EVT_KEY_UP, self.OnText)
         self.search.searchChoice.Bind(wx.EVT_CHOICE, self.OnText)
         self.Bind(wx.EVT_BUTTON, self.OnOk, self.btnOk)
         
@@ -2401,13 +2478,14 @@ class ModelSearchDialog(wx.Dialog):
             list()
         
         try:
-            cmd = shlex.split(str(line))
+            cmd = utils.split(str(line))
         except UnicodeError:
-            cmd = shlex.split(utils.EncodeString((line)))
+            cmd = utils.split(utils.EncodeString((line)))
             
         return cmd
     
     def OnOk(self, event):
+        """!Button 'OK' pressed"""
         self.btnOk.SetFocus()
         cmd = self.GetCmd()
         
@@ -2426,13 +2504,15 @@ class ModelSearchDialog(wx.Dialog):
         self.EndModal(wx.ID_OK)
         
     def OnText(self, event):
-        """!Text entered"""
+        """!Text in prompt changed"""
         if self.cmd_prompt.AutoCompActive():
             event.Skip()
             return
         
         if isinstance(event, wx.KeyEvent):
-            entry = self.cmd_prompt.GetTextLeft() # FIXME
+            entry = self.cmd_prompt.GetTextLeft()
+        elif isinstance(event, wx.stc.StyledTextEvent):
+            entry = event.GetText()
         else:
             entry = event.GetString()
         
@@ -2447,22 +2527,28 @@ class ModelSearchDialog(wx.Dialog):
         """!Reset dialog"""
         self.search.Reset()
         self.cmd_prompt.OnCmdErase(None)
+        self.btnOk.Enable(False)
+        self.cmd_prompt.SetFocus()
 
 class ModelRelation(ogl.LineShape):
     """!Data - action relation"""
-    def __init__(self, fromShape, toShape, param = ''):
+    def __init__(self, parent, fromShape, toShape, param = ''):
         self.fromShape = fromShape
         self.toShape   = toShape
         self.param     = param
+        self.parent    = parent
         
         self._points    = None
         
-        ogl.LineShape.__init__(self)
+        if self.parent.GetCanvas():        
+            ogl.LineShape.__init__(self)
     
     def __del__(self):
-        self.fromShape.rels.remove(self)
-        self.toShape.rels.remove(self)
-
+        if self in self.fromShape.rels:
+            self.fromShape.rels.remove(self)
+        if self in self.toShape.rels:
+            self.toShape.rels.remove(self)
+        
     def GetFrom(self):
         """!Get id of 'from' shape"""
         return self.fromShape
@@ -2513,6 +2599,138 @@ class ModelRelation(ogl.LineShape):
         """!Draw relation"""
         self._setPen()
         ogl.LineShape.OnDraw(self, dc)
+    
+    def SetName(self, param):
+        self.param = param
+        
+class ModelRelationDialog(wx.Dialog):
+    """!Relation properties dialog"""
+    def __init__(self, parent, shape, id = wx.ID_ANY, title = _("Relation properties"),
+                 style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER, **kwargs):
+        self.parent = parent
+        self.shape = shape
+        
+        options = self._getOptions()
+        if not options:
+            self.valid = False
+            return
+        
+        self.valid = True
+        wx.Dialog.__init__(self, parent, id, title, style = style, **kwargs)
+        self.SetIcon(wx.Icon(os.path.join(globalvar.ETCICONDIR, 'grass.ico'), wx.BITMAP_TYPE_ICO))
+        
+        self.panel = wx.Panel(parent = self, id = wx.ID_ANY)
+        
+        self.fromBox = wx.StaticBox(parent = self.panel, id = wx.ID_ANY,
+                                    label = " %s " % _("From"))
+        self.toBox = wx.StaticBox(parent = self.panel, id = wx.ID_ANY,
+                                  label = " %s " % _("To"))
+        
+        self.option = wx.ComboBox(parent = self.panel, id = wx.ID_ANY,
+                                  style = wx.CB_READONLY,
+                                  choices = options)
+        self.option.Bind(wx.EVT_COMBOBOX, self.OnOption)
+        
+        self.btnCancel = wx.Button(self.panel, wx.ID_CANCEL)
+        self.btnOk     = wx.Button(self.panel, wx.ID_OK)
+        self.btnOk.Enable(False)
+        
+        self._layout()
+
+    def _layout(self):
+        mainSizer = wx.BoxSizer(wx.VERTICAL)
+
+        fromSizer = wx.StaticBoxSizer(self.fromBox, wx.VERTICAL)
+        self._layoutShape(shape = self.shape.GetFrom(), sizer = fromSizer)
+        toSizer = wx.StaticBoxSizer(self.toBox, wx.VERTICAL)
+        self._layoutShape(shape = self.shape.GetTo(), sizer = toSizer)
+
+        btnSizer = wx.StdDialogButtonSizer()
+        btnSizer.AddButton(self.btnCancel)
+        btnSizer.AddButton(self.btnOk)
+        btnSizer.Realize()
+        
+        mainSizer.Add(item = fromSizer, proportion = 0,
+                      flag = wx.EXPAND | wx.ALL, border = 5)
+        mainSizer.Add(item = toSizer, proportion = 0,
+                      flag = wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border = 5)
+        mainSizer.Add(item = btnSizer, proportion = 0,
+                      flag = wx.EXPAND | wx.ALL | wx.ALIGN_CENTER, border = 5)
+        
+        self.panel.SetSizer(mainSizer)
+        mainSizer.Fit(self.panel)
+        
+        self.Layout()
+        self.SetSize(self.GetBestSize())
+        
+    def _layoutShape(self, shape, sizer):
+        if isinstance(shape, ModelData):
+            sizer.Add(item = wx.StaticText(parent = self.panel, id = wx.ID_ANY,
+                                           label = _("Data: %s") % shape.GetLog()),
+                      proportion = 1, flag = wx.EXPAND | wx.ALL,
+                      border = 5)
+        elif isinstance(shape, ModelAction):
+            gridSizer = wx.GridBagSizer (hgap = 5, vgap = 5)
+            gridSizer.Add(item = wx.StaticText(parent = self.panel, id = wx.ID_ANY,
+                                               label = _("Command:")),
+                          pos = (0, 0))
+            gridSizer.Add(item = wx.StaticText(parent = self.panel, id = wx.ID_ANY,
+                                               label = shape.GetName()),
+                          pos = (0, 1))
+            gridSizer.Add(item = wx.StaticText(parent = self.panel, id = wx.ID_ANY,
+                                               label = _("Option:")),
+                          flag = wx.ALIGN_CENTER_VERTICAL,
+                          pos = (1, 0))
+            gridSizer.Add(item = self.option,
+                          pos = (1, 1))
+            sizer.Add(item = gridSizer,
+                      proportion = 1, flag = wx.EXPAND | wx.ALL,
+                      border = 5)
+            
+    def _getOptions(self):
+        """!Get relevant options"""
+        items = []
+        fromShape = self.shape.GetFrom()
+        if not isinstance(fromShape, ModelData):
+            GError(parent = self.parent,
+                   message = _("Relation doesn't start with data item.\n"
+                               "Unable to add relation."))
+            return items
+        
+        toShape = self.shape.GetTo()
+        if not isinstance(toShape, ModelAction):
+            GError(parent = self.parent,
+                   message = _("Relation doesn't point to GRASS command.\n"
+                               "Unable to add relation."))
+            return items
+        
+        prompt = fromShape.GetPrompt()
+        task = toShape.GetTask()
+        for p in task.get_options()['params']:
+            if p.get('prompt', '') == prompt and \
+                    'name' in p:
+                items.append(p['name'])
+        
+        if not items:
+            GError(parent = self.parent,
+                   message = _("No relevant option found.\n"
+                               "Unable to add relation."))
+        return items
+    
+    def GetOption(self):
+        """!Get selected option"""
+        return self.option.GetStringSelection()
+    
+    def IsValid(self):
+        """!Check if relation is valid"""
+        return self.valid
+    
+    def OnOption(self, event):
+        """!Set option"""
+        if event.GetString():
+            self.btnOk.Enable()
+        else:
+            self.btnOk.Enable(False)
         
 class ProcessModelFile:
     """!Process GRASS model file (gxm)"""
@@ -2726,8 +2944,7 @@ class ProcessModelFile:
             cmd.append('%s=%s' % (name,
                                   self._filterValue(self._getNodeText(p, 'value'))))
         
-        task, err = menuform.GUI().ParseCommand(cmd = cmd,
-                                                show = None, checkError = True)
+        task, err = menuform.GUI(show = None, checkError = True).ParseCommand(cmd = cmd)
         if err:
             GWarning(os.linesep.join(err))
         
@@ -2845,11 +3062,13 @@ class WriteModelFile:
         if self.properties['name']:
             self.fd.write('%s<name>%s</name>\n' % (' ' * self.indent, self.properties['name']))
         if self.properties['description']:
-            self.fd.write('%s<description>%s</description>\n' % (' ' * self.indent, self.properties['description']))
+            self.fd.write('%s<description>%s</description>\n' % (' ' * self.indent,
+                                                                 utils.EncodeString(self.properties['description'])))
         if self.properties['author']:
-            self.fd.write('%s<author>%s</author>\n' % (' ' * self.indent, self.properties['author']))
+            self.fd.write('%s<author>%s</author>\n' % (' ' * self.indent,
+                                                       utils.EncodeString(self.properties['author'])))
         
-        if self.properties.has_key('overwrite') and \
+        if 'overwrite' in self.properties and \
                 self.properties['overwrite']:
             self.fd.write('%s<flag name="overwrite" />\n' % (' ' * self.indent))
         self.indent -= 4
@@ -2865,10 +3084,10 @@ class WriteModelFile:
             self.fd.write('%s<variable name="%s" type="%s">\n' % \
                               (' ' * self.indent, name, values['type']))
             self.indent += 4
-            if values.has_key('value'):
+            if 'value' in values:
                 self.fd.write('%s<value>%s</value>\n' % \
                                   (' ' * self.indent, values['value']))
-            if values.has_key('description'):
+            if 'description' in values:
                 self.fd.write('%s<description>%s</description>\n' % \
                                   (' ' * self.indent, values['description']))
             self.indent -= 4
@@ -3021,11 +3240,51 @@ class PreferencesDialog(PreferencesBaseDialog):
                                        settings = settings)
         
         # create notebook pages
+        self._createGeneralPage(self.notebook)
         self._createActionPage(self.notebook)
         self._createDataPage(self.notebook)
-                
+        self._createLoopPage(self.notebook)
+        
         self.SetMinSize(self.GetBestSize())
         self.SetSize(self.size)
+
+    def _createGeneralPage(self, notebook):
+        """!Create notebook page for action settings"""
+        panel = wx.Panel(parent = notebook, id = wx.ID_ANY)
+        notebook.AddPage(page = panel, text = _("General"))
+        
+        # colors
+        border = wx.BoxSizer(wx.VERTICAL)
+        box   = wx.StaticBox (parent = panel, id = wx.ID_ANY,
+                              label = " %s " % _("Item properties"))
+        sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
+        
+        gridSizer = wx.GridBagSizer (hgap = 3, vgap = 3)
+        gridSizer.AddGrowableCol(0)
+        
+        row = 0
+        gridSizer.Add(item = wx.StaticText(parent = panel, id = wx.ID_ANY,
+                                           label = _("Disabled:")),
+                      flag = wx.ALIGN_LEFT |
+                      wx.ALIGN_CENTER_VERTICAL,
+                      pos = (row, 0))
+        rColor = csel.ColourSelect(parent = panel, id = wx.ID_ANY,
+                                   colour = self.settings.Get(group='modeler', key='disabled', subkey='color'),
+                                   size = globalvar.DIALOG_COLOR_SIZE)
+        rColor.SetName('GetColour')
+        self.winId['modeler:disabled:color'] = rColor.GetId()
+        
+        gridSizer.Add(item = rColor,
+                      flag = wx.ALIGN_RIGHT |
+                      wx.ALIGN_CENTER_VERTICAL,
+                      pos = (row, 1))
+        
+        sizer.Add(item = gridSizer, proportion = 1, flag = wx.ALL | wx.EXPAND, border = 5)
+        border.Add(item = sizer, proportion = 0, flag = wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, border = 3)
+
+        panel.SetSizer(border)
+        
+        return panel
 
     def _createActionPage(self, notebook):
         """!Create notebook page for action settings"""
@@ -3035,7 +3294,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         # colors
         border = wx.BoxSizer(wx.VERTICAL)
         box   = wx.StaticBox (parent = panel, id = wx.ID_ANY,
-                              label = " %s " % _("Validity"))
+                              label = " %s " % _("Color"))
         sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         
         gridSizer = wx.GridBagSizer (hgap = 3, vgap = 3)
@@ -3091,24 +3350,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                       flag = wx.ALIGN_RIGHT |
                       wx.ALIGN_CENTER_VERTICAL,
                       pos = (row, 1))
-
-        row += 1
-        gridSizer.Add(item = wx.StaticText(parent = panel, id = wx.ID_ANY,
-                                         label = _("Disabled:")),
-                      flag = wx.ALIGN_LEFT |
-                      wx.ALIGN_CENTER_VERTICAL,
-                      pos = (row, 0))
-        rColor = csel.ColourSelect(parent = panel, id = wx.ID_ANY,
-                                   colour = self.settings.Get(group='modeler', key='action', subkey=('color', 'disabled')),
-                                   size = globalvar.DIALOG_COLOR_SIZE)
-        rColor.SetName('GetColour')
-        self.winId['modeler:action:color:disabled'] = rColor.GetId()
         
-        gridSizer.Add(item = rColor,
-                      flag = wx.ALIGN_RIGHT |
-                      wx.ALIGN_CENTER_VERTICAL,
-                      pos = (row, 1))
-
         sizer.Add(item = gridSizer, proportion = 1, flag = wx.ALL | wx.EXPAND, border = 5)
         border.Add(item = sizer, proportion = 0, flag = wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, border = 3)
         
@@ -3282,6 +3524,91 @@ class PreferencesDialog(PreferencesBaseDialog):
         
         return panel
 
+    def _createLoopPage(self, notebook):
+        """!Create notebook page for loop settings"""
+        panel = wx.Panel(parent = notebook, id = wx.ID_ANY)
+        notebook.AddPage(page = panel, text = _("Loop"))
+        
+        # colors
+        border = wx.BoxSizer(wx.VERTICAL)
+        box   = wx.StaticBox (parent = panel, id = wx.ID_ANY,
+                              label = " %s " % _("Color"))
+        sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
+        
+        gridSizer = wx.GridBagSizer (hgap = 3, vgap = 3)
+        gridSizer.AddGrowableCol(0)
+        
+        row = 0
+        gridSizer.Add(item = wx.StaticText(parent = panel, id = wx.ID_ANY,
+                                         label = _("Valid:")),
+                      flag = wx.ALIGN_LEFT |
+                      wx.ALIGN_CENTER_VERTICAL,
+                      pos = (row, 0))
+        vColor = csel.ColourSelect(parent = panel, id = wx.ID_ANY,
+                                   colour = self.settings.Get(group='modeler', key='loop', subkey=('color', 'valid')),
+                                   size = globalvar.DIALOG_COLOR_SIZE)
+        vColor.SetName('GetColour')
+        self.winId['modeler:loop:color:valid'] = vColor.GetId()
+        
+        gridSizer.Add(item = vColor,
+                      flag = wx.ALIGN_RIGHT |
+                      wx.ALIGN_CENTER_VERTICAL,
+                      pos = (row, 1))
+        
+        sizer.Add(item = gridSizer, proportion = 1, flag = wx.ALL | wx.EXPAND, border = 5)
+        border.Add(item = sizer, proportion = 0, flag = wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, border = 3)
+        
+        # size
+        box   = wx.StaticBox (parent = panel, id = wx.ID_ANY,
+                              label = " %s " % _("Shape size"))
+        sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
+        
+        gridSizer = wx.GridBagSizer (hgap=3, vgap=3)
+        gridSizer.AddGrowableCol(0)
+
+        row = 0
+        gridSizer.Add(item = wx.StaticText(parent = panel, id = wx.ID_ANY,
+                                         label = _("Width:")),
+                      flag = wx.ALIGN_LEFT |
+                      wx.ALIGN_CENTER_VERTICAL,
+                      pos = (row, 0))
+        
+        width = wx.SpinCtrl(parent = panel, id = wx.ID_ANY,
+                            min = 0, max = 500,
+                            initial = self.settings.Get(group='modeler', key='loop', subkey=('size', 'width')))
+        width.SetName('GetValue')
+        self.winId['modeler:loop:size:width'] = width.GetId()
+        
+        gridSizer.Add(item = width,
+                      flag = wx.ALIGN_RIGHT |
+                      wx.ALIGN_CENTER_VERTICAL,
+                      pos = (row, 1))
+
+        row += 1
+        gridSizer.Add(item = wx.StaticText(parent=panel, id=wx.ID_ANY,
+                                         label=_("Height:")),
+                      flag = wx.ALIGN_LEFT |
+                      wx.ALIGN_CENTER_VERTICAL,
+                      pos=(row, 0))
+        
+        height = wx.SpinCtrl(parent = panel, id = wx.ID_ANY,
+                             min = 0, max = 500,
+                             initial = self.settings.Get(group='modeler', key='loop', subkey=('size', 'height')))
+        height.SetName('GetValue')
+        self.winId['modeler:loop:size:height'] = height.GetId()
+        
+        gridSizer.Add(item = height,
+                      flag = wx.ALIGN_RIGHT |
+                      wx.ALIGN_CENTER_VERTICAL,
+                      pos = (row, 1))
+        
+        sizer.Add(item=gridSizer, proportion=1, flag=wx.ALL | wx.EXPAND, border=5)
+        border.Add(item=sizer, proportion=0, flag=wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, border=3)
+                
+        panel.SetSizer(border)
+        
+        return panel
+
     def OnApply(self, event):
         """!Button 'Apply' pressed"""
         PreferencesBaseDialog.OnApply(self, event)
@@ -3406,7 +3733,7 @@ class PropertiesDialog(wx.Dialog):
         self.name.SetValue(prop['name'])
         self.desc.SetValue(prop['description'])
         self.author.SetValue(prop['author'])
-        if prop.has_key('overwrite'):
+        if 'overwrite' in prop:
             self.overwrite.SetValue(prop['overwrite'])
 
 class ModelParamDialog(wx.Dialog):
@@ -3479,9 +3806,9 @@ class ModelParamDialog(wx.Dialog):
     def _createPage(self, name, params):
         """!Define notebook page"""
         if name in globalvar.grassCmd['all']:
-            task = menuform.grassTask(name)
+            task = gtask.grassTask(name)
         else:
-            task = menuform.grassTask()
+            task = gtask.grassTask()
         task.flags  = params['flags']
         task.params = params['params']
         
@@ -3683,6 +4010,11 @@ class VariablePanel(wx.Panel):
     def Update(self):
         """!Reload list of variables"""
         self.list.OnReload(None)
+        
+    def Reset(self):
+        """!Remove all variables"""
+        self.list.DeleteAllItems()
+        self.parent.GetModel().SetVariables([])
         
 class VariableListCtrl(ModelListCtrl):
     def __init__(self, parent, columns, **kwargs):
@@ -3908,6 +4240,32 @@ class ModelLoop(ModelItem, ogl.RectangleShape):
             else:
                 self.AddText('(' + str(self.id) + ')')
         
+        self._setBrush()
+        
+    def _setBrush(self):
+        """!Set brush"""
+        if not self.isEnabled:
+            color = UserSettings.Get(group='modeler', key='disabled',
+                                     subkey='color')
+        else:
+            color = UserSettings.Get(group='modeler', key='loop',
+                                     subkey=('color', 'valid'))
+        
+        wxColor = wx.Color(color[0], color[1], color[2])
+        self.SetBrush(wx.Brush(wxColor))
+
+    def Enable(self, enabled = True):
+        """!Enable/disable action"""
+        for item in self.items:
+            if not isinstance(item, ModelAction):
+                continue
+            item.Enable(enabled)
+        
+        ModelObject.Enable(self, enabled)
+        
+    def Update(self):
+        self._setBrush()
+        
     def GetName(self):
         """!Get name"""
         return _("loop")
@@ -4018,6 +4376,7 @@ class ItemListCtrl(ModelListCtrl):
     def Populate(self, data):
         """!Populate the list"""
         self.itemDataMap = dict()
+        
         if self.shape:
             if isinstance(self.shape, ModelCondition):
                 if self.GetName() == 'ElseBlockList':
@@ -4032,6 +4391,9 @@ class ItemListCtrl(ModelListCtrl):
         if len(self.columns) == 3: # ItemCheckList
             checked = list()
         for action in data:
+            if isinstance(action, ModelData):
+                continue
+            
             if len(self.columns) == 3:
                 self.itemDataMap[i] = [str(action.GetId()),
                                        action.GetName(),
@@ -4482,8 +4844,7 @@ if __name__ == "__main__":
         
     def _writePythonAction(self, item):
         """!Write model action to Python file"""
-        task = menuform.GUI().ParseCommand(cmd = item.GetLog(string = False),
-                                           show = None)
+        task = menuform.GUI(show = None).ParseCommand(cmd = item.GetLog(string = False))
         opts = task.get_options()
         flags = ''
         params = list()
