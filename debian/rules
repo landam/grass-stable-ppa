@@ -276,9 +276,6 @@ binary-arch: install
 	dh_installmenu -a
 	dh_installman -p$(PKG_NAME) debian/$(BASE_NAME).1 -a
 	dh_link -a
-	dh_link usr/share/doc/grass-core/AUTHORS usr/lib/$(BASE_NAME)/AUTHORS \
-		    usr/share/doc/grass-core/COPYING usr/lib/$(BASE_NAME)/COPYING \
-		    usr/share/common-licenses/GPL-2 usr/lib/$(BASE_NAME)/GPL.TXT
 	dh_pysupport -p$(PKG_NAME) /usr/lib/grass64/etc
 	dh_strip -a
 	dh_compress -a -XAUTHORS
