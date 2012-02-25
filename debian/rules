@@ -121,26 +121,24 @@ endif
 	rm -f error.log
 	# clean doxygen documentation (programming man)
 	rm -rf doxygenhtml \
-		lib/db/html \
-		lib/db/latex \
-		lib/g3d/html \
-		lib/g3d/latex \
-		lib/gis/html \
-		lib/gis/latex \
-		lib/gmath/html \
-		lib/gmath/latex \
-		lib/ogsf/html \
-		lib/ogsf/latex \
-		lib/proj/html \
-		lib/proj/latex \
-		lib/segment/html \
-		lib/segment/latex \
-		lib/vector/dglib/html \
-		lib/vector/dglib/latex \
-		lib/vector/html \
-		lib/vector/latex \
-		rfc/html \
-		rfc/latex
+		html latex \
+		rfc/html rfc/latex \
+		gui/wxpython/html gui/wxpython/latex
+	for LIBRARY in 
+		db \
+		g3d \
+		gis \
+		gmath \
+		gpde \
+		ogsf \
+		proj \
+		python \
+		segment \
+		vector \
+		vector/dglib ; \
+	    do \
+		rm -rf lib/$$LIBRARY/html lib/$$LIBRARY/latex ; \
+	done
 
 install: build
 	dh_testdir
@@ -225,21 +223,39 @@ install: build
 install-indep: build-indep
 	dh_testdir -i
 	dh_testroot -i
-	# jquery.js provided by a symlink to the libjs-jquery package
-	rm -f debian/tmp/programming-manual/html/db/html/jquery.js
-	rm -f debian/tmp/programming-manual/html/vector/html/jquery.js
-	rm -f debian/tmp/programming-manual/html/gis/html/jquery.js
 	install -m 644  -d debian/tmp
-	install -m 644  -d debian/tmp/programming-manual/vector/html/search \
-			   debian/tmp/programming-manual/db/html/search \
-			   debian/tmp/programming-manual/gis/html/search 
-			   
-	-install -m 644 lib/vector/html/* debian/tmp/programming-manual/vector/html
-	-install -m 644 lib/vector/html/search/* debian/tmp/programming-manual/vector/html/search
-	-install -m 644 lib/db/html/* debian/tmp/programming-manual/db/html
-	-install -m 644 lib/db/html/search/* debian/tmp/programming-manual/db/html/search
-	-install -m 644 lib/gis/html/* debian/tmp/programming-manual/gis/html
-	-install -m 644 lib/gis/html/search/* debian/tmp/programming-manual/gis/html/search
+	for CHAPTER in \
+		db \
+		g3d \
+		gis \
+		gmath \
+		gpde \
+		ogsf \
+		proj \
+		python \
+		segment \
+		vector \
+		vector/dglib ; \
+	     do \
+		install -m 644 -d debian/tmp/programming-manual/$$CHAPTER/html/search ; \
+		-install -m 644 lib/$$CHAPTER/html/* \
+			debian/tmp/programming-manual/$$CHAPTER/html ; \
+		rm -f debian/tmp/programming-manual/$$CHAPTER/html/jquery.js ; \
+		-install -m 644 lib/$$CHAPTER/html/search/* \
+			debian/tmp/programming-manual/$$CHAPTER/html/search ; \
+	done
+	for CHAPTER in \
+		. \
+		rfc \
+		gui/wxpython ; \
+	     do \
+		install -m 644 -d debian/tmp/programming-manual/$$CHAPTER/html/search ; \
+		-install -m 644 $$CHAPTER/html/* \
+			debian/tmp/programming-manual/$$CHAPTER/html ; \
+		rm -f debian/tmp/programming-manual/$$CHAPTER/html/jquery.js ; \
+		-install -m 644 $$CHAPTER/html/search/* \
+			debian/tmp/programming-manual/$$CHAPTER/html/search ; \
+	done
 
 # Build architecture-independent files here.
 binary-indep: install install-indep 

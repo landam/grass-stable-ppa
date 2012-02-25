@@ -16,9 +16,6 @@ E: grass-core: package-installs-python-bytecode usr/lib/grass64/etc/.../*.pyc
 Lintian:
 W: grass-dev: copyright-without-copyright-notice
 W: grass-dev-doc: copyright-without-copyright-notice
-W: grass-dev-doc: embedded-javascript-library usr/share/doc/grass-dev-doc/programming-manual/html/db/html/jquery.js
-W: grass-dev-doc: embedded-javascript-library usr/share/doc/grass-dev-doc/programming-manual/html/gis/html/jquery.js
-W: grass-dev-doc: embedded-javascript-library usr/share/doc/grass-dev-doc/programming-manual/html/vector/html/jquery.js
 W: grass-core: copyright-without-copyright-notice
 W: grass-doc: copyright-without-copyright-notice
 W: grass: copyright-without-copyright-notice
