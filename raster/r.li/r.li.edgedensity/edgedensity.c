@@ -6,8 +6,7 @@
  *
  *   This program is free software under the GPL (>=v2)
  *   Read the COPYING file that comes with GRASS for details.
- *       
- *       BUGS: please send bugs reports to  pallecch@cli.di.unipi.it
+ *
  */
 
 #include <grass/gis.h>
@@ -381,7 +380,7 @@ int calculate(int fd, area_des ad, char **valore, double *result)
 	G_free(mask_inf);
 	G_free(mask_corr);
     }
-    
+
     G_free(buf_sup);
     return RLI_OK;
 }

@@ -81,10 +81,10 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster");
+    module->keywords = _("raster, hydrology");
     module->description =
-	_("Filters and generates a depressionless elevation map and a flow "
-	  "direction map from a given elevation layer.");
+	_("Filters and generates a depressionless elevation map and a "
+	  "flow direction map from a given elevation raster map.");
 
     opt1 = G_define_standard_option(G_OPT_R_INPUT);
     opt1->description =

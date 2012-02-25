@@ -28,12 +28,10 @@ gettext.install('grasswxpy', os.path.join(os.getenv("GISBASE"), 'locale'), unico
 ETCDIR = os.path.join(os.getenv("GISBASE"), "etc")
 ETCICONDIR = os.path.join(os.getenv("GISBASE"), "etc", "gui", "icons")
 ETCWXDIR = os.path.join(ETCDIR, "wxpython")
+ETCIMGDIR = os.path.join(ETCDIR, "gui", "images")
 
 sys.path.append(os.path.join(ETCDIR, "python"))
 import grass.script as grass
-
-# wxversion.select() called once at the beginning
-check = True
 
 def CheckWxVersion(version = [2, 8, 11, 0]):
     """!Check wx version"""
@@ -45,8 +43,7 @@ def CheckWxVersion(version = [2, 8, 11, 0]):
 
 def CheckForWx():
     """!Try to import wx module and check its version"""
-    global check
-    if not check:
+    if 'wx' in sys.modules.keys():
         return
     
     minVersion = [2, 8, 1, 1]
@@ -55,9 +52,11 @@ def CheckForWx():
             import wxversion
         except ImportError, e:
             raise ImportError(e)
-        wxversion.select(str(minVersion[0]) + '.' + str(minVersion[1]))
+        # wxversion.select(str(minVersion[0]) + '.' + str(minVersion[1]))
+        wxversion.ensureMinimal(str(minVersion[0]) + '.' + str(minVersion[1]))
         import wx
         version = wx.version().split(' ')[0]
+        
         if map(int, version.split('.')) < minVersion:
             raise ValueError('Your wxPython version is %s.%s.%s.%s' % tuple(version.split('.')))
 
@@ -71,9 +70,7 @@ def CheckForWx():
     except locale.Error, e:
         print >> sys.stderr, "Unable to set locale:", e
         os.environ['LC_ALL'] = ''
-
-    check = False
-
+    
 if not os.getenv("GRASS_WXBUNDLED"):
     CheckForWx()
 import wx
@@ -109,7 +106,7 @@ DIALOG_COLOR_SIZE = (30, 30)
 
 MAP_WINDOW_SIZE = (800, 600)
 HIST_WINDOW_SIZE = (500, 350)
-GM_WINDOW_SIZE = (575, 600)
+GM_WINDOW_SIZE = (500, 600)
 
 MAP_DISPLAY_STATUSBAR_MODE = [_("Coordinates"),
                               _("Extent"),
@@ -155,12 +152,27 @@ def GetGRASSCmds(bin = True, scripts = True, gui_scripts = True):
         os.environ["PATH"] = os.getenv("PATH") + os.pathsep + os.path.join(gisbase, 'etc', 'wxpython', 'scripts')
         cmd = cmd + os.listdir(os.path.join(gisbase, 'etc', 'gui', 'scripts'))
     
+    if os.getenv('GRASS_ADDON_PATH'):
+        for path in os.getenv('GRASS_ADDON_PATH').split(os.pathsep):
+            if not os.path.exists(path) or not os.path.isdir(path):
+                continue
+            for fname in os.listdir(path):
+                name, ext = os.path.splitext(fname)
+                if bin:
+                    if ext == EXT_BIN:
+                        cmd.append(name)
+                if scripts:
+                    if ext == EXT_SCT:
+                        cmd.append(name)
+                    elif ext == '.py':
+                        cmd.append(fname)
+        
     if sys.platform == 'win32':
         for idx in range(len(cmd)):
             name, ext = os.path.splitext(cmd[idx])
             if ext in (EXT_BIN, EXT_SCT):
                 cmd[idx] = name
-
+    
     return cmd
 
 """@brief Collected GRASS-relared binaries/scripts"""

@@ -28,7 +28,6 @@
 #include <grass/dbmi.h>
 #include <grass/Vect.h>
 
-
 /* TODO: support all types (lines, boundaries, areas for 'from' (from_type) */
 
 /* define codes for characteristics of relation between two nearest features */
@@ -181,17 +180,20 @@ int main(int argc, char *argv[])
     upload_opt->descriptions =
 	_("cat;category of the nearest feature;"
 	  "dist;minimum distance to nearest feature;"
-	  "to_x;x coordinate of the nearest point on 'to' feature;"
-	  "to_y;y coordinate of the nearest point on 'to' feature;"
-	  "to_along;distance between points/centroids in 'from' map and the linear feature's "
-	  "start point in 'to' map, along this linear feature;"
-	  "to_angle;angle between the linear feature in 'to' map and the positive x axis, at "
-	  "the location of point/centroid in 'from' map, counterclockwise, in radians, which "
-	  "is between -PI and PI inclusive;"
+	  "to_x;x coordinate of the nearest point on the 'to' feature;"
+	  "to_y;y coordinate of the nearest point on the 'to' feature;"
+	  "to_along;distance to the nearest point on the 'to' feature along "
+	     "that linear feature;"
+	  "to_angle;angle along the nearest linear feature in the 'to' map, "
+	     "measured CCW from the +x axis, in radians, between -Pi and Pi "
+	     "inclusive;"
 	  "to_attr;attribute of nearest feature given by to_column option");
     /*  "from_x - x coordinate of the nearest point on 'from' feature;" */
     /*  "from_y - y coordinate of the nearest point on 'from' feature;" */
     /* "from_along - distance to the nearest point on 'from' feature along linear feature;" */
+    /* "from_angle - angle between the linear feature in 'to' map and the +x "
+	"axis, at the location of point/centroid in 'from' map, CCW, in "
+	"radians, between -Pi and Pi inclusive;" */
 
     column_opt = G_define_standard_option(G_OPT_COLUMN);
     column_opt->required = YES;
@@ -222,7 +224,9 @@ int main(int argc, char *argv[])
     all_flag->key = 'a';
     all_flag->label =
 	_("Calculate distances to all features within the threshold");
-    all_flag->description = _("The output is written to stdout but may be uploaded " "to a new table created by this module. " "From categories are may be multiple.");	/* huh? */
+    all_flag->description =
+	_("Output is written to stdout but may be uploaded to a new table "
+	  "created by this module; multiple 'upload' options may be used.");
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);

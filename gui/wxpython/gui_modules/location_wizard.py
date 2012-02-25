@@ -22,7 +22,7 @@ Classes:
  - LocationWizard
  - SelectTransformDialog
 
-(C) 2007-2010 by the GRASS Development Team
+(C) 2007-2011 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -709,7 +709,7 @@ class ProjParamsPage(TitledPage):
         id  = event.GetId()
         val = event.GetString()
         
-        if not self.pparam.has_key(id):
+        if id not in self.pparam:
             event.Skip()
             return
 
@@ -1729,7 +1729,7 @@ class LocationWizard(wx.Object):
         #
         # define wizard image
         #
-        imagePath = os.path.join(globalvar.ETCWXDIR, "images", "loc_wizard_qgis.png")
+        imagePath = os.path.join(globalvar.ETCIMGDIR, "loc_wizard_qgis.png")
         wizbmp = wx.Image(imagePath, wx.BITMAP_TYPE_PNG)
         wizbmp = wizbmp.ConvertToBitmap()
         
@@ -1748,7 +1748,7 @@ class LocationWizard(wx.Object):
         # define wizard pages
         #
         self.wizard = wiz.Wizard(parent, id = wx.ID_ANY, title = _("Define new GRASS Location"),
-                                 bitmap = wizbmp)
+                                 bitmap = wizbmp, style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
         self.startpage = DatabasePage(self.wizard, self, grassdatabase)
         self.csystemspage = CoordinateSystemPage(self.wizard, self)
         self.projpage = ProjectionsPage(self.wizard, self)
@@ -2034,11 +2034,11 @@ class LocationWizard(wx.Object):
                 
                 grass.create_location(dbase = self.startpage.grassdatabase,
                                       location = self.startpage.location,
-                                      filename = self.wktpage.wktfile,
+                                      wkt = self.wktpage.wktfile,
                                       desc = self.startpage.locTitle)
         
-        except grass.ScriptException, e:
-            return str(e)
+        except grass.ScriptError, e:
+            return e.value
         
         return None
     
@@ -2143,8 +2143,8 @@ class RegionDef(BaseClass, wx.Frame):
         #
         # image
         #
-        self.img = wx.Image(os.path.join(globalvar.ETCWXDIR, "images",
-                                         "qgis_world.png"), wx.BITMAP_TYPE_PNG).ConvertToBitmap()
+        self.img = wx.Image(os.path.join(globalvar.ETCIMGDIR, "qgis_world.png"),
+                            wx.BITMAP_TYPE_PNG).ConvertToBitmap()
         
         #
         # set current working environment to PERMANENT mapset

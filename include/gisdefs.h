@@ -905,6 +905,8 @@ int G_stat(const char *, struct stat *);
 int G_percent(long, long, int);
 int G_percent2(long, long, int, FILE *);
 int G_percent_reset(void);
+void G_set_percent_routine(int (*) (int));
+void G_unset_percent_routine(void);
 
 /* plot.c */
 int G_setup_plot(double, double, double, double, int (*)(int, int),
@@ -1081,6 +1083,10 @@ double G_rhumbline_lat_from_lon(double);
 /* rotate.c */
 void G_rotate_around_point(double, double, double *, double *, double);
 void G_rotate_around_point_int(int, int, int *, int *, double);
+
+/* seek.c */
+int G_ftell(FILE *);
+void G_fseek(FILE *, int, int);
 
 /* sample.c */
 DCELL G_get_raster_sample_nearest(

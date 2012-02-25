@@ -11,7 +11,7 @@ List of classes:
  - SavedRegion
  - DecorationDialog
  - TextLayerDialog 
- - LoadMapLayersDialog
+ - AddMapLayersDialog
  - ImportDialog
  - GdalImportDialog
  - DxfImportDialog
@@ -32,27 +32,38 @@ for details.
 import os
 import sys
 import re
+from bisect import bisect
 
 import wx
 import wx.lib.filebrowsebutton as filebrowse
 import wx.lib.mixins.listctrl as listmix
 
 from grass.script import core as grass
+from grass.script import task as gtask
 
 import gcmd
 import globalvar
 import gselect
 import menuform
 import utils
+from debug import Debug
 from preferences import globalSettings as UserSettings
 
 class ElementDialog(wx.Dialog):
-    """!General dialog to choose given element (location, mapset, vector map, etc.)"""
     def __init__(self, parent, title, label, id = wx.ID_ANY,
-                 style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
+                 etype = False, style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
                  **kwargs):
+        """!General dialog to choose given element (location, mapset, vector map, etc.)
         
+        @param parent window
+        @param title window title
+        @param label element label
+        @param etype show also ElementSelect
+        """
         wx.Dialog.__init__(self, parent, id, title, style = style, **kwargs)
+        
+        self.etype = etype
+        self.label = label
         
         self.panel = wx.Panel(parent = self, id = wx.ID_ANY)
         
@@ -61,16 +72,25 @@ class ElementDialog(wx.Dialog):
         self.btnOK.SetDefault()
         self.btnOK.Enable(False)
         
-        self.label = wx.StaticText(parent = self.panel, id = wx.ID_ANY,
-                                   label = label)
+        if self.etype:
+            self.typeSelect = gselect.ElementSelect(parent = self.panel,
+                                                    size = globalvar.DIALOG_GSELECT_SIZE)
+            self.typeSelect.Bind(wx.EVT_CHOICE, self.OnType)
         
         self.element = None # must be defined 
         
-        self.__Layout()
+        self.__layout()
         
     def PostInit(self):
         self.element.SetFocus()
         self.element.Bind(wx.EVT_TEXT, self.OnElement)
+        
+    def OnType(self, event):
+        """!Select element type"""
+        if not self.etype:
+            return
+        evalue = self.typeSelect.GetValue(event.GetString())
+        self.element.SetType(evalue)
         
     def OnElement(self, event):
         """!Name for vector map layer given"""
@@ -79,13 +99,22 @@ class ElementDialog(wx.Dialog):
         else:
             self.btnOK.Enable(False)
         
-    def __Layout(self):
+    def __layout(self):
         """!Do layout"""
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         
         self.dataSizer = wx.BoxSizer(wx.VERTICAL)
-        self.dataSizer.Add(self.label, proportion=0,
-                           flag=wx.ALL, border=1)
+        
+        if self.etype:
+            self.dataSizer.Add(item = wx.StaticText(parent = self.panel, id = wx.ID_ANY,
+                                                    label = _("Type of element:")),
+                               proportion=0, flag=wx.ALL, border=1)
+            self.dataSizer.Add(item = self.typeSelect,
+                               proportion=0, flag=wx.ALL, border=1)
+        
+        self.dataSizer.Add(item = wx.StaticText(parent = self.panel, id = wx.ID_ANY,
+                                                label = self.label),
+                           proportion=0, flag=wx.ALL, border=1)
         
         # buttons
         btnSizer = wx.StdDialogButtonSizer()
@@ -103,6 +132,10 @@ class ElementDialog(wx.Dialog):
         """!Return (mapName, overwrite)"""
         return self.element.GetValue()
     
+    def GetType(self):
+        """!Get element type"""
+        return self.element.tcp.GetType()
+        
 class LocationDialog(ElementDialog):
     """!Dialog used to select location"""
     def __init__(self, parent, title = _("Select GRASS location and mapset"), id =  wx.ID_ANY):
@@ -184,20 +217,37 @@ class MapsetDialog(ElementDialog):
         return self.GetElement()
     
 class NewVectorDialog(ElementDialog):
-    """!Dialog for creating new vector map"""
-    def __init__(self, parent, id, title, disableAdd=False, disableTable=False,
-                 style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER):
+    def __init__(self, parent, id = wx.ID_ANY, title = _('Create new vector map'),
+                 disableAdd = False, disableTable = False,
+                 style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER, *kwargs):
+        """!Dialog for creating new vector map
+
+        @param parent parent window
+        @param id window id
+        @param title window title
+        @param disableAdd disable 'add layer' checkbox
+        @param disableTable disable 'create table' checkbox
+        @param style window style
+        @param kwargs other argumentes for ElementDialog
         
+        @return dialog instance       
+        """
         ElementDialog.__init__(self, parent, title, label = _("Name for new vector map:"))
         
-        self.element = gselect.Select(parent=self.panel, id=wx.ID_ANY, size=globalvar.DIALOG_GSELECT_SIZE,
-                                      type='vector', mapsets=[grass.gisenv()['MAPSET'],])
+        self.element = gselect.Select(parent = self.panel, id = wx.ID_ANY, size = globalvar.DIALOG_GSELECT_SIZE,
+                                      type = 'vector', mapsets = [grass.gisenv()['MAPSET'],])
         
         self.table = wx.CheckBox(parent = self.panel, id = wx.ID_ANY,
                                  label = _("Create attribute table"))
         self.table.SetValue(True)
         if disableTable:
             self.table.Enable(False)
+        
+        self.keycol = wx.TextCtrl(parent = self.panel, id =  wx.ID_ANY,
+                                  size = globalvar.DIALOG_SPIN_SIZE)
+        self.keycol.SetValue(UserSettings.Get(group = 'atm', key = 'keycolumn', subkey = 'value'))
+        if disableTable:
+            self.keycol.Enable(False)
         
         self.addbox = wx.CheckBox(parent = self.panel,
                                   label = _('Add created map into layer tree'), style = wx.NO_BORDER)
@@ -206,125 +256,179 @@ class NewVectorDialog(ElementDialog):
             self.addbox.Enable(False)
         else:
             self.addbox.SetValue(UserSettings.Get(group = 'cmd', key = 'addNewLayer', subkey = 'enabled'))
+
+        self.table.Bind(wx.EVT_CHECKBOX, self.OnTable)
         
         self.PostInit()
         
-        self.__Layout()
+        self._layout()
         self.SetMinSize(self.GetSize())
         
     def OnMapName(self, event):
         """!Name for vector map layer given"""
         self.OnElement(event)
         
-    def __Layout(self):
+    def OnTable(self, event):
+        self.keycol.Enable(event.IsChecked())
+        
+    def _layout(self):
         """!Do layout"""
-        self.dataSizer.Add(self.element, proportion=0,
-                      flag=wx.EXPAND | wx.ALL, border=1)
+        self.dataSizer.Add(self.element, proportion = 0,
+                      flag = wx.EXPAND | wx.ALL, border = 1)
         
-        self.dataSizer.Add(self.table, proportion=0,
-                      flag=wx.EXPAND | wx.ALL, border=1)
-        
+        self.dataSizer.Add(self.table, proportion = 0,
+                      flag = wx.EXPAND | wx.ALL, border = 1)
+
+        keySizer = wx.BoxSizer(wx.HORIZONTAL)
+        keySizer.Add(item = wx.StaticText(parent = self.panel, label = _("Key column:")),
+                     proportion = 0,
+                     flag = wx.ALIGN_CENTER_VERTICAL)
+        keySizer.AddSpacer(10)
+        keySizer.Add(item = self.keycol, proportion = 0,
+                     flag = wx.ALIGN_RIGHT)
+        self.dataSizer.Add(item = keySizer, proportion = 1,
+                           flag = wx.EXPAND | wx.ALL, border = 1)
+
         self.dataSizer.AddSpacer(5)
         
-        self.dataSizer.Add(item=self.addbox, proportion=0,
-                      flag=wx.EXPAND | wx.ALL, border=1)
+        self.dataSizer.Add(item = self.addbox, proportion = 0,
+                      flag = wx.EXPAND | wx.ALL, border = 1)
         
         self.panel.SetSizer(self.sizer)
         self.sizer.Fit(self)
 
-    def GetName(self):
-        """!Return (mapName, overwrite)"""
-        return self.GetElement().split('@', 1)[0]
-            
-def CreateNewVector(parent, cmd, title=_('Create new vector map'),
-                    exceptMap=None, log=None, disableAdd=False, disableTable=False):
-    """!Create new vector map layer
+    def GetName(self, full = False):
+        """!Get name of vector map to be created
 
-    @cmd cmd (prog, **kwargs)
-    
-    @return tuple (name of create vector map, add to layer tree)
-    @return None of failure
-    """
-    dlg = NewVectorDialog(parent, wx.ID_ANY, title,
-                          disableAdd, disableTable)
-    if dlg.ShowModal() == wx.ID_OK:
-        outmap = dlg.GetName()
-        if outmap == exceptMap:
-            wx.MessageBox(parent=parent,
-                          message=_("Unable to create vector map <%s>.") % outmap,
-                          caption=_("Error"),
-                          style=wx.ID_OK | wx.ICON_ERROR | wx.CENTRE)
-            return (None, None)
-        
-        if outmap == '': # should not happen
-            return (None, None)
-        
-        cmd[1][cmd[2]] = outmap
-        
-        try:
-            listOfVectors = grass.list_grouped('vect')[grass.gisenv()['MAPSET']]
-        except KeyError:
-            listOfVectors = []
-        
-        overwrite = False
-        if not UserSettings.Get(group='cmd', key='overwrite', subkey='enabled') and \
-                outmap in listOfVectors:
-            dlgOw = wx.MessageDialog(parent, message=_("Vector map <%s> already exists "
-                                                       "in the current mapset. "
-                                                       "Do you want to overwrite it?") % outmap,
-                                     caption=_("Overwrite?"),
-                                     style=wx.YES_NO | wx.YES_DEFAULT | wx.ICON_QUESTION)
-            if dlgOw.ShowModal() == wx.ID_YES:
-                overwrite = True
+        @param full True to get fully qualified name
+        """
+        name = self.GetElement()
+        if full:
+            if '@' in name:
+                return name
             else:
-                dlgOw.Destroy()
-                return (None, None)
-
-        if UserSettings.Get(group='cmd', key='overwrite', subkey='enabled') is True:
-            overwrite = True
+                return name + '@' + grass.gisenv()['MAPSET']
         
-        try:
-            gcmd.RunCommand(prog = cmd[0],
-                            overwrite = overwrite,
-                            **cmd[1])
-        except gcmd.GException, e:
-            gcmd.GError(parent = self,
-                        message = e.value)
-            return (None, None)
-        
-        #
-        # create attribute table
-        #
-        if dlg.table.IsEnabled() and dlg.table.IsChecked():
-            key = UserSettings.Get(group='atm', key='keycolumn', subkey='value')
-            sql = 'CREATE TABLE %s (%s INTEGER)' % (outmap, key)
-            
-            gcmd.RunCommand('db.connect',
-                            flags = 'c')
-            
-            gcmd.RunCommand('db.execute',
-                            quiet = True,
-                            parent = parent,
-                            stdin = sql)
-            
-            gcmd.RunCommand('v.db.connect',
-                            quiet = True,
-                            parent = parent,
-                            map = outmap,
-                            table = outmap,
-                            key = key,
-                            layer = '1')
-            
-        # return fully qualified map name
-        if '@' not in outmap:
-            outmap += '@' + grass.gisenv()['MAPSET']
+        return name.split('@', 1)[0]
 
-        if log:
-            log.WriteLog(_("New vector map <%s> created") % outmap)
-
-        return (outmap, dlg.addbox.IsChecked())
+    def GetKey(self):
+        """!Get key column name"""
+        return self.keycol.GetValue()
     
-    return (None, dlg.addbox.IsChecked())
+    def IsChecked(self, key):
+        """!Get dialog properties
+
+        @param key window key ('add', 'table')
+
+        @return True/False
+        @return None on error
+        """
+        if key == 'add':
+            return self.addbox.IsChecked()
+        elif key == 'table':
+            return self.table.IsChecked()
+        
+        return None
+
+def CreateNewVector(parent, cmd, title = _('Create new vector map'),
+                    exceptMap = None, log = None, disableAdd = False, disableTable = False):
+    """!Create new vector map layer
+    
+    @param cmd (prog, **kwargs)
+    @param title window title
+    @param exceptMap list of maps to be excepted
+    @param log
+    @param disableAdd disable 'add layer' checkbox
+    @param disableTable disable 'create table' checkbox
+
+    @return dialog instance
+    @return None on error
+    """
+    dlg = NewVectorDialog(parent, title = title,
+                          disableAdd = disableAdd, disableTable = disableTable)
+    
+    if dlg.ShowModal() != wx.ID_OK:
+        dlg.Destroy()
+        return None
+
+    outmap = dlg.GetName()
+    key    = dlg.GetKey()
+    if outmap == exceptMap:
+        gcmd.GError(parent = parent,
+                    message = _("Unable to create vector map <%s>.") % outmap)
+        dlg.Destroy()
+        return None
+    if dlg.table.IsEnabled() and not key:
+        gcmd.GError(parent = parent,
+                    message = _("Invalid or empty key column.\n"
+                                "Unable to create vector map <%s>.") % outmap)
+        dlg.Destroy()
+        return
+        
+    if outmap == '': # should not happen
+        dlg.Destroy()
+        return None
+    
+    # update cmd -> output name defined
+    cmd[1][cmd[2]] = outmap
+        
+    listOfVectors = grass.list_grouped('vect')[grass.gisenv()['MAPSET']]
+    
+    overwrite = False
+    if not UserSettings.Get(group = 'cmd', key = 'overwrite', subkey = 'enabled') and \
+            outmap in listOfVectors:
+        dlgOw = wx.MessageDialog(parent, message = _("Vector map <%s> already exists "
+                                                     "in the current mapset. "
+                                                     "Do you want to overwrite it?") % outmap,
+                                 caption = _("Overwrite?"),
+                                 style = wx.YES_NO | wx.YES_DEFAULT | wx.ICON_QUESTION)
+        if dlgOw.ShowModal() == wx.ID_YES:
+            overwrite = True
+        else:
+            dlgOw.Destroy()
+            dlg.Destroy()
+            return None
+    
+    if UserSettings.Get(group = 'cmd', key = 'overwrite', subkey = 'enabled'):
+        overwrite = True
+        
+    ret = gcmd.RunCommand(prog = cmd[0],
+                          parent = parent,
+                          overwrite = overwrite,
+                          **cmd[1])
+    if ret != 0:
+        dlg.Destroy()
+        return None
+    
+    # create attribute table
+    if dlg.table.IsEnabled() and dlg.table.IsChecked():
+        sql = 'CREATE TABLE %s (%s INTEGER)' % (outmap, key)
+        
+        gcmd.RunCommand('db.connect',
+                        flags = 'c')
+        
+        Debug.msg(1, "SQL: %s" % sql)
+        gcmd.RunCommand('db.execute',
+                        quiet = True,
+                        parent = parent,
+                        stdin = sql)
+        
+        gcmd.RunCommand('v.db.connect',
+                        quiet = True,
+                        parent = parent,
+                        map = outmap,
+                        table = outmap,
+                        key = key,
+                        layer = '1')
+    
+    # return fully qualified map name
+    if '@' not in outmap:
+        outmap += '@' + grass.gisenv()['MAPSET']
+    
+    if log:
+        log.WriteLog(_("New vector map <%s> created") % outmap)
+        
+    return dlg
 
 class SavedRegion(wx.Dialog):
     def __init__(self, parent, id = wx.ID_ANY, title="", loadsave='load',
@@ -465,9 +569,9 @@ class DecorationDialog(wx.Dialog):
             mapName, found = utils.GetLayerNameFromCmd(self.parent.MapWindow.overlays[self.ovlId]['cmd'])
             if self.parent.MapWindow.overlays[self.ovlId]['propwin'] is None and mapName:
                 # build properties dialog
-                menuform.GUI().ParseCommand(cmd=self.cmd,
-                                            completed=(self.GetOptData, self.name, ''),
-                                            parentframe=self.parent, show=False)
+                menuform.GUI(parent = self.parent, show = False).ParseCommand(cmd=self.cmd,
+                                                                              completed=(self.GetOptData, self.name, ''))
+                
             if found:
                 # enable 'OK' button
                 self.btnOK.Enable()
@@ -504,9 +608,9 @@ class DecorationDialog(wx.Dialog):
         """
         if self.parent.MapWindow.overlays[self.ovlId]['propwin'] is None:
             # build properties dialog
-            menuform.GUI().ParseCommand(cmd=self.cmd,
-                                        completed=(self.GetOptData, self.name, ''),
-                                        parentframe=self.parent)
+            menuform.GUI(parent = self.parent).ParseCommand(cmd=self.cmd,
+                                                            completed=(self.GetOptData, self.name, ''))
+            
         else:
             if self.parent.MapWindow.overlays[self.ovlId]['propwin'].IsShown():
                 self.parent.MapWindow.overlays[self.ovlId]['propwin'].SetFocus()
@@ -587,7 +691,7 @@ class TextLayerDialog(wx.Dialog):
 
         # show/hide
         self.chkbox = wx.CheckBox(parent=self, id=wx.ID_ANY, \
-            label='Show text object')
+            label = _('Show text object'))
         if self.parent.Map.GetOverlay(self.ovlId) is None:
             self.chkbox.SetValue(True)
         else:
@@ -715,8 +819,8 @@ class TextLayerDialog(wx.Dialog):
                  'coords' : self.currCoords,
                  'active' : self.chkbox.IsChecked() }
 
-class LoadMapLayersDialog(wx.Dialog):
-    """!Load selected map layers (raster, vector) into layer tree"""
+class AddMapLayersDialog(wx.Dialog):
+    """!Add selected map layers (raster, vector) into layer tree"""
     def __init__(self, parent, title, style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER):
         wx.Dialog.__init__(self, parent=parent, id=wx.ID_ANY, title=title, style=style)
 
@@ -733,10 +837,11 @@ class LoadMapLayersDialog(wx.Dialog):
         #
         # buttons
         #
-        btnCancel = wx.Button(self, wx.ID_CANCEL)
-        btnOk = wx.Button(self, wx.ID_OK, _("&Load") )
+        btnCancel = wx.Button(parent = self, id = wx.ID_CANCEL)
+        btnOk = wx.Button(parent = self, id = wx.ID_OK, label = _("&Add"))
         btnOk.SetDefault()
-        
+        btnOk.SetToolTipString(_("Add selected map layers to current display"))
+
         #
         # sizers & do layout
         #
@@ -828,7 +933,7 @@ class LoadMapLayersDialog(wx.Dialog):
         @param type layer type ('raster' or 'vector')
         @param mapset mapset name
         """
-        self.map_layers = grass.mlist(type = type, mapset = mapset)
+        self.map_layers = grass.mlist_grouped(type = type)[mapset]
         self.layers.Set(self.map_layers)
         
         # check all items by default
@@ -954,10 +1059,10 @@ class ImportDialog(wx.Dialog):
         self.list.LoadData()
 
         self.optionBox = wx.StaticBox(parent=self.panel, id=wx.ID_ANY,
-                                      label=_(" Options "))
+                                      label="%s" % _("Options"))
         
         cmd = self._getCommand()
-        task = menuform.GUI().ParseInterface(cmd = [cmd])
+        task = gtask.parse_interface(cmd)
         for f in task.get_options()['flags']:
             name = f.get('name', '')
             desc = f.get('label', '')
@@ -1087,19 +1192,18 @@ class ImportDialog(wx.Dialog):
     
     def AddLayers(self, returncode, cmd = None):
         """!Add imported/linked layers into layer tree"""
-        self.commandId += 1
-        
         if not self.add.IsChecked() or returncode != 0:
             return
         
+        self.commandId += 1
         maptree = self.parent.curr_page.maptree
-        
         layer, output = self.list.GetLayers()[self.commandId]
         
         if '@' not in output:
             name = output + '@' + grass.gisenv()['MAPSET']
         else:
             name = output
+        
         # add imported layers into layer tree
         if self.importType == 'gdal':
             cmd = ['d.rast',
@@ -1107,14 +1211,15 @@ class ImportDialog(wx.Dialog):
             if UserSettings.Get(group='cmd', key='rasterOverlay', subkey='enabled'):
                 cmd.append('-o')
                 
-            item = maptree.AddLayer(ltype='raster',
-                                    lname=name,
-                                    lcmd=cmd)
+            item = maptree.AddLayer(ltype = 'raster',
+                                    lname = name, lchecked = False,
+                                    lcmd = cmd)
         else:
-            item = maptree.AddLayer(ltype='vector',
-                                    lname=name,
-                                    lcmd=['d.vect',
-                                          'map=%s' % name])
+            item = maptree.AddLayer(ltype = 'vector',
+                                    lname = name, lchecked = False,
+                                    lcmd = ['d.vect',
+                                            'map=%s' % name])
+        
         maptree.mapdisplay.MapWindow.ZoomToMap()
         
     def OnAbort(self, event):
@@ -1171,10 +1276,12 @@ class GdalImportDialog(ImportDialog):
 
     def OnRun(self, event):
         """!Import/Link data (each layes as separate vector map)"""
+        self.commandId = -1
         data = self.list.GetLayers()
-        
-        # hide dialog
-        self.Hide()
+        if not data:
+            gcmd.GMessage(parent = self,
+                          message = _("No layers marked for import.\nOperation canceled."))
+            return
         
         dsn = self.dsnInput.GetDsn()
         ext = self.dsnInput.GetFormatExt()
@@ -1219,11 +1326,9 @@ class GdalImportDialog(ImportDialog):
                 cmd.append('--overwrite')
             
             # run in Layer Manager
-            self.parent.goutput.RunCmd(cmd, switchPage=True,
+            self.parent.goutput.RunCmd(cmd, switchPage = True,
                                        onDone = self.AddLayers)
-        
-        self.OnCancel()
-
+            
     def _getCommand(self):
         """!Get command"""
         if self.link:
@@ -1242,9 +1347,8 @@ class GdalImportDialog(ImportDialog):
     def OnCmdDialog(self, event):
         """!Show command dialog"""
         name = self._getCommand()
-        menuform.GUI().ParseCommand(cmd = [name],
-                                    parentframe = self, modal = True)
-        
+        menuform.GUI(parent = self, modal = True).ParseCommand(cmd = [name])
+                
 class DxfImportDialog(ImportDialog):
     """!Dialog for bulk import of DXF layers""" 
     def __init__(self, parent):
@@ -1330,9 +1434,8 @@ class DxfImportDialog(ImportDialog):
 
     def OnCmdDialog(self, event):
         """!Show command dialog"""
-        menuform.GUI().ParseCommand(cmd = ['v.in.dxf'],
-                                    parentframe = self, modal = True)
-        
+        menuform.GUI(parent = self, modal = True).ParseCommand(cmd = ['v.in.dxf'])
+                
 class LayersList(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin,
                  listmix.CheckListCtrlMixin, listmix.TextEditMixin):
     """!List of layers to be imported (dxf, shp...)"""
@@ -1349,9 +1452,9 @@ class LayersList(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin,
         listmix.ListCtrlAutoWidthMixin.__init__(self)
         listmix.TextEditMixin.__init__(self)
 
-        self.InsertColumn(0, _('Layer'))
+        self.InsertColumn(0, _('Layer id'))
         self.InsertColumn(1, _('Layer name'))
-        self.InsertColumn(2, _('Name for GRASS map'))
+        self.InsertColumn(2, _('Name for GRASS map (editable)'))
         
         self.Bind(wx.EVT_COMMAND_RIGHT_CLICK, self.OnPopupMenu) #wxMSW
         self.Bind(wx.EVT_RIGHT_UP,            self.OnPopupMenu) #wxGTK
@@ -1367,10 +1470,11 @@ class LayersList(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin,
             index = self.InsertStringItem(sys.maxint, str(id))
             self.SetStringItem(index, 1, "%s" % str(name))
             self.SetStringItem(index, 2, "%s" % str(grassName))
-            # check by default
-            self.CheckItem(index, True)
         
-        self.SetColumnWidth(col=0, width=wx.LIST_AUTOSIZE_USEHEADER)
+        if len(data) == 1:
+            self.CheckItem(0, True)
+        
+        self.SetColumnWidth(col = 0, width = wx.LIST_AUTOSIZE_USEHEADER)
 
     def OnPopupMenu(self, event):
         """!Show popup menu"""
@@ -1415,6 +1519,26 @@ class LayersList(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin,
             self.CheckItem(item, False)
 
         event.Skip()
+        
+    def OnLeftDown(self, event):
+        """!Allow editing only output name
+
+        Code taken from TextEditMixin class.
+        """
+        x, y = event.GetPosition()
+        
+        colLocs = [0]
+        loc = 0
+        for n in range(self.GetColumnCount()):
+            loc = loc + self.GetColumnWidth(n)
+            colLocs.append(loc)
+        
+        col = bisect(colLocs, x + self.GetScrollPos(wx.HORIZONTAL)) - 1
+        
+        if col == 2:
+            listmix.TextEditMixin.OnLeftDown(self, event)
+        else:
+            event.Skip()
         
     def GetLayers(self):
         """!Get list of layers (layer name, output name)"""

@@ -5,19 +5,18 @@ rem Self Contained GRASS Automated Packager
 rem -----------------------------------------------------------------------------------------------------------------------
 rem Edited by: Marco Pasetti
 rem Revised for OSGeo4W by: Colin Nielsen, Helmut Kudrnovsky, and Martin Landa
-rem Last Update: $Id: GRASS-Packager.bat 45749 2011-03-25 00:25:20Z hamish $
+rem Last Update: $Id: GRASS-Packager.bat 50399 2012-01-23 22:14:19Z martinl $
 rem -----------------------------------------------------------------------------------------------------------------------
 
 rem --------------------------------------------------------------------------------------------------------------------------
 rem Set the script variables
 rem --------------------------------------------------------------------------------------------------------------------------
 
+set PACKAGE_DIR=.\GRASS-64-Package
+
 set OSGEO4W_DIR=c:\osgeo4w
 
-rem set PACKAGE_DIR=.\GRASS-64-Release-Package
-set PACKAGE_DIR=.\GRASS-64-Devel-Package
-rem set GRASS_PREFIX=%OSGEO4W_DIR%\apps\grass\grass-6.4.1
-set GRASS_PREFIX=%OSGEO4W_DIR%\apps\grass\grass-6.4.1svn
+set GRASS_PREFIX=%OSGEO4W_DIR%\apps\grass\grass-6.4.2
 
 set SVN_PATH=c:\Subversion
 
@@ -48,6 +47,7 @@ mkdir %PACKAGE_DIR%\extralib
 
 copy %OSGEO4W_DIR%\bin\*.dll %PACKAGE_DIR%\extralib
 del %PACKAGE_DIR%\extralib\libgrass_*6.4.0*.dll
+del %PACKAGE_DIR%\extralib\libgrass_*6.4.1*.dll
 del %PACKAGE_DIR%\extralib\libgrass_*6.5*.dll
 del %PACKAGE_DIR%\extralib\libgrass_*7.0*.dll
 del %PACKAGE_DIR%\extralib\Qt*4.dll
@@ -149,6 +149,7 @@ mkdir %PACKAGE_DIR%\tcl-tk\lib
 mkdir %PACKAGE_DIR%\tcl-tk\lib\tcl8.5
 mkdir %PACKAGE_DIR%\tcl-tk\lib\tk8.5
 mkdir %PACKAGE_DIR%\tcl-tk\lib\tcl8.5\encoding
+mkdir %PACKAGE_DIR%\tcl-tk\lib\tcl8\8.5
 
 xcopy %OSGEO4W_DIR%\bin\tclpip85.dll %PACKAGE_DIR%\tcl-tk\bin /S/V/F/I
 xcopy %OSGEO4W_DIR%\bin\tcl85.dll %PACKAGE_DIR%\tcl-tk\bin /S/V/F/I
@@ -173,6 +174,8 @@ copy %OSGEO4W_DIR%\lib\tk8.5\tclIndex %PACKAGE_DIR%\tcl-tk\lib\tk8.5
 
 xcopy %OSGEO4W_DIR%\lib\tk8.5\ttk %PACKAGE_DIR%\tcl-tk\lib\tk8.5\ttk /S/V/F/I
 
+xcopy %OSGEO4W_DIR%\lib\tcl8\8.5 %PACKAGE_DIR%\tcl-tk\lib\tcl8\8.5 /S/V/F/I
+
 @echo.
 @echo -----------------------------------------------------------------------------------------------------------------------
 @echo Copy MSYS files to PACKAGE_DIR\msys
@@ -196,19 +199,19 @@ del %PACKAGE_DIR%\msys\msys.bat
 
 @echo.
 @echo -----------------------------------------------------------------------------------------------------------------------
-@echo Copy Python content to PACKAGE_DIR\Python25
+@echo Copy Python content to PACKAGE_DIR\Python27
 @echo -----------------------------------------------------------------------------------------------------------------------
 @echo.
 
-mkdir %PACKAGE_DIR%\Python25
+mkdir %PACKAGE_DIR%\Python27
 
-copy %OSGEO4W_DIR%\apps\Python25\* %PACKAGE_DIR%\Python25
+copy %OSGEO4W_DIR%\apps\Python27\* %PACKAGE_DIR%\Python27
 
-xcopy %OSGEO4W_DIR%\apps\Python25\DLLs %PACKAGE_DIR%\Python25\DLLs /S/V/F/I
-xcopy %OSGEO4W_DIR%\apps\Python25\include %PACKAGE_DIR%\Python25\include /S/V/F/I
-xcopy %OSGEO4W_DIR%\apps\Python25\Lib %PACKAGE_DIR%\Python25\Lib /S/V/F/I
-xcopy %OSGEO4W_DIR%\apps\Python25\libs %PACKAGE_DIR%\Python25\libs /S/V/F/I
-xcopy %OSGEO4W_DIR%\apps\Python25\Scripts %PACKAGE_DIR%\Python25\Scripts /S/V/F/I
+xcopy %OSGEO4W_DIR%\apps\Python27\DLLs %PACKAGE_DIR%\Python27\DLLs /S/V/F/I
+xcopy %OSGEO4W_DIR%\apps\Python27\include %PACKAGE_DIR%\Python27\include /S/V/F/I
+xcopy %OSGEO4W_DIR%\apps\Python27\Lib %PACKAGE_DIR%\Python27\Lib /S/V/F/I
+xcopy %OSGEO4W_DIR%\apps\Python27\libs %PACKAGE_DIR%\Python27\libs /S/V/F/I
+xcopy %OSGEO4W_DIR%\apps\Python27\Scripts %PACKAGE_DIR%\Python27\Scripts /S/V/F/I
 
 @echo.
 @echo -----------------------------------------------------------------------------------------------------------------------

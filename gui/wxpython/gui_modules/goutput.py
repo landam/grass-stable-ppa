@@ -9,13 +9,14 @@ Classes:
  - GMStdout
  - GMStderr
 
-(C) 2007-2010 by the GRASS Development Team
+(C) 2007-2011 by the GRASS Development Team
 This program is free software under the GNU General Public
 License (>=v2). Read the file COPYING that comes with GRASS
 for details.
 
 @author Michael Barton (Arizona State University)
 @author Martin Landa <landa.martin gmail.com>
+@author Vaclav Petras <wenzeslaus gmail.com> (copy&paste customization)
 """
 
 import os
@@ -24,12 +25,15 @@ import textwrap
 import time
 import threading
 import Queue
+import codecs
+import locale
 
 import wx
 import wx.stc
 from wx.lib.newevent import NewEvent
 
 import grass.script as grass
+from   grass.script import task as gtask
 
 import globalvar
 import gcmd
@@ -48,10 +52,10 @@ wxCmdRun,      EVT_CMD_RUN      = NewEvent()
 wxCmdDone,     EVT_CMD_DONE     = NewEvent()
 wxCmdAbort,    EVT_CMD_ABORT    = NewEvent()
 
-def GrassCmd(cmd, stdout, stderr):
+def GrassCmd(cmd, stdout = None, stderr = None):
     """!Return GRASS command thread"""
     return gcmd.CommandThread(cmd,
-                              stdout=stdout, stderr=stderr)
+                              stdout = stdout, stderr = stderr)
 
 class CmdThread(threading.Thread):
     """!Thread for GRASS commands"""
@@ -69,11 +73,11 @@ class CmdThread(threading.Thread):
 
         self.start()
 
-    def RunCmd(self, callable, onDone, *args, **kwds):
+    def RunCmd(self, *args, **kwds):
         CmdThread.requestId += 1
 
         self.requestCmd = None
-        self.requestQ.put((CmdThread.requestId, callable, onDone, args, kwds))
+        self.requestQ.put((CmdThread.requestId, args, kwds))
         
         return CmdThread.requestId
 
@@ -84,23 +88,31 @@ class CmdThread(threading.Thread):
     def run(self):
         os.environ['GRASS_MESSAGE_FORMAT'] = 'gui'
         while True:
-            requestId, callable, onDone, args, kwds = self.requestQ.get()
+            requestId, args, kwds = self.requestQ.get()
+            for key in ('callable', 'onDone', 'userData'):
+                if key in kwds:
+                    vars()[key] = kwds[key]
+                    del kwds[key]
+                else:
+                    vars()[key] = None
+            
+            if not vars()['callable']:
+                vars()['callable'] = GrassCmd
             
             requestTime = time.time()
-            event = wxCmdRun(cmd=args[0],
-                             pid=requestId)
+            event = wxCmdRun(cmd = args[0],
+                             pid = requestId)
             wx.PostEvent(self.parent, event)
             
             time.sleep(.1)
-            
-            self.requestCmd = callable(*args, **kwds)
+            self.requestCmd = vars()['callable'](*args, **kwds)
             if self._want_abort_all:
                 self.requestCmd.abort()
                 if self.requestQ.empty():
                     self._want_abort_all = False
             
             self.resultQ.put((requestId, self.requestCmd.run()))
-
+            
             try:
                 returncode = self.requestCmd.module.returncode
             except AttributeError:
@@ -124,7 +136,7 @@ class CmdThread(threading.Thread):
                     except KeyError:
                         pass
                 else:
-                    moduleInterface = menuform.GUI().ParseCommand(args[0], show = None)
+                    moduleInterface = menuform.GUI(show = None).ParseCommand(args[0])
                     outputParam = moduleInterface.get_param(value = 'output', raiseError = False)
                     if outputParam and outputParam['prompt'] == 'raster':
                         mapName = outputParam['value']
@@ -134,7 +146,7 @@ class CmdThread(threading.Thread):
                     argsColor[0] = [ 'r.colors',
                                      'map=%s' % mapName,
                                      'color=%s' % colorTable ]
-                    self.requestCmdColor = callable(*argsColor, **kwds)
+                    self.requestCmdColor = vars()['callable'](*argsColor, **kwds)
                     self.resultQ.put((requestId, self.requestCmdColor.run()))
             
             event = wxCmdDone(cmd = args[0],
@@ -142,7 +154,8 @@ class CmdThread(threading.Thread):
                               returncode = returncode,
                               time = requestTime,
                               pid = requestId,
-                              onDone = onDone)
+                              onDone = vars()['onDone'],
+                              userData = vars()['userData'])
             
             # send event
             wx.PostEvent(self.parent, event)
@@ -158,9 +171,9 @@ class CmdThread(threading.Thread):
 class GMConsole(wx.SplitterWindow):
     """!Create and manage output console for commands run by GUI.
     """
-    def __init__(self, parent, id=wx.ID_ANY, margin=False, pageid=0,
+    def __init__(self, parent, id = wx.ID_ANY, margin = False,
                  notebook = None,
-                 style=wx.TAB_TRAVERSAL | wx.FULL_REPAINT_ON_RESIZE,
+                 style = wx.TAB_TRAVERSAL | wx.FULL_REPAINT_ON_RESIZE,
                  **kwargs):
         wx.SplitterWindow.__init__(self, parent, id, style = style, *kwargs)
         self.SetName("GMConsole")
@@ -175,8 +188,7 @@ class GMConsole(wx.SplitterWindow):
         else:
             self._notebook = self.parent.notebook
         self.lineWidth       = 80
-        self.pageid          = pageid
-                        
+        
         # remember position of line begining (used for '\r')
         self.linePos         = -1
         
@@ -238,16 +250,16 @@ class GMConsole(wx.SplitterWindow):
         # buttons
         #
         self.btn_console_clear = wx.Button(parent = self.panelPrompt, id = wx.ID_ANY,
-                                           label = _("&Clear output"), size=(125,-1))
+                                           label = _("&Clear output"), size=(100,-1))
         self.btn_cmd_clear = wx.Button(parent = self.panelPrompt, id = wx.ID_ANY,
-                                       label = _("C&lear command"), size=(125,-1))
+                                       label = _("C&lear cmd"), size=(100,-1))
         if self.parent.GetName() != 'LayerManager':
             self.btn_cmd_clear.Hide()
         self.btn_console_save  = wx.Button(parent = self.panelPrompt, id = wx.ID_ANY,
-                                           label = _("&Save output"), size=(125,-1))
+                                           label = _("&Save output"), size=(100,-1))
         # abort
-        self.btn_abort = wx.Button(parent = self.panelPrompt, id = wx.ID_ANY, label = _("&Abort command"),
-                                   size=(125,-1))
+        self.btn_abort = wx.Button(parent = self.panelPrompt, id = wx.ID_ANY, label = _("&Abort cmd"),
+                                   size=(100,-1))
         self.btn_abort.SetToolTipString(_("Abort the running command"))
         self.btn_abort.Enable(False)
         
@@ -345,20 +357,21 @@ class GMConsole(wx.SplitterWindow):
         return self.panelOutput
     
     def Redirect(self):
-        """!Redirect stderr
-
-        @return True redirected
-        @return False failed
+        """!Redirect stdout/stderr
         """
-        if Debug.get_level() == 0 and int(grass.gisenv().get('DEBUG', 0)) == 0:
+        if Debug.GetLevel() == 0 and int(grass.gisenv().get('DEBUG', 0)) == 0:
             # don't redirect when debugging is enabled
             sys.stdout = self.cmd_stdout
             sys.stderr = self.cmd_stderr
-            
-            return True
-
-        return False
-
+        else:
+            enc = locale.getdefaultlocale()[1]
+            if enc:
+                sys.stdout = codecs.getwriter(enc)(sys.__stdout__)
+                sys.stderr = codecs.getwriter(enc)(sys.__stderr__)
+            else:
+                sys.stdout = sys.__stdout__
+                sys.stderr = sys.__stderr__
+        
     def WriteLog(self, text, style = None, wrap = None,
                  switchPage = False):
         """!Generic method for writing log message in 
@@ -371,9 +384,8 @@ class GMConsole(wx.SplitterWindow):
 
         self.cmd_output.SetStyle()
 
-        if switchPage and \
-                self._notebook.GetSelection() != self.parent.goutput.pageid:
-            self._notebook.SetSelection(self.parent.goutput.pageid)
+        if switchPage:
+            self._notebook.SetSelectionByName('output')
         
         if not style:
             style = self.cmd_output.StyleDefault
@@ -398,11 +410,11 @@ class GMConsole(wx.SplitterWindow):
         
         self.cmd_output.EnsureCaretVisible()
         
-    def WriteCmdLog(self, line, pid=None):
+    def WriteCmdLog(self, line, pid = None, switchPage = True):
         """!Write message in selected style"""
         if pid:
             line = '(' + str(pid) + ') ' + line
-        self.WriteLog(line, style=self.cmd_output.StyleCommand, switchPage = True)
+        self.WriteLog(line, style=self.cmd_output.StyleCommand, switchPage = switchPage)
 
     def WriteWarning(self, line):
         """!Write message in warning style"""
@@ -410,7 +422,7 @@ class GMConsole(wx.SplitterWindow):
 
     def WriteError(self, line):
         """!Write message in error style"""
-        self.WriteLog(line, style=self.cmd_output.StyleError, switchPage = True)
+        self.WriteLog(line, style = self.cmd_output.StyleError, switchPage = True)
 
     def RunCmd(self, command, compReg = True, switchPage = False,
                onDone = None):
@@ -421,7 +433,7 @@ class GMConsole(wx.SplitterWindow):
         display widget that currently has the focus (as indicted by
         mdidx).
         
-        @param command command given as a list (produced e.g. by shlex.split())
+        @param command command given as a list (produced e.g. by utils.split())
         @param compReg True use computation region
         @param switchPage switch to output page
         @param onDone function to be called when command is finished
@@ -433,10 +445,13 @@ class GMConsole(wx.SplitterWindow):
         # update history file
         env = grass.gisenv()
         try:
-            fileHistory = open(os.path.join(env['GISDBASE'], env['LOCATION_NAME'], env['MAPSET'],
-                                            '.bash_history'), 'a')
+            fileHistory = codecs.open(os.path.join(env['GISDBASE'],
+                                                   env['LOCATION_NAME'],
+                                                   env['MAPSET'],
+                                                   '.bash_history'),
+                                      encoding = 'utf-8', mode = 'a')
         except IOError, e:
-            self.WriteError(str(e))
+            self.WriteError(e)
             fileHistory = None
         
         if fileHistory:
@@ -456,7 +471,8 @@ class GMConsole(wx.SplitterWindow):
             # send GRASS command without arguments to GUI command interface
             # except display commands (they are handled differently)
             if self.parent.GetName() == "LayerManager" and \
-                    command[0][0:2] == "d.":
+                    command[0][0:2] == "d." and \
+                    'help' not in ' '.join(command[1:]):
                 # display GRASS commands
                 try:
                     layertype = {'d.rast'         : 'raster',
@@ -474,7 +490,8 @@ class GMConsole(wx.SplitterWindow):
                                  'd.geodesic'     : 'geodesic',
                                  'd.rhumbline'    : 'rhumb',
                                  'd.labels'       : 'labels',
-                                 'd.barscale'     : 'barscale'}[command[0]]
+                                 'd.barscale'     : 'barscale',
+                                 'd.redraw'       : 'redraw'}[command[0]]
                 except KeyError:
                     gcmd.GMessage(parent = self.parent,
                                   message = _("Command '%s' not yet implemented in the WxGUI. "
@@ -485,6 +502,8 @@ class GMConsole(wx.SplitterWindow):
                     self.parent.curr_page.maptree.GetMapDisplay().OnAddBarscale(None)
                 elif layertype == 'rastleg':
                     self.parent.curr_page.maptree.GetMapDisplay().OnAddLegend(None)
+                elif layertype == 'redraw':
+                    self.parent.curr_page.maptree.GetMapDisplay().OnRender(None)
                 else:
                     # add layer into layer tree
                     lname, found = utils.GetLayerNameFromCmd(command, fullyQualified = True,
@@ -493,13 +512,44 @@ class GMConsole(wx.SplitterWindow):
                         self.parent.curr_page.maptree.AddLayer(ltype = layertype,
                                                                lname = lname,
                                                                lcmd = command)
-                
+            
             else:
                 # other GRASS commands (r|v|g|...)
+                if sys.platform == 'win32':
+                    if command[0] in globalvar.grassCmd['script']:
+                        command[0] += globalvar.EXT_SCT
+                hasParams = False
+                if command[0] != 'r.mapcalc':
+                    task = menuform.GUI(show = None).ParseCommand(command)
+                    if task:
+                        options = task.get_options()
+                        hasParams = options['params'] and options['flags']
+                        # check for <input>=-
+                        for p in options['params']:
+                            if p.get('prompt', '') == 'input' and \
+                                    p.get('element', '') == 'file' and \
+                                    p.get('age', 'new') == 'old_file' and \
+                                    p.get('value', '') == '-':
+                                gcmd.GError(parent = self,
+                                            message = _("Unable to run command:\n%(cmd)s\n\n"
+                                                        "Option <%(opt)s>: read from standard input is not "
+                                                        "supported by wxGUI") % { 'cmd': ' '.join(command),
+                                                                                  'opt': p.get('name', '') })
+                                return None
+                else:
+                    task = None
+                
+                if len(command) == 1 and hasParams:
+                    # no arguments given
+                    try:
+                        menuform.GUI(parent = self).ParseCommand(command)
+                    except gcmd.GException, e:
+                        print >> sys.stderr, e
+                    return 0
+                
                 # switch to 'Command output' if required
                 if switchPage:
-                    if self._notebook.GetSelection() != self.parent.goutput.pageid:
-                        self._notebook.SetSelection(self.parent.goutput.pageid)
+                    self._notebook.SetSelectionByName('output')
                     
                     self.parent.SetFocus()
                     self.parent.Raise()
@@ -508,29 +558,13 @@ class GMConsole(wx.SplitterWindow):
                 # for all non-display commands.
                 if compReg:
                     tmpreg = os.getenv("GRASS_REGION")
-                    if os.environ.has_key("GRASS_REGION"):
+                    if "GRASS_REGION" in os.environ:
                         del os.environ["GRASS_REGION"]
                 
-                if len(command) == 1:
-                    import menuform
-                    task = menuform.GUI().ParseInterface(command)
-                    # if not task.has_required():
-                    # task = None # run command
-                else:
-                    task = None
-                
-                if task and command[0] not in ('v.krige.py'):
-                    # process GRASS command without argument
-                    menuform.GUI().ParseCommand(command, parentframe = self)
-                else:
-                    # process GRASS command with argument
-                    self.cmdThread.RunCmd(GrassCmd,
-                                          onDone,
-                                          command,
-                                          self.cmd_stdout, self.cmd_stderr)                                          
-                    self.cmd_output_timer.Start(50)
-                    
-                    return None
+                # process GRASS command with argument
+                self.cmdThread.RunCmd(command, stdout = self.cmd_stdout, stderr = self.cmd_stderr,
+                                      onDone = onDone)
+                self.cmd_output_timer.Start(50)
                 
                 # deactivate computational region and return to display settings
                 if compReg and tmpreg:
@@ -539,24 +573,19 @@ class GMConsole(wx.SplitterWindow):
             # Send any other command to the shell. Send output to
             # console output window
             if len(command) == 1:
-                import menuform
                 try:
-                    task = menuform.GUI().ParseInterface(command)
+                    task = gtask.parse_interface(command[0])
                 except:
                     task = None
-                # if not task.has_required():
-                # task = None # run command
             else:
                 task = None
                 
             if task:
                 # process GRASS command without argument
-                menuform.GUI().ParseCommand(command, parentframe = self)
+                menuform.GUI(parent = self).ParseCommand(command)
             else:
-                self.cmdThread.RunCmd(GrassCmd,
-                                      onDone,
-                                      command,
-                                      self.cmd_stdout, self.cmd_stderr)                                         
+                self.cmdThread.RunCmd(command, stdout = self.cmd_stdout, stderr = self.cmd_stderr,
+                                      onDone = onDone)
             self.cmd_output_timer.Start(50)
         
         return None
@@ -568,6 +597,20 @@ class GMConsole(wx.SplitterWindow):
         self.cmd_output.SetReadOnly(True)
         self.console_progressbar.SetValue(0)
 
+    def GetProgressBar(self):
+        """!Return progress bar widget"""
+        return self.console_progressbar
+    
+    def GetLog(self, err = False):
+        """!Get widget used for logging
+
+        @param err True to get stderr widget
+        """
+        if err:
+            return self.cmd_stderr
+        
+        return self.cmd_stdout
+    
     def SaveHistory(self, event):
         """!Save history of commands"""
         self.history = self.cmd_output.GetSelectedText()
@@ -579,10 +622,9 @@ class GMConsole(wx.SplitterWindow):
             self.history += '\n'
 
         wildcard = "Text file (*.txt)|*.txt"
-        dlg = wx.FileDialog(
-            self, message=_("Save file as..."), defaultDir=os.getcwd(),
-            defaultFile="grass_cmd_history.txt", wildcard=wildcard,
-            style=wx.SAVE|wx.FD_OVERWRITE_PROMPT)
+        dlg = wx.FileDialog(self, message = _("Save file as..."), defaultDir = os.getcwd(),
+            defaultFile = "grass_cmd_history.txt", wildcard = wildcard,
+            style = wx.SAVE | wx.FD_OVERWRITE_PROMPT)
 
         # Show the dialog and retrieve the user response. If it is the OK response,
         # process the data.
@@ -599,6 +641,19 @@ class GMConsole(wx.SplitterWindow):
         """!Get running command or None"""
         return self.requestQ.get()
     
+    def SetCopyingOfSelectedText(self, copy):
+        """!Enable or disable copying of selected text in to clipboard.
+        Effects prompt and output.
+        
+        @param copy True for enable, False for disable
+        """
+        if copy:
+            self.cmd_prompt.Bind(wx.stc.EVT_STC_PAINTED, self.cmd_prompt.OnTextSelectionChanged)
+            self.cmd_output.Bind(wx.stc.EVT_STC_PAINTED, self.cmd_output.OnTextSelectionChanged)
+        else:
+            self.cmd_prompt.Unbind(wx.stc.EVT_STC_PAINTED)
+            self.cmd_output.Unbind(wx.stc.EVT_STC_PAINTED)
+        
     def OnUpdateStatusBar(self, event):
         """!Update statusbar text"""
         if event.GetString():
@@ -613,12 +668,12 @@ class GMConsole(wx.SplitterWindow):
         """!Print command output"""
         message = event.text
         type  = event.type
-        if self._notebook.GetSelection() != self.parent.goutput.pageid:
-            textP = self._notebook.GetPageText(self.parent.goutput.pageid)
+        if self._notebook.GetSelection() != self._notebook.GetPageIndexByName('output'):
+            page = self._notebook.GetPageIndexByName('output')
+            textP = self._notebook.GetPageText(page)
             if textP[-1] != ')':
                 textP += ' (...)'
-            self._notebook.SetPageText(self.parent.goutput.pageid,
-                                       textP)
+            self._notebook.SetPageText(page, textP)
         
         # message prefix
         if type == 'warning':
@@ -711,7 +766,7 @@ class GMConsole(wx.SplitterWindow):
             except KeyError:
                 # stopped deamon
                 pass
-            
+
             self.btn_abort.Enable(False)
         
         if event.onDone:
@@ -721,11 +776,16 @@ class GMConsole(wx.SplitterWindow):
 
         self.cmd_output_timer.Stop()
 
+        if event.cmd[0] == 'g.gisenv':
+            Debug.SetLevel()
+            self.Redirect()
+        
         if self.parent.GetName() == "LayerManager":
             self.btn_abort.Enable(False)
             if event.cmd[0] not in globalvar.grassCmd['all'] or \
                     event.cmd[0] == 'r.mapcalc':
                 return
+            
             display = self.parent.GetLayerTree().GetMapDisplay()
             if not display or not display.IsAutoRendered():
                 return
@@ -734,8 +794,9 @@ class GMConsole(wx.SplitterWindow):
                             display.GetRender().GetListOfLayers(l_type = 'vector'))
             
             try:
-                task = menuform.GUI().ParseCommand(event.cmd, show = None)
-            except gcmd.GException:
+                task = menuform.GUI(show = None).ParseCommand(event.cmd)
+            except gcmd.GException, e:
+                print >> sys.stderr, e
                 task = None
                 return
             
@@ -966,19 +1027,28 @@ class GMStc(wx.stc.StyledTextCtrl):
         #
         self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
         
+    def OnTextSelectionChanged(self, event):
+        """!Copy selected text to clipboard and skip event.
+        The same function is in TextCtrlAutoComplete class (prompt.py).
+        """
+        self.Copy()
+        event.Skip()
+        
     def SetStyle(self):
         """!Set styles for styled text output windows with type face 
         and point size selected by user (Courier New 10 is default)"""
 
         settings = preferences.Settings()
         
-        typeface = settings.Get(group='display', key='outputfont', subkey='type')   
-        if typeface == "": typeface = "Courier New"
-                           
-        typesize = settings.Get(group='display', key='outputfont', subkey='size')
-        if typesize == None or typesize <= 0: typesize = 10
+        typeface = settings.Get(group = 'appearance', key = 'outputfont', subkey = 'type')   
+        if typeface == "":
+            typeface = "Courier New"
+        
+        typesize = settings.Get(group = 'appearance', key = 'outputfont', subkey = 'size')
+        if typesize == None or typesize <= 0:
+            typesize = 10
         typesize = float(typesize)
-
+        
         self.StyleDefault     = 0
         self.StyleDefaultSpec = "face:%s,size:%d,fore:#000000,back:#FFFFFF" % (typeface, typesize)
         self.StyleCommand     = 1
@@ -1046,11 +1116,11 @@ class GMStc(wx.stc.StyledTextCtrl):
                 enc = UserSettings.Get(group='atm', key='encoding', subkey='value')
                 if enc:
                     txt = unicode(txt, enc)
-                elif os.environ.has_key('GRASS_DB_ENCODING'):
+                elif 'GRASS_DB_ENCODING' in os.environ:
                     txt = unicode(txt, os.environ['GRASS_DB_ENCODING'])
                 else:
-                    txt = _('Unable to encode text. Please set encoding in GUI preferences.') + '\n'
-                    
+                    txt = utils.EncodeString(txt)
+                
                 self.AddText(txt)
         
         # reset output window to read only

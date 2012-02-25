@@ -10,7 +10,7 @@
  *               Markus Neteler <neteler itc.it>,
  *               Alessandro Frigeri <afrigeri unipg.it>
  * PURPOSE:      This is an enhanced PostScript version of the p.map program
- * COPYRIGHT:    (C) 2003-2008 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2003-2011 by the GRASS Development Team
  *
  *               This program is free software under the GNU General Public
  *               License (>=v2). Read the file COPYING that comes with GRASS
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
     struct Option *input_file;
     struct Option *output_file;
     struct Option *copies;
-    struct Flag *rflag, *pflag, *eflag;
+    struct Flag *rflag, *pflag, *eflag, *bflag;
     struct GModule *module;
     static char *def_font = "Helvetica";
 
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
     /* Set description */
     module = G_define_module();
     module->keywords = _("postscript, map, printing");
-    module->description = _("Hardcopy PostScript map output utility.");
+    module->description = _("Produces hardcopy PostScript map output.");
 
     rflag = G_define_flag();
     rflag->key = 'r';
@@ -113,6 +113,11 @@ int main(int argc, char *argv[])
     eflag->key = 'e';
     eflag->description =
 	_("Create EPS (Encapsulated PostScript) instead of PostScript file");
+
+    bflag = G_define_flag();
+    bflag->key = 'b';
+    bflag->description =
+	_("Describe map-box's position on the page and exit (inches from top-left of paper)");
 
     input_file = G_define_option();
     input_file->key = "input";
@@ -148,7 +153,7 @@ int main(int argc, char *argv[])
     if (G_parser(argc, argv))
 	usage(0);
 
-    /* Print papers */
+    /* Print paper sizes to stdout */
     if (pflag->answer) {
 	print_papers();
 	exit(EXIT_SUCCESS);
@@ -174,8 +179,6 @@ int main(int argc, char *argv[])
     vector.x = vector.y = -1.0;
     ct.x = ct.y = -1.0;
     ct.width = -1.0;
-    m_info.color = BLACK;
-    m_info.bgcolor = WHITE;
     hdr.color = BLACK;
     cmt.color = BLACK;
     PS.grid_color = BLACK;
@@ -254,16 +257,21 @@ int main(int argc, char *argv[])
 	copies_set = 1;
     }
 
-    if (output_file->answer) {
-	if ((PS.fp = fopen(output_file->answer, "w")) == NULL)
-	    G_fatal_error("%s - %s: %s", G_program_name(),
-			  output_file->answer, strerror(errno));
+    if (!bflag->answer) {
+	if (output_file->answer) {
+	    if ((PS.fp = fopen(output_file->answer, "w")) == NULL)
+		G_fatal_error("%s - %s: %s", G_program_name(),
+			      output_file->answer, strerror(errno));
+	}
+	else {
+	    fprintf(stderr, _("ERROR: Required parameter <%s> not set:\n\t(%s)\n"),
+		    output_file->key, output_file->description);
+	    usage(1);
+	}
     }
-    else {
-	G_message(_("\nERROR: Required parameter <%s> not set:\n    (%s).\n"),
-		  output_file->key, output_file->description);
-	usage(1);
-    }
+    else
+	PS.fp = NULL;
+
 
     /* get current mapset */
     PS.cell_mapset = G_mapset();
@@ -717,6 +725,15 @@ int main(int argc, char *argv[])
 
     /* reset map location base on 'paper' on 'location' */
     reset_map_location();
+
+    if (bflag->answer) {
+	map_setup();
+	fprintf(stdout, "bbox=%.3f,%.3f,%.3f,%.3f\n", PS.map_left / 72.0,
+		PS.page_height - (PS.map_bot / 72.0), PS.map_right / 72.0,
+		PS.page_height - (PS.map_top / 72.0));
+		/* +/- 0.5 ? see ps.map.c brd.* */
+	exit(EXIT_SUCCESS);
+    }
 
     /* write the PostScript output file */
     ps_mask_file = G_tempfile();

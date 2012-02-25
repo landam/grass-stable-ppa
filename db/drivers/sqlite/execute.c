@@ -9,8 +9,9 @@
  *
  * \author Radim Blazek
  * \author Antonio Galea
+ * \author Support for multiple connections by Markus Metz
  *
- * \date 2005-2007
+ * \date 2005-2011
  */
 
 #include <stdlib.h>
@@ -50,6 +51,7 @@ int db__driver_execute_immediate(dbString * sql)
     }
 
     ret = sqlite3_step(stmt);
+    /* check if sqlite is still busy preparing the statement? */
 
     if (ret != SQLITE_DONE) {
 	append_error("Error in sqlite3_step():\n");
@@ -91,6 +93,7 @@ int db__driver_begin_transaction(void)
     G_debug(3, "execute: BEGIN");
 
     ret = sqlite3_exec(sqlite, "BEGIN", NULL, NULL, NULL);
+
     if (ret != SQLITE_OK) {
 	append_error("Cannot 'BEGIN' transaction:\n");
 	append_error((char *)sqlite3_errmsg(sqlite));
@@ -117,6 +120,7 @@ int db__driver_commit_transaction(void)
     G_debug(3, "execute: COMMIT");
 
     ret = sqlite3_exec(sqlite, "COMMIT", NULL, NULL, NULL);
+
     if (ret != SQLITE_OK) {
 	append_error("Cannot 'COMMIT' transaction:\n");
 	append_error((char *)sqlite3_errmsg(sqlite));

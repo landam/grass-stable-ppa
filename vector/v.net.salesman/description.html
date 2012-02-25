@@ -3,20 +3,49 @@
 <em>v.net.salesman</em> calculates the optimal route to visit nodes on a
 vector network.
 
+<p>
+Costs may be either line lengths, or attributes saved in a database 
+table. These attribute values are taken as costs of whole segments, not 
+as costs to traverse a length unit (e.g. meter) of the segment. 
+For example, if the speed limit is 100 km / h, the cost to traverse a 
+10 km long road segment must be calculated as 
+length / speed = 10 km / (100 km/h) = 0.1 h.
+Supported are cost assignments for arcs, 
+and also different costs for both directions of a vector line. 
+For areas, costs will be calculated along boundary lines.
+<p>
+The input vector needs to be prepared with <em>v.net operation=connect</em> 
+in order to connect points representing center nodes to the network.
+
+<p>
+Points specified by category must be exactly on network nodes, and the 
+input vector map needs to be prepared with <em>v.net operation=connect</em>.
+
+<h2>NOTES</h2>
+Arcs can be closed using cost = -1. 
+
 <h2>EXAMPLE</h2>
 
 Traveling salesman for 6 digitized nodes (Spearfish):
 
-<div class="code"><pre>
-g.copy vect=roads,myroads
-v.db.addcol myroads col="cost double precision"
+<p>
+Shortest path, along unimproved roads:
+<p>
+<img src="vnetsalesman.png" alt="v.net.salesman example using distance" border="1">
 
-# define traveling costs as inverse of speed limit:
-v.db.update myroads col=cost val=1/50
-v.db.update myroads col=cost val=1/75 where="label='interstate'"
-v.db.update myroads col=cost val=1/5 where="label='unimproved road'"
-v.db.update myroads col=cost val=1/25 where="label='light-duty road, improved surface'"
-v.db.select myroads
+<p>
+Fastest path, along highways:
+<p>
+<img src="vnetsalesmantime.png" alt="v.net.salesman example using time" border="1">
+
+<p>
+Searching for the shortest path using distance and the fastest path using 
+traveling time according to the speed limits of different road types:
+
+<div class="code"><pre>
+# Spearfish
+
+g.copy vect=roads,myroads
 
 # we have 6 locations to visit on our trip
 echo "1|601653.5|4922869.2|a
@@ -24,7 +53,7 @@ echo "1|601653.5|4922869.2|a
 3|601845|4914981.9|c
 4|596270|4917456.3|d
 5|593330.8|4924096.6|e
-6|598005.5|4921439.2|f" | v.in.ascii cat=1 x=2 y=3 out=centers col="cat integer, \
+6|598005.5|4921439.2|f" | v.in.ascii in=- cat=1 x=2 y=3 out=centers col="cat integer, \
                          east double precision, north double precision, label varchar(43)"
 
 # verify data preparation
@@ -45,40 +74,75 @@ v.category myroads_net op=report
 # type       count        min        max
 # point          6          1          5
 
-# The network is now prepared. Visualize it
+# find the shortest path
+v.net.salesman myroads_net ccats=1-6 out=mysalesman_distance
+
+# set up costs as traveling time
+
+# create unique categories for each road in layer 3
+v.category in=myroads_net out=myroads_net_time opt=add cat=1 layer=3 type=line
+
+# add new table for layer 3
+v.db.addtable myroads_net_time layer=3 col="cat integer,label varchar(43),length double precision,speed double precision,cost double precision"
+
+# copy road type to layer 3
+v.to.db myroads_net_time layer=3 qlayer=1 opt=query qcolumn=label columns=label
+
+# upload road length in miles
+v.to.db myroads_net_time layer=3 type=line option=length col=length unit=miles
+
+# set speed limits in miles / hour
+v.db.update myroads_net_time layer=3 col=speed val="5.0"
+v.db.update myroads_net_time layer=3 col=speed val="75.0" where="label='interstate'"
+v.db.update myroads_net_time layer=3 col=speed val="75.0" where="label='primary highway, hard surface'"
+v.db.update myroads_net_time layer=3 col=speed val="50.0" where="label='secondary highway, hard surface'"
+v.db.update myroads_net_time layer=3 col=speed val="25.0" where="label='light-duty road, improved surface'"
+v.db.update myroads_net_time layer=3 col=speed val="5.0" where="label='unimproved road'"
+
+# define traveling costs as traveling time in minutes:
+v.db.update myroads_net_time layer=3 col=cost val="length / speed * 60"
+
+# find the fastest path
+v.net.salesman myroads_net_time alayer=3 nlayer=2 acol=cost ccats=1-6 out=mysalesman_time
+</pre></div>
+
+To display the result, run for example:
+
+<div class="code"><pre>
+# Display the results
 g.region vect=myroads_net
+
+# shortest path
 d.mon x0
 d.vect myroads_net
-d.vect -c centers icon=basic/triangle
-d.font verdana
+d.vect centers -c icon=basic/triangle
+d.vect mysalesman_distance col=green width=2
+d.font Vera
 d.vect centers col=red disp=attr attrcol=label lsize=12
 
-# due to the costs (?, TODO), the result looks like a Steiner tree:
-# v.net.salesman myroads_net acol=cost ccats=1-6 out=mysalesman
-
-# run without traveling costs
-v.net.salesman myroads_net ccats=1-6 out=mysalesman
-d.vect mysalesman col=green width=2
+# fastest path
+d.mon x1
+d.vect myroads_net
+d.vect centers -c icon=basic/triangle
+d.vect mysalesman_time col=green width=2
+d.font Vera
 d.vect centers col=red disp=attr attrcol=label lsize=12
 </pre></div>
 
 
-<img src="vnetsalesman.png" alt="v.net.salesman example" border="1">
-
-
 <h2>SEE ALSO</h2>
 
-<em><a HREF="d.path.html">d.path</a></em>,
-<em><a HREF="v.net.html">v.net</a></em>,
-<em><a HREF="v.net.alloc.html">v.net.alloc</a></em>,
-<em><a HREF="v.net.iso.html">v.net.iso</a></em>,
-<em><a HREF="v.net.path.html">v.net.path</a></em>,
-<em><a HREF="v.net.steiner.html">v.net.steiner</a></em>
+<em><a href="d.path.html">d.path</a></em>,
+<em><a href="v.net.html">v.net</a></em>,
+<em><a href="v.net.alloc.html">v.net.alloc</a></em>,
+<em><a href="v.net.iso.html">v.net.iso</a></em>,
+<em><a href="v.net.path.html">v.net.path</a></em>,
+<em><a href="v.net.steiner.html">v.net.steiner</a></em>
 
 <h2>AUTHOR</h2>
 
 Radim Blazek, ITC-Irst, Trento, Italy<br>
-Documentation: Markus Neteler
+Documentation: Markus Neteler, Markus Metz
 
 
-<p><i>Last changed: $Date: 2009-05-18 23:02:34 +0200 (Mon, 18 May 2009) $</i>
+<p><i>Last changed: $Date: 2011-11-08 10:42:51 +0100 (Tue, 08 Nov 2011) $</i>

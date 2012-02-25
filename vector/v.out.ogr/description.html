@@ -25,7 +25,9 @@ For further available drivers go
 
 To export areas with holes into, e.g., a Shapefile, while keeping the 
 holes as holes, the flag <em>-c</em> has to be used.
-
+<p>
+The "-z" flag can be used to automatically export a 3D map to a 3D Shapefile, instead 
+of setting the correct <em>lco=</em> option manually.
 
 <h2>EXAMPLES</h2>
 
@@ -54,6 +56,11 @@ v.out.ogr points_3d type=point dsn=points_3d.shp lco="SHPT=POINTZ"
 Export 3D faces from GRASS vector map to Shapefile format:
 <div class="code"><pre>
 v.out.ogr input=objects_3d type=face dsn=faces_3d.shp lco="SHPT=POLYGONZ"
+</pre></div>
+<p>
+Export 3D faces from GRASS vector map to Shapefile format, automatic 3D setting:
+<div class="code"><pre>
+v.out.ogr input=objects_3d type=face dsn=faces_3d.shp -z"
 </pre></div>
 
 <h3>Export to GML</h3>
@@ -108,7 +115,7 @@ v.out.ogr input=random3d_hull dsn=random3d_hull.kml format=KML \
 </pre></div>
 
 
-<H2>REFERENCES</H2>
+<h2>REFERENCES</h2>
 
 <a href="http://www.gdal.org/ogr/">OGR vector library</a>
 <br>
@@ -118,16 +125,16 @@ documentation
 
 <h2>SEE ALSO</h2>
 
-<EM>
-<A HREF="db.out.ogr.html">db.out.ogr</A>,
-<A HREF="v.external.html">v.external</A>,
-<a HREF="v.in.ogr.html">v.in.ogr</a>
-</EM>
+<em>
+<a href="db.out.ogr.html">db.out.ogr</a>,
+<a href="v.external.html">v.external</a>,
+<a href="v.in.ogr.html">v.in.ogr</a>
+</em>
 
 <h2>AUTHORS</h2>
 
 Radim Blazek, ITC-Irst, Trento, Italy<br>
 Some contributions: Markus Neteler, Martin Landa
 <p>
-<i>Last changed: $Date: 2010-04-04 13:21:23 +0200 (Sun, 04 Apr 2010) $</i>
-</p>
+<i>Last changed: $Date: 2011-11-08 12:29:50 +0100 (Tue, 08 Nov 2011) $</i>
+

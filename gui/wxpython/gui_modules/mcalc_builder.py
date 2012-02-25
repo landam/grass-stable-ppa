@@ -6,7 +6,7 @@
 Classes:
  - MapCalcFrame
 
-(C) 2008, 2010 by the GRASS Development Team
+(C) 2008, 2011 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -21,8 +21,6 @@ import sys
 import time
 
 import globalvar
-if not os.getenv("GRASS_WXBUNDLED"):
-    globalvar.CheckForWx()
 import wx
 
 import grass.script as grass
@@ -68,59 +66,55 @@ class MapCalcFrame(wx.Frame):
         # variables
         #
         self.heading = _('mapcalc statement')
-        self.funct_list = [
-            'abs(x)',
-            'acos(x)',
-            'asin(x)',
-            'atan(x)',
-            'atan(x,y)',
-            'cos(x)',
-            'double(x)',
-            'eval([x,y,...,]z)',
-            'exp(x)',
-            'exp(x,y)',
-            'float(x)',
-            'graph(x,x1,y1[x2,y2..])',
-            'if(x)',
-            'if(x,a)',
-            'if(x,a,b)',
-            'if(x,a,b,c)',
-            'int(x)',
-            'isnull(x)',
-            'log(x)',
-            'log(x,b)',
-            'max(x,y[,z...])',
-            'median(x,y[,z...])',
-            'min(x,y[,z...])',
-            'mode(x,y[,z...])',
-            'not(x)',
-            'pow(x,y)',
-            'rand(a,b)',
-            'round(x)',
-            'sin(x)',
-            'sqrt(x)',
-            'tan(x)',
-            'xor(x,y)',
-            'row()',
-            'col()',
-            'x()',
-            'y()',
-            'ewres()',
-            'nsres()',
-            'null()'
-            ]
+        self.funct_dict = {
+            'abs(x)':'abs()',
+            'acos(x)':'acos()',
+            'asin(x)':'asin()',
+            'atan(x)':'atan()',
+            'atan(x,y)':'atan( , )',
+            'cos(x)':'cos()',
+            'double(x)':'double()',
+            'eval([x,y,...,]z)':'eval()',
+            'exp(x)':'exp()',
+            'exp(x,y)':'exp( , )',
+            'float(x)':'float()',
+            'graph(x,x1,y1[x2,y2..])':'graph( , , )',
+            'if(x)':'if()',
+            'if(x,a)':'if( , )',
+            'if(x,a,b)':'if( , , )',
+            'if(x,a,b,c)':'if( , , , )',
+            'int(x)':'if()',
+            'isnull(x)':'isnull()',
+            'log(x)':'log(',
+            'log(x,b)':'log( , )',
+            'max(x,y[,z...])':'max( , )',
+            'median(x,y[,z...])':'median( , )',
+            'min(x,y[,z...])':'min( , )',
+            'mode(x,y[,z...])':'mode( , )',
+            'not(x)':'not()',
+            'pow(x,y)':'pow( , )',
+            'rand(a,b)':'rand( , )',
+            'round(x)':'round()',
+            'sin(x)':'sin()',
+            'sqrt(x)':'sqrt()',
+            'tan(x)':'tan()',
+            'xor(x,y)':'xor( , )',
+            'row()':'row()',
+            'col()':'col()',
+            'x()':'x()',
+            'y()':'y()',
+            'ewres()':'ewres()',
+            'nsres()':'nsres()',
+            'null()':'null()'
+            }
         
         if self.rast3d:
-            indx = self.funct_list.index('y()') +1
-            self.funct_list.insert(indx, 'z()')
-            indx = self.funct_list.index('nsres()') +1
-            self.funct_list.insert(indx, 'tbres()')
-            maplabel = _('3D raster map')
+            self.funct_dict['z()'] = 'z()'
+            self.funct_dict['tbres()'] = 'tbres()'
             element = 'rast3d'
         else:
-            maplabel = _('raster map')
             element = 'cell'
-
+        
         self.operatorBox = wx.StaticBox(parent = self.panel, id = wx.ID_ANY,
                                         label=" %s " % _('Operators'))
         self.operandBox = wx.StaticBox(parent = self.panel, id = wx.ID_ANY,
@@ -156,8 +150,8 @@ class MapCalcFrame(wx.Frame):
         self.btn['mult'] = wx.Button(parent = self.panel, id = wx.ID_ANY, label = "*")
         self.btn['mult'].SetToolTipString(_('multiply'))
 
-        self.btn['paren'] = wx.Button(parent = self.panel, id = wx.ID_ANY, label = "( )") 
-
+        self.btn['parenl'] = wx.Button(parent = self.panel, id = wx.ID_ANY, label = "(") 
+        self.btn['parenr'] = wx.Button(parent = self.panel, id = wx.ID_ANY, label = ")")
         self.btn['lshift'] = wx.Button(parent = self.panel, id = wx.ID_ANY, label = "<<")
         self.btn['lshift'].SetToolTipString(_('left shift'))
         self.btn['rshift'] = wx.Button(parent = self.panel, id = wx.ID_ANY, label = ">>")
@@ -205,17 +199,23 @@ class MapCalcFrame(wx.Frame):
         
         #
         # Map and function insertion text and ComboBoxes
-        self.newmaplabel = wx.StaticText(parent = self.panel, id = wx.ID_ANY,
-                                         label= _('Name for new %s to create') % maplabel)
+        self.newmaplabel = wx.StaticText(parent = self.panel, id = wx.ID_ANY)
+        if self.rast3d:
+            self.newmaplabel.SetLabel(_('Name for new 3D raster map to create'))
+        else:
+            self.newmaplabel.SetLabel(_('Name for new raster map to create'))
         self.newmaptxt = wx.TextCtrl(parent = self.panel, id = wx.ID_ANY, size=(250, -1))
-        self.mapsellabel = wx.StaticText(parent = self.panel, id = wx.ID_ANY,
-                                         label = _('Insert existing %s') % maplabel)
+        self.mapsellabel = wx.StaticText(parent = self.panel, id = wx.ID_ANY)
+        if self.rast3d:
+            self.mapsellabel.SetLabel(_('Insert existing 3D raster map'))
+        else:
+            self.mapsellabel.SetLabel(_('Insert existing raster map'))
         self.mapselect = gselect.Select(parent = self.panel, id = wx.ID_ANY, size = (250, -1),
                                         type = element, multiple = False)
         self.functlabel = wx.StaticText(parent = self.panel, id = wx.ID_ANY,
                                         label = _('Insert mapcalc function'))
         self.function = wx.ComboBox(parent = self.panel, id = wx.ID_ANY, 
-                                    size = (250, -1), choices = self.funct_list,
+                                    size = (250, -1), choices = sorted(self.funct_dict.keys()),
                                     style = wx.CB_DROPDOWN |
                                     wx.CB_READONLY | wx.TE_PROCESS_ENTER)
         
@@ -239,7 +239,7 @@ class MapCalcFrame(wx.Frame):
         self.btn_load.Bind(wx.EVT_BUTTON, self.OnLoadExpression)
         
         self.mapselect.Bind(wx.EVT_TEXT, self.OnSelect)
-        self.function.Bind(wx.EVT_COMBOBOX, self.OnSelect)
+        self.function.Bind(wx.EVT_COMBOBOX, self._return_funct)
         self.function.Bind(wx.EVT_TEXT_ENTER, self.OnSelect)
         self.newmaptxt.Bind(wx.EVT_TEXT, self.OnUpdateStatusBar)
         self.text_mcalc.Bind(wx.EVT_TEXT, self.OnUpdateStatusBar)
@@ -247,7 +247,11 @@ class MapCalcFrame(wx.Frame):
         self._layout()
 
         self.SetMinSize(self.GetBestSize())
-        
+    
+    def _return_funct(self,event):
+	i = event.GetString()
+	self._addSomething(self.funct_dict[i])
+    
     def _layout(self):
         sizer = wx.BoxSizer(wx.VERTICAL)
         
@@ -284,23 +288,28 @@ class MapCalcFrame(wx.Frame):
 
         operandSizer = wx.StaticBoxSizer(self.operandBox, wx.HORIZONTAL)
         buttonSizer3 = wx.GridBagSizer(7, 1)
-        buttonSizer3.Add(item = self.newmaplabel, pos = (0, 0),
+        buttonSizer3.Add(item = self.newmaplabel, pos = (0,0),
                          span = (1, 2), flag = wx.ALIGN_CENTER)
         buttonSizer3.Add(item = self.newmaptxt, pos = (1,0),
                          span = (1, 2))
-        buttonSizer3.Add(item = self.mapsellabel, pos = (2,0),
+        buttonSizer3.Add(item = self.functlabel, pos = (2,0),
                          span = (1,2), flag = wx.ALIGN_CENTER)
-        buttonSizer3.Add(item = self.mapselect, pos = (3,0),
-                         span = (1,2))
-        buttonSizer3.Add(item = self.functlabel, pos = (4,0),
+        buttonSizer3.Add(item = self.function, pos = (3,0),
+                         span = (1,2))                         
+        buttonSizer3.Add(item = self.mapsellabel, pos = (4,0),
                          span = (1,2), flag = wx.ALIGN_CENTER)
-        buttonSizer3.Add(item = self.function, pos = (5,0),
+        buttonSizer3.Add(item = self.mapselect, pos = (5,0),
                          span = (1,2))
-        buttonSizer3.Add(item = self.btn['paren'], pos = (6, 0),
+        threebutton = wx.GridBagSizer(1, 2)
+        threebutton.Add(item = self.btn['parenl'], pos = (0,0),
                          span = (1,1), flag = wx.ALIGN_LEFT)
-        buttonSizer3.Add(item = self.btn_clear, pos = (6,1),
+        threebutton.Add(item = self.btn['parenr'], pos = (0,1),
+                         span = (1,1), flag = wx.ALIGN_CENTER)
+        threebutton.Add(item = self.btn_clear, pos = (0,2),
                          span = (1,1), flag = wx.ALIGN_RIGHT)
-        
+        buttonSizer3.Add(item = threebutton, pos = (6,0),
+	                 span = (1,1), flag = wx.ALIGN_CENTER)
+
         buttonSizer4 = wx.BoxSizer(wx.HORIZONTAL)
         buttonSizer4.AddSpacer(10)
         buttonSizer4.Add(item = self.btn_load,
@@ -378,7 +387,8 @@ class MapCalcFrame(wx.Frame):
         elif event.GetId() == self.btn['and'].GetId(): mark = "&&"
         elif event.GetId() == self.btn['andnull'].GetId(): mark = "&&&"
         elif event.GetId() == self.btn['cond'].GetId(): mark = " ? : "
-        elif event.GetId() == self.btn['paren'].GetId(): mark = "( )"        
+        elif event.GetId() == self.btn['parenl'].GetId(): mark = "("
+        elif event.GetId() == self.btn['parenr'].GetId(): mark = ")"
         self._addSomething(mark)
         
     def OnSelect(self, event):

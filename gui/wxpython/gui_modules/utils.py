@@ -3,7 +3,7 @@
 
 @brief Misc utilities for wxGUI
 
-(C) 2007-2009 by the GRASS Development Team
+(C) 2007-2009, 2011 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -24,6 +24,7 @@ import globalvar
 sys.path.append(os.path.join(globalvar.ETCDIR, "python"))
 
 from grass.script import core as grass
+from grass.script import task as gtask
 
 import gcmd
 from debug import Debug
@@ -75,6 +76,9 @@ def GetLayerNameFromCmd(dcmd, fullyQualified = False, param = None,
                         layerType = None):
     """!Get map name from GRASS command
     
+    Parameter dcmd can be modified when first parameter is not
+    defined.
+    
     @param dcmd GRASS command (given as list)
     @param fullyQualified change map name to be fully qualified
     @param param params directory
@@ -111,12 +115,14 @@ def GetLayerNameFromCmd(dcmd, fullyQualified = False, param = None,
             if p in ('map', 'input',
                      'red', 'blue', 'green',
                      'h_map', 's_map', 'i_map',
-                     'reliefmap'):
+                     'reliefmap', 'labels'):
                 params.append((idx, p, v))
         
         if len(params) < 1:
             if len(dcmd) > 1 and '=' not in dcmd[1]:
-                params.append((1, None, dcmd[1]))
+                task = gtask.parse_interface(dcmd[0])
+                p = task.get_options()['params'][0].get('name', '')
+                params.append((1, p, dcmd[1]))
             else:
                 return mapname, False
         
@@ -272,8 +278,12 @@ def ListSortLower(list):
     """!Sort list items (not case-sensitive)"""
     list.sort(cmp=lambda x, y: cmp(x.lower(), y.lower()))
 
-def GetVectorNumberOfLayers(vector):
-    """!Get list of vector layers"""
+def GetVectorNumberOfLayers(vector, parent = None):
+    """!Get list of vector layers
+
+    @param vector name of vector map
+    @param parent parent window (to show dialog) or None
+    """
     layers = []
     if not vector:
         return layers
@@ -283,16 +293,19 @@ def GetVectorNumberOfLayers(vector):
         Debug.msg(5, "utils.GetVectorNumberOfLayers(): vector map '%s' not found" % vector)
         return layers
     
-    ret = gcmd.RunCommand('v.db.connect',
-                          flags = 'g',
-                          read = True,
-                          map = fullname,
-                          fs = ';')
-        
-    if not ret:
+    ret, out, msg = gcmd.RunCommand('v.db.connect',
+                                    getErrorMsg = True,
+                                    read = True,
+                                    flags = 'g',
+                                    map = fullname,
+                                    fs = ';')
+    if ret != 0:
+        sys.stderr.write(_("Vector map <%(map)s>: %(msg)s\n") % { 'map' : fullname, 'msg' : msg })
         return layers
     
-    for line in ret.splitlines():
+    Debug.msg(1, "GetVectorNumberOfLayers(): ret %s" % ret)
+    
+    for line in out.splitlines():
         try:
             layer = line.split(';')[0]
             if '/' in layer:
@@ -452,11 +465,11 @@ def GetCmdString(cmd):
     
     scmd = cmd[0]
     
-    if cmd[1].has_key('flags'):
+    if 'flags' in cmd[1]:
         for flag in cmd[1]['flags']:
             scmd += ' -' + flag
     for flag in ('verbose', 'quiet', 'overwrite'):
-        if cmd[1].has_key(flag) and cmd[1][flag] is True:
+        if flag in cmd[1] and cmd[1][flag] is True:
             scmd += ' --' + flag
     
     for k, v in cmd[1].iteritems():
@@ -481,7 +494,7 @@ def CmdToTuple(cmd):
             if flag in ('verbose', 'quiet', 'overwrite'):
                 dcmd[str(flag)] = True
         else: # -> flags
-            if not dcmd.has_key('flags'):
+            if 'flags' not in dcmd:
                 dcmd['flags'] = ''
             dcmd['flags'] += item.replace('-', '')
                 
@@ -619,16 +632,16 @@ def GetListOfMapsets(dbase, location, selectable = False):
         
         if not ret:
             return listOfMapsets
-            
+        
         for line in ret.rstrip().splitlines():
             listOfMapsets += line.split(' ')
     else:
         for mapset in glob.glob(os.path.join(dbase, location, "*")):
             if os.path.isdir(mapset) and \
                     os.path.isfile(os.path.join(dbase, location, mapset, "WIND")):
-                listOfMapsets.append(EncodeString(os.path.basename(mapset)))
+                listOfMapsets.append(os.path.basename(mapset))
     
-    ListSortLower(listOfMapsets)    
+    ListSortLower(listOfMapsets)
     return listOfMapsets
 
 def GetColorTables():
@@ -641,15 +654,35 @@ def GetColorTables():
     
     return ret.splitlines()
 
-def EncodeString(string):
-    """!Return encoded string
-
-    @param string string to be encoded
-
-    @return encoded string
+def DecodeString(string):
+    """!Decode string using system encoding
+    
+    @param string string to be decoded
+    
+    @return decoded string
     """
+    if not string:
+        return string
+    
     enc = locale.getdefaultlocale()[1]
     if enc:
+        Debug.msg(5, "DecodeString(): enc=%s" % enc)
+        return string.decode(enc)
+    
+    return string
+
+def EncodeString(string):
+    """!Return encoded string using system locales
+    
+    @param string string to be encoded
+    
+    @return encoded string
+    """
+    if not string:
+        return string
+    enc = locale.getdefaultlocale()[1]
+    if enc:
+        Debug.msg(5, "EncodeString(): enc=%s" % enc)
         return string.encode(enc)
     
     return string
@@ -730,3 +763,19 @@ def GetFormats():
             }
     
     return formats
+
+def GetSettingsPath():
+    """!Get full path to the settings directory
+    """
+    try:
+        verFd = open(os.path.join(globalvar.ETCDIR, "VERSIONNUMBER"))
+        version = int(verFd.readlines()[0].split(' ')[0].split('.')[0])
+    except (IOError, ValueError, TypeError, IndexError), e:
+        sys.exit(_("ERROR: Unable to determine GRASS version. Details: %s") % e)
+    
+    verFd.close()
+    
+    if sys.platform == 'win32':
+        return os.path.join(os.getenv('APPDATA'), '.grass%d' % version)
+    
+    return os.path.join(os.getenv('HOME'), '.grass%d' % version)

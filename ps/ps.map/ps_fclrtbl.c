@@ -152,7 +152,7 @@ int PS_fcolortable(void)
 
     /* Frame around */
     fprintf(PS.fp, "NP\n");
-    set_rgb_color(ct.color);
+    set_ps_color(&ct.color);
     fprintf(PS.fp, "%.8f W\n", lwidth);
     fprintf(PS.fp, "%f %f %f %f B\n", x1,
 	    t - (ncols - 1) * cwidth - (cwidth + lwidth) / 2, x2,
@@ -318,8 +318,8 @@ int PS_fcolortable(void)
 	}
 
 	text_box_path( xu, yu, label_xref, label_yref, units, fontsize, 0);
-	set_rgb_color(BLACK); 
 	fprintf(PS.fp, "TIB\n");
+	set_rgb_color(BLACK);
     }
 
     G_free_colors(&colors);

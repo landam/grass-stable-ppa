@@ -7,14 +7,14 @@
 #   	    	Huidae Cho - Korea - grass4u@gmail.com
 #   	    	Justin Hickey - Thailand - jhickey@hpcc.nectec.or.th
 #   	    	Markus Neteler - Germany/Italy - neteler@itc.it
-#		Hamish Bowman - New Zealand - hamish_nospam at yahoo,com
+#		Hamish Bowman - New Zealand - hamish_b at yahoo,com
 # PURPOSE:  	The source file for this shell script is in
 #   	    	src/general/init/init.sh. It sets up some environment
 #   	    	variables and the lock file. It also parses any remaining
 #   	    	command line options for setting the GISDBASE, LOCATION, and/or
 #   	    	MAPSET. Finally it starts GRASS with the appropriate user
 #   	    	interface and cleans up after it is finished.
-# COPYRIGHT:    (C) 2000 by the GRASS Development Team
+# COPYRIGHT:    (C) 2000-2011 by the GRASS Development Team
 #
 #               This program is free software under the GNU General Public
 #   	    	License (>=v2). Read the file COPYING that comes with GRASS
@@ -119,37 +119,37 @@ for i in "$@" ; do
 	    ;;
 
 	# Check if the -text flag was given
-	-text)
+	-text | --text)
 	    GRASS_GUI="text"
 	    shift
 	    ;;
 
 	# Check if the -gui flag was given
-	-gui)
+	-gui | --gui)
 	    GRASS_GUI="$DEFAULT_GUI"
 	    shift
 	    ;;
 
 	# Check if the -tcltk flag was given
-	-tcltk)
+	-tcltk | --tcltk)
 	    GRASS_GUI="tcltk"
 	    shift
 	    ;;
 
 	# Check if the -oldtcltk flag was given
-	-oldtcltk)
+	-oldtcltk | --oldtcltk)
 	    GRASS_GUI="oldtcltk"
 	    shift
 	    ;;
 
 	# Check if the -wxpython flag was given
-	-wxpython | -wx)
+	-wxpython | -wx | --wxpython | --wx)
 	    GRASS_GUI="wxpython"
 	    shift
 	    ;;
 
     	# Check if the user wants to create a new mapset
-	-c)
+	-c | --create)
 	    CREATE_NEW=1
 	    shift
 	    ;;
@@ -256,11 +256,16 @@ else
 	LCL=`echo "$LANG" | sed 's/\(..\)\(.*\)/\1/'`
 fi
 
-if [ -n "$GRASS_ADDON_PATH" ] ; then
-   PATH="$GISBASE/bin:$GISBASE/scripts:$GRASS_ADDON_PATH:$PATH"
-else
-   PATH="$GISBASE/bin:$GISBASE/scripts:$PATH"
+# if it doesn't exist set it to something so that g.extension's default is reasonable
+if [ -z "$GRASS_ADDON_PATH" ] ; then
+    if [ "$MINGW" ] ; then
+	GRASS_ADDON_PATH="$APPDATA/GRASS6/addons"
+    else
+	GRASS_ADDON_PATH="$HOME/.grass6/addons"
+    fi
 fi
+export GRASS_ADDON_PATH
+PATH="$GISBASE/bin:$GISBASE/scripts:$GRASS_ADDON_PATH:$PATH"
 export PATH
 
 # Set LD_LIBRARY_PATH to find GRASS shared libraries

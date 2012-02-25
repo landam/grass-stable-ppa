@@ -8,8 +8,9 @@
  * (>=v2). Read the file COPYING that comes with GRASS for details.
  *
  * \author Radim Blazek
+ * \author Support for multiple connections by Markus Metz
  *
- * \date 2005-2007
+ * \date 2005-2011
  */
 
 #include <stdlib.h>
@@ -63,6 +64,7 @@ int db__driver_fetch(dbCursor * cn, int position, int *more)
 	    c->row = -1;
 
 	ret = sqlite3_step(c->statement);
+
 	if (ret != SQLITE_ROW) {
 	    if (ret != SQLITE_DONE) {
 		append_error("Cannot step:\n");

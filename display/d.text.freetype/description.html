@@ -1,115 +1,115 @@
-<H2>DESCRIPTION</H2>
+<h2>DESCRIPTION</h2>
 
 
-<EM>d.text.freetype</EM>
+<em>d.text.freetype</em>
 draws text in the graphics monitor's active display frame using TrueType
 fonts already installed on the user's system.
-<BR>
+<br>
 
 
-<H3>Parameter Notes:</H3>
+<h3>Parameter Notes:</h3>
 
-<DL>
+<dl>
 
-<DT><B>at=</B><EM>x,y</EM>
-<DD>Locates the text at this screen position (percentage, [0,0] is bottom
+<dt><b>at=</b><em>x,y</em>
+<dd>Locates the text at this screen position (percentage, [0,0] is bottom
     left). If this option is omitted, 
     the user will be prompted to use the mouse to specify the location.
-<DT><B>font=</B><EM>name</EM>
-<DD>Specifies a font listed in the GRASS 'freetypecap' definition file.
+<dt><b>font=</b><em>name</em>
+<dd>Specifies a font listed in the GRASS 'freetypecap' definition file.
 
-<DT><B>charset=</B><EM>name</EM>
-<DD>Sets character encoding for input <B>text</B>. (e.g. <TT>ISO-8859-1</TT>)
+<dt><b>charset=</b><em>name</em>
+<dd>Sets character encoding for input <b>text</b>. (e.g. <TT>ISO-8859-1</TT>)
 
-<DT><B>color=</B><EM>name</EM>
-<DD>Sets text color to <EM>name</EM> or <EM>R:G:B triplet</EM>.
+<dt><b>color=</b><em>name</em>
+<dd>Sets text color to <em>name</em> or <em>R:G:B triplet</em>.
 	It can also be a hexadecimal value of <TT>0xRRGGBB</TT>
-	(deprecated).<BR>
+	(deprecated).<br>
     Options: red, orange, yellow, green, blue, indigo, 
-    violet, gray, white, and black<BR>
-    Default: <EM>gray</EM><BR>
+    violet, gray, white, and black<br>
+    Default: <em>gray</em><br>
 
-<DT><B>size=</B><EM>value</EM>
-<DD>Sets text height in percent of available frame height.<BR>
+<dt><b>size=</b><em>value</em>
+<dd>Sets text height in percent of available frame height.<br>
     Default: 10
 
-<DT><B>align=</B><EM>name</EM>
-<DD>Aligns text in this way.<BR>
-    Options: ll, lc, lr, cl, cc, cr, ul, uc, ur<BR>
-    l?: Lower, c?: Vertically Centered, u?: Upper,<BR>
-    ?l: Left, ?c: Horizontally Centered, ?r: Right<BR>
-    Default: <EM>ll</EM> (Lower Left)<BR>
+<dt><b>align=</b><em>name</em>
+<dd>Aligns text in this way.<br>
+    Options: ll, lc, lr, cl, cc, cr, ul, uc, ur<br>
+    l?: Lower, c?: Vertically Centered, u?: Upper,<br>
+    ?l: Left, ?c: Horizontally Centered, ?r: Right<br>
+    Default: <em>ll</em> (Lower Left)<br>
 
-</DL>
+</dl>
 
 
-<H3>Command mode:</H3>
+<h3>Command mode:</h3>
 
-<H4>Key</H4>
-<DL>
-<DT>{REQUIRED}
-<DD>
-<DT>[OPTIONAL]
-<DD>
-<DT>THIS|orTHAT
-<DD>
-<DT>+, - 
-<DD>Relative value
-<DT>r, %, p
-<DD>Radian, Percentage, and Pixels respectively
-</DL>
+<h4>Key</h4>
+<dl>
+<dt>{REQUIRED}
+<dd>
+<dt>[OPTIONAL]
+<dd>
+<dt>THIS|orTHAT
+<dd>
+<dt>+, - 
+<dd>Relative value
+<dt>r, %, p
+<dd>Radian, Percentage, and Pixels respectively
+</dl>
 
-<H4>Commands</H4>
+<h4>Commands</h4>
 
-<DL>
-<DT><DD>.F {font|path}[:charset] <EM>font</EM>
-<DD>
-<DT><DD>.C {color_name|R:G:B} <EM>color</EM> (default: gray)
-<DD>
-<DT><DD>.S [+|-]size[p] <EM>size</EM> (default: 5)
-<DD>
-<DT><DD>.B {0|1} <EM>bold</EM> (default: 0)
-<DD>
-<DT><DD>.A {ll|lc|lr|cl|cc|cr|ul|uc|ur} <EM>align</EM> (default: ll)
-<DD>
-<DT><DD>.R [+|-]rotation[r] <EM>rotation</EM> (default: 0)
-<DD>
-<DT><DD>.I linespacing <EM>linespacing</EM> (default: 1.1)
-<DD>
-<DT><DD>.X [+|-]x[%|p] <EM>x-coord</EM>
-<DD>
-<DT><DD>.Y [+|-]y[%|p] <EM>y-coord</EM>
-<DD>
-<DT><DD>.L {0|1} <EM>linefeed</EM> (default: 1)
-<DD>
-<DT><DD>.E [+|-]east[%|p] <EM>x-origin</EM>
-<DD>
-<DT><DD>.N [+|-]north[%|p] <EM>y-origin</EM>
-<DD>
-<DT><DD>.. <EM>dot</EM>
-<DD>
-</DL>
+<dl>
+<dt><dd>.F {font|path}[:charset] <em>font</em>
+<dd>
+<dt><dd>.C {color_name|R:G:B} <em>color</em> (default: gray)
+<dd>
+<dt><dd>.S [+|-]size[p] <em>size</em> (default: 5)
+<dd>
+<dt><dd>.B {0|1} <em>bold</em> (default: 0)
+<dd>
+<dt><dd>.A {ll|lc|lr|cl|cc|cr|ul|uc|ur} <em>align</em> (default: ll)
+<dd>
+<dt><dd>.R [+|-]rotation[r] <em>rotation</em> (default: 0)
+<dd>
+<dt><dd>.I linespacing <em>linespacing</em> (default: 1.1)
+<dd>
+<dt><dd>.X [+|-]x[%|p] <em>x-coord</em>
+<dd>
+<dt><dd>.Y [+|-]y[%|p] <em>y-coord</em>
+<dd>
+<dt><dd>.L {0|1} <em>linefeed</em> (default: 1)
+<dd>
+<dt><dd>.E [+|-]east[%|p] <em>x-origin</em>
+<dd>
+<dt><dd>.N [+|-]north[%|p] <em>y-origin</em>
+<dd>
+<dt><dd>.. <em>dot</em>
+<dd>
+</dl>
 
 To end input, press Ctrl-d on a blank line.
-<BR><BR>
+<br><br>
 
-<H2>EXAMPLES</H2>
+<h2>EXAMPLES</h2>
 
-<H4>Standard mode:</H4>
+<h4>Standard mode:</h4>
 
-<TT><B>d.text.freetype</B> text="GRASS GIS" -g at=2107055,5603133 \<BR>
+<TT><b>d.text.freetype</b> text="GRASS GIS" -g at=2107055,5603133 \<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;size=7 path=/usr/X11R6/lib/X11/fonts/TTF/luximb.ttf</TT>
-<P>
+<p>
 
-<H4>Command mode:</H4>
+<h4>Command mode:</h4>
 The following example prints three lines: "<TT><font color=gray>GRASS</font>
  <font color=red>d.text.freetype</font> <font color=gray>output</font></TT>",
 "<TT><font color=gray>See test.input file</font></TT>", and 
 "<TT><font color=gray>for more details.</font></TT>".
 
-<DL>
-<DT><TT><B>d.text.freetype -c</B></TT>
-</DL>
+<dl>
+<dt><TT><b>d.text.freetype -c</b></TT>
+</dl>
 <pre>.F /usr/X11R6/lib/X11/fonts/TTF/luximb.ttf:ISO-8859-1
 .S 20p
 .L 0
@@ -123,11 +123,11 @@ See test.input file
 for more details.
 </pre>
 
-Command mode instructions may also be read directly from a text file:<BR><BR>
-<TT><B>d.text.freetype</B> -c &lt; test.input</TT>
+Command mode instructions may also be read directly from a text file:<br><br>
+<TT><b>d.text.freetype</b> -c &lt; test.input</TT>
 
 
-<H2>DEFINITION FILE</H2>
+<h2>DEFINITION FILE</h2>
 
 To help users select fonts conveniently, the definition file,
 <TT>$(GISBASE)/etc/freetypecap</TT>, is provided.  Its format is as follows:
@@ -138,22 +138,22 @@ To help users select fonts conveniently, the definition file,
 </PRE>
 
 See the file for examples.
-<BR><BR>
+<br><br>
 
-<H2>SEE ALSO</H2>
+<h2>SEE ALSO</h2>
 
-<EM><A HREF="d.text.html">d.text</A></EM><br>
-<EM><A HREF="d.font.freetype.html">d.font.freetype</A></EM><br>
-<EM><A HREF="d.font.html">d.font</A></EM><br>
-<EM><A HREF="d.title.html">d.title</A></EM><br>
-<EM><A HREF="d.where.html">d.where</A></EM><br>
-<BR><BR>
+<em><a href="d.text.html">d.text</a></em><br>
+<em><a href="d.font.freetype.html">d.font.freetype</a></em><br>
+<em><a href="d.font.html">d.font</a></em><br>
+<em><a href="d.title.html">d.title</a></em><br>
+<em><a href="d.where.html">d.where</a></em><br>
+<br><br>
 
-<H2>AUTHOR</H2>
+<h2>AUTHOR</h2>
 
 Huidae Cho
 &lt;<a href=mailto:grass4u@gmail.com>grass4u@gmail.com</a>&gt;
-<P>
+<p>
 Updates by Hamish Bowman, NZ
 
-<p><i>Last changed: $Date: 2010-01-20 14:26:08 +0100 (Wed, 20 Jan 2010) $</i>
+<p><i>Last changed: $Date: 2011-11-08 12:29:50 +0100 (Tue, 08 Nov 2011) $</i>
