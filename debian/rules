@@ -120,21 +120,26 @@ endif
 	rm -f debian/$(BASE_NAME).1
 	rm -f error.log
 	# clean doxygen documentation (programming man)
-	rm -rf doxygenhtml lib/vector/html lib/db/html lib/gis/html \
-		lib/vector/latex lib/db/latex lib/gis/latex \
+	rm -rf doxygenhtml \
+		lib/db/html \
+		lib/db/latex \
 		lib/g3d/html \
-		lib/ogsf/html \
-		lib/proj/html \
-		lib/gmath/html \
-		lib/segment/html \
-		lib/vector/dglib/html \
-		rfc/html \
 		lib/g3d/latex \
-		lib/ogsf/latex \
-		lib/proj/latex \
+		lib/gis/html \
+		lib/gis/latex \
+		lib/gmath/html \
 		lib/gmath/latex \
+		lib/ogsf/html \
+		lib/ogsf/latex \
+		lib/proj/html \
+		lib/proj/latex \
+		lib/segment/html \
 		lib/segment/latex \
+		lib/vector/dglib/html \
 		lib/vector/dglib/latex \
+		lib/vector/html \
+		lib/vector/latex \
+		rfc/html \
 		rfc/latex
 
 install: build
@@ -150,7 +155,7 @@ install: build
 		PREFIX=$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME) \
 		BINDIR=$(CURDIR)/debian/tmp/usr/bin
 
-	# fix all the braindead scripts
+	# make all the self-bootstrapping tcl/tk scripts executable and fully pathed
 	debian/fixscripts.sh
 
 	# fix links
@@ -158,6 +163,23 @@ install: build
 	
 	# delete extra license files
 	rm -f debian/tmp/usr/lib/$(BASE_NAME)/bwidget/LICENSE.txt
+
+	# delete duplicated grass-gui stuff from grass-core package
+	for COMPONENT in bwidget \
+		etc/dm \
+		etc/form \
+		etc/gm \
+		etc/gtcltk \
+		etc/gui \
+		etc/nviz2.2 \
+		etc/v.digit \
+		etc/wxpython ; do
+		rm -rf debian/$(PKG_NAME)-core/usr/lib/$(BASE_NAME)/$COMPONENT
+	done
+
+	# delete python compiled files
+	rf -f debian/tmp/usr/lib/$(BASE_NAME)/etc/python/grass/lib/*.pyc
+	# ..FIXME..: rebuild the .pyc anew in postinst
 
 	# change section from 1 to .1grass 
 	mv debian/tmp/usr/lib/$(BASE_NAME)/man/man1/grass6.1 debian/$(BASE_NAME).1
@@ -198,9 +220,8 @@ install: build
 		debian/tmp/usr/share/icons/hicolor/48x48/apps/$(BASE_NAME).png
 	install -m 644 gui/icons/grass.desktop \
 		debian/tmp/usr/share/applications/$(BASE_NAME).desktop
-	# 6.4.1 shipped with "grass65" as the Exec target
+	# n.b. 6.4.1 shipped with "grass65" as the Exec target
 	sed -i -e 's+/usr/share/icons/grass-48x48.png+$(BASE_NAME)+' \
-		-e 's+grass65+$(BASE_NAME)+' \
 		debian/tmp/usr/share/applications/$(BASE_NAME).desktop
 
 	# install x-grass wrapper script
