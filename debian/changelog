@@ -15,8 +15,6 @@ grass (6.4.2-1) unstable; urgency=low
 
   [ Francesco Paolo Lovergine ]
   * Moved to use TIFF 4.0.1 instead of the legacy flavor.
-  * B-D updated to libmysqlclient-dev to pickup current version.
-    (closes: #650361)
 
  -- Francesco Paolo Lovergine <frankie@debian.org>  Sat, 25 Feb 2012 18:55:41 +0100
 
