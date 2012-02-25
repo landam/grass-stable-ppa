@@ -95,7 +95,11 @@ build-indep: configure build-indep-stamp
 build-indep-stamp: 
 	dh_testdir
 	# generate the Programmers' manual (in HTML)
-	$(MAKE) htmldocs
+	$(MAKE) htmldocs-single
+	# save a lot of disk space by compressing PNG images (but takes a long time)
+	##for file in `find debian/tmp/programming-manual/ -iname \*.png` ; do \
+	##	optipng -o5 $$file ; \
+	##done
 	touch $@
 
 clean: templates true-clean 
@@ -224,38 +228,11 @@ install: build
 install-indep: build-indep
 	dh_testdir -i
 	dh_testroot -i
-	install -m 644  -d debian/tmp
-	for CHAPTER in \
-		db \
-		g3d \
-		gis \
-		gmath \
-		gpde \
-		ogsf \
-		proj \
-		python \
-		segment \
-		vector \
-		vector/dglib ; \
-	     do \
-		install -m 644 -d debian/tmp/programming-manual/$$CHAPTER/html/search ; \
-		install -m 644 lib/$$CHAPTER/html/* \
-			debian/tmp/programming-manual/$$CHAPTER/html ; \
-		rm -f debian/tmp/programming-manual/$$CHAPTER/html/jquery.js ; \
-		install -m 644 lib/$$CHAPTER/html/search/* \
-			debian/tmp/programming-manual/$$CHAPTER/html/search ; \
-	done
-	for CHAPTER in \
-		. \
-		rfc \
-		gui/wxpython ; \
-	     do \
-		install -m 644 -d debian/tmp/programming-manual/$$CHAPTER/html/search ; \
-		install -m 644 $$CHAPTER/html/* \
-			debian/tmp/programming-manual/$$CHAPTER/html ; \
-		rm -f debian/tmp/programming-manual/$$CHAPTER/html/jquery.js ; \
-		install -m 644 $$CHAPTER/html/search/* \
-			debian/tmp/programming-manual/$$CHAPTER/html/search ; \
+	install -m 644 -d debian/tmp
+	-install -m 644 -d debian/tmp/programming-manual/html/search
+	-install -m 644 ./html/* debian/tmp/programming-manual/html
+	-install -m 644 ./html/search/* debian/tmp/programming-manual/html/search
+	-rm -f debian/tmp/programming-manual/html/jquery.js
 	done
 
 # Build architecture-independent files here.

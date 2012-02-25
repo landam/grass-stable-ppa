@@ -1,13 +1,1 @@
-programming-manual/db usr/share/doc/grass-dev-doc/programming-manual/html
-programming-manual/g3d usr/share/doc/grass-dev-doc/programming-manual/html
-programming-manual/gis usr/share/doc/grass-dev-doc/programming-manual/html
-programming-manual/gmath usr/share/doc/grass-dev-doc/programming-manual/html
-programming-manual/gpde usr/share/doc/grass-dev-doc/programming-manual/html
-programming-manual/gui usr/share/doc/grass-dev-doc/programming-manual/html
-programming-manual/html usr/share/doc/grass-dev-doc/programming-manual/html
-programming-manual/ogsf usr/share/doc/grass-dev-doc/programming-manual/html
-programming-manual/proj usr/share/doc/grass-dev-doc/programming-manual/html
-programming-manual/python usr/share/doc/grass-dev-doc/programming-manual/html
-programming-manual/rfc usr/share/doc/grass-dev-doc/programming-manual/html
-programming-manual/segment usr/share/doc/grass-dev-doc/programming-manual/html
-programming-manual/vector usr/share/doc/grass-dev-doc/programming-manual/html
+programming-manual/html usr/share/doc/grass-dev-doc/programming-manual

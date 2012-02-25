@@ -11,6 +11,11 @@ FIXME:
 
 E: grass-core: package-installs-python-bytecode usr/lib/grass64/etc/.../*.pyc
 ( -> removed in rules, but still need to generate anew in postinst )
+  see /usr/share/debhelper/autoscripts/postinst-python
+      /var/lib/dpkg/info/python-numpy.*
+      update-python-modules(8)
+      dh_python2
+
 
 
 Lintian:
