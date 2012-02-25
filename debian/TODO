@@ -14,7 +14,6 @@ E: grass-core: package-installs-python-bytecode usr/lib/grass64/etc/.../*.pyc
 
 
 Lintian:
-E: grass-gui: shell-script-fails-syntax-check usr/lib/grass64/etc/gm/animate.tcl
 W: grass-dev: copyright-without-copyright-notice
 W: grass-dev-doc: copyright-without-copyright-notice
 W: grass-dev-doc: embedded-javascript-library usr/share/doc/grass-dev-doc/programming-manual/html/db/html/jquery.js
