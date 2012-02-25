@@ -25,3 +25,15 @@ W: grass-core: copyright-without-copyright-notice
 W: grass-doc: copyright-without-copyright-notice
 W: grass: copyright-without-copyright-notice
 W: grass-gui: copyright-without-copyright-notice
+
+
+
+TODO:
+
+allow parallel builds by adding something like this to debian/rules:
+{{{
+%:
+        dh $@ --parallel
+}}}
+
+
