@@ -3,6 +3,7 @@ grass (6.4.2-1) unstable; urgency=low
   * Packaged new upstream version.
   * Reorganize binary packages, new: grass-core, grass-gui, grass-dev-doc.
   * Patch g.extension.sh to check for the needed grass-dev package.
+  * Remove outdated cruft from debian/fixscripts.sh.
 
  -- M. Hamish Bowman <hamish_b@yahoo.com>  Thu, 23 Feb 2012 19:09:32 +1300
 
