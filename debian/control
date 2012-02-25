@@ -29,14 +29,14 @@ Build-depends:
   python-wxgtk2.8, libwxgtk2.8-dev,
   tcl-dev (>= 8.5), tk-dev (>= 8.5),
   unixodbc-dev
-Standards-Version: 3.9.2
+Standards-Version: 3.9.3
 Build-Conflicts: wx2.6-headers
 Homepage: http://grass.osgeo.org/
 Vcs-Browser: http://git.debian.org/?p=pkg-grass/grass.git
 Vcs-Git: git://git.debian.org/git/pkg-grass/grass.git
 
 Package: grass
-Section: science
+Section: metapackages
 Architecture: all
 Depends: grass-core, grass-gui
 Recommends: grass-doc

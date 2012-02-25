@@ -9,8 +9,9 @@ grass (6.4.2-1) unstable; urgency=low
     (closes: #650361)
   * Use xdg-open for GRASS_HTML_BROWSER when available.
     (closes: #615667)
+  * Policy bumped to 3.9.3, using metapackages archive section for 'grass'.
 
- -- M. Hamish Bowman <hamish_b@yahoo.com>  Sat, 25 Feb 2012 22:09:50 +1300
+ -- M. Hamish Bowman <hamish_b@yahoo.com>  Sat, 25 Feb 2012 22:49:50 +1300
 
 grass (6.4.1-2) unstable; urgency=low
 
