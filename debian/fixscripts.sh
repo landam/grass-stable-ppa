@@ -7,25 +7,22 @@ CURDIR=$(pwd)
 VERSION=$(echo $(head -2 $CURDIR/include/VERSION)|sed -e 's/ //') 
 
 # silence bogus lintian complaint about interpreter-not-absolute
-for x in script_get_line \
+for SCRIPT in script_get_line \
     script_play \
     script_tools \
     script_file_tools \
     nviz2.2_script
 do
-  f=$CURDIR/debian/tmp/usr/lib/grass$VERSION/etc/nviz2.2/scripts/$x
-  # why not use 'sed -i' here?
-  sed -e "s.!nviz.!/usr/lib/grass$VERSION/bin/nviz." $f >foo && cat foo >$f
+  file="$CURDIR/debian/tmp/usr/lib/grass$VERSION/etc/nviz2.2/scripts/$SCRIPT"
+  sed -i -e "s.!nviz.!/usr/lib/grass$VERSION/bin/nviz." "$file"
 done
 
-for x in panel_label.tcl \
+for SCRIPT in panel_label.tcl \
     panel_scale.tcl
 do
-  f=$CURDIR/debian/tmp/usr/lib/grass$VERSION/etc/nviz2.2/scripts/$x
-  # why not use 'sed -i' here?
-  sed -e "s%!../glnviz.new/nvwish%!/usr/lib/grass$VERSION/etc/nviz2.2/glnviz/nvwish%" $f >foo && cat foo >$f
+  file="$CURDIR/debian/tmp/usr/lib/grass$VERSION/etc/nviz2.2/scripts/$SCRIPT"
+  sed -i -e "s%!../glnviz.new/nvwish%!/usr/lib/grass$VERSION/etc/nviz2.2/glnviz/nvwish%" "$file"
 done
-rm foo
 
 # silence lintian warning script-not-executable
 for x in etc/dm/tksys.tcl \

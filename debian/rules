@@ -9,8 +9,8 @@
 DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
 DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 
-VERSION=$(shell echo `head -2 $(CURDIR)/include/VERSION`|sed -e 's/ //')
-ABI=$(shell echo `head -3 $(CURDIR)/include/VERSION`|sed -e 's/ //g' -e 's/RC/-/')
+VERSION=$(shell echo `head -2 $(CURDIR)/include/VERSION` | sed -e 's/ //')
+ABI=$(shell echo `head -3 $(CURDIR)/include/VERSION` | sed -e 's/ //g' -e 's/RC/-/')
 BASE_NAME=grass$(VERSION)
 PKG_NAME=grass
 
@@ -73,7 +73,7 @@ endif
                     --with-freetype-includes=/usr/include/freetype2 \
                     --with-tcltk-includes=$(TCLINC) \
                     --with-postgres-includes=$(shell pg_config --includedir) \
-                    --with-mysql-includes=$(shell mysql_config --include|sed -e 's/-I//') \
+                    --with-mysql-includes=$(shell mysql_config --include | sed -e 's/-I//') \
 		    --with-proj-share=/usr/share/proj \
 		    --with-wxwidgets=/usr/bin/wx-config \
 		    --with-python=/usr/bin/python-config \
@@ -222,7 +222,7 @@ install: build
 	# install x-grass wrapper script
 	install -m 755 debian/x-grass debian/tmp/usr/bin/x-grass
 
-	ln -fs /usr/lib/$(shell objdump -p /usr/lib/`gdal-config --libs|cut -d' ' -f2|sed -e 's/-l/lib/'`.so|grep SONAME|cut -d' ' -f18) \
+	ln -fs /usr/lib/$(shell objdump -p /usr/lib/`gdal-config --libs | cut -d' ' -f2 | sed -e 's/-l/lib/'`.so | grep SONAME | cut -d' ' -f18) \
 		debian/tmp/usr/lib/$(BASE_NAME)/lib/libgdal.so
 
 install-indep: build-indep
