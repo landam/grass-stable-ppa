@@ -7,43 +7,20 @@ moved to /var/lib/grass or /usr/lib/grass, leaving symlinks so to not
 break things.
 
 
-
-Package re-org:
-
-[done]
- Move the programmers' manual out of grass-doc and into a new
- grass-doc-dev package, suggested by both grass-dev and grass-doc.
-   /usr/share/doc/grass-doc/programming-manual/
-
-
-[in progress]
- Move $GISBASE/etc/gui/ dm/ gm/ gtcltk/ wxpython/ nviz2.2/ v.digit/ form/
- into a separate grass-gui package, so that packages like QGIS don't
- have to install wxPython etc. as well.
- .
- Move remaining contents of the grass binary package into grass-core,
- and make the 'grass' binary package a virtual one depending on both
- grass-core and grass-gui, and recommending grass-doc.
-
-
-
 FIXME:
 
-E: grass-core: package-installs-python-bytecode usr/lib/grass64/etc/python/grass/lib/*.pyc
-( -> remove in prerm, generate anew in postinst )
+E: grass-core: package-installs-python-bytecode usr/lib/grass64/etc/.../*.pyc
+( -> removed in rules, but still need to generate anew in postinst )
 
 
-grass-core.install gets $GISBASE/etc/, but how to exclude the 8 grass-gui
-dirs from that without explicitly listsing in grass-core.install the other
-78 (or so) files in $GISBASE/etc/?
-
-
-Make use of upstream's gui/icons/grass.desktop file (include it in the
-grass-core package as it will launch the text-only version too), but
-perhaps we need to patch the Exec= line and or filename with @VERSION@
-to follow the other .in files?
-.
-Currently we ignore upstream's grass.menu file, Debian pkging's version
-is @VERSION@.in compliant. Suggest we continue to do so.
-
-
+Lintian:
+E: grass-gui: shell-script-fails-syntax-check usr/lib/grass64/etc/gm/animate.tcl
+W: grass-dev: copyright-without-copyright-notice
+W: grass-dev-doc: copyright-without-copyright-notice
+W: grass-dev-doc: embedded-javascript-library usr/share/doc/grass-dev-doc/programming-manual/html/db/html/jquery.js
+W: grass-dev-doc: embedded-javascript-library usr/share/doc/grass-dev-doc/programming-manual/html/gis/html/jquery.js
+W: grass-dev-doc: embedded-javascript-library usr/share/doc/grass-dev-doc/programming-manual/html/vector/html/jquery.js
+W: grass-core: copyright-without-copyright-notice
+W: grass-doc: copyright-without-copyright-notice
+W: grass: copyright-without-copyright-notice
+W: grass-gui: copyright-without-copyright-notice

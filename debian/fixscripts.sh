@@ -29,8 +29,10 @@ rm foo
 
 # silence lintian warning script-not-executable
 for x in etc/dm/tksys.tcl \
-    etc/gm/animate.tcl
-do 
+    etc/gm/animate.tcl \
+    etc/gem/skeleton/post \
+    etc/gem/skeleton/uninstall
+do
     chmod +x $CURDIR/debian/tmp/usr/lib/grass$VERSION/$x
 done
 
@@ -50,6 +52,7 @@ for x in etc/dm/cmd.tcl \
     etc/dm/vector.tcl \
     etc/epsg_option.tcl \
     etc/gis_set.tcl \
+    etc/gm/tksys.tcl \
     etc/nviz2.2/scripts/assoc.tcl \
     etc/nviz2.2/scripts/attIsosurfPopup.tcl \
     etc/nviz2.2/scripts/attPopup.tcl \

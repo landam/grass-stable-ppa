@@ -164,8 +164,17 @@ install: build
 	# delete extra license files
 	rm -f debian/tmp/usr/lib/$(BASE_NAME)/bwidget/LICENSE.txt
 
-	# delete python compiled files
-	rf -f debian/tmp/usr/lib/$(BASE_NAME)/etc/python/grass/lib/*.pyc
+	# delete python compiled bytecode files
+	for DIR in python/grass \
+		python/grass/lib \
+		python/grass/script \
+		wxpython \
+		wxpython/compat \
+		wxpython/gui_modules \
+		wxpython/icons ; \
+	     do \
+		rm -f debian/tmp/usr/lib/$(BASE_NAME)/etc/$$DIR/*.pyc ; \
+	done
 	# ..FIXME..: rebuild the .pyc anew in postinst
 
 	# change section from 1 to .1grass 
@@ -174,10 +183,6 @@ install: build
 		n=`basename $$m .1`; mv $$m debian/tmp/usr/lib/$(BASE_NAME)/man/man1/$$n.1grass; done
 	for m in debian/tmp/usr/lib/$(BASE_NAME)/man/man1/*.1grass; do \
 		sed -i -e 's/^.TH \(.*\) 1/.TH \1 1grass/' $$m; done
-
-	# install module makefile (redundant due to grass-dev.install?)
-	install -m 644 include/Make/Module.make \
-		debian/$(PKG_NAME)-dev/usr/lib/$(BASE_NAME)/include/Make/Module.make
 
 	# adjust from build-server build dir to end-user's install dir
 	sed -i -e "s+^\(GRASS_HOME[ ]*=\) .*+\1 /usr/lib/$(BASE_NAME)+" \
@@ -258,14 +263,14 @@ binary-arch: install
 	dh_install -a
 	# delete duplicated grass-gui stuff from grass-core package
 	for COMPONENT in bwidget \
-		etc/dm \
-		etc/form \
-		etc/gm \
-		etc/gtcltk \
-		etc/gui \
-		etc/nviz2.2 \
-		etc/v.digit \
-		etc/wxpython ; do \
+			etc/dm \
+			etc/form \
+			etc/gm \
+			etc/gtcltk \
+			etc/gui \
+			etc/nviz2.2 \
+			etc/v.digit \
+			etc/wxpython ; do \
 		rm -rf debian/$(PKG_NAME)-core/usr/lib/$(BASE_NAME)/$$COMPONENT; \
 	done
 	dh_installmenu -a

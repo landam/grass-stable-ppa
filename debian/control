@@ -41,7 +41,7 @@ Architecture: all
 Depends: grass-core, grass-gui
 Recommends: grass-doc
 Suggests: grass-dev
-Description: GRASS GIS (The Geographic Resources Analysis Support System)
+Description: Geographic Resources Analysis Support System (GRASS GIS)
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
  image processing, graphics/map production, spatial modeling, and
@@ -138,7 +138,7 @@ Section: doc
 Architecture: all
 Depends: ${misc:Depends}
 Suggests: grass
-Description: The GRASS GIS Programmers' Manual
+Description: GRASS GIS Programmers' Manual
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
  image processing, graphics/map production, spatial modeling, and
