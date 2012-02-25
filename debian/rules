@@ -270,7 +270,9 @@ binary-arch: install
 			etc/gui \
 			etc/nviz2.2 \
 			etc/v.digit \
-			etc/wxpython ; do \
+			etc/wxpython \
+			bin/v.digit \
+			bin/xganim ; do \
 		rm -rf debian/$(PKG_NAME)-core/usr/lib/$(BASE_NAME)/$$COMPONENT; \
 	done
 	dh_installmenu -a
