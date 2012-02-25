@@ -12,6 +12,7 @@ echo " in $TMPPATH"
 
 for i in `grep -r $ZOTPATH $TMPPATH | cut -d : -f 1 | sort -u` ; do
     echo -n "Grr. Zotting $i ... "
+    # why not use 'sed -i' here?
     cp $i $i.old
     sed -e s,$ZOTPATH,,g $i.old >$i
     rm -f $i.old
