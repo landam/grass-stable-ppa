@@ -124,7 +124,7 @@ endif
 		html latex \
 		rfc/html rfc/latex \
 		gui/wxpython/html gui/wxpython/latex
-	for LIBRARY in 
+	for LIBRARY in \
 		db \
 		g3d \
 		gis \
