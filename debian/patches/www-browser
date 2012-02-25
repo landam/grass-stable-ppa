@@ -38,7 +38,9 @@ Index: grass/lib/init/init.sh
 -	done
 -	if [ -n "$GRASS_HTML_BROWSER" ] ; then
 -	   break
-+	if [ -x /usr/bin/x-www-browser ] ; then
++	if [ -x /usr/bin/xdg-open ] ; then
++		GRASS_HTML_BROWSER=xdg-open
++	elif [ -x /usr/bin/x-www-browser ] ; then
 +		GRASS_HTML_BROWSER=x-www-browser
 +	else 
 +		GRASS_HTML_BROWSER=true

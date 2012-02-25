@@ -5,8 +5,9 @@ grass (6.4.2-1) unstable; urgency=low
   * Patch g.extension.sh to check for the needed grass-dev package.
   * Remove outdated cruft from debian/fixscripts.sh and debian/rules.
   * libmysqlclient-dev replaces libmysqlclient15-dev (closes #650361)
+  * Use xdg-open for GRASS_HTML_BROWSER when available (closes #615667)
 
- -- M. Hamish Bowman <hamish_b@yahoo.com>  Thu, 23 Feb 2012 19:09:32 +1300
+ -- M. Hamish Bowman <hamish_b@yahoo.com>  Sat, 25 Feb 2012 22:09:50 +1300
 
 grass (6.4.1-2) unstable; urgency=low
 
