@@ -94,6 +94,7 @@ build-stamp:
 build-indep: configure build-indep-stamp
 build-indep-stamp: 
 	dh_testdir
+	# generate the Programmers' manual (in HTML)
 	$(MAKE) htmldocs
 	touch $@
 
@@ -238,10 +239,10 @@ install-indep: build-indep
 		vector/dglib ; \
 	     do \
 		install -m 644 -d debian/tmp/programming-manual/$$CHAPTER/html/search ; \
-		-install -m 644 lib/$$CHAPTER/html/* \
+		install -m 644 lib/$$CHAPTER/html/* \
 			debian/tmp/programming-manual/$$CHAPTER/html ; \
 		rm -f debian/tmp/programming-manual/$$CHAPTER/html/jquery.js ; \
-		-install -m 644 lib/$$CHAPTER/html/search/* \
+		install -m 644 lib/$$CHAPTER/html/search/* \
 			debian/tmp/programming-manual/$$CHAPTER/html/search ; \
 	done
 	for CHAPTER in \
@@ -250,10 +251,10 @@ install-indep: build-indep
 		gui/wxpython ; \
 	     do \
 		install -m 644 -d debian/tmp/programming-manual/$$CHAPTER/html/search ; \
-		-install -m 644 $$CHAPTER/html/* \
+		install -m 644 $$CHAPTER/html/* \
 			debian/tmp/programming-manual/$$CHAPTER/html ; \
 		rm -f debian/tmp/programming-manual/$$CHAPTER/html/jquery.js ; \
-		-install -m 644 $$CHAPTER/html/search/* \
+		install -m 644 $$CHAPTER/html/search/* \
 			debian/tmp/programming-manual/$$CHAPTER/html/search ; \
 	done
 
