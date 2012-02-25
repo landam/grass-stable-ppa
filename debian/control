@@ -136,7 +136,7 @@ Description: GRASS GIS user documentation
 Package: grass-dev-doc
 Section: doc
 Architecture: all
-Depends: ${misc:Depends}
+Depends: ${misc:Depends}, libjs-jquery
 Suggests: grass
 Description: GRASS GIS Programmers' Manual
  Commonly referred to as GRASS, this is a Geographic Information

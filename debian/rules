@@ -141,6 +141,10 @@ endif
 		lib/vector/latex \
 		rfc/html \
 		rfc/latex
+	# jquery.js provided by a symlink to the libjs-jquery package
+	rm -f debian/tmp/programming-manual/html/db/html/jquery.js
+	rm -f debian/tmp/programming-manual/html/vector/html/jquery.js
+	rm -f debian/tmp/programming-manual/html/gis/html/jquery.js
 
 install: build
 	dh_testdir
