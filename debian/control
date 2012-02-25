@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Debian GIS Project <pkg-grass-devel@lists.alioth.debian.org>
 Uploaders: Francesco Paolo Lovergine <frankie@debian.org>
 Build-depends:
-  autoconf2.13, autotools-dev,
+  autotools-dev,
   debhelper (>= 8), 
   doxygen,
   fakeroot,
@@ -25,23 +25,25 @@ Build-depends:
   libreadline-dev | libreadline6-dev,
   libsqlite3-dev,
   libxmu-dev,
+#install optipng if compressing the PNG images in the programmers' manual
+  optipng,
   python-dev (>= 2.5), python-support (>= 0.7.1),
   python-wxgtk2.8, libwxgtk2.8-dev,
   tcl-dev (>= 8.5), tk-dev (>= 8.5),
   unixodbc-dev
-Standards-Version: 3.9.2
+Standards-Version: 3.9.3
 Build-Conflicts: wx2.6-headers
 Homepage: http://grass.osgeo.org/
 Vcs-Browser: http://git.debian.org/?p=pkg-grass/grass.git
 Vcs-Git: git://git.debian.org/git/pkg-grass/grass.git
 
 Package: grass
-Section: science
+Section: metapackages
 Architecture: all
 Depends: grass-core, grass-gui
 Recommends: grass-doc
 Suggests: grass-dev
-Description: GRASS GIS (The Geographic Resources Analysis Support System)
+Description: Geographic Resources Analysis Support System (GRASS GIS)
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
  image processing, graphics/map production, spatial modeling, and
@@ -136,9 +138,9 @@ Description: GRASS GIS user documentation
 Package: grass-dev-doc
 Section: doc
 Architecture: all
-Depends: ${misc:Depends}
+Depends: ${misc:Depends}, libjs-jquery
 Suggests: grass
-Description: The GRASS GIS Programmers' Manual
+Description: GRASS GIS Programmers' Manual
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
  image processing, graphics/map production, spatial modeling, and
