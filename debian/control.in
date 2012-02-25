@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Debian GIS Project <pkg-grass-devel@lists.alioth.debian.org>
 Uploaders: Francesco Paolo Lovergine <frankie@debian.org>
 Build-depends:
-  autotools-dev,
+  autoconf2.13, autotools-dev,
   debhelper (>= 8), 
   doxygen,
   fakeroot,
@@ -26,7 +26,7 @@ Build-depends:
   libsqlite3-dev,
   libxmu-dev,
 #install optipng if compressing the PNG images in the programmers' manual
-  optipng,
+#  optipng,
   python-dev (>= 2.5), python-support (>= 0.7.1),
   python-wxgtk2.8, libwxgtk2.8-dev,
   tcl-dev (>= 8.5), tk-dev (>= 8.5),
