@@ -44,7 +44,8 @@ for x in etc/dm/cmd.tcl \
     etc/dm/menu.tcl \
     etc/dm/print.tcl \
     etc/dm/raster.tcl \
-    etc/dm/tool.tcl \
+    etc/dm/tool1.tcl \
+    etc/dm/tool2.tcl \
     etc/dm/tree.tcl \
     etc/dm/vector.tcl \
     etc/epsg_option.tcl \
@@ -70,15 +71,14 @@ for x in etc/dm/cmd.tcl \
     etc/nviz2.2/scripts/panel_lights.tcl \
     etc/nviz2.2/scripts/panel_main.tcl \
     etc/nviz2.2/scripts/panel_pos.tcl \
-    etc/nviz2.2/scripts/panel_query.tcl \
-    etc/nviz2.2/scripts/panel_query_orig.tcl \
-    etc/nviz2.2/scripts/panel_query_pg.tcl \
+    etc/nviz2.2/scripts/panel_rquery.tcl \
     etc/nviz2.2/scripts/panel_scale.tcl \
     etc/nviz2.2/scripts/panel_sdiff.tcl \
     etc/nviz2.2/scripts/panel_site.tcl \
     etc/nviz2.2/scripts/panel_surf.tcl \
     etc/nviz2.2/scripts/panel_tst.tcl \
     etc/nviz2.2/scripts/panel_vect.tcl \
+    etc/nviz2.2/scripts/panel_vquery.tcl \
     etc/nviz2.2/scripts/panel_vol.tcl \
     etc/nviz2.2/scripts/position_procs.tcl \
     etc/nviz2.2/scripts/queue.tcl \

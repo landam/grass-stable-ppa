@@ -164,19 +164,6 @@ install: build
 	# delete extra license files
 	rm -f debian/tmp/usr/lib/$(BASE_NAME)/bwidget/LICENSE.txt
 
-	# delete duplicated grass-gui stuff from grass-core package
-	for COMPONENT in bwidget \
-		etc/dm \
-		etc/form \
-		etc/gm \
-		etc/gtcltk \
-		etc/gui \
-		etc/nviz2.2 \
-		etc/v.digit \
-		etc/wxpython ; do
-		rm -rf debian/$(PKG_NAME)-core/usr/lib/$(BASE_NAME)/$COMPONENT
-	done
-
 	# delete python compiled files
 	rf -f debian/tmp/usr/lib/$(BASE_NAME)/etc/python/grass/lib/*.pyc
 	# ..FIXME..: rebuild the .pyc anew in postinst
@@ -269,6 +256,18 @@ binary-arch: install
 	dh_installdocs  -a
 	dh_installexamples  -a
 	dh_install -a
+	# delete duplicated grass-gui stuff from grass-core package
+	for COMPONENT in bwidget \
+		etc/dm \
+		etc/form \
+		etc/gm \
+		etc/gtcltk \
+		etc/gui \
+		etc/nviz2.2 \
+		etc/v.digit \
+		etc/wxpython ; do \
+		rm -rf debian/$(PKG_NAME)-core/usr/lib/$(BASE_NAME)/$$COMPONENT; \
+	done
 	dh_installmenu -a
 	dh_installman -p$(PKG_NAME) debian/$(BASE_NAME).1 -a
 	dh_link -a
