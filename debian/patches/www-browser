@@ -2,7 +2,7 @@ Index: grass/lib/init/init.sh
 ===================================================================
 --- grass.orig/lib/init/init.sh	2011-02-14 17:15:01.000000000 +0100
 +++ grass/lib/init/init.sh	2011-02-14 17:28:01.000000000 +0100
-@@ -325,53 +325,11 @@
+@@ -325,53 +325,13 @@
  
  # try and find a web browser if one isn't already specified
  if [ ! "$GRASS_HTML_BROWSER" ] ; then
