@@ -17,6 +17,9 @@ E: grass-core: package-installs-python-bytecode usr/lib/grass64/etc/.../*.pyc
       dh_python2
 
 
+* put Tcl/Tk NVIZ back into grass-core so that qgis users can use it?
+   (that seems to be a popular use of the qgis-grass toolbox)
+
 
 Lintian:
 W: grass-dev: copyright-without-copyright-notice
@@ -30,10 +33,15 @@ W: grass-gui: copyright-without-copyright-notice
 
 TODO:
 
-allow parallel builds by adding something like this to debian/rules:
+* allow parallel builds by adding something like this to debian/rules:
 {{{
 %:
         dh $@ --parallel
 }}}
+
+
+
+* link Programmers' Manual to a listing in the wxGUI Help menu, if installed?
+   (launch using GRASS_HTML_BROWSER)
 
 
