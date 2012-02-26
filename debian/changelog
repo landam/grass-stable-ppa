@@ -1,6 +1,6 @@
 grass (6.4.2-1) unstable; urgency=low
 
-  [ M. Hamish Bowman ]
+  [ Hamish Bowman ]
   * Packaged new upstream version.
   * Reorganize binary packages, new: grass-core, grass-gui, grass-dev-doc.
   * Patch g.extension.sh to check for the needed grass-dev package.
