@@ -37,8 +37,6 @@ GUIModulesPath = os.path.join(os.getenv("GISBASE"), "etc", "wxpython", "gui_modu
 sys.path.append(GUIModulesPath)
 
 import globalvar
-if not os.getenv("GRASS_WXBUNDLED"):
-    globalvar.CheckForWx()
 import gselect
 import goutput
 import menuform
@@ -105,7 +103,6 @@ class KrigingPanel(wx.Panel):
         
         ## Command output. From menuform module, cmdPanel class
         self.goutput = goutput.GMConsole(parent = self, margin = False,
-                                         pageid = self.RPackagesBook.GetPageCount(),
                                          notebook = self.RPackagesBook)
         self.goutputId = self.RPackagesBook.GetPageCount()
         self.outpage = self.RPackagesBook.AddPage(self.goutput, text = _("Command output"))

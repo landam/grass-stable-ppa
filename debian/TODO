@@ -7,17 +7,41 @@ moved to /var/lib/grass or /usr/lib/grass, leaving symlinks so to not
 break things.
 
 
-Package re-org:
+FIXME:
 
-Move the programmers' manual out of grass-doc and into a new grass-doc-dev
-package, suggested by both grass-dev and grass-doc.
-   /usr/share/doc/grass-doc/programming-manual/
+E: grass-core: package-installs-python-bytecode usr/lib/grass64/etc/.../*.pyc
+( -> removed in rules, but still need to generate anew in postinst )
+  see /usr/share/debhelper/autoscripts/postinst-python
+      /var/lib/dpkg/info/python-numpy.*
+      update-python-modules(8)
+      dh_python2
 
-Move $GISBASE/etc/gui/ dm/ gm/ gtcltk/ wxpython/ nviz2.2/ v.digit/ form/
-into a separate grass-gui package, so that packages like QGIS don't
-have to install wxPython etc. as well.
 
-Move remaining contents of the grass binary package into grass-core,
-and make the 'grass' binary package a virtual one depending on both
-grass-core and grass-gui, and recommending grass-doc.
+* put Tcl/Tk NVIZ back into grass-core so that qgis users can use it?
+   (that seems to be a popular use of the qgis-grass toolbox)
+
+
+Lintian:
+W: grass-dev: copyright-without-copyright-notice
+W: grass-dev-doc: copyright-without-copyright-notice
+W: grass-core: copyright-without-copyright-notice
+W: grass-doc: copyright-without-copyright-notice
+W: grass: copyright-without-copyright-notice
+W: grass-gui: copyright-without-copyright-notice
+
+
+
+TODO:
+
+* allow parallel builds by adding something like this to debian/rules:
+{{{
+%:
+        dh $@ --parallel
+}}}
+
+
+
+* link Programmers' Manual to a listing in the wxGUI Help menu, if installed?
+   (launch using GRASS_HTML_BROWSER)
+
 

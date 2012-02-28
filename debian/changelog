@@ -1,3 +1,23 @@
+grass (6.4.2-1) unstable; urgency=low
+
+  [ Hamish Bowman ]
+  * Packaged new upstream version.
+  * Reorganize binary packages, new: grass-core, grass-gui, grass-dev-doc.
+  * Patch g.extension.sh to check for the needed grass-dev package.
+  * Remove outdated cruft from debian/fixscripts.sh and debian/rules.
+  * Install the full Programmers' Manual.
+  * Use system's copy of jquery.js in the Programmers' Manual.
+  * libmysqlclient-dev replaces libmysqlclient15-dev.
+    (closes: #650361)
+  * Use xdg-open for GRASS_HTML_BROWSER when available.
+    (closes: #615667)
+  * Policy bumped to 3.9.3, using metapackages archive section for 'grass'.
+
+  [ Francesco Paolo Lovergine ]
+  * Moved to use TIFF 4.0.1 instead of the legacy flavor.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Sat, 25 Feb 2012 19:21:24 +0100
+
 grass (6.4.1-2) unstable; urgency=low
 
   [ Hamish Bowman ]

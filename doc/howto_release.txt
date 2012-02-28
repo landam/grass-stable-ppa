@@ -1,6 +1,6 @@
 How to release GRASS binaries and source code
 
-$Date: 2010-10-21 22:24:20 +0200 (Thu, 21 Oct 2010) $
+$Date: 2011-10-11 00:23:31 +0200 (Tue, 11 Oct 2011) $
 
 Note: This text contains *some* rules only applicable to the
       development coordinators at CEA (currently Markus Neteler).
@@ -24,6 +24,7 @@ Contents
    - make distclean
 
    - cleanup rubbish:
+       rm -f locale/templates/*.pot
        find . -name '*~'     | xargs rm
        find . -name '*.bak'  | xargs rm
        find . -name '.#*'    | xargs rm
@@ -124,7 +125,7 @@ Contents
       - grass$MAJOR$MINOR/main.inc
       - devel/grasshist.html
       - devel/grassreleases.html
-      - devel/svntags.inc (add tag)
+      - devel/svntags.inc (add tag): echo $RELEASETAG
 
      write announcement
       - store in trac: http://trac.osgeo.org/grass/wiki/Release/6.XX.YY-News
@@ -169,28 +170,25 @@ Contents
    OSGeo.org:          <news_item@osgeo.org>
 
  Email:
-   http://www.gismonitor.com/news/submit_news.php (matteo@gismonitor.com)
    http://www.gis-news.de/  (franz-josef.behr@gismngt.de)
    http://www.gisdevelopment.net (news@gisdevelopment.net)
    http://spatialnews.geocomm.com/submitnews.html (not free any more, convince editor@geocomm.com)
-   admin@cartographyonline.com
-   redazionenews@mondogis.net
+   redazione@geoforus.it
    mfeilner@linuxnewmedia.de
    info@harzer.de
    info@j-geoinfo.net
-   editor@newsblaze.com
    pr@geocomm.com
+   editor-geo@geoconnexion.com
 
  Web:
    http://slashgeo.org/submit.pl
    http://freshmeat.net/projects/grass/?highlight=GRASS (update, MN)
    http://linuxtoday.com/contribute.php3
    https://www.osor.eu/projects/grassgis (update, MN)
-   http://www.newsforge.com/submit.pl
+   https://forge.osor.eu/news/submit.php?group_id=44 (submit news, MN)
    http://www.macnn.com/contact/newstips/1
    http://www10.giscafe.com/submit_material/submit_options.php#Press (MN)
    http://www.freegis.org   (update, MN)
-   http://www.blinkgeo.com (markusN)
    http://www.directionsmag.com/pressreleases/ (News -> Post Press Release)
    http://www.gnu.org/directory/science/geography/grass.html
    http://www.kde-apps.org/content/show.php?content=19776

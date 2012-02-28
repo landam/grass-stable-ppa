@@ -189,8 +189,8 @@ text
  
   <dt>GRASS_INT_ZLIB</dt>
   <dd>[libgis]<br>
-    if the environment variable GRASS_INT_ZLIB exists, new compressed
-    rasters will be compressed using zlib instead of RLE
+    if the environment variable GRASS_INT_ZLIB exists, new compressed <i>integer</i> (CELL type)
+    raster maps will be compressed using zlib instead of RLE
     compression. Such rasters will have a <tt>compressed</tt> value of 2 in the
     cellhd file.
   <br>
@@ -199,9 +199,19 @@ text
   </dd>
   
   <dt>GRASS_MESSAGE_FORMAT</dt>
-  <dd>[various modules]<br>
-    maybe set to either <tt>standard</tt> or <tt>gui</tt> (normally
-    GRASS takes care).</dd>
+  <dd>[various modules, wxGUI]<br>
+    maybe set to either
+    </ul>
+      <li><tt>standard</tt> - sets percentage output and message
+	formatting style to standard formatting,</li>
+      <li><tt>gui</tt> - sets percentage output and message formatting
+	style to GUI formatting,</li>
+      <li><tt>silent</tt> - disables percentage output and error
+	messages,</li>
+      <li><tt>plain</tt> - sets percentage output and message
+	formatting style to ASCII output without rewinding control
+	characters.</li>
+  </ul></dd>
   
   <dt>GRASS_MOUSE_BUTTON</dt>
   <dd>[various modules]<br>
@@ -295,7 +305,7 @@ list of the variables.
     2008/03 -- variables are described in PNG driver manual
    page. The link should be enough here.
 
-   <P></P>
+   <p>
 
 <p>GRASS_PNGFILE
   <br>&nbsp; name of PNG output file. If it ends with ".ppm" a PPM file will be created.
@@ -346,7 +356,7 @@ list of the variables.
     2008/03 -- variables are described in PS driver manual
    page. The link should be enough here.
 
-<P></P>
+<p>
 
 <p>GRASS_PSFILE
 <br>&nbsp; name of output file. If it ends with ".eps" an EPS file
@@ -442,7 +452,7 @@ detailed list of the variables.
   <dt>GRASS_OVERWRITE</dt>
   <dd>[all modules]<br>
     toggles map overwrite.
-    <ul>
+    </ul>
       <li>0 - maps are protected (default),</li>
       <li>1 - maps with identical names will be overwritten.</li>
     </ul>
@@ -457,7 +467,7 @@ detailed list of the variables.
   <dt>GRASS_VERBOSE</dt>
   <dd>[all modules]<br>
     toggles verbosity level
-    <ul>
+    </ul>
       <li>0 - only errors and warnings are printed</li>
       <li>1 - progress messages are printed (percent complete)</li>
       <li>2 - all module messages are printed</li>
@@ -489,7 +499,7 @@ detailed list of the variables.
 <h2>List of selected GRASS gisenv variables</h2>
 
 <blockquote>
-  [ Use <em>g.gisenv</em> to get/set/unset/change them ]
+  [ Use <em><a href="g.gisenv.html">g.gisenv</a></em> to get/set/unset/change them ]
 </blockquote>
 
 <dl>
@@ -497,9 +507,13 @@ detailed list of the variables.
   <dt>DEBUG</dt>
   <dd>[entire GRASS]<br>
     sets level of debug message output (0: no debug messages)
-    <div class="code"><pre>
-	g.gisenv set=DEBUG=0
-    </pre></div>
+<div class="code"><pre>
+g.gisenv set=DEBUG=0
+</pre></div>
+
+  <dt>WX_DEBUG</dt>
+  <dd>[wxGUI]<br>
+    sets level of debug message output for <em><a href="wxGUI.html">wxGUI</a></em> (0: no debug messages, 1-5 debug levels)
   
 
   <dt>DM_FORM_MODE</dt>
@@ -548,7 +562,7 @@ detailed list of the variables.
   <dt>OVERWRITE</dt>
   <dd>[all modules]<br>
     toggles map overwrite.
-    <ul>
+    </ul>
       <li>0 - maps are protected (default),</li>
       <li>1 - maps with identical names will be overwritten.</li>
     </ul>
@@ -591,15 +605,15 @@ detailed list of the variables.
 </em>
 
 <p>
-<i>Last changed: $Date: 2010-09-22 23:36:54 +0200 (Wed, 22 Sep 2010) $</i>
+<i>Last changed: $Date: 2011-12-12 16:25:22 +0100 (Mon, 12 Dec 2011) $</i>
 
 <hr>
 
 <p>
 <a href=index.html>Help Index</a>
 <p>
-&copy; 2008 <a href="http://grass.osgeo.org">GRASS Development Team</a>
-</p>
+&copy; 2008-2011 <a href="http://grass.osgeo.org">GRASS Development Team</a>
+
 
 </body>
 </html>

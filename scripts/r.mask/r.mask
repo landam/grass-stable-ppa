@@ -15,7 +15,7 @@
 #############################################################################
 
 #%module
-#%  description: Create a MASK for limiting raster operation
+#%  description: Creates a MASK for limiting raster operation.
 #%  keywords: raster, mask
 #%end
 #%option
@@ -68,7 +68,7 @@ TEMPRAST="r_mask_$$"
 
 cleanup()
 {
- g.remove --q rast=$TEMPRAST
+ g.remove --q rast="$TEMPRAST"
 }
 
 # what to do in case of user break:
@@ -92,6 +92,13 @@ if [ $GIS_OPT_INPUT ]; then
    fi
 fi
 
+if [ -n "$GIS_OPT_MASKCATS" -a "$GIS_FLAG_R" -eq 0 ]; then
+   eval `r.info -t $GIS_OPT_INPUT`
+   if [ "$datatype" != "CELL" ] ; then
+      g.message -e "Raster map <$GIS_OPT_INPUT> must be integer for maskcats parameter"
+      exit 1
+   fi
+fi
 
 if [ "$GIS_FLAG_R" -eq 1 ]; then
 	if test -f "`g.gisenv GISDBASE`/`g.gisenv LOCATION_NAME`/`g.gisenv MAPSET`/cell/MASK" ; then

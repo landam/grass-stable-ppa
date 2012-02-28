@@ -87,7 +87,7 @@ static void check_projection(struct Cell_head *cellhd, GDALDatasetH hDS, int ove
 	/*      Does the projection of the current location match the           */
 	/*      dataset?                                                        */
 	/* -------------------------------------------------------------------- */
-	G_get_window(&loc_wind);
+	G_get_default_window(&loc_wind);
 	if (loc_wind.proj != PROJECTION_XY) {
 	    loc_proj_info = G_get_projinfo();
 	    loc_proj_units = G_get_projunits();
@@ -237,24 +237,34 @@ static void update_default_window(struct Cell_head *cellhd)
     /*      Extend current window based on dataset.                         */
     /* -------------------------------------------------------------------- */
 
-    struct Cell_head def_wind;
+    struct Cell_head cur_wind;
 
-    G_get_default_window(&def_wind);
+    if (strcmp(G_mapset(), "PERMANENT") == 0) 
+	/* fixme: expand WIND and DEFAULT_WIND independently. (currently
+	 WIND gets forgotten and DEFAULT_WIND is expanded for both) */
+	G_get_default_window(&cur_wind);
+    else
+	G_get_window(&cur_wind);
 
-    def_wind.north = MAX(def_wind.north, cellhd->north);
-    def_wind.south = MIN(def_wind.south, cellhd->south);
-    def_wind.west = MIN(def_wind.west, cellhd->west);
-    def_wind.east = MAX(def_wind.east, cellhd->east);
+    cur_wind.north = MAX(cur_wind.north, cellhd->north);
+    cur_wind.south = MIN(cur_wind.south, cellhd->south);
+    cur_wind.west = MIN(cur_wind.west, cellhd->west);
+    cur_wind.east = MAX(cur_wind.east, cellhd->east);
 
-    def_wind.rows = (int)ceil((def_wind.north - def_wind.south)
-			      / def_wind.ns_res);
-    def_wind.south = def_wind.north - def_wind.rows * def_wind.ns_res;
+    cur_wind.rows = (int)ceil((cur_wind.north - cur_wind.south)
+			      / cur_wind.ns_res);
+    cur_wind.south = cur_wind.north - cur_wind.rows * cur_wind.ns_res;
 
-    def_wind.cols = (int)ceil((def_wind.east - def_wind.west)
-			      / def_wind.ew_res);
-    def_wind.east = def_wind.west + def_wind.cols * def_wind.ew_res;
+    cur_wind.cols = (int)ceil((cur_wind.east - cur_wind.west)
+			      / cur_wind.ew_res);
+    cur_wind.east = cur_wind.west + cur_wind.cols * cur_wind.ew_res;
 
-    G__put_window(&def_wind, "../PERMANENT", "DEFAULT_WIND");
+    if (strcmp(G_mapset(), "PERMANENT") == 0) {
+	G__put_window(&cur_wind, "", "DEFAULT_WIND");
+	G_message(_("Default region for this location updated")); 
+    }
+    G_put_window(&cur_wind);
+    G_message(_("Region for the current mapset updated"));
 }
 
 static void query_band(GDALRasterBandH hBand, const char *output, int exact_range,
@@ -445,6 +455,7 @@ static void create_map(const char *input, int band, const char *output,
 		       const char *title)
 {
     struct History history;
+    struct Categories cats;
 
     G_put_cellhd(output, cellhd);
 
@@ -473,6 +484,9 @@ static void create_map(const char *input, int band, const char *output,
     G_short_history(output, "raster", &history);
     G_command_history(&history);
     G_write_history(output, &history);
+
+    G_init_cats(0, NULL, &cats);
+    G_write_raster_cats((char *)output, &cats);
 
     G_write_colors(output, G_mapset(), &info->colors);
 
@@ -543,7 +557,9 @@ int main(int argc, char *argv[])
 
     flag_e = G_define_flag();
     flag_e->key = 'e';
-    flag_e->description = _("Extend location extents based on new dataset");
+    flag_e->label = _("Extend region extents based on new dataset");
+    flag_e->description =
+	_("Also updates the default region if in the PERMANENT mapset");
 
     flag_r = G_define_flag();
     flag_r->key = 'r';

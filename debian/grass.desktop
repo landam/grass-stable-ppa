@@ -1,9 +1,0 @@
-[Desktop Entry]
-Type=Application
-Encoding=UTF-8
-Name=GRASS GIS
-Comment=
-Categories=Application;Education;Geography;
-Exec=/usr/bin/grass
-Icon=/usr/share/icons/hicolor/32x32/grass64.xpm
-Terminal=true

@@ -13,14 +13,14 @@ grass.parser()
 ...
 @endcode
 
-(C) 2008-2010 by the GRASS Development Team
+(C) 2008-2011 by the GRASS Development Team
 This program is free software under the GNU General Public
 License (>=v2). Read the file COPYING that comes with GRASS
 for details.
 
 @author Glynn Clements
 @author Martin Landa <landa.martin gmail.com>
-@author Michael Barton <michael.barton@asu.edu>
+@author Michael Barton <michael.barton asu.edu>
 """
 
 import os
@@ -30,6 +30,7 @@ import re
 import atexit
 import subprocess
 import shutil
+import locale
 import codecs
 
 # i18N
@@ -39,11 +40,11 @@ gettext.install('grasslibs', os.path.join(os.getenv("GISBASE"), 'locale'), unico
 # subprocess wrapper that uses shell on Windows
 
 class Popen(subprocess.Popen):
-    def __init__(self, args, bufsize=0, executable=None,
-                 stdin=None, stdout=None, stderr=None,
-                 preexec_fn=None, close_fds=False, shell=None,
-                 cwd=None, env=None, universal_newlines=False,
-                 startupinfo=None, creationflags=0):
+    def __init__(self, args, bufsize = 0, executable = None,
+                 stdin = None, stdout = None, stderr = None,
+                 preexec_fn = None, close_fds = False, shell = None,
+                 cwd = None, env = None, universal_newlines = False,
+                 startupinfo = None, creationflags = 0):
 
 	if shell == None:
 	    shell = (sys.platform == "win32")
@@ -57,7 +58,7 @@ class Popen(subprocess.Popen):
 PIPE = subprocess.PIPE
 STDOUT = subprocess.STDOUT
 
-class ScriptException(Exception):
+class ScriptError(Exception):
     def __init__(self, msg):
         self.value = msg
     
@@ -75,6 +76,13 @@ def call(*args, **kwargs):
 _popen_args = ["bufsize", "executable", "stdin", "stdout", "stderr",
 	       "preexec_fn", "close_fds", "cwd", "env",
 	       "universal_newlines", "startupinfo", "creationflags"]
+
+def decode(string):
+    enc = locale.getdefaultlocale()[1]
+    if enc:
+        return string.decode(enc)
+    
+    return string
 
 def _make_val(val):
     if isinstance(val, types.StringType) or \
@@ -112,6 +120,8 @@ def make_command(prog, flags = "", overwrite = False, quiet = False, verbose = F
     if verbose:
 	args.append("--v")
     if flags:
+        if '-' in flags:
+            raise ScriptError("'-' is not a valid flag")
 	args.append("-%s" % flags)
     for opt, val in options.iteritems():
 	if val != None:
@@ -155,7 +165,10 @@ def start_command(prog, flags = "", overwrite = False, quiet = False, verbose = 
 	else:
 	    options[opt] = val
     args = make_command(prog, flags, overwrite, quiet, verbose, **options)
-
+    if sys.platform == 'win32' and os.path.splitext(prog)[1] == '.py':
+        os.chdir(os.path.join(os.getenv('GISBASE'), 'etc', 'gui', 'scripts'))
+        args.insert(0, sys.executable)
+    
     global debug_level
     if debug_level > 0:
         sys.stderr.write("D1/%d: %s.start_command(): %s\n" % (debug_level, __name__, ' '.join(args)))
@@ -226,14 +239,20 @@ def read_command(*args, **kwargs):
     return ps.communicate()[0]
 
 def parse_command(*args, **kwargs):
-    """!Passes all arguments to read_command, then parses the output by
-    parse_key_val().
+    """!Passes all arguments to read_command, then parses the output
+    by parse_key_val().
 
-    Parsing function can be optionally given by <b>parse</b> parameter
+    Parsing function can be optionally given by <em>parse</em> parameter
     including its arguments, e.g.
 
     @code
     parse_command(..., parse = (grass.parse_key_val, { 'sep' : ':' }))
+    @endcode
+
+    or you can simply define <em>delimiter</em>
+
+    @code
+    parse_command(..., delimiter = ':')
     @endcode
 
     @param args list of unnamed arguments (see start_command() for details)
@@ -242,15 +261,19 @@ def parse_command(*args, **kwargs):
     @return parsed module output
     """
     parse = None
-    if kwargs.has_key('parse'):
+    parse_args = {}
+    if 'parse' in kwargs:
         if type(kwargs['parse']) is types.TupleType:
             parse = kwargs['parse'][0]
             parse_args = kwargs['parse'][1]
         del kwargs['parse']
     
+    if 'delimiter' in kwargs:
+        parse_args = { 'sep' : kwargs['delimiter'] }
+        del kwargs['delimiter']
+    
     if not parse:
         parse = parse_key_val # use default fn
-        parse_args = {}
         
     res = read_command(*args, **kwargs)
 
@@ -353,7 +376,7 @@ def error(msg):
     """
     global raise_on_error
     if raise_on_error:
-        raise ScriptException(msg)
+        raise ScriptError(msg)
     else:
         message(msg, flag = 'e')
 
@@ -368,7 +391,7 @@ def fatal(msg):
 def set_raise_on_error(raise_exp = True):
     """!Define behaviour on error (error() called)
 
-    @param raise_exp True to raise ScriptException instead of calling
+    @param raise_exp True to raise ScriptError instead of calling
     error()
     
     @return current status
@@ -438,7 +461,7 @@ def parser():
     
     if not lines or lines[0].rstrip('\r\n') != "@ARGS_PARSED@":
 	sys.stdout.write(s)
-	sys.exit(1)
+	sys.exit(p.returncode)
 
     return _parse_opts(lines[1:])
 
@@ -542,7 +565,7 @@ def use_temp_region():
     handler to delete the temporary region upon termination.
     """
     name = "tmp.%s.%d" % (os.path.basename(sys.argv[0]), os.getpid())
-    run_command("g.region", save = name)
+    run_command("g.region", save = name, overwrite = True)
     os.environ['WIND_OVERRIDE'] = name
     atexit.register(del_temp_region)
 
@@ -579,7 +602,7 @@ def find_file(name, element = 'cell', mapset = None):
 
 # interface to g.list
 
-def list_grouped(type):
+def list_grouped(type, check_search_path = True):
     """!List elements grouped by mapsets.
 
     Returns the output from running g.list, as a dictionary where the
@@ -592,12 +615,17 @@ def list_grouped(type):
     @endcode
     
     @param type element type (rast, vect, rast3d, region, ...)
+    @param check_search_path True to add mapsets for the search path with no found elements
 
     @return directory of mapsets/elements
     """
     dashes_re = re.compile("^----+$")
     mapset_re = re.compile("<(.*)>")
     result = {}
+    if check_search_path:
+        for mapset in mapsets(search_path = True):
+            result[mapset] = []
+    
     mapset = None
     for line in read_command("g.list", type = type).splitlines():
 	if line == "":
@@ -607,7 +635,8 @@ def list_grouped(type):
 	m = mapset_re.search(line)
 	if m:
 	    mapset = m.group(1)
-	    result[mapset] = []
+            if mapset not in result.keys():
+                result[mapset] = []
 	    continue
         if mapset:
             result[mapset].extend(line.split())
@@ -657,25 +686,7 @@ def list_strings(type):
 
 # interface to g.mlist
 
-def mlist(type, pattern = None, mapset = None):
-    """!List of elements
-
-    @param type element type (rast, vect, rast3d, region, ...)
-    @param pattern pattern string
-    @param mapset mapset name (if not given use search path)
-
-    @return list of elements
-    """
-    result = list()
-    for line in read_command("g.mlist",
-                             type = type,
-                             pattern = pattern,
-                             mapset = mapset).splitlines():
-        result.append(line.strip())
-    
-    return result
-    
-def mlist_grouped(type, pattern = None):
+def mlist_grouped(type, pattern = None, check_search_path = True):
     """!List of elements grouped by mapsets.
 
     Returns the output from running g.mlist, as a dictionary where the
@@ -689,23 +700,28 @@ def mlist_grouped(type, pattern = None):
     
     @param type element type (rast, vect, rast3d, region, ...)
     @param pattern pattern string
+    @param check_search_path True to add mapsets for the search path with no found elements
 
     @return directory of mapsets/elements
     """
-    result = dict()
-    mapset_element = None
+    result = {}
+    if check_search_path:
+        for mapset in mapsets(search_path = True):
+            result[mapset] = []
+    
+    mapset = None
     for line in read_command("g.mlist", flags = "m",
                              type = type, pattern = pattern).splitlines():
         try:
-            map, mapset_element = line.split('@')
+            name, mapset = line.split('@')
         except ValueError:
             warning(_("Invalid element '%s'") % line)
             continue
         
-        if result.has_key(mapset_element):
-            result[mapset_element].append(map)
-        else:
-	    result[mapset_element] = [map, ]
+        if mapset in result:
+            result[mapset].append(name) 
+        else:  	  	 
+            result[mapset] = [name, ] 
     
     return result
 
@@ -851,81 +867,16 @@ def float_or_dms(s):
     """
     return sum(float(x) / 60 ** n for (n, x) in enumerate(s.split(':')))
 
-def command_info(cmd):
-    """!Returns 'help' information for any command as dictionary with entries
-    for description, keywords, usage, flags, and parameters"""
-    
-    cmdinfo = {}
-    s = start_command(cmd, 'help', stdout = subprocess.PIPE, stderr = subprocess.PIPE)
-    out, err = s.communicate()
-    
-    sections = err.split('\n\n')
-
-    #Description
-    first, desc = sections[0].split(':\n', 1)
-    desclines = desc.splitlines()
-    for line in desclines:
-        line = line.strip()+' '
-    
-    # Keywords
-    first, keywords = sections[1].split(':\n', 1)
-    keylines = keywords.splitlines()
-    list = []
-    list = keywords.strip().split(',')
-    cmdinfo['keywords'] = list
-        
-    cmdinfo['description'] = ''.join(desclines).strip()
-
-    # Usage
-    first, usage = sections[2].split(':\n', 1)
-    usagelines = usage.splitlines()
-    list = []
-    for line in usagelines:        
-        line = line.strip()
-        if line == '': continue
-        line = line+' '
-        list.append(line)
-        
-    cmdinfo['usage'] = ''.join(list).strip()
-
-    # Flags
-    first, flags = sections[3].split(':\n', 1)
-    flaglines = flags.splitlines()
-    dict = {}
-    for line in flaglines:
-        line = line.strip()
-        if line == '': continue
-        item = line.split(' ',1)[0].strip()
-        val = line.split(' ',1)[1].strip()
-        dict[item] = val
-        
-    cmdinfo['flags'] = dict
-    
-    # Parameters
-    first, params = err.rsplit(':\n', 1)
-    paramlines = params.splitlines()
-    dict = {}
-    for line in paramlines:
-        line = line.strip()
-        if line == '': continue
-        item = line.split(' ',1)[0].strip()
-        val = line.split(' ',1)[1].strip()
-        dict[item] = val
-         
-    cmdinfo['parameters'] = dict
-                
-    return cmdinfo
-
 # interface to g.mapsets
 
-def mapsets(accessible = True):
-    """!List accessible mapsets (mapsets in search path)
+def mapsets(search_path = False):
+    """!List available mapsets
 
-    @param accessible False to list all mapsets in the location
-
+    @param searchPatch True to list mapsets only in search path
+    
     @return list of mapsets
     """
-    if accessible:
+    if search_path:
         flags = 'p'
     else:
         flags = 'l'
@@ -935,7 +886,7 @@ def mapsets(accessible = True):
                            quiet = True)
     if not mapsets:
         fatal(_("Unable to list mapsets"))
-        
+    
     return mapsets.splitlines()
 
 # interface to `g.proj -c`
@@ -945,7 +896,7 @@ def create_location(dbase, location,
                     datum = None, desc = None):
     """!Create new location
 
-    Raise ScriptException on error.
+    Raise ScriptError on error.
     
     @param dbase path to GRASS database
     @param location location name to create
@@ -995,7 +946,7 @@ def create_location(dbase, location,
         ps = pipe_command('g.proj',
                           quiet = True,
                           flags = 'c',
-                          wkt = wktfile,
+                          wkt = wkt,
                           location = location,
                           stderr = PIPE)
     else:
@@ -1007,7 +958,7 @@ def create_location(dbase, location,
                     set = 'GISDBASE=%s' % gisdbase)
         
         if ps.returncode != 0 and error:
-            raise ScriptException(repr(error))
+            raise ScriptError(repr(error))
 
     try:
         fd = codecs.open(os.path.join(dbase, location,
@@ -1019,12 +970,12 @@ def create_location(dbase, location,
             fd.write(os.linesep)
         fd.close()
     except OSError, e:
-        raise ScriptException(repr(e))
+        raise ScriptError(repr(e))
         
 def _create_location_xy(database, location):
     """!Create unprojected location
 
-    Raise ScriptException on error.
+    Raise ScriptError on error.
     
     @param database GRASS database where to create new location
     @param location location name
@@ -1066,8 +1017,27 @@ def _create_location_xy(database, location):
         
         os.chdir(cur_dir)
     except OSError, e:
-        raise ScriptException(repr(e))
-    
+        raise ScriptError(repr(e))
+
+# interface to g.version
+
+def version():
+    """!Get GRASS version as dictionary
+
+    @code
+    print version()
+
+    {'date': '2011', 'libgis_date': '2011-04-13 13:19:03 +0200 (Wed, 13 Apr 2011)',
+    'version': '6.4.2svn', 'libgis_revision': '45934', 'revision': '47445'}
+    @endcode
+    """
+    data = parse_command('g.version',
+                         flags = 'rg')
+    for k, v in data.iteritems():
+        data[k.strip()] = v.replace('"', '').strip()
+        
+    return data
+
 # get debug_level
 if find_program('g.gisenv', ['--help']):
     debug_level = int(gisenv().get('DEBUG', 0))

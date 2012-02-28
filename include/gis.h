@@ -38,8 +38,8 @@
 static const char *GRASS_copyright __attribute__ ((unused))
     = "GRASS GNU GPL licensed Software";
 
-#define GIS_H_VERSION "$Revision: 43636 $"
-#define GIS_H_DATE    "$Date: 2010-09-22 22:18:42 +0200 (Wed, 22 Sep 2010) $"
+#define GIS_H_VERSION "$Revision: 45934 $"
+#define GIS_H_DATE    "$Date: 2011-04-13 13:19:03 +0200 (Wed, 13 Apr 2011) $"
 
 #define G_gisinit(pgm) G__gisinit(GIS_H_VERSION, (pgm))
 #define G_no_gisinit() G__no_gisinit(GIS_H_VERSION)
@@ -51,6 +51,12 @@ static const char *GRASS_copyright __attribute__ ((unused))
 
 #ifndef FALSE
 #define FALSE 0
+#endif
+
+#if defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS == 64
+#define PRI_OFF_T	"lld"
+#else
+#define PRI_OFF_T	"ld"
 #endif
 
 #define MAXEDLINES  50

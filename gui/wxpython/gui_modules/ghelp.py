@@ -11,11 +11,13 @@ Classes:
  - AboutWindow
  - InstallExtensionWindow
  - ExtensionTree
+ - UninstallExtensionWindow
+ - CheckListExtension
  - HelpFrame
  - HelpWindow
  - HelpPanel
 
-(C) 2008-2010 by the GRASS Development Team
+(C) 2008-2011 by the GRASS Development Team
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
 
@@ -23,8 +25,11 @@ This program is free software under the GNU General Public License
 """
 
 import os
+import codecs
+import sys
 
 import wx
+import wx.lib.mixins.listctrl as listmix
 try:
     import wx.lib.agw.customtreectrl as CT
 #    import wx.lib.agw.hyperlink as hl
@@ -34,11 +39,15 @@ except ImportError:
 import wx.lib.flatnotebook as FN
 import  wx.lib.scrolledpanel as scrolled
 
+from grass.script import core as grass
+from grass.script import task as gtask
+
 import menudata
 import gcmd
 import globalvar
 import gdialogs
 import utils
+import menuform
 
 class HelpFrame(wx.Frame):
     """!GRASS Quickstart help window"""
@@ -157,7 +166,7 @@ class SearchModuleWindow(wx.Panel):
                 if text in data['desc']:
                     found = True
             elif sel == 1: # keywords
-                if self.cmdPrompt.CheckKey(text, data['keywords']):
+                if text in ','.join(data['keywords']):
                     found = True
             else: # command
                 if module[:len(text)] == text:
@@ -170,7 +179,7 @@ class SearchModuleWindow(wx.Panel):
                 except ValueError:
                     continue # TODO
                 
-                if not modules.has_key(group):
+                if group not in modules:
                     modules[group] = list()
                 modules[group].append(name)
                 
@@ -201,6 +210,8 @@ class SearchModuleWindow(wx.Panel):
         """!Reset widget"""
         self.searchBy.SetSelection(0)
         self.search.SetValue('')
+        if self.showTip:
+            self.searchTip.SetLabel('')
         
 class MenuTreeWindow(wx.Panel):
     """!Show menu tree"""
@@ -304,7 +315,7 @@ class MenuTreeWindow(wx.Panel):
             return
         
         data = self.tree.GetPyData(item)
-        if not data or not data.has_key('command'):
+        if not data or 'command' not in data:
             return
         
         self.tree.itemSelected = item
@@ -318,7 +329,7 @@ class MenuTreeWindow(wx.Panel):
             return
         
         data = self.tree.GetPyData(item)
-        if not data or not data.has_key('command'):
+        if not data or 'command' not in data:
             return
         
         if data['command']:
@@ -387,7 +398,7 @@ class ItemTree(CT.CustomTreeCtrl):
                 self._processItem(subItem, element, value, listOfItems)
             data = self.GetPyData(item)
             
-            if data and data.has_key(element) and \
+            if data and element in data and \
                     value.lower() in data[element].lower():
                 listOfItems.append(item)
             
@@ -469,13 +480,13 @@ class MenuTree(ItemTree):
                     self.SetPyData(itemNew, data)
         
 class AboutWindow(wx.Frame):
-    def __init__(self, parent):
-        """!Create custom About Window
+    """!Create custom About Window
 
-        @todo improve styling
-        """
-        wx.Frame.__init__(self, parent = parent, id = wx.ID_ANY, size = (550,400), 
-                          title = _('About GRASS GIS'))
+    @todo improve styling
+    """
+    def __init__(self, parent, size = (750, 400), 
+                 title = _('About GRASS GIS'), **kwargs):
+        wx.Frame.__init__(self, parent = parent, id = wx.ID_ANY, size = size, **kwargs)
         
         panel = wx.Panel(parent = self, id = wx.ID_ANY)
         
@@ -483,9 +494,7 @@ class AboutWindow(wx.Frame):
         self.SetIcon(wx.Icon(os.path.join(globalvar.ETCICONDIR, 'grass.ico'), wx.BITMAP_TYPE_ICO))
 
         # get version and web site
-        version, svn_gis_h_rev, svn_gis_h_date = gcmd.RunCommand('g.version',
-                                                                 flags = 'r',
-                                                                 read = True).splitlines()
+        vInfo = grass.version()
         
         infoTxt = wx.Panel(parent = panel, id = wx.ID_ANY)
         infoSizer = wx.BoxSizer(wx.VERTICAL)
@@ -500,7 +509,7 @@ class AboutWindow(wx.Frame):
                       flag = wx.ALL | wx.ALIGN_CENTER, border = 25)
         
         info = wx.StaticText(parent = infoTxt, id = wx.ID_ANY,
-                             label = version.replace('GRASS', 'GRASS GIS').strip() + '\n\n')
+                             label = 'GRASS GIS ' + vInfo['version'] + '\n\n')
         info.SetFont(wx.Font(13, wx.DEFAULT, wx.NORMAL, wx.BOLD, 0, ""))
         infoSizer.Add(item = info, proportion = 0,
                           flag = wx.BOTTOM | wx.ALIGN_CENTER, border = 15)
@@ -514,22 +523,26 @@ class AboutWindow(wx.Frame):
                                                label = 'http://grass.osgeo.org'),
                           pos = (0, 1),
                           flag = wx.ALIGN_LEFT)
-
-        # infoGridSizer.Add(item = hl.HyperLinkCtrl(parent = self, id = wx.ID_ANY,
-        #                                           label = 'http://grass.osgeo.org',
-        #                                           URL = 'http://grass.osgeo.org'),
-        #                   pos = (0, 1),
-        #                   flag = wx.LEFT)
         
         infoGridSizer.Add(item = wx.StaticText(parent = infoTxt, id = wx.ID_ANY,
-                                               label = _('GIS Library Revision:')),
+                                               label = _('SVN Revision:')),
                           pos = (2, 0),
                           flag = wx.ALIGN_RIGHT)
         
         infoGridSizer.Add(item = wx.StaticText(parent = infoTxt, id = wx.ID_ANY,
-                                               label = svn_gis_h_rev.split(' ')[1] + ' (' +
-                                               svn_gis_h_date.split(' ')[1] + ')'),
+                                               label = vInfo['revision']),
                           pos = (2, 1),
+                          flag = wx.ALIGN_LEFT)
+
+        infoGridSizer.Add(item = wx.StaticText(parent = infoTxt, id = wx.ID_ANY,
+                                               label = _('GIS Library Revision:')),
+                          pos = (3, 0),
+                          flag = wx.ALIGN_RIGHT)
+        
+        infoGridSizer.Add(item = wx.StaticText(parent = infoTxt, id = wx.ID_ANY,
+                                               label = vInfo['libgis_revision'] + ' (' +
+                                               vInfo['libgis_date'].split(' ')[0] + ')'),
+                          pos = (3, 1),
                           flag = wx.ALIGN_LEFT)
 
         infoSizer.Add(item = infoGridSizer,
@@ -537,35 +550,18 @@ class AboutWindow(wx.Frame):
                       flag = wx.EXPAND | wx.ALL | wx.ALIGN_CENTER | wx.ALIGN_CENTER_VERTICAL,
                       border = 25)
         
-        #
-        # create pages
-        #
-        copyrightwin = self.PageCopyright()
-        licensewin   = self.PageLicense()
-        authorwin    = self.PageCredit()
-        contribwin   = self.PageContributors()
-        transwin     = self.PageTranslators()
-
         # create a flat notebook for displaying information about GRASS
-        nbstyle = FN.FNB_VC8 | \
-                FN.FNB_BACKGROUND_GRADIENT | \
-                FN.FNB_TABS_BORDER_SIMPLE | \
-                FN.FNB_NO_X_BUTTON
-        
-        if globalvar.hasAgw:
-            aboutNotebook = FN.FlatNotebook(panel, id = wx.ID_ANY, agwStyle = nbstyle)
-        else:
-            aboutNotebook = FN.FlatNotebook(panel, id = wx.ID_ANY, style = nbstyle)
+        aboutNotebook = menuform.GNotebook(panel, style = globalvar.FNPageStyle | FN.FNB_NO_X_BUTTON) 
         aboutNotebook.SetTabAreaColour(globalvar.FNPageColor)
         
-        # make pages for About GRASS notebook
-        pg1 = aboutNotebook.AddPage(infoTxt,      text = _("Info"))
-        pg2 = aboutNotebook.AddPage(copyrightwin, text = _("Copyright"))
-        pg3 = aboutNotebook.AddPage(licensewin,   text = _("License"))
-        pg4 = aboutNotebook.AddPage(authorwin,    text = _("Authors"))
-        pg5 = aboutNotebook.AddPage(contribwin,   text = _("Contributors"))
-        pg5 = aboutNotebook.AddPage(transwin,     text = _("Translators"))
-        
+        for title, win in ((_("Info"), infoTxt),
+                           (_("Copyright"), self._pageCopyright()),
+                           (_("License"), self._pageLicense()),
+                           (_("Authors"), self._pageCredit()),
+                           (_("Contributors"), self._pageContributors()),
+                           (_("Extra contributors"), self._pageContributors(extra = True)),
+                           (_("Translators"), self._pageTranslators())):
+            aboutNotebook.AddPage(page = win, text = title)
         wx.CallAfter(aboutNotebook.SetSelection, 0)
         
         # buttons
@@ -575,9 +571,8 @@ class AboutWindow(wx.Frame):
                      flag = wx.ALL | wx.ALIGN_RIGHT,
                      border = 5)
         # bindings
-        # self.aboutNotebook.Bind(FN.EVT_FLATNOTEBOOK_PAGE_CHANGED, self.OnAGPageChanged)
         btnClose.Bind(wx.EVT_BUTTON, self.OnCloseWindow)
-
+        
         infoTxt.SetSizer(infoSizer)
         infoSizer.Fit(infoTxt)
         
@@ -589,7 +584,7 @@ class AboutWindow(wx.Frame):
         panel.SetSizer(sizer)
         self.Layout()
     
-    def PageCopyright(self):
+    def _pageCopyright(self):
         """Copyright information"""
         copyfile = os.path.join(os.getenv("GISBASE"), "COPYING")
         if os.path.exists(copyfile):
@@ -614,7 +609,7 @@ class AboutWindow(wx.Frame):
         
         return copyrightwin
     
-    def PageLicense(self):
+    def _pageLicense(self):
         """Licence about"""
         licfile = os.path.join(os.getenv("GISBASE"), "GPL.TXT")
         if os.path.exists(licfile):
@@ -637,7 +632,7 @@ class AboutWindow(wx.Frame):
         
         return licensewin
     
-    def PageCredit(self):
+    def _pageCredit(self):
         """Credit about"""
                 # credits
         authfile = os.path.join(os.getenv("GISBASE"), "AUTHORS")
@@ -660,46 +655,63 @@ class AboutWindow(wx.Frame):
         
         return authorwin
 
-    def PageContributors(self):
+    def _pageContributors(self, extra = False):
         """Contributors info"""
-        contribfile = os.path.join(os.getenv("GISBASE"), "contributors.csv")
+        if extra:
+            contribfile = os.path.join(os.getenv("GISBASE"), "contributors_extra.csv")
+        else:
+            contribfile = os.path.join(os.getenv("GISBASE"), "contributors.csv")
         if os.path.exists(contribfile):
-            contribFile = open(contribfile, 'r')
+            contribFile = codecs.open(contribfile, encoding = 'utf-8', mode = 'r')
             contribs = list()
             errLines = list()
-            for line in contribFile.readlines():
+            for line in contribFile.readlines()[1:]:
                 line = line.rstrip('\n')
                 try:
-                    cvs_id, name, email, country, osgeo_id, rfc2_agreed = line.split(',')
+                    if extra:
+                        name, email, rfc2_agreed = line.split(',')
+                    else:
+                        cvs_id, name, email, country, osgeo_id, rfc2_agreed = line.split(',')
                 except ValueError:
                     errLines.append(line)
                     continue
-                contribs.append((name, email, country, osgeo_id))
-            contribs[0] = (_('Name'), _('E-mail'), _('Country'), _('OSGeo_ID'))
+                if extra:
+                    contribs.append((name, email))
+                else:
+                    contribs.append((name, email, country, osgeo_id))
+            
             contribFile.close()
             
             if errLines:
                 gcmd.GError(parent = self,
-                            message = _("Error when reading file '%s'.\n\nLines: %s") % \
-                                (translatorsfile, os.linesep.join(map (utils.UnicodeString, errLines))))
+                            message = _("Error when reading file '%s'.") % contribfile + \
+                                "\n\n" + _("Lines:") + " %s" % \
+                                os.linesep.join(map(utils.UnicodeString, errLines)))
         else:
             contribs = None
         
         contribwin = scrolled.ScrolledPanel(self, id = wx.ID_ANY, 
-                                           style = wx.TAB_TRAVERSAL|wx.SUNKEN_BORDER)
-        contribwin.SetAutoLayout(1)
+                                           style = wx.TAB_TRAVERSAL | wx.SUNKEN_BORDER)
+        contribwin.SetAutoLayout(True)
         contribwin.SetupScrolling()
         contribwin.sizer = wx.BoxSizer(wx.VERTICAL)
         
         if not contribs:
             contribtxt = wx.StaticText(contribwin, id = wx.ID_ANY,
-                                       label = _('%s file missing') % 'contibutors.csv')
+                                       label = _('%s file missing') % contribfile)
             contribwin.sizer.Add(item = contribtxt, proportion = 1,
                                  flag = wx.EXPAND | wx.ALL, border = 3)
         else:
-            contribBox = wx.FlexGridSizer(cols = 4, vgap = 5, hgap = 5)
-            for developer in contribs:
-                for item in developer:
+            if extra:
+                items = (_('Name'), _('E-mail'))
+            else:
+                items = (_('Name'), _('E-mail'), _('Country'), _('OSGeo_ID'))
+            contribBox = wx.FlexGridSizer(cols = len(items), vgap = 5, hgap = 5)
+            for item in items:
+                contribBox.Add(item = wx.StaticText(parent = contribwin, id = wx.ID_ANY,
+                                                    label = item))
+            for vals in contribs:
+                for item in vals:
                     contribBox.Add(item = wx.StaticText(parent = contribwin, id = wx.ID_ANY,
                                                         label = item))
             contribwin.sizer.Add(item = contribBox, proportion = 1,
@@ -710,7 +722,7 @@ class AboutWindow(wx.Frame):
         
         return contribwin
 
-    def PageTranslators(self):
+    def _pageTranslators(self):
         """Translators info"""
         translatorsfile = os.path.join(os.getenv("GISBASE"), "translators.csv")
         if os.path.exists(translatorsfile):
@@ -725,15 +737,16 @@ class AboutWindow(wx.Frame):
                     errLines.append(line)
                     continue
                 for language in languages.split(' '):
-                    if not translators.has_key(language):
+                    if language not in translators:
                         translators[language] = list()
                     translators[language].append((name, email))
             translatorsFile.close()
             
             if errLines:
                 gcmd.GError(parent = self,
-                            message = _("Error when reading file '%s'.\n\nLines: %s") % \
-                                (translatorsfile, os.linesep.join(map (utils.UnicodeString, errLines))))
+                            message = _("Error when reading file '%s'.") % translatorsfile + \
+                                "\n\n" + _("Lines:") + " %s" % \
+                                os.linesep.join(map(utils.UnicodeString, errLines)))
         else:
             translators = None
         
@@ -782,10 +795,12 @@ class AboutWindow(wx.Frame):
 
 class InstallExtensionWindow(wx.Frame):
     def __init__(self, parent, id = wx.ID_ANY,
-                 title = _("Fetch & install new extension from GRASS Addons"), **kwargs):
+                 title = _("Fetch & install extension from GRASS Addons"), **kwargs):
         self.parent = parent
+        self.options = dict() # list of options
         
         wx.Frame.__init__(self, parent = parent, id = id, title = title, **kwargs)
+        self.SetIcon(wx.Icon(os.path.join(globalvar.ETCICONDIR, 'grass.ico'), wx.BITMAP_TYPE_ICO))
         
         self.panel = wx.Panel(parent = self, id = wx.ID_ANY)
 
@@ -794,18 +809,41 @@ class InstallExtensionWindow(wx.Frame):
         self.treeBox = wx.StaticBox(parent = self.panel, id = wx.ID_ANY,
                                     label = " %s " % _("List of extensions"))
         
-        self.repo = wx.TextCtrl(parent = self.panel, id = wx.ID_ANY,
-                                value = 'https://svn.osgeo.org/grass/grass-addons')
+        self.repo = wx.TextCtrl(parent = self.panel, id = wx.ID_ANY)
         self.fullDesc = wx.CheckBox(parent = self.panel, id = wx.ID_ANY,
-                                    label = _("Fetch full info including description and keywords (takes time)"))
-        self.fullDesc.SetValue(False)
+                                    label = _("Fetch full info including description and keywords"))
+        self.fullDesc.SetValue(True)
         
         self.search = SearchModuleWindow(parent = self.panel)
-        self.search.SetSelection(2) 
+        self.search.SetSelection(0) 
         
         self.tree   = ExtensionTree(parent = self.panel, log = parent.GetLogWindow())
         
-        self.statusbar = self.CreateStatusBar(0)
+        self.optionBox = wx.StaticBox(parent = self.panel, id = wx.ID_ANY,
+                                      label = " %s " % _("Options"))
+        
+        task = gtask.parse_interface('g.extension.py')
+        
+        ignoreFlags = ['l', 'c', 'g', 'a', 'f', 'quiet', 'verbose']
+        if sys.platform == 'win32':
+            ignoreFlags.append('d')
+            ignoreFlags.append('i')
+        
+        for f in task.get_options()['flags']:
+            name = f.get('name', '')
+            desc = f.get('label', '')
+            if not desc:
+                desc = f.get('description', '')
+            if not name and not desc:
+                continue
+            if name in ignoreFlags:
+                continue
+            self.options[name] = wx.CheckBox(parent = self.panel, id = wx.ID_ANY,
+                                             label = desc)
+        self.repo.SetValue(task.get_param(value = 'svnurl').get('default',
+                                                                'http://svn.osgeo.org/grass/grass-addons'))
+        
+        self.statusbar = self.CreateStatusBar(number = 1)
         
         self.btnFetch = wx.Button(parent = self.panel, id = wx.ID_ANY,
                                   label = _("&Fetch"))
@@ -815,10 +853,14 @@ class InstallExtensionWindow(wx.Frame):
                                     label = _("&Install"))
         self.btnInstall.SetToolTipString(_("Install selected add-ons GRASS module"))
         self.btnInstall.Enable(False)
-        
+        self.btnCmd = wx.Button(parent = self.panel, id = wx.ID_ANY,
+                                label = _("Command dialog"))
+        self.btnCmd.SetToolTipString(_('Open %s dialog') % 'g.extension.py')
+
         self.btnClose.Bind(wx.EVT_BUTTON, self.OnCloseWindow)
         self.btnFetch.Bind(wx.EVT_BUTTON, self.OnFetch)
         self.btnInstall.Bind(wx.EVT_BUTTON, self.OnInstall)
+        self.btnCmd.Bind(wx.EVT_BUTTON, self.OnCmdDialog)
         self.tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.OnItemActivated)
         self.tree.Bind(wx.EVT_TREE_SEL_CHANGED,    self.OnItemSelected)
         self.search.Bind(wx.EVT_TEXT_ENTER,        self.OnShowItem)
@@ -845,8 +887,16 @@ class InstallExtensionWindow(wx.Frame):
         treeSizer = wx.StaticBoxSizer(self.treeBox, wx.HORIZONTAL)
         treeSizer.Add(item = self.tree, proportion = 1,
                       flag = wx.ALL | wx.EXPAND, border = 1)
+
+        # options
+        optionSizer = wx.StaticBoxSizer(self.optionBox, wx.VERTICAL)
+        for key in self.options.keys():
+            optionSizer.Add(item = self.options[key], proportion = 0)
         
         btnSizer = wx.BoxSizer(wx.HORIZONTAL)
+        btnSizer.Add(item = self.btnCmd, proportion = 0,
+                     flag = wx.RIGHT, border = 5)
+        btnSizer.AddSpacer(10)
         btnSizer.Add(item = self.btnClose, proportion = 0,
                      flag = wx.RIGHT, border = 5)
         btnSizer.Add(item = self.btnInstall, proportion = 0)
@@ -857,6 +907,8 @@ class InstallExtensionWindow(wx.Frame):
                   flag = wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, border = 3)
         sizer.Add(item = treeSizer, proportion = 1,
                   flag = wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, border = 3)
+        sizer.Add(item = optionSizer, proportion = 0,
+                        flag = wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, border = 3)
         sizer.Add(item = btnSizer, proportion = 0,
                   flag = wx.ALIGN_RIGHT | wx.ALL, border = 5)
         
@@ -865,14 +917,23 @@ class InstallExtensionWindow(wx.Frame):
         
         self.Layout()
 
-    def _install(self, name):
-        if not name:
-            return
-        log = self.parent.GetLogWindow()
-        log.RunCmd(['g.extension', 'extension=' + name,
-                    'svnurl=' + self.repo.GetValue().strip()])
-        self.OnCloseWindow(None)
+    def _getCmd(self):
+        item = self.tree.GetSelected()
+        if not item or not item.IsOk():
+            return ['g.extension.py']
         
+        name = self.tree.GetItemText(item)
+        if not name:
+            gcmd.GError(_("Extension not defined"), parent = self)
+            return
+        flags = list()
+        for key in self.options.keys():
+            if self.options[key].IsChecked():
+                flags.append('-%s' % key)
+        
+        return ['g.extension.py'] + flags + ['extension=' + name,
+                                             'svnurl=' + self.repo.GetValue().strip()]
+    
     def OnUpdateStatusBar(self, event):
         """!Update statusbar text"""
         element = self.search.GetSelection()
@@ -897,29 +958,39 @@ class InstallExtensionWindow(wx.Frame):
 
     def OnFetch(self, event):
         """!Fetch list of available extensions"""
+        wx.BeginBusyCursor()
         self.SetStatusText(_("Fetching list of modules from GRASS-Addons SVN (be patient)..."), 0)
         self.tree.Load(url = self.repo.GetValue().strip(), full = self.fullDesc.IsChecked())
         self.SetStatusText("", 0)
+        wx.EndBusyCursor()
 
     def OnItemActivated(self, event):
         item = event.GetItem()
         data = self.tree.GetPyData(item)
-        if data and data.has_key('command'):
-            self._install(data['command'])
-            
+        if data and 'command' in data:
+            self.OnInstall(event = None)
+        
     def OnInstall(self, event):
         """!Install selected extension"""
+        log = self.parent.GetLogWindow()
+        log.RunCmd(self._getCmd(), onDone = self.OnDone)
+        
+    def OnDone(self, cmd, returncode):
         item = self.tree.GetSelected()
-        if not item.IsOk():
+        if not item or not item.IsOk() or \
+                returncode != 0 or \
+                not os.getenv('GRASS_ADDON_PATH'):
             return
-        self._install(self.tree.GetItemText(item))
+        
+        name = self.tree.GetItemText(item)
+        globalvar.grassCmd['all'].append(name)
         
     def OnItemSelected(self, event):
         """!Item selected"""
         item = event.GetItem()
         self.tree.itemSelected = item
         data = self.tree.GetPyData(item)
-        if not data:
+        if data is None:
             self.SetStatusText('', 0)
             self.btnInstall.Enable(False)
         else:
@@ -933,6 +1004,10 @@ class InstallExtensionWindow(wx.Frame):
             self.btnInstall.Enable()
         else:
             self.btnInstall.Enable(False)
+
+    def OnCmdDialog(self, event):
+        """!Shows command dialog"""
+        menuform.GUI(parent = self).ParseCommand(cmd = self._getCmd())
         
 class ExtensionTree(ItemTree):
     """!List of available extensions"""
@@ -951,7 +1026,7 @@ class ExtensionTree(ItemTree):
         for prefix in ('display', 'database',
                        'general', 'imagery',
                        'misc', 'postscript', 'paint',
-                       'raster', 'raster3D', 'sites', 'vector'):
+                       'raster', 'raster3d', 'sites', 'vector', 'wxGUI', 'other'):
             self.AppendItem(parentId = self.root,
                             text = prefix)
         self._loaded = False
@@ -965,11 +1040,13 @@ class ExtensionTree(ItemTree):
                  'ps' : 'postscript',
                  'p'  : 'paint',
                  'r'  : 'raster',
-                 'r3' : 'raster3D',
+                 'r3' : 'raster3d',
                  's'  : 'sites',
-                 'v'  : 'vector' }
+                 'v'  : 'vector',
+                 'wx' : 'wxGUI',
+                 ''   : 'other' }
         
-        if name.has_key(c):
+        if c in name:
             return name[c]
         
         return c
@@ -995,7 +1072,7 @@ class ExtensionTree(ItemTree):
             flags = 'g'
         else:
             flags = 'l'
-        ret = gcmd.RunCommand('g.extension', read = True,
+        ret = gcmd.RunCommand('g.extension.py', read = True, parent = self,
                               svnurl = url,
                               flags = flags, quiet = True)
         if not ret:
@@ -1004,19 +1081,36 @@ class ExtensionTree(ItemTree):
         mdict = dict()
         for line in ret.splitlines():
             if full:
-                key, value = line.split('=', 1)
+                try:
+                    key, value = line.split('=', 1)
+                except ValueError:
+                    key = 'name'
+                    value = line
+                
                 if key == 'name':
-                    prefix, name = value.split('.', 1)
-                    if not mdict.has_key(prefix):
+                    try:
+                        prefix, name = value.split('.', 1)
+                    except ValueError:
+                        prefix = ''
+                        name = value
+                    if prefix not in mdict:
                         mdict[prefix] = dict()
                     mdict[prefix][name] = dict()
                 else:
                     mdict[prefix][name][key] = value
             else:
-                prefix, name = line.strip().split('.', 1)
-                if not mdict.has_key(prefix):
-                    mdict[prefix] = dict()
+                try:
+                    prefix, name = line.strip().split('.', 1)
+                except:
+                    prefix = ''
+                    name = line.strip()
                 
+                if self._expandPrefix(prefix) == prefix:
+                    prefix = ''
+                    
+                if prefix not in mdict:
+                    mdict[prefix] = dict()
+                    
                 mdict[prefix][name] = { 'command' : prefix + '.' + name }
         
         for prefix in mdict.keys():
@@ -1025,8 +1119,12 @@ class ExtensionTree(ItemTree):
             names = mdict[prefix].keys()
             names.sort()
             for name in names:
+                if prefix:
+                    text = prefix + '.' + name
+                else:
+                    text = name
                 new = self.AppendItem(parentId = item,
-                                      text = prefix + '.' + name)
+                                      text = text)
                 data = dict()
                 for key in mdict[prefix][name].keys():
                     data[key] = mdict[prefix][name][key]
@@ -1038,6 +1136,132 @@ class ExtensionTree(ItemTree):
     def IsLoaded(self):
         """Check if items are loaded"""
         return self._loaded
+
+class UninstallExtensionWindow(wx.Frame):
+    def __init__(self, parent, id = wx.ID_ANY,
+                 title = _("Uninstall GRASS Addons extensions"), **kwargs):
+        self.parent = parent
+        
+        wx.Frame.__init__(self, parent = parent, id = id, title = title, **kwargs)
+        self.SetIcon(wx.Icon(os.path.join(globalvar.ETCICONDIR, 'grass.ico'), wx.BITMAP_TYPE_ICO))
+        
+        self.panel = wx.Panel(parent = self, id = wx.ID_ANY)
+
+        self.extBox = wx.StaticBox(parent = self.panel, id = wx.ID_ANY,
+                                   label = " %s " % _("List of installed extensions"))
+        
+        self.extList = CheckListExtension(parent = self.panel)
+
+        # buttons
+        self.btnUninstall = wx.Button(parent = self.panel, id = wx.ID_ANY,
+                                    label = _("&Uninstall"))
+        self.btnUninstall.SetToolTipString(_("Uninstall selected AddOns extensions"))
+        self.btnCmd = wx.Button(parent = self.panel, id = wx.ID_ANY,
+                                label = _("Command dialog"))
+        self.btnCmd.SetToolTipString(_('Open %s dialog') % 'g.extension')
+        self.btnClose = wx.Button(parent = self.panel, id = wx.ID_CLOSE)
+        
+        self.btnUninstall.Bind(wx.EVT_BUTTON, self.OnUninstall)
+        self.btnCmd.Bind(wx.EVT_BUTTON, self.OnCmdDialog)
+        self.btnClose.Bind(wx.EVT_BUTTON, self.OnCloseWindow)
+        
+        self._layout()
+        
+    def _layout(self):
+        """!Do layout"""
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        
+        extSizer = wx.StaticBoxSizer(self.extBox, wx.HORIZONTAL)
+        extSizer.Add(item = self.extList, proportion = 1,
+                     flag = wx.ALL | wx.EXPAND, border = 1)
+        
+        btnSizer = wx.BoxSizer(wx.HORIZONTAL)
+        btnSizer.Add(item = self.btnCmd, proportion = 0,
+                     flag = wx.RIGHT, border = 5)
+        btnSizer.AddSpacer(10)
+        btnSizer.Add(item = self.btnClose, proportion = 0,
+                     flag = wx.RIGHT, border = 5)
+        btnSizer.Add(item = self.btnUninstall, proportion = 0)
+        
+        sizer.Add(item = extSizer, proportion = 1,
+                  flag = wx.ALL | wx.EXPAND, border = 3)
+        sizer.Add(item = btnSizer, proportion = 0,
+                  flag = wx.ALIGN_RIGHT | wx.ALL, border = 5)
+        
+        self.panel.SetSizer(sizer)
+        sizer.Fit(self.panel)
+        
+        self.Layout()
+
+    def OnCloseWindow(self, event):
+        """!Close window"""
+        self.Destroy()
+
+    def OnUninstall(self, event):
+        """!Uninstall selected extensions"""
+        log = self.parent.GetLogWindow()
+        eList = self.extList.GetExtensions()
+        if not eList:
+            gcmd.GError(_("No extension selected for removal. "
+                          "Operation canceled."),
+                        parent = self)
+            return
+        
+        for ext in eList:
+            files = gcmd.RunCommand('g.extension.py', parent = self, read = True, quiet = True,
+                                    extension = ext, operation = 'remove').splitlines()
+            dlg = wx.MessageDialog(parent = self,
+                                   message = _("List of files to be removed:\n%(files)s\n\n"
+                                               "Do you want really to remove <%(ext)s> extension?") % \
+                                       { 'files' : os.linesep.join(files), 'ext' : ext },
+                                   caption = _("Remove extension"),
+                                   style = wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+            
+            if dlg.ShowModal() ==  wx.ID_YES:
+                gcmd.RunCommand('g.extension.py', flags = 'f', parent = self, quiet = True,
+                                extension = ext, operation = 'remove')
+        
+        self.extList.LoadData()
+        
+    def OnCmdDialog(self, event):
+        """!Shows command dialog"""
+        menuform.GUI(parent = self).ParseCommand(cmd = ['g.extension.py'])
+
+class CheckListExtension(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin, listmix.CheckListCtrlMixin):
+    """!List of mapset/owner/group"""
+    def __init__(self, parent):
+        self.parent = parent
+        
+        wx.ListCtrl.__init__(self, parent, id = wx.ID_ANY,
+                             style = wx.LC_REPORT)
+        listmix.CheckListCtrlMixin.__init__(self)
+        
+        # setup mixins
+        listmix.ListCtrlAutoWidthMixin.__init__(self)
+
+        self.InsertColumn(0, _('Extension'))
+        self.LoadData()
+        
+    def LoadData(self):
+        """!Load data into list"""
+        self.DeleteAllItems()
+        for ext in gcmd.RunCommand('g.extension.py',
+                                   quiet = True, parent = self, read = True,
+                                   flags = 'a').splitlines():
+            if ext:
+                self.InsertStringItem(sys.maxint, ext)
+        
+    def GetExtensions(self):
+        """!Get extensions to be un-installed
+        """
+        extList = list()
+        for i in range(self.GetItemCount()):
+            if self.IsChecked(i):
+                name = self.GetItemText(i)
+                if name:
+                    extList.append(name)
+        
+        return extList
 
 class HelpWindow(wx.html.HtmlWindow):
     """!This panel holds the text from GRASS docs.

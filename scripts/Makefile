@@ -25,8 +25,8 @@ SUBDIRS = \
 	db.in.ogr \
 	db.out.ogr \
 	db.test \
-	g.manual \
 	g.extension \
+	g.manual \
 	i.fusion.brovey \
 	i.image.mosaic \
 	i.in.spotvgt \
@@ -49,7 +49,6 @@ SUBDIRS = \
 	r.out.xyz \
 	r.plane \
 	r.reclass.area \
-	r.regression.line \
 	r.shaded.relief \
 	r.tileset \
 	r.univar.sh \

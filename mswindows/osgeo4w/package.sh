@@ -17,7 +17,10 @@ if ! [ -d /tmp ]; then
     fi 
 fi 
 
-export PACKAGE=${1:-1} 
+export PACKAGE=${1:-1}
+# package name for osgeo4w
+# eg. 64-dev -> grass64-dev, empty for release
+export PACKAGE_NAME=$2
 export OSGEO4W_ROOT_MSYS="/c/OSGeo4W"
 export OSGEO4W_ROOT="C:\\\OSGeo4W"
 export PATH=.:/c/mingw/bin:/usr/local/bin:/bin:$OSGEO4W_ROOT_MSYS/bin:/c/WINDOWS/system32:/c/WINDOWS:/c/WINDOWS/System32/Wbem:/c/Subversion:$PWD/mswindows/osgeo4w
@@ -62,10 +65,16 @@ read MAJOR <&3
 read MINOR <&3 
 read PATCH <&3 
 
-export VERSION=$MAJOR.$MINOR.$PATCH 
+export VERSION=$MAJOR.$MINOR.$PATCH
+
+if [[ "$PATCH" == *svn* ]] ; then
+    GRASS_EXECUTABLE=grass${MAJOR}${MINOR}svn
+else
+    GRASS_EXECUTABLE=grass${MAJOR}${MINOR}
+fi
 
 export GRASS_PYTHON="/c/OSGeo4W/bin/python.exe"
-export PYTHONHOME="/c/OSGeo4W/apps/Python25"
+export PYTHONHOME="/c/OSGeo4W/apps/Python27"
 
 if [ -f mswindows/osgeo4w/package.log ]; then 
     i=0 
@@ -92,6 +101,9 @@ if ! [ -f mswindows/osgeo4w/configure-stamp ]; then
 	    make distclean
 	fi
 
+	log remove old logs
+	rm -f mswindows/osgeo4w/package.log.[0-9][0-9][0-9]
+
 	log configure
 	./configure \
 		--with-libs="$OSGEO4W_ROOT_MSYS/lib $PWD/mswindows/osgeo4w/lib" \
@@ -103,7 +115,6 @@ if ! [ -f mswindows/osgeo4w/configure-stamp ]; then
 		--disable-x --without-x \
 		--with-cxx \
 		--enable-shared \
-		--enable-largefile \
 		--with-opengl=windows \
 		--with-fftw \
 		--with-freetype \
@@ -133,51 +144,65 @@ mv $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/include/grass/config.h \
     $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/include/grass/config.h.mingw
 cp mswindows/osgeo4w/config.h.switch $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/include/grass/config.h
 cp mswindows/osgeo4w/config.h.vc $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/include/grass
-sed -e "s#@VERSION@#$VERSION#g" -e "s#@OSGEO4W_ROOT@#$OSGEO4W_ROOT#g" \
-    mswindows/osgeo4w/grass.bat.tmpl >$OSGEO4W_ROOT_MSYS/bin/grass$MAJOR$MINOR.bat
+mkdir -p $OSGEO4W_ROOT_MSYS/etc/preremove $OSGEO4W_ROOT_MSYS/etc/postinstall
+sed -e "s#@VERSION@#$VERSION#g" -e "s#@osgeo4w@#$OSGEO4W_ROOT#g" \
+    mswindows/osgeo4w/grass.bat.tmpl >$OSGEO4W_ROOT_MSYS/bin/${GRASS_EXECUTABLE}.bat
+sed -e "s#@VERSION@#$VERSION#g" -e "s#@OSGEO4W_ROOT_MSYS@#$OSGEO4W_ROOT_MSYS#g" -e "s#@POSTFIX@#$MAJOR$MINOR#g" \
+    mswindows/osgeo4w/grass.tmpl >$OSGEO4W_ROOT_MSYS/bin/${GRASS_EXECUTABLE}
 sed -e "s#@VERSION@#$VERSION#g" -e "s#@OSGEO4W_ROOT_MSYS@#$OSGEO4W_ROOT#g" \
     mswindows/osgeo4w/env.bat.tmpl >$OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/etc/env.bat
-sed -e "s#@VERSION@#$VERSION#g" -e "s#@POSTFIX@#$MAJOR$MINOR#g" \
-    mswindows/osgeo4w/postinstall.bat >$OSGEO4W_ROOT_MSYS/etc/postinstall/grass$MAJOR$MINOR.bat 
-sed -e "s#@VERSION@#$VERSION#g" -e "s#@POSTFIX@#$MAJOR$MINOR#g" \
-    mswindows/osgeo4w/preremove.bat >$OSGEO4W_ROOT_MSYS/etc/preremove/grass$MAJOR$MINOR.bat 
+sed -e "s#@VERSION@#$VERSION#g" -e "s#@GRASS_EXECUTABLE@#$GRASS_EXECUTABLE#g" \
+    mswindows/osgeo4w/postinstall.bat >$OSGEO4W_ROOT_MSYS/etc/postinstall/${GRASS_EXECUTABLE}.bat 
+sed -e "s#@VERSION@#$VERSION#g" -e "s#@GRASS_EXECUTABLE@#$GRASS_EXECUTABLE#g" \
+    mswindows/osgeo4w/preremove.bat >$OSGEO4W_ROOT_MSYS/etc/preremove/${GRASS_EXECUTABLE}.bat 
 
-if [ -f /c/mingw/bin/libgnurx-0.dll ]; then
-    cp /c/mingw/bin/libgnurx-0.dll $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/bin 
-    cp /c/mingw/bin/libiconv-2.dll $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/bin 
-    cp /c/mingw/bin/libintl-8.dll $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/bin
-fi
-
-# P="$(pwd -W)"
-# P="${P//\//\\\\}\\\\dist.i686-pc-mingw32"
-
-# sed -e "s#$P#@osgeo4w@#g" $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/etc/fontcap >$OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/etc/fontcap.tmpl
-# rm "$OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/etc/fontcap"
-
-if [ -n "$1" ]; then
+if [ -n "$PACKAGE" ]; then
     log building vc libraries 
-    sh mswindows/osgeo4w/mklibs.sh $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/bin/*.$VERSION.dll 
-    mv mswindows/osgeo4w/vc/grass*.lib $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/lib 
+    sh mswindows/osgeo4w/mklibs.sh $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/lib/*.$VERSION.dll 
+    mv mswindows/osgeo4w/vc/grass*.lib $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/lib
+    # rm $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/lib/*.dll
     
     # log BUILDING GDAL GRASS plugins 
     # $COMSPEC /c "mswindows\\osgeo4w\\gdalplugins.cmd $VERSION" 
     
     log CREATING PACKAGES 
-    mkdir -p package/grass$MAJOR$MINOR 
+    mkdir -p mswindows/osgeo4w/package
     
-    PDIR=$PWD/package
+    PDIR=$PWD/mswindows/osgeo4w/package
+    SRC=$PWD
     cd $OSGEO4W_ROOT_MSYS 
+
+    sed -e "s#@VERSION@#$VERSION#g" \
+	$SRC/mswindows/osgeo4w/grass.bat.tmpl >$OSGEO4W_ROOT_MSYS/bin/${GRASS_EXECUTABLE}.bat.tmpl
+    sed -e "s#@VERSION@#$VERSION#g" \
+	$SRC/mswindows/osgeo4w/grass.tmpl >$OSGEO4W_ROOT_MSYS/bin/${GRASS_EXECUTABLE}.tmpl
+
+    # grass package
+    tar -cjf $PDIR/grass$PACKAGE_NAME-$VERSION-$PACKAGE.tar.bz2 \
+	apps/grass/grass-$VERSION \
+	bin/${GRASS_EXECUTABLE}.bat.tmpl \
+	bin/${GRASS_EXECUTABLE}.tmpl \
+	etc/postinstall/${GRASS_EXECUTABLE}.bat \
+	etc/preremove/${GRASS_EXECUTABLE}.bat
     
-    tar -cjf $PDIR/grass$MAJOR$MINOR/grass-$VERSION-$PACKAGE.tar.bz2 \
-    apps/grass/grass-$VERSION \
-    bin/grass$MAJOR$MINOR.bat \
-    bin/grass$MAJOR$MINOR \
-    etc/postinstall/grass$MAJOR$MINOR.bat \
-    etc/preremove/grass$MAJOR$MINOR.bat
+    rm bin/${GRASS_EXECUTABLE}.tmpl
+    rm bin/${GRASS_EXECUTABLE}.bat.tmpl
     
-    cd $PDIR/.. 
-    svn diff >/tmp/grass-$VERSION.diff
-    tar -C /tmp -cjf $PDIR/grass$MAJOR$MINOR/grass-$VERSION-$PACKAGE-src.tar.bz2 grass-$VERSION.diff 
+    # grass-devel package (obsolete)
+    ###tar -cjf $PDIR/grass-devel-$VERSION-$PACKAGE.tar.bz2 \
+    ###apps/grass/grass-$VERSION/include
+    
+    # grass-devel-mingw package (obsolete)
+    ###tar -cjf $PDIR/grass-devel-mingw-$VERSION-$PACKAGE.tar.bz2 \
+    ###apps/grass/grass-$VERSION/lib/*.a
+    
+    # grass-devel-vc package (obsolete)
+    ###tar -cjf $PDIR/grass-devel-vc-$VERSION-$PACKAGE.tar.bz2 \
+    ###apps/grass/grass-$VERSION/lib/*.lib
+    
+    # grass-locale package (obsolete)
+    ###tar -cjf $PDIR/grass-locale-$VERSION-$PACKAGE.tar.bz2 \
+    ###apps/grass/grass-$VERSION/locale
 fi
 
 log 

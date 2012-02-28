@@ -6,8 +6,6 @@
  *
  *   This program is free software under the GPL (>=v2)
  *   Read the COPYING file that comes with GRASS for details.
- *       
- *       BUGS: please send bugs reports to pallecch@cli.di.unipi.it
  *
  */
 
@@ -23,9 +21,11 @@
 #include "../r.li.daemon/avlID.h"
 #include "../r.li.daemon/GenericCell.h"
 #include "../r.li.daemon/daemon.h"
+
 int calculate(int fd, area_des ad, double *result);
 int calculateD(int fd, area_des ad, double *result);
 int calculateF(int fd, area_des ad, double *result);
+
 int main(int argc, char *argv[])
 {
     struct Option *raster, *conf, *output;
@@ -51,6 +51,7 @@ int main(int argc, char *argv[])
     return calculateIndex(conf->answer, patchAreaDistributionCV, NULL,
 			  raster->answer, output->answer);
 }
+
 int patchAreaDistributionCV(int fd, char **par, area_des ad, double *result)
 {
     char *mapset;
@@ -94,6 +95,7 @@ int patchAreaDistributionCV(int fd, char **par, area_des ad, double *result)
     *result = indice;
     return RLI_OK;
 }
+
 int calculate(int fd, area_des ad, double *result)
 {
     CELL *buf;
@@ -491,6 +493,7 @@ int calculate(int fd, area_des ad, double *result)
     G_free(buf_sup);
     return RLI_OK;
 }
+
 int calculateD(int fd, area_des ad, double *result)
 {
     DCELL *buf;
@@ -884,6 +887,7 @@ int calculateD(int fd, area_des ad, double *result)
     *result = indice;
     return RLI_OK;
 }
+
 int calculateF(int fd, area_des ad, double *result)
 {
     FCELL *buf;

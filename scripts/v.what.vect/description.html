@@ -7,35 +7,35 @@ attribute table into the attribute table of <u>points</u> present in the
 <h2>NOTES</h2>
 
 The upload <b>column</b>, into which the query results are stored, must be
-present in the <b>vector</b> map. Use <em>v.db.addcol</em> to add one if needed.
+present in the <b>vector</b> map. Use <em>v.db.addcolumn</em> to add one if needed.
 <p>
 Use dmax parameter to control query distance tolerance (how far points/centroids
 can be from <b>qvector</b> features). For more options, use
 <em>v.distance</em> instead.
-<P>
+<p>
 In case of a multipoint input <b>vector</b> map, with several points having the
 same category number, it can happen, that the query result is NULL, if the same
 category number falls into different <b>qvector</b> polygons.
-<P>
+<p>
 When transferring attributes from a point map to a polygon map, usually <b>dmax</b>
 has to be larger than zero (determined by distance between query points and
 polygon centroids).
 
 <h2>EXAMPLES</h2>
 
-In this example, the 'archsites' point map in the Spearfish location is copied
-to the current mapset, a new attribute column is added and the owner
-names from the 'fields' polygon map are transferred to the 'myarchsites'
-map at points' locations:
+In this example, the 'hospitals' point map in the North Carolina location is
+copied to the current mapset, a new attribute column is added and the urban
+names from the 'urbanarea' polygon map are transferred to the 'myhospitals'
+map at the hospital points' locations:
 
 <div class="code"><pre>
-g.copy vect=archsites,myarchsites
-v.db.addcol myarchsites col="owner varchar(25)"
-v.what.vect myarchsites qvect=fields column=owner qcolumn=label
+g.copy vect=hospitals,myhospitals
+v.db.addcol myhospitals column="urb_name varchar(25)"
+v.what.vect myhospitals qvect=urbanarea column=urb_name qcolumn=NAME
 # verification:
-v.db.select myarchsites
+v.db.select myhospitals
 </pre></div>
-<P>
+<p>
 
 In this example, city names, population data and more from
 <a href="http://download.geonames.org/export/dump/">Geonames.org country files</a> are
@@ -46,24 +46,24 @@ beforehand to have metric distances support:
 
 <div class="code"><pre>
 # extract populated places from geonames
-v.extract geonames_IT where="featurecla='P'" out=geonames_IT_cities
+v.extract geonames_IT where="featurecla='P'" output=geonames_IT_cities
 # add new column 
-v.db.addcol corine_code111_112_cities col="gnameid double precision"
+v.db.addcol corine_code111_112_cities column="gnameid double precision"
 # transfer geonameid (3000m maximal distance between points and centroids)
-v.what.vect corine_code111_112_cities qvect=geonames_IT_cities col=gnameid \
-            qcol=geonameid dmax=3000
+v.what.vect corine_code111_112_cities qvect=geonames_IT_cities column=gnameid \
+            qcolumn=geonameid dmax=3000
 # now gnameid can be used for v.db.join to join further
-# attributes in from Geonames.org
+# attributes in from geonames.org
 </pre></div>
 
 <h2>SEE ALSO</h2>
 
 <em>
-<a HREF="v.db.addcol.html">v.db.addcol</a>,
-<a HREF="v.db.select.html">v.db.select</a>,
-<a HREF="v.distance.html">v.distance</a>,
-<a HREF="v.rast.stats.html">v.rast.stats</a>,
-<a HREF="v.what.rast.html">v.what.rast</a>
+<a href="v.db.addcolumn.html">v.db.addcolumn</a>,
+<a href="v.db.select.html">v.db.select</a>,
+<a href="v.distance.html">v.distance</a>,
+<a href="v.rast.stats.html">v.rast.stats</a>,
+<a href="v.what.rast.html">v.what.rast</a>
 </em>
 
 
@@ -72,4 +72,4 @@ v.what.vect corine_code111_112_cities qvect=geonames_IT_cities col=gnameid \
 Markus Neteler
 
 <p>
-<i>Last changed: $Date: 2009-11-29 11:12:00 +0100 (Sun, 29 Nov 2009) $</i></p>
+<i>Last changed: $Date: 2011-11-08 12:29:50 +0100 (Tue, 08 Nov 2011) $</i>
