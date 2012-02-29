@@ -17,6 +17,34 @@ E: grass-core: package-installs-python-bytecode usr/lib/grass64/etc/.../*.pyc
       dh_python2
 
 
+grass-core.prerm[.in]:  (adapted from debian/rules)
+---------------------
+# delete python compiled bytecode files
+for DIR in python/grass \
+        python/grass/lib \
+        python/grass/script \
+     do
+        rm -f /usr/lib/grass@VERSION@/etc/$DIR/*.pyc
+done
+
+
+grass-gui.prerm[.in]:   (adapted from debian/rules)
+--------------------
+# delete python compiled bytecode files
+for DIR in wxpython \
+        wxpython/compat \
+        wxpython/gui_modules \
+        wxpython/icons ; \
+     do
+        rm -f /usr/lib/grass@VERSION@/etc/$DIR/*.pyc
+done
+
+
+... but how to do *.postinst with update-python-modules or dh_python2?
+
+
+
+
 * put Tcl/Tk NVIZ back into grass-core so that qgis users can use it?
    (that seems to be a popular use of the qgis-grass toolbox)
 
