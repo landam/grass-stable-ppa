@@ -1,3 +1,9 @@
+grass (6.4.2-2~precise1) precise; urgency=low
+
+  * Launchpad build for precise.
+
+ -- Alan Boudreault <aboudreault@mapgears.com>  Wed, 09 May 2012 17:11:24 +0000
+
 grass (6.4.2-1) unstable; urgency=low
 
   [ Hamish Bowman ]
