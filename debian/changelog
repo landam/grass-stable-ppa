@@ -12,11 +12,13 @@ grass (6.4.2-1) unstable; urgency=low
   * Use xdg-open for GRASS_HTML_BROWSER when available.
     (closes: #615667)
   * Policy bumped to 3.9.3, using metapackages archive section for 'grass'.
+  * Fix g.extension.sh test for the grass-dev package.
+  * Add patch to fix C++ FTBFS for gcc 4.7.0.
 
   [ Francesco Paolo Lovergine ]
   * Moved to use TIFF 4.0.1 instead of the legacy flavor.
 
- -- Francesco Paolo Lovergine <frankie@debian.org>  Sat, 25 Feb 2012 19:21:24 +0100
+ -- M. Hamish Bowman <hamish_b@yahoo.com>  Thu, 17 May 2012 20:09:15 +1200
 
 grass (6.4.1-2) unstable; urgency=low
 
