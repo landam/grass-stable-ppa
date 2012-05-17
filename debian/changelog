@@ -14,6 +14,7 @@ grass (6.4.2-1) unstable; urgency=low
   * Policy bumped to 3.9.3, using metapackages archive section for 'grass'.
   * Fix g.extension.sh test for the grass-dev package.
   * Add patch to fix C++ FTBFS for gcc 4.7.0.
+    (closes: #671991)
 
   [ Francesco Paolo Lovergine ]
   * Moved to use TIFF 4.0.1 instead of the legacy flavor.
