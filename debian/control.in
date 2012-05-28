@@ -27,7 +27,7 @@ Build-depends:
   libxmu-dev,
 #install optipng if compressing the PNG images in the programmers' manual
 #  optipng,
-  python-dev (>= 2.5), python-support (>= 0.7.1),
+  python (>= 2.6.6-3~),
   python-wxgtk2.8, libwxgtk2.8-dev,
   tcl-dev (>= 8.5), tk-dev (>= 8.5),
   unixodbc-dev
@@ -58,7 +58,7 @@ Section: science
 Architecture: any
 Depends:
   ${shlibs:Depends},
-  python (>= 2.5),
+  ${python:Depends},
 # numpy used by the GRASS Python Library
   python-numpy,
   ${misc:Depends}
@@ -99,7 +99,7 @@ Section: science
 Architecture: any
 Depends: ${shlibs:Depends},
   grass-core,
-  python,
+  ${python:Depends},
   python-wxgtk2.8,
 # pyGL needed for wxNviz
   python-opengl,

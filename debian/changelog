@@ -15,11 +15,13 @@ grass (6.4.2-1) unstable; urgency=low
   * Fix g.extension.sh test for the grass-dev package.
   * Add patch to fix C++ FTBFS for gcc 4.7.0.
     (closes: #671991)
+  * Support for dh_python2, byte-compile .py at postinst.
+  * Clean up TODO list.
 
   [ Francesco Paolo Lovergine ]
   * Moved to use TIFF 4.0.1 instead of the legacy flavor.
 
- -- M. Hamish Bowman <hamish_b@yahoo.com>  Thu, 17 May 2012 20:09:15 +1200
+ -- M. Hamish Bowman <hamish_b@yahoo.com>  Mon, 28 May 2012 21:47:12 +1200
 
 grass (6.4.1-2) unstable; urgency=low
 
