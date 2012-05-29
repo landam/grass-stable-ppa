@@ -1,7 +1,7 @@
-Index: /grass/branches/releasebranch_6_4/lib/iostream/mm.cc
+Index: grass/lib/iostream/mm.cc
 ===================================================================
---- /grass/branches/releasebranch_6_4/lib/iostream/mm.cc	(revision 48704)
-+++ /grass/branches/releasebranch_6_4/lib/iostream/mm.cc	(revision 51638)
+--- grass.orig/lib/iostream/mm.cc	(revision 48704)
++++ grass/lib/iostream/mm.cc	(revision 51638)
 @@ -254,11 +254,11 @@
  }
  
@@ -54,10 +54,10 @@ Index: /grass/branches/releasebranch_6_4/lib/iostream/mm.cc
    
    MM_DEBUG cout << "delete[]: ptr=" << ptr << ","; 
  
-Index: /grass/branches/releasebranch_6_4/include/iostream/mm.h
+Index: grass/include/iostream/mm.h
 ===================================================================
---- /grass/branches/releasebranch_6_4/include/iostream/mm.h	(revision 32629)
-+++ /grass/branches/releasebranch_6_4/include/iostream/mm.h	(revision 51638)
+--- grass.orig/include/iostream/mm.h	(revision 32629)
++++ grass/include/iostream/mm.h	(revision 51638)
 @@ -108,14 +108,14 @@
    int    space_overhead ();          
   
@@ -77,10 +77,10 @@ Index: /grass/branches/releasebranch_6_4/include/iostream/mm.h
  
  
  
-Index: /grass/branches/releasebranch_6_4/include/iostream/minmaxheap.h
+Index: grass/include/iostream/minmaxheap.h
 ===================================================================
---- /grass/branches/releasebranch_6_4/include/iostream/minmaxheap.h	(revision 41531)
-+++ /grass/branches/releasebranch_6_4/include/iostream/minmaxheap.h	(revision 51638)
+--- grass.orig/include/iostream/minmaxheap.h	(revision 41531)
++++ grass/include/iostream/minmaxheap.h	(revision 51638)
 @@ -742,11 +742,11 @@
  HeapIndex MinMaxHeap<T>::fill(T* arr, HeapIndex n) {
    HeapIndex i;
