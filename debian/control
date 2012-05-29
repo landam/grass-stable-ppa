@@ -27,7 +27,7 @@ Build-depends:
   libxmu-dev,
 #install optipng if compressing the PNG images in the programmers' manual
 #  optipng,
-  python (>= 2.6.6-3~), python-dev,
+  python (>= 2.6.6-3~),
   python-wxgtk2.8, libwxgtk2.8-dev,
   python-dev,
   tcl-dev (>= 8.5), tk-dev (>= 8.5),
