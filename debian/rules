@@ -166,6 +166,7 @@ install: build
 	
 	# delete extra license files
 	rm -f debian/tmp/usr/lib/$(BASE_NAME)/bwidget/LICENSE.txt
+	find debian/tmp/usr/lib -name COPYING -delete
 
 	# delete python compiled bytecode files (maybe dh_python2 takes care of this for us?)
 	for DIR in python/grass \

@@ -22,7 +22,7 @@ grass (6.4.2-1) unstable; urgency=low
   * Moved to use TIFF 4.0.1 instead of the legacy flavor.
   * Moved to use libgdal-dev (introduced in 1.9+) b-d.
 
- -- M. Hamish Bowman <hamish_b@yahoo.com>  Mon, 28 May 2012 21:47:12 +1200
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 29 May 2012 17:23:07 +0200
 
 grass (6.4.1-2) unstable; urgency=low
 
