@@ -157,7 +157,7 @@ Depends:
   grass-core (= ${binary:Version}),
 # fakeroot used by patches/htmlgen-fakeroot; see changelog entry for 5.7.0+6.0.0beta2-2
   fakeroot,
-  libproj-dev, libgdal1-dev,
+  libproj-dev, libgdal-dev,
   ${misc:Depends}
 # Subversion is needed by g.extension, a primary motivator for installing the grass-dev pkg
 Recommends: subversion

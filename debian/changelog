@@ -1,3 +1,11 @@
+grass (6.4.2-2~precise2) precise; urgency=low
+
+  * launchpad build for precise
+  * Modified libgdal1-dev to libgdal-dev to get the latest version of libgdal in Ubuntu
+    Precise
+
+ -- Jerome Villeneuve Larouche <jlarouche@mapgears.com>  Wed, 16 May 2012 14:21:30 +0000
+
 grass (6.4.2-2~precise1) precise; urgency=low
 
   * Launchpad build for precise.
