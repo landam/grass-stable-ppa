@@ -1,3 +1,10 @@
+grass (6.4.2-2) unstable; urgency=low
+
+  * Now grass-gui replacing/breaking old grass.
+    (closes: #675514)
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 04 Jun 2012 18:14:50 +0200
+
 grass (6.4.2-1) unstable; urgency=low
 
   [ Hamish Bowman ]
