@@ -1,3 +1,9 @@
+grass (6.4.2-3~oneiric1) oneiric; urgency=low
+
+  * Launchpad build for oneiric
+
+ -- Jerome Villeneuve Larouche <jlarouche@mapgears.com>  Tue, 05 Jun 2012 18:18:51 +0000
+
 grass (6.4.2-2) unstable; urgency=low
 
   * Now grass-gui replacing/breaking old grass.
