@@ -1,72 +1,49 @@
 Maintainers TODO list
 ---------------------
 
-The grass 'etc' directory contains a mixed arch/non-arch depending mess of
-files. They should be automatically classified in the install target and
-moved to /var/lib/grass or /usr/lib/grass, leaving symlinks so to not
-break things.
-
 
 FIXME:
-
-E: grass-core: package-installs-python-bytecode usr/lib/grass64/etc/.../*.pyc
-( -> removed in rules, but still need to generate anew in postinst )
-  see /usr/share/debhelper/autoscripts/postinst-python
-      /var/lib/dpkg/info/python-numpy.*
-      update-python-modules(8)
-      dh_python2
-
-
-grass-core.prerm[.in]:  (adapted from debian/rules)
----------------------
-# delete python compiled bytecode files
-for DIR in python/grass \
-        python/grass/lib \
-        python/grass/script \
-     do
-        rm -f /usr/lib/grass@VERSION@/etc/$DIR/*.pyc
-done
-
-
-grass-gui.prerm[.in]:   (adapted from debian/rules)
---------------------
-# delete python compiled bytecode files
-for DIR in wxpython \
-        wxpython/compat \
-        wxpython/gui_modules \
-        wxpython/icons ; \
-     do
-        rm -f /usr/lib/grass@VERSION@/etc/$DIR/*.pyc
-done
-
-
-... but how to do *.postinst with update-python-modules or dh_python2?
-
-
-
-
-* put Tcl/Tk NVIZ back into grass-core so that qgis users can use it?
-   (that seems to be a popular use of the qgis-grass toolbox)
-
+======
 
 Lintian:
-W: grass-dev: copyright-without-copyright-notice
-W: grass-dev-doc: copyright-without-copyright-notice
-W: grass-core: copyright-without-copyright-notice
-W: grass-doc: copyright-without-copyright-notice
-W: grass: copyright-without-copyright-notice
-W: grass-gui: copyright-without-copyright-notice
+ (some will be false positives)
 
+$ grep '^W: ' grass_6.4.2-1_amd64.build | cut -f1,3 -d' ' | sort | uniq
+W: copyright-without-copyright-notice
+W: executable-not-elf-or-script
+W: extra-license-file
+W: hardening-no-fortify-functions
+W: hardening-no-relro
+W: hardening-no-stackprotector
+W: image-file-in-usr-lib
+W: manpage-has-bad-whatis-entry
+W: manpage-has-errors-from-man
+W: script-not-executable
+W: unusual-interpreter
 
 
 TODO:
+=====
 
-* allow parallel builds by adding something like this to debian/rules:
+* The grass 'etc' directory contains a mixed arch/non-arch depending mess of
+  files. They should be automatically classified in the install target and
+  moved to /var/lib/grass or /usr/lib/grass, leaving symlinks so to not
+  break things.
+
+
+* Allow parallel builds by adding something like this to debian/rules:
 {{{
 %:
         dh $@ --parallel
 }}}
 
+
+* Put Tcl/Tk NVIZ back into grass-core so that qgis users can use it?
+   (that seems to be a popular use of the qgis-grass toolbox)
+    ... but that makes grass-core depend on Tcl/Tk deps.
+  Or to split it off into a new grass-nviz package?
+    ... but that adds to the clutter.
+  ?
 
 
 * link Programmers' Manual to a listing in the wxGUI Help menu, if installed?
