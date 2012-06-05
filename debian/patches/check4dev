@@ -8,7 +8,7 @@ Index: grass/scripts/g.extension/g.extension
  
 +
 +# check if we have the grass include and Make files
-+dpkg-query -W grass-dev > /dev/null 2> /dev/null
++dpkg-query -l grass-dev | grep '^ii' > /dev/null 2> /dev/null
 +if [ $? -ne 0 ] ; then
 +   g.message -w "This module requires the \"grass-dev\" package"
 +fi

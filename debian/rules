@@ -167,7 +167,7 @@ install: build
 	# delete extra license files
 	rm -f debian/tmp/usr/lib/$(BASE_NAME)/bwidget/LICENSE.txt
 
-	# delete python compiled bytecode files
+	# delete python compiled bytecode files (maybe dh_python2 takes care of this for us?)
 	for DIR in python/grass \
 		python/grass/lib \
 		python/grass/script \
@@ -178,7 +178,6 @@ install: build
 	     do \
 		rm -f debian/tmp/usr/lib/$(BASE_NAME)/etc/$$DIR/*.pyc ; \
 	done
-	# ..FIXME..: rebuild the .pyc anew in postinst
 
 	# change section from 1 to .1grass 
 	mv debian/tmp/usr/lib/$(BASE_NAME)/man/man1/grass6.1 debian/$(BASE_NAME).1
@@ -275,7 +274,8 @@ binary-arch: install
 	dh_installmenu -a
 	dh_installman -p$(PKG_NAME) debian/$(BASE_NAME).1 -a
 	dh_link -a
-	dh_pysupport -p$(PKG_NAME) /usr/lib/grass64/etc
+	dh_python2
+	dh_python2 /usr/lib/grass64/etc
 	dh_strip -a
 	dh_compress -a -XAUTHORS
 	dh_fixperms -a
