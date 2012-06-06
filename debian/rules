@@ -274,8 +274,8 @@ binary-arch: install
 	dh_installmenu -a
 	dh_installman -p$(PKG_NAME) debian/$(BASE_NAME).1 -a
 	dh_link -a
-	dh_python2
-	dh_python2 /usr/lib/grass64/etc
+	dh_pycentral
+	dh_pycentral /usr/lib/grass64/etc
 	dh_strip -a
 	dh_compress -a -XAUTHORS
 	dh_fixperms -a
