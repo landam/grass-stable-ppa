@@ -1,3 +1,10 @@
+grass (6.4.2-3) unstable; urgency=low
+
+  * Build-Depends on libpng-dev for LibPNG transition.
+    (closes: #662361)
+
+ -- M. Hamish Bowman <hamish_b@yahoo.com>  Sat, 09 Jun 2012 17:15:10 +1200
+
 grass (6.4.2-2) unstable; urgency=low
 
   * Now grass-gui replacing/breaking old grass.
