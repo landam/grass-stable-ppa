@@ -1,6 +1,8 @@
-grass (6.4.2~upstream2-3~precise1) precise; urgency=low
+grass (6.4.2~upstream2-3~precise3) precise; urgency=low
 
   * Launchpad build for Precise
+  * Changed the Breaks and Replaces for grass-core and grass-gui to << 6.4.1
+    so it works with the current precise version
 
  -- Jerome Villeneuve Larouche <jlarouche@mapgears.com>  Tue, 05 Jun 2012 17:47:13 +0000
 
