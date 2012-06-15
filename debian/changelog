@@ -1,6 +1,8 @@
-grass (6.4.2-3~oneiric1) oneiric; urgency=low
+grass (6.4.2~upstream2-3~oneiric6) oneiric; urgency=low
 
   * Launchpad build for oneiric
+  * Changed breaks and replaces to (<< 6.4.1) in debian/control so it works
+    with the current oneiric releases without causing problems.
 
  -- Jerome Villeneuve Larouche <jlarouche@mapgears.com>  Tue, 05 Jun 2012 18:18:51 +0000
 
