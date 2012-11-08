@@ -1,3 +1,9 @@
+grass (6.4.2~upstream2-3~quantal1) quantal; urgency=high
+
+  * Launchpad build for precise
+
+ -- Jerome Villeneuve Larouche <jlarouche@mapgears.com>  Thu, 25 Oct 2012 12:36:47 +0000
+
 grass (6.4.2-3) unstable; urgency=low
 
   * Build-Depends on libpng-dev for LibPNG transition.
