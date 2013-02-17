@@ -2,8 +2,9 @@ grass (6.4.2-3) unstable; urgency=low
 
   * Build-Depends on libpng-dev for LibPNG transition.
     (closes: #662361)
+  * grass-dev needs to depend on libfreetype6-dev for building addons.
 
- -- M. Hamish Bowman <hamish_b@yahoo.com>  Sat, 09 Jun 2012 17:15:10 +1200
+ -- M. Hamish Bowman <hamish_b@yahoo.com>  Sun, 17 Feb 2013 21:30:53 +1300
 
 grass (6.4.2-2) unstable; urgency=low
 
