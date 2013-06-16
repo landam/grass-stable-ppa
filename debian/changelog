@@ -3,8 +3,9 @@ grass (6.4.2-3) unstable; urgency=low
   * Build-Depends on libpng-dev for LibPNG transition.
     (closes: #662361)
   * grass-dev needs to depend on libfreetype6-dev for building addons.
+  * Enable GEOS support
 
- -- M. Hamish Bowman <hamish_b@yahoo.com>  Sun, 17 Feb 2013 21:30:53 +1300
+ -- M. Hamish Bowman <hamish_b@yahoo.com>  Sun, 16 Jun 2013 14:27:59 +1200
 
 grass (6.4.2-2) unstable; urgency=low
 

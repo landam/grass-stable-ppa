@@ -63,6 +63,7 @@ endif
                     --with-cxx \
                     --with-x \
                     --with-gdal \
+                    --with-geos \
                     --with-freetype \
                     --with-motif \
                     --with-readline \
