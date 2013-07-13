@@ -10,7 +10,7 @@ Build-depends:
   fakeroot,
   flex, bison,
   graphviz,
-  lesstif2-dev,
+  libmotif-dev | lesstif2-dev,
   libcairo2-dev,
   libfftw3-dev,
   libfreetype6-dev,

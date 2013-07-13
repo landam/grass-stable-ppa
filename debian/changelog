@@ -4,8 +4,10 @@ grass (6.4.2-3) unstable; urgency=low
     (closes: #662361)
   * grass-dev needs to depend on libfreetype6-dev for building addons.
   * Enable GEOS support
+  * Build-Depends on libmotif-dev for Motif transition.
+    (closes: #714679)
 
- -- M. Hamish Bowman <hamish_b@yahoo.com>  Sun, 16 Jun 2013 14:27:59 +1200
+ -- M. Hamish Bowman <hamish_b@yahoo.com>  Sun, 14 Jul 2013 10:18:40 +1200
 
 grass (6.4.2-2) unstable; urgency=low
 
