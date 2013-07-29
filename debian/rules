@@ -14,7 +14,16 @@ ABI=$(shell echo `head -3 $(CURDIR)/include/VERSION` | sed -e 's/ //g' -e 's/RC/
 BASE_NAME=grass$(VERSION)
 PKG_NAME=grass
 
-CFLAGS=-Wall -g
+include /usr/share/hardening-includes/hardening.make
+CFLAGS=$(shell dpkg-buildflags --get CFLAGS)
+LDFLAGS=$(shell dpkg-buildflags --get LDFLAGS)
+CFLAGS+=$(HARDENING_CFLAGS)
+LDFLAGS+=$(HARDENING_LDFLAGS)
+
+# TODO: fix these
+CFLAGS+=-Wno-error=format-security
+
+CFLAGS+=-Wall
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
 	CFLAGS += -O0
