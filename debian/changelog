@@ -6,8 +6,9 @@ grass (6.4.2-3) unstable; urgency=low
   * Enable GEOS support
   * Build-Depends on libmotif-dev for Motif transition.
     (closes: #714679)
+  * Partial enable of the hardening flags
 
- -- M. Hamish Bowman <hamish_b@yahoo.com>  Sun, 14 Jul 2013 10:18:40 +1200
+ -- M. Hamish Bowman <hamish_b@yahoo.com>  Mon, 05 Aug 2013 08:22:19 +1200
 
 grass (6.4.2-2) unstable; urgency=low
 
