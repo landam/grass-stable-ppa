@@ -17,6 +17,10 @@ PKG_NAME=grass
 include /usr/share/hardening-includes/hardening.make
 CFLAGS=$(shell dpkg-buildflags --get CFLAGS)
 LDFLAGS=$(shell dpkg-buildflags --get LDFLAGS)
+# in Wheezy -fPIE conflicts with -fPIC. See example in the hardening.make file.
+#CFLAGS += $(HARDENING_CFLAGS_PIC) \
+#	$(filter-out $(HARDENING_DISABLE_PIE_CFLAGS_FILTER),$(HARDENING_CFLAGS))
+# in Jessie & Sid the problem seems fixed so we can proceed normally.
 CFLAGS+=$(HARDENING_CFLAGS)
 LDFLAGS+=$(HARDENING_LDFLAGS)
 
