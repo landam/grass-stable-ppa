@@ -18,6 +18,7 @@ The rules are:
 <li> Other coordinates: elevation in the same unit as the easting-northing coordinates.
 </ul>
 
+<p>
 The solar geometry of the model is based on the works of Krcho (1990), later
 improved by Jenco (1992). The equations describing Sun &#8211; Earth position as
 well as an interaction of the solar radiation with atmosphere were originally 
@@ -52,7 +53,7 @@ steepness raster map <i>slopin,</i> given the day <i>day</i> and local time
 and defined projection/coordinate system (check it with the <a href="g.proj.html">
 g.proj</a>
  command). If you have undefined projection, (x,y) system, etc. then the latitude
-can be defined explicitely for large areas by input raster map <i>latin</i>
+can be defined explicitly for large areas by input raster map <i>latin</i>
  with interpolated latitude values. All input raster maps must
 be floating point (FCELL) raster maps. Null data in maps are excluded from
 the computation (and also speeding-up the computation), so each output raster
@@ -127,7 +128,7 @@ distance. This basic sampling distance equals to the arithmetic average of
 both cell sizes. The reasonable values are in the range 0.5-1.5.  The values
 below 0.5 will decrease and values above 1.0 will increase the computing
 speed. Values greater than 2.0 may produce estimates with lower accuracy
-in highly dissected relief. The fully shadowed areas are written to the ouput
+in highly dissected relief. The fully shadowed areas are written to the output
 maps as zero values. Areas with NULL data are considered as no barrier with
 shadowing effect .
 <p>The maps' history files are generated containing the following listed 
@@ -249,9 +250,9 @@ memory_bytes = rows*cols*(IR*4 + horizonsteps + OR*4)
 memory_bytes = rows*cols*((IR*4+horizonsteps)/numpartitions  + OR*4)
 </pre></div>
 
-<!--
-<h3>Example</h3>
+<h2>EXAMPLE</h2>
 
+<!-- still troubles with r.horizon
 Spearfish example (considering also cast shadows):
 <div class="code"><pre>
 g.region rast=elevation.dem -p
@@ -267,7 +268,28 @@ r.slope.aspect elevation=elevation.dem aspect=aspect.dem slope=slope.dem
 r.sun -s elevation.dem horizon=horangle horizonstep=30 aspin=aspect.dem \
           slopein=slope.dem glob_rad=global_rad day=180 time=14
 </pre></div>
+<p>
 -->
+
+Calculation of the integrated daily irradiation for a region in North-Carolina
+for a given day of the year at 30m resolution. Here day 172 (i.e., 21 June
+in non-leap years):
+
+<div class="code"><pre>
+g.region rast=elev_ned_30m -p
+
+# considering cast shadows (-s)
+r.sun -s elev_ned_30m lin=2.5 alb=0.2 day=172 \
+      beam_rad=b172 diff_rad=d172 \
+      refl_rad=r172 insol_time=it172
+
+d.mon x0
+# show irradiation raster map [Wh.m-2.day-1]
+d.rast.leg b172
+# show insolation time raster map [h]
+d.rast.leg it172
+</pre></div>
+
 
 <h2>SEE ALSO</h2>
 
@@ -282,57 +304,58 @@ r.sun -s elevation.dem horizon=horangle horizonstep=30 aspin=aspect.dem \
 
 <h2>REFERENCES</h2>
 
-Hofierka, J., Suri, M. (2002): The solar radiation model for Open source
-GIS: implementation and applications. Manuscript submitted to the International
-GRASS users conference in Trento, Italy, September 2002. 
-<p>
+<ul>
+<li> Hofierka, J., Suri, M. (2002): The solar radiation model for Open source
+GIS: implementation and applications. International
+GRASS users conference in Trento, Italy, September 2002.
+(<a href="http://skagit.meas.ncsu.edu/~jaroslav/trento/Hofierka_Jaroslav.pdf">PDF</a>)
+<li>
 Hofierka, J. (1997). Direct solar radiation modelling within an open GIS
 environment. Proceedings of JEC-GI'97 conference in Vienna, Austria, IOS
 Press Amsterdam, 575-584. 
-<p>
+<li>
 Jenco, M. (1992). Distribution of direct solar radiation on georelief and
 its modelling by means of complex digital model of terrain (in Slovak). Geograficky
 casopis, 44, 342-355. 
-<p>
+<li>
 Kasten, F. (1996). The Linke turbidity factor based on improved values of
 the integral Rayleigh optical thickness. Solar Energy, 56 (3), 239-244. 
-<p>
+<li>
 Kasten, F., Young, A. T. (1989). Revised optical air mass tables and approximation
 formula. Applied Optics, 28, 4735-4738. 
-<p>
+<li>
 Kittler, R., Mikler, J. (1986): Basis of the utilization of solar radiation 
 (in Slovak). VEDA, Bratislava, p. 150. 
-<p>
+<li>
 Krcho, J. (1990). Morfometrick&aacute; analza a digit&aacute;lne modely georeli&eacute;fu
-(Morphometric analysis and digital models of georelief). VEDA,
-Bratislava (in Slovak). 
-<p>
+(Morphometric analysis and digital models of georelief, in Slovak).
+VEDA, Bratislava.
+<li>
 Muneer, T. (1990). Solar radiation model for Europe. Building services engineering
 research and technology, 11, 4, 153-163. 
-<p>
+<li>
 Neteler, M., Mitasova, H. (2002): Open Source GIS: A GRASS GIS Approach, Kluwer
-Academic Publishers/Springer. 
-<p>
+Academic Publishers. (Appendix explains formula;
+<a href="http://www.grassbook.org/">r.sun script download</a>)
+<li>
 Page, J. ed. (1986). Prediction of solar radiation on inclined surfaces. Solar
 energy R&amp;D in the European Community, series F &#8211; Solar radiation data,
 Dordrecht (D. Reidel), 3, 71, 81-83. 
-<p>
+<li>
 Page, J., Albuisson, M., Wald, L. (2001). The European solar radiation atlas:
 a valuable digital tool. Solar Energy, 71, 81-83. 
-<p>
+<li>
 Rigollier, Ch., Bauer, O., Wald, L. (2000). On the clear sky model of the
 ESRA - European Solar radiation Atlas - with respect to the Heliosat method.
 Solar energy, 68, 33-48. 
-<p>
+<li>
 Scharmer, K., Greif, J., eds., (2000). The European solar radiation atlas,
 Vol. 2: Database and exploitation software. Paris (Les Presses de l&#8217; &Eacute;cole
-des Mines). 
-<p>
-Suri, M., Hofierka, J. (2004): A new GIS-based solar radiation model and its
-application to photovoltaic assessments. Transactions in GIS 8, pp. 175-190.
-
-<p>Joint Research Centre: <a href="http://re.jrc.ec.europa.eu/pvgis/">GIS solar radiation database for Europe</a> and
+des Mines).
+<li>
+Joint Research Centre: <a href="http://re.jrc.ec.europa.eu/pvgis/">GIS solar radiation database for Europe</a> and 
 <a href="http://re.jrc.ec.europa.eu/pvgis/solres/solmod3.htm">Solar radiation and GIS</a>
+</ul>
 
 <h2>AUTHORS</h2>
 
@@ -342,10 +365,10 @@ Marcel Suri, GeoModel, s.r.o. Bratislava, Slovakia <br>
 
 Thomas Huld, JRC, Italy <br>
 
-&copy; 2007, Jaroslav Hofierka, Marcel Suri 
+&copy; 2007, Jaroslav Hofierka, Marcel Suri. This program is free software under the GNU General Public License (&gt;=v2)
 <address>
-<a href="MAILTO:hofi@geomodel.sk">hofierka@geomodel.sk</a>
+<a href="MAILTO:hofierka@geomodel.sk">hofierka@geomodel.sk</a>
 <a href="MAILTO:suri@geomodel.sk">suri@geomodel.sk</a>
 </address>
 
-<p><i>Last changed: $Date: 2012-01-04 16:37:26 +0100 (Wed, 04 Jan 2012) $</i> 
+<p><i>Last changed: $Date: 2013-06-16 05:08:46 +0200 (Sun, 16 Jun 2013) $</i> 

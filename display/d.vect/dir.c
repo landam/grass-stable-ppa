@@ -5,15 +5,18 @@
 #include <grass/glocale.h>
 #include "plot.h"
 
-int dir(struct Map_info *Map, int type, struct cat_list *Clist, int chcat)
+/* arrow heads will be drawn at 25,50,75% of the line length */
+#define PERC_OF_LINE 25
+
+int dir(struct Map_info *Map, int type, struct cat_list *Clist,
+        int chcat, int dsize)
 {
-    int ltype, dsize;
-    double len, x, y, angle, msize;
+    int ltype;
+    double len, x, y, angle, msize, dist;
     struct line_pnts *Points;
     struct line_cats *Cats;
 
     G_debug(1, "display direction:");
-    dsize = 5;
     msize = dsize * (D_d_to_u_col(2.0) - D_d_to_u_col(1.0));	/* do it better */
 
     Points = Vect_new_line_struct();
@@ -62,17 +65,13 @@ int dir(struct Map_info *Map, int type, struct cat_list *Clist, int chcat)
 
 	len = Vect_line_length(Points);
 
-	Vect_point_on_line(Points, len * 0.25, &x, &y, NULL, &angle, NULL);
-	G_debug(3, "plot direction: %f, %f", x, y);
-	G_plot_icon(x, y, G_ICON_ARROW, angle, msize);
-
-	Vect_point_on_line(Points, len * 0.5, &x, &y, NULL, &angle, NULL);
-	G_debug(3, "plot direction: %f, %f", x, y);
-	G_plot_icon(x, y, G_ICON_ARROW, angle, msize);
-
-	Vect_point_on_line(Points, len * 0.75, &x, &y, NULL, &angle, NULL);
-	G_debug(3, "plot direction: %f, %f", x, y);
-	G_plot_icon(x, y, G_ICON_ARROW, angle, msize);
+	for (dist = PERC_OF_LINE / 100.0; dist <= 1.0 - PERC_OF_LINE / 100.0;
+	     dist += PERC_OF_LINE / 100.0) {
+	    Vect_point_on_line(Points, len * dist, &x, &y, NULL, &angle,
+			       NULL);
+	    G_debug(4, "plot direction: %f, %f", x, y);
+	    G_plot_icon(x, y, G_ICON_ARROW, angle, msize);
+	}
     }
 
 

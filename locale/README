@@ -1,7 +1,7 @@
 HOWTO translate GRASS messages
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-$Date: 2009-05-20 23:14:50 +0200 (Wed, 20 May 2009) $
+$Date: 2012-02-25 05:14:51 -0800 (Sat, 25 Feb 2012) $
 
 [ Web page: http://grass.osgeo.org/devel/i18n.php ]
 
@@ -22,7 +22,7 @@ or (omit \n)
  G_message ( _("..."), ...);
 
 Careful:
-  G_message should be used for messages - informations about
+  G_message should be used for messages - information about
   the process for user while fprintf(stdout...) for data output.
   G_message output is not expected to be send to pipe or file.
   fprintf(stdout...) output is usually send to pipe or file.

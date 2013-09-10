@@ -64,10 +64,9 @@ int main(int argc, char *argv[])
     /* Define the different options */
     parm.map = G_define_standard_option(G_OPT_R_INPUT);
 
-    parm.output = G_define_standard_option(G_OPT_R_OUTPUT);
-    parm.output->gisprompt = "new_file,file,output";
+    parm.output = G_define_standard_option(G_OPT_F_OUTPUT);
     parm.output->description =
-	_("Name of an output ARC-GRID map (use out=- for stdout)");
+	_("Name for output ARC-GRID map (use out=- for stdout)");
 
     parm.dp = G_define_option();
     parm.dp->key = "dp";
@@ -157,11 +156,15 @@ int main(int argc, char *argv[])
 	    }
 	}
 	else {			/* yes, lat/long */
-	    fprintf(fp, "xllcorner %f\n", region.west);
-	    fprintf(fp, "yllcorner %f\n", region.south);
+	    G_format_easting(region.west, buf, -1);
+	    fprintf(fp, "xllcorner %s\n", buf);
+
+	    G_format_northing(region.south, buf, -1);
+	    fprintf(fp, "yllcorner %s\n", buf);
 	}
 
-	fprintf(fp, "cellsize %f\n", cellsize);
+	G_format_resolution(cellsize, buf, -1);
+	fprintf(fp, "cellsize %s\n", buf);
 	fprintf(fp, "NODATA_value %s\n", null_str);
     }
 

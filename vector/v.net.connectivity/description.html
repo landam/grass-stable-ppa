@@ -17,18 +17,21 @@ capacity, which is used when no column is specified, is one.
 The following command finds the minimum number of intersections separating
 roads on the left bank from roads on the right bank. 
 <div class="code"><pre>
-v.net.connectivity input=roads output=roads_conn set1_where="bank=left" set2_where="bank=right"
+v.net.connectivity input=roads output=roads_conn set1_where="bank=left" \
+      set2_where="bank=right"
 </pre></div>
 <p>
 
 <div class="code"><pre>
-v.net.connectivity input=airtraffic output=connectivity set1_where="name=JFK" set2_where="name=Heathrow" ncolumn=capacity
+v.net.connectivity input=airtraffic output=connectivity \
+      set1_where="name=JFK" set2_where="name=Heathrow" ncolumn=capacity
 </pre></div>
 
 
 <h2>SEE ALSO</h2>
 
 <em>
+<a href="v.net.html">v.net</a>,
 <a href="v.net.flow.html">v.net.flow</a>,
 <a href="v.net.bridge.html">v.net.bridge</a>
 </em>
@@ -39,4 +42,4 @@ Daniel Bundala, Google Summer of Code 2009, Student<br>
 Wolf Bergenheim, Mentor
 
 <p>
-<i>Last changed: $Date: 2011-11-08 11:06:56 +0100 (Tue, 08 Nov 2011) $</i>
+<i>Last changed: $Date: 2013-05-23 13:01:55 -0700 (Thu, 23 May 2013) $</i>

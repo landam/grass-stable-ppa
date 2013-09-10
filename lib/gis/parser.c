@@ -634,7 +634,7 @@ struct Option *G_define_standard_option(int opt)
 	Opt->key_desc = "name";
 	Opt->required = YES;
 	Opt->gisprompt = "old_file,file,input";
-	Opt->description = _("Name to input file");
+	Opt->description = _("Name of input file");
 	break;
     case G_OPT_F_OUTPUT:
 	Opt->key = "output";
@@ -650,7 +650,8 @@ struct Option *G_define_standard_option(int opt)
 	Opt->key_desc = "character";
 	Opt->required = NO;
 	Opt->answer = "|";
-	Opt->description = _("Field separator");
+	Opt->label = _("Field separator");
+	Opt->description = _("Special characters: newline, space, comma, tab");
 	break;
 
 	/* colors */
@@ -2011,7 +2012,7 @@ static void G_gui_wx(void)
     if (!pgm_name)
 	G_fatal_error(_("Unable to determine program name"));
 
-    sprintf(script, "%s/etc/wxpython/gui_modules/menuform.py",
+    sprintf(script, "%s/etc/wxpython/gui_core/forms.py",
 	    getenv("GISBASE"));
     G_spawn(getenv("GRASS_PYTHON"), getenv("GRASS_PYTHON"), script, G_recreate_command(), NULL);
 }

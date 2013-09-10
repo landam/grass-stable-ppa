@@ -1,14 +1,16 @@
 <h2>DESCRIPTION</h2>
 
-<em>v.db.update</em> allows to assign a new value to a column in the
-attribute table connected to a given map. Alternatively, values can
-be copied from another column in the table.
+<em>v.db.update</em> assigns a new value to a column in the
+attribute table connected to a given map. The <em>value</em> parameter updates with a literal value. Alternatively, with the <em>qcol</em> parameter values can
+be copied from another column in the table or be the result of a combination or transformation of other columns.
+
 
 <h2>NOTES</h2>
 
 <em>v.db.update</em> is just a front-end to <em>db.execute</em> to allow easier usage.
 <p>
 For complex SQL UPDATE statements, <em>db.execute</em> should be used.
+
 
 <h2>EXAMPLES</h2>
 
@@ -51,11 +53,12 @@ v.db.update mygeodetic_pts col=zval qcol="CAST(z_value AS double precision)" \
             where="z_value &lt;&gt; 'N/A'"
 </pre></div>
 
+
 <h2>SEE ALSO</h2>
 
 <em>
 <a href="db.execute.html">db.execute</a>,
-<a href="v.db.addcolumn.html">v.db.addcolumn</a>,
+<a href="v.db.addcol.html">v.db.addcol</a>,
 <a href="v.db.addtable.html">v.db.addtable</a>,
 <a href="v.db.connect.html">v.db.connect</a>,
 <a href="v.db.droptable.html">v.db.droptable</a>,
@@ -69,4 +72,5 @@ v.db.update mygeodetic_pts col=zval qcol="CAST(z_value AS double precision)" \
 
 Moritz Lennert (mlennert@club.worldonline.be)
 
-<p><i>Last changed: $Date: 2011-11-22 23:29:56 +0100 (Tue, 22 Nov 2011) $</i>
+<p>
+<i>Last changed: $Date: 2013-05-02 02:29:18 -0700 (Thu, 02 May 2013) $</i>

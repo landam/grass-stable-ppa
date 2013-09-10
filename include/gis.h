@@ -38,8 +38,8 @@
 static const char *GRASS_copyright __attribute__ ((unused))
     = "GRASS GNU GPL licensed Software";
 
-#define GIS_H_VERSION "$Revision: 45934 $"
-#define GIS_H_DATE    "$Date: 2011-04-13 13:19:03 +0200 (Wed, 13 Apr 2011) $"
+#define GIS_H_VERSION "$Revision: 50937 $"
+#define GIS_H_DATE    "$Date: 2012-02-25 05:14:51 -0800 (Sat, 25 Feb 2012) $"
 
 #define G_gisinit(pgm) G__gisinit(GIS_H_VERSION, (pgm))
 #define G_no_gisinit() G__no_gisinit(GIS_H_VERSION)
@@ -633,7 +633,7 @@ struct GModule			/* Structure that stores module info  */
     const char *keywords;	/* Keywords describing module */
     /* further items are possible: author(s), version */
     int overwrite;		/* overwrite old files */
-    int verbose;		/* print all informations about progress and so on */
+    int verbose;		/* print all information about progress and so on */
 };
 
 struct TimeStamp

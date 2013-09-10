@@ -30,6 +30,7 @@ BINDIR=			${UNIX_BIN}
 MAKE_DIR_CMD=		mkdir -p -m 755
 
 SUBDIRS = \
+	tools \
 	lib \
 	db \
 	display \
@@ -43,11 +44,11 @@ SUBDIRS = \
 	raster3d \
 	scripts \
 	sites \
-	tools \
 	vector \
 	visualization \
 	man \
-	macosx
+	macosx \
+	mswindows
 
 ifeq ($(strip $(MINGW)),)
 	SUBDIRS += gem
@@ -97,8 +98,10 @@ default: builddemolocation
 	-cp -f ${ARCH_BINDIR}/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR} ${ARCH_DISTDIR}/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}.tmp
 	@test -d ${ARCH_DISTDIR}/tools/ || mkdir -p ${ARCH_DISTDIR}/tools/
 	-${INSTALL} tools/mkhtml.sh ${ARCH_DISTDIR}/tools/ 2>/dev/null
-	@test -d ${ARCH_DISTDIR}/tools/g.html2man/ || mkdir -p ${ARCH_DISTDIR}/tools/g.html2man/
-	-${INSTALL} tools/g.html2man/g.html2man ${ARCH_DISTDIR}/tools/g.html2man/ 2>/dev/null
+	@if test -d ${ARCH_DISTDIR}/tools/g.html2man/; then rm -rf ${ARCH_DISTDIR}/tools/g.html2man/; fi
+	-${INSTALL} tools/g.html2man/g.html2man ${ARCH_DISTDIR}/tools/ 2>/dev/null
+	-sed -e 's+tools/g.html2man/g.html2man+tools/g.html2man+' \
+		include/Make/Man.make > ${ARCH_DISTDIR}/include/Make/Man.make
 	@(cd tools ; sh -c "./build_html_index.sh")
 	@if [ `cat "$(ERRORLOG)" | wc -l` -gt 5 ] ; then \
 		echo "--"     >> $(ERRORLOG) ; \
@@ -291,9 +294,12 @@ endif
 	@ # default to be /usr/local
 	@##### -cd ${GISBASE} ; tar cBf - man | (cd ${INST_DIR} ; tar xBf - ) 2>/dev/null
 	-cd ${GISBASE} ; tar cBf - include | (cd ${INST_DIR} ; tar xBf - ) 2>/dev/null
-	-sed -e "s#^\(GRASS_HOME.[^=]*\).*#\1= ${INST_DIR}#" -e "s#^\(RUN_GISBASE.[^=]*\).*#\1= ${INST_DIR}#" ${GISBASE}/include/Make/Platform.make > ${INST_DIR}/include/Make/Platform.make
-	-sed -e "s#^\(ARCH_DISTDIR.[^=]*\).*#\1= ${INST_DIR}#" -e "s#^\(ARCH_BINDIR.[^=]*\).*#\1= ${UNIX_BIN}#" ${GISBASE}/include/Make/Grass.make > ${INST_DIR}/include/Make/Grass.make
-	-sed -e 's#/tools/g.html2man/g.html2man#/tools/g.html2man#' ${GISBASE}/include/Make/Man.make > ${INST_DIR}/include/Make/Man.make
+	-sed -e "s#^\(GRASS_HOME.[^=]*\).*#\1= ${INST_DIR}#" \
+		-e "s#^\(RUN_GISBASE.[^=]*\).*#\1= ${INST_DIR}#" \
+		${GISBASE}/include/Make/Platform.make > ${INST_DIR}/include/Make/Platform.make
+	-sed -e "s#^\(ARCH_DISTDIR.[^=]*\).*#\1= ${INST_DIR}#" \
+		-e "s#^\(ARCH_BINDIR.[^=]*\).*#\1= ${UNIX_BIN}#" \
+		${GISBASE}/include/Make/Grass.make > ${INST_DIR}/include/Make/Grass.make
 	-cd ${GISBASE} ; tar cBf - lib | (cd ${INST_DIR} ; tar xBf - ) 2>/dev/null
 	-sed 's#'${GISBASE}'#'${INST_DIR}'#g' ${GISBASE}/etc/monitorcap > ${INST_DIR}/etc/monitorcap
 	-sed 's#'${GISBASE}'#'${INST_DIR}'#g' ${GISBASE}/etc/fontcap > ${INST_DIR}/etc/fontcap
@@ -383,6 +389,13 @@ srclibsdist: FORCE distclean
 builddemolocation:
 	test -d ${ARCH_DISTDIR} || ${MAKE_DIR_CMD} ${ARCH_DISTDIR}
 	-tar cBf - demolocation | (cd ${ARCH_DISTDIR}/ ; tar xBfo - ) 2>/dev/null
+	-(cd ${ARCH_DISTDIR}/demolocation ; \
+		rm -rf ".svn" ; \
+		rm -rf "PERMANENT/.svn" ; \
+		rm -rf "PERMANENT/vector/.svn" ; \
+		rm -rf "PERMANENT/vector/mysites/.svn" ; \
+		rm -rf "PERMANENT/vector/point/.svn" ; \
+		rm -rf "PERMANENT/dbf/.svn" )
 	@ echo "GISDBASE: ${RUN_GISBASE}" > ${RUN_GISRC}
 	@ echo "LOCATION_NAME: demolocation" >> ${RUN_GISRC}
 	@ echo "MAPSET: PERMANENT" >> ${RUN_GISRC}

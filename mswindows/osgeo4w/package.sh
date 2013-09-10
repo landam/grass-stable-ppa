@@ -1,4 +1,4 @@
-#!/c/OSGeo4W/apps/msys/bin/sh
+#!sh
 
 set -e
 
@@ -21,8 +21,16 @@ export PACKAGE=${1:-1}
 # package name for osgeo4w
 # eg. 64-dev -> grass64-dev, empty for release
 export PACKAGE_NAME=$2
-export OSGEO4W_ROOT_MSYS="/c/OSGeo4W"
-export OSGEO4W_ROOT="C:\\\OSGeo4W"
+# OSGeo4W directory postfix, separate OSGeo4W installations are used
+# for building GRASS 6.x and 7.x
+if test -z "$3" ; then
+    OSGEO4W_ROOT_POSTFIX=""
+else
+    OSGEO4W_ROOT_POSTFIX="$3"
+fi
+export OSGEO4W_ROOT_MSYS="/c/OSGeo4W${OSGEO4W_ROOT_POSTFIX}"
+export OSGEO4W_ROOT="C:\\\OSGeo4W${OSGEO4W_ROOT_POSTFIX}"
+
 export PATH=.:/c/mingw/bin:/usr/local/bin:/bin:$OSGEO4W_ROOT_MSYS/bin:/c/WINDOWS/system32:/c/WINDOWS:/c/WINDOWS/System32/Wbem:/c/Subversion:$PWD/mswindows/osgeo4w
 
 T0=$(date +%s) 
@@ -73,8 +81,8 @@ else
     GRASS_EXECUTABLE=grass${MAJOR}${MINOR}
 fi
 
-export GRASS_PYTHON="/c/OSGeo4W/bin/python.exe"
-export PYTHONHOME="/c/OSGeo4W/apps/Python27"
+export GRASS_PYTHON="$OSGEO4W_ROOT_MSYS/bin/python.exe"
+export PYTHONHOME="$OSGEO4W_ROOT_MSYS/apps/Python27"
 
 if [ -f mswindows/osgeo4w/package.log ]; then 
     i=0 
@@ -88,7 +96,7 @@ exec 3>&1 >> mswindows/osgeo4w/package.log 2>&1
 
 [ -d mswindows/osgeo4w/lib ] || mkdir mswindows/osgeo4w/lib 
 cp -uv $OSGEO4W_ROOT_MSYS/lib/sqlite3_i.lib mswindows/osgeo4w/lib/libsqlite3.a 
-cp -uv $OSGEO4W_ROOT_MSYS/lib/proj.lib mswindows/osgeo4w/lib/libproj.a 
+cp -uv $OSGEO4W_ROOT_MSYS/lib/proj_i.lib mswindows/osgeo4w/lib/libproj_i.a 
 cp -uv $OSGEO4W_ROOT_MSYS/lib/libtiff_i.lib mswindows/osgeo4w/lib/libtiff.a 
 cp -uv $OSGEO4W_ROOT_MSYS/lib/libpq.lib mswindows/osgeo4w/lib/libpq.a 
 cp -uv $OSGEO4W_ROOT_MSYS/lib/jpeg_i.lib mswindows/osgeo4w/lib/libjpeg.a 
@@ -106,8 +114,8 @@ if ! [ -f mswindows/osgeo4w/configure-stamp ]; then
 
 	log configure
 	./configure \
-		--with-libs="$OSGEO4W_ROOT_MSYS/lib $PWD/mswindows/osgeo4w/lib" \
-		--with-includes=$OSGEO4W_ROOT_MSYS/include \
+		--with-libs="$OSGEO4W_ROOT_MSYS/lib $OSGEO4W_ROOT_MSYS/apps/msys/lib $PWD/mswindows/osgeo4w/lib" \
+		--with-includes="$OSGEO4W_ROOT_MSYS/include $OSGEO4W_ROOT_MSYS/apps/msys/include" \
 		--libexecdir=$OSGEO4W_ROOT_MSYS/bin \
 		--prefix=$OSGEO4W_ROOT_MSYS/apps/grass \
 	        --bindir=$OSGEO4W_ROOT_MSYS/bin \
@@ -176,7 +184,13 @@ if [ -n "$PACKAGE" ]; then
 	$SRC/mswindows/osgeo4w/grass.bat.tmpl >$OSGEO4W_ROOT_MSYS/bin/${GRASS_EXECUTABLE}.bat.tmpl
     sed -e "s#@VERSION@#$VERSION#g" \
 	$SRC/mswindows/osgeo4w/grass.tmpl >$OSGEO4W_ROOT_MSYS/bin/${GRASS_EXECUTABLE}.tmpl
-
+    
+    # bat files - unix2dos
+    unix2dos bin/${GRASS_EXECUTABLE}.bat.tmpl
+    unix2dos bin/${GRASS_EXECUTABLE}.tmpl
+    unix2dos etc/postinstall/${GRASS_EXECUTABLE}.bat
+    unix2dos etc/preremove/${GRASS_EXECUTABLE}.bat
+    
     # grass package
     tar -cjf $PDIR/grass$PACKAGE_NAME-$VERSION-$PACKAGE.tar.bz2 \
 	apps/grass/grass-$VERSION \

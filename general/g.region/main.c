@@ -13,8 +13,10 @@
  *   	    	Read the file COPYING that comes with GRASS for details.
  ****************************************************************************/
 
+#include <math.h>
 #include <string.h>
 #include <stdlib.h>
+
 #include <grass/gis.h>
 #include <grass/G3d.h>
 #include <grass/Vect.h>
@@ -80,7 +82,8 @@ int main(int argc, char *argv[])
 
     flag.savedefault = G_define_flag();
     flag.savedefault->key = 's';
-    flag.savedefault->description = _("Save as default region");
+    flag.savedefault->label = _("Save as default region");
+    flag.savedefault->description = _("Only possible from the PERMANENT mapset");
     flag.savedefault->guisection = _("Existing");
 
     flag.print = G_define_flag();

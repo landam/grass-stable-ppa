@@ -47,6 +47,11 @@ int main(int argc, char **argv)
     dbString stmt;
 
     parse_command_line(argc, argv);
+    if (!db_table_exists(parms.driver, parms.database, parms.table)) {
+	G_warning(_("Table <%s> not found in database <%s> using driver <%s>"),
+		   parms.table, parms.database, parms.driver);
+	exit(EXIT_FAILURE);
+    }
     driver = db_start_driver(parms.driver);
     if (driver == NULL)
 	G_fatal_error(_("Unable to start driver <%s>"), parms.driver);
@@ -60,7 +65,7 @@ int main(int argc, char **argv)
     db_set_string(&table_name, parms.table);
 
     if (db_describe_table(driver, &table_name, &table) != DB_OK)
-	G_fatal_error(_("Unable to describe table <%s>"), table_name);
+	G_fatal_error(_("Unable to describe table <%s>"), db_get_string(&table_name));
 
     if (!parms.printcolnames)
 	print_table_definition(driver, table);

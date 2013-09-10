@@ -8,7 +8,7 @@
  *               Bernhard Reiter <bernhard intevation.de>, 
  *               Brad Douglas <rez touchofmadness.com>, 
  *               Glynn Clements <glynn gclements.plus.com>, 
- *               Hamish Bowman <hamish_nospam yahoo.com>, 
+ *               Hamish Bowman <hamish_b yahoo.com>, 
  *               Jan-Oliver Wagner <jan intevation.de>
  * PURPOSE:      define training areas for supervised classification
  * COPYRIGHT:    (C) 1999-2007 by the GRASS Development Team
@@ -242,11 +242,11 @@ static int check_files(char *img_group, char *img_subgroup,
 	G_fatal_error(_("Unable to open output signature file '%s'"),
 		      out_sig);
 
+    I_init_signatures(&Sigs, Refer.nfiles);
     if (in_sig) {
 	FILE *insig_fd;
 
 	G_message(_("\nSEED SIGNATURES"));
-	I_init_signatures(&Sigs, Refer.nfiles);
 
 	if (!
 	    (insig_fd =

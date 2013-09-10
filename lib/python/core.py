@@ -61,9 +61,9 @@ STDOUT = subprocess.STDOUT
 class ScriptError(Exception):
     def __init__(self, msg):
         self.value = msg
-    
+        
     def __str__(self):
-        return repr(self.value)
+        return self.value
         
 raise_on_error = False # raise exception instead of calling fatal()
 debug_level = 0        # DEBUG level
@@ -302,7 +302,7 @@ def exec_command(prog, flags = "", overwrite = False, quiet = False, verbose = F
     @param overwrite True to enable overwriting the output (<tt>--o</tt>)
     @param quiet True to run quietly (<tt>--q</tt>)
     @param verbose True to run verbosely (<tt>--v</tt>)
-    @param env directory with enviromental variables
+    @param env directory with environmental variables
     @param kwargs module's parameters
 
     """
@@ -479,6 +479,27 @@ def tempdir():
     
     return tmp
 
+class KeyValue(dict):
+    """A general-purpose key-value store.
+
+    KeyValue is a subclass of dict, but also allows entries to be read and
+    written using attribute syntax. Example:
+
+    \code
+    >>> region = grass.region()
+    >>> region['rows']
+    477
+    >>> region.rows
+    477
+    \endcode
+    """
+
+    def __getattr__(self, key):
+        return self[key]
+
+    def __setattr__(self, key, value):
+        self[key] = value
+
 # key-value parsers
 
 def parse_key_val(s, sep = '=', dflt = None, val_type = None, vsep = None):
@@ -493,7 +514,7 @@ def parse_key_val(s, sep = '=', dflt = None, val_type = None, vsep = None):
 
     @return parsed input (dictionary of keys/values)
     """
-    result = {}
+    result = KeyValue()
 
     if not s:
         return result
@@ -537,12 +558,27 @@ def gisenv():
     s = read_command("g.gisenv", flags='n')
     return parse_key_val(s)
 
+def locn_is_latlong():
+    """!Tests if location is lat/long. Value is obtained
+    by checking the "g.region -p" projection code.
+
+    @return True for a lat/long region, False otherwise
+    """
+    s = read_command("g.region", flags='p')
+    kv = parse_key_val(s, ':')
+    if kv['projection'].split(' ')[1] == '3':
+        return True
+    else:
+        return False
+
 # interface to g.region
 
-def region():
+def region(region3d = False):
     """!Returns the output from running "g.region -g", as a
     dictionary. Example:
 
+    \param region3d True to get 3D region
+    
     \code
     >>> region = grass.region()
     >>> [region[key] for key in "nsew"]
@@ -553,12 +589,95 @@ def region():
 
     @return dictionary of region values
     """
-    s = read_command("g.region", flags='g')
+    flgs = 'g'
+    if region3d:
+        flgs += '3'
+    
+    s = read_command("g.region", flags = flgs)
     reg = parse_key_val(s, val_type = float)
-    for k in ['rows', 'cols']:
+    for k in ['rows',  'cols',  'cells',
+              'rows3', 'cols3', 'cells3', 'depths']:
+        if k not in reg:
+            continue
 	reg[k] = int(reg[k])
+    
     return reg
 
+def region_env(region3d = False,
+               **kwargs):
+    """!Returns region settings as a string which can used as
+    GRASS_REGION environmental variable.
+
+    If no 'kwargs' are given then the current region is used. Note
+    that this function doesn't modify the current region!
+
+    See also use_temp_region() for alternative method how to define
+    temporary region used for raster-based computation.
+
+    \param region3d True to get 3D region
+    \param kwargs g.region's parameters like 'rast', 'vect' or 'region'
+    \code
+    os.environ['GRASS_REGION'] = grass.region_env(region = 'detail')
+    grass.mapcalc('map = 1', overwrite = True)
+    os.environ.pop('GRASS_REGION')
+    \endcode
+
+    @return string with region values
+    @return empty string on error
+    """
+    # read proj/zone from WIND file
+    env = gisenv()
+    windfile = os.path.join (env['GISDBASE'], env['LOCATION_NAME'],
+                              env['MAPSET'], "WIND")
+    fd = open(windfile, "r")
+    grass_region = ''
+    for line in fd.readlines():
+        key, value = map(lambda x: x.strip(), line.split(":", 1))
+        if kwargs and key not in ('proj', 'zone'):
+            continue
+        if not kwargs and not region3d and \
+                key in ('top', 'bottom', 'cols3', 'rows3',
+                        'depths', 'e-w resol3', 'n-s resol3', 't-b resol'):
+            continue
+        
+        grass_region += '%s: %s;' % (key, value)
+    
+    if not kwargs: # return current region
+        return grass_region
+    
+    # read other values from `g.region -g`
+    flgs = 'ug'
+    if region3d:
+        flgs += '3'
+        
+    s = read_command('g.region', flags = flgs, **kwargs)
+    if not s:
+        return ''
+    reg = parse_key_val(s)
+    
+    kwdata = [('north',     'n'),
+              ('south',     's'),
+              ('east',      'e'),
+              ('west',      'w'),
+              ('cols',      'cols'),
+              ('rows',      'rows'),
+              ('e-w resol', 'ewres'),
+              ('n-s resol', 'nsres')]
+    if region3d:
+        kwdata += [('top',        't'),
+                   ('bottom',     'b'),
+                   ('cols3',      'cols3'),
+                   ('rows3',      'rows3'),
+                   ('depths',     'depths'),
+                   ('e-w resol3', 'ewres3'),
+                   ('n-s resol3', 'nsres3'),
+                   ('t-b resol',  'tbres')]
+    
+    for wkey, rkey in kwdata:
+        grass_region += '%s: %s;' % (wkey, reg[rkey])
+    
+    return grass_region
+    
 def use_temp_region():
     """!Copies the current region to a temporary region with "g.region save=",
     then sets WIND_OVERRIDE to refer to that region. Installs an atexit
@@ -686,7 +805,46 @@ def list_strings(type):
 
 # interface to g.mlist
 
-def mlist_grouped(type, pattern = None, check_search_path = True):
+def mlist_strings(type, pattern = None, mapset = None, flag = ''):
+    """!List of elements as strings.
+
+    Returns the output from running g.mlist, as a list of qualified
+    names.
+
+    @param type element type (rast, vect, rast3d, region, ...)
+    @param pattern pattern string
+    @param mapset mapset name (if not given use search path)
+    @param flag pattern type: 'r' (basic regexp), 'e' (extended regexp), or '' (glob pattern)
+
+    @return list of elements
+    """
+    result = list()
+    for line in read_command("g.mlist",
+                             quiet = True,
+                             flags = 'm' + flag,
+                             type = type,
+                             pattern = pattern,
+                             mapset = mapset).splitlines():
+        result.append(line.strip())
+
+    return result
+
+def mlist_pairs(type, pattern = None, mapset = None, flag = ''):
+    """!List of elements as pairs
+
+    Returns the output from running g.mlist, as a list of
+    (name, mapset) pairs
+
+    @param type element type (rast, vect, rast3d, region, ...)
+    @param pattern pattern string
+    @param mapset mapset name (if not given use search path)
+    @param flag pattern type: 'r' (basic regexp), 'e' (extended regexp), or '' (glob pattern)
+
+    @return list of elements
+    """
+    return [tuple(map.split('@', 1)) for map in mlist_strings(type, pattern, mapset, flag)]
+
+def mlist_grouped(type, pattern = None, check_search_path = True, flag = ''):
     """!List of elements grouped by mapsets.
 
     Returns the output from running g.mlist, as a dictionary where the
@@ -701,6 +859,7 @@ def mlist_grouped(type, pattern = None, check_search_path = True):
     @param type element type (rast, vect, rast3d, region, ...)
     @param pattern pattern string
     @param check_search_path True to add mapsets for the search path with no found elements
+    @param flag pattern type: 'r' (basic regexp), 'e' (extended regexp), or '' (glob pattern)
 
     @return directory of mapsets/elements
     """
@@ -710,7 +869,7 @@ def mlist_grouped(type, pattern = None, check_search_path = True):
             result[mapset] = []
     
     mapset = None
-    for line in read_command("g.mlist", flags = "m",
+    for line in read_command("g.mlist", quiet = True, flags = "m" + flag,
                              type = type, pattern = pattern).splitlines():
         try:
             name, mapset = line.split('@')
@@ -812,11 +971,25 @@ def basename(path, ext = None):
 
 def find_program(pgm, args = []):
     """!Attempt to run a program, with optional arguments. 
+    You must call the program in a way that will return a successful
+    exit code. For GRASS modules this means you need to pass it some
+    valid CLI option, like "--help". For other programs a common
+    valid do-little option is "--version".
+  
+    Example:
+
+    @code
+    >>> grass.find_program('r.sun', ['help'])
+    True
+    >>> grass.find_program('gdalwarp', ['--version'])
+    True
+    @endcode
 
     @param pgm program name
     @param args list of arguments
 
     @return False if the attempt failed due to a missing executable
+            or non-zero return code
     @return True otherwise
     """
     nuldev = file(os.devnull, 'w+')
@@ -893,23 +1066,25 @@ def mapsets(search_path = False):
 
 def create_location(dbase, location,
                     epsg = None, proj4 = None, filename = None, wkt = None,
-                    datum = None, desc = None):
+                    datum = None, datumtrans = None, desc = None):
     """!Create new location
 
     Raise ScriptError on error.
     
     @param dbase path to GRASS database
     @param location location name to create
-    @param epgs if given create new location based on EPSG code
+    @param epsg if given create new location based on EPSG code
     @param proj4 if given create new location based on Proj4 definition
     @param filename if given create new location based on georeferenced file
     @param wkt if given create new location based on WKT definition (path to PRJ file)
-    @param datum datum transformation parameters (used for epsg and proj4)
+    @param datum GRASS format datum code
+    @param datumtrans datum transformation parameters (used for epsg and proj4)
     @param desc description of the location (creates MYNAME file)
     """
     gisdbase = None
     if epsg or proj4 or filename or wkt:
         gisdbase = gisenv()['GISDBASE']
+        # FIXME: changing GISDBASE mid-session is not background-job safe
         run_command('g.gisenv',
                     set = 'GISDBASE=%s' % dbase)
     if not os.path.exists(dbase):
@@ -918,11 +1093,13 @@ def create_location(dbase, location,
     kwargs = dict()
     if datum:
         kwargs['datum'] = datum
+    if datumtrans:
+        kwargs['datumtrans'] = datumtrans
     
     if epsg:
         ps = pipe_command('g.proj',
                           quiet = True,
-                          flags = 'c',
+                          flags = 't',
                           epsg = epsg,
                           location = location,
                           stderr = PIPE,
@@ -930,7 +1107,7 @@ def create_location(dbase, location,
     elif proj4:
         ps = pipe_command('g.proj',
                           quiet = True,
-                          flags = 'c',
+                          flags = 't',
                           proj4 = proj4,
                           location = location,
                           stderr = PIPE,
@@ -938,14 +1115,12 @@ def create_location(dbase, location,
     elif filename:
         ps = pipe_command('g.proj',
                           quiet = True,
-                          flags = 'c',
                           georef = filename,
                           location = location,
                           stderr = PIPE)
     elif wkt:
         ps = pipe_command('g.proj',
                           quiet = True,
-                          flags = 'c',
                           wkt = wkt,
                           location = location,
                           stderr = PIPE)
@@ -1027,8 +1202,8 @@ def version():
     @code
     print version()
 
-    {'date': '2011', 'libgis_date': '2011-04-13 13:19:03 +0200 (Wed, 13 Apr 2011)',
-    'version': '6.4.2svn', 'libgis_revision': '45934', 'revision': '47445'}
+    {'date': '2011', 'libgis_date': '2011-02-26 21:31:24 +0100 (Sat, 26 Feb 2011)',
+    'version': '6.4.3', 'libgis_revision': '45467', 'revision': '47305'}
     @endcode
     """
     data = parse_command('g.version',
@@ -1041,3 +1216,25 @@ def version():
 # get debug_level
 if find_program('g.gisenv', ['--help']):
     debug_level = int(gisenv().get('DEBUG', 0))
+
+
+def legal_name(s):
+    """!Checks if the string contains only allowed characters.
+
+    This is the Python implementation of G_legal_filename() function.
+
+    @note It is not clear when to use this function.
+    """
+    if not s or s[0] == '.':
+        warning(_("Illegal filename <%s>. Cannot be empty or start with '.'.") % s)
+        return False
+
+    illegal = [c
+               for c in s
+               if c in '/"\'@,=*~' or c <= ' ' or c >= '\177']
+    if illegal:
+        illegal = ''.join(sorted(set(illegal)))
+        warning(_("Illegal filename <%s>. <%s> not allowed.\n") % (s, illegal))
+        return False
+
+    return True

@@ -21,7 +21,7 @@ To enable parallel computing, you will need a compiler with OpenMP capabilities
 and a computer with at least two cores or cpu's.
 Most proprietary compilers support OpenMP. 
 The free gnu-C compiler supports OpenMP since version 4.2.
-More informations about OpenMP are available at http://www.openmp.org .
+More information about OpenMP are available at http://www.openmp.org .
 <br>
 <br>
 Based on the finite volume discretization for structured grids, 
@@ -223,7 +223,7 @@ void #N_write_array_2d_to_rast (N_array_2d * array, char *name);
 
 <P>
 <b>Example implementation:</b><br>
-The GRASS module <a href="http://grass.osgeo.org/grass64/manuals/html64_user/r.gwflow.html">r.gwflow</a>
+The GRASS module <a href="http://grass.osgeo.org/grass64/manuals/r.gwflow.html">r.gwflow</a>
 implements numerical calculation program for transient,
 confined and unconfined groundwater flow in two dimensions.
 
@@ -294,7 +294,7 @@ void #N_write_array_3d_to_rast3d (N_array_3d * array, char *name, int mask);
 
 <P>
 <b>Example implementation:</b><br>
-The GRASS module <a href="http://grass.itc.it/grass64/manuals/html64_user/r3.gwflow.html">r3.gwflow</a>
+The GRASS module <a href="http://grass.itc.it/grass64/manuals/r3.gwflow.html">r3.gwflow</a>
 implements numerical calculation program for transient, confined
 groundwater flow in three dimensions.
 
@@ -517,7 +517,7 @@ To handle geometrical data a special data structure was implemented.<br>
 
 
 \verbatim
-Geometric informations about the structured grid is stored in this structure
+Geometric information about the structured grid is stored in this structure
 
 typedef struct
 {

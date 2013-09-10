@@ -13,7 +13,7 @@ int open_files(void)
 
     I_init_group_ref(&Ref);
     if (!I_find_group(group))
-	G_fatal_error(_("Group <%s> not found"), group);
+	G_fatal_error(_("Group <%s> not found in current mapset"), group);
 
     if (!I_find_subgroup(group, subgroup))
 	G_fatal_error(_("Subgroup <%s> in group <%s> not found"),
@@ -24,10 +24,10 @@ int open_files(void)
     if (Ref.nfiles <= 1) {
 	if (Ref.nfiles <= 0)
 	    G_fatal_error(_("Subgroup <%s> of group <%s> doesn't have any raster maps. "
-			    "The subgroup must have at least 2 raster maps."));
+			    "The subgroup must have at least 2 raster maps."), subgroup, group);
 	else
 	    G_fatal_error(_("Subgroup <%s> of group <%s> only has 1 raster map. "
-			    "The subgroup must have at least 2 raster maps."));
+			    "The subgroup must have at least 2 raster maps."), subgroup, group);
     }
 
     cell = (DCELL **) G_malloc(Ref.nfiles * sizeof(DCELL *));

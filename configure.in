@@ -8,15 +8,17 @@
 # PURPOSE:  	This configure runs all the tests to determine what components
 #   	    	are installed on the current system. It also defines certain
 #   	    	configuration variables for compilation and installation.
-# COPYRIGHT:    (C) 2000-2008 by the GRASS Development Team
+# COPYRIGHT:    (C) 2000-2012 by the GRASS Development Team
 #
-#               This program is free software under the GNU General Public
-#   	    	License (>=v2). Read the file COPYING that comes with GRASS
-#   	    	for details.
+#               This program is free software under the GNU General
+#   	    	Public License (>=v2). Read the file COPYING that
+#   	    	comes with GRASS for details.
 #
 # MANUAL:       http://www.gnu.org/software/autoconf/manual/autoconf.html
+#               http://savannah.gnu.org/projects/autoconf/
 # Website for   config.guess, config.sub:
-#               http://savannah.gnu.org/cgi-bin/viewcvs/config/config/
+#               wget http://git.savannah.gnu.org/cgit/config.git/plain/config.guess
+#               wget http://git.savannah.gnu.org/cgit/config.git/plain/config.sub
 #               Note: use autoconf-2.13
 #############################################################################
 
@@ -62,11 +64,11 @@ AC_SUBST(BINDIR)
 
 AC_PATH_PROG(pwd, pwd, pwd)
 
-if test "$MINGW32" = yes ; then
-  winpwd="$pwd -W"
-else
-  winpwd="$pwd"
-fi
+dnl if test "$MINGW32" = yes ; then
+dnl   winpwd="$pwd -W"
+dnl else
+dnl   winpwd="$pwd"
+dnl fi
 
 AC_MSG_CHECKING(for source directory)
 
@@ -81,7 +83,7 @@ AC_MSG_RESULT("$SRCDIR")
 AC_MSG_CHECKING(for build directory)
 
 DSTDIR=`$pwd`
-WINDSTDIR=`$winpwd`
+dnl WINDSTDIR=`$winpwd`
 
 AC_MSG_RESULT("$DSTDIR")
 
@@ -105,7 +107,8 @@ AC_CONFIG_AUX_DIR($SRCDIR)
 
 # Set GISBASE and GRASS_BIN
 
-GISBASE="${WINDSTDIR}/dist.${ARCH}"
+dnl GISBASE="${WINDSTDIR}/dist.${ARCH}
+GISBASE="${DSTDIR}/dist.${ARCH}"
 GRASS_BIN="${DSTDIR}/bin.${ARCH}"
 
 AC_SUBST(GISBASE)
@@ -244,7 +247,6 @@ AC_ARG_WITH(macosx-archs,
 AC_ARG_WITH(macosx-sdk,
 [  --with-macosx-sdk[=path/sdk]
                           compile with a system SDK on MacOSX. (default: no)],, with_macosx_sdk="no")
-LOC_ARG_WITH(jpeg, JPEG)
 LOC_ARG_WITH(tiff, TIFF)
 LOC_ARG_WITH(png, PNG)
 LOC_ARG_WITH(tcltk, Tcl/Tk)
@@ -304,9 +306,6 @@ LOC_ARG_WITH_LIB(zlib, zlib)
 
 LOC_ARG_WITH_INC(readline, Readline)
 LOC_ARG_WITH_LIB(readline, Readline)
-
-LOC_ARG_WITH_INC(jpeg, JPEG)
-LOC_ARG_WITH_LIB(jpeg, JPEG)
 
 LOC_ARG_WITH_INC(tiff, TIFF)
 LOC_ARG_WITH_LIB(tiff, TIFF)
@@ -768,36 +767,6 @@ AC_SUBST(HISTORYLIB)
 
 # Done checking Readline
 
-# Enable JPEG option
-
-LOC_CHECK_USE(jpeg,JPEG,USE_JPEG)
-
-JPEGINCPATH=
-JPEGLIBPATH=
-JPEGLIB=
-
-if test -n "$USE_JPEG"; then
-
-# With JPEG includes directory
-
-LOC_CHECK_INC_PATH(jpeg,JPEG,JPEGINCPATH)
-
-LOC_CHECK_INCLUDES(jpeglib.h,JPEG,$JPEGINCPATH)
-
-# With JPEG library directory
-
-LOC_CHECK_LIB_PATH(jpeg,JPEG,JPEGLIBPATH)
-
-LOC_CHECK_LIBS(jpeg,jpeg_start_compress,JPEG,$JPEGLIBPATH,JPEGLIB,,,,$ZLIB)
-
-fi # $USE_JPEG
-
-AC_SUBST(JPEGINCPATH)
-AC_SUBST(JPEGLIBPATH)
-AC_SUBST(JPEGLIB)
-
-# Done checking JPEG
-
 # GDAL option
 
 AC_MSG_CHECKING(whether to use GDAL)
@@ -884,11 +853,12 @@ else
   fi
   
   LOC_CHECK_INCLUDES(geos_c.h,GEOS,$GEOS_CFLAGS)
-  if test "$MINGW32" = yes ; then
-    LOC_CHECK_LIBS(geos_c_i,initGEOS,GEOS,$GEOS_LIBS,GEOS_LIBS)
-  else
-    LOC_CHECK_LIBS(geos_c,initGEOS,GEOS,$GEOS_LIBS,GEOS_LIBS)
-  fi
+### geos 3.3.6 installs geos_c.lib, see http://osgeo-org.1560.n6.nabble.com/osgeo4w-329-update-geos-to-3-3-6-td5024605.html
+#  if test "$MINGW32" = yes ; then
+#    LOC_CHECK_LIBS(geos_c_i,initGEOS,GEOS,$GEOS_LIBS,GEOS_LIBS)
+#  else
+  LOC_CHECK_LIBS(geos_c,initGEOS,GEOS,$GEOS_LIBS,GEOS_LIBS)
+#  fi
   
   AC_DEFINE(HAVE_GEOS)
 fi
@@ -917,7 +887,7 @@ LOC_CHECK_INCLUDES(tiffio.h,TIFF,$TIFF_INCLUDE_DIRS)
 
 LOC_CHECK_LIB_PATH(tiff,TIFF,TIFF_LIBRARY_DIRS)
 
-LOC_CHECK_LIBS(tiff,TIFFOpen,TIFF,$TIFF_LIBRARY_DIRS,TIFFLIB,,,,$JPEGLIBPATH $JPEGLIB,$ZLIB,$MATHLIB)
+LOC_CHECK_LIBS(tiff,TIFFOpen,TIFF,$TIFF_LIBRARY_DIRS,TIFFLIB,,,,-ljpeg,$ZLIB,$MATHLIB)
 
 fi # $USE_TIFF
 
@@ -1125,8 +1095,8 @@ if test -n "$USE_FFMPEG"; then
 LOC_CHECK_LIB_PATH(ffmpeg, FFMPEG, FFMPEGLIBPATH)
 
 LOC_CHECK_LIBS(avutil, av_free, FFMPEG, $FFMPEGLIBPATH, FFMPEGLIB,,,,$MATHLIB)
-LOC_CHECK_LIBS(avcodec, avcodec_init, FFMPEG, $FFMPEGLIBPATH, FFMPEGLIB, $FFMPEGLIB,,,$MATHLIB)
-LOC_CHECK_LIBS(avformat, av_set_parameters, FFMPEG, $FFMPEGLIBPATH, FFMPEGLIB, $FFMPEGLIB,,,$MATHLIB)
+LOC_CHECK_LIBS(avcodec, avcodec_register, FFMPEG, $FFMPEGLIBPATH, FFMPEGLIB, $FFMPEGLIB,,,$MATHLIB)
+LOC_CHECK_LIBS(avformat, avformat_alloc_context, FFMPEG, $FFMPEGLIBPATH, FFMPEGLIB, $FFMPEGLIB,,,$MATHLIB)
 
 fi # $USE_FFMPEG
 
@@ -2061,7 +2031,6 @@ LOC_MSG_USE(FreeType support,USE_FREETYPE)
 LOC_MSG_USE(GDAL support,USE_GDAL)
 LOC_MSG_USE(GEOS support,USE_GEOS)
 LOC_MSG_USE(GLw support,USE_GLW)
-LOC_MSG_USE(JPEG support,USE_JPEG)
 LOC_MSG_USE(LAPACK support,USE_LAPACK)
 LOC_MSG_USE(Large File support (LFS), USE_LARGEFILES)
 LOC_MSG_USE(Motif support,USE_MOTIF)

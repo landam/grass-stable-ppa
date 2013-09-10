@@ -14,7 +14,7 @@
 #   	    	command line options for setting the GISDBASE, LOCATION, and/or
 #   	    	MAPSET. Finally it starts GRASS with the appropriate user
 #   	    	interface and cleans up after it is finished.
-# COPYRIGHT:    (C) 2000-2011 by the GRASS Development Team
+# COPYRIGHT:    (C) 2000, 2010 by the GRASS Development Team
 #
 #               This program is free software under the GNU General Public
 #   	    	License (>=v2). Read the file COPYING that comes with GRASS
@@ -52,7 +52,7 @@ CMD_NAME=START_UP
 # Get the system name
 SYSTEM=`uname -s`
 case $SYSTEM in
-MINGW*)
+MINGW* | MSYS*)
 	MINGW=1
 	;;
 CYGWIN*)
@@ -232,39 +232,59 @@ if [ ! "$GRASS_GUI" ] ; then
     if [ -f "$GISRC" ] ; then
     	GRASS_GUI=`awk '/GRASS_GUI/ {print $2}' "$GISRC"`
     fi
-    
+
+    # Check for a reference to the language in the grassrc file
+    if [ -f "$GISRC" ] ; then
+	if [ `grep -c 'LANG' "$GISRC"` -ge 1 ] ; then
+    	    LANG=`awk '/LANG/ {print $2}' "$GISRC"`
+	fi
+    fi
+
     # Set the GRASS user interface to the default if needed
     if [ ! "$GRASS_GUI" ] ; then
 	GRASS_GUI="$DEFAULT_GUI"
     fi
 else
     if [ "$GRASS_GUI" = "gui" ] ; then
-	GRASS_GUI="$DEFAULT_GUI"
+    	GRASS_GUI="$DEFAULT_GUI"
     elif [ "$GRASS_GUI" = "wx" ] ; then
 	GRASS_GUI="wxpython"
     fi
 fi
 
+# in case of fire, break glass
+dos2unix_path()
+{
+   echo "$1" | sed -e 's|^\([A-Za-z]\):|/\1|' -e 's|\\|/|g'
+}
+
 # Set PATH to GRASS bin, ETC to GRASS etc
 ETC="$GISBASE/etc"
 
-if [ "$LC_ALL" ] ; then
-	LCL=`echo "$LC_ALL" | sed 's/\(..\)\(.*\)/\1/'`
-elif [ "$LC_MESSAGES" ] ; then
-	LCL=`echo "$LC_MESSAGES" | sed 's/\(..\)\(.*\)/\1/'`
+if [ $LANG ] ; then
+    LCL=$LANG
+    export LANG
+    export LANGUAGE=$LANG
 else
-	LCL=`echo "$LANG" | sed 's/\(..\)\(.*\)/\1/'`
+    if [ "$LC_ALL" ] ; then
+        LCL=`echo "$LC_ALL" | sed 's/\(..\)\(.*\)/\1/'`
+    elif [ "$LC_MESSAGES" ] ; then
+        LCL=`echo "$LC_MESSAGES" | sed 's/\(..\)\(.*\)/\1/'`
+    else
+        LCL=`echo "$LANG" | sed 's/\(..\)\(.*\)/\1/'`
+    fi
 fi
 
 # if it doesn't exist set it to something so that g.extension's default is reasonable
 if [ -z "$GRASS_ADDON_PATH" ] ; then
     if [ "$MINGW" ] ; then
-	GRASS_ADDON_PATH="$APPDATA/GRASS6/addons"
+	APPDATA_UNIX=`dos2unix_path "$APPDATA"`
+	GRASS_ADDON_PATH="$APPDATA_UNIX/GRASS6/addons"
     else
 	GRASS_ADDON_PATH="$HOME/.grass6/addons"
     fi
+    export GRASS_ADDON_PATH
 fi
-export GRASS_ADDON_PATH
 PATH="$GISBASE/bin:$GISBASE/scripts:$GRASS_ADDON_PATH:$PATH"
 export PATH
 
@@ -824,10 +844,10 @@ case "$GRASS_GUI" in
     
     # Check for tcltk interface
     tcltk | gis.m)
-       if [ "$sh" != "bash" ] && [ "$sh" != "msh" ] && [ "$sh" != "cygwin" ]; then
-               # trap is not supported by csh/tcsh and rc
-               "$GISBASE/scripts/gis.m"
-       fi;
+	if [ "$sh" != "bash" ] && [ "$sh" != "msh" ] && [ "$sh" != "cygwin" ]; then
+		# trap is not supported by csh/tcsh and rc
+		"$GISBASE/scripts/gis.m"
+	fi;
 	;;
     oldtcltk | d.m)
 	"$GISBASE/scripts/d.m"
@@ -978,7 +998,7 @@ bash|msh|cygwin)
     echo "export HOME=\"$USERHOME\"" >> "$bashrc" # restore user home path
     echo 'export GRASS_SHELL_PID=$$' >> "$bashrc" # can be used to terminate GRASS session from GUI
     if [ "$GRASS_GUI" = tcltk ] || [ "$GRASS_GUI" = gis.m ]; then
-       echo '$GISBASE/scripts/gis.m' >> "$bashrc" # Start gis.m
+    	echo '$GISBASE/scripts/gis.m' >> "$bashrc" # Start gis.m
     fi;
     echo 'trap "echo \"GUI issued an exit\"; exit" SIGQUIT' >> "$bashrc"
 
@@ -1032,11 +1052,11 @@ done
 
 # Attempt to close any open gis.m instances.
 if [ -n "$TCLTKGRASSBASE" ] && [ `ps -a | grep -c "$GRASS_WISH"` -ge 1 ] ; then
-       echo "Closing open gis.m sessions....."
-       echo 'foreach gwin [lsearch -all -inline [winfo interps] gm_tcl*] {
-               catch {send -async $gwin Gm::remoteExit $env(GIS_LOCK)}
-       }
-       exit' | "$GRASS_WISH" #>/dev/null 2>&1
+	echo "Closing open gis.m sessions....."
+	echo 'foreach gwin [lsearch -all -inline [winfo interps] gm_tcl*] {
+		catch {send -async $gwin Gm::remoteExit $env(GIS_LOCK)}
+	}
+	exit' | "$GRASS_WISH" #>/dev/null 2>&1
 fi
 
 echo "Cleaning up temporary files ..."

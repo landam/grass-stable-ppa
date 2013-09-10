@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
 {
     char *terrainmap, *seedmap, *lakemap, *mapset;
     int rows, cols, in_terran_fd, out_fd, lake_fd, row, col, pases, pass;
-    int lastcount, curcount, start_col, start_row;
+    int lastcount, curcount, start_col = 0, start_row = 0;
     double east, north, area = 0, volume = 0;
     FCELL **in_terran, **out_water, water_level, max_depth = 0, min_depth = 0;
     FCELL water_window[3][3];
@@ -144,9 +144,11 @@ int main(int argc, char *argv[])
     struct Cell_head window;
     struct History history;
 
+    G_gisinit(argv[0]);
+    
     module = G_define_module();
     module->keywords = _("raster, hydrology");
-    module->description = _("Fills lake from seed at given level.");
+    module->description = _("Fills lake at given point to given level.");
 
     tmap_opt = G_define_option();
     tmap_opt->key = "dem";
@@ -182,7 +184,7 @@ int main(int argc, char *argv[])
     smap_opt->key = "seed";
     smap_opt->key_desc = "name";
     smap_opt->description =
-	_("Name of raster map with seed (at least 1 cell > 0)");
+	_("Name of raster map with given starting point(s) (at least 1 cell > 0)");
     smap_opt->type = TYPE_STRING;
     smap_opt->gisprompt = "old,cell,raster";
     smap_opt->required = NO;
@@ -199,8 +201,6 @@ int main(int argc, char *argv[])
 
     if (G_parser(argc, argv))	/* Returns 0 if successful, non-zero otherwise */
 	exit(EXIT_FAILURE);
-
-    G_gisinit(argv[0]);
 
     if (smap_opt->answer && sdxy_opt->answer)
 	G_fatal_error(_("Both seed map and coordinates cannot be specified"));

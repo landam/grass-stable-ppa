@@ -78,7 +78,7 @@ default: $(FILES)
 
 $(ARCH_BINDIR)/$(START_UP): init.sh grass.src
 	@test -d $(ARCH_BINDIR) || (echo 'ARCH_DISTDIR($(ARCH_BINDIR))' not found; exit 1)
-	@test -w $(ARCH_BINDIR) || (echo '($(ARCH_BINDIR))' not writeable; exit 1)
+	@test -w $(ARCH_BINDIR) || (echo '($(ARCH_BINDIR))' not writable; exit 1)
 	rm -f $(ARCH_BINDIR)/$(START_UP) ; true
 	$(SHELL) -c "sed \
 	-e \"s#GISBASE_VALUE#$(GISBASE)#\" \
@@ -105,6 +105,7 @@ $(ETC)/Init.bat: init.bat
 	-e \"s#CONFIG_PROJSHARE#$(PROJSHARE)#\" \
 	$< > $@"
 	chmod +x $@
+	unix2dos $@
 
 $(ETC)/set_data$(EXE): $(SET_DATA)
 	$(CC) $(LDFLAGS) -o $@ $(SET_DATA) $(EDITLIB) $(GISLIB) $(DATETIMELIB) $(VASKLIB) $(CURSES) $(MATHLIB) $(XDRLIB)

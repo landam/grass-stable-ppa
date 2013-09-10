@@ -23,6 +23,7 @@
 #include <grass/config.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <grass/gis.h>
 #include <grass/dbmi.h>
 #include <grass/Vect.h>
@@ -94,6 +95,8 @@ int main(int argc, char *argv[])
     int layer_id;
     int overwrite;
     double area_size = 0.;
+    int ncentr, n_overlaps;
+    BOUND_BOX box;
 
     G_gisinit(argv[0]);
 
@@ -281,8 +284,11 @@ int main(int argc, char *argv[])
     ncnames = 0;
     if (cnames_opt->answers) {
 	i = 0;
-	while (cnames_opt->answers[i++]) {
+	while (cnames_opt->answers[i]) {
+	    G_strip(cnames_opt->answers[i]);
+	    G_strchg(cnames_opt->answers[i], ' ', '\0');
 	    ncnames++;
+	    i++;
 	}
     }
 
@@ -318,6 +324,7 @@ int main(int argc, char *argv[])
     if (list_flag->answer) {
 	fprintf(stdout, "\n");
 	fflush(stdout);
+	OGR_DS_Destroy(Ogr_ds);
 	exit(EXIT_SUCCESS);
     }
 
@@ -621,6 +628,8 @@ int main(int argc, char *argv[])
 
     Vect_hist_command(&Map);
 
+    ncentr = n_overlaps = n_polygons = 0;
+
     /* Points and lines are written immediately with categories. Boundaries of polygons are
      * written to the vector then cleaned and centroids are calculated for all areas in cleaan vector.
      * Then second pass through finds all centroids in each polygon feature and adds its category
@@ -637,6 +646,7 @@ int main(int argc, char *argv[])
 	/* Add DB link */
 	if (!notab_flag->answer) {
 	    char *cat_col_name = "cat";
+	    char *lname;
 
 	    if (nlayers == 1) {	/* one layer only */
 		Fi = Vect_default_field_info(&Map, layer + 1, NULL,
@@ -650,8 +660,14 @@ int main(int argc, char *argv[])
 	    if (ncnames > 0) {
 		cat_col_name = cnames_opt->answers[0];
 	    }
-	    Vect_map_add_dblink(&Map, layer + 1, layer_names[layer], Fi->table,
+	    /* replace all spaces with underscore, otherwise dbln can't be read */
+	    lname = G_store(layer_names[layer]);
+	    G_strip(lname);
+	    G_strchg(lname, ' ', '_');
+
+	    Vect_map_add_dblink(&Map, layer + 1, lname, Fi->table,
 				cat_col_name, Fi->database, Fi->driver);
+	    G_free(lname);
 
 	    ncols = OGR_FD_GetFieldCount(Ogr_featuredefn);
 	    G_debug(2, "%d columns", ncols);
@@ -862,9 +878,9 @@ int main(int argc, char *argv[])
 			if (Ogr_ftype == OFTInteger || Ogr_ftype == OFTReal) {
 			    sprintf(buf, ", %s",
 				    OGR_F_GetFieldAsString(Ogr_feature, i));
+			}
 #if GDAL_VERSION_NUM >= 1320
 			    /* should we use OGR_F_GetFieldAsDateTime() here ? */
-			}
 			else if (Ogr_ftype == OFTDate || Ogr_ftype == OFTTime
 				 || Ogr_ftype == OFTDateTime) {
 			    char *newbuf;
@@ -876,8 +892,8 @@ int main(int argc, char *argv[])
 			    sprintf(buf, ", '%s'", db_get_string(&strval));
 			    newbuf = G_str_replace(buf, "/", "-");	/* fix 2001/10/21 to 2001-10-21 */
 			    sprintf(buf, "%s", newbuf);
-#endif
 			}
+#endif
 			else if (Ogr_ftype == OFTString ||
 				 Ogr_ftype == OFTIntegerList) {
 			    db_set_string(&strval, (char *)
@@ -886,23 +902,30 @@ int main(int argc, char *argv[])
 			    db_double_quote_string(&strval);
 			    sprintf(buf, ", '%s'", db_get_string(&strval));
 			}
-
+			else {
+			    /* column type not supported */
+			    buf[0] = 0;
+			}
 		    }
 		    else {
 			/* G_warning (_("Column value not set" )); */
 			if (Ogr_ftype == OFTInteger || Ogr_ftype == OFTReal) {
 			    sprintf(buf, ", NULL");
+			}
 #if GDAL_VERSION_NUM >= 1320
+			else if (Ogr_ftype == OFTDate ||
+				 Ogr_ftype == OFTTime || 
+				 Ogr_ftype == OFTDateTime) {
+			    sprintf(buf, ", ''");
 			}
-			else if (Ogr_ftype == OFTString ||
-				 Ogr_ftype == OFTIntegerList ||
-				 Ogr_ftype == OFTDate) {
-#else
-			}
+#endif
 			else if (Ogr_ftype == OFTString ||
 				 Ogr_ftype == OFTIntegerList) {
-#endif
 			    sprintf(buf, ", ''");
+			}
+			else {
+			    /* column type not supported */
+			    buf[0] = 0;
 			}
 		    }
 		    db_append_string(&sql, buf);
@@ -943,11 +966,10 @@ int main(int argc, char *argv[])
 
     if (!no_clean_flag->answer &&
 	Vect_get_num_primitives(&Tmp, GV_BOUNDARY) > 0) {
-	int ret, centr, ncentr, otype, n_overlaps, n_nocat;
+	int ret, centr, otype, n_nocat;
 	CENTR *Centr;
 	SPATIAL_INDEX si;
 	double x, y, total_area, overlap_area, nocat_area;
-	BOUND_BOX box;
 	struct line_pnts *Points;
 	int nmodif;
 
@@ -1159,9 +1181,7 @@ int main(int argc, char *argv[])
 	G_message("%s", separator);
     }
 
-    /* needed?
-     * OGR_DS_Destroy( Ogr_ds );
-     */
+    OGR_DS_Destroy(Ogr_ds);
 
     /* Copy temporary vector to output vector */
     Vect_copy_map_lines(&Tmp, &Map);
@@ -1169,6 +1189,48 @@ int main(int argc, char *argv[])
     Vect_delete(tempvect);
 
     Vect_build(&Map);
+
+    if (n_polygons && nlayers == 1) {
+	ncentr = Vect_get_num_primitives(&Map, GV_CENTROID);
+	/* this test is not perfect:
+	 * small gaps (areas without centroid) are not detected
+	 * because they may be true gaps */
+	if (ncentr != n_polygons || n_overlaps) {
+	    double new_snap;
+	    int exp;
+
+	    Vect_get_map_box(&Map, &box);
+	    
+	    if (abs(box.E) > abs(box.W))
+		xmax = abs(box.E);
+	    else
+		xmax = abs(box.W);
+	    if (abs(box.N) > abs(box.S))
+		xmax = abs(box.N);
+	    else
+		xmax = abs(box.S);
+
+	    if (xmax < ymax)
+		xmax = ymax;
+
+	    new_snap = frexp(xmax, &exp);
+	    exp -= 52;
+	    new_snap = ldexp(new_snap, exp);
+	    new_snap = log10(new_snap);
+	    if (new_snap < 0)
+		new_snap = (int)new_snap;
+	    else
+		new_snap = (int)new_snap + 1;
+	    new_snap = pow(10, new_snap);
+
+	    if (snap < new_snap) {
+		G_important_message("%s", separator);
+		G_warning(_("Errors were encountered during the import"));
+		G_important_message(_("Try to import again, snapping with at least %g: 'snap=%g'"), new_snap, new_snap);
+	    }
+	}
+    }
+
     Vect_close(&Map);
 
 

@@ -5,15 +5,14 @@
 
    GRASS OpenGL gsurf OGSF Library 
 
-   (C) 1999-2008 by the GRASS Development Team
+   (C) 1999-2008, 2012 by the GRASS Development Team
 
-   This program is free software under the 
-   GNU General Public License (>=v2). 
-   Read the file COPYING that comes with GRASS
-   for details.
+   This program is free software under the GNU General Public License
+   (>=v2).  Read the file COPYING that comes with GRASS for details.
 
    \author Bill Brown USACERL, GMSL/University of Illinois
-   \author Doxygenized by Martin Landa <landa.martin gmail.com> (May 2008)
+   \author Doxygenized (May 2008) and update for FFMPEG >= 0.7
+   (November 2012) by Martin Landa <landa.martin gmail.com>
  */
 
 #include <stdlib.h>
@@ -27,6 +26,13 @@
 /* FFMPEG stuff */
 #ifdef HAVE_FFMPEG
 #include <avformat.h>
+#include <avio.h>
+#if LIBAVUTIL_VERSION_MAJOR < 51
+#include <avutil.h>
+#else
+/* libavutil 51.22.1's avutil.h doesn't include libavutil/mathematics.h */
+#include <mathematics.h>
+#endif
 
 /* 5 seconds stream duration */
 #define STREAM_DURATION   5.0
@@ -58,7 +64,11 @@ static AVStream *add_video_stream(AVFormatContext * oc, int codec_id, int w,
     AVCodecContext *c;
     AVStream *st;
 
+#if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(52, 112, 0)
     st = av_new_stream(oc, 0);
+#else
+    st = avformat_new_stream(oc, NULL);
+#endif
     if (!st) {
 	G_warning(_("Unable to allocate stream"));
 	return NULL;
@@ -66,7 +76,11 @@ static AVStream *add_video_stream(AVFormatContext * oc, int codec_id, int w,
 
     c = st->codec;
     c->codec_id = codec_id;
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(52, 123, 0)
     c->codec_type = CODEC_TYPE_VIDEO;
+#else
+    c->codec_type = AVMEDIA_TYPE_VIDEO;
+#endif
 
     /* put sample parameters */
     c->bit_rate = 400000;
@@ -97,7 +111,13 @@ static AVStream *add_video_stream(AVFormatContext * oc, int codec_id, int w,
 	c->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
     c->flags |= CODEC_FLAG_QSCALE;
+    
+    /* Quality, as it has been removed from AVCodecContext and put in AVVideoFrame. */
+#if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(52, 100, 0)
     c->global_quality = st->quality = FF_QP2LAMBDA * 10;
+#else
+    c->global_quality = FF_QP2LAMBDA * 10;
+#endif
 
     return st;
 }
@@ -158,7 +178,11 @@ static void open_video(AVFormatContext * oc, AVStream * st)
     }
 
     /* open the codec */
-    if (avcodec_open(c, codec) < 0) {
+#if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(52, 100, 0)
+    if (avcodec_open(c, codec) < 0) { 
+#else
+    if (avcodec_open2(c, codec, NULL) < 0) {
+#endif
 	G_warning(_("Unable to open codec"));
 	return;
     }
@@ -214,8 +238,11 @@ static void write_video_frame(AVFormatContext * oc, AVStream * st)
 	AVPacket pkt;
 
 	av_init_packet(&pkt);
-
+#if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(52, 32, 0)
 	pkt.flags |= PKT_FLAG_KEY;
+#else
+	pkt.flags |= AV_PKT_FLAG_KEY;
+#endif
 	pkt.stream_index = st->index;
 	pkt.data = (uint8_t *) picture;
 	pkt.size = sizeof(AVPicture);
@@ -236,7 +263,11 @@ static void write_video_frame(AVFormatContext * oc, AVStream * st)
 		av_rescale_q(c->coded_frame->pts, c->time_base,
 			     st->time_base);
 	    if (c->coded_frame->key_frame)
+#if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(52, 32, 0)
 		pkt.flags |= PKT_FLAG_KEY;
+#else
+		pkt.flags |= AV_PKT_FLAG_KEY;
+#endif
 	    pkt.stream_index = st->index;
 	    pkt.data = video_outbuf;
 	    pkt.size = out_size;
@@ -261,7 +292,7 @@ static void write_video_frame(AVFormatContext * oc, AVStream * st)
    \param oc [unused]
    \param st
  */
-static void close_video(AVFormatContext * oc, AVStream * st)
+static void close_video(AVStream * st)
 {
     avcodec_close(st->codec);
     av_free(picture->data[0]);
@@ -301,10 +332,18 @@ int gsd_init_mpeg(const char *filename)
     av_register_all();
 
     /* auto detect the output format from the name. default is mpeg. */
+#if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(52, 32, 0)
     fmt = guess_format(NULL, filename, NULL);
+#else
+    fmt = av_guess_format(NULL, filename, NULL);
+#endif
     if (!fmt) {
 	G_warning(_("Unable to deduce output format from file extension: using MPEG"));
+#if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(52, 32, 0)
 	fmt = guess_format("mpeg", NULL, NULL);
+#else
+	fmt = av_guess_format("mpeg", NULL, NULL);
+#endif
     }
     if (!fmt) {
 	G_warning(_("Unable to find suitable output format"));
@@ -312,7 +351,7 @@ int gsd_init_mpeg(const char *filename)
     }
 
     /* allocate the output media context */
-    oc = av_alloc_format_context();
+    oc = avformat_alloc_context();
     if (!oc) {
 	G_warning(_("Out of memory"));
 	return (-1);
@@ -333,12 +372,20 @@ int gsd_init_mpeg(const char *filename)
     }
 
     /* set the output parameters (must be done even if no parameters). */
-    if (av_set_parameters(oc, NULL) < 0) {
+#if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(52, 100, 0)
+    if (av_set_parameters(oc, NULL) < 0) { 
+#else
+    if (avformat_write_header(oc, NULL) < 0) {
+#endif
 	G_warning(_("Invalid output format parameters"));
-	return (-1);
+	return -1;
     }
 
-    dump_format(oc, 0, filename, 1);
+#if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(52, 100, 0)
+    dump_format(oc, 0, filename, 1); 
+#else
+    av_dump_format(oc, 0, filename, 1);
+#endif
 
     /* now that all the parameters are set, we can open the audio and
        video codecs and allocate the necessary encode buffers */
@@ -347,21 +394,28 @@ int gsd_init_mpeg(const char *filename)
 
     /* open the output file, if needed */
     if (!(fmt->flags & AVFMT_NOFILE)) {
-	if (url_fopen(&oc->pb, filename, URL_WRONLY) < 0) {
+#if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(52, 112, 0)
+        if (url_fopen(&oc->pb, filename, URL_WRONLY) < 0) { 
+#else
+	if (avio_open(&oc->pb, filename, AVIO_FLAG_WRITE) < 0) {
+#endif
 	    G_warning(_("Unable to open <%s>"), filename);
 	    return (-1);
 	}
     }
 
     /* write the stream header, if any */
+#if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(52, 100, 0)
     av_write_header(oc);
-
+#else
+    avformat_write_header(oc, NULL);
+#endif
 
 #else
-    G_warning(_("NVIZ has not been built with MPEG output support"));
-    return (-1);
+    G_warning(_("OGSF library has not been built with MPEG output support"));
+    return -1;
 #endif
-    return (0);
+    return 0;
 }
 
 /*!
@@ -374,8 +428,8 @@ int gsd_init_mpeg(const char *filename)
 int gsd_write_mpegframe(void)
 {
 #ifdef HAVE_FFMPEG
-    unsigned int xsize, ysize;
-    int x, y, xy, xy_uv;
+    unsigned int xsize, ysize, x;
+    int y, xy, xy_uv;
     int yy, uu, vv;
     unsigned char *pixbuf;
 
@@ -421,9 +475,9 @@ int gsd_write_mpegframe(void)
 int gsd_close_mpeg(void)
 {
 #ifdef HAVE_FFMPEG
-    int i;
+    unsigned int i;
 
-    close_video(oc, video_st);
+    close_video(video_st);
 
     /* write the trailer, if any */
     av_write_trailer(oc);
@@ -437,10 +491,12 @@ int gsd_close_mpeg(void)
     if (!(fmt->flags & AVFMT_NOFILE)) {
 	/* close the output file */
 #if (LIBAVFORMAT_VERSION_INT>>16) < 52
-	url_fclose(&oc->pb);
+      url_fclose(&oc->pb);
+#elif LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(52, 100, 0)
+      url_fclose(oc->pb);
 #else
-	url_fclose(oc->pb);
-#endif
+      avio_close(oc->pb);
+#endif 
     }
 
     /* free the stream */
@@ -450,5 +506,5 @@ int gsd_close_mpeg(void)
     G_debug(3, "Closed MPEG stream");
 #endif
 
-    return (0);
+    return 0;
 }

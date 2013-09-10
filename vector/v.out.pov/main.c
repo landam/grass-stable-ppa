@@ -1,12 +1,12 @@
 /* ***************************************************************
  * *
- * * MODULE:       v.out.render
+ * * MODULE:       v.out.pov
  * * 
  * * AUTHOR(S):    Radim Blazek
  * *               
  * * PURPOSE:      Export vector to renderers' format (PovRay)
  * *               
- * * COPYRIGHT:    (C) 2001 by the GRASS Development Team
+ * * COPYRIGHT:    (C) 2001-2012 by the GRASS Development Team
  * *
  * *               This program is free software under the 
  * *               GNU General Public License (>=v2). 
@@ -68,7 +68,6 @@ int main(int argc, char *argv[])
     zmod_opt->key = "zmod";
     zmod_opt->type = TYPE_STRING;
     zmod_opt->required = NO;
-    zmod_opt->answer = "";
     zmod_opt->description =
 	"Modifier for z coordinates, this string is appended to each z coordinate.\n"
 	"\t\tExamples: '*10', '+1000', '*10+100', '*exaggeration'";
@@ -77,7 +76,6 @@ int main(int argc, char *argv[])
     objmod_opt->key = "objmod";
     objmod_opt->type = TYPE_STRING;
     objmod_opt->required = NO;
-    objmod_opt->answer = "";
     objmod_opt->description =
 	"Object modifier (OBJECT_MODIFIER in POV-Ray documentation).\n"
 	"\t\tExample: \"pigment { color red 0 green 1 blue 0 }\"";
@@ -104,6 +102,11 @@ int main(int argc, char *argv[])
 	Vect_close(&In);
 	G_fatal_error("Cannot open output file '%s'", out_opt->answer);
     }
+
+    if (zmod_opt->answer == NULL)
+	zmod_opt->answer = G_store("");
+    if (objmod_opt->answer == NULL)
+	objmod_opt->answer = G_store("");
 
     count = 0;
     /* Lines */
