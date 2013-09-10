@@ -1,14 +1,15 @@
-grass (6.4.2-3) unstable; urgency=low
+grass (6.4.3-1) unstable; urgency=low
 
+  * Packaged new upstream version.
   * Build-Depends on libpng-dev for LibPNG transition.
     (closes: #662361)
   * grass-dev needs to depend on libfreetype6-dev for building addons.
-  * Enable GEOS support
+  * Enable GEOS support.
   * Build-Depends on libmotif-dev for Motif transition.
     (closes: #714679)
-  * Partial enable of the hardening flags
+  * Partial enable of the hardening flags.
 
- -- M. Hamish Bowman <hamish_b@yahoo.com>  Mon, 05 Aug 2013 08:22:19 +1200
+ -- M. Hamish Bowman <hamish_b@yahoo.com>  Tue, 10 Sep 2013 12:50:42 +1200
 
 grass (6.4.2-2) unstable; urgency=low
 
