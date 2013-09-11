@@ -8,8 +8,9 @@ grass (6.4.3-1) unstable; urgency=low
   * Build-Depends on libmotif-dev for Motif transition.
     (closes: #714679)
   * Partial enable of the hardening flags.
+  * Prepare for libtiff-dev transition. (debian-release/2013/05/msg00127.html)
 
- -- M. Hamish Bowman <hamish_b@yahoo.com>  Tue, 10 Sep 2013 12:50:42 +1200
+ -- M. Hamish Bowman <hamish_b@yahoo.com>  Wed, 11 Sep 2013 14:17:50 +1200
 
 grass (6.4.2-2) unstable; urgency=low
 
