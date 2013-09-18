@@ -34,7 +34,8 @@ Build-depends:
   python-wxgtk2.8, libwxgtk2.8-dev,
   python-dev,
   tcl-dev (>= 8.5), tk-dev (>= 8.5),
-  unixodbc-dev
+  unixodbc-dev,
+  hardening-includes
 Standards-Version: 3.9.3
 Build-Conflicts: wx2.6-headers
 Homepage: http://grass.osgeo.org/
