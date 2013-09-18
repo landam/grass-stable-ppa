@@ -19,6 +19,7 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <fcntl.h>
 #include <grass/gis.h>
 #include <grass/dbmi.h>
 #include "procs.h"
@@ -88,6 +89,9 @@ int db_driver(int argc, char *argv[])
 	    cfd++;
 	}
     }
+
+    _setmode(_fileno(stdin), _O_BINARY);
+    _setmode(_fileno(stdout), _O_BINARY);
 #endif
 
     send = stdout;

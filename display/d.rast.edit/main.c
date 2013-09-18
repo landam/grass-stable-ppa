@@ -9,7 +9,7 @@
  *               Bernhard Reiter <bernhard intevation.de>, 
  *               Huidae Cho <grass4u gmail.com>, 
  *               Eric G. Miller <egm2 jps.net>, 
- *               Hamish Bowman <hamish_nospam yahoo.com>
+ *               Hamish Bowman <hamish_b yahoo.com>
  * PURPOSE:      interactive editing of cell values
  * COPYRIGHT:    (C) 1999-2007 by the GRASS Development Team
  *
@@ -78,7 +78,7 @@ int main(int argc, char **argv)
 	G_fatal_error("No graphics device selected");
     /*
      * if the monitor is divided into more than one window, find which is
-     * the choosen, current one being used
+     * the chosen, current one being used
      */
 
     if (D_get_cur_wind(temp))

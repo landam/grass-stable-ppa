@@ -2,7 +2,7 @@
  *
  * MODULE:       r.recode
  * AUTHOR(S):    CERL
- *               Bob Covill <bcovill tekmap.ns.ca>, Hamish Bowman <hamish_nospam yahoo.com>,
+ *               Bob Covill <bcovill tekmap.ns.ca>, Hamish Bowman <hamish_b yahoo.com>,
  *               Jan-Oliver Wagner <jan intevation.de>
  * PURPOSE:      Recode categorical raster maps
  * COPYRIGHT:    (C) 1999-2011 by the GRASS Development Team
@@ -106,8 +106,11 @@ int main(int argc, char *argv[])
 
     do_recode();
 
+    if(title)
+	G_put_cell_title(result, title);
+
     G_done_msg(_("Raster map <%s> created."),
 	       result);
-    
+
     exit(EXIT_SUCCESS);
 }

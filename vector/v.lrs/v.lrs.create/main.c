@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 #include <grass/gis.h>
 #include <grass/Vect.h>
 #include <grass/dbmi.h>
@@ -118,7 +119,7 @@ int main(int argc, char **argv)
 
     module = G_define_module();
     module->keywords = _("vector, LRS, networking");
-    module->description = _("Create Linear Reference System");
+    module->description = _("Creates Linear Reference System");
 
     in_lines_opt = G_define_standard_option(G_OPT_V_INPUT);
     in_lines_opt->key = "in_lines";

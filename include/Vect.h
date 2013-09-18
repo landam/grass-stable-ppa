@@ -186,7 +186,7 @@ double Vect_get_thresh(struct Map_info *);
 int Vect_get_constraint_box(struct Map_info *, BOUND_BOX *);
 
 
-/* Get map level 2 informations */
+/* Get map level 2 information */
 int Vect_level(struct Map_info *);
 int Vect_get_num_nodes(struct Map_info *);
 int Vect_get_num_primitives(struct Map_info *, int);
@@ -331,6 +331,8 @@ int Vect_line_check_duplicate(const struct line_pnts *,
 void Vect_snap_lines(struct Map_info *, int, double, struct Map_info *);
 void Vect_snap_lines_list(struct Map_info *, struct ilist *, double,
 			  struct Map_info *);
+int Vect_snap_line(struct Map_info *, struct ilist *, struct line_pnts *,
+                   double, int *, int *);
 void Vect_remove_dangles(struct Map_info *, int, double, struct Map_info *);
 void Vect_chtype_dangles(struct Map_info *, double, struct Map_info *);
 void Vect_select_dangles(struct Map_info *, int, double, struct ilist *);

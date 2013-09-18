@@ -18,6 +18,7 @@
  **************************************************************/
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <grass/gis.h>
 #include <grass/Vect.h>
 #include <grass/dbmi.h>
@@ -387,11 +388,13 @@ int main(int argc, char *argv[])
     Vect_spatial_index_init(&si);
 
     /* Lines (and Points) */
-    if ((type & GV_POINTS) || (type & GV_LINES)) {
+    if (nlines > 0) {
 	int ltype;
 
-	if (nlines > 0)
-	    G_message(_("Buffering lines..."));
+	G_message(_("Buffering lines..."));
+
+	nlines = Vect_get_num_lines(&In);
+
 	for (line = 1; line <= nlines; line++) {
 	    int cat;
 
@@ -518,7 +521,7 @@ int main(int argc, char *argv[])
     }
 
     /* write all buffer contours */
-    G_message(_("Writting buffers..."));
+    G_message(_("Writing buffers..."));
     for (i = 1; i < buffers_count; i++) {
 	G_percent(i, buffers_count, 2);
 	Vect_write_line(&Out, GV_BOUNDARY, arr_bc[i].oPoints, BCats);

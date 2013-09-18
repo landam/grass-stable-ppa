@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include <grass/gis.h>
 #include <grass/Vect.h>
@@ -226,7 +227,7 @@ int P_get_BandWidth(int interpolator, int nsplines)
 {
     /* Returns the interpolation matrixes BandWidth dimension */
 
-    if (interpolator == 1) {
+    if (interpolator == P_BILINEAR) {
 	return (2 * nsplines + 1);
     }
     else {

@@ -5,7 +5,7 @@
  * AUTHOR(S):    Michael Shapiro, CERL (original contributor)
  *               Markus Neteler <neteler itc.it>,Brad Douglas <rez touchofmadness.com>,
  *               Huidae Cho <grass4u gmail.com>, Glynn Clements <glynn gclements.plus.com>,
- *               Hamish Bowman <hamish_nospam yahoo.com>, Soeren Gebbert <soeren.gebbert gmx.de>
+ *               Hamish Bowman <hamish_b yahoo.com>, Soeren Gebbert <soeren.gebbert gmx.de>
  * PURPOSE:      
  * COPYRIGHT:    (C) 1999-2006 by the GRASS Development Team
  *
@@ -53,10 +53,10 @@ static int do_value(const char *buf, RASTER_MAP_TYPE type,
 	    return 0;
 	}
 	if (!G_get_d_raster_color(&fval, &red, &grn, &blu, colors)) {
-	    fprintf(stdout, "%f: *\n", fval);
+	    fprintf(stdout, "%.15g: *\n", fval);
 	    return 0;
 	}
-	fprintf(stdout, "%f: ", fval);
+	fprintf(stdout, "%.15g: ", fval);
 	fprintf(stdout, fmt, red, grn, blu);
 	fprintf(stdout, "\n");
 	return 1;

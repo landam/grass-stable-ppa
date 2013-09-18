@@ -15,7 +15,7 @@
 #############################################################################
 
 #%Module
-#%  description: Allows to update a column in the attribute table connected to a vector map.
+#%  description: Updates a column in the attribute table connected to a vector map.
 #%  keywords: vector, database, attribute table
 #%End
 #%option
@@ -43,14 +43,16 @@
 #%option
 #% key: value
 #% type: string
-#% description: Value to update the column with (varchar values have to be in single quotes, e.g. 'grass')
+#% label: Literal value to update the column with
+#% description: Varchar values must be in single quotes, e.g. 'grass'
 #% required : no
 #%end
 #%option
 #% key: qcolumn
 #% gisprompt: old_dbcolumn,dbcolumn,dbcolumn
 #% type: string
-#% description: Column to query
+#% label: Name of attribute column to query
+#% description: Can be a combination of columns, e.g. col1+col2
 #% required : no
 #%end
 #%option
@@ -111,11 +113,20 @@ driver=`v.db.connect map="$GIS_OPT_MAP" -gl fs="|" layer="$GIS_OPT_LAYER" | cut 
 # checking column types
 coltype=`v.info -c map="$GIS_OPT_MAP" layer=$GIS_OPT_LAYER --quiet | grep -w "$GIS_OPT_COLUMN" | cut -d'|' -f1`
 
-if [ -n "$GIS_OPT_QCOLUMN" ] ; then
-   if [ -n "$GIS_OPT_VALUE" ] ; then
+if [ -z "$GIS_OPT_QCOLUMN" ] ; then
+   if [ -z "$GIS_OPT_VALUE" ] ; then
       g.message -e 'Either value or qcolumn parameter have to be used'
       exit 1
    fi
+fi
+if [ ! -z "$GIS_OPT_QCOLUMN" ] ; then
+   if [ ! -z "$GIS_OPT_VALUE" ] ; then
+      g.message -e 'Either value or qcolumn parameter have to be used'
+      exit 1
+   fi
+fi
+
+if [ ! -z "$GIS_OPT_QCOLUMN" ] ; then
    # special case: we copy from another column
    value="$GIS_OPT_QCOLUMN"
 else

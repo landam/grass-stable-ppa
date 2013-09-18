@@ -6,7 +6,7 @@
  *               Stream directions: Jaro Hofierka and Helena Mitasova
  *               Radim Blazek <radim.blazek gmail.com> (GRASS 6 update)
  *               Brad Douglas <rez touchofmadness.com>, Glynn Clements <glynn gclements.plus.com>,
- *               Hamish Bowman <hamish_nospam yahoo.com>, Markus Neteler <neteler itc.it>
+ *               Hamish Bowman <hamish_b yahoo.com>, Markus Neteler <neteler itc.it>
  * PURPOSE:      
  * COPYRIGHT:    (C) 2003-2009 by the GRASS Development Team
  *
@@ -18,6 +18,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <grass/gis.h>
 #include <grass/dbmi.h>
 #include <grass/Vect.h>
@@ -139,8 +140,10 @@ int main(int argc, char *argv[])
 
     if (vect_to_rast(input->answer, output->answer, field,
 		     col->answer, nrows, use, value, value_type,
-		     rgbcol_opt->answer, label_opt->answer, type))
-      exit(EXIT_FAILURE);
-   
+		     rgbcol_opt->answer, label_opt->answer, type)) {
+	exit(EXIT_FAILURE);
+    }
+
+    G_done_msg("");
     exit(EXIT_SUCCESS);
 }

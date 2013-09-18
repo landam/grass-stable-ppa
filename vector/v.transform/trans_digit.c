@@ -32,7 +32,7 @@ transform_digit_file(struct Map_info *Old, struct Map_info *New,
 		     int shift_file, double ztozero, double *trans_params_def,
 		     char *table, char **columns, int field)
 {
-    int i, type, cat;
+    int i, type, cat, ret;
     unsigned int j;
     double *trans_params;
     double ang, x, y;
@@ -50,32 +50,45 @@ transform_digit_file(struct Map_info *Old, struct Map_info *New,
     Points = Vect_new_line_struct();
     Cats = Vect_new_cats_struct();
 
-    if (table) {
-	fi = Vect_default_field_info(Old, 1, NULL, GV_1TABLE);
+    if (table || field > 0) {
+	if (table) {
+	    fi = Vect_default_field_info(Old, 1, NULL, GV_1TABLE);
+	    fi->table = table;
+	}
+	else
+	    fi = Vect_get_field(Old, field);
+	
 
 	driver = db_start_driver_open_database(fi->driver, fi->database);
 	if (!driver)
 	    G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 			  fi->database, fi->driver);
 
-	trans_params = (double *)G_calloc(IDX_ZROT, sizeof(double));
+	trans_params = (double *)G_calloc(IDX_ZROT + 1, sizeof(double));
     }
     else {
 	trans_params = trans_params_def;
 	ang = PI * trans_params[IDX_ZROT] / 180;
+	fi = NULL;
+	driver = NULL;
     }
 
+    ret = 1;
     while (1) {
 	type = Vect_read_next_line(Old, Points, Cats);
 
-	if (type == -1)		/* error */
-	    return 0;
+	if (type == -1)	{	/* error */
+	    ret = 0;
+	    break;
+	}
 
-	if (type == -2)		/* EOF */
-	    return 1;
+	if (type == -2) {	/* EOF */
+	    ret = 1;
+	    break;
+	}
 
 	/* get transformation parameters */
-	if (table) {
+	if (field > 0) {
 	    Vect_cat_get(Cats, field, &cat);	/* get first category */
 	    if (cat > -1) {
 		for (j = 0; j <= IDX_ZROT; j++) {
@@ -83,7 +96,7 @@ transform_digit_file(struct Map_info *Old, struct Map_info *New,
 			trans_params[j] = trans_params_def[j];
 			continue;
 		    }
-		    ctype = db_column_Ctype(driver, table, columns[j]);
+		    ctype = db_column_Ctype(driver, fi->table, columns[j]);
 		    switch (ctype) {
 		    case DB_C_TYPE_INT:
 		    case DB_C_TYPE_DOUBLE:
@@ -91,19 +104,19 @@ transform_digit_file(struct Map_info *Old, struct Map_info *New,
 			break;
 		    case -1:
 			G_fatal_error(_("Missing column <%s> in table <%s>"),
-				      columns[j], table);
+				      columns[j], fi->table);
 		    default:
 			G_fatal_error(_("Unsupported column type of <%s>"),
 				      columns[j]);
 		    }
 		    if (db_select_value
-			(driver, table, fi->key, cat, columns[j], &val) != 1
+			(driver, fi->table, fi->key, cat, columns[j], &val) != 1
 			|| db_test_value_isnull(&val)) {
 			trans_params[j] = trans_params_def[j];
 
 			G_warning(_("Unable to select value for category %d from table <%s>, column <%s>. "
 				   "For category %d using default transformation parameter %.3f."),
-				  cat, table, columns[j], cat,
+				  cat, fi->table, columns[j], cat,
 				  trans_params[j]);
 		    }
 		    else {
@@ -160,4 +173,6 @@ transform_digit_file(struct Map_info *Old, struct Map_info *New,
 	db_close_database_shutdown_driver(driver);
 	G_free((void *)trans_params);
     }
+    
+    return ret;
 }

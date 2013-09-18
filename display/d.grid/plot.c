@@ -11,7 +11,8 @@
 
 
 int plot_grid(double grid_size, double east, double north, int do_text,
-	      int gcolor, int tcolor, int fontsize, int mark_type)
+	      int gcolor, int tcolor, int fontsize, int mark_type,
+	      double line_width)
 {
     double x, y, y0;
     double e1, e2;
@@ -41,7 +42,10 @@ int plot_grid(double grid_size, double east, double north, int do_text,
 
 	if (mark_type == MARK_GRID) {
 	    D_raster_use_color(gcolor);
+	    if (line_width)
+		D_line_width(line_width);
 	    G_plot_line(x, window.north, x, window.south);
+	    D_line_width(0);	/* reset so text doesn't use it */
 	}
 
 	if (do_text) {
@@ -83,9 +87,12 @@ int plot_grid(double grid_size, double east, double north, int do_text,
     while (y <= window.north) {
 	if (mark_type == MARK_GRID) {
 	    D_raster_use_color(gcolor);
+	    if (line_width)
+		D_line_width(line_width);
 	    G_plot_line(window.east, y, e1, y);
 	    G_plot_line(e1, y, e2, y);
 	    G_plot_line(e2, y, window.west, y);
+	    D_line_width(0);	/* reset so text doesn't use it */
 	}
 
 	if (do_text) {
@@ -125,8 +132,10 @@ int plot_grid(double grid_size, double east, double north, int do_text,
 	    while (y <= window.north) {
 		if (mark_type == MARK_CROSS)
 		    plot_cross(x, y, gcolor, 0.0);
-		if (mark_type == MARK_FIDUCIAL)
+		else if (mark_type == MARK_FIDUCIAL)
 		    plot_fiducial(x, y, gcolor, 0.0);
+		else if (mark_type == MARK_DOT)
+		    plot_dot(x, y, gcolor);
 		y += grid_size;
 	    }
 	    x += grid_size;
@@ -139,7 +148,7 @@ int plot_grid(double grid_size, double east, double north, int do_text,
 
 int plot_geogrid(double size, struct pj_info info_in, struct pj_info info_out,
 		 int do_text, int gcolor, int tcolor, int fontsize,
-		 int mark_type)
+		 int mark_type, double line_width)
 {
     double g;
     double e1, e2, n1, n2;
@@ -150,6 +159,7 @@ int plot_geogrid(double size, struct pj_info info_in, struct pj_info info_out,
     int SEGS = 100;
     char text[128];
     float border_off = 4.5;
+    float extra_y_off;
     float grid_off = 3.;
     double row_dist, colm_dist;
     float font_angle;
@@ -205,7 +215,11 @@ int plot_geogrid(double size, struct pj_info info_in, struct pj_info info_out,
 		start_coord = n1;
 		font_angle = get_heading((e1 - e2), (n1 - n2));
 	    }
+
+	    if (line_width)
+		D_line_width(line_width);
 	    G_plot_line(e1, n1, e2, n2);
+	    D_line_width(0);
 	}
 
 	if (do_text) {
@@ -226,6 +240,7 @@ int plot_geogrid(double size, struct pj_info info_in, struct pj_info info_out,
     n1 = north;
     for (j = 0; g > west; j++, g -= size) {
 	start_coord = -9999.;
+	extra_y_off = 0.0;
 	if (g == east || g == west)
 	    continue;
 
@@ -253,12 +268,22 @@ int plot_geogrid(double size, struct pj_info info_in, struct pj_info info_out,
 	    e2 = lon;
 	    n2 = lat;
 
-	    if (start_coord == -9999.) {
+	    if ((start_coord == -9999.) && (D_u_to_a_row(n1) > 0)) {
 		font_angle = get_heading((e1 - e2), (n1 - n2));
 		start_coord = e1;
+
+		/* font rotates by bottom-left corner, try to keep top-left cnr on screen */
+		if (font_angle - 270 > 0) {
+		    extra_y_off = sin((font_angle - 270) * M_PI/180) * fontsize;
+		    if (D_u_to_d_row(n1) - D_get_d_north() < extra_y_off + grid_off)
+			start_coord = -9999.;  /* wait until the next point south */
+		}
 	    }
 
+	    if (line_width)
+		D_line_width(line_width);
 	    G_plot_line(e1, n1, e2, n2);
+	    D_line_width(0);
 	}
 	if (do_text) {
 	    /* Set text color */
@@ -268,7 +293,7 @@ int plot_geogrid(double size, struct pj_info info_in, struct pj_info info_out,
 	    R_text_rotation(font_angle);
 	    R_text_size(fontsize, fontsize);
 	    R_move_abs((int)(D_u_to_d_col(start_coord) + grid_off + 1.5),
-		       (int)(D_get_d_north() + border_off));
+		       (int)(D_get_d_north() + border_off + extra_y_off));
 	    R_text(text);
 	}
     }

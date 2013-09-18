@@ -10,9 +10,11 @@ user to create interactively hardcopy map outputs. This tool
 generates <em><a href="ps.map.html">ps.map</a></em> configuration file
 and then runs <em><a href="ps.map.html">ps.map</a></em> to create
 PostScript output. There are two modes - <em>Draft mode</em> for map
-composing and <em>Preview mode</em> to see how the result will look
-like. In draft mode map features (like legend or scalebar) are
-represented by a colored rectangle with a label.</p>
+composing and <em>Preview mode</em>
+(requires <a href="http://www.pythonware.com/products/pil/">Python
+Imaging Library</a>) to see how the result will look like. In draft
+mode map features (like legend or scalebar) are represented by a
+colored rectangle with a label.
 
 <p>
 Possible output files:</p>
@@ -43,6 +45,9 @@ Currently supported <em><a href="ps.map.html">ps.map</a></em> instructions:</p>
   <li> text
   <li> scalebar
   <li> mapinfo
+  <li> point
+  <li> line
+  <li> rectangle
 </ul>
 
 
@@ -184,24 +189,16 @@ Currently supported <em><a href="ps.map.html">ps.map</a></em> instructions:</p>
 <h2>SEE ALSO</h2>
 
 <em>
-  <a href="wxGUI.html">wxGUI</a>
+  <a href="wxGUI.html">wxGUI</a><br>
+  <a href="wxGUI.Components.html">wxGUI components</a>
 </em>
 
 <p>
-Other wxGUI components:<br>
-<em>
-  <a href="wxGUI.Vector_Digitizer.html">Vector Digitizer</a><br>
-  <a href="wxGUI.Attribute_Table_Manager.html">Attribute Table Manager</a><br>
-  <a href="wxGUI.Nviz.html">3D Viewer</a><br>
-  <a href="wxGUI.GCP_Manager.html">Manage Ground Control Points</a><br>
-</em>
-</p>
-<p>
-See also <a href="http://grass.osgeo.org/wiki/WxGUI_Cartographic_Composer">wiki</a> page.
+See also <a href="http://grasswiki.osgeo.org/wiki/WxGUI_Cartographic_Composer">wiki</a> page.
 </p>
 <h2>AUTHORS</h2>
 
 Anna Kratochvilova, Czech Technical Univesity (CTU) in Prague, Czech Republic (bachelor's final project 2011, mentor: Martin Landa)
 
 <p>
-<i>$Date: 2011-09-16 14:01:25 +0200 (Fri, 16 Sep 2011) $</i></p>
+<i>$Date: 2013-02-15 14:04:18 -0800 (Fri, 15 Feb 2013) $</i></p>
