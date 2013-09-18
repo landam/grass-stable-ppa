@@ -1,5 +1,6 @@
 grass (6.4.3-1) unstable; urgency=low
 
+  [ M. Hamish Bowman ]
   * Packaged new upstream version.
   * Build-Depends on libpng-dev for LibPNG transition.
     (closes: #662361)
@@ -10,7 +11,11 @@ grass (6.4.3-1) unstable; urgency=low
   * Partial enable of the hardening flags.
   * Prepare for libtiff-dev transition. (debian-release/2013/05/msg00127.html)
 
- -- M. Hamish Bowman <hamish_b@yahoo.com>  Wed, 11 Sep 2013 14:17:50 +1200
+  [ Francesco Paolo Lovergine ]
+  * Modified libtiff dependencies to work as in current plan for libtiff
+    migration.
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 18 Sep 2013 13:50:49 +0200
 
 grass (6.4.2-2) unstable; urgency=low
 

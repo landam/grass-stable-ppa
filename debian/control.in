@@ -19,7 +19,7 @@ Build-depends:
   libglu1-mesa-dev | libglu1-xorg-dev, 
   libjpeg-dev,
   libpng-dev | libpng12-dev,
-  libtiff5-dev | libtiff4-dev,
+  libtiff-dev (>> 4.0.3-1~) | libtiff5-dev,
   libmysqlclient-dev | libmysqlclient15-dev,
   libncurses5-dev,
   libpq-dev,

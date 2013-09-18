@@ -19,7 +19,7 @@ Build-depends:
   libglu1-mesa-dev | libglu1-xorg-dev, 
   libjpeg-dev,
   libpng-dev | libpng12-dev,
-  libtiff5-dev | libtiff-dev | libtiff4-dev,
+  libtiff-dev (>> 4.0.3-1~) | libtiff5-dev,
   libmysqlclient-dev | libmysqlclient15-dev,
   libncurses5-dev,
   libpq-dev,
@@ -89,7 +89,7 @@ Suggests:
   wget | curl,
 # used by r.in.wms
   xml2
-Provides: grass642
+Provides: grass643
 Description: GRASS GIS core components
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
