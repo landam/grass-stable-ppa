@@ -1,3 +1,9 @@
+grass (6.4.3-2) unstable; urgency=low
+
+  * Sort out watch file.
+
+ -- M. Hamish Bowman <hamish_b@yahoo.com>  Sat, 21 Sep 2013 15:46:48 +1200
+
 grass (6.4.3-1) unstable; urgency=low
 
   [ M. Hamish Bowman ]
