@@ -14,7 +14,7 @@ Build-depends:
   libcairo2-dev,
   libfftw3-dev,
   libfreetype6-dev,
-  libgdal-dev | libgdal1-dev (>= 1.5.0),
+  libgdal-dev (>= 1.10.0-0~),
   libgeos-dev,
   libglu1-mesa-dev | libglu1-xorg-dev, 
   libjpeg-dev,
@@ -36,7 +36,7 @@ Build-depends:
   tcl-dev (>= 8.5), tk-dev (>= 8.5),
   unixodbc-dev,
   hardening-includes
-Standards-Version: 3.9.3
+Standards-Version: 3.9.5
 Build-Conflicts: wx2.6-headers
 Homepage: http://grass.osgeo.org/
 Vcs-Browser: http://git.debian.org/?p=pkg-grass/grass.git

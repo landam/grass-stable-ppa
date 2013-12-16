@@ -1,3 +1,12 @@
+grass (6.4.3-3) unstable; urgency=medium
+
+  * Now b-d on current libgdal-dev.
+  * Policy bumped to 3.9.5. 
+  * Now use dh_autotools-dev_{restore,update}config instead of manual 
+    update/restore in debian/rules
+
+ -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 16 Dec 2013 12:37:57 +0100
+
 grass (6.4.3-2) unstable; urgency=low
 
   [ M. Hamish Bowman ]
