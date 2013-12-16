@@ -5,6 +5,12 @@ grass (6.4.3-3) unstable; urgency=medium
   * Now use dh_autotools-dev_{restore,update}config instead of manual 
     update/restore in debian/rules
 
+    [ Paul Gevers ]
+  * On ia64 build with $(HARDENING_DISABLE_PIE_CFLAGS_FILTER) filtered for
+    now (closes: #728150)
+  * Add patch fix_big-endian_issues which allows grass to build on s390x
+    and ppc64 (closes: #672719)
+
  -- Francesco Paolo Lovergine <frankie@debian.org>  Mon, 16 Dec 2013 12:37:57 +0100
 
 grass (6.4.3-2) unstable; urgency=low
