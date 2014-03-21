@@ -5,7 +5,7 @@ Maintainer: Debian GIS Project <pkg-grass-devel@lists.alioth.debian.org>
 Uploaders: Francesco Paolo Lovergine <frankie@debian.org>
 Build-depends:
   autoconf2.13, autotools-dev,
-  debhelper (>= 8), 
+  debhelper (>= 9), 
   doxygen,
   fakeroot,
   flex, bison,
@@ -39,8 +39,8 @@ Build-depends:
 Standards-Version: 3.9.5
 Build-Conflicts: wx2.6-headers
 Homepage: http://grass.osgeo.org/
-Vcs-Browser: http://git.debian.org/?p=pkg-grass/grass.git
-Vcs-Git: git://git.debian.org/git/pkg-grass/grass.git
+Vcs-Browser: http://anonscm.debian.org/gitweb/?p=pkg-grass/grass.git
+Vcs-Git: git://anonscm.debian.org/pkg-grass/grass.git
 
 Package: grass
 Section: metapackages
