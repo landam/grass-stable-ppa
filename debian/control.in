@@ -14,7 +14,7 @@ Build-depends:
   libcairo2-dev,
   libfftw3-dev,
   libfreetype6-dev,
-  libgdal-dev (>= 1.10.0-0~),
+  libgdal-dev,
   libgeos-dev,
   libglu1-mesa-dev | libglu1-xorg-dev, 
   libjpeg-dev,
