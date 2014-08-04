@@ -7,7 +7,7 @@ control for display management and access to command console.
 Classes:
  - frame::GMFrame
 
-(C) 2006-2012 by the GRASS Development Team
+(C) 2006-2014 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -73,16 +73,18 @@ class GMFrame(wx.Frame):
     GIS. Includes command console page for typing GRASS (and other)
     commands, tree widget page for managing map layers.
     """
-    def __init__(self, parent, id = wx.ID_ANY, title = _("GRASS GIS Layer Manager"),
+    def __init__(self, parent, id = wx.ID_ANY, title = None,
                  workspace = None,
                  size = globalvar.GM_WINDOW_SIZE, style = wx.DEFAULT_FRAME_STYLE, **kwargs):
         self.parent    = parent
-        self.baseTitle = title
+        if title:
+            self.baseTitle = title
+        else:
+            self.baseTitle = _("GRASS GIS %s Layer Manager") % grass.version()['version']
         self.iconsize  = (16, 16)
         
         wx.Frame.__init__(self, parent = parent, id = id, size = size,
                           style = style, **kwargs)
-                          
         self.SetTitle(self.baseTitle)
         self.SetName("LayerManager")
 
@@ -399,7 +401,7 @@ class GMFrame(wx.Frame):
         win.Show()
         
     def OnDone(self, cmd, returncode):
-        """Command execution finised"""
+        """Command execution finished"""
         if hasattr(self, "model"):
             self.model.DeleteIntermediateData(log = self.goutput)
             del self.model
@@ -763,20 +765,23 @@ class GMFrame(wx.Frame):
             osgeo4w = ''
         
         self.goutput.WriteCmdLog(_("System Info"))
+        # platform from UTF-8 conversion was added because of Fedora 19
+        # which has the name Schrodinger's cat (umlaut and special ' character)
+        # which appears in the platform.platform() string
         self.goutput.WriteLog("%s: %s\n"
                               "%s: %s\n"
-                              "%s: %s (%s)\n"
+                              # "%s: %s (%s)\n"
                               "GDAL/OGR: %s\n"
                               "PROJ4: %s\n"
                               "Python: %s\n"
                               "wxPython: %s\n"
                               "%s: %s%s\n"% (_("GRASS version"), vInfo['version'],
                                            _("GRASS SVN Revision"), vInfo['revision'],
-                                           _("GIS Library Revision"), vInfo['libgis_revision'], vInfo['libgis_date'].split(' ', 1)[0],
+                                           # _("GIS Library Revision"), vInfo['libgis_revision'], vInfo['libgis_date'].split(' ', 1)[0],
                                            gdalVersion, projVersion,
                                            platform.python_version(),
                                            wx.__version__,
-                                           _("Platform"), platform.platform(), osgeo4w),
+                                           _("Platform"), platform.platform().decode('utf8', errors='replace'), osgeo4w),
                               switchPage = True)
         self.goutput.WriteCmdLog(' ')
     
@@ -1161,9 +1166,10 @@ class GMFrame(wx.Frame):
             name = dlg.GetValue()
             self.gm_cb.SetPageText(page = self.curr_pagenum, text = name)
             mapdisplay = self.curr_page.maptree.mapdisplay
-            mapdisplay.SetTitle(_("GRASS GIS Map Display: %(name)s  - Location: %(loc)s") % \
-                                     { 'name' : name,
-                                       'loc' : grass.gisenv()["LOCATION_NAME"] })
+            mapdisplay.SetTitle(_("GRASS GIS %(version) Map Display: %(name)s - Location: %(loc)s") % \
+                                    { 'version' : grass.version()['version'],
+                                      'name' : name,
+                                      'loc' : grass.gisenv()["LOCATION_NAME"] })
         dlg.Destroy()
         
     def RulesCmd(self, event):
@@ -1712,8 +1718,8 @@ class GMFrame(wx.Frame):
         if UserSettings.Get(group = 'manager', key = 'askOnRemoveLayer', subkey = 'enabled'):
             layerName = ''
             for item in self.curr_page.maptree.GetSelections():
-                name = str(self.curr_page.maptree.GetItemText(item))
-                idx = name.find('(opacity')
+                name = self.curr_page.maptree.GetItemText(item)
+                idx = name.find('(' + _('opacity:'))
                 if idx > -1:
                     layerName += '<' + name[:idx].strip(' ') + '>,\n'
                 else:

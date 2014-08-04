@@ -10,12 +10,18 @@ as a preview of the action to be taken.
 Delete all raster maps starting with "<tt>tmp_</tt>" in the current mapset:
 
 <div class="code"><pre>
-  g.mremove -f "tmp_*"
+# show matching raster maps but do not delete yet (as verification)
+g.mremove rast="tmp_*"
+
+# actually delete the matching raster maps
+g.mremove -f rast="tmp_*"
 </pre></div>
 
 <h2>SEE ALSO</h2>
 
-<em><a href="g.remove.html">g.remove</a></em><br>
+<em>
+<a href="g.remove.html">g.remove</a>
+</em>
 
 <h2>AUTHOR</h2>
 
@@ -23,4 +29,4 @@ Huidae Cho <br>
 grass4u@gmail.com
 
 <p>
-<i>Last changed: $Date: 2011-11-08 01:42:51 -0800 (Tue, 08 Nov 2011) $</i>
+<i>Last changed: $Date: 2013-11-09 16:13:17 +0100 (Sat, 09 Nov 2013) $</i>

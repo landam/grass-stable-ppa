@@ -24,7 +24,7 @@ static struct Cell_head window;
 static int fastline(double, double, double, double);
 static int slowline(double, double, double, double);
 static int plot_line(double, double, double, double, int (*)());
-static double nearest(double, double);
+static double wrap_east(double, double);
 static int edge(double, double, double, double);
 static int edge_point(double, int);
 
@@ -386,7 +386,7 @@ static int npalloc = 0;
 #define NO_MEMORY 1
 #define OUT_OF_SYNC -1
 
-static double nearest(double e0, double e1)
+static double wrap_east(double e0, double e1)
 {
     while (e0 - e1 > 180)
 	e1 += 360.0;
@@ -444,7 +444,7 @@ int G_plot_polygon(const double *x, const double *y, int n)
 	    return NO_MEMORY;
 
 	for (i = 0; i < n; i++) {
-	    e1 = nearest(e0, x[i]);
+	    e1 = wrap_east(e0, x[i]);
 	    if (e1 > E)
 		E = e1;
 	    if (e1 < W)
@@ -485,16 +485,20 @@ int G_plot_polygon(const double *x, const double *y, int n)
     }
 
     /* check if perimeter has odd number of points */
-    if (np % 2)
+    if (np % 2) {
+	G_debug(1, "Weird internal error: perimeter has odd number of points");
 	return OUT_OF_SYNC;
+    }
 
     /* sort the edge points by col(x) and then by row(y) */
     qsort(P, np, sizeof(POINT), &edge_order);
 
     /* plot */
     for (i = 1; i < np; i += 2) {
-	if (P[i].y != P[i - 1].y)
+	if (P[i].y != P[i - 1].y) {
+	    G_debug(1, "Weird internal error: edge leaves row");
 	    return OUT_OF_SYNC;
+	}
 	row_fill(P[i].y, P[i - 1].x + shift1, P[i].x + shift1);
     }
     if (window.proj == PROJECTION_LL) {	/* now do wrap-around, part 2 */
@@ -580,7 +584,7 @@ int G_plot_area(double *const *xs, double *const *ys, int *rpnts, int rings)
 		return NO_MEMORY;
 
 	    for (i = 0; i < n; i++) {
-		e1 = nearest(e0, x[i]);
+		e1 = wrap_east(e0, x[i]);
 		if (e1 > E)
 		    E = e1;
 		if (e1 < W)
@@ -622,8 +626,10 @@ int G_plot_area(double *const *xs, double *const *ys, int *rpnts, int rings)
     }				/* for() */
 
     /* check if perimeter has odd number of points */
-    if (np % 2)
+    if (np % 2) {
+	G_debug(1, "Weird internal error: perimeter has odd number of points");
 	return OUT_OF_SYNC;
+    }
 
     /* sort the edge points by col(x) and then by row(y) */
     qsort(P, np, sizeof(POINT), &edge_order);
@@ -631,8 +637,10 @@ int G_plot_area(double *const *xs, double *const *ys, int *rpnts, int rings)
     /* plot */
     for (j = 0; j < rings; j++) {
 	for (i = 1; i < np; i += 2) {
-	    if (P[i].y != P[i - 1].y)
+	    if (P[i].y != P[i - 1].y) {
+		G_debug(1, "Weird internal error: edge leaves row");
 		return OUT_OF_SYNC;
+	    }
 	    row_fill(P[i].y, P[i - 1].x + shift1[j], P[i].x + shift1[j]);
 	}
 	if (window.proj == PROJECTION_LL) {	/* now do wrap-around, part 2 */
@@ -661,16 +669,25 @@ int G_plot_area(double *const *xs, double *const *ys, int *rpnts, int rings)
 static int edge(double x0, double y0, double x1, double y1)
 {
     register double m;
-    double dy, x;
+    double x, d;
     int ystart, ystop;
-
+    int exp;
 
     /* tolerance to avoid FPE */
-    dy = y0 - y1;
-    if (fabs(dy) < 1e-10)
-	return 1;
+    d = GRASS_EPSILON;
+    if (y0 != y1) {
+	if (fabs(y0) > fabs(y1))
+	    d = fabs(y0);
+	else
+	    d = fabs(y1);
 
-    m = (x0 - x1) / dy;
+	d = frexp(d, &exp);
+	exp -= 53;
+	d = ldexp(d, exp);
+    }
+
+    if (fabs(y0 - y1) < d)
+	return 1;
 
     if (y0 < y1) {
 	ystart = iceil(y0);
@@ -687,6 +704,7 @@ static int edge(double x0, double y0, double x1, double y1)
     if (ystart > ystop)
 	return 1;		/* does not cross center line of row */
 
+    m = (x0 - x1) / (y0 - y1);
     x = m * (ystart - y0) + x0;
     while (ystart <= ystop) {
 	if (!edge_point(x, ystart++))

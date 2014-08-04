@@ -5,10 +5,10 @@ distance to the nearest non-null cell in the input map and/or the
 value of the nearest non-null cell.
 
 <h2>NOTES</h2>
-The user has the option of specifying four different metrics which
+The user has the option of specifying five different metrics which
 control the geometry in which grown cells are created, (controlled by
 the <b>metric</b> parameter): <i>Euclidean</i>, <i>Squared</i>,
-<i>Manhattan</i>, and <i>Maximum</i>.
+<i>Manhattan</i>, <i>Maximum</i>, and <i>Geodesic</i>.
 
 <p>
 The <i>Euclidean distance</i> or <i>Euclidean metric</i> is the "ordinary" distance 
@@ -54,6 +54,11 @@ d(dx,dy) = max(abs(dx),abs(dy))
 
 where the isolines of distance from a point are squares.
 
+<p>
+The <i>Geodesic metric</i> is calculated as geodesic distance, to 
+be used only in latitude-longitude locations. It is recommended 
+to use it along with the <em>-m</em> flag in order to output 
+distances in meters instead of map units.
 
 <h2>EXAMPLE</h2>
 
@@ -74,6 +79,7 @@ r.grow.distance -m input=sea distance=dist_from_sea_geodetic metric=geodesic
 
 <em>
 <a href="r.grow.html">r.grow</a>,
+<a href="r.distance.html">r.distance</a>,
 <a href="r.buffer.html">r.buffer</a>,
 <a href="r.cost.html">r.cost</a>,
 <a href="r.patch.html">r.patch</a>
@@ -93,4 +99,4 @@ r.grow.distance -m input=sea distance=dist_from_sea_geodetic metric=geodesic
 Glynn Clements
 
 <p>
-<i>Last changed: $Date: 2012-09-02 05:49:21 -0700 (Sun, 02 Sep 2012) $</i>
+<i>Last changed: $Date: 2014-02-01 22:56:18 +0100 (Sat, 01 Feb 2014) $</i>

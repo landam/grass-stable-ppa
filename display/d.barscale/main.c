@@ -1,4 +1,3 @@
-
 /****************************************************************************
  *
  * MODULE:       d.barscale
@@ -94,8 +93,8 @@ int main(int argc, char **argv)
     opt3->answer = "0.0,0.0";
     opt3->options = "0-100";
     opt3->required = NO;
-    opt3->description =
-	_("The screen coordinates for top-left corner of label ([0,0] is top-left of frame)");
+    opt3->label = _("Screen coordinates of the rectangle's top-left corner");
+    opt3->description = _("(0,0) is top-left of the display frame");
 
     fsize = G_define_option();
     fsize->key = "fontsize";
@@ -174,9 +173,9 @@ int main(int argc, char **argv)
     else if (mouse_query(top->answer, fontsize)) {
 	char cmdbuf[512];
 
-	sprintf(cmdbuf, "%s at=%.2f,%.2f", argv[0], east, north);
-	sprintf(cmdbuf, "%s bcolor=%s", cmdbuf, opt1->answer);
-	sprintf(cmdbuf, "%s tcolor=%s", cmdbuf, opt2->answer);
+	sprintf(cmdbuf, "%s at=%.2f,%.2f bcolor=\"%s\" tcolor=\"%s\" fontsize=%s",
+		argv[0], east, north, opt1->answer, opt2->answer, fsize->answer);
+
 	if (top->answer)
 	    strcat(cmdbuf, " -t");
 	if (feet->answer)

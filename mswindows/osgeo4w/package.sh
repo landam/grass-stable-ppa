@@ -31,7 +31,7 @@ fi
 export OSGEO4W_ROOT_MSYS="/c/OSGeo4W${OSGEO4W_ROOT_POSTFIX}"
 export OSGEO4W_ROOT="C:\\\OSGeo4W${OSGEO4W_ROOT_POSTFIX}"
 
-export PATH=.:/c/mingw/bin:/usr/local/bin:/bin:$OSGEO4W_ROOT_MSYS/bin:/c/WINDOWS/system32:/c/WINDOWS:/c/WINDOWS/System32/Wbem:/c/Subversion:$PWD/mswindows/osgeo4w
+export PATH=.:/usr/local/bin:/bin:$OSGEO4W_ROOT_MSYS/bin:/c/WINDOWS/system32:/c/WINDOWS:/c/WINDOWS/System32/Wbem:/c/Subversion/bin:$PWD/mswindows/osgeo4w
 
 T0=$(date +%s) 
 LT=$T0 
@@ -136,7 +136,9 @@ if ! [ -f mswindows/osgeo4w/configure-stamp ]; then
 		--with-regex \
 		--with-nls \
 		--with-freetype-includes=$OSGEO4W_ROOT_MSYS/include/freetype2 \
-		--with-odbc
+		--with-odbc \
+	        --with-cairo \
+		--with-cairo-includes=$OSGEO4W_ROOT_MSYS/include/cairo
 
 	touch mswindows/osgeo4w/configure-stamp
 fi

@@ -4,6 +4,3 @@ pager
 xterm
 instdir
 check4dev
-barscale_ui
-svn-any-version
-fix_big-endian_issues

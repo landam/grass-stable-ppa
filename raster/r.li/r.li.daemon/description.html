@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
-<title>r.li</title>
+<title>GRASS GIS manual: r.li.daemon</title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
 <link rel="stylesheet" href="grassdocs.css" type="text/css">
 </head>
@@ -9,12 +9,13 @@
 
 <img src="grass_logo.png" alt="GRASS logo"><hr align=center size=6 noshade>
 
-<H2>NAME</H2>
-<EM><B>libgrass_rli</B></EM> - r.li landscape index support library
+<h2>NAME</h2>
 
-<H2>DESCRIPTION</H2>
+<em><b>libgrass_rli</b></em> - r.li landscape index support library
 
-<EM>r.li.daemon</EM> provides support for landscape index calculations on raster
+<h2>DESCRIPTION</h2>
+
+<em>r.li.daemon</em> provides support for landscape index calculations on raster
 maps. It hides the management of areas, defined using <a href="r.li.setup.html">r.li.setup</a>
 command. It is not used like a standalone program, but its functions are 
 a library used by all <em>r.li.[index]</em> commands.<br>
@@ -56,7 +57,8 @@ To write a new index only two steps are needed:
 </ol>
 Compile it using a changed Makefile based on the file for <em>r.li.patchdensity</em>.
 
-<H2>NOTES</H2>
+<h2>NOTES</h2>
+
 Using GRASS library function to access raster rows can slow down moving windows 
 execution. It is recommended to use 
 <br><div class="code"><pre>
@@ -68,25 +70,33 @@ to use an ad hoc build memory management developed to speed up the system.
 The documentation is in doxygen files.
 
 
-<H2>SEE ALSO</H2>
+<h2>SEE ALSO</h2>
 
-<EM><A HREF="http://grass.osgeo.org/gdp/landscape/r_le_manual5.pdf">old r.le manual</A></EM><BR>
-<EM><A HREF="r.li.html">r.li</A></EM> package overview <BR>
-<EM><A HREF="r.li.patchdensity.html">r.li.patchdensity</A></EM>,
-<EM><A HREF="r.li.setup.html">r.li.setup</A></EM>
+<em><a href="http://grass.osgeo.org/gdp/landscape/r_le_manual5.pdf">old r.le manual</a></em><br>
+<em><a href="r.li.html">r.li</a></em> - package overview <br>
+<em><a href="r.li.setup.html">r.li.setup</a></em>
 
-<H2>AUTHORS</H2>
+
+<h2>REFERENCES</h2>
+McGarigal, K., and B. J. Marks. 1995. FRAGSTATS: spatial pattern
+analysis program for quantifying landscape structure. USDA For. Serv.
+Gen. Tech. Rep. PNW-351. (<a href="http://treesearch.fs.fed.us/pubs/3064">PDF</a>)
+
+<h2>AUTHORS</h2>
+
 Claudio Porta and Lucio Davide Spano, students of Computer Science 
 University of Pisa (Italy).<br>
 Commission from Faunalia Pontedera (PI)<br>
-Rebuild of r.le.setup from William L. Baker
+Rewritten from "r.le.setup" by William L. Baker
 This program is free software under the GPL (>=v2)
 Read the COPYING file that comes with GRASS for details.
 
 <p>
-<i>Last changed: $Date: 2013-06-16 05:08:46 +0200 (Sun, 16 Jun 2013) $</i>
+<i>Last changed: $Date: 2014-03-24 12:43:14 +0100 (Mon, 24 Mar 2014) $</i>
 
-<HR>
-<P><a href="index.html">Main index</a> - <a href="raster.html">raster index</a> - <a href="full_index.html">Full index</a>
+<hr>
+<p><a href="index.html">Main index</a>
+ - <a href="raster.html">Raster index</a>
+ - <a href="full_index.html">Full index</a>
 </body>
 </html>

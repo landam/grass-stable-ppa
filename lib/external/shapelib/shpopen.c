@@ -1,5 +1,5 @@
 /******************************************************************************
- * $Id: shpopen.c 32581 2008-08-06 19:30:45Z neteler $
+ * $Id: shpopen.c 59648 2014-04-08 20:34:08Z mmetz $
  *
  * Project:  Shapelib
  * Purpose:  Implementation of core Shapefile read/write functions.
@@ -231,7 +231,7 @@
 #include <string.h>
 #include <stdio.h>
 
-SHP_CVSID("$Id: shpopen.c 32581 2008-08-06 19:30:45Z neteler $")
+SHP_CVSID("$Id: shpopen.c 59648 2014-04-08 20:34:08Z mmetz $")
 
 typedef unsigned char uchar;
 
@@ -846,6 +846,8 @@ SHPCreateLL( const char * pszLayer, int nShapeType, SAHooks *psHooks )
     if( fpSHP == NULL )
     {
         psHooks->Error( "Failed to create file .shp file." );
+	free( pszFullname );
+	free( pszBasename );
         return( NULL );
     }
 
@@ -854,6 +856,8 @@ SHPCreateLL( const char * pszLayer, int nShapeType, SAHooks *psHooks )
     if( fpSHX == NULL )
     {
         psHooks->Error( "Failed to create file .shx file." );
+	free( pszFullname );
+	free( pszBasename );
         return( NULL );
     }
 

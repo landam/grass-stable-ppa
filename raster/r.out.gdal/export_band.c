@@ -16,6 +16,7 @@
 
 #include <grass/gis.h>
 #include <grass/glocale.h>
+
 #include "cpl_string.h"
 #include "gdal.h"
 #include "local_proto.h"
@@ -189,7 +190,7 @@ int exact_checks(GDALDataType export_datatype,
 				(int)nodataval, nodatakey);
 	else
 	    G_important_message(_("Input raster map contains cells with NULL-value (no-data). "
-				 "The value %f will be used to represent no-data values in the input map. "
+				 "The value %g will be used to represent no-data values in the input map. "
 				 "You can specify a nodata value with the %s option."),
 				nodataval, nodatakey);
     }
@@ -212,6 +213,8 @@ int exact_checks(GDALDataType export_datatype,
 	}
 	ret = -1;
     }
+
+    G_close_cell(fd);
 
     G_free(bufer);
 
@@ -484,6 +487,8 @@ int export_band(GDALDatasetH hMEMDS, GDALDataType export_datatype, int band,
 	}
     }
 
+    G_close_cell(fd);
+
     G_free(bufer);
 
     return ret;
@@ -492,6 +497,7 @@ int export_band(GDALDatasetH hMEMDS, GDALDataType export_datatype, int band,
 int exact_range_check(double min, double max, GDALDataType datatype,
 		      const char *name)
 {
+
     switch (datatype) {
     case GDT_Byte:
 	if (min < TYPE_BYTE_MIN || max > TYPE_BYTE_MAX) {

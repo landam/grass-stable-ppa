@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 	     i_flag->answer);
 
 
-    G_done_msg(_("Raster map <%s> generated."), out->answer);
+    G_done_msg(_("Raster map <%s> created."), out->answer);
     
     exit(EXIT_SUCCESS);
 }

@@ -47,12 +47,12 @@ int db__driver_execute_immediate(dbString * sql)
     while (1) {
 	ret = sqlite3_prepare(sqlite, s, -1, &stmt, &rest);
 
-    if (ret != SQLITE_OK) {
-	append_error("Error in sqlite3_prepare():\n");
-	append_error((char *)sqlite3_errmsg(sqlite));
-	report_error();
-	return DB_FAILED;
-    }
+	if (ret != SQLITE_OK) {
+	    append_error("Error in sqlite3_prepare():\n");
+	    append_error((char *)sqlite3_errmsg(sqlite));
+	    report_error();
+	    return DB_FAILED;
+	}
 
 	ret = sqlite3_step(stmt);
 	/* get real result code */
@@ -81,11 +81,6 @@ int db__driver_execute_immediate(dbString * sql)
 	report_error();
 	return DB_FAILED;
     }
-
-    /*
-       if ( rest )
-       G_free ( rest );
-     */
 
     return DB_OK;
 }

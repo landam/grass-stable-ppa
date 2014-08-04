@@ -1,15 +1,12 @@
 <h2>DESCRIPTION</h2>
 
-
 <em>r.covar</em> outputs a covariance/correlation matrix for user-specified
 raster map layer(s).  The output can be printed, or saved by redirecting
 output into a file.
 
 <p>
-
 The output is an N x N symmetric covariance (correlation) matrix, 
 where N is the number of raster map layers specified on the command line. 
-
 
 <h2>NOTES</h2>
 
@@ -20,10 +17,9 @@ eigen values and eigen vectors. An NxN covariance matrix would result in
 N real eigen values and N eigen vectors (each composed of N real numbers). 
 
 <p>
-
-The module <em><a href="m.eigensystem.html">m.eigensystem</a></em> in
-src.contrib can be compiled and used to generate the eigen values and
-vectors.
+The module <em><a href="http://grasswiki.osgeo.org/wiki/AddOns/GRASS_6#m.eigensystem">m.eigensystem</a></em>
+in <a href="http://grass.osgeo.org/download/addons/">GRASS GIS Addons</a>
+can be compiled and used to generate the eigen values and vectors.
 
 <h2>EXAMPLE</h2>
 
@@ -31,7 +27,7 @@ For example,
 
 <dl>
 <dd>
-<b>r.covar</b> map=</b><em>layer.1</em>,<em>layer.2</em>,<em>layer.3</em>
+<b>r.covar</b> map=<em>layer.1</em>,<em>layer.2</em>,<em>layer.3</em>
 </dl>
 
 would produce a 3x3 matrix (values are example only): 
@@ -93,4 +89,4 @@ This can be done with <em><a href="r.rescale.html">r.rescale</a></em>.
 
 Michael Shapiro, U.S. Army Construction Engineering Research Laboratory
 
-<p><i>Last changed: $Date: 2008-05-16 12:09:06 -0700 (Fri, 16 May 2008) $</i>
+<p><i>Last changed: $Date: 2014-05-02 15:52:55 +0200 (Fri, 02 May 2014) $</i>

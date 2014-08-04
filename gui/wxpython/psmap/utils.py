@@ -21,7 +21,7 @@ import string
 from math import ceil, floor, sin, cos, pi
 
 try:
-    import Image as PILImage
+    from PIL import Image as PILImage
     havePILImage = True
 except ImportError:
     havePILImage = False
@@ -149,7 +149,7 @@ def convertRGB(rgb):
         color = (grass.parse_color(rgb)[0]*255,
                  grass.parse_color(rgb)[1]*255,
                  grass.parse_color(rgb)[2]*255)
-        color = wx.Color(*color)
+        color = wx.Colour(*color)
         if color.IsOk():
             return color
         else:  

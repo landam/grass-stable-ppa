@@ -19,12 +19,9 @@
 
 #include <grass/gis.h>
 #include "list.h"
+#include "defs.h"
 
 
-/**
- * \brief number of r.li.workers to use
- */
-#define WORKERS 10
 #define NORMAL 1
 #define MVWIN 2
 #define GEN 3
@@ -98,10 +95,11 @@ typedef struct fcell_memory_entry *fcell_manager;
 
  /**
   * \brief fields of an area descriptor
-  * \member x the x coordinate of upper left corner
-  * \member y the y coordinate of upper left corner
-  * \member rl area length in rows
-  * \member cl area length in columns
+  * \member x column offset = start of sample area
+  * \member y row offset = start of sample area
+  * \member rl sample area length in rows
+  * \member cl sample area length in columns
+  * \member rc number of rows in the cache
   * \member mask file descriptor of mask raster file (-1 if there is no mask)
  */
 struct area_entry
@@ -110,6 +108,7 @@ struct area_entry
     int y;
     int rl;
     int cl;
+    int rc;
     int mask;
     int data_type;
     cell_manager cm;
@@ -119,9 +118,16 @@ struct area_entry
     char *mask_name;
 };
 
-typedef struct area_entry *area_des;
-
-
+/**
+ * \brief function prototype for index calculation
+ * \param fd file descripter of opened raster map
+ * \param par optional parameters
+ * \param ad definition of the sample area
+ * \param result pointer to store the result
+ * \return RLI_ERRORE error occurs in calculating index
+ * \return RLI_OK  otherwise
+ */
+typedef int rli_func(int fd, char **par, struct area_entry *ad, double *result);
 
 
 /**
@@ -134,7 +140,7 @@ typedef struct area_entry *area_des;
  * \return 1  otherwise
  */
 
-int calculateIndex(char *file, int f(int, char **, area_des, double *),
+int calculateIndex(char *file, rli_func *f,
 		   char **parameters, char *raster, char *output);
 
 /**
@@ -150,7 +156,7 @@ int calculateIndex(char *file, int f(int, char **, area_des, double *),
  * be written in normal way
  * \return MVWIN if a new raster file had to be created
  */
-int parseSetup(char *path, list l, g_areas g, char *raster);
+int parseSetup(char *path, struct list *l, struct g_area *g, char *raster);
 
 /**
  * \description dispose sample areas if configuration file have
@@ -164,7 +170,7 @@ int parseSetup(char *path, list l, g_areas g, char *raster);
  * be written in normal way
  * \return MVWIN if a new raster file had to be created
  */
-int disposeAreas(list l, g_areas g, char *def);
+int disposeAreas(struct list *l, struct g_area *g, char *def);
 
 /**
  * \brief generate the next area to analyze
@@ -175,7 +181,7 @@ int disposeAreas(list l, g_areas g, char *def);
  * \return 1 if the area is generated
  * \return 0 if there isn't another area
  */
-int next_Area(int parsed, list l, g_areas g, msg * m);
+int next_Area(int parsed, struct list *l, struct g_area *g, msg * m);
 
 /**
  * \brief writes output in a file
@@ -199,12 +205,12 @@ int error_Output(int out, msg m);
  * \brief client implementation
  * \param raster the raster map to analyze
  * \param f the function used for index computing
- * \param server_channel the channel where to send the result
- * \param mychannel the channel where to receive the area messages
  * \param result where to put the result of index computing
  */
-void worker(char *raster, int f(int, char **, area_des, double *),
-	    char *server_channel, char *mychannel, char **parameters);
+void worker_init(char *raster, rli_func *f,
+		 char **parameters);
+void worker_process(msg * ret, msg * m);
+void worker_end(void);
 
  /**
   * \brief adapts the mask at current raster file
@@ -214,7 +220,7 @@ void worker(char *raster, int f(int, char **, area_des, double *),
   * \param cl the lenght in cols of sample area
   * \return the name of mask raster file to use
   */
-char *mask_preprocessing(char *mask, char *raster, int rl, int cl);
+char *mask_preprocessing(char *mask, char *raster, struct area_entry *ad);
 
  /**
   * \brief writes the output for a raster file
@@ -223,7 +229,7 @@ char *mask_preprocessing(char *mask, char *raster, int rl, int cl);
   * \param res the result to be written
   * \return 0 on error, 1 if done
   */
-int raster_Output(int fd, int aid, g_areas g, double res);
+int raster_Output(int fd, int aid, struct g_area *g, double res);
 
  /**
   * \brief calculates a simple index for code debugging
@@ -233,7 +239,7 @@ int raster_Output(int fd, int aid, g_areas g, double res);
   * \param result where to return result
   * \return 0 on error, 1 otherwise
   */
-int simple_index(int fd, char **par, area_des ad, double *result);
+int simple_index(int fd, char **par, struct area_entry * ad, double *result);
 
  /**
   * \brief copy the content of regular file random access 
@@ -243,7 +249,7 @@ int simple_index(int fd, char **par, area_des ad, double *result);
   * \param g the mv window generator
   * \return 0 on error, 1 otherwise
   */
-int write_raster(int mv_fd, int random_access, g_areas g);
+int write_raster(int mv_fd, int random_access, struct g_area *g);
 
  /**
   * \brief get a cell raster row using the memory menager
@@ -251,7 +257,7 @@ int write_raster(int mv_fd, int random_access, g_areas g);
   * \param row identifier of row to get
   * \param ad area descriptor of current sample area
   */
-CELL *RLI_get_cell_raster_row(int fd, int row, area_des ad);
+CELL *RLI_get_cell_raster_row(int fd, int row, struct area_entry * ad);
 
  /**
   * \brief get a dcell raster row using the memory menager
@@ -259,7 +265,7 @@ CELL *RLI_get_cell_raster_row(int fd, int row, area_des ad);
   * \param row identifier of row to get
   * \param ad area descriptor of current sample area
   */
-DCELL *RLI_get_dcell_raster_row(int fd, int row, area_des ad);
+DCELL *RLI_get_dcell_raster_row(int fd, int row, struct area_entry * ad);
 
  /**
   * \brief get a fcell raster row using the memory menager
@@ -267,6 +273,5 @@ DCELL *RLI_get_dcell_raster_row(int fd, int row, area_des ad);
   * \param row identifier of row to get
   * \param ad area descriptor of current sample area
   */
-FCELL *RLI_get_fcell_raster_row(int fd, int row, area_des ad);
+FCELL *RLI_get_fcell_raster_row(int fd, int row, struct area_entry * ad);
 
-#include "index.h"

@@ -105,7 +105,7 @@ class ProfileFrame(BasePlotFrame):
         """!Select raster map(s) to profile
         """
         dlg = ProfileRasterDialog(parent = self)
-
+        dlg.CenterOnParent()
         if dlg.ShowModal() == wx.ID_OK:
             self.rasterList = dlg.rasterList
             self.raster = self.InitRasterOpts(self.rasterList, self.plottype)
@@ -291,7 +291,7 @@ class ProfileFrame(BasePlotFrame):
         if len(self.seglist) > 0 :
             self.ppoints = plot.PolyMarker(self.seglist,
                                            legend = ' ' + self.properties['marker']['legend'],
-                                           colour = wx.Color(self.properties['marker']['color'][0],
+                                           colour = wx.Colour(self.properties['marker']['color'][0],
                                                            self.properties['marker']['color'][1],
                                                            self.properties['marker']['color'][2],
                                                            255),
@@ -302,7 +302,7 @@ class ProfileFrame(BasePlotFrame):
 
         # Add profile distance/elevation pairs to plot data list for each raster profiled
         for r in self.rasterList:
-            col = wx.Color(self.raster[r]['pcolor'][0],
+            col = wx.Colour(self.raster[r]['pcolor'][0],
                            self.raster[r]['pcolor'][1],
                            self.raster[r]['pcolor'][2],
                            255)

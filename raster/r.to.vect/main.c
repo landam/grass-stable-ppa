@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 
     module = G_define_module();
     module->keywords = _("raster, conversion, vectorization");
-    module->description = _("Converts a raster map into a vector map layer.");
+    module->description = _("Converts a raster map into a vector map.");
 
     in_opt = G_define_standard_option(G_OPT_R_INPUT);
 
@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
 	Vect_map_add_dblink(&Map, 1, NULL, Fi->table, "cat", Fi->database,
 			    Fi->driver);
 
-	driver = db_start_driver_open_database(Fi->driver, Fi->database);
+	driver = db_start_driver_open_database(Fi->driver, Vect_subst_var(Fi->database, &Map));
 	if (driver == NULL)
 	    G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 			  Fi->database, Fi->driver);
@@ -288,7 +288,7 @@ int main(int argc, char *argv[])
     }
 
     Vect_close(&Map);
-    G_done_msg("");
+    G_done_msg(" ");
 
     exit(EXIT_SUCCESS);
 }
