@@ -233,7 +233,7 @@ install: build
 	install -m 644 gui/icons/grass.desktop \
 		debian/tmp/usr/share/applications/$(BASE_NAME).desktop
 	# n.b. 6.4.1 shipped with "grass65" as the Exec target
-	sed -i -e 's+/usr/share/icons/grass-48x48.png+$(BASE_NAME)+' \
+	sed -i -e 's+Icon=grass+Icon=$(BASE_NAME)+' \
 		debian/tmp/usr/share/applications/$(BASE_NAME).desktop
 
 	# install x-grass wrapper script
