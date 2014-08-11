@@ -3,12 +3,13 @@ grass (6.4.4-1) UNRELEASED; urgency=low
   [ M. Hamish Bowman ]
   * Packaged new upstream version, drop redundant patches.
   * Dropped version dependency on libgdal-dev for easier backports.
+  * Added patch to fix Help-About parsing.
 
   [ Francesco Paolo Lovergine ]
   * Debhelper level set to 9. 
   * Vcs-* fields are now canonical to make lintian happy.
 
- -- M. Hamish Bowman <hamish_b@yahoo.com>  Sun, 03 Aug 2014 18:33:07 +1200
+ -- M. Hamish Bowman <hamish.webmail@gmail.com>  Mon, 11 Aug 2014 18:09:42 +1200
 
 grass (6.4.3-3) unstable; urgency=medium
 

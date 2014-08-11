@@ -1,0 +1,21 @@
+Index: grass/gui/wxpython/gui_core/ghelp.py
+===================================================================
+--- grass.orig/gui/wxpython/gui_core/ghelp.py	(revision 58704)
++++ grass/gui/wxpython/gui_core/ghelp.py	(revision 61335)
+@@ -605,15 +605,15 @@
+             contribFile = codecs.open(contribfile, encoding = 'utf-8', mode = 'r')
+             contribs = list()
+             errLines = list()
+             for line in contribFile.readlines()[1:]:
+                 line = line.rstrip('\n')
+                 try:
+                     if extra:
+-                        name, email, rfc2_agreed = line.split(',')
++                        name, email, country, rfc2_agreed = line.split(',')
+                     else:
+                         cvs_id, name, email, country, osgeo_id, rfc2_agreed = line.split(',')
+                 except ValueError:
+                     errLines.append(line)
+                     continue
+                 if extra:
+                     contribs.append((name, email))
