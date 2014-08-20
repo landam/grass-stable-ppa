@@ -13,6 +13,7 @@ grass (6.4.4-1) UNRELEASED; urgency=low
   * Add gbp.conf to use pristine-tar by default.
   * Restructure control file with cme, remove duplice section 'science',
     add ${misc:Depends} for grass, remove obsolete ored build dependencies.
+  * Add myself to Uploaders.
 
  -- M. Hamish Bowman <hamish.webmail@gmail.com>  Mon, 11 Aug 2014 18:09:42 +1200
 

@@ -1,6 +1,7 @@
 Source: grass
 Maintainer: Debian GIS Project <pkg-grass-devel@lists.alioth.debian.org>
-Uploaders: Francesco Paolo Lovergine <frankie@debian.org>
+Uploaders: Francesco Paolo Lovergine <frankie@debian.org>,
+           Bas Couwenberg <sebastic@xs4all.nl>
 Section: science
 Priority: optional
 Build-Depends: autoconf2.13,
