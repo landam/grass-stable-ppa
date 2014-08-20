@@ -1,8 +1,6 @@
-Index: grass/scripts/g.extension/g.extension
-===================================================================
---- grass.orig/scripts/g.extension/g.extension	2012-02-24 18:06:25.980494464 +1300
-+++ grass/scripts/g.extension/g.extension	2012-02-24 18:08:03.756783834 +1300
-@@ -75,6 +75,14 @@
+--- a/scripts/g.extension/g.extension
++++ b/scripts/g.extension/g.extension
+@@ -75,6 +75,14 @@ if [ "$1" != "@ARGS_PARSED@" ] ; then
    exec g.parser "$0" "$@"
  fi
  

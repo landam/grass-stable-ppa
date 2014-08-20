@@ -1,8 +1,6 @@
-Index: grass/lib/init/init.sh
-===================================================================
---- grass.orig/lib/init/init.sh	2011-02-14 17:28:01.000000000 +0100
-+++ grass/lib/init/init.sh	2011-02-14 17:28:23.000000000 +0100
-@@ -276,10 +276,12 @@
+--- a/lib/init/init.sh
++++ b/lib/init/init.sh
+@@ -301,10 +301,12 @@ export GRASS_LD_LIBRARY_PATH
  
  # Set some environment variables if they are not set
  if [ ! "$GRASS_PAGER" ] ; then
