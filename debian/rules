@@ -14,20 +14,9 @@ ABI=$(shell echo `head -3 $(CURDIR)/include/VERSION` | sed -e 's/ //g' -e 's/RC/
 BASE_NAME=grass$(VERSION)
 PKG_NAME=grass
 
-include /usr/share/hardening-includes/hardening.make
 CFLAGS=$(shell dpkg-buildflags --get CFLAGS)
 LDFLAGS=$(shell dpkg-buildflags --get LDFLAGS)
-# in Wheezy (and Jessie ia64) -fPIE conflicts with -fPIC. See example in
-# the hardening.make file.
-ifeq ($(shell dpkg-architecture -qDEB_HOST_ARCH_CPU),ia64)
-    CFLAGS += $(HARDENING_CFLAGS_PIC) \
-        $(filter-out $(HARDENING_DISABLE_PIE_CFLAGS_FILTER),$(HARDENING_CFLAGS))
-    LDFLAGS+=$(HARDENING_LDFLAGS)
-else
-    # in Jessie & Sid the problem seems fixed so we can proceed normally
-    CFLAGS+=$(HARDENING_CFLAGS)
-    LDFLAGS+=$(HARDENING_LDFLAGS)
-endif
+CPPFLAGS=$(shell dpkg-buildflags --get CPPFLAGS)
 
 # TODO: fix these
 CFLAGS+=-Wno-error=format-security

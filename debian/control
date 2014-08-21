@@ -39,8 +39,7 @@ Build-Depends: autoconf2.13,
                python-dev,
                tcl-dev (>= 8.5),
                tk-dev (>= 8.5),
-               unixodbc-dev,
-               hardening-includes
+               unixodbc-dev
 Build-Conflicts: wx2.6-headers
 Standards-Version: 3.9.5
 Vcs-Browser: http://anonscm.debian.org/gitweb/?p=pkg-grass/grass.git

@@ -15,6 +15,7 @@ grass (6.4.4-1) UNRELEASED; urgency=low
     add ${misc:Depends} for grass, remove obsolete ored build dependencies.
   * Add myself to Uploaders.
   * Use {build,install}-arch targets in rules file.
+  * Don't use hardening-includes, but dpkg-buildflags only.
 
  -- M. Hamish Bowman <hamish.webmail@gmail.com>  Mon, 11 Aug 2014 18:09:42 +1200
 
