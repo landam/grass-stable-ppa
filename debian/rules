@@ -51,7 +51,7 @@ config.status:
 	
 	dh_autotools-dev_updateconfig
 	# Add here commands to configure the package.
-	CFLAGS="$(CFLAGS)" ./configure \
+	CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)" LDFLAGS="$(LDFLAGS)" ./configure \
                     --host=$(DEB_HOST_GNU_TYPE) \
                     --build=$(DEB_BUILD_GNU_TYPE) \
                     --prefix=/usr/lib \
