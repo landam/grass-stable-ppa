@@ -94,10 +94,12 @@ config.status:
 
 	touch $@
 
+build: build-arch build-indep
+
 # This target generates arch-dep stuff, unfortunately most doc requires working bins to 
 # be properly generated...
-build: configure build-stamp
-build-stamp:  
+build-arch: configure build-arch-stamp
+build-arch-stamp:  
 	dh_testdir
 	$(MAKE) 
 	chmod 755 debian/fixpaths.sh debian/fixscripts.sh
@@ -152,7 +154,9 @@ true-clean:
 		rm -rf lib/$$LIBRARY/html lib/$$LIBRARY/latex ; \
 	done
 
-install: build
+install: install-arch install-indep
+
+install-arch: build-arch
 	dh_testdir
 	dh_testroot
 	dh_prep
@@ -252,7 +256,7 @@ install-indep: build-indep
 	-rm -f debian/tmp/programming-manual/html/jquery.js
 
 # Build architecture-independent files here.
-binary-indep: install install-indep 
+binary-indep: install-arch install-indep 
 	dh_testdir -i
 	dh_testroot -i
 	dh_installchangelogs -i CHANGES
@@ -268,7 +272,7 @@ binary-indep: install install-indep
 	dh_builddeb -i
 
 # Build architecture-dependent files here.
-binary-arch: install
+binary-arch: install-arch
 	dh_testdir -a
 	dh_testroot  -a
 	dh_installchangelogs -a CHANGES
