@@ -9,3 +9,8 @@ usr/lib/grass@VERSION@/etc/v.digit
 usr/lib/grass@VERSION@/etc/wxpython
 usr/lib/grass@VERSION@/bin/v.digit
 usr/lib/grass@VERSION@/bin/xganim
+usr/share/grass@VERSION@/bwidget
+usr/share/grass@VERSION@/etc/dm
+usr/share/grass@VERSION@/etc/gm
+usr/share/grass@VERSION@/etc/gui
+usr/share/grass@VERSION@/etc/nviz2.2

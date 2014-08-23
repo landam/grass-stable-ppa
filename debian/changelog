@@ -18,6 +18,7 @@ grass (6.4.4-1) UNRELEASED; urgency=low
   * Don't use hardening-includes, but dpkg-buildflags only.
   * Pass CPPFLAGS and LDFLAGS to configure for their hardening flags.
   * Add lintian overrides for hardening-no-fortify-functions false positives.
+  * Move image files to /usr/share, symlink them from /usr/lib.
 
  -- M. Hamish Bowman <hamish.webmail@gmail.com>  Mon, 11 Aug 2014 18:09:42 +1200
 

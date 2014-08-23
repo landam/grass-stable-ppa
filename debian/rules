@@ -43,7 +43,7 @@ versions:
 templates: $(patsubst %.in,%,$(wildcard debian/*.in))
 
 debian/% :: debian/%.in
-	sed -e 's/@VERSION@/$(VERSION)/' -e 's/@ABI@/$(ABI)/' $< >$@
+	sed -e 's/@VERSION@/$(VERSION)/g' -e 's/@ABI@/$(ABI)/g' $< >$@
 
 configure: config.status
 config.status: 
@@ -234,6 +234,24 @@ install-arch: build-arch
 
 	ln -fs /usr/lib/$(shell objdump -p /usr/lib/`gdal-config --libs | cut -d' ' -f2 | sed -e 's/-l/lib/'`.so | grep SONAME | cut -d' ' -f18) \
 		debian/tmp/usr/lib/$(BASE_NAME)/lib/libgdal.so
+
+	# Move image files from /usr/lib/$(BASE_NAME) to /usr/share/$(BASE_NAME)
+	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/bwidget
+	mv debian/tmp/usr/lib/$(BASE_NAME)/bwidget/images/ debian/tmp/usr/share/$(BASE_NAME)/bwidget/
+
+	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/etc/dm
+	mv debian/tmp/usr/lib/$(BASE_NAME)/etc/dm/*.gif debian/tmp/usr/share/$(BASE_NAME)/etc/dm/
+
+	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/etc/gm
+	mv debian/tmp/usr/lib/$(BASE_NAME)/etc/gm/intro.gif debian/tmp/usr/share/$(BASE_NAME)/etc/gm/
+
+	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/etc/gui
+	mv debian/tmp/usr/lib/$(BASE_NAME)/etc/gui/icons/ debian/tmp/usr/share/$(BASE_NAME)/etc/gui/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/etc/gui/images/ debian/tmp/usr/share/$(BASE_NAME)/etc/gui/
+
+	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/etc/nviz2.2/bitmaps
+	mv debian/tmp/usr/lib/$(BASE_NAME)/etc/nviz2.2/bitmaps/flythrough/ debian/tmp/usr/share/$(BASE_NAME)/etc/nviz2.2/bitmaps/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/etc/nviz2.2/bitmaps/trash.gif debian/tmp/usr/share/$(BASE_NAME)/etc/nviz2.2/bitmaps/
 
 install-indep: build-indep
 	dh_testdir -i
