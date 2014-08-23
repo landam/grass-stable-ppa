@@ -269,6 +269,7 @@ binary-indep: install-arch install-indep
 	dh_installchangelogs -i CHANGES
 	dh_installdocs -i
 	dh_install -i
+	dh_lintian -i
 	dh_link -i
 	dh_strip -i
 	dh_compress -i
@@ -302,6 +303,7 @@ binary-arch: install-arch
 	done
 	dh_installmenu -a
 	dh_installman -p$(PKG_NAME) debian/$(BASE_NAME).1 -a
+	dh_lintian -a
 	dh_link -a
 	dh_python2
 	dh_python2 /usr/lib/$(BASE_NAME)/etc
