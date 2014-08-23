@@ -1,3 +1,8 @@
+# False positive, file is an executable not an image
+grass-core: image-file-in-usr-lib usr/lib/grass64/bin/r.out.png
+grass-core: image-file-in-usr-lib usr/lib/grass64/bin/r.out.tiff
+grass-core: image-file-in-usr-lib usr/lib/grass64/scripts/d.out.png
+
 # Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
 #  Fortify Source functions: no, only unprotected functions found!
 #         unprotected: read
