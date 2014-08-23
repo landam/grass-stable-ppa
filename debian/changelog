@@ -1,4 +1,4 @@
-grass (6.4.4-1) UNRELEASED; urgency=low
+grass (6.4.4-1) UNRELEASED; urgency=medium
 
   [ M. Hamish Bowman ]
   * Packaged new upstream version, drop redundant patches.
@@ -21,7 +21,7 @@ grass (6.4.4-1) UNRELEASED; urgency=low
   * Move image files to /usr/share, symlink them from /usr/lib.
   * Add lintian overrides for image-file-in-usr-lib false positives.
 
- -- M. Hamish Bowman <hamish.webmail@gmail.com>  Mon, 11 Aug 2014 18:09:42 +1200
+ -- Bas Couwenberg <sebastic@xs4all.nl>  Sat, 23 Aug 2014 17:37:14 +0200
 
 grass (6.4.3-3) unstable; urgency=medium
 
