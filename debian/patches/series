@@ -6,3 +6,4 @@ instdir
 check4dev
 help_about_names
 wxpy3.0-compat.patch
+animate-wish.patch

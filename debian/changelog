@@ -24,6 +24,8 @@ grass (6.4.4-1) UNRELEASED; urgency=medium
   * Add wxpy3.0-compat.patch for wxPython 3.0 support, adapt for 6.4.4.
     Thanks to Olly Betts for the patch.
     (closes: #757308)
+  * Add patch to remove the sheband from animate.tcl which is source instead
+    of executed.
 
  -- Bas Couwenberg <sebastic@xs4all.nl>  Sat, 23 Aug 2014 17:37:14 +0200
 
