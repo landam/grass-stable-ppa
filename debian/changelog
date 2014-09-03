@@ -21,6 +21,9 @@ grass (6.4.4-1) UNRELEASED; urgency=medium
   * Move image files to /usr/share, symlink them from /usr/lib.
   * Add lintian overrides for image-file-in-usr-lib false positives.
   * Update copyright file using copyright-format 1.0.
+  * Add wxpy3.0-compat.patch for wxPython 3.0 support, adapt for 6.4.4.
+    Thanks to Olly Betts for the patch.
+    (closes: #757308)
 
  -- Bas Couwenberg <sebastic@xs4all.nl>  Sat, 23 Aug 2014 17:37:14 +0200
 
