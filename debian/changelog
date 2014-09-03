@@ -20,6 +20,7 @@ grass (6.4.4-1) UNRELEASED; urgency=medium
   * Add lintian overrides for hardening-no-fortify-functions false positives.
   * Move image files to /usr/share, symlink them from /usr/lib.
   * Add lintian overrides for image-file-in-usr-lib false positives.
+  * Update copyright file using copyright-format 1.0.
 
  -- Bas Couwenberg <sebastic@xs4all.nl>  Sat, 23 Aug 2014 17:37:14 +0200
 

@@ -1,42 +1,924 @@
-This package was debianized by Markus Neteler <neteler@itc.it> on
-Mon, 10 Nov 2003 17:59:04 +0100.
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: GRASS GIS
+Upstream-Contact: GRASS Development Team <grass-dev@lists.osgeo.org>
+Source: http://grass.osgeo.org/
 
-It was downloaded from http://grass.osgeo.org
+Files: *
+Copyright: 1994-2014, GRASS Development Team
+License: GPL-2.0+
 
-The upstream contributors are listed in the AUTHORS file.
+Files: display/d.paint.labels/color.c
+ gui/scripts/v.type_wrapper.sh
+ gui/scripts/d.path.sh
+ lib/gis/raster_metadata.c
+ lib/gis/wind_in.c
+ ps/ps.map/border.h
+ ps/ps.map/r_border.c
+ tools/module_synopsis.sh
+Copyright: 2007, Hamish Bowman, and the GRASS Development Team
+License: GPL-2.0+
 
-The Geographic Resources Analysis and Support System (GRASS)
-Geographic Information System (GIS) is Copyright by members
-of the GRASS Development Team.
+Files: gui/scripts/v.type_wrapper.py
+Copyright: 2007-2008, Hamish Bowman, and the GRASS Development Team
+License: GPL-2.0+
 
-This program is free software; you can redistribute it and/or modify it
-under the terms of the GNU General Public License as published by the
-Free Software Foundation; either version 2 of the License, or (at your
-option) any later version.
+Files: doc/python/m.distance.py
+Copyright: 2008-2011, Hamish Bowman, and the GRASS Development Team
+License: GPL-2.0+
 
-Parts of GRASS are not copyright by the GRASS development team.
-The original authors hold the copyrights and you have to abide
-to their licensing terms where noted.
-(Keep in mind that code linking into GRASS can only be distributed
-if compatible with the GPL.)
+Files: lib/display/symbol.c
+Copyright: 2005-2007, M. Hamish Bowman, and the GRASS Development Team
+License: GPL-2.0+
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License (GPL) for more details.
+Files: gem/actions.c
+ gem/actions.h
+ gem/at_exit_funcs.c
+ gem/at_exit_funcs.h
+ gem/error.c
+ gem/error.h
+ gem/globals.h
+ gem/main.c
+ gem/reg_deps.c
+ gem/reg_deps.h
+ gem/tools.c
+ gem/tools.h
+Copyright: 2005, Benjamin Ducke
+License: GPL-2.0+
 
-On Debian systems, the complete text of the GNU General Public
-License can be found in the /usr/share/common-licenses/GPL file.
+Files: gem/reg_entries.c
+ gem/reg_entries.h
+ gem/reg_html.c
+ gem/reg_html.h
+Copyright: 2005, User
+License: GPL-2.0+
 
-Questions regarding GRASS GIS should be directed to the
-GRASS Development Team at the following address:
+Files: gui/scripts/g.extension.rebuild.all.py
+Copyright: 2011, Martin Landa, and the GRASS Development Team
+License: GPL-2.0+
 
- GRASS Development Team
- c/o M. Neteler
- Fondazione Mach - Centre for Alpine Ecology
- 38100 Viote del Monte Bondone (Trento)
- Italy
- neteler AT cealp.it
+Files: gui/scripts/g.extension.py
+Copyright: 2009-2013, Markus Neteler, and the GRASS Development Team
+License: GPL-2.0+
 
-Internet:  http://grass.osgeo.org
-           http://www.grass-gis.org
+Files: gui/wxpython/compat/subprocess.py
+Copyright: 2003-2005, Peter Astrand <astrand@lysator.liu.se>
+License: GPL-2.0+
+
+Files: gui/wxpython/psmap/utils.py
+Copyright: 2012, Anna Kratochvilova, and the GRASS Development Team
+License: GPL-2.0+
+
+Files: gui/wxpython/psmap/dialogs.py
+ gui/wxpython/psmap/frame.py
+ gui/wxpython/psmap/instructions.py
+Copyright: 2011-2012, Anna Kratochvilova, and the GRASS Development Team
+License: GPL-2.0+
+
+Files: imagery/i.atcorr/AerosolConcentration.h
+ imagery/i.atcorr/Transform.h
+ imagery/i.atcorr/main.cpp
+Copyright: 2003, Christo Zietsman
+License: GPL-2.0+
+
+Files: imagery/i.landsat.acca/algorithm.c
+Copyright: 2010, E. Jorge Tizado
+License: GPL-2.0+
+
+Files: imagery/i.topo.corr/correction.c
+ imagery/i.topo.corr/illumination.c
+Copyright: 2007-2010, E. Jorge Tizado
+License: GPL-2.0+
+
+Files: imagery/i.landsat.toar/earth_sun.h
+ imagery/i.landsat.toar/earth_sun.c
+Copyright: 2000-2005, Liam Girdwood
+ 2006, E. Jorge Tizado
+License: GPL-2.0+
+
+Files: include/iostream/ami.h
+ include/iostream/ami_config.h
+ include/iostream/ami_sort.h
+ include/iostream/ami_sort_impl.h
+ include/iostream/ami_stream.h
+ include/iostream/embuffer.h
+ include/iostream/empq.h
+ include/iostream/empq_adaptive.h
+ include/iostream/empq_adaptive_impl.h
+ include/iostream/empq_impl.h
+ include/iostream/imbuffer.h
+ include/iostream/mem_stream.h
+ include/iostream/minmaxheap.h
+ include/iostream/mm.h
+ include/iostream/mm_utils.h
+ include/iostream/pqheap.h
+ include/iostream/quicksort.h
+ include/iostream/replacementHeap.h
+ include/iostream/replacementHeapBlock.h
+ include/iostream/rtimer.h
+ include/iostream/queue.h
+Copyright: 2007, Laura Toma
+License: GPL-2.0+
+
+Files: include/gmath.h
+Copyright: 2000, David D.Gray <ddgray@armadce.demon.co.uk>
+License: GPL-2.0+
+
+Files: include/neta.h
+Copyright: 2009-2010, Daniel Bundala, and the GRASS Development Team
+License: GPL-2.0+
+
+Files: lib/gis/make_loc.c
+Copyright: 2000, Frank Warmerdam
+License: LGPL-2.0+
+
+Files: lib/gis/color_compat.c
+ lib/gis/color_rules.c
+ lib/gis/open_misc.c
+Copyright: 2007, Glynn Clements and the GRASS Development Team
+License: GPL-2.0+
+
+Files: lib/gis/color_remove.c
+ lib/gis/color_xform.c
+ lib/pngdriver/Driver.c
+ lib/pngdriver/Set_window.c
+Copyright: 2007, Glynn Clements
+License: GPL-2.0+
+
+Files: lib/gis/make_mapset.c
+Copyright: 2006, Joel Pitt
+License: LGPL-2.0+
+
+Files: lib/python/array.py
+Copyright: 2010-2011, Glynn Clements and the GRASS Development Team
+License: GPL-2.0+
+
+Files: lib/python/ctypes/loader.py
+ lib/python/ctypes/ctypesgencore/libraryloader.py
+Copyright: 2006-2008, Alex Holkner
+ 2008, David James
+License: BSD-3-Clause
+
+Files: lib/python/ctypes/ctypesgencore/parser/lex.py
+ lib/python/ctypes/ctypesgencore/parser/yacc.py
+Copyright: 2001-2006, David M. Beazley
+License: LGPL-2.1+
+
+Files: lib/rst/interp_float/func2d.c
+ lib/rst/interp_float/interp2d.c
+ lib/rst/interp_float/matrix.c
+ lib/rst/interp_float/point2d.c
+Copyright: 1993, 1995, L. Mitas
+ 1993, 1995, H. Mitasova
+ 1993, 1995, I. Kosinovsky
+ 1993, 1995, D. Gerdes
+ 1993, 1995, D. McCauley
+License: GPL-2.0+
+
+Files: lib/rst/interp_float/ressegm2d.c
+ lib/rst/interp_float/input2d.c
+ lib/rst/interp_float/vinput2d.c
+Copyright: 1993, H. Mitasova (University of Illinois)
+License: GPL-2.0+
+
+Files: lib/rst/interp_float/minmax.c
+Copyright: 1994, H. Mitasova (University of Illinois)
+License: GPL-2.0+
+
+Files: lib/rst/interp_float/resout2d.c
+ lib/rst/interp_float/distance.c
+ lib/rst/interp_float/write2d.c
+Copyright: 1993, H. Mitasova (University of Illinois)
+License: GPL-2.0+
+
+Files: lib/rst/interp_float/output2d.c
+Copyright: 1992, H. Mitasova
+License: GPL-2.0+
+
+Files: lib/rst/data/dataquad.h
+Copyright: 1992, H. Mitasova (University of Illinois)
+License: GPL-2.0+
+
+Files: lib/rst/interp_float/init2d.c
+Copyright: 1993, H. Mitasova
+License: GPL-2.0+
+
+Files: lib/rst/interp_float/segmen2d.c
+Copyright: 1993, H. Mitasova,
+ 1993, I. Kosinovsky,
+ 1993, D. Gerdes
+License: GPL-2.0+
+
+Files: lib/rst/interp_float/secpar2d.c
+Copyright: 1994, H. Mitasova (University of Illinois)
+License: GPL-2.0+
+
+Files: lib/rst/data/dataquad.c
+ lib/rst/qtree/qtree.h
+ lib/rst/qtree/qtree.c
+Copyright: 1993, H. Mitasova (University of Illinois)
+License: GPL-2.0+
+
+Files: lib/iostream/mm_utils.cc
+ lib/iostream/mm.cc
+ lib/iostream/rtimer.cc
+ lib/iostream/ami_stream.cc
+ lib/iostream/minmaxheap_test.cc
+Copyright: 2007, Laura Toma
+License: GPL-2.0+
+
+Files: lib/linkm/linkm.c
+ lib/linkm/malloc.c
+ lib/linkm/new.c
+ lib/linkm/next.c
+ lib/linkm/speed.c
+ lib/linkm/speed3.c
+ lib/linkm/try2.c
+Copyright: 1992, USA-CERL
+License: GPL-2.0+
+
+Files: lib/linkm/init.c
+Copyright: 1992, USA-CERL
+ 1999, 2006, GRASS Development Team
+License: GPL-2.0+
+
+Files: lib/linkm/destroy.c
+ lib/linkm/dispose.c
+ lib/linkm/try.c
+ lib/linkm/speed2.c
+Copyright: 1992, USA-CERL
+License: GPL-2.0+
+
+Files: lib/external/shapelib/dbfopen.c
+ lib/external/shapelib/shapefil.h
+Copyright: 1999, Frank Warmerdam
+License: MIT or LGPL-2.0+
+
+Files: lib/external/shapelib/shpopen.c
+Copyright: 1999, 2001, Frank Warmerdam
+License: MIT or LGPL-2.0+
+
+Files: lib/external/shapelib/safileio.c
+Copyright: 2007, Frank Warmerdam
+License: MIT or LGPL-2.0+
+
+Files: lib/gmath/brent.c
+Copyright: 1996-2000, Brian Gough
+License: GPL-2.0+
+
+Files: lib/gmath/la.c
+Copyright: 2000, David D.Gray <ddgray@armadce.demon.co.uk>
+License: GPL-2.0+
+
+Files: lib/cairodriver/Driver.c
+Copyright: 2007, Lars Ahlzen
+License: GPL-2.0+
+
+Files: lib/cairodriver/Draw_bitmap.c
+Copyright: 2007-2010, Lars Ahlzen and the GRASS Development Team
+License: GPL-2.0+
+
+Files: lib/cairodriver/Graph.c
+Copyright: 2007-2008, 2011, Lars Ahlzen and the GRASS Development Team
+License: GPL-2.0+
+
+Files: lib/psdriver/Driver.c
+ lib/psdriver/Set_window.c
+Copyright: 2007, Glynn Clements
+License: GPL-2.0+
+
+Files: lib/datetime/between.c
+ lib/datetime/change.c
+ lib/datetime/copy.c
+ lib/datetime/diff.c
+ lib/datetime/error.c
+ lib/datetime/format.c
+ lib/datetime/incr1.c
+ lib/datetime/incr2.c
+ lib/datetime/incr3.c
+ lib/datetime/local.c
+ lib/datetime/misc.c
+ lib/datetime/same.c
+ lib/datetime/scan.c
+ lib/datetime/sign.c
+ lib/datetime/type.c
+ lib/datetime/tz1.c
+ lib/datetime/tz2.c
+ lib/datetime/values.c
+Copyright: 1995, Bill Brown <brown@gis.uiuc.edu> & Michael Shapiro
+License: GPL-2.0+
+
+Files: lib/vector/dglib/edgemgmt-template.c
+ lib/vector/dglib/graph.c
+ lib/vector/dglib/graph.h
+ lib/vector/dglib/graph_v1.c
+ lib/vector/dglib/graph_v1.h
+ lib/vector/dglib/graph_v2.c
+ lib/vector/dglib/graph_v2.h
+ lib/vector/dglib/heap.c
+ lib/vector/dglib/heap.h
+ lib/vector/dglib/helpers.c
+ lib/vector/dglib/helpers.h
+ lib/vector/dglib/misc-template.c
+ lib/vector/dglib/nodemgmt-template.c
+ lib/vector/dglib/sp-template.c
+ lib/vector/dglib/span-template.c
+ lib/vector/dglib/tree.c
+ lib/vector/dglib/tree.h
+ lib/vector/dglib/type.h
+ lib/vector/dglib/v1-defs.h
+ lib/vector/dglib/v2-defs.h
+ lib/vector/dglib/examples/cr_from_a.c
+ lib/vector/dglib/examples/cr_large_graph.c
+ lib/vector/dglib/examples/components.c
+ lib/vector/dglib/examples/delnode.c
+ lib/vector/dglib/examples/minspan.c
+ lib/vector/dglib/examples/opt.c
+ lib/vector/dglib/examples/opt.h
+ lib/vector/dglib/examples/parse.c
+ lib/vector/dglib/examples/shortest_path.c
+ lib/vector/dglib/examples/span.c
+ lib/vector/dglib/examples/unflatten.c
+ lib/vector/dglib/examples/view.c
+Copyright: 2002, Roberto Micarelli
+License: GPL-2.0+
+
+Files: lib/vector/dglib/avl.c
+ lib/vector/dglib/avl.h
+ lib/vector/dglib/tavl.c
+ lib/vector/dglib/tavl.h
+Copyright: 1998-2002, Free Software Foundation, Inc
+License: GPL-2.0+
+
+Files: lib/vector/neta/allpairs.c
+ lib/vector/neta/articulation_point.c
+ lib/vector/neta/bridge.c
+ lib/vector/neta/centrality.c
+ lib/vector/neta/components.c
+ lib/vector/neta/flow.c
+ lib/vector/neta/path.c
+ lib/vector/neta/spanningtree.c
+ lib/vector/neta/timetables.c
+ lib/vector/neta/utils.c
+Copyright: 2009-2010, Daniel Bundala, and the GRASS Development Team
+License: GPL-2.0+
+
+Files: raster/r.surf.area/main.c
+Copyright: 1994, Bill Brown, USACERL
+License: GPL-2.0+
+
+Files: raster/r.sun/main.c
+ raster/r.sun2/main.c
+ raster/r.sun2/rsunglobals.h
+ raster/r.sun2/rsunlib.c
+ raster/r.sun2/sunradstruct.h
+Copyright: 2002, Jaro Hofierka
+License: GPL-2.0+
+
+Files: raster/r.resamp.rst/main.c
+Copyright: 1993, H. Mitasova (University of Illinois)
+License: GPL-2.0+
+
+Files: raster/r.flow/r.flow.h
+Copyright: 1992, Maros Zlocha
+ 1992, Jaroslav Hofierka
+ 1992, Helena Mitasova
+ 1992, USA-CERL
+License: GPL-2.0+
+
+Files: raster/r.flow/aspect.c
+ raster/r.flow/mem.c
+ raster/r.flow/precomp.c
+Copyright: 1995, M. Ruesink
+ 1995, J. Caplan
+ 1995, H. Mitasova
+ 1995, L. Mitas
+ 1995, J. Hofierka
+ 1995, M. Zlocha
+License: GPL-2.0+
+
+Files: raster/r.flow/io.c
+Copyright: 1995, J. Caplan
+ 1995, H. Mitasova
+ 1995, L. Mitas
+ 1995, J. Hofierka
+ 1995, M. Zlocha
+License: GPL-2.0+
+
+Files: raster/r.flow/calc.c
+Copyright: 1995, J. Caplan
+ 1995, H. Mitasova
+ 1995, L. Mitas
+ 1995, M.Ruesink
+ 1995, J. Hofierka
+ 1995, M. Zlocha
+License: GPL-2.0+
+
+Files: raster/r.out.bin/tif_swab.c
+Copyright: 1988-1997, Sam Leffler
+ 1991-1997, Silicon Graphics, Inc
+License: HPND-sl-sgi
+
+Files: raster/r.in.bin/gmt_grd.h
+ raster/r.out.bin/gmt_grd.h
+Copyright: 1991-2000, P. Wessel and W. H. F. Smith
+License: GPL-2.0
+
+Files: raster/r.in.xyz/local_proto.h
+ raster/r.in.xyz/main.c
+ raster/r.in.xyz/support.c
+Copyright: 2006, M. Hamish Bowman, and The GRASS Development Team
+License: GPL-2.0+
+
+Files: raster/r.le/r.le.patch/driver.c
+ raster/r.le/r.le.patch/input.c
+ raster/r.le/r.le.patch/main.c
+ raster/r.le/r.le.patch/patch.c
+ raster/r.le/r.le.patch/patch.h
+ raster/r.le/r.le.patch/trace.c
+ raster/r.le/r.le.pixel/driver.c
+ raster/r.le/r.le.pixel/cellclip.c
+ raster/r.le/r.le.pixel/input.c
+ raster/r.le/r.le.pixel/main.c
+ raster/r.le/r.le.pixel/pixel.h
+ raster/r.le/r.le.pixel/texture.c
+ raster/r.le/r.le.setup/ask_group.c
+ raster/r.le/r.le.setup/colors.h
+ raster/r.le/r.le.setup/main.c
+ raster/r.le/r.le.setup/mv_wind.c
+ raster/r.le/r.le.setup/sample.c
+ raster/r.le/r.le.setup/setup.c
+ raster/r.le/r.le.setup/setup.h
+ raster/r.le/r.le.trace/main.c
+ raster/r.le/r.le.trace/r.le.trace.h
+ raster/r.le/r.le.trace/user_input.c
+Copyright: 2001, W.L. Baker
+License: GPL-2.0+
+
+Files: raster/simwe/r.sim.sediment/main.c
+ raster/simwe/r.sim.water/main.c
+Copyright: 2002, L. Mitas, H. Mitasova, J. Hofierka
+  2002, 2010, GRASS Development Team
+License: GPL-2.0+
+
+Files: raster/r.colors.out/main.c
+Copyright: 2008, 2010, Glynn Clements and the GRASS Development Team
+License: GPL-2.0+
+
+Files: raster/r.terraflow/3scan.h
+ raster/r.terraflow/ccforest.cc
+ raster/r.terraflow/ccforest.h
+ raster/r.terraflow/common.cc
+ raster/r.terraflow/common.h
+ raster/r.terraflow/direction.cc
+ raster/r.terraflow/direction.h
+ raster/r.terraflow/fill.cc
+ raster/r.terraflow/fill.h
+ raster/r.terraflow/filldepr.cc
+ raster/r.terraflow/filldepr.h
+ raster/r.terraflow/flow.cc
+ raster/r.terraflow/flow.h
+ raster/r.terraflow/genericWindow.cc
+ raster/r.terraflow/genericWindow.h
+ raster/r.terraflow/grass2str.h
+ raster/r.terraflow/grid.cc
+ raster/r.terraflow/grid.h
+ raster/r.terraflow/main.h
+ raster/r.terraflow/nodata.cc
+ raster/r.terraflow/nodata.h
+ raster/r.terraflow/option.h
+ raster/r.terraflow/plateau.cc
+ raster/r.terraflow/plateau.h
+ raster/r.terraflow/sortutils.h
+ raster/r.terraflow/stats.cc
+ raster/r.terraflow/stats.h
+ raster/r.terraflow/streamutils.h
+ raster/r.terraflow/sweep.cc
+ raster/r.terraflow/sweep.h
+ raster/r.terraflow/types.cc
+ raster/r.terraflow/types.h
+ raster/r.terraflow/unionFind.h
+ raster/r.terraflow/water.cc
+ raster/r.terraflow/water.h
+ raster/r.terraflow/weightWindow.cc
+ raster/r.terraflow/weightWindow.h
+Copyright: 2007, Laura Toma
+License: GPL-2.0+
+
+Files: raster/r.terraflow/main.cc
+Copyright: 2007, 2010, Laura Toma
+License: GPL-2.0+
+
+Files: raster/r.external/main.c
+Copyright: 1999, Frank Warmerdam
+ 2008, Glynn Clements and the GRASS Development Team
+License: GPL-2.0+
+
+Files: raster/r.texture/h_measure.h
+Copyright: 2002, University of Sannio (BN) - Italy
+License: GPL-2.0+
+
+Files: raster/r.texture/h_measure.c
+ raster/r.texture/main.c
+Copyright: 2003, University of Sannio (BN) - Italy
+License: GPL-2.0+
+
+Files: raster/r.out.tiff/r.out.tiff.c
+Copyright: 1988, 1990, by Sam Leffler
+ 1999-2007, GRASS Development Team
+Comment: Portions Copyright (c) 1988, 1990 by Sam Leffler.
+ All rights reserved.
+ .
+ This file is provided for unrestricted use provided that this
+ legend is included on all tape media and as a part of the
+ software program in whole or part.  Users may copy, modify or
+ distribute this file at will.
+License: GPL-2.0+
+
+Files: raster/r.in.gdal/main.c
+Copyright: 2001-2011, Frank Warmerdam, and the GRASS Development Team
+License: GPL-2.0+
+
+Files: raster3d/r3.in.v5d/main.c
+Copyright: 2000, Jaroslav Hofierka
+License: GPL-2.0+
+
+Files: raster3d/r3.in.v5d/binio.c
+ raster3d/r3.in.v5d/v5d.c
+ raster3d/r3.out.v5d/binio.c:
+ raster3d/r3.out.v5d/v5d.c
+Copyright: 1990-1997, Bill Hibbard, Johan Kellum, Brian Paul
+License: GPL-1.0+
+
+Files: raster3d/r3.in.v5d/v5d.h
+ raster3d/r3.out.v5d/v5d.h
+Copyright: 1990-1996, Bill Hibbard, Brian Paul, Dave Santek
+License: GPL-1.0+
+
+Files: raster3d/r3.in.v5d/binio.h
+ raster3d/r3.in.v5d/vis5d.h
+ raster3d/r3.out.v5d/binio.h
+ raster3d/r3.out.v5d/vis5d.h
+Copyright: 1990-1997, Bill Hibbard, Brian Paul, Dave Santek
+License: GPL-1.0+
+
+Files: tools/build_html_index.sh
+Copyright: 2003-2006, 2009, The GRASS Development Team, and Markus Neteler
+License: GPL-2.0+
+
+Files: vector/lidar/lidarlib/InterpSpline.c
+ vector/lidar/lidarlib/PolimiFunct.h
+ vector/lidar/v.lidar.correction/main.c
+ vector/lidar/v.lidar.correction/correction.c
+ vector/lidar/v.lidar.edgedetection/main.c
+ vector/lidar/v.lidar.edgedetection/edgedetection.c
+ vector/lidar/v.lidar.edgedetection/edgedetection.h
+ vector/lidar/v.lidar.growing/main.c
+ vector/lidar/v.outlier/main.c
+ vector/lidar/v.surf.bspline/bspline.h
+ vector/lidar/v.surf.bspline/crosscorr.c
+ vector/lidar/v.surf.bspline/main.c
+Copyright: 2006, Politecnico di Milano
+License: GPL-2.0+
+
+Files: vector/v.normal/main.c
+ vector/v.normal/scancats.c
+ vector/v.qcount/count.c
+ vector/v.qcount/findquads.c
+ vector/v.qcount/indices.c
+ vector/v.qcount/quaddefs.h
+Copyright: 1994-1995, James Darrell McCauley <darrell@mccauley-usa.com>
+License: GPL-2.0+
+
+Files: vector/v.perturb/fische.c
+ vector/v.perturb/main.c
+ vector/v.perturb/myrng.c
+ vector/v.perturb/normal00.c
+ vector/v.perturb/normalen.c
+ vector/v.perturb/normalsv.c
+ vector/v.perturb/normalrs.c
+ vector/v.perturb/zufall.h
+Copyright: 1994, James Darrell McCauley <darrell@mccauley-usa.com>
+License: GPL-2.0+
+
+Files: vector/v.qcount/main.c
+Copyright: 1993-1995, James Darrell McCauley
+License: GPL-2.0+
+
+Files: vector/v.surf.rst/main.c
+Copyright: 1993, H. Mitasova (University of Illinois)
+License: GPL-2.0+
+
+Files: vector/v.net.distance/main.c
+Copyright: 2009-2010, Daniel Bundala, and the GRASS Development Team
+License: GPL-2.0+
+
+Files: vector/v.lrs/lib/lrs.c
+ vector/v.lrs/v.lrs.create/main.c
+ vector/v.lrs/v.lrs.label/main.c
+ vector/v.lrs/v.lrs.where/main.c
+Copyright: 2004, Radim Blazek <blazek@itc.it>
+License: MIT
+
+Files: vector/v.lrs/v.lrs.segment/main.c
+Copyright: 2004-2007, Radim Blazek <blazek@itc.it>
+License: MIT
+
+Files: vector/v.kcv/histo.c
+ vector/v.kcv/kcv.h
+ vector/v.kcv/main.c
+ vector/v.kcv/utils.c
+Copyright: 1993-1994, James Darrell McCauley <darrell@mccauley-usa.com>
+License: MIT
+
+Files: vector/v.delaunay2/data_types.h
+ vector/v.delaunay2/edge.c
+ vector/v.delaunay2/edge.h
+ vector/v.delaunay2/geom_primitives.h
+ vector/v.delaunay2/geometry.c
+ vector/v.delaunay2/memory.c
+ vector/v.delaunay2/in_out.c
+Copyright: 1993, RMIT
+ 2008-2009, GRASS Development Team
+License: GPL-2.0+
+
+Files: vector/v.delaunay2/main.c
+Copyright: 1993, RMIT
+ 2008, GRASS Development Team
+License: GPL-2.0+
+
+Files: vector/v.hull/chull.c
+Copyright: 1998, Joseph O'Rourke
+License: chull
+ This code is Copyright 1998 by Joseph O'Rourke.  It may be freely 
+ redistributed in its entirety provided that this copyright notice is 
+ not removed.
+
+Files: vector/v.random/main.c
+Copyright: 1993-1995, James Darrell McCauley
+ 2003-2007, 2010, GRASS Development Team
+License: GPL-2.0+
+
+Files: vector/v.sample/main.c
+Copyright: 1994-1995, James Darrell McCauley
+License: GPL-2.0+
+
+Files: vector/v.vol.rst/dataoct.c
+ vector/v.vol.rst/main.c
+ vector/v.vol.rst/oct.c
+ vector/v.vol.rst/user1.c
+ vector/v.vol.rst/user2.c
+ vector/v.vol.rst/user3.c
+ vector/v.vol.rst/user4.c
+ vector/v.vol.rst/vector.c
+Copyright: 1989, 1993, 2000, L. Mitas, H. Mitasova
+License: GPL-2.0+
+
+Files: visualization/ximgview/main.c
+Copyright: 2007, Glynn Clements
+License: GPL-2.0+
+
+Files: visualization/nviz/src/tkWin.h
+Copyright: 1996, Sun Microsystems, Inc
+License: GPL-2.0+
+
+Files: visualization/nviz/src/nvizMain.c
+Copyright: 2002-2007, GRASS Development Team
+License: GPL-2.0+
+
+Files: visualization/nviz/src/pick_vect_commands.c
+ visualization/nviz/src/site_attr_commands.c
+ visualization/nviz/src/togl_flythrough.c
+Copyright: 2005, ACS
+ 2005, GRASS Development Team
+License: GPL-2.0+
+
+Files: visualization/nviz/src/tkUnixPort.h
+Copyright: 1991-1993, The Regents of the University of California
+ 1994-1996, Sun Microsystems, Inc
+ 1998, Scriptics Corporation
+License: SUN
+
+Files: visualization/nviz/src/tkPort.h
+Copyright: 1995, Sun Microsystems, Inc
+License: SUN
+
+Files: visualization/nviz/src/tkWinPort.h
+Copyright: 1995-1996, Sun Microsystems, Inc
+ 1998, Scriptics Corporation
+License: SUN
+
+Files: visualization/nviz/src/tkFont.h
+Copyright: 1996, Sun Microsystems, Inc
+License: SUN
+
+Files: visualization/nviz/src/togl.h
+Copyright: 1996-1998, Brian Paul and Ben Bederson
+License: TOGL
+
+Files: visualization/nviz/src/togl.c
+Copyright: 1996-2002, Brian Paul and Ben Bederson
+License: TOGL
+
+License: GPL-1.0+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 1, or (at your option)
+ any later version.
+ .
+ On Debian systems, the complete text of version 1 of the GNU General
+ Public License can be found in `/usr/share/common-licenses/GPL-1'.
+
+License: GPL-2.0
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; version 2 of the License.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ On Debian systems, the complete text of version 2 of the GNU General
+ Public License can be found in `/usr/share/common-licenses/GPL-2'.
+
+License: GPL-2.0+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License along
+ with this program; if not, write to the Free Software Foundation, Inc.,
+ 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ .
+ On Debian systems, the complete text of version 2 of the GNU General
+ Public License can be found in `/usr/share/common-licenses/GPL-2'.
+
+License: LGPL-2.0+
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Library General Public
+ License as published by the Free Software Foundation; either
+ version 2 of the License, or (at your option) any later version.
+ .
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
+ .
+ On Debian systems, the full text of the GNU Library General Public
+ License version 2 can be found in the file
+ `/usr/share/common-licenses/LGPL-2'.
+
+License: LGPL-2.1+
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation; either
+ version 2.1 of the License, or (at your option) any later version.
+ .
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+ .
+ On Debian systems, the full text of the GNU Lesser General Public
+ License version 2.1 can be found in the file
+ `/usr/share/common-licenses/LGPL-2.1'.
+
+License: BSD-3-Clause
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are met:
+ .
+ 1) Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
+ .
+ 2) Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+ .
+ 3) Neither the name of the ORGANIZATION nor the names of its contributors may
+    be used to endorse or promote products derived from this software without
+    specific prior written permission.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ POSSIBILITY OF SUCH DAMAGE.
+
+License: MIT
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of this software and associated documentation files (the "Software"),
+ to deal in the Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ and/or sell copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following conditions:
+ .
+ The above copyright notice and this permission notice shall be included
+ in all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ DEALINGS IN THE SOFTWARE.
+
+License: HPND-sl-sgi
+ Permission to use, copy, modify, distribute, and sell this software and
+ its documentation for any purpose is hereby granted without fee, provided
+ that (i) the above copyright notices and this permission notice appear in
+ all copies of the software and related documentation, and (ii) the names of
+ Sam Leffler and Silicon Graphics may not be used in any advertising or
+ publicity relating to the software without the specific, prior written
+ permission of Sam Leffler and Silicon Graphics.
+ .
+ THE SOFTWARE IS PROVIDED "AS-IS" AND WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS, IMPLIED OR OTHERWISE, INCLUDING WITHOUT LIMITATION, ANY
+ WARRANTY OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+ .
+ IN NO EVENT SHALL SAM LEFFLER OR SILICON GRAPHICS BE LIABLE FOR
+ ANY SPECIAL, INCIDENTAL, INDIRECT OR CONSEQUENTIAL DAMAGES OF ANY KIND,
+ OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
+ WHETHER OR NOT ADVISED OF THE POSSIBILITY OF DAMAGE, AND ON ANY THEORY OF
+ LIABILITY, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
+ OF THIS SOFTWARE.
+
+License: SUN
+ Sun Microsystems, Inc.  The following terms apply to all files
+ associated with the software unless explicitly disclaimed in individual
+ files.
+ .
+ The authors hereby grant permission to use, copy, modify, distribute,
+ and license this software and its documentation for any purpose, provided
+ that existing copyright notices are retained in all copies and that this
+ notice is included verbatim in any distributions. No written agreement,
+ license, or royalty fee is required for any of the authorized uses.
+ Modifications to this software may be copyrighted by their authors
+ and need not follow the licensing terms described here, provided that
+ the new terms are clearly indicated on the first page of each file where
+ they apply.
+ .
+ IN NO EVENT SHALL THE AUTHORS OR DISTRIBUTORS BE LIABLE TO ANY PARTY
+ FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES
+ ARISING OUT OF THE USE OF THIS SOFTWARE, ITS DOCUMENTATION, OR ANY
+ DERIVATIVES THEREOF, EVEN IF THE AUTHORS HAVE BEEN ADVISED OF THE
+ POSSIBILITY OF SUCH DAMAGE.
+ .
+ THE AUTHORS AND DISTRIBUTORS SPECIFICALLY DISCLAIM ANY WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.  THIS SOFTWARE
+ IS PROVIDED ON AN "AS IS" BASIS, AND THE AUTHORS AND DISTRIBUTORS HAVE
+ NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR
+ MODIFICATIONS.
+ .
+ RESTRICTED RIGHTS: Use, duplication or disclosure by the government
+ is subject to the restrictions as set forth in subparagraph (c) (1) (ii)
+ of the Rights in Technical Data and Computer Software Clause as DFARS
+ 252.227-7013 and FAR 52.227-19.
+
+License: TOGL
+ This software is copyrighted by Brian Paul (brianp@ssec.wisc.edu)
+ and Benjamin Bederson (bederson@cs.unm.edu).  The following
+ terms apply to all files associated with the software unless explicitly
+ disclaimed in individual files.
+ .
+ The authors hereby grant permission to use, copy, modify, distribute,
+ and license this software and its documentation for any purpose, provided
+ that existing copyright notices are retained in all copies and that this
+ notice is included verbatim in any distributions. No written agreement,
+ license, or royalty fee is required for any of the authorized uses.
+ Modifications to this software may be copyrighted by their authors
+ and need not follow the licensing terms described here, provided that
+ the new terms are clearly indicated on the first page of each file where
+ they apply.
+ .
+ IN NO EVENT SHALL THE AUTHORS OR DISTRIBUTORS BE LIABLE TO ANY PARTY
+ FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES
+ ARISING OUT OF THE USE OF THIS SOFTWARE, ITS DOCUMENTATION, OR ANY
+ DERIVATIVES THEREOF, EVEN IF THE AUTHORS HAVE BEEN ADVISED OF THE
+ POSSIBILITY OF SUCH DAMAGE.
+ .
+ THE AUTHORS AND DISTRIBUTORS SPECIFICALLY DISCLAIM ANY WARRANTIES,
+ INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.  THIS SOFTWARE
+ IS PROVIDED ON AN "AS IS" BASIS, AND THE AUTHORS AND DISTRIBUTORS HAVE
+ NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR
+ MODIFICATIONS.
+ .
+ RESTRICTED RIGHTS: Use, duplication or disclosure by the government
+ is subject to the restrictions as set forth in subparagraph (c) (1) (ii)
+ of the Rights in Technical Data and Computer Software Clause as DFARS
+ 252.227-7013 and FAR 52.227-19.
+
