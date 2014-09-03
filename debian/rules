@@ -166,6 +166,9 @@ install-arch: build-arch
 	
 	# delete extra license files
 	rm -f debian/tmp/usr/lib/$(BASE_NAME)/bwidget/LICENSE.txt
+	rm -f debian/tmp/usr/lib/$(BASE_NAME)/bwidget/LGPL-2.1.txt
+	rm -f debian/tmp/usr/lib/$(BASE_NAME)/etc/gem/skeleton/license
+	rm -f debian/tmp/usr/lib/$(BASE_NAME)/etc/license
 
 	# delete python compiled bytecode files (maybe dh_python2 takes care of this for us?)
 	for DIR in python/grass \
