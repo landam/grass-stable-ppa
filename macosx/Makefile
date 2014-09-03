@@ -26,9 +26,9 @@ PACKAGEMAKER = /Developer/usr/bin/packagemaker
 PKG_INST_DIR = ${prefix}
 endif
 
-SUBDIRS = 
+SUBDIRS =
 ifeq ($(MACOSX_APP),1)
-SUBDIRS = app modbuild
+SUBDIRS = app
 endif
 
 FILES = AUTHORS COPYING CHANGES REQUIREMENTS.html GPL.TXT
@@ -53,9 +53,7 @@ install-macosx:
 real-install-macosx: INST_DIR_TARGET = ${INST_DIR}
 real-install-macosx: PREFIX_TARGET = ${prefix}
 real-install-macosx: install-basic-macosx macosx-support-dir bundle-macosx
-	-cd ${GISBASE} ; tar cBf - modbuild | (cd ${MACOSX_SUPPDIR} ; tar xBf - ) 2>/dev/null
-	@# help file package
-	${LN_DIR} "${INST_DIR_TARGET}/docs/html" /Library/Documentation/Help/GRASS-${GRASS_VERSION_MAJOR}.${GRASS_VERSION_MINOR}
+	echo ${ARCH_DISTDIR}/${MACOSX_APP_NAME}
 
 # create a packagemaker installer package.
 # pretty much the same as install, but needs intermediate install location
@@ -72,7 +70,6 @@ bindist-macosx: install-basic-macosx bundle-macosx
 	-sed -e "s#@GRASS_VERSION_MAJOR@#${GRASS_VERSION_MAJOR}#g" -e "s#@GRASS_VERSION_MINOR@#${GRASS_VERSION_MINOR}#g" -e "s#@GRASS_VERSION_RELEASE@#${GRASS_VERSION_RELEASE}#g" -e "s#@VER_MINOR_REL@#${VER_MINOR_REL}#g" -e "s#@VER_DATE@#${VER_DATE}#g" -e "s#@PKG_INST_DIR@#${PKG_INST_DIR}#g" pkg/resources/Info.plist.in > dist/Info.plist
 	-${INSTALL_DATA} pkg/resources/License.rtf dist/resources
 	-${INSTALL_DATA} pkg/resources/ReadMe.rtf dist/resources
-	-cd ${GISBASE} ; tar cBf - modbuild | (cd ${GRASS_HOME}/macosx/dist/resources ; tar xBf - ) 2>/dev/null
 	@# build the package
 ifeq ($(XCODE_VER),xcode3)
 	${PACKAGEMAKER} --target 10.4 --root-volume-only --id org.osgeo.grass --root dist/${MACOSX_APP_NAME} --info dist/Info.plist --out "GRASS-${GRASS_VERSION_MAJOR}.${GRASS_VERSION_MINOR}.pkg" --resources dist/resources
@@ -100,6 +97,7 @@ install-basic-macosx:
 	-cd ${GISBASE} ; tar cBf - include | (cd ${INST_DIR_TARGET} ; tar xBf - ) 2>/dev/null
 	-sed -e "s#^\(GRASS_HOME.[^=]*\).*#\1= ${INST_DIR}#" \
 		-e "s#^\(RUN_GISBASE.[^=]*\).*#\1= ${INST_DIR}#" \
+		-e "s#-isysroot /.*MacOSX.*\.sdk##g" \
 		${GISBASE}/include/Make/Platform.make > ${INST_DIR_TARGET}/include/Make/Platform.make
 	-sed -e "s#^\(ARCH_DISTDIR.[^=]*\).*#\1= ${INST_DIR}#" \
 		-e "s#^\(ARCH_BINDIR.[^=]*\).*#\1= ${UNIX_BIN}#" \
@@ -120,4 +118,3 @@ macosx-support-dir:
 
 clean: cleansubdirs
 	-rm -rf ${ARCH_DISTDIR}/${MACOSX_APP_NAME}/ 2>/dev/null
-	-rm -rf ${ARCH_DISTDIR}/modbuild/ 2>/dev/null

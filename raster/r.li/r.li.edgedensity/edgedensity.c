@@ -1,29 +1,35 @@
-/*
- * \brief calculates edge density index
- *
- *  AUTHOR: Serena Pallecchi student of Computer Science University of Pisa (Italy)
- *                      Commission from Faunalia Pontedera (PI) www.faunalia.it
- *
- *   This program is free software under the GPL (>=v2)
- *   Read the COPYING file that comes with GRASS for details.
- *
- */
 
-#include <grass/gis.h>
-#include <grass/glocale.h>
+/****************************************************************************
+ *
+ * MODULE:       r.li.edgedensity
+ * AUTHOR(S):    Serena Pallecchi student of Computer Science University of Pisa (Italy)
+ *               Commission from Faunalia Pontedera (PI) www.faunalia.it
+ *               Rewrite: Markus Metz
+ *
+ * PURPOSE:      calculates edge density index
+ * COPYRIGHT:    (C) 2006-2014 by the GRASS Development Team
+ *
+ *               This program is free software under the GNU General Public
+ *               License (>=v2). Read the file COPYING that comes with GRASS
+ *               for details.
+ *
+ *****************************************************************************/
 
 #include <stdlib.h>
 #include <fcntl.h>		/* for O_RDONLY usage */
 #include <math.h>
 
-#include "../r.li.daemon/defs.h"
+#include <grass/gis.h>
+#include <grass/glocale.h>
+
 #include "../r.li.daemon/avlDefs.h"
 #include "../r.li.daemon/avl.h"
 #include "../r.li.daemon/daemon.h"
 
-int calculate(int fd, area_des ad, char **valore, double *result);
-int calculateD(int fd, area_des ad, char **valore, double *result);
-int calculateF(int fd, area_des ad, char **valore, double *result);
+rli_func edgedensity;
+int calculate(int fd, struct area_entry *ad, char **par, double *result);
+int calculateD(int fd, struct area_entry *ad, char **par, double *result);
+int calculateF(int fd, struct area_entry *ad, char **par, double *result);
 
 int main(int argc, char *argv[])
 {
@@ -41,12 +47,10 @@ int main(int argc, char *argv[])
 
     raster = G_define_standard_option(G_OPT_R_MAP);
 
-    conf = G_define_option();
+    conf = G_define_standard_option(G_OPT_F_INPUT);
     conf->key = "conf";
     conf->description = _("Configuration file");
-    conf->type = TYPE_STRING;
     conf->required = YES;
-    conf->gisprompt = "old_file,file,input";
 
     output = G_define_standard_option(G_OPT_R_OUTPUT);
 
@@ -55,8 +59,9 @@ int main(int argc, char *argv[])
     class->type = TYPE_STRING;
     class->required = NO;
     class->multiple = NO;
-    class->description =
-	"The value of the patch type, it can be integer, double or float; it will be changed in function of map type";
+    class->label = _("The value of the patch type");
+    class->description = _("It can be integer, double or float; "
+			   "it will be changed in function of map type");
 
 
     if (G_parser(argc, argv))
@@ -70,40 +75,27 @@ int main(int argc, char *argv[])
 
     return calculateIndex(conf->answer, edgedensity, par, raster->answer,
 			  output->answer);
-
-
 }
 
-int edgedensity(int fd, char **valore, area_des ad, double *result)
+int edgedensity(int fd, char **par, struct area_entry *ad, double *result)
 {
-    struct Cell_head hd;
-
     int ris = -1;
-
-    char *mapset;
-
     double indice = 0;
-
-    mapset = G_find_cell(ad->raster, "");
-
-    if (G_get_cellhd(ad->raster, mapset, &hd) == -1)
-	return RLI_ERRORE;
-
 
     switch (ad->data_type) {
     case CELL_TYPE:
 	{
-	    ris = calculate(fd, ad, valore, &indice);
+	    ris = calculate(fd, ad, par, &indice);
 	    break;
 	}
     case DCELL_TYPE:
 	{
-	    ris = calculateD(fd, ad, valore, &indice);
+	    ris = calculateD(fd, ad, par, &indice);
 	    break;
 	}
     case FCELL_TYPE:
 	{
-	    ris = calculateF(fd, ad, valore, &indice);
+	    ris = calculateF(fd, ad, par, &indice);
 	    break;
 	}
     default:
@@ -122,794 +114,536 @@ int edgedensity(int fd, char **valore, area_des ad, double *result)
 }
 
 
-
-int calculate(int fd, area_des ad, char **valore, double *result)
+int calculate(int fd, struct area_entry *ad, char **par, double *result)
 {
-    double indice = 0;
-    double e = 0;
-    double somma = 0;
-    double area = 0;
-
-    CELL *buf_corr, *buf_sup, *buf_inf;
-    CELL prevCell, corrCell, supCell, infCell, nextCell;
-
-    AVL_table *array;
-
-    long tot = 0;
-    long zero = 0;
-    long m = 0;
-    long bordoCorr = 0;
-
-    avl_tree albero = NULL;
-
+    CELL *buf, *buf_sup, *buf_null;
+    CELL corrCell, precCell, supCell;
+    CELL ptype;
+    long nedges, area; 
     int i, j;
-    int mask_fd = -1, *mask_corr, *mask_sup, *mask_inf;
-    int masked = FALSE;
-    int ris;
+    int mask_fd, *mask_buf, *mask_sup, *mask_tmp, masked;
+    struct Cell_head hd;
 
-    generic_cell c1;
+    G_get_window(&hd);
 
-    c1.t = CELL_TYPE;
     /* open mask if needed */
+    mask_fd = -1;
+    mask_buf = mask_sup = NULL;
+    masked = FALSE;
     if (ad->mask == 1) {
-	if ((mask_fd = open(ad->mask_name, O_RDONLY, 0755)) < 0) {
-	    G_fatal_error("can't  open mask");
+	if ((mask_fd = open(ad->mask_name, O_RDONLY, 0755)) < 0)
+	    return RLI_ERRORE;
+	mask_buf = G_malloc(ad->cl * sizeof(int));
+	if (mask_buf == NULL) {
+	    G_fatal_error("malloc mask_buf failed");
 	    return RLI_ERRORE;
 	}
-
-	mask_corr = G_malloc(ad->cl * sizeof(int));
-	if (mask_corr == NULL) {
-	    G_fatal_error("malloc mask_corr failed");
+	mask_sup = G_malloc(ad->cl * sizeof(int));
+	if (mask_sup == NULL) {
+	    G_fatal_error("malloc mask_buf failed");
 	    return RLI_ERRORE;
 	}
-
-	mask_inf = G_malloc(ad->cl * sizeof(int));
-	if (mask_inf == NULL) {
-	    G_fatal_error("malloc mask_inf failed");
-	    return RLI_ERRORE;
-	}
+	for (j = 0; j < ad->cl; j++)
+	    mask_buf[j] = 0;
 
 	masked = TRUE;
     }
 
-    buf_sup = G_allocate_cell_buf();
-    if (buf_sup == NULL) {
-	G_fatal_error("malloc buf_sup failed");
+    buf_null = G_allocate_cell_buf();
+    if (buf_null == NULL) {
+	G_fatal_error("malloc buf_null failed");
 	return RLI_ERRORE;
     }
 
-    G_set_c_null_value(buf_sup + ad->x, ad->cl);	/*the first time buf_sup is all null */
+    /* the first time buf_sup is all null */
+    G_set_c_null_value(buf_null, G_window_cols());
+    buf_sup = buf_null;
 
+    if (par != NULL) {	/* only 1 class */
+	char *sval;
 
-    for (j = 0; j < ad->rl; j++) {	/* for each raster row */
+	sval = par[0];
+	ptype = atoi(sval);
+    }
+    else
+	G_set_c_null_value(&ptype, 1);
 
-	buf_corr = RLI_get_cell_raster_row(fd, j + ad->y, ad);	/* read row of raster */
+    nedges = 0;
+    area = 0;
 
-	if (j > 0)		/* not first row */
-	    buf_sup = RLI_get_cell_raster_row(fd, j - 1 + ad->y, ad);
+    /* for each raster row */
+    for (i = 0; i < ad->rl; i++) {
 
+	/* read row of raster */
+	buf = RLI_get_cell_raster_row(fd, i + ad->y, ad);
 
-	if ((j + 1) < ad->rl) {	/*not last row */
-	    buf_inf = RLI_get_cell_raster_row(fd, 1 + j + ad->y, ad);
-	}
-	else {
-	    buf_inf = G_allocate_cell_buf();
-	    if (buf_inf == NULL) {
-		G_fatal_error("malloc buf_inf failed");
-		return RLI_ERRORE;
-	    }
-	    G_set_c_null_value(buf_inf + ad->x, ad->cl);
-	}
+	if (i > 0)		/* not first row */
+	    buf_sup = RLI_get_cell_raster_row(fd, i - 1 + ad->y, ad);
 
-	/*read mask if needed */
+	/* read mask if needed */
 	if (masked) {
-	    if (read(mask_fd, mask_corr, (ad->cl * sizeof(int))) < 0) {
-		G_fatal_error("reading mask_corr");
+	    mask_tmp = mask_sup;
+	    mask_sup = mask_buf;
+	    mask_buf = mask_tmp;
+	    if (read(mask_fd, mask_buf, (ad->cl * sizeof(int))) < 0)
 		return RLI_ERRORE;
-	    }
-
-
-	    if ((j + 1) < ad->rl) {	/*not last row */
-		if (read(mask_fd, mask_inf, (ad->cl * sizeof(int))) < 0) {
-		    G_fatal_error("reading mask_inf");
-		    return RLI_ERRORE;
-		}
-	    }
-	    else {
-		int z = 0;
-
-		for (z = 0; z < ad->cl; z++)
-		    mask_inf[z + ad->x] = 0;
-	    }
 	}
 
+	G_set_c_null_value(&precCell, 1);
 
-	G_set_c_null_value(&nextCell, 1);
-	G_set_c_null_value(&prevCell, 1);
-	G_set_c_null_value(&corrCell, 1);
+	for (j = 0; j < ad->cl; j++) {
+	    corrCell = buf[j + ad->x];
 
-	for (i = 0; i < ad->cl; i++) {	/* for each cell in the row */
-	    area++;
-	    corrCell = buf_corr[i + ad->x];
-
-
-	    if (masked && mask_corr[i + ad->x] == 0) {
+	    if (masked && mask_buf[j] == 0) {
 		G_set_c_null_value(&corrCell, 1);
-		area--;
+	    }
+	    else {
+		/* total sample area */
+		area++;
 	    }
 
-	    if (!(G_is_null_value(&corrCell, CELL_TYPE))) {
-		if ((i + 1) == ad->cl)	/*last cell of the row */
-		    G_set_c_null_value(&nextCell, 1);
-		else if (masked && mask_corr[i + 1 + ad->x] == 0)
-		    G_set_c_null_value(&nextCell, 1);
-		else
-		    nextCell = buf_corr[i + 1 + ad->x];
-
-		supCell = buf_sup[i + ad->x];
-
-
-		if (masked && mask_inf[i + ad->x] == 0)
-		    G_set_c_null_value(&infCell, 1);
-		else
-		    infCell = buf_inf[i + ad->x];
-
-		/* calculate how many edge the cell has */
-
-		if ((G_is_null_value(&prevCell, CELL_TYPE)) ||
-		    (corrCell != prevCell)) {
-		    bordoCorr++;
-		}
-
-
-		if ((G_is_null_value(&supCell, CELL_TYPE)) ||
-		    (corrCell != supCell)) {
-		    bordoCorr++;
-		}
-
-		if ((G_is_null_value(&infCell, CELL_TYPE)) ||
-		    (corrCell != infCell)) {
-		    bordoCorr++;
-		}
-
-
-		if ((G_is_null_value(&nextCell, CELL_TYPE)) ||
-		    (corrCell != nextCell)) {
-		    bordoCorr++;
-		}
-
-		/*store the result in the tree */
-		if (albero == NULL) {
-		    c1.val.c = corrCell;
-		    albero = avl_make(c1, bordoCorr);
-		    if (albero == NULL) {
-			G_fatal_error("avl_make error");
-			return RLI_ERRORE;
-		    }
-		    m++;
-		}
-		else {
-		    c1.val.c = corrCell;
-		    ris = avl_add(&albero, c1, bordoCorr);
-
-		    switch (ris) {
-		    case AVL_ERR:
-			{
-			    G_fatal_error("avl_add error");
-			    return RLI_ERRORE;
-			}
-		    case AVL_ADD:
-			{
-			    m++;
-			    break;
-			}
-		    case AVL_PRES:
-			{
-			    break;
-			}
-		    default:
-			{
-			    G_fatal_error("avl_add unknown error");
-			    return RLI_ERRORE;
-			}
-		    }
-		}
-
-		bordoCorr = 0;
-
+	    supCell = buf_sup[j + ad->x];
+	    if (masked && (mask_sup[j] == 0)) {
+		G_set_c_null_value(&supCell, 1);
 	    }
 
-
-	    prevCell = buf_corr[i + ad->x];
+	    if (!G_is_c_null_value(&ptype)) {
+		/* only one patch type */
+		if (!G_is_c_null_value(&corrCell) && corrCell == ptype) {
+		    if (corrCell != precCell)
+			nedges++;
+		    if (corrCell != supCell)
+			nedges++;
+		    /* right and bottom */
+		    if (i == ad->rl - 1)
+			nedges++;
+		    if (j == ad->cl - 1)
+			nedges++;
+		}
+		if (!G_is_c_null_value(&precCell) && precCell == ptype) {
+		    if (corrCell != precCell)
+			nedges++;
+		}
+		if (!G_is_c_null_value(&supCell) && supCell == ptype) {
+		    if (corrCell != supCell)
+			nedges++;
+		}
+	    }
+	    else {
+		/* all patch types */
+		if (!G_is_c_null_value(&corrCell)) {
+		    if (corrCell != precCell) {
+			nedges++;
+		    }
+		    if (corrCell != supCell) {
+			nedges++;
+		    }
+		    /* right and bottom */
+		    if (i == ad->rl - 1)
+			nedges++;
+		    if (j == ad->cl - 1)
+			nedges++;
+		}
+		if (!G_is_c_null_value(&precCell) && corrCell != precCell) {
+		    nedges++;
+		}
+		if (!G_is_c_null_value(&supCell) && corrCell != supCell) {
+		    nedges++;
+		}
+	    }
+	    precCell = corrCell;
 	}
-
-
-
-	if (masked)
-	    mask_sup = mask_corr;
-
-
-
     }
-
 
     /* calculate index */
-    if (area == 0)
-	indice = -1;
-    else {
+    if (area > 0) {
+	double EW_DIST1, EW_DIST2, NS_DIST1, NS_DIST2;
+	double elength, cell_size;
 
-	if (valore != NULL) {	/* only 1 class */
-	    char *sval;
-	    int val;
-	    CELL cella;
+	/* calculate distance */
+	G_begin_distance_calculations();
+	/* EW Dist at North edge */
+	EW_DIST1 = G_distance(hd.east, hd.north, hd.west, hd.north);
+	/* EW Dist at South Edge */
+	EW_DIST2 = G_distance(hd.east, hd.south, hd.west, hd.south);
+	/* NS Dist at East edge */
+	NS_DIST1 = G_distance(hd.east, hd.north, hd.east, hd.south);
+	/* NS Dist at West edge */
+	NS_DIST2 = G_distance(hd.west, hd.north, hd.west, hd.south);
 
-	    sval = valore[0];
-	    val = atoi(sval);
-	    cella = val;
-	    c1.t = CELL_TYPE;
-	    c1.val.c = cella;
-	    e = (double)howManyCell(albero, c1);
-	    somma = e;
+	elength = ((EW_DIST1 + EW_DIST2) / (2 * hd.cols) + 
+	          (NS_DIST1 + NS_DIST2) / (2  * hd.rows)) / 2;
 
-	}
-	else {			/* all classes */
+	cell_size = ((EW_DIST1 + EW_DIST2) / (2 * hd.cols)) *
+	            ((NS_DIST1 + NS_DIST2) / (2 * hd.rows));
 
-
-	    array = G_malloc(m * sizeof(AVL_tableRow));
-	    if (array == NULL) {
-		G_fatal_error("malloc array failed");
-		return RLI_ERRORE;
-	    }
-	    tot = avl_to_array(albero, zero, array);
-	    if (tot != m) {
-		G_warning
-		    ("avl_to_array unaspected value. the result could be wrong");
-	    }
-	    for (i = 0; i < m; i++) {
-		e = (double)array[i]->tot;
-		somma = somma + e;
-	    }
-	    G_free(array);
-	}
-
-	indice = somma * 10000 / area;
+	*result = (double) nedges * elength * 10000 / (area * cell_size);
     }
+    else
+	G_set_d_null_value(result, 1);
 
-    *result = indice;
     if (masked) {
-	G_free(mask_inf);
-	G_free(mask_corr);
+	close(mask_fd);
+	G_free(mask_buf);
+	G_free(mask_sup);
     }
+    G_free(buf_null);
 
-    G_free(buf_sup);
     return RLI_OK;
 }
 
-int calculateD(int fd, area_des ad, char **valore, double *result)
+int calculateD(int fd, struct area_entry *ad, char **par, double *result)
 {
-    double indice = 0;
-    double e = 0;
-    double somma = 0;
-    double area = 0;
-
-    DCELL *buf_corr, *buf_sup, *buf_inf;
-    DCELL prevCell, corrCell, supCell, infCell, nextCell;
-
-    AVL_table *array;
-
-    long tot = 0;
-    long zero = 0;
-    long m = 0;
-    long bordoCorr = 0;
-
-    avl_tree albero = NULL;
-
+    DCELL *buf, *buf_sup, *buf_null;
+    DCELL corrCell, precCell, supCell;
+    DCELL ptype;
+    long nedges, area; 
     int i, j;
-    int mask_fd = -1, *mask_corr, *mask_sup, *mask_inf;
-    int masked = FALSE;
-    int ris;
+    int mask_fd, *mask_buf, *mask_sup, *mask_tmp, masked;
+    struct Cell_head hd;
 
-    generic_cell c1;
-
-    c1.t = DCELL_TYPE;
+    G_get_window(&hd);
 
     /* open mask if needed */
+    mask_fd = -1;
+    mask_buf = mask_sup = NULL;
+    masked = FALSE;
     if (ad->mask == 1) {
-	if ((mask_fd = open(ad->mask_name, O_RDONLY, 0755)) < 0) {
-	    G_fatal_error("can't  open mask");
+	if ((mask_fd = open(ad->mask_name, O_RDONLY, 0755)) < 0)
+	    return RLI_ERRORE;
+	mask_buf = G_malloc(ad->cl * sizeof(int));
+	if (mask_buf == NULL) {
+	    G_fatal_error("malloc mask_buf failed");
 	    return RLI_ERRORE;
 	}
-
-	mask_corr = G_malloc(ad->cl * sizeof(int));
-	if (mask_corr == NULL) {
-	    G_fatal_error("malloc mask_corr failed");
+	mask_sup = G_malloc(ad->cl * sizeof(int));
+	if (mask_sup == NULL) {
+	    G_fatal_error("malloc mask_buf failed");
 	    return RLI_ERRORE;
 	}
-
-	mask_inf = G_malloc(ad->cl * sizeof(int));
-	if (mask_inf == NULL) {
-	    G_fatal_error("malloc mask_inf failed");
-	    return RLI_ERRORE;
-	}
+	for (j = 0; j < ad->cl; j++)
+	    mask_buf[j] = 0;
 
 	masked = TRUE;
     }
 
-    buf_sup = G_allocate_d_raster_buf();
-    if (buf_sup == NULL) {
-	G_fatal_error("malloc buf_sup failed");
+    buf_null = G_allocate_d_raster_buf();
+    if (buf_null == NULL) {
+	G_fatal_error("malloc buf_null failed");
 	return RLI_ERRORE;
     }
 
-    G_set_d_null_value(buf_sup + ad->x, ad->cl);	/*the first time buf_sup is all null */
+    /* the first time buf_sup is all null */
+    G_set_d_null_value(buf_null, G_window_cols());
+    buf_sup = buf_null;
 
+    if (par != NULL) {	/* only 1 class */
+	char *sval;
 
-    for (j = 0; j < ad->rl; j++) {	/* for each raster row */
+	sval = par[0];
+	ptype = atof(sval);
+    }
+    else
+	G_set_d_null_value(&ptype, 1);
 
-	buf_corr = RLI_get_dcell_raster_row(fd, j + ad->y, ad);	/* read row of raster */
+    nedges = 0;
+    area = 0;
 
-	if (j > 0)		/* not first row */
-	    buf_sup = RLI_get_dcell_raster_row(fd, j - 1 + ad->y, ad);
+    /* for each raster row */
+    for (i = 0; i < ad->rl; i++) {
 
+	/* read row of raster */
+	buf = RLI_get_dcell_raster_row(fd, i + ad->y, ad);
 
-	if ((j + 1) < ad->rl) {	/*not last row */
+	if (i > 0)		/* not first row */
+	    buf_sup = RLI_get_dcell_raster_row(fd, i - 1 + ad->y, ad);
 
-	    buf_inf = RLI_get_dcell_raster_row(fd, 1 + j + ad->y, ad);
-	}
-	else {
-	    buf_inf = G_allocate_d_raster_buf();
-	    if (buf_inf == NULL) {
-		G_fatal_error("malloc buf_inf failed");
-		return RLI_ERRORE;
-	    }
-
-	    G_set_d_null_value(buf_inf + ad->x, ad->cl);
-	}
-
-	/*read mask if needed */
+	/* read mask if needed */
 	if (masked) {
-
-	    if (read(mask_fd, mask_corr, (ad->cl * sizeof(int))) < 0) {
-		G_fatal_error("reading mask_corr");
+	    mask_tmp = mask_sup;
+	    mask_sup = mask_buf;
+	    mask_buf = mask_tmp;
+	    if (read(mask_fd, mask_buf, (ad->cl * sizeof(int))) < 0)
 		return RLI_ERRORE;
-	    }
-
-
-	    if ((j + 1) < ad->rl) {	/*not last row */
-		if (read(mask_fd, mask_inf, (ad->cl * sizeof(int))) < 0) {
-		    G_fatal_error("reading mask_inf");
-		    return RLI_ERRORE;
-		}
-	    }
-	    else {
-		int z = 0;
-
-		for (z = 0; z < ad->cl; z++)
-		    mask_inf[z + ad->x] = 0;
-	    }
 	}
 
+	G_set_d_null_value(&precCell, 1);
 
-	G_set_d_null_value(&nextCell, 1);
-	G_set_d_null_value(&prevCell, 1);
-	G_set_d_null_value(&corrCell, 1);
+	for (j = 0; j < ad->cl; j++) {
+	    corrCell = buf[j + ad->x];
 
-	for (i = 0; i < ad->cl; i++) {	/* for each cell in the row */
-
-	    area++;
-	    corrCell = buf_corr[i + ad->x];
-
-
-	    if (masked && mask_corr[i + ad->x] == 0) {
+	    if (masked && mask_buf[j] == 0) {
 		G_set_d_null_value(&corrCell, 1);
-		area--;
+	    }
+	    else {
+		/* total sample area */
+		area++;
 	    }
 
-	    if (!(G_is_null_value(&corrCell, DCELL_TYPE))) {
-
-
-
-		if ((i + 1) == ad->cl)	/*last cell of the row */
-		    G_set_d_null_value(&nextCell, 1);
-		else if (masked && mask_corr[i + 1 + ad->x] == 0)
-		    G_set_d_null_value(&nextCell, 1);
-		else
-		    nextCell = buf_corr[i + 1 + ad->x];
-
-		supCell = buf_sup[i + ad->x];
-
-
-		if (masked && mask_inf[i + ad->x] == 0)
-		    G_set_d_null_value(&infCell, 1);
-		else
-		    infCell = buf_inf[i + ad->x];
-
-		/* calculate how many edge the cell has */
-
-		if ((G_is_null_value(&prevCell, DCELL_TYPE)) ||
-		    (corrCell != prevCell)) {
-		    bordoCorr++;
-		}
-
-
-		if ((G_is_null_value(&supCell, DCELL_TYPE)) ||
-		    (corrCell != supCell)) {
-		    bordoCorr++;
-		}
-
-		if ((G_is_null_value(&infCell, DCELL_TYPE)) ||
-		    (corrCell != infCell)) {
-		    bordoCorr++;
-		}
-
-
-		if ((G_is_null_value(&nextCell, DCELL_TYPE)) ||
-		    (corrCell != nextCell)) {
-		    bordoCorr++;
-		}
-
-		/*store the result in the tree */
-		if (albero == NULL) {
-		    c1.val.dc = corrCell;
-		    albero = avl_make(c1, bordoCorr);
-		    if (albero == NULL) {
-			G_fatal_error("avl_make error");
-			return RLI_ERRORE;
-		    }
-		    m++;
-		}
-		else {
-		    c1.val.dc = corrCell;
-		    ris = avl_add(&albero, c1, bordoCorr);
-
-		    switch (ris) {
-		    case AVL_ERR:
-			{
-			    G_fatal_error("avl_add error");
-			    return RLI_ERRORE;
-			}
-		    case AVL_ADD:
-			{
-			    m++;
-			    break;
-			}
-		    case AVL_PRES:
-			{
-			    break;
-			}
-		    default:
-			{
-			    G_fatal_error("avl_add unknown error");
-			    return RLI_ERRORE;
-			}
-		    }
-		}
-
-		bordoCorr = 0;
-
+	    supCell = buf_sup[j + ad->x];
+	    if (masked && (mask_sup[j] == 0)) {
+		G_set_d_null_value(&supCell, 1);
 	    }
 
-
-	    prevCell = buf_corr[i + ad->x];
+	    if (!G_is_d_null_value(&ptype)) {
+		/* only one patch type */
+		if (!G_is_d_null_value(&corrCell) && corrCell == ptype) {
+		    if (corrCell != precCell)
+			nedges++;
+		    if (corrCell != supCell)
+			nedges++;
+		    /* right and bottom */
+		    if (i == ad->rl - 1)
+			nedges++;
+		    if (j == ad->cl - 1)
+			nedges++;
+		}
+		if (!G_is_d_null_value(&precCell) && precCell == ptype) {
+		    if (corrCell != precCell)
+			nedges++;
+		}
+		if (!G_is_d_null_value(&supCell) && supCell == ptype) {
+		    if (corrCell != supCell)
+			nedges++;
+		}
+	    }
+	    else {
+		/* all patch types */
+		if (!G_is_d_null_value(&corrCell)) {
+		    if (corrCell != precCell) {
+			nedges++;
+		    }
+		    if (corrCell != supCell) {
+			nedges++;
+		    }
+		    /* right and bottom */
+		    if (i == ad->rl - 1)
+			nedges++;
+		    if (j == ad->cl - 1)
+			nedges++;
+		}
+		if (!G_is_d_null_value(&precCell) && corrCell != precCell) {
+		    nedges++;
+		}
+		if (!G_is_d_null_value(&supCell) && corrCell != supCell) {
+		    nedges++;
+		}
+	    }
+	    precCell = corrCell;
 	}
-
-
-
-	if (masked)
-	    mask_sup = mask_corr;
-
-
-
     }
-
 
     /* calculate index */
-    if (area == 0)
-	indice = -1;
-    else {
+    if (area > 0) {
+	double EW_DIST1, EW_DIST2, NS_DIST1, NS_DIST2;
+	double elength, cell_size;
 
-	if (valore != NULL) {	/* only 1 class */
-	    char *sval;
-	    double val;
-	    DCELL cella;
+	/* calculate distance */
+	G_begin_distance_calculations();
+	/* EW Dist at North edge */
+	EW_DIST1 = G_distance(hd.east, hd.north, hd.west, hd.north);
+	/* EW Dist at South Edge */
+	EW_DIST2 = G_distance(hd.east, hd.south, hd.west, hd.south);
+	/* NS Dist at East edge */
+	NS_DIST1 = G_distance(hd.east, hd.north, hd.east, hd.south);
+	/* NS Dist at West edge */
+	NS_DIST2 = G_distance(hd.west, hd.north, hd.west, hd.south);
 
-	    sval = valore[0];
-	    val = (double)atof(sval);
-	    cella = val;
-	    c1.val.dc = cella;
-	    c1.t = DCELL_TYPE;
-	    e = (double)howManyCell(albero, c1);
-	    somma = e;
+	elength = ((EW_DIST1 + EW_DIST2) / (2 * hd.cols) + 
+	          (NS_DIST1 + NS_DIST2) / (2  * hd.rows)) / 2;
 
-	}
-	else {			/* all classes */
+	cell_size = ((EW_DIST1 + EW_DIST2) / (2 * hd.cols)) *
+	            ((NS_DIST1 + NS_DIST2) / (2 * hd.rows));
 
-	    array = G_malloc(m * sizeof(AVL_tableRow));
-	    if (array == NULL) {
-		G_fatal_error("malloc array failed");
-		return RLI_ERRORE;
-	    }
-	    tot = avl_to_array(albero, zero, array);
-	    if (tot != m) {
-		G_warning
-		    ("avl_to_array unaspected value. the result could be wrong");
-	    }
-	    for (i = 0; i < m; i++) {
-		e = (double)array[i]->tot;
-		somma = somma + e;
-	    }
-	    G_free(array);
-	}
-	indice = somma * 10000 / area;
+	*result = (double) nedges * elength * 10000 / (area * cell_size);
     }
+    else
+	G_set_d_null_value(result, 1);
 
-    *result = indice;
     if (masked) {
-	G_free(mask_inf);
-	G_free(mask_corr);
+	close(mask_fd);
+	G_free(mask_buf);
+	G_free(mask_sup);
     }
+    G_free(buf_null);
+
     return RLI_OK;
 }
 
-int calculateF(int fd, area_des ad, char **valore, double *result)
+int calculateF(int fd, struct area_entry *ad, char **par, double *result)
 {
-    double indice = 0;
-    double e = 0;
-    double somma = 0;
-    double area = 0;
-
-    FCELL *buf_corr, *buf_sup, *buf_inf;
-    FCELL prevCell, corrCell, supCell, infCell, nextCell;
-
-    AVL_table *array;
-
-    long tot = 0;
-    long zero = 0;
-    long m = 0;
-    long bordoCorr = 0;
-
-    avl_tree albero = NULL;
-
+    FCELL *buf, *buf_sup, *buf_null;
+    FCELL corrCell, precCell, supCell;
+    FCELL ptype;
+    long nedges, area; 
     int i, j;
-    int mask_fd = -1, *mask_corr, *mask_sup, *mask_inf;
-    int masked = FALSE;
-    int ris;
+    int mask_fd, *mask_buf, *mask_sup, *mask_tmp, masked;
+    struct Cell_head hd;
 
-    generic_cell c1;
+    G_get_window(&hd);
 
-    c1.t = FCELL_TYPE;
     /* open mask if needed */
+    mask_fd = -1;
+    mask_buf = mask_sup = NULL;
+    masked = FALSE;
     if (ad->mask == 1) {
-	if ((mask_fd = open(ad->mask_name, O_RDONLY, 0755)) < 0) {
-	    G_fatal_error("can't  open mask");
+	if ((mask_fd = open(ad->mask_name, O_RDONLY, 0755)) < 0)
+	    return RLI_ERRORE;
+	mask_buf = G_malloc(ad->cl * sizeof(int));
+	if (mask_buf == NULL) {
+	    G_fatal_error("malloc mask_buf failed");
 	    return RLI_ERRORE;
 	}
-
-	mask_corr = G_malloc(ad->cl * sizeof(int));
-	if (mask_corr == NULL) {
-	    G_fatal_error("malloc mask_corr failed");
+	mask_sup = G_malloc(ad->cl * sizeof(int));
+	if (mask_sup == NULL) {
+	    G_fatal_error("malloc mask_buf failed");
 	    return RLI_ERRORE;
 	}
-
-	mask_inf = G_malloc(ad->cl * sizeof(int));
-	if (mask_inf == NULL) {
-	    G_fatal_error("malloc mask_inf failed");
-	    return RLI_ERRORE;
-	}
+	for (j = 0; j < ad->cl; j++)
+	    mask_buf[j] = 0;
 
 	masked = TRUE;
     }
 
-    buf_sup = G_allocate_f_raster_buf();
-    if (buf_sup == NULL) {
-	G_fatal_error("malloc buf_sup failed");
+    buf_null = G_allocate_f_raster_buf();
+    if (buf_null == NULL) {
+	G_fatal_error("malloc buf_null failed");
 	return RLI_ERRORE;
     }
 
-    G_set_f_null_value(buf_sup + ad->x, ad->cl);	/*the first time buf_sup is all null */
+    /* the first time buf_sup is all null */
+    G_set_f_null_value(buf_null, G_window_cols());
+    buf_sup = buf_null;
 
+    if (par != NULL) {	/* only 1 class */
+	char *sval;
 
-    for (j = 0; j < ad->rl; j++) {	/* for each raster row */
+	sval = par[0];
+	ptype = atof(sval);
+    }
+    else
+	G_set_f_null_value(&ptype, 1);
 
-	buf_corr = RLI_get_fcell_raster_row(fd, j + ad->y, ad);	/* read row of raster */
+    nedges = 0;
+    area = 0;
 
-	if (j > 0)		/* not first row */
-	    buf_sup = RLI_get_fcell_raster_row(fd, j - 1 + ad->y, ad);
+    /* for each raster row */
+    for (i = 0; i < ad->rl; i++) {
 
+	/* read row of raster */
+	buf = RLI_get_fcell_raster_row(fd, i + ad->y, ad);
 
-	if ((j + 1) < ad->rl) {	/*not last row */
+	if (i > 0)		/* not first row */
+	    buf_sup = RLI_get_fcell_raster_row(fd, i - 1 + ad->y, ad);
 
-	    buf_inf = RLI_get_fcell_raster_row(fd, 1 + j + ad->y, ad);
-	}
-	else {
-	    buf_inf = G_allocate_f_raster_buf();
-	    if (mask_inf == NULL) {
-		G_fatal_error("malloc mask_inf failed");
-		return RLI_ERRORE;
-	    }
-
-	    G_set_f_null_value(buf_inf + ad->x, ad->cl);
-	}
-
-	/*read mask if needed */
+	/* read mask if needed */
 	if (masked) {
-
-	    if (read(mask_fd, mask_corr, (ad->cl * sizeof(int))) < 0) {
-		G_fatal_error("reading mask_corr");
+	    mask_tmp = mask_sup;
+	    mask_sup = mask_buf;
+	    mask_buf = mask_tmp;
+	    if (read(mask_fd, mask_buf, (ad->cl * sizeof(int))) < 0)
 		return RLI_ERRORE;
+	}
+
+	G_set_f_null_value(&precCell, 1);
+
+	for (j = 0; j < ad->cl; j++) {
+	    corrCell = buf[j + ad->x];
+
+	    if (masked && mask_buf[j] == 0) {
+		G_set_f_null_value(&corrCell, 1);
+	    }
+	    else {
+		/* total sample area */
+		area++;
 	    }
 
+	    supCell = buf_sup[j + ad->x];
+	    if (masked && (mask_sup[j] == 0)) {
+		G_set_f_null_value(&supCell, 1);
+	    }
 
-	    if ((j + 1) < ad->rl) {	/*not last row */
-		if (read(mask_fd, mask_inf, (ad->cl * sizeof(int))) < 0) {
-		    G_fatal_error("reading mask_inf");
-		    return RLI_ERRORE;
+	    if (!G_is_f_null_value(&ptype)) {
+		/* only one patch type */
+		if (!G_is_f_null_value(&corrCell) && corrCell == ptype) {
+		    if (corrCell != precCell)
+			nedges++;
+		    if (corrCell != supCell)
+			nedges++;
+		    /* right and bottom */
+		    if (i == ad->rl - 1)
+			nedges++;
+		    if (j == ad->cl - 1)
+			nedges++;
+		}
+		if (!G_is_f_null_value(&precCell) && precCell == ptype) {
+		    if (corrCell != precCell)
+			nedges++;
+		}
+		if (!G_is_f_null_value(&supCell) && supCell == ptype) {
+		    if (corrCell != supCell)
+			nedges++;
 		}
 	    }
 	    else {
-		int z = 0;
-
-		for (z = 0; z < ad->cl; z++)
-		    mask_inf[z + ad->x] = 0;
-	    }
-	}
-
-
-	G_set_f_null_value(&nextCell, 1);
-	G_set_f_null_value(&prevCell, 1);
-	G_set_f_null_value(&corrCell, 1);
-
-	for (i = 0; i < ad->cl; i++) {	/* for each cell in the row */
-	    area++;
-	    corrCell = buf_corr[i + ad->x];
-
-
-	    if (masked && mask_corr[i + ad->x] == 0) {
-		G_set_f_null_value(&corrCell, 1);
-		area--;
-	    }
-
-	    if (!(G_is_null_value(&corrCell, FCELL_TYPE))) {
-
-		if ((i + 1) == ad->cl)	/*last cell of the row */
-		    G_set_f_null_value(&nextCell, 1);
-		else if (masked && mask_corr[i + 1 + ad->x] == 0)
-		    G_set_f_null_value(&nextCell, 1);
-		else
-		    nextCell = buf_corr[i + 1 + ad->x];
-
-		supCell = buf_sup[i + ad->x];
-
-
-		if (masked && mask_inf[i + ad->x] == 0)
-		    G_set_f_null_value(&infCell, 1);
-		else
-		    infCell = buf_inf[i + ad->x];
-
-		/* calculate how many edge the cell has */
-
-		if ((G_is_null_value(&prevCell, FCELL_TYPE)) ||
-		    (corrCell != prevCell)) {
-		    bordoCorr++;
-		}
-
-
-		if ((G_is_null_value(&supCell, FCELL_TYPE)) ||
-		    (corrCell != supCell)) {
-		    bordoCorr++;
-		}
-
-		if ((G_is_null_value(&infCell, FCELL_TYPE)) ||
-		    (corrCell != infCell)) {
-		    bordoCorr++;
-		}
-
-
-		if ((G_is_null_value(&nextCell, FCELL_TYPE)) ||
-		    (corrCell != nextCell)) {
-		    bordoCorr++;
-		}
-
-		/*store the result in the tree */
-		if (albero == NULL) {
-		    c1.val.c = corrCell;
-		    albero = avl_make(c1, bordoCorr);
-		    if (albero == NULL) {
-			G_fatal_error("avl_make error");
-			return RLI_ERRORE;
+		/* all patch types */
+		if (!G_is_f_null_value(&corrCell)) {
+		    if (corrCell != precCell) {
+			nedges++;
 		    }
-		    m++;
-		}
-		else {
-		    c1.val.c = corrCell;
-		    ris = avl_add(&albero, c1, bordoCorr);
-
-		    switch (ris) {
-		    case AVL_ERR:
-			{
-			    G_fatal_error("avl_add error");
-			    return RLI_ERRORE;
-			}
-		    case AVL_ADD:
-			{
-			    m++;
-			    break;
-			}
-		    case AVL_PRES:
-			{
-			    break;
-			}
-		    default:
-			{
-			    G_fatal_error("avl_add unknown error");
-			    return RLI_ERRORE;
-			}
+		    if (corrCell != supCell) {
+			nedges++;
 		    }
+		    /* right and bottom */
+		    if (i == ad->rl - 1)
+			nedges++;
+		    if (j == ad->cl - 1)
+			nedges++;
 		}
-
-		bordoCorr = 0;
-
+		if (!G_is_f_null_value(&precCell) && corrCell != precCell) {
+		    nedges++;
+		}
+		if (!G_is_f_null_value(&supCell) && corrCell != supCell) {
+		    nedges++;
+		}
 	    }
-
-
-	    prevCell = buf_corr[i + ad->x];
+	    precCell = corrCell;
 	}
-
-
-
-	if (masked)
-	    mask_sup = mask_corr;
-
-
-
     }
-
 
     /* calculate index */
-    if (area == 0)
-	indice = -1;
-    else {
+    if (area > 0) {
+	double EW_DIST1, EW_DIST2, NS_DIST1, NS_DIST2;
+	double elength, cell_size;
 
-	if (valore != NULL) {	/* only 1 class */
-	    char *sval;
-	    float val;
-	    FCELL cella;
+	/* calculate distance */
+	G_begin_distance_calculations();
+	/* EW Dist at North edge */
+	EW_DIST1 = G_distance(hd.east, hd.north, hd.west, hd.north);
+	/* EW Dist at South Edge */
+	EW_DIST2 = G_distance(hd.east, hd.south, hd.west, hd.south);
+	/* NS Dist at East edge */
+	NS_DIST1 = G_distance(hd.east, hd.north, hd.east, hd.south);
+	/* NS Dist at West edge */
+	NS_DIST2 = G_distance(hd.west, hd.north, hd.west, hd.south);
 
-	    sval = valore[0];
-	    val = (float)atof(sval);
-	    cella = val;
-	    c1.t = FCELL_TYPE;
-	    c1.val.fc = cella;
-	    e = (double)howManyCell(albero, c1);
-	    somma = e;
+	elength = ((EW_DIST1 + EW_DIST2) / (2 * hd.cols) + 
+	          (NS_DIST1 + NS_DIST2) / (2  * hd.rows)) / 2;
 
-	}
-	else {			/* all classes */
+	cell_size = ((EW_DIST1 + EW_DIST2) / (2 * hd.cols)) *
+	            ((NS_DIST1 + NS_DIST2) / (2 * hd.rows));
 
-
-	    array = G_malloc(m * sizeof(AVL_tableRow));
-	    if (array == NULL) {
-		G_fatal_error("malloc array failederror");
-		return RLI_ERRORE;
-	    }
-	    tot = avl_to_array(albero, zero, array);
-	    if (tot != m) {
-		G_warning
-		    ("avl_to_array unaspected value. the result could be wrong");
-	    }
-	    for (i = 0; i < m; i++) {
-		e = (double)array[i]->tot;
-		somma = somma + e;
-	    }
-	    G_free(array);
-	}
-	indice = somma * 10000 / area;
+	*result = (double) nedges * elength * 10000 / (area * cell_size);
     }
+    else
+	G_set_d_null_value(result, 1);
 
-    *result = indice;
     if (masked) {
-	G_free(mask_inf);
-	G_free(mask_corr);
+	close(mask_fd);
+	G_free(mask_buf);
+	G_free(mask_sup);
     }
+    G_free(buf_null);
+
     return RLI_OK;
 }

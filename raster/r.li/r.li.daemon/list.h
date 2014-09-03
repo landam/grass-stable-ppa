@@ -27,10 +27,10 @@
  * \member next the next item in list
  * \member m the content of list node
  */
-struct nodoLista
+struct node
 {
-    struct nodoLista *prev;
-    struct nodoLista *next;
+    struct node *prev;
+    struct node *next;
     msg *m;
 };
 
@@ -42,45 +42,44 @@ struct nodoLista
  * \member tail last item in list
  * \member size number of items in list
  */
-struct lista
+struct list
 {
-    struct nodoLista *head;
-    struct nodoLista *tail;
+    struct node *head;
+    struct node *tail;
     int size;
 };
 
-typedef struct nodoLista *node;
-
-typedef struct lista *list;
 
 /**
  * \brief insert a item in list
  * \param l list where to put items
  * \param mess the message to insert
  */
-void insertNode(list l, msg m);
+void insertNode(struct list *l, msg m);
 
 /**
  * \brief remove head item
  * \param l list where to remove
  */
-void removeNode(list l);
+void removeNode(struct list *l);
 
  /**
   * \brief struct for runtime area generation
   * \param dist inter-area distance
   * \param add_row cell to add in rows
   * \param add_col cell to add in columns
-  * \param x x coordinate of next area
-  * \param y y coordinate of next area
-  * \param rl area length in rows
-  * \param cl areal length in columns
+  * \param rows area length in rows
+  * \param cols area length in columns
+  * \param x column offset of next area
+  * \param y row offset of next area
+  * \param rl sample area length in rows
+  * \param cl sample area length in columns
   * \param count identifier of next area
-  * \param sf_x x coordinate of sample frame
-  * \param sf_y y coordinate of sample frame
+  * \param sf_x column offset of sample frame
+  * \param sf_y row offset of sample frame
   * \param maskname name of mask for the area
   */
-struct generatore
+struct g_area
 {
     int dist;
     int add_row;
@@ -97,11 +96,9 @@ struct generatore
     char *maskname;
 };
 
-typedef struct generatore *g_areas;
-
 /**
  * \brief runtime area generation
  * \param gen area generator to use
  * \param msg next area message
  */
-int next(g_areas gen, msg * toReturn);
+int next(struct g_area *gen, msg *toReturn);

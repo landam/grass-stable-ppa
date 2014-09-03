@@ -8,57 +8,96 @@ vector segments are generated).
 
 <h2>NOTES</h2>
 
+Internal buffers for areas can be generated with negative distance 
+values ("inward buffer" or "negative buffer").
 <!-- Q: True?  A: Sure. if two point buffers overlap and are merged, which
      area's attribute is the one to use in the combined area? -->
 Attributes are not transferred due to potential buffer overlap, which
 cannot be resolved automatically.
 
+<p>
+Buffers for lines and areas are generated using the algorithms from
+the GEOS library.
 
 <h2>EXAMPLES</h2>
+
+All examples are based on the North Carolina sample dataset.
 
 <h3>Buffer around input lines</h3>
 
 <div class="code"><pre>
-v.buffer input=map output=buffer type=line distance=100
+v.buffer input=roadsmajor output=roadsmajor_buffer type=line distance=100
 </pre></div>
+
+<center>
+<img src="v_buffer_lines.png" border="1"><br>
+Buffer of 100m along the "roadsmajor" lines (map subset, original center line
+shown in black)
+</center>
 
 <h3>Circles around input points</h3>
 
 <div class="code"><pre>
-v.buffer input=pointsmap output=circles type=point distance=1000 
+v.buffer input=hospitals output=hospitals_circled type=point distance=2000 
 </pre></div>
 
-<h3>Non-overlapping circles around input points with attribute transfer</h3>
+<center>
+<img src="v_buffer_points.png" border="1"><br>
+Buffer of 2000m around the "hospitals" points (map subset, original points
+shown in black, new area centroids in red)
+</center>
+
+<h3>Overlapping circles around input points with attribute transfer</h3>
 
 <div class="code"><pre>
-v.buffer input=archsites output=circles type=point distance=200 
+# copy map to current mapset (for easier DB linking)
+g.copy vect=hospitals,myhospitals
+v.buffer input=myhospitals output=circles type=point distance=2000
 # change original points to centroids: 
-v.type in=archsites out=archcentroids type=point,centroid 
+v.type in=myhospitals out=hospital_centroids type=point,centroid 
 # patch circles and centroids: 
-v.patch in=archcentroids,circles out=circles_db 
-# attach attributes, either use 
-# db.copy ... 
-# or link to the original table: 
-v.db.connect map=circles_db table=archsites field=1 key=cat driver=dbf \
-database='$GISDBASE/$LOCATION_NAME/$MAPSET/dbf'
+v.patch in=hospital_centroids,circles out=circles_db 
+# attach attributes, either use db.copy or link to the original table: 
+v.db.connect map=circles_db table=myhospitals layer=1 key=cat driver=dbf \
+     database='$GISDBASE/$LOCATION_NAME/$MAPSET/dbf'
+v.db.select circles_db
 </pre></div>
 
+<h3>Buffer around input areas</h3>
+
+<div class="code"><pre>
+v.buffer input=lakes output=lakes_buffer type=area distance=100
+</pre></div>
+
+<center>
+<img src="v_buffer_areas.png" border="1"><br>
+Buffer of 100m around the "lakes" polygons (map subset, original areas
+shown in black)
+</center>
+
+<h2>REFERENCE</h2>
+
+<ul>
+<li><a href="http://trac.osgeo.org/geos">GEOS Library</a></li>
+</ul>
 
 <h2>SEE ALSO</h2>
 
 <em>
 <a href="r.buffer.html">r.buffer</a>,
+<a href="v.parallel.html">v.parallel</a>,
 <a href="v.extract.html">v.extract</a>,
 <a href="v.type.html">v.type</a>,
 <a href="v.patch.html">v.patch</a>,
 <a href="v.db.connect.html">v.db.connect</a>
 </em>
 
-
 <h2>AUTHORS</h2>
 
 Radim Blazek<br>
 Rewritten by Rosen Matev (with support through the
- Google Summer of Code program 2008)
+ Google Summer of Code program 2008)<br>
+Rewritten by Markus Metz (2011, 2012)
+
 <p>
-<i>Last changed: $Date: 2011-11-08 01:42:51 -0800 (Tue, 08 Nov 2011) $</i>
+<i>Last changed: $Date: 2014-04-30 18:19:24 +0200 (Wed, 30 Apr 2014) $</i>

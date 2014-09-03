@@ -53,7 +53,7 @@ GRASS source code is currently distributed in 2 forms:
   repository (http://svn.osgeo.org/grass/) or as a snapshot
   (*.tar.gz package) of that SVN repository. The SVN snapshot name
   contains the date when the snapshot was created (checked out from
-  the SVN repository), e.g. grass-6.4.0svn_src_snapshot_2008_12_20.tar.gz
+  the SVN repository), e.g. grass-6.4.svn_src_snapshot_2014_04_05.tar.gz
   Further instructions at http://trac.osgeo.org/grass/wiki/DownloadSource
 
 
@@ -307,4 +307,4 @@ http://grass.osgeo.org/wiki/GRASS_6_Tutorial
 
 ------------------
 (C) 1999-2010 by The GRASS Development Team
-$Date: 2010-07-28 16:32:36 -0700 (Wed, 28 Jul 2010) $
+$Date: 2014-04-08 22:34:08 +0200 (Tue, 08 Apr 2014) $

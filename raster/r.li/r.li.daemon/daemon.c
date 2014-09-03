@@ -15,6 +15,7 @@
  * \include
  * 
  */
+#include <grass/config.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <fcntl.h>
@@ -34,87 +35,51 @@
 #include <grass/glocale.h>
 #include "daemon.h"
 
+#ifdef __MINGW32__
+#define srandom srand
+#define random rand
+#endif
 
-int calculateIndex(char *file, int f(int, char **, area_des, double *),
+int calculateIndex(char *file, rli_func *f,
 		   char **parameters, char *raster, char *output)
 {
 
     char pathSetup[GPATH_MAX], out[GPATH_MAX], parsed;
-    char *reportChannelName, *random_access_name;
+    char *random_access_name;
     struct History history;
-    g_areas g;
-    int receiveChannel;
+    struct g_area *g;
     int res;
-    wd child[WORKERS];
-    int i, mypid, doneDir, withoutJob, mv_fd, random_access;
+    int i, doneDir, mv_fd, random_access;
 
-    /*int mv_rows, mv_cols; */
-    list l;
+    /* int mv_rows, mv_cols; */
+    struct list *l;
     msg m, doneJob;
 
-    /* int perc=0; */
-
-    g = (g_areas) G_malloc(sizeof(struct generatore));
+    g = (struct g_area *) G_malloc(sizeof(struct g_area));
     g->maskname = NULL;
-    l = (list) G_malloc(sizeof(struct lista));
+    l = (struct list*) G_malloc(sizeof(struct list));
     l->head = NULL;
     l->tail = NULL;
     l->size = 0;
-    mypid = getpid();
 
-    /* create report pipe */
-    reportChannelName = G_tempfile();
-    if (mkfifo(reportChannelName, 0644) == -1)
-	G_fatal_error("Error in pipe creation");
+    worker_init(raster, f, parameters);
 
-
-    /*###############################################
-       --------------create childs-------------------
-       ############################################### */
-
-    i = 0;
-    while (i < WORKERS) {
-	int childpid;
-
-	/*creating pipe */
-	child[i].pipe = G_tempfile();
-	if (mkfifo(child[i].pipe, 0755) == -1)
-	    G_fatal_error(_("Error in pipe creation"));
-	childpid = fork();
-	if (childpid) {
-	    /*father process */
-	    child[i].pid = childpid;
-	    child[i].channel = open(child[i].pipe, O_WRONLY | O_CREAT, 0755);
-
-	    if (child[i].channel == -1) {
-		G_fatal_error(_("Error opening channel %i"), i);
-	    }
-	    i++;
-	}
-	else {
-	    /*child process */
-	    worker(raster, f, reportChannelName, child[i].pipe, parameters);
-	    exit(0);
-	}
-    }
-
-    /*open reportChannel */
-    receiveChannel = open(reportChannelName, O_RDONLY, 0755);
-
-
-    /*########################################################      
+    /*#########################################################
        -----------------create area queue----------------------
        ######################################################### */
 
     /* strip off leading path if present */
+    char rlipath[GPATH_MAX];
     char testpath[GPATH_MAX];
 
-    sprintf(testpath, "%s%s", G_home(), "/.r.li/history/");
+    sprintf(rlipath, "%s%c%s%c", G_home(), HOST_DIRSEP, ".r.li", HOST_DIRSEP);
+
+    sprintf(testpath, "%s%s%c", rlipath, "history", HOST_DIRSEP);
     if (strncmp(file, testpath, strlen(testpath)) == 0)
 	file += strlen(testpath);
 
-    /* TODO: check if this path is portable */
-    sprintf(pathSetup, "%s/.r.li/history/%s", G_home(), file);
+    /* TODO: use G_rc_path() */
+    sprintf(pathSetup, "%s%s%c%s", rlipath, "history", HOST_DIRSEP, file);
     G_debug(1, "r.li.daemon pathSetup: [%s]", pathSetup);
     parsed = parseSetup(pathSetup, l, g, raster);
 
@@ -137,18 +102,20 @@ int calculateIndex(char *file, int f(int, char **, area_des, double *),
 	    G_fatal_error(_("Cannot create random access file"));
     }
     else {
-	/* check if ~/.r.li/output exists */
-	sprintf(out, "%s/.r.li/", G_home());
+	/* text file output */
+	/* check if ~/.r.li/ exists */
+	sprintf(out, "%s", rlipath);
+	doneDir = G_mkdir(out);
+	if (doneDir == -1 && errno != EEXIST)
+	    G_fatal_error(_("Cannot create %s directory"), rlipath);
 
+	/* check if ~/.r.li/output/ exists */
+	sprintf(out, "%s%s%c", rlipath, "output", HOST_DIRSEP);
 	doneDir = G_mkdir(out);
 	if (doneDir == -1 && errno != EEXIST)
-	    G_fatal_error(_("Cannot create %s/.r.li/ directory"), G_home());
-	sprintf(out, "%s/.r.li/output", G_home());
-	doneDir = G_mkdir(out);
-	if (doneDir == -1 && errno != EEXIST)
-	    G_fatal_error(_("Cannot create %s/.r.li/output/ directory"),
-			  G_home());
-	sprintf(out, "%s/.r.li/output/%s", G_home(), output);
+	    G_fatal_error(_("Cannot create %s%s%c directory"), rlipath, "output", HOST_DIRSEP);
+
+	sprintf(out, "%s%s%c%s", rlipath, "output", HOST_DIRSEP, output);
 	res = open(out, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     }
     i = 0;
@@ -156,130 +123,41 @@ int calculateIndex(char *file, int f(int, char **, area_des, double *),
     /*#######################################################
        ------------------analysis loop----------------------
        ####################################################### */
-    /*first job scheduling */
-    while ((i < WORKERS) && next_Area(parsed, l, g, &m) != 0) {
-	send(child[i].channel, &m);
-	i++;
-    }
-
 
     /*body */
     while (next_Area(parsed, l, g, &m) != 0) {
-	int j = 0, donePid;
+	worker_process(&doneJob, &m);
 
-	receive(receiveChannel, &doneJob);
 	/*perc++; */
 	/*G_percent (perc, WORKERS, 1); */
 	if (doneJob.type == DONE) {
 	    double result;
 
-	    donePid = doneJob.f.f_d.pid;
 	    result = doneJob.f.f_d.res;
-	    /*output */
+	    /* output */
 	    if (parsed != MVWIN) {
+		/* text file output */
 		print_Output(res, doneJob);
 	    }
 	    else {
-		/*raster output */
+		/* raster output */
 		raster_Output(random_access, doneJob.f.f_d.aid, g,
 			      doneJob.f.f_d.res);
 	    }
 	}
 	else {
-	    donePid = doneJob.f.f_e.pid;
 	    if (parsed != MVWIN) {
+		/* text file output */
 		error_Output(res, doneJob);
 	    }
 	    else {
-		/*printf("todo ");fflush(stdout); *//* TODO scrivere su raster NULL ??? */
+		/* printf("todo"); fflush(stdout); */
+		/* TODO write to raster NULL ??? */
 	    }
 	}
-	j = 0;
-
-
-	while (j < WORKERS && donePid != child[j].pid)
-	    j++;
-	send(child[j].channel, &m);
-
     }
 
-    /*kill childs */
-    withoutJob = i;
-    while (i > 0) {
-	int j = 0, donePid, status;
-
-	receive(receiveChannel, &doneJob);
-	if (doneJob.type == DONE) {
-	    double result;
-
-	    donePid = doneJob.f.f_d.pid;
-	    result = doneJob.f.f_d.res;
-	    if (parsed != MVWIN) {
-		print_Output(res, doneJob);
-	    }
-	    else {
-		/* raster */
-		raster_Output(random_access, doneJob.f.f_d.aid, g,
-			      doneJob.f.f_d.res);
-	    }
-	}
-	else {
-	    donePid = doneJob.f.f_e.pid;
-	    if (parsed != MVWIN) {
-		error_Output(res, doneJob);
-	    }
-	    else {
-		/*printf("todo2 ");fflush(stdout); *//*TODO scrivere su raster */
-	    }
-	}
-
-	i--;
-
-	while (j < WORKERS && donePid != child[j].pid)
-	    j++;
-
-	m.type = TERM;
-	m.f.f_t.pid = mypid;
-	send(child[j].channel, &m);
-	wait(&status);
-
-	if (!(WIFEXITED(status)))
-	    G_warning(_("r.li.worker (pid %i) exited with abnormal status: %i"),
-		      donePid, status);
-	else
-	    G_verbose_message(_("r.li.worker (pid %i) terminated successfully"),
-			      donePid);
-
-	/* remove pipe */
-	if (close(child[j].channel) != 0)
-	    G_message(_("Cannot close %s file (PIPE)"), child[j].pipe);
-	if (unlink(child[j].pipe) != 0)
-	    G_message(_("Cannot delete %s file (PIPE)"), child[j].pipe);
-    }
-
-    /* kill children without Job */
-    for (i = withoutJob; i < WORKERS; i++) {
-	int status;
-
-	m.type = TERM;
-	m.f.f_t.pid = mypid;
-	send(child[i].channel, &m);
-	wait(&status);
-
-	if (!(WIFEXITED(status)))
-	    G_warning(_("r.li.worker (pid %i) exited with abnormal status: %i"),
-		      child[i].pid, status);
-	else
-	    G_verbose_message(_("r.li.worker (pid %i) terminated successfully"),
-			      child[i].pid);
-
-	/* remove pipe */
-	if (close(child[i].channel) != 0)
-	    G_message(_("Cannot close %s file (PIPE2)"), child[i].pipe);
-	if (unlink(child[i].pipe) != 0)
-	    G_message(_("Cannot delete %s file (PIPE2)"), child[i].pipe);
-    }
-
+    worker_end();
 
     /*################################################
        --------------delete tmp files------------------
@@ -293,28 +171,28 @@ int calculateIndex(char *file, int f(int, char **, area_des, double *),
 	G_short_history(output, "raster", &history);
 	G_command_history(&history);
 	G_write_history(output, &history);
+	G_done_msg(_("Raster map <%s> created."), output);
+    } else {
+	/* text file output */
+	G_message("Result written to text file <%s>", out);
     }
-
-    if (close(receiveChannel) != 0)
-	G_message(_("Cannot close receive channel file"));
-
-    if (unlink(reportChannelName) != 0)
-	G_message(_("Cannot delete %s file"), child[i].pipe);
 
     return 1;
 }
 
 
-int parseSetup(char *path, list l, g_areas g, char *raster)
+int parseSetup(char *path, struct list *l, struct g_area *g, char *raster)
 {
     struct stat s;
     struct Cell_head cellhd;
-    char *buf, *token, *mapset;
+    char *buf, *mapset; /* *raster_fqn, */
+    const char *token;
     int setup;
     int letti;
     double rel_x, rel_y, rel_rl, rel_cl;
     double sf_n, sf_s, sf_e, sf_w;
     int sf_x, sf_y, sf_rl, sf_cl;
+    int sa_x, sa_y, sa_rl, sa_cl;
     int size;
 
     if (stat(path, &s) != 0)
@@ -333,7 +211,7 @@ int parseSetup(char *path, list l, g_areas g, char *raster)
 
     token = strtok(buf, " ");
     if (strcmp("SAMPLINGFRAME", token) != 0)
-	G_fatal_error(_("Unable to parse configuration file"));
+	G_fatal_error(_("Unable to parse configuration file (sampling frame)"));
 
     rel_x = atof(strtok(NULL, "|"));
     rel_y = atof(strtok(NULL, "|"));
@@ -342,14 +220,30 @@ int parseSetup(char *path, list l, g_areas g, char *raster)
 
     /* find raster map */
     mapset = G_find_cell(raster, "");
-    if (G_get_cellhd(raster, mapset, &cellhd) == -1)
-	G_fatal_error(_("Cannot read raster header file"));
+/*    raster_fqn = G_fully_qualified_name(raster, mapset); */
+   
+    /* use current region ! */
+    G_get_window(&cellhd);
 
     /* calculate absolute sampling frame definition */
     sf_x = (int)rint(cellhd.cols * rel_x);
     sf_y = (int)rint(cellhd.rows * rel_y);
     sf_rl = (int)rint(cellhd.rows * rel_rl);
     sf_cl = (int)rint(cellhd.cols * rel_cl);
+    
+    /* sanity check */
+    if (sf_x < 0)
+	sf_x = 0;
+    if (sf_y < 0)
+	sf_y = 0;
+    if (sf_x > cellhd.cols)
+	sf_x = cellhd.cols;
+    if (sf_y > cellhd.rows)
+	sf_y = cellhd.rows;
+    if (sf_rl > cellhd.rows - sf_y)
+	sf_rl = cellhd.rows - sf_y;
+    if (sf_cl > cellhd.cols - sf_x)
+	sf_cl = cellhd.cols - sf_x;
 
     /* calculate sample frame boundaries */
     sf_n = cellhd.north - (cellhd.ns_res * sf_y);
@@ -373,19 +267,27 @@ int parseSetup(char *path, list l, g_areas g, char *raster)
 	    if (rel_sa_x == -1.0 && rel_sa_y == -1.0) {
 		/* runtime disposition */
 
-		int sa_rl, sa_cl;
-
 		sa_rl = (int)rint(cellhd.rows * rel_sa_rl);
 		sa_cl = (int)rint(cellhd.cols * rel_sa_cl);
+
+		/* sanity check */
+		if (sa_rl > cellhd.rows - sf_y)
+		    sa_rl = cellhd.rows - sf_y;
+		if (sa_cl > cellhd.cols - sf_x)
+		    sa_cl = cellhd.cols - sf_x;
+
+		/* total sample area */
 		g->rows = sf_rl;
 		g->cols = sf_cl;
-		g->rl = sa_rl;
-		g->cl = sa_cl;
-		g->count = 1;
-		g->sf_x = sf_x;
-		g->sf_y = sf_y;
 		g->x = sf_x;
 		g->y = sf_y;
+		/* current sample area (subset of total sample area) */
+		g->rl = sa_rl;
+		g->cl = sa_cl;
+		g->sf_x = sf_x;
+		g->sf_y = sf_y;
+
+		g->count = 1;
 		g->maskname = NULL;
 
 		return disposeAreas(l, g, strtok(NULL, "\n"));
@@ -396,10 +298,30 @@ int parseSetup(char *path, list l, g_areas g, char *raster)
 		toReturn = NORMAL;
 		/*read file and create list */
 		m.type = AREA;
-		m.f.f_a.x = (int)rint(cellhd.cols * rel_sa_x);
-		m.f.f_a.y = (int)rint(cellhd.rows * rel_sa_y);
-		m.f.f_a.rl = (int)rint(cellhd.rows * rel_sa_rl);
-		m.f.f_a.cl = (int)rint(cellhd.cols * rel_sa_cl);
+		/* current sample area (subset of total sample area) */
+		sa_x = (int)rint(cellhd.cols * rel_sa_x);
+		sa_y = (int)rint(cellhd.rows * rel_sa_y);
+		sa_rl = (int)rint(cellhd.rows * rel_sa_rl);
+		sa_cl = (int)rint(cellhd.cols * rel_sa_cl);
+
+		/* sanity check */
+		if (sa_x < 0)
+		    sa_x = 0;
+		if (sa_y < 0)
+		    sa_y = 0;
+		if (sa_x > cellhd.cols)
+		    sa_x = cellhd.cols;
+		if (sa_y > cellhd.rows)
+		    sa_y = cellhd.rows;
+		if (sa_rl > cellhd.rows - sa_y)
+		    sa_rl = cellhd.rows - sa_y;
+		if (sa_cl > cellhd.cols - sa_x)
+		    sa_cl = cellhd.cols - sa_x;
+
+		m.f.f_a.x = sa_x;
+		m.f.f_a.y = sa_y;
+		m.f.f_a.rl = sa_rl;
+		m.f.f_a.cl = sa_cl;
 		m.f.f_a.aid = aid;
 		aid++;
 		insertNode(l, m);
@@ -409,13 +331,12 @@ int parseSetup(char *path, list l, g_areas g, char *raster)
 		 strcmp(token, "SAMPLEAREA") == 0);
 
 	close(setup);
-
 	return toReturn;
     }
     else if (strcmp("MASKEDSAMPLEAREA", token) == 0) {
 	double rel_sa_x, rel_sa_y, rel_sa_rl, rel_sa_cl;
 	int aid = 1;
-	char maskname[GNAME_MAX];
+	char maskname[GNAME_MAX] = {'\0'};
 
 	do {
 	    rel_sa_x = atof(strtok(NULL, "|"));
@@ -426,17 +347,25 @@ int parseSetup(char *path, list l, g_areas g, char *raster)
 
 	    if (rel_sa_x == -1 && rel_sa_y == -1) {
 		/* runtime disposition */
-		int sa_rl, sa_cl;
 
 		sa_rl = (int)rint(cellhd.rows * rel_sa_rl);
 		sa_cl = (int)rint(cellhd.cols * rel_sa_cl);
+
+		/* sanity check */
+		if (sa_rl > cellhd.rows - sf_y)
+		    sa_rl = cellhd.rows - sf_y;
+		if (sa_cl > cellhd.cols - sf_x)
+		    sa_cl = cellhd.cols - sf_x;
+
+		/* total sample area */
 		g->rows = sf_rl;
 		g->cols = sf_cl;
+		g->x = sf_x;
+		g->y = sf_y;
+		/* current sample area (subset of total sample area) */
 		g->rl = sa_rl;
 		g->cl = sa_cl;
 		g->count = 1;
-		g->x = sf_x;
-		g->y = sf_y;
 		g->maskname = maskname;
 		return disposeAreas(l, g, strtok(NULL, "\n"));
 	    }
@@ -445,26 +374,52 @@ int parseSetup(char *path, list l, g_areas g, char *raster)
 		msg m;
 
 		m.type = MASKEDAREA;
-		m.f.f_ma.x = (int)rint(cellhd.cols * rel_sa_x);
-		m.f.f_ma.y = (int)rint(cellhd.rows * rel_sa_y);
-		m.f.f_ma.rl = (int)rint(cellhd.rows * rel_sa_rl);
-		m.f.f_ma.cl = (int)rint(cellhd.cols * rel_sa_cl);
+		/* current sample area (subset of total sample area) */
+		sa_x = (int)rint(cellhd.cols * rel_sa_x);
+		sa_y = (int)rint(cellhd.rows * rel_sa_y);
+		sa_rl = (int)rint(cellhd.rows * rel_sa_rl);
+		sa_cl = (int)rint(cellhd.cols * rel_sa_cl);
+
+		/* sanity check */
+		if (sa_x < 0)
+		    sa_x = 0;
+		if (sa_y < 0)
+		    sa_y = 0;
+		if (sa_x > cellhd.cols)
+		    sa_x = cellhd.cols;
+		if (sa_y > cellhd.rows)
+		    sa_y = cellhd.rows;
+		if (sa_rl > cellhd.rows - sa_y)
+		    sa_rl = cellhd.rows - sa_y;
+		if (sa_cl > cellhd.cols - sa_x)
+		    sa_cl = cellhd.cols - sa_x;
+
+		m.f.f_ma.x = sa_x;
+		m.f.f_ma.y = sa_y;
+		m.f.f_ma.rl = sa_rl;
+		m.f.f_ma.cl = sa_cl;
 		m.f.f_ma.aid = aid;
 		strcpy(m.f.f_ma.mask, maskname);
 		aid++;
 		insertNode(l, m);
 	    }
 	}
+
 	while ((token = strtok(NULL, " ")) != NULL &&
 	       strcmp(token, "MASKEDSAMPLEAREA") == 0);
+
 	close(setup);
 	return NORMAL;
     }
     else if (strcmp("MASKEDOVERLAYAREA", token) == 0) {
 	double sa_n, sa_s, sa_w, sa_e;
 	int aid = 1;
-	char maskname[GNAME_MAX];
+	char maskname[GNAME_MAX] = {'\0'};
 	msg m;
+
+	/* Get the window setting. g.region rast=<input raster> */
+	/*   ? same as cellhd above ? */
+	/* no. the current window might be different */
 
 	do {
 	    strcpy(maskname, strtok(NULL, "|"));
@@ -474,34 +429,69 @@ int parseSetup(char *path, list l, g_areas g, char *raster)
 	    sa_w = atof(strtok(NULL, "\n"));
 
 	    m.type = MASKEDAREA;
-	    m.f.f_ma.x = (int)rint((cellhd.north - sa_n) * cellhd.ns_res);
-	    m.f.f_ma.y = (int)rint((cellhd.west + sa_w) * cellhd.ew_res);
-	    m.f.f_ma.rl = (int)rint((sa_n - sa_s) * cellhd.ns_res);
-	    m.f.f_ma.cl = (int)rint((sa_e - sa_w) * cellhd.ew_res);
+
+	    /* Each input overlay area from input vector are converted to
+		raster via v.to.rast. See r.li.setup/sample_area_vector.sh.
+		This is used only for reading the region (NS, EW). */
+
+	    /* current sample area (subset of total sample area) */
+
+	    /* Get start x and y position of masked overlay raster with
+		respect to current region.
+		sa_n, sa_w are read from configuration file. */
+	    sa_x = (int)rint((sa_w - cellhd.west) / cellhd.ew_res);
+	    sa_y = (int)rint((cellhd.north - sa_n) / cellhd.ns_res);
+
+	    /* Get row count and column count of overlay raster */
+	    sa_rl = (int)rint((sa_n - sa_s) / cellhd.ns_res);
+	    sa_cl = (int)rint((sa_e - sa_w) / cellhd.ew_res);
+
+	    /* sanity check */
+	    if (sa_x < 0)
+		sa_x = 0;
+	    if (sa_y < 0)
+		sa_y = 0;
+	    if (sa_x > cellhd.cols)
+		sa_x = cellhd.cols;
+	    if (sa_y > cellhd.rows)
+		sa_y = cellhd.rows;
+	    if (sa_rl > cellhd.rows - sa_y)
+		sa_rl = cellhd.rows - sa_y;
+	    if (sa_cl > cellhd.cols - sa_x)
+		sa_cl = cellhd.cols - sa_x;
+
+	    m.f.f_ma.x = sa_x;
+	    m.f.f_ma.y = sa_y;
+	    m.f.f_ma.rl = sa_rl;
+	    m.f.f_ma.cl = sa_cl;
 	    m.f.f_ma.aid = aid;
 	    strcpy(m.f.f_ma.mask, maskname);
 	    aid++;
 	    insertNode(l, m);
 	}
+
 	while ((token = strtok(NULL, " ")) != NULL &&
 	       (strcmp(token, "MASKEDOVERLAYAREA") == 0));
+
 	if (strcmp(token, "RASTERMAP") != 0)
-	    G_fatal_error(_("Irregular maskedoverlay areas definition"));
+	    G_fatal_error(_("Irregular MASKEDOVERLAY areas definition"));
+
 	token = strtok(NULL, "\n");
-	if (strcmp(token, raster) != 0)
-	    G_fatal_error(_("The configuration file can be used only with \
-			%s rasterfile"), token);
+/*	if (strcmp(token, raster_fqn) != 0)
+	    G_fatal_error(_("The configuration file can be used only with "
+			"rasterfile <%s> and not with <%s>"), token, raster_fqn); */
+
 	close(setup);
 	return NORMAL;
-
     }
     else
-	G_fatal_error(_("Illegal configuration file (sample area)"));
+	G_fatal_error(_("Unable to parse configuration file (sample area)"));
+
     close(setup);
     return ERROR;
 }
 
-int disposeAreas(list l, g_areas g, char *def)
+int disposeAreas(struct list *l, struct g_area *g, char *def)
 {
     char *token;
 
@@ -599,7 +589,7 @@ int disposeAreas(list l, g_areas g, char *def)
 	r_strat_len = (int)rint(g->rows / r_strat);
 	c_strat_len = (int)rint(g->cols / c_strat);
 	if (r_strat_len < g->rl || c_strat_len < g->cl)
-	    G_fatal_error(_("Too many strats for raster map"));
+	    G_fatal_error(_("Too many stratified random sample for raster map"));
 	loop = r_strat * c_strat;
 	srandom(getpid());
 	for (i = 0; i < loop; i++) {
@@ -640,7 +630,7 @@ int disposeAreas(list l, g_areas g, char *def)
 }
 
 
-int next_Area(int parsed, list l, g_areas g, msg * m)
+int next_Area(int parsed, struct list *l, struct g_area *g, msg * m)
 {
     if (parsed == NORMAL) {
 	if (l->size == 0)
@@ -668,7 +658,10 @@ int print_Output(int out, msg m)
 	char s[100];
 	int len;
 
-	sprintf(s, "RESULT %i|%f\n", m.f.f_d.aid, m.f.f_d.res);
+	if (G_is_null_value(&m.f.f_d.res, DCELL_TYPE))
+	    sprintf(s, "RESULT %i|NULL\n", m.f.f_d.aid);
+	else
+	    sprintf(s, "RESULT %i|%.15g\n", m.f.f_d.aid, m.f.f_d.res);
 	len = strlen(s);
 
 	if (write(out, s, len) == len)
@@ -696,7 +689,7 @@ int error_Output(int out, msg m)
 }
 
 
-int raster_Output(int fd, int aid, g_areas g, double res)
+int raster_Output(int fd, int aid, struct g_area *g, double res)
 {
     double toPut = res;
     off_t offset = (off_t) aid * sizeof(double);
@@ -713,7 +706,7 @@ int raster_Output(int fd, int aid, g_areas g, double res)
 }
 
 
-int write_raster(int mv_fd, int random_access, g_areas g)
+int write_raster(int mv_fd, int random_access, struct g_area *g)
 {
     int i = 0, j = 0, letti = 0;
     double *file_buf;
@@ -745,6 +738,7 @@ int write_raster(int mv_fd, int random_access, g_areas g)
 	}
 
 	G_put_raster_row(mv_fd, cell_buf, DCELL_TYPE);
+
     }
 
     G_set_d_null_value(cell_buf, G_window_cols() + 1);

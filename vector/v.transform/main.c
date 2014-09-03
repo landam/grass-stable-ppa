@@ -10,7 +10,7 @@
 * PURPOSE:      To transform a vector map's coordinates via a set of tie
 *               points.
 *
-* COPYRIGHT:    (C) 2002-2007 by the GRASS Development Team
+* COPYRIGHT:    (C) 2002-2011 by the GRASS Development Team
 *
 *               This program is free software under the GNU General Public
 *   	    	License (>=v2). Read the file COPYING that comes with GRASS
@@ -50,8 +50,8 @@ int main(int argc, char *argv[])
 
     struct Option *vold, *vnew, *pointsfile, *xshift, *yshift, *zshift,
 	*xscale, *yscale, *zscale, *zrot, *columns, *table, *field;
-    struct Flag *quiet_flag, *tozero_flag, *shift_flag, *print_mat_flag;
-
+    struct Flag *quiet_flag, *tozero_flag, *shift_flag, *print_mat_flag, *swap_flag;
+    
     char *mapset, mon[4], date[40], buf[1000];
     struct Map_info Old, New;
     int ifield;
@@ -86,23 +86,29 @@ int main(int argc, char *argv[])
     tozero_flag->description = _("Shift all z values to bottom=0");
     tozero_flag->guisection = _("Custom");
 
+    swap_flag = G_define_flag();
+    swap_flag->key = 'w';
+    swap_flag->description =
+	_("Swap coordinates x, y and then apply other parameters");
+    swap_flag->guisection = _("Custom");
+
     print_mat_flag = G_define_flag();
     print_mat_flag->key = 'm';
     print_mat_flag->description =
 	_("Print the transformation matrix to stdout");
-    
+
     shift_flag = G_define_flag();
     shift_flag->key = 's';
     shift_flag->description =
 	_("Instead of points use transformation parameters "
 	  "(xshift, yshift, zshift, xscale, yscale, zscale, zrot)");
     shift_flag->guisection = _("Custom");
-	
+
     vold = G_define_standard_option(G_OPT_V_INPUT);
 
     field = G_define_standard_option(G_OPT_V_FIELD);
     field->answer = "-1";
-    
+
     vnew = G_define_standard_option(G_OPT_V_OUTPUT);
 
     pointsfile = G_define_standard_option(G_OPT_F_INPUT);
@@ -354,7 +360,7 @@ int main(int argc, char *argv[])
 
     /* do the transformation */
     transform_digit_file(&Old, &New, Coord.name[0] ? 1 : 0,
-			 ztozero, trans_params,
+			 ztozero, swap_flag->answer, trans_params,
 			 table->answer, columns_name, ifield);
 
     if (Vect_copy_tables(&Old, &New, 0))

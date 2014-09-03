@@ -120,11 +120,6 @@ unset LC_ALL
 LC_NUMERIC=C
 export LC_NUMERIC
 
-eval `g.gisenv`
-: ${GISBASE?} ${GISDBASE?} ${LOCATION_NAME?} ${MAPSET?}
-LOCATION="$GISDBASE"/"$LOCATION_NAME"/"$MAPSET"
-
-PROG=`basename "$0"`
 
 #### check for gpsbabel 
 if [ ! -x "`which gpsbabel`" ] ; then
@@ -192,7 +187,7 @@ if [ $RTE -eq 1 ] && [ $TRK -eq 1 ] ; then
 fi
 
 if [ $WPT -eq 0 ] && [ $RTE -eq 0 ] && [ $TRK -eq 0 ] ; then
-    g.message -e "No features requested for export."
+    g.message -e "No features requested for export. (wpt/trk/rte)"
     cleanup
     exit 1
 fi

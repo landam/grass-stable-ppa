@@ -6,13 +6,14 @@
  *   Read the COPYING file that comes with GRASS for details.
  *       
  */
-#include <grass/gis.h>
-#include <grass/glocale.h>
 
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
+
+#include <grass/gis.h>
+#include <grass/glocale.h>
 
 #include "defs.h"
 #include "avlDefs.h"
@@ -32,7 +33,7 @@ void avl_rotation_rr(avl_node * critical);
 void printAVL(avl_node * r);
 
 
-/* define function declsred in avl.h */
+/* define function declared in avl.h */
 
 avl_tree avl_make(const generic_cell k, const long n)
 {
@@ -56,6 +57,31 @@ avl_tree avl_make(const generic_cell k, const long n)
     return root;
 }
 
+void avl_destroy(avl_tree root)
+{
+    struct avl_node *it;
+    struct avl_node *save = root;
+
+    /*
+    Rotate away the left links so that
+    we can treat this like the destruction
+    of a linked list
+    */
+    while((it = save) != NULL) {
+	if (it->left_child == NULL) {
+	    /* No left links, just kill the node and move on */
+	    save = it->right_child;
+	    G_free(it);
+	    it = NULL;
+	}
+	else {
+	    /* Rotate away the left link and check again */
+	    save = it->left_child;
+	    it->left_child = save->right_child;
+	    save->right_child = it;
+	}
+    }
+}
 
 long howManyCell(const avl_tree root, const generic_cell k)
 {
@@ -184,6 +210,8 @@ long avl_to_array(avl_node * root, long i, AVL_table * a)
     }
     return i;
 }
+
+
 
 
 static avl_node *avl_individua(const avl_tree root, const generic_cell k,

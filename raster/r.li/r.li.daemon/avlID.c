@@ -7,12 +7,12 @@
  *       
  */
 
-#include <grass/gis.h>
-#include <grass/glocale.h>
-
 #include <stdlib.h>
 #include <fcntl.h>
 #include <math.h>
+
+#include <grass/gis.h>
+#include <grass/glocale.h>
 
 #include "defs.h"
 #include "avlDefs.h"
@@ -28,7 +28,6 @@ void avlID_rotation_ll(avlID_node * critical);
 void avlID_rotation_lr(avlID_node * critical);
 void avlID_rotation_rl(avlID_node * critical);
 void avlID_rotation_rr(avlID_node * critical);
-
 
 
 avlID_tree avlID_make(const long k, const long n)
@@ -50,6 +49,31 @@ avlID_tree avlID_make(const long k, const long n)
     return root;
 }
 
+void avlID_destroy(avlID_tree root)
+{
+    struct avlID_node *it;
+    struct avlID_node *save = root;
+
+    /*
+    Rotate away the left links so that
+    we can treat this like the destruction
+    of a linked list
+    */
+    while((it = save) != NULL) {
+	if (it->left_child == NULL) {
+	    /* No left links, just kill the node and move on */
+	    save = it->right_child;
+	    G_free(it);
+	    it = NULL;
+	}
+	else {
+	    /* Rotate away the left link and check again */
+	    save = it->left_child;
+	    it->left_child = save->right_child;
+	    save->right_child = it;
+	}
+    }
+}
 
 long howManyID(const avlID_tree root, const long k)
 {

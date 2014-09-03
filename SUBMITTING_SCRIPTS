@@ -1,4 +1,4 @@
-$Date: 2012-02-05 12:39:18 -0800 (Sun, 05 Feb 2012) $
+$Date: 2013-09-14 07:56:11 +0200 (Sat, 14 Sep 2013) $
 
 NOTE: Please improve this list!
 
@@ -134,7 +134,7 @@ please take care of following rules:
 8.  Testing the existence of variables. For portability, use
 	if [ -z "$VARIABLE" ] ; then
     instead of
-	if [ "$VARIABLE" == "" ] ; then
+	if [ "$VARIABLE" = "" ] ; then
 
     and
 

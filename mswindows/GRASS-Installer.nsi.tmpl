@@ -3,7 +3,7 @@
 ;GRASS GIS Installer for Windows
 ;Written by Marco Pasetti
 ;Updated for OSGeo4W by Colin Nielsen, Helmut Kudrnovsky, and Martin Landa
-;Last Update: $Id: GRASS-Installer.nsi.tmpl 57038 2013-07-08 08:54:02Z hamish $
+;Last Update: $Id: GRASS-Installer.nsi.tmpl 60867 2014-06-18 19:07:02Z martinl $
 ;Mail to: grass-dev@lists.osgeo.org 
 
 ;----------------------------------------------------------------------------------------------------------------------------
@@ -39,6 +39,11 @@ SetCompressorDictSize 64
 !else
         !define GRASS_COMMAND "grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@svn"
 !endif
+
+; Platform
+; TODO: Support 64bit (x86_64)
+; Related problem: hardcoded C:\OSGeo4W (X C:\OSGeo4W64)
+!define PLATFORM "x86"
 
 ;----------------------------------------------------------------------------------------------------------------------------
 
@@ -542,7 +547,7 @@ Section "GRASS" SecGRASS
 	FileWrite $0 'set GISBASE=$INSTALL_DIR$\r$\n'
 	FileWrite $0 '$\r$\n'
 	FileWrite $0 'rem set path to freetype dll$\r$\n'
-	FileWrite $0 'set FREETYPEBASE=$INSTALL_DIR\extralib;$INSTALL_DIR\msys\bin;$INSTALL_DIR\lib$\r$\n'
+	FileWrite $0 'set FREETYPEBASE=$INSTALL_DIR\extrabin;$INSTALL_DIR\msys\bin;$INSTALL_DIR\lib$\r$\n'
 	FileWrite $0 '$\r$\n'
 	FileWrite $0 'rem set dependecies path$\r$\n'
 	FileWrite $0 'set PATH=%FREETYPEBASE%;%PATH%$\r$\n'
@@ -782,8 +787,7 @@ Section "GRASS" SecGRASS
 	FileWrite $0 'export GISBASE$\r$\n'
 	FileWrite $0 '$\r$\n'
 	FileWrite $0 '# Set the PATH variable$\r$\n'
-	FileWrite $0 'PATH="$$GISBASE/extrabin:$$GISBASE/extralib:$$PATH"$\r$\n'
-	FileWrite $0 'PATH="$$GISBASE/tcl-tk/bin:$$GISBASE/sqlite/bin:$$PATH"$\r$\n'
+	FileWrite $0 'PATH="$$GISBASE/extrabin:$$PATH"$\r$\n'
 	FileWrite $0 'export PATH$\r$\n'
 	FileWrite $0 '$\r$\n'
 	FileWrite $0 'GRASS_PAGER=more$\r$\n'
@@ -804,16 +808,16 @@ Section "GRASS" SecGRASS
 	FileWrite $0 'export GRASS_HTML_BROWSER$\r$\n'
 	FileWrite $0 '$\r$\n'
 	FileWrite $0 '# Set the GRASS_PROJSHARE variable$\r$\n'
-	FileWrite $0 'GRASS_PROJSHARE="$INSTALL_DIR\proj"$\r$\n'
+	FileWrite $0 'GRASS_PROJSHARE="$INSTALL_DIR\share\proj"$\r$\n'
 	FileWrite $0 'export GRASS_PROJSHARE$\r$\n'
+	FileWrite $0 '$\r$\n'
+	FileWrite $0 '# Set the PROJ_LIB variable$\r$\n'
+	FileWrite $0 'PROJ_LIB="$INSTALL_DIR\share\proj"$\r$\n'
+	FileWrite $0 'export PROJ_LIB $\r$\n'
 	FileWrite $0 '$\r$\n'
 	FileWrite $0 '# Set the GDAL_DATA variable$\r$\n'
 	FileWrite $0 'GDAL_DATA="$INSTALL_DIR\share\gdal"$\r$\n'
 	FileWrite $0 'export GDAL_DATA$\r$\n'
-	FileWrite $0 '$\r$\n'
-	FileWrite $0 '# Set the PROJ_LIB variable$\r$\n'
-	FileWrite $0 'PROJ_LIB="$INSTALL_DIR\proj"$\r$\n'
-	FileWrite $0 'export PROJ_LIB $\r$\n'
 	FileWrite $0 '$\r$\n'
 	FileWrite $0 '# Set the GEOTIFF_CSV variable$\r$\n'
 	FileWrite $0 'GEOTIFF_CSV="$INSTALL_DIR\share\epsg_csv"$\r$\n'
@@ -865,10 +869,10 @@ Section "GRASS" SecGRASS
 	Push 'gisbase = "$INSTDIR"' ; string to replace whole line with
 	Call ReplaceLineStr
 	
-	;replace config_projshare = "/c/OSGeo4W/share/proj" i n grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@.py with $INSTDIR\proj
+	;replace config_projshare = "/c/OSGeo4W/share/proj" i n grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@.py with $INSTDIR\share/proj
 	Push "$INSTDIR\etc\grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@.py" ; file to modify
 	Push 'config_projshare = "/c/OSGeo4W/share/proj"' ; string that a line must begin with *WS Sensitive*
-	Push 'config_projshare = "$INSTDIR\proj"' ; string to replace whole line with
+	Push 'config_projshare = "$INSTDIR\share\proj"' ; string to replace whole line with
 	Call ReplaceLineStr
                  
 SectionEnd
@@ -918,7 +922,7 @@ Function DownloadInstallMSRuntime
 	ExecWait "$TEMP\$ORIGINAL_UNTAR_FOLDER\bin\vcredist_2005_x86.exe /q"
 	ExecWait "$TEMP\$ORIGINAL_UNTAR_FOLDER\bin\vcredist_2008_x86.exe /q"	
 	ExecWait "$TEMP\$ORIGINAL_UNTAR_FOLDER\bin\vcredist_2010_x86.exe /q"
-	CopyFiles "$TEMP\$ORIGINAL_UNTAR_FOLDER\bin\*.dll" "$INSTDIR\extralib"
+	CopyFiles "$TEMP\$ORIGINAL_UNTAR_FOLDER\bin\*.dll" "$INSTDIR\extrabin"
 	Delete "$TEMP\$ARCHIVE_NAME"
 	RMDir /r "$TEMP\$ORIGINAL_UNTAR_FOLDER"
 	;the following doesn't work. Maybe because the installer is still running?
@@ -949,8 +953,8 @@ Section /O "Important Microsoft Runtime DLLs" SecMSRuntime
 	;Set the size (in KB) of the unpacked archive file
 	AddSize 13500
 	
-	StrCpy $HTTP_PATH "http://download.osgeo.org/osgeo4w/release/msvcrt/"
-	StrCpy $ARCHIVE_NAME "msvcrt-1.0.1-8.tar.bz2"
+	StrCpy $HTTP_PATH "http://download.osgeo.org/osgeo4w/${PLATFORM}/release/msvcrt/"
+	StrCpy $ARCHIVE_NAME "msvcrt-1.0.1-11.tar.bz2"
 	StrCpy $EXTENDED_ARCHIVE_NAME "Microsoft Visual C++ Redistributable Packages"
 	StrCpy $ORIGINAL_UNTAR_FOLDER "install_msruntime"
 	

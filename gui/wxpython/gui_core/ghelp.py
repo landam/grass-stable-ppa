@@ -88,7 +88,6 @@ class SearchModuleWindow(wx.Panel):
         """!Do layout"""
         sizer = wx.StaticBoxSizer(self.box, wx.HORIZONTAL)
         gridSizer = wx.GridBagSizer(hgap = 3, vgap = 3)
-        gridSizer.AddGrowableCol(1)
         
         gridSizer.Add(item = self.searchBy,
                       flag = wx.ALIGN_CENTER_VERTICAL, pos = (0, 0))
@@ -104,6 +103,7 @@ class SearchModuleWindow(wx.Panel):
             gridSizer.Add(item = self.searchChoice,
                           flag = wx.ALIGN_CENTER_VERTICAL | wx.EXPAND, pos = (row, 0), span = (1, 2))
         
+        gridSizer.AddGrowableCol(1)
         sizer.Add(item = gridSizer, proportion = 1)
         
         self.SetSizer(sizer)
@@ -397,8 +397,6 @@ class AboutWindow(wx.Frame):
         infoTxt.SetupScrolling()
         infoSizer = wx.BoxSizer(wx.VERTICAL)
         infoGridSizer = wx.GridBagSizer(vgap = 5, hgap = 5)
-        infoGridSizer.AddGrowableCol(0)
-        infoGridSizer.AddGrowableCol(1)
         logo = os.path.join(globalvar.ETCDIR, "gui", "icons", "grass-64x64.png")
         logoBitmap = wx.StaticBitmap(parent = infoTxt, id = wx.ID_ANY,
                                      bitmap = wx.Bitmap(name = logo,
@@ -468,6 +466,8 @@ class AboutWindow(wx.Frame):
                                                label = wx.__version__),
                           pos = (row, 1),
                           flag = wx.ALIGN_LEFT)
+        infoGridSizer.AddGrowableCol(0)
+        infoGridSizer.AddGrowableCol(1)
         
         infoSizer.Add(item = infoGridSizer,
                       proportion = 1,
@@ -776,7 +776,8 @@ class HelpWindow(wx.html.HtmlWindow):
         in the Panel.
         """
         self.parent = parent
-        wx.InitAllImageHandlers()
+        if not globalvar.CheckWxVersion([2, 9]):
+            wx.InitAllImageHandlers()
         wx.html.HtmlWindow.__init__(self, parent = parent, **kwargs)
         
         gisbase = os.getenv("GISBASE")

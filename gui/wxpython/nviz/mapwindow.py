@@ -93,7 +93,10 @@ class GLWindow(MapWindow, glcanvas.GLCanvas):
         
         self.init = False
         self.initView = False
-        
+        self.context = None
+        if CheckWxVersion(version=[2, 9]):
+            self.context = glcanvas.GLContext(self)
+
         # render mode 
         self.render = { 'quick' : False,
                         # do not render vector lines in quick mode
@@ -340,11 +343,18 @@ class GLWindow(MapWindow, glcanvas.GLCanvas):
     
     def OnSize(self, event):
         size = self.GetClientSize()
+        if CheckWxVersion(version=[2, 9]):
+            context = self.context
+        else:
+            context = self.GetContext()
         if self.size != size \
-            and self.GetContext():
+            and context:
             Debug.msg(3, "GLCanvas.OnSize(): w = %d, h = %d" % \
                       (size.width, size.height))
-            self.SetCurrent()
+            if CheckWxVersion(version=[2, 9]):
+                self.SetCurrent(self.context)
+            else:
+                self.SetCurrent()
             self._display.ResizeWindow(size.width,
                                        size.height)
         
@@ -367,7 +377,10 @@ class GLWindow(MapWindow, glcanvas.GLCanvas):
         
 
     def DoPaint(self):
-        self.SetCurrent()
+        if CheckWxVersion(version=[2, 9]):
+            self.SetCurrent(self.context)
+        else:
+            self.SetCurrent()
         
         if not self.initView:
             self._display.InitView()
@@ -1305,8 +1318,10 @@ class GLWindow(MapWindow, glcanvas.GLCanvas):
                     if (vInfo['points']) > 0:
                         # include vInfo['centroids'] to initially load centroids 
                         self.LoadVector(item, points = True)
-                    if (vInfo['lines'] + vInfo['boundaries']) > 0 or vInfo['map3d']:
+                    if (vInfo['lines'] + vInfo['boundaries']) > 0:
                         self.LoadVector(item, points = False)
+                    if vInfo['map3d'] and (vInfo['kernels'] + vInfo['faces']) > 0:
+                        self.LoadVector(item, points=None)
                     
             except GException, e:
                 GError(parent = self,
@@ -2109,17 +2124,21 @@ class GLWindow(MapWindow, glcanvas.GLCanvas):
             data['height'].pop('update')
             
         # surface
-        if 'update' in data['mode'] and 'surface' in data['mode']:
-            for item in range(len(data['mode']['surface']['value'])):
-                for type in ('raster', 'constant'):
-                    sid = self.GetLayerId(type = type,
-                                          name = data['mode']['surface']['value'][item])
-                    if sid > -1:
-                        if data['mode']['surface']['show'][item]:
-                            self._display.SetVectorPointSurface(id, sid)
-                        else:
-                            self._display.UnsetVectorPointSurface(id, sid)   
-                        break
+        if 'update' in data['mode']:
+            if data['mode'].get('3d', False):
+                self._display.SetVectorPointZMode(id, True)
+            elif 'surface' in data['mode']:
+                self._display.SetVectorPointZMode(id, False)
+                for item in range(len(data['mode']['surface']['value'])):
+                    for type in ('raster', 'constant'):
+                        sid = self.GetLayerId(type=type,
+                                              name=data['mode']['surface']['value'][item])
+                        if sid > -1:
+                            if data['mode']['surface']['show'][item]:
+                                self._display.SetVectorPointSurface(id, sid)
+                            else:
+                                self._display.UnsetVectorPointSurface(id, sid)   
+                            break
             data['mode'].pop('update')
             
     def GetLayerNames(self, type):
