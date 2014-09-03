@@ -1,3 +1,6 @@
+Description: Perfer pager over more.
+Author: Francesco Paolo Lovergine <frankie@debian.org>
+
 --- a/lib/init/init.sh
 +++ b/lib/init/init.sh
 @@ -301,10 +301,12 @@ export GRASS_LD_LIBRARY_PATH

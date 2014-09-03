@@ -1,3 +1,6 @@
+Description: Prefer x-terminal-emulator as terminal.
+Author: Francesco Paolo Lovergine <frankie@debian.org>
+
 --- a/lib/init/grass-xterm-wrapper
 +++ b/lib/init/grass-xterm-wrapper
 @@ -3,7 +3,7 @@

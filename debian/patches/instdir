@@ -1,3 +1,6 @@
+Description: Don't include GRASS_VERSION_RELEASE in path.
+Author: Francesco Paolo Lovergine <frankie@debian.org>
+
 --- a/configure
 +++ b/configure
 @@ -1432,7 +1432,7 @@ fi

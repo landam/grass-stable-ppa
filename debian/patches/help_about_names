@@ -1,3 +1,6 @@
+Description: Fix help-about name parsingix help-about name parsing.
+Author: M. Hamish Bowman <hamish.webmail@gmail.com>
+
 --- a/gui/wxpython/gui_core/ghelp.py
 +++ b/gui/wxpython/gui_core/ghelp.py
 @@ -609,7 +609,7 @@ class AboutWindow(wx.Frame):

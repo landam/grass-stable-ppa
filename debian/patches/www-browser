@@ -1,3 +1,6 @@
+Description: Prefer xdg-open and x-www-browser for HTML browser.
+Author: Francesco Paolo Lovergine <frankie@debian.org>
+
 --- a/lib/init/init.sh
 +++ b/lib/init/init.sh
 @@ -350,53 +350,13 @@ fi

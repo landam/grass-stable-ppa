@@ -1,3 +1,6 @@
+Description: Use fakeroot to run htmlgen
+Author: Steve Halasz
+
 --- a/include/Make/Html.make
 +++ b/include/Make/Html.make
 @@ -34,7 +34,7 @@ htmldesc = \
