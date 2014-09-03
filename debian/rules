@@ -182,6 +182,22 @@ install-arch: build-arch
 		rm -f debian/tmp/usr/lib/$(BASE_NAME)/etc/$$DIR/*.pyc ; \
 	done
 
+	# Fix permissions
+	chmod 775 debian/tmp/usr/lib/$(BASE_NAME)/etc/gm/tksys.tcl
+	chmod 644 debian/tmp/usr/lib/$(BASE_NAME)/etc/gm/animate.tcl
+	chmod 644 debian/tmp/usr/lib/$(BASE_NAME)/etc/nviz2.2/scripts/ACS_utils.tcl
+	chmod 644 debian/tmp/usr/lib/$(BASE_NAME)/etc/nviz2.2/scripts/configIndex
+	chmod 644 debian/tmp/usr/lib/$(BASE_NAME)/etc/nviz2.2/scripts/flythrough.tcl
+	chmod 644 debian/tmp/usr/lib/$(BASE_NAME)/etc/nviz2.2/scripts/nviz_params
+	chmod 644 debian/tmp/usr/lib/$(BASE_NAME)/etc/nviz2.2/scripts/panel_arrow.tcl
+	chmod 644 debian/tmp/usr/lib/$(BASE_NAME)/etc/nviz2.2/scripts/panel_legend.tcl
+	chmod 644 debian/tmp/usr/lib/$(BASE_NAME)/etc/nviz2.2/scripts/panel_resize.tcl
+	chmod 644 debian/tmp/usr/lib/$(BASE_NAME)/etc/nviz2.2/scripts/panel_fringe.tcl
+	chmod 644 debian/tmp/usr/lib/$(BASE_NAME)/etc/nviz2.2/scripts/site_attr.tcl
+	chmod 644 debian/tmp/usr/lib/$(BASE_NAME)/etc/r.li.setup/r.li.windows.tcl
+	chmod 644 debian/tmp/usr/lib/$(BASE_NAME)/etc/r.li.setup/r.li.setup.procedures.tcl
+	chmod 644 debian/tmp/usr/lib/$(BASE_NAME)/etc/file_option.tcl
+
 	# change section from 1 to .1grass 
 	mv debian/tmp/usr/lib/$(BASE_NAME)/man/man1/grass6.1 debian/$(BASE_NAME).1
 	for m in debian/tmp/usr/lib/$(BASE_NAME)/man/man1/*.1; do \
