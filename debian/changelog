@@ -8,6 +8,7 @@ grass (6.4.4-1) unstable; urgency=medium
   [ Francesco Paolo Lovergine ]
   * Debhelper level set to 9. 
   * Vcs-* fields are now canonical to make lintian happy.
+  * Added one more lintian override.
 
   [ Bas Couwenberg ]
   * Add gbp.conf to use pristine-tar by default.

@@ -80,3 +80,7 @@ grass-core: hardening-no-fortify-functions usr/lib/grass64/lib/libgrass_dgl.6.4.
 #         unprotected: memcpy
 grass-core: hardening-no-fortify-functions usr/lib/grass64/lib/libgrass_segment.6.4.4.so
 
+# This license file is used by the program to show license, so needs to be
+# distributed.
+grass-core: extra-license-file usr/share/doc/grass-core/COPYING
+
