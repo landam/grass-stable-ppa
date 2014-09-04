@@ -1,4 +1,4 @@
-grass (6.4.4-1) UNRELEASED; urgency=medium
+grass (6.4.4-1) unstable; urgency=medium
 
   [ M. Hamish Bowman ]
   * Packaged new upstream version, drop redundant patches.
