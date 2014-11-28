@@ -2,7 +2,9 @@
 Bug-Database: http://trac.osgeo.org/grass/report
 Bug-Submit: http://trac.osgeo.org/grass/newticket
 Contact: GRASS Development Team <grass-dev@lists.osgeo.org>
+Donation: http://grass.osgeo.org/donations/
 Name: GRASS
 Registration: https://www.osgeo.org/cgi-bin/ldap_create_user.py
 Repository: https://svn.osgeo.org/grass/grass/
 Repository-Browse: http://trac.osgeo.org/grass/browser
+Screenshots: http://grass.osgeo.org/screenshots/
