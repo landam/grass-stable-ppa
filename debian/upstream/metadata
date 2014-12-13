@@ -1,6 +1,6 @@
 ---
 Bug-Database: http://trac.osgeo.org/grass/report
-Bug-Submit: http://trac.osgeo.org/grass/newticket
+#Bug-Submit: http://trac.osgeo.org/grass/newticket
 Contact: GRASS Development Team <grass-dev@lists.osgeo.org>
 Donation: http://grass.osgeo.org/donations/
 Name: GRASS
