@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 
 typedef struct
@@ -28,9 +28,9 @@ typedef struct
     int **edge;			/* edge for each vertex */
     int *degree;		/* degree of vertices */
     int vertices;
-} NGRAPH;
+} NdglGraph_s;
 
-void graph_free(NGRAPH * g)
+void graph_free(NdglGraph_s * g)
 {
     int i;
 
@@ -44,7 +44,7 @@ void graph_free(NGRAPH * g)
     return;
 }
 
-int graph_init(NGRAPH * g, int vertices)
+int graph_init(NdglGraph_s * g, int vertices)
 {
     g->edge = NULL;
     g->degree = NULL;
@@ -76,7 +76,7 @@ int graph_generalization(struct Map_info *In, struct Map_info *Out,
     int i;
     int output = 0;
     dglGraph_s *gr;
-    NGRAPH g;
+    NdglGraph_s g;
     int nnodes;
     struct line_pnts *Points;
     struct line_cats *Cats;
@@ -85,9 +85,11 @@ int graph_generalization(struct Map_info *In, struct Map_info *Out,
     double *betw, *betweeness;
     struct ilist **prev;
 
-    Vect_net_build_graph(In, mask_type, 0, 0, NULL, NULL, NULL, 0,
-			 0);
-    gr = &(In->graph);
+    if (0 != Vect_net_build_graph(In, mask_type, 0, 0, NULL, NULL, NULL, 0, 0))
+        G_fatal_error(_("Unable to build graph for vector map <%s>"), Vect_get_full_name(In));
+    
+    gr = Vect_net_get_graph(In);
+    
     /* build own graph by edge<->vertex */
     /* each vertex represents undirected edge */
     if (!graph_init(&g, dglGet_EdgeCount(gr) / 2 + 1)) {

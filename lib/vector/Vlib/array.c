@@ -1,11 +1,11 @@
 /*!
-   \file array.c
+   \file lib/vector/Vlib/array.c
 
-   \brief Vector library - array structure
+   \brief Vector library - category array
 
    Higher level functions for reading/writing/manipulating vectors.
 
-   (C) 2001-2008 by the GRASS Development Team
+   (C) 2001-2009 by the GRASS Development Team
 
    This program is free software under the 
    GNU General Public License (>=v2). 
@@ -13,14 +13,11 @@
    for details.
 
    \author Radim Blazek
-
-   \date 2001-2008
  */
 
 #include <stdlib.h>
-#include <grass/gis.h>
 #include <grass/dbmi.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 
 
@@ -30,22 +27,22 @@ static int in_array(int *cats, size_t ncats, int cat);
 
 
 /*!
-   \brief Create new VARRAY and allocate space for given number of items.
+   \brief Create new struct varray and allocate space for given number of items.
 
    Space allocated is 'size + 1' so that lines are accessed by line id.
    Array values are set to 0.
 
    \param size size of array
 
-   \return pointer to new VARRAY
+   \return pointer to new struct varray
    \return NULL if failed
  */
 
-VARRAY *Vect_new_varray(int size)
+struct varray *Vect_new_varray(int size)
 {
-    VARRAY *p;
+    struct varray *p;
 
-    p = (VARRAY *) G_malloc(sizeof(VARRAY));
+    p = (struct varray *) G_malloc(sizeof(struct varray));
 
     if (p == NULL)
 	return NULL;
@@ -62,29 +59,29 @@ VARRAY *Vect_new_varray(int size)
 }
 
 /*!
-   \brief Set values in 'varray' to 'value'.
+   \brief Set values in 'varray' to 'value' from category string.
 
-   If category of object of given type is in 'cstring' (string
-   representing category list like: '1,3,5-7').  'type' may be either:
-   GV_AREA or: GV_POINT | GV_LINE | GV_BOUNDARY | GV_CENTROID
+   If category of object of given type is in <em>cstring</em> (string
+   representing category list like: '1,3,5-7'). <em>type</em> may be
+   either: GV_AREA or: GV_POINT | GV_LINE | GV_BOUNDARY | GV_CENTROID
 
-   Array is not reset to zero before, but old values (if any > 0) are overwritten.
-   Array must be initialised by Vect_new_varray(size) call.
+   Array is not reset to zero before, but old values (if any > 0) are
+   overwritten.  Array must be initialised by Vect_new_varray() call.
 
    \param Map vector map
    \param field layer number
    \param cstring pointer to string with categories
    \param type feature type
    \param value value to set up
-   \param[in,out] varray varray structure to modify
+   \param[out] varray varray structure to modify
 
    \return number of items set
    \return -1 on error
  */
 int
-Vect_set_varray_from_cat_string(struct Map_info *Map, int field,
+Vect_set_varray_from_cat_string(const struct Map_info *Map, int field,
 				const char *cstring, int type, int value,
-				VARRAY * varray)
+				struct varray * varray)
 {
     int ret;
     struct cat_list *Clist;
@@ -96,7 +93,7 @@ Vect_set_varray_from_cat_string(struct Map_info *Map, int field,
     ret = Vect_str_to_cat_list(cstring, Clist);
 
     if (ret > 0)
-	G_warning(_("%d errors in category string."), ret);
+	G_warning(_("%d errors in category string"), ret);
 
     G_debug(4, "  %d ranges in clist", Clist->n_ranges);
 
@@ -109,29 +106,29 @@ Vect_set_varray_from_cat_string(struct Map_info *Map, int field,
 }
 
 /*!
-   \brief Set values in 'varray' to 'value'
+   \brief Set values in 'varray' to 'value' from category list
 
-   If category of object of given type is in 'clist' (category list).
-   'type' may be either: GV_AREA or: GV_POINT | GV_LINE | GV_BOUNDARY |
-   GV_CENTROID
+   If category of object of given type is in <em>clist</em> (category
+   list).  <em>type</em> may be either: GV_AREA or: GV_POINT | GV_LINE
+   | GV_BOUNDARY | GV_CENTROID
 
-   Array is not reset to zero before, but old values (if any > 0) are overwritten.
-   Array must be initialised by Vect_new_varray(size) call.
+   Array is not reset to zero before, but old values (if any > 0) are
+   overwritten.  Array must be initialised by Vect_new_varray() call.
 
    \param Map vector map
    \param field layer number
    \param clist list of categories
    \param type feature type
    \param value value to set up
-   \param[in,out] varray varray structure to modify
+   \param[out] varray varray structure to modify
 
    \return number of items set
    \return -1 on error
  */
 int
-Vect_set_varray_from_cat_list(struct Map_info *Map, int field,
+Vect_set_varray_from_cat_list(const struct Map_info *Map, int field,
 			      struct cat_list *clist, int type, int value,
-			      VARRAY * varray)
+			      struct varray * varray)
 {
     int i, n, centr, cat;
     int ni = 0;			/* number of items set */
@@ -228,30 +225,31 @@ static int in_array(int *cats, size_t ncats, int cat)
 }
 
 /*!
-   \brief Set values in 'varray' to 'value'.
+   \brief Set values in 'varray' to 'value' from DB (where statement)
 
-   if category of object of given type is in categories selected from
-   DB based on where statement (given without where).  'type' may be
-   either: GV_AREA or: GV_POINT | GV_LINE | GV_BOUNDARY | GV_CENTROID
+   I category of object of given type is in categories selected from
+   DB based on where statement (given without where). <em>type</em>
+   may be either: GV_AREA or: GV_POINT | GV_LINE | GV_BOUNDARY |
+   GV_CENTROID
 
    Array is not reset to zero before, but old values (if any > 0) are
-   overwritten. Array must be initialised by Vect_new_varray(size) call.
+   overwritten. Array must be initialised by Vect_new_varray() call.
 
    \param Map vector map
    \param field layer number
    \param where where statement
    \param type feature type
    \param value value to set up
-   \param[in,out] varray varray structure to modify
+   \param[out] varray varray structure to modify
 
    \return number of items set
    \return -1 on error
  */
 int
-Vect_set_varray_from_db(struct Map_info *Map, int field, const char *where,
-			int type, int value, VARRAY * varray)
+Vect_set_varray_from_db(const struct Map_info *Map, int field, const char *where,
+			int type, int value, struct varray * varray)
 {
-    int i, n, c, centr, cat, *cats;
+    int i, n, c, centr, *cats;
     int ncats;
     int ni = 0;			/* number of items set */
     int ltype;			/* line type */
@@ -317,7 +315,6 @@ Vect_set_varray_from_db(struct Map_info *Map, int field, const char *where,
 	    for (c = 0; c < Cats->n_cats; c++) {
 		if (Cats->field[c] == field &&
 		    in_array(cats, ncats, Cats->cat[c])) {
-		    cat = Cats->cat[c];
 		    varray->c[i] = value;
 		    ni++;
 		    break;
@@ -350,7 +347,6 @@ Vect_set_varray_from_db(struct Map_info *Map, int field, const char *where,
 	    for (c = 0; c < Cats->n_cats; c++) {
 		if (Cats->field[c] == field &&
 		    in_array(cats, ncats, Cats->cat[c])) {
-		    cat = Cats->cat[c];
 		    varray->c[i] = value;
 		    ni++;
 		    break;

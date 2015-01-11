@@ -2,9 +2,8 @@
 
 void PS_Erase(void)
 {
-    if (encapsulated)
-	output("%d %d %d %d BOX\n", screen_left, screen_top, screen_right,
-	       screen_bottom);
+    if (ps.encapsulated)
+	output("%d %d %d %d BOX\n", ps.left, ps.top, ps.right, ps.bot);
     else
 	output("ERASE\n");
 }

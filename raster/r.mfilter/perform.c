@@ -1,12 +1,13 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <grass/rowio.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "glob.h"
 #include "filter.h"
 #include "local_proto.h"
 
-int perform_filter(char *in_name, char *in_mapset, char *out_name,
+int perform_filter(const char *in_name, const char *out_name,
 		   FILTER * filter, int nfilters, int repeat)
 {
     int in;
@@ -17,10 +18,10 @@ int perform_filter(char *in_name, char *in_mapset, char *out_name,
     char *tmp1, *tmp2;
     int count;
     int row;
-    CELL *cell;
+    DCELL *cell;
 
 
-    cell = G_allocate_cell_buf();
+    cell = Rast_allocate_d_buf();
 
     count = 0;
     for (pass = 0; pass < repeat; pass++) {
@@ -29,14 +30,10 @@ int perform_filter(char *in_name, char *in_mapset, char *out_name,
 	    G_debug(1, "Filter %d", n + 1);
 
 	    if (count == 0) {
-		in = G_open_cell_old(in_name, in_mapset);
+		in = Rast_open_old(in_name, "");
 
-		G_debug(1, "Open raster map %s in %s = %d", in_name,
-			in_mapset, in);
+		G_debug(1, "Open raster map %s = %d", in_name, in);
 
-		if (in < 0) {
-		    G_fatal_error(_("Cannot open raster map <%s>"), in_name);
-		}
 		close(creat(tmp1 = G_tempfile(), 0666));
 		out = open(tmp1, 2);
 		if (out < 0)
@@ -46,7 +43,7 @@ int perform_filter(char *in_name, char *in_mapset, char *out_name,
 
 		G_debug(1, "Closing raster map");
 
-		G_close_cell(in);
+		Rast_close(in);
 		in = out;
 		close(creat(tmp2 = G_tempfile(), 0666));
 		out = open(tmp2, 2);
@@ -63,41 +60,38 @@ int perform_filter(char *in_name, char *in_mapset, char *out_name,
 		out = fd;
 	    }
 
-	    rowio_setup(&r, in, filter[n].size, buflen,
+	    Rowio_setup(&r, in, filter[n].size, buflen,
 			count ? getrow : getmaprow, NULL);
 
 	    execute_filter(&r, out, &filter[n], cell);
 
-	    rowio_release(&r);
+	    Rowio_release(&r);
 	}
     }
 
     if (count == 1)
-	G_close_cell(in);
+	Rast_close(in);
     else if (count > 1)
 	close(in);
 
     /* copy final result to output raster map */
     in = out;
-    out = G_open_cell_new(out_name);
-    if (out < 0) {
-	G_fatal_error(_("Cannot create raster map <%s>"), out_name);
-    }
+    out = Rast_open_fp_new(out_name);
 
     G_message(_("Writing raster map <%s>"), out_name);
     for (row = 0; row < nrows; row++) {
 	getrow(in, cell, row, buflen);
-	G_put_raster_row(out, cell, CELL_TYPE);
+	Rast_put_d_row(out, cell);
     }
 
-    /* remove the temporary files before closing so that the G_close_cell()
+    /* remove the temporary files before closing so that the Rast_close()
        has more disk to work with
      */
     if (count > 0)
 	unlink(tmp1);
     if (count > 1)
 	unlink(tmp2);
-    G_close_cell(out);
+    Rast_close(out);
 
     return 0;
 }

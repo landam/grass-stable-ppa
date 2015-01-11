@@ -3,11 +3,13 @@
  * termination time.
  */
 
-#ifndef __MINGW32__
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef __MINGW32__
+#include <windows.h>
+#else
 #include <sys/mman.h>
 #endif
 
@@ -16,25 +18,28 @@
 
 static void unmap_file(void)
 {
-#ifndef __MINGW32__
-    size_t size = HEADER_SIZE + width * height * sizeof(unsigned int);
-    void *ptr = (char *)grid - HEADER_SIZE;
+    size_t size = HEADER_SIZE + png.width * png.height * sizeof(unsigned int);
+    void *ptr = (char *)png.grid - HEADER_SIZE;
 
-    if (!mapped)
+    if (!png.mapped)
 	return;
 
+#ifdef __MINGW32__
+    UnmapViewOfFile(ptr);
+    CloseHandle(png.handle);
+#else
     munmap(ptr, size);
-
-    mapped = 0;
 #endif
+
+    png.mapped = 0;
 }
 
 void PNG_Graph_close(void)
 {
     write_image();
 
-    if (mapped)
+    if (png.mapped)
 	unmap_file();
     else
-	G_free(grid);
+	G_free(png.grid);
 }

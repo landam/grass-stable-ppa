@@ -11,7 +11,7 @@
 static void make_head(struct Map_info *);
 static int find_next_header_variable(struct dxf_file *);
 
-static BOUND_BOX ext, dxf_ext;
+static struct bound_box ext, dxf_ext;
 
 /* returns 1 on success, otherwise 0 */
 int dxf_to_vect(struct dxf_file *dxf, struct Map_info *Map)
@@ -22,7 +22,7 @@ int dxf_to_vect(struct dxf_file *dxf, struct Map_info *Map)
     if (dxf_find_header(dxf)) {
 	/* code == 0: end of the header section */
 	code = dxf_get_code(dxf);
-	while (code != 0) {
+	while (code != 0) {	/* ENDSEC */
 	    if (code == -2)	/* EOF */
 		return 0;
 
@@ -91,20 +91,18 @@ int dxf_to_vect(struct dxf_file *dxf, struct Map_info *Map)
     else
 	code = dxf_get_code(dxf);
 
-    ARR_MAX = ARR_INCR;
+    arr_max = ARR_INCR;
     ext.E = ext.N = ext.T = DBL_MIN;
     ext.W = ext.S = ext.B = DBL_MAX;
 
-    xpnts = (double *)G_malloc(ARR_MAX * sizeof(double));
-    ypnts = (double *)G_malloc(ARR_MAX * sizeof(double));
-    zpnts = (double *)G_malloc(ARR_MAX * sizeof(double));
+    xpnts = (double *)G_malloc(arr_max * sizeof(double));
+    ypnts = (double *)G_malloc(arr_max * sizeof(double));
+    zpnts = (double *)G_malloc(arr_max * sizeof(double));
 
     if (!flag_list)
 	Points = Vect_new_line_struct();
 
     while (!feof(dxf->fp)) {
-	set_entity(dxf_buf);
-
 	/* avoid TEXT having object names: '0' should be followed by objects */
 	if (code != 0)
 	    code = dxf_get_code(dxf);
@@ -183,15 +181,6 @@ int check_ext(double x, double y, double z)
 	ext.T = z;
 
     return 0;
-}
-
-void set_entity(char *str)
-{
-    strcpy(entity, str);
-    for (str = entity; *str; str++)
-	*str = tolower(*str);
-
-    return;
 }
 
 static void make_head(struct Map_info *Map)

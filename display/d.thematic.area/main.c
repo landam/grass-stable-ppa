@@ -21,7 +21,7 @@
 #include <grass/gis.h>
 #include <grass/raster.h>
 #include <grass/display.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/colors.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
@@ -32,7 +32,6 @@
 
 int main(int argc, char **argv)
 {
-    char *mapset;
     int ret, level;
     int i, stat = 0;
     int nclass = 0, nbreaks, *frequencies, boxsize, textsize, ypos;
@@ -54,9 +53,9 @@ int main(int argc, char **argv)
     struct Option *bwidth_opt;
     struct Option *where_opt;
     struct Option *field_opt;
-    struct Option *render_opt;
     struct Option *legend_file_opt;
     struct Flag *legend_flag, *algoinfo_flag, *nodraw_flag;
+    char *desc;
 
     struct cat_list *Clist;
     int *cats, ncat, nrec, ctype;
@@ -66,7 +65,7 @@ int main(int argc, char **argv)
     dbHandle handle;
     dbCatValArray cvarr;
     struct Cell_head window;
-    BOUND_BOX box;
+    struct bound_box box;
     double overlap, *breakpoints, *data = NULL, class_info = 0.0;
     struct GASTATS stats;
     FILE *fd;
@@ -75,7 +74,9 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("display, cartography");
+    G_add_keyword(_("display"));
+    G_add_keyword(_("cartography"));
+    G_add_keyword(_("choropleth map"));
     module->description =
 	_("Displays a thematic vector area map in the active "
 	  "frame on the graphics monitor.");
@@ -103,10 +104,14 @@ int main(int argc, char **argv)
     algo_opt->multiple = NO;
     algo_opt->options = "int,std,qua,equ,dis";
     algo_opt->description = _("Algorithm to use for classification");
-    algo_opt->descriptions = _("int;simple intervals;"
-			       "std;standard deviations;"
-			       "qua;quantiles;"
-			       "equ;equiprobable (normal distribution);");
+    desc = NULL;
+    G_asprintf(&desc,
+	        "int;%s;std;%s;qua;%s;equ;%s",
+	        _("simple intervals"),
+	        _("standard deviations"),
+	        _("quantiles"),
+	        _("equiprobable (normal distribution)"));
+    algo_opt->descriptions = desc;
     /*currently disabled because of bugs       "dis;discontinuities"); */
 
     nbclass_opt = G_define_option();
@@ -122,14 +127,14 @@ int main(int argc, char **argv)
     colors_opt->required = YES;
     colors_opt->multiple = YES;
     colors_opt->description = _("Colors (one per class).");
-    colors_opt->gisprompt = GISPROMPT_COLOR;
+    colors_opt->gisprompt = "old_color,color,color";
 
     field_opt = G_define_standard_option(G_OPT_V_FIELD);
     field_opt->description =
 	_("Layer number. If -1, all layers are displayed.");
     field_opt->guisection = _("Selection");
 
-    where_opt = G_define_standard_option(G_OPT_WHERE);
+    where_opt = G_define_standard_option(G_OPT_DB_WHERE);
     where_opt->guisection = _("Selection");
 
     bwidth_opt = G_define_option();
@@ -145,21 +150,7 @@ int main(int argc, char **argv)
     bcolor_opt->answer = DEFAULT_FG_COLOR;
     bcolor_opt->description = _("Boundary color");
     bcolor_opt->guisection = _("Boundaries");
-    bcolor_opt->gisprompt = GISPROMPT_COLOR;
-
-    render_opt = G_define_option();
-    render_opt->key = "render";
-    render_opt->type = TYPE_STRING;
-    render_opt->required = NO;
-    render_opt->multiple = NO;
-    render_opt->answer = "l";
-    render_opt->options = "d,c,l";
-    render_opt->description = _("Rendering method for filled polygons");
-    render_opt->descriptions =
-	_("d;use the display library basic functions (features: polylines);"
-	  "c;use the display library clipping functions (features: clipping);"
-	  "l;use the display library culling functions (features: culling, polylines)");
-
+    bcolor_opt->gisprompt = "old_color,color,color";
 
     legend_file_opt = G_define_standard_option(G_OPT_F_OUTPUT);
     legend_file_opt->key = "legendfile";
@@ -185,15 +176,6 @@ int main(int argc, char **argv)
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    if (G_strcasecmp(render_opt->answer, "d") == 0)
-	render = RENDER_DP;
-    else if (G_strcasecmp(render_opt->answer, "c") == 0)
-	render = RENDER_DPC;
-    else if (G_strcasecmp(render_opt->answer, "l") == 0)
-	render = RENDER_DPL;
-    else
-	G_fatal_error(_("Invalid rendering method <%s>"), render_opt->answer);
-
     if (G_verbose() > G_verbose_std())
 	verbose = TRUE;
 
@@ -203,15 +185,8 @@ int main(int argc, char **argv)
 
     strcpy(map_name, map_opt->answer);
 
-
-    /* Make sure map is available */
-    mapset = G_find_vector2(map_name, "");
-
-    if (mapset == NULL)
-	G_fatal_error(_("Vector map <%s> not found"), map_name);
-
     /* open vector */
-    level = Vect_open_old(&Map, map_name, mapset);
+    level = Vect_open_old(&Map, map_name, "");
 
     if (level < 2)
 	G_fatal_error(_("%s: You must build topology on vector map. Run v.build."),
@@ -392,9 +367,10 @@ int main(int argc, char **argv)
 
     if (!nodraw_flag->answer) {
 	/* Now's let's prepare the actual plotting */
-	if (R_open_driver() != 0)
-	    G_fatal_error(_("No graphics device selected"));
-
+	if (D_open_driver() != 0)
+	    G_fatal_error(_("No graphics device selected. "
+			    "Use d.mon to select graphics device."));
+	
 	D_setup(0);
 
 	if (verbose)
@@ -433,11 +409,12 @@ int main(int argc, char **argv)
 	     * driver (not implemented)?  It will help restore previous line
 	     * width (not just 0) determined by another module (e.g.,
 	     * d.linewidth). */
-	    R_line_width(0);
+	    D_line_width(0);
 
 	}			/* end window check if */
 
-	R_close_driver();
+	D_save_command(G_recreate_command());
+	D_close_driver();
 
     }				/* end of nodraw_flag condition */
 
@@ -473,36 +450,55 @@ int main(int argc, char **argv)
 
 	}
 
+        if(stats.min > breakpoints[0]){
+	fprintf(stdout, "<%f|%i|%d:%d:%d\n",
+		breakpoints[0], frequencies[0], colors[0].r,
+		colors[0].g, colors[0].b);
+
+        } else {
 	fprintf(stdout, "%f|%f|%i|%d:%d:%d\n",
 		stats.min, breakpoints[0], frequencies[0], colors[0].r,
 		colors[0].g, colors[0].b);
+        }
 
 	for (i = 1; i < nbreaks; i++) {
 	    fprintf(stdout, "%f|%f|%i|%d:%d:%d\n",
 		    breakpoints[i - 1], breakpoints[i], frequencies[i],
 		    colors[i].r, colors[i].g, colors[i].b);
 	}
+
+        if(stats.max < breakpoints[nbreaks-1]){
+	fprintf(stdout, ">%f|%i|%d:%d:%d\n",
+		breakpoints[nbreaks - 1], frequencies[nbreaks],
+		colors[nbreaks].r, colors[nbreaks].g, colors[nbreaks].b);
+        } else {
 	fprintf(stdout, "%f|%f|%i|%d:%d:%d\n",
 		breakpoints[nbreaks - 1], stats.max, frequencies[nbreaks],
 		colors[nbreaks].r, colors[nbreaks].g, colors[nbreaks].b);
+        }
     }
 
     if (legend_file_opt->answer) {
 	fd = fopen(legend_file_opt->answer, "w");
 	boxsize = 25;
-	textsize = boxsize / 10;
+	textsize = 8;
 	fprintf(fd, "size %i %i\n", textsize, textsize);
 	ypos = 10;
 	fprintf(fd, "symbol basic/box %i 5 %i black %d:%d:%d\n", boxsize,
 		ypos, colors[0].r, colors[0].g, colors[0].b);
-	fprintf(fd, "move 8 %f \n", ypos - textsize / 2.5);
+	fprintf(fd, "move 8 %i \n", ypos-1);
+        if(stats.min > breakpoints[0]){
+	fprintf(fd, "text <%f | %i\n", breakpoints[0],
+		frequencies[0]);
+        } else {
 	fprintf(fd, "text %f - %f | %i\n", stats.min, breakpoints[0],
 		frequencies[0]);
+        }
 	for (i = 1; i < nbreaks; i++) {
 	    ypos = 10 + i * 6;
 	    fprintf(fd, "symbol basic/box %i 5 %i black %d:%d:%d\n", boxsize,
 		    ypos, colors[i].r, colors[i].g, colors[i].b);
-	    fprintf(fd, "move 8 %f\n", ypos - textsize / 2.5);
+	    fprintf(fd, "move 8 %i\n", ypos-1);
 	    fprintf(fd, "text %f - %f | %i\n", breakpoints[i - 1],
 		    breakpoints[i], frequencies[i]);
 	}
@@ -510,9 +506,14 @@ int main(int argc, char **argv)
 	fprintf(fd, "symbol basic/box %i 5 %i black %d:%d:%d\n", boxsize,
 		ypos, colors[nbreaks].r, colors[nbreaks].g,
 		colors[nbreaks].b);
-	fprintf(fd, "move 8 %f\n", ypos - textsize / 2.5);
+	fprintf(fd, "move 8 %i\n", ypos -1);
+        if(stats.max < breakpoints[nbreaks-1]){
+	fprintf(fd, "text >%f | %i\n", breakpoints[nbreaks - 1],
+		frequencies[nbreaks]);
+        } else {
 	fprintf(fd, "text %f - %f | %i\n", breakpoints[nbreaks - 1],
 		stats.max, frequencies[nbreaks]);
+        }
 	fclose(fd);
     }
 

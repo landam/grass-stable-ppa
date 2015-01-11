@@ -7,7 +7,7 @@
  * PURPOSE:      Just copies a raster map, preserving the raster map type
  *               Intended to explain GRASS raster programming
  *
- * COPYRIGHT:    (C) 2002,2005 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2002, 2005-2009 by the GRASS Development Team
  *
  *               This program is free software under the GNU General Public
  *   	    	 License (>=v2). Read the file COPYING that comes with GRASS
@@ -15,11 +15,11 @@
  *
  *****************************************************************************/
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 /* 
@@ -68,32 +68,27 @@ int main(int argc, char *argv[])
     int nrows, ncols;
     int row, col;
     int infd, outfd;		/* file descriptor */
-    int verbose;
     RASTER_MAP_TYPE data_type;	/* type of the map (CELL/DCELL/...) */
     struct History history;	/* holds meta-data (title, comments,..) */
 
     struct GModule *module;	/* GRASS module for parsing arguments */
 
     struct Option *input, *output;	/* options */
-    struct Flag *flag1;		/* flags */
 
     /* initialize GIS environment */
     G_gisinit(argv[0]);		/* reads grass env, stores program name to G_program_name() */
 
     /* initialize module */
     module = G_define_module();
-    module->keywords = _("raster, keyword2, keyword3");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("keyword2"));
+    G_add_keyword(_("keyword3"));
     module->description = _("My first raster module");
 
     /* Define the different options as defined in gis.h */
     input = G_define_standard_option(G_OPT_R_INPUT);
 
     output = G_define_standard_option(G_OPT_R_OUTPUT);
-
-    /* Define the different flags */
-    flag1 = G_define_flag();
-    flag1->key = 'q';
-    flag1->description = _("Quiet");
 
     /* options and flags parser */
     if (G_parser(argc, argv))
@@ -102,43 +97,34 @@ int main(int argc, char *argv[])
     /* stores options and flags to variables */
     name = input->answer;
     result = output->answer;
-    verbose = (!flag1->answer);
 
     /* returns NULL if the map was not found in any mapset, 
      * mapset name otherwise */
-    mapset = G_find_cell2(name, "");
+    mapset = (char *) G_find_raster2(name, "");
     if (mapset == NULL)
 	G_fatal_error(_("Raster map <%s> not found"), name);
 
-    if (G_legal_filename(result) < 0)
-	G_fatal_error(_("<%s> is an illegal file name"), result);
-
-
     /* determine the inputmap type (CELL/FCELL/DCELL) */
-    data_type = G_raster_map_type(name, mapset);
+    data_type = Rast_map_type(name, mapset);
 
-    /* G_open_cell_old - returns file destriptor (>0) */
-    if ((infd = G_open_cell_old(name, mapset)) < 0)
-	G_fatal_error(_("Unable to open raster map <%s>"), name);
-
+    /* Rast_open_old - returns file destriptor (>0) */
+    infd = Rast_open_old(name, mapset);
 
     /* controlling, if we can open input raster */
-    if (G_get_cellhd(name, mapset, &cellhd) < 0)
-	G_fatal_error(_("Unable to read file header of <%s>"), name);
+    Rast_get_cellhd(name, mapset, &cellhd);
 
     G_debug(3, "number of rows %d", cellhd.rows);
 
     /* Allocate input buffer */
-    inrast = G_allocate_raster_buf(data_type);
+    inrast = Rast_allocate_buf(data_type);
 
     /* Allocate output buffer, use input map data_type */
-    nrows = G_window_rows();
-    ncols = G_window_cols();
-    outrast = G_allocate_raster_buf(data_type);
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
+    outrast = Rast_allocate_buf(data_type);
 
     /* controlling, if we can write the raster */
-    if ((outfd = G_open_raster_new(result, data_type)) < 0)
-	G_fatal_error(_("Unable to create raster map <%s>"), result);
+    outfd = Rast_open_new(result, data_type);
 
     /* for each row */
     for (row = 0; row < nrows; row++) {
@@ -146,13 +132,10 @@ int main(int argc, char *argv[])
 	FCELL f;
 	DCELL d;
 
-	if (verbose)
-	    G_percent(row, nrows, 2);
+	G_percent(row, nrows, 2);
 
 	/* read input map */
-	if (G_get_raster_row(infd, inrast, row, data_type) < 0)
-	    G_fatal_error(_("Unable to read raster map <%s> row %d"), name,
-			  row);
+	Rast_get_row(infd, inrast, row, data_type);
 
 	/* process the data */
 	for (col = 0; col < ncols; col++) {
@@ -177,8 +160,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* write raster row to output raster map */
-	if (G_put_raster_row(outfd, outrast, data_type) < 0)
-	    G_fatal_error(_("Failed writing raster map <%s>"), result);
+	Rast_put_row(outfd, outrast, data_type);
     }
 
     /* memory cleanup */
@@ -186,13 +168,13 @@ int main(int argc, char *argv[])
     G_free(outrast);
 
     /* closing raster maps */
-    G_close_cell(infd);
-    G_close_cell(outfd);
+    Rast_close(infd);
+    Rast_close(outfd);
 
     /* add command line incantation to history file */
-    G_short_history(result, "raster", &history);
-    G_command_history(&history);
-    G_write_history(result, &history);
+    Rast_short_history(result, "raster", &history);
+    Rast_command_history(&history);
+    Rast_write_history(result, &history);
 
 
     exit(EXIT_SUCCESS);

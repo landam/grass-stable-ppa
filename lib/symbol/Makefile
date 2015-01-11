@@ -1,29 +1,22 @@
 MODULE_TOPDIR = ../..
 
-EXTRA_LIBS=$(GISLIB) $(MATHLIB)
 
-LIB_NAME = $(SYMB_LIBNAME)
+LIB = SYMB
 
 include $(MODULE_TOPDIR)/include/Make/Lib.make
 
-default: lib symb
+SYMBOL_SRC := $(wildcard symbol/*/*)
+SYMBOL_DST := $(patsubst symbol/%,$(ETC)/symbol/%,$(SYMBOL_SRC))
+SYMBOL_DIRS := $(patsubst %,$(ETC)/symbol/%, demo basic extra geology n_arrows)
 
-symb:
-	if [ ! -d $(ETC)/symbol ]; then $(MKDIR) $(ETC)/symbol ; fi
-	if [ ! -d $(ETC)/symbol/demo ]; then $(MKDIR) $(ETC)/symbol/demo ; fi
-	if [ ! -d $(ETC)/symbol/basic ]; then $(MKDIR) $(ETC)/symbol/basic ; fi
-	if [ ! -d $(ETC)/symbol/extra ]; then $(MKDIR) $(ETC)/symbol/extra ; fi
-	if [ ! -d $(ETC)/symbol/geology ]; then $(MKDIR) $(ETC)/symbol/geology ; fi
-	@# check for file type to avoid problems with CVS/ directory:
-	for file in symbol/demo/* ; do \
-		[ -f "$$file" ] && $(INSTALL_DATA) $$file $(ETC)/symbol/demo ; \
-	done
-	for file in symbol/basic/* ; do \
-		[ -f "$$file" ] && $(INSTALL_DATA) $$file $(ETC)/symbol/basic ; \
-	done
-	for file in symbol/extra/* ; do \
-		[ -f "$$file" ] && $(INSTALL_DATA) $$file $(ETC)/symbol/extra ; \
-	done
-	for file in symbol/geology/* ; do \
-		[ -f "$$file" ] && $(INSTALL_DATA) $$file $(ETC)/symbol/geology ; \
-	done
+default: lib
+	$(MAKE) $(SYMBOL_DST)
+
+$(SYMBOL_DIRS): %: | $(ETC)/symbol
+	$(MKDIR) $@
+
+$(ETC)/symbol:
+	$(MKDIR) $@
+
+$(ETC)/symbol/%: symbol/% | $(SYMBOL_DIRS)
+	$(INSTALL_DATA) $< $@

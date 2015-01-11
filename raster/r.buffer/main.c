@@ -26,6 +26,7 @@
 
 #include "distance.h"
 #include "local_proto.h"
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 struct Distance *distances;
@@ -42,10 +43,10 @@ int count_rows_with_data;
 int main(int argc, char *argv[])
 {
     struct Distance *pd;
-    char *input, *output, *mapset;
+    const char *input, *output, *mapset;
     char **zone_list;
     double to_meters;
-    char *units;
+    const char *units;
     int offset;
     int count;
     int step, nsteps;
@@ -56,19 +57,16 @@ int main(int argc, char *argv[])
     struct Flag *flag2;
     int ZEROFLAG;
 
-    /* please, remove before GRASS 7 released */
-    struct Flag *q_flag;
-
-
     /* initialize GRASS */
     G_gisinit(argv[0]);
 
     pgm_name = argv[0];
 
     module = G_define_module();
-    module->keywords = _("raster, buffer");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("buffer"));
     module->description =
-	_("Creates a raster map layer showing buffer zones "
+	_("Creates a raster map showing buffer zones "
 	  "surrounding cells that contain non-NULL category values.");
 
     opt1 = G_define_standard_option(G_OPT_R_INPUT);
@@ -95,21 +93,8 @@ int main(int argc, char *argv[])
     flag2->description =
 	_("Ignore zero (0) data cells instead of NULL cells");
 
-    /* please, remove before GRASS 7 released */
-    q_flag = G_define_flag();
-    q_flag->key = 'q';
-    q_flag->description = _("Run quietly");
-
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
-
-
-    /* please, remove before GRASS 7 released */
-    if (q_flag->answer) {
-	putenv("GRASS_VERBOSE=0");
-	G_warning(_("The '-q' flag is superseded and will be removed "
-		    "in future. Please use '--quiet' instead."));
-    }
 
     init_grass();
 
@@ -122,12 +107,9 @@ int main(int argc, char *argv[])
     ZEROFLAG = 0;		/* default: use NULL for non-data cells */
     ZEROFLAG = (flag2->answer);
 
-    mapset = G_find_cell2(input, "");
+    mapset = G_find_raster2(input, "");
     if (mapset == NULL)
 	G_fatal_error(_("Raster map <%s> not found"), input);
-
-    if (G_legal_filename(output) < 0)
-	G_fatal_error(_("<%s> is an illegal file name"), output);
 
     /* parse units */
     if (opt4->answer == NULL)
@@ -180,15 +162,12 @@ int main(int argc, char *argv[])
     make_support_files(output, units);
 
     /* write map history (meta data) */
-    G_short_history(output, "raster", &hist);
-    sprintf(hist.datsrc_1, "%s", input);
-    if (strlen(opt3->answer) < (RECORD_LEN - 14)) {
-	sprintf(hist.edhist[0], "Buffer distance%s:", ndist > 1 ? "s" : "");
-	sprintf(hist.edhist[1], " %s %s", opt3->answer, units);
-	hist.edlinecnt = 2;
-    }
-    G_command_history(&hist);
-    G_write_history(output, &hist);
+    Rast_short_history(output, "raster", &hist);
+    Rast_set_history(&hist, HIST_DATSRC_1, input);
+    Rast_append_format_history(&hist, "Buffer distance%s:", ndist > 1 ? "s" : "");
+    Rast_append_format_history(&hist, " %s %s", opt3->answer, units);
+    Rast_command_history(&hist);
+    Rast_write_history(output, &hist);
 
 
     exit(EXIT_SUCCESS);

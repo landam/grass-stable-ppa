@@ -1,5 +1,5 @@
-#ifndef GRASS_SYMB_H
-#define GRASS_SYMB_H
+#ifndef GRASS_SYMBOL_H
+#define GRASS_SYMBOL_H
 
 /* definitions and structures */
 
@@ -51,7 +51,7 @@ typedef struct
     int count, alloc;		/* number of elements */
     SYMBEL **elem;		/* array of elements */
     int scount, salloc;		/* number of points in stroked version */
-    int *sx, *sy;		/* coordinates in stroked version */
+    double *sx, *sy;		/* coordinates in stroked version */
 } SYMBCHAIN;
 
 /* part */
@@ -71,8 +71,6 @@ typedef struct
     SYMBPART **part;		/* objects ( parts ) */
 } SYMBOL;
 
-/* prototypes */
-SYMBOL *S_read(char *sname);
-void S_stroke(SYMBOL * symb, int size, double rotation, int tolerance);
+#include <grass/defs/symbol.h>
 
 #endif

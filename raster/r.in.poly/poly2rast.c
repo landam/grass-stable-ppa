@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "format.h"
 #include "local_proto.h"
@@ -31,15 +32,13 @@ int poly_to_rast(char *input_file, char *raster_map, char *title, int nrows)
 	exit(EXIT_FAILURE);
     }
 
-    rfd = G_open_cell_new(raster_map);
-    if (rfd < 0)
-	G_fatal_error(_("Can't create raster map <%s>"), raster_map);
+    rfd = Rast_open_c_new(raster_map);
 
     if (title == NULL)
 	title = "";
     G_strip(title);
 
-    G_init_cats((CELL) 0, title, &labels);
+    Rast_init_cats(title, &labels);
 
     format = getformat(ifd);
     
@@ -55,7 +54,7 @@ int poly_to_rast(char *input_file, char *raster_map, char *title, int nrows)
 	if (npasses > 1)
 	    G_message(_("Pass #%d (of %d) ..."), pass, npasses);
 
-	fseek(ifd, 0L, 0);
+	G_fseek(ifd, 0L, 0);
 	while (get_item(ifd, &type, &cat, &x, &y, &count, &labels)) {
 	    set_cat(cat);
 	    switch (type) {
@@ -85,15 +84,15 @@ int poly_to_rast(char *input_file, char *raster_map, char *title, int nrows)
      */
 
     if (stat < 0) {
-	G_unopen_cell(rfd);
+	Rast_unopen(rfd);
 	return 1;
     }
 
-    G_close_cell(rfd);
-    G_write_cats(raster_map, &labels);
-    G_short_history(raster_map, "raster", &history);
-    G_command_history(&history);
-    G_write_history(raster_map, &history);
+    Rast_close(rfd);
+    Rast_write_cats(raster_map, &labels);
+    Rast_short_history(raster_map, "raster", &history);
+    Rast_command_history(&history);
+    Rast_write_history(raster_map, &history);
 
     return 0;
 }

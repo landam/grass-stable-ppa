@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 extern CELL f_c(CELL);
@@ -43,7 +44,7 @@ extern CELL f_c(CELL);
 int main(int argc, char *argv[])
 {
     struct Cell_head cellhd;
-    char *name, *result, *mapset;
+    char *name, *result;
     void *inrast;
     unsigned char *outrast;
     int nrows, ncols;
@@ -59,7 +60,8 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, map algebra");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("algebra"));
     module->description = _("Compares bit patterns with a raster map.");
 
     /* Define the different options */
@@ -95,34 +97,22 @@ int main(int argc, char *argv[])
     pat = atoi(pattern->answer);
     patv = atoi(patval->answer);
 
-    /* find map in mapset */
-    mapset = G_find_cell2(name, "");
-    if (mapset == NULL)
-	G_fatal_error(_("Raster map <%s> not found"), name);
-
-    if (G_legal_filename(result) < 0)
-	G_fatal_error(_("<%s> is an illegal file name"), result);
-
-    /*if Gispf() error */
-    if ((infd = G_open_cell_old(name, mapset)) < 0)
-	G_fatal_error(_("Unable to open raster map <%s>"), name);
+    infd = Rast_open_old(name, "");
 
     /* determine the inputmap type (CELL/FCELL/DCELL) */
-    data_type = G_get_raster_map_type(infd);
+    data_type = Rast_get_map_type(infd);
 
-    if (G_get_cellhd(name, mapset, &cellhd) < 0)
-	G_fatal_error(_("Unable to read header of raster map <%s>"), name);
+    Rast_get_cellhd(name, "", &cellhd);
 
     /* Allocate input buffer */
-    inrast = G_allocate_raster_buf(data_type);
+    inrast = Rast_allocate_buf(data_type);
 
     /* Allocate output buffer, use input map data_type */
-    nrows = G_window_rows();
-    ncols = G_window_cols();
-    outrast = G_allocate_raster_buf(data_type);
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
+    outrast = Rast_allocate_buf(data_type);
 
-    if ((outfd = G_open_raster_new(result, data_type)) < 0)
-	G_fatal_error(_("Unable to create raster map <%s>"), result);
+    outfd = Rast_open_new(result, data_type);
 
     for (row = 0; row < nrows; row++) {
 	CELL c;
@@ -131,9 +121,7 @@ int main(int argc, char *argv[])
 	    G_percent(row, nrows, 2);
 
 	/* read input map */
-	if (G_get_raster_row(infd, inrast, row, data_type) < 0)
-	    G_fatal_error(_("Unable to read raster map <%s> row %d"), name,
-			  row);
+	Rast_get_row(infd, inrast, row, data_type);
 
 	/*process the data */
 	for (col = 0; col < ncols; col++) {
@@ -147,14 +135,13 @@ int main(int argc, char *argv[])
 
 	}
 
-	if (G_put_raster_row(outfd, outrast, data_type) < 0)
-	    G_fatal_error(_("Unable to write to <%s>"), result);
+	Rast_put_row(outfd, outrast, data_type);
     }
 
     G_free(inrast);
     G_free(outrast);
-    G_close_cell(infd);
-    G_close_cell(outfd);
+    Rast_close(infd);
+    Rast_close(outfd);
 
     return (EXIT_SUCCESS);
 }

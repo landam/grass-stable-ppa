@@ -1,5 +1,5 @@
 #include "vizual.h"
-#include <grass/G3d.h>
+#include <grass/raster3d.h>
 
 #define	XDIMYDIM	(Headfax->xdim)*(Headfax->ydim)
 
@@ -10,7 +10,7 @@ int r3read_level(g3map, Headfax, data, n_lev)
      int n_lev;
 {
 
-    G3d_getBlock(g3map, 0, 0, n_lev,
+    Rast3d_get_block(g3map, 0, 0, n_lev,
 		 Headfax->xdim, Headfax->ydim, 1, (char *)data, FCELL_TYPE);
 
     return 0;

@@ -1,15 +1,14 @@
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/display.h>
-#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "plot.h"
 
 /* arrow heads will be drawn at 25,50,75% of the line length */
 #define PERC_OF_LINE 25
 
-int dir(struct Map_info *Map, int type, struct cat_list *Clist,
-        int chcat, int dsize)
+int display_dir(struct Map_info *Map, int type, struct cat_list *Clist,
+		int chcat, int dsize)
 {
     int ltype;
     double len, x, y, angle, msize, dist;
@@ -28,12 +27,15 @@ int dir(struct Map_info *Map, int type, struct cat_list *Clist,
 	ltype = Vect_read_next_line(Map, Points, Cats);
 	switch (ltype) {
 	case -1:
-	    G_fatal_error(_("Can't read vector map"));
+	    G_fatal_error(_("Unable to read vector map"));
 	case -2:		/* EOF */
 	    return 0;
 	}
 
-	if (!(type & ltype & GV_LINES))
+        if (!(ltype & type))
+          continue;
+
+	if (!(ltype & (GV_LINES | GV_FACE)))
 	    continue;
 
 	if (chcat) {
@@ -70,7 +72,7 @@ int dir(struct Map_info *Map, int type, struct cat_list *Clist,
 	    Vect_point_on_line(Points, len * dist, &x, &y, NULL, &angle,
 			       NULL);
 	    G_debug(4, "plot direction: %f, %f", x, y);
-	    G_plot_icon(x, y, G_ICON_ARROW, angle, msize);
+	    D_plot_icon(x, y, G_ICON_ARROW, angle, msize);
 	}
     }
 

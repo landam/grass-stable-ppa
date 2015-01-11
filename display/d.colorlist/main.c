@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <grass/gis.h>
 #include <grass/glocale.h>
-#include <grass/display.h>
+#include <grass/colors.h>
 
 int main(int argc, char **argv)
 {
@@ -32,7 +32,8 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("display, setup");
+    G_add_keyword(_("display"));
+    G_add_keyword(_("settings"));
     module->description =
 	"Output a list of all available display colors with a configurable "
 	"separator (default is comma).";
@@ -45,12 +46,10 @@ int main(int argc, char **argv)
     sep->description = "character for separation of list items";
     sep->answer = ",";
 
-    G_disable_interactive();
+    if (G_parser(argc, argv))
+	exit(EXIT_FAILURE);
 
-    if (argc > 1 && G_parser(argc, argv))
-	exit(1);
-
-    colorlist = G_store(D_color_list());
+    colorlist = G_store(D_COLOR_LIST);
 
     /* if separator is different from ",", escape this character */
     if (strcmp(sep->answer, ",") != 0 && strlen(sep->answer) > 0) {
@@ -60,5 +59,5 @@ int main(int argc, char **argv)
     }
 
     fprintf(stdout, "%s\n", colorlist);
-    return (0);
+    return 0;
 }

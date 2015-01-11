@@ -1,5 +1,9 @@
 #include <string.h>
-#include "global.h"
+
+#include <grass/gis.h>
+#include <grass/manage.h>
+#include <grass/raster.h>
+#include <grass/glocale.h>
 
 int check_reclass(const char *name, const char *mapset, int force)
 {
@@ -7,15 +11,15 @@ int check_reclass(const char *name, const char *mapset, int force)
     char **rmaps;
     int nrmaps;
 
-    if (G_is_reclassed_to(name, mapset, &nrmaps, &rmaps) > 0) {
+    if (Rast_is_reclassed_to(name, mapset, &nrmaps, &rmaps) > 0) {
 	for (; *rmaps; rmaps++) {
 	    /* force remove */
 	    if (force)
-		G_warning(_("[%s@%s] is a base map for [%s]. Remove forced."),
+		G_warning(_("Raster map <%s@%s> is a base map for <%s>. Remove forced."),
 			  name, mapset, *rmaps);
 	    else
 		G_warning(_
-			  ("[%s@%s] is a base map. Remove reclassed map first: %s"),
+			  ("Raster map <%s@%s> is a base map. Remove reclassed map first: %s"),
 			  name, mapset, *rmaps);
 	}
 
@@ -23,8 +27,8 @@ int check_reclass(const char *name, const char *mapset, int force)
 	    return 1;
     }
 
-    if (G_is_reclass(name, mapset, rname, rmapset) > 0 &&
-	G_is_reclassed_to(rname, rmapset, &nrmaps, &rmaps) > 0) {
+    if (Rast_is_reclass(name, mapset, rname, rmapset) > 0 &&
+	Rast_is_reclassed_to(rname, rmapset, &nrmaps, &rmaps) > 0) {
 	char path[GPATH_MAX];
 	char *p = strchr(rname, '@');
 	char *qname = G_fully_qualified_name(name, mapset);
@@ -32,7 +36,7 @@ int check_reclass(const char *name, const char *mapset, int force)
 	if (p)
 	    *p = '\0';
 
-	G__file_name_misc(path, "cell_misc", "reclassed_to", rname, rmapset);
+	G_file_name_misc(path, "cell_misc", "reclassed_to", rname, rmapset);
 
 	if (nrmaps == 1 && !G_strcasecmp(rmaps[0], qname)) {
 

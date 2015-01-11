@@ -16,7 +16,7 @@
 *
 *****************************************************************************/
 
-#include "grass/N_gwflow.h"
+#include <grass/N_gwflow.h>
 
 /* *************************************************************** */
 /* ***************** N_gwflow_data3d ***************************** */
@@ -307,7 +307,7 @@ N_data_star *N_callback_gwflow_3d(void *gwdata, N_geom_data * geom, int col,
 
     /*inner sources */
     q = N_get_array_3d_d_value(data->q, col, row, depth);
-    /*specific yield */
+    /*storativity */
     Ss = N_get_array_3d_d_value(data->s, col, row, depth);
     /*porosity */
     nf = N_get_array_3d_d_value(data->nf, col, row, depth);
@@ -325,7 +325,7 @@ N_data_star *N_callback_gwflow_3d(void *gwdata, N_geom_data * geom, int col,
     /*mass balance center cell to bottom cell */
     B = -1 * Az * hc_b / dz;
 
-    /*specific yield */
+    /*storativity */
     Ss = Az * dz * Ss;
 
     /*the diagonal entry of the matrix */
@@ -347,6 +347,100 @@ N_data_star *N_callback_gwflow_3d(void *gwdata, N_geom_data * geom, int col,
 
     return mat_pos;
 }
+
+
+/* *************************************************************** */
+/* ****************** N_gwflow_3d_calc_water_budget ************** */
+/* *************************************************************** */
+/*!
+ * \brief This function computes the water budget of the entire groundwater
+ *
+ * The water budget is calculated for each active and dirichlet cell from
+ * its surrounding neighbours. This is based on the 7 star mass balance computation
+ * of N_callback_gwflow_3d and the gradient of the water heights in the cells.
+ * The sum of the water budget of each active/dirichlet cell must be near zero
+ * due the effect of numerical inaccuracy of cpu's.
+ *
+ * \param gwdata N_gwflow_data3d *
+ * \param geom N_geom_data *
+ * \param budget N_array_3d
+ * \return void
+ *
+ * */
+void
+N_gwflow_3d_calc_water_budget(N_gwflow_data3d * data, N_geom_data * geom, N_array_3d * budget)
+{
+    int z, y, x, stat;
+    double h, hc;
+    double val;
+    double sum;
+    N_data_star *dstar;
+
+    int rows = data->status->rows;
+    int cols = data->status->cols;
+    int depths = data->status->depths;
+    sum = 0;
+
+    for (z = 0; z < depths; z++) {
+        for (y = 0; y < rows; y++) {
+            G_percent(y, rows - 1, 10);
+            for (x = 0; x < cols; x++) {
+                stat = (int)N_get_array_3d_d_value(data->status, x, y, z);
+
+                val = 0.0;
+
+                if (stat != N_CELL_INACTIVE ) {	/*all active/dirichlet cells */
+
+                    /* Compute the flow parameter */
+                    dstar = N_callback_gwflow_3d(data, geom, x, y, z);
+                    /* Compute the gradient in each direction pointing from the center */
+                    hc = N_get_array_3d_d_value(data->phead, x, y, z);
+
+                    if((int)N_get_array_3d_d_value(data->status, x + 1, y    , z) != N_CELL_INACTIVE) {
+                        h = N_get_array_3d_d_value(data->phead,  x + 1, y    , z);
+                        val += dstar->E * (hc - h);
+                    }
+                    if((int)N_get_array_3d_d_value(data->status, x - 1, y    , z) != N_CELL_INACTIVE) {
+                        h = N_get_array_3d_d_value(data->phead,  x - 1, y    , z);
+                        val += dstar->W * (hc - h);
+                    }
+                    if((int)N_get_array_3d_d_value(data->status, x    , y + 1, z) != N_CELL_INACTIVE) {
+                        h = N_get_array_3d_d_value(data->phead,  x    , y + 1, z);
+                        val += dstar->S * (hc - h);
+                    }
+                    if((int)N_get_array_3d_d_value(data->status, x    , y - 1, z) != N_CELL_INACTIVE) {
+                        h = N_get_array_3d_d_value(data->phead,  x    , y - 1, z);
+                        val += dstar->N * (hc - h);
+                    }
+                    if((int)N_get_array_3d_d_value(data->status, x    , y    , z + 1) != N_CELL_INACTIVE) {
+                        h = N_get_array_3d_d_value(data->phead,  x    , y    , z + 1);
+                        val += dstar->T * (hc - h);
+                    }
+                    if((int)N_get_array_3d_d_value(data->status, x    , y    , z - 1) != N_CELL_INACTIVE) {
+                        h = N_get_array_3d_d_value(data->phead,  x    , y    , z - 1);
+                        val += dstar->B * (hc - h);
+                    }
+                    sum += val;
+
+                    G_free(dstar);
+                }
+                else {
+                    Rast_set_null_value(&val, 1, DCELL_TYPE);
+                }
+                N_put_array_3d_d_value(budget, x, y, z, val);
+            }
+        }
+    }
+
+    if(fabs(sum) < 0.0000000001)
+        G_message(_("The total sum of the water budget: %g\n"), sum);
+    else
+        G_warning(_("The total sum of the water budget is significant larger then 0: %g\n"), sum);
+
+    return;
+}
+
+
 
 /* *************************************************************** */
 /* ****************** N_callback_gwflow_2d *********************** */
@@ -380,7 +474,7 @@ N_data_star *N_callback_gwflow_2d(void *gwdata, N_geom_data * geom, int col,
     double hc_xe, hc_ys;
     double z_xe, z_ys;
     double hc, hc_start;
-    double Ss, r, nf, q;
+    double Ss, r, q;
     double C, W, E, N, S, V;
     N_gwflow_data2d *data;
     N_data_star *mat_pos;
@@ -400,6 +494,14 @@ N_data_star *N_callback_gwflow_2d(void *gwdata, N_geom_data * geom, int col,
     hc_start = N_get_array_2d_d_value(data->phead_start, col, row);
     hc = N_get_array_2d_d_value(data->phead, col, row);
     top = N_get_array_2d_d_value(data->top, col, row);
+
+    /* Inner sources */
+    q = N_get_array_2d_d_value(data->q, col, row);
+
+    /* storativity or porosity of current cell face [-]*/
+    Ss = N_get_array_2d_d_value(data->s, col, row);
+    /* recharge */
+    r = N_get_array_2d_d_value(data->r, col, row) * Az;
 
 
     if (hc > top) {		/*If the aquifer is confined */
@@ -457,15 +559,6 @@ N_data_star *N_callback_gwflow_2d(void *gwdata, N_geom_data * geom, int col,
     else
 	z_s = z;
 
-    /* Inner sources */
-    q = N_get_array_2d_d_value(data->q, col, row);
-    nf = N_get_array_2d_d_value(data->nf, col, row);
-
-    /* specific yield  of current cell face */
-    Ss = N_get_array_2d_d_value(data->s, col, row) * Az;
-    /* recharge */
-    r = N_get_array_2d_d_value(data->r, col, row) * Az;
-
     /*get the surrounding permeabilities */
     hc_x = N_get_array_2d_d_value(data->hc_x, col, row);
     hc_y = N_get_array_2d_d_value(data->hc_y, col, row);
@@ -480,14 +573,18 @@ N_data_star *N_callback_gwflow_2d(void *gwdata, N_geom_data * geom, int col,
     T_n = N_calc_harmonic_mean(hc_yn, hc_y) * z_n;
     T_s = N_calc_harmonic_mean(hc_ys, hc_y) * z_s;
 
-    /*compute the river leakage, this is an explicit method */
+    /* Compute the river leakage, this is an explicit method
+     * Influent and effluent flow is computed.
+     */
     if (data->river_leak &&
-	(N_get_array_2d_d_value(data->river_leak, col, row) != 0)) {
+	(N_get_array_2d_d_value(data->river_leak, col, row) != 0) &&
+            N_get_array_2d_d_value(data->river_bed, col, row) <= top) {
+        /* Groundwater surface is above the river bed*/
 	if (hc > N_get_array_2d_d_value(data->river_bed, col, row)) {
 	    river_vect = N_get_array_2d_d_value(data->river_head, col, row) *
 		N_get_array_2d_d_value(data->river_leak, col, row);
 	    river_mat = N_get_array_2d_d_value(data->river_leak, col, row);
-	}
+	} /* Groundwater surface is below the river bed */
 	else if (hc < N_get_array_2d_d_value(data->river_bed, col, row)) {
 	    river_vect = (N_get_array_2d_d_value(data->river_head, col, row) -
 			  N_get_array_2d_d_value(data->river_bed, col, row))
@@ -496,9 +593,12 @@ N_data_star *N_callback_gwflow_2d(void *gwdata, N_geom_data * geom, int col,
 	}
     }
 
-    /*compute the drainage, this is an explicit method */
+    /* compute the drainage, this is an explicit method
+     * Drainage is only enabled, if the drain bed is lower the groundwater surface
+     */
     if (data->drain_leak &&
-	(N_get_array_2d_d_value(data->drain_leak, col, row) != 0)) {
+	(N_get_array_2d_d_value(data->drain_leak, col, row) != 0) &&
+            N_get_array_2d_d_value(data->drain_bed, col, row) <= top) {
 	if (hc > N_get_array_2d_d_value(data->drain_bed, col, row)) {
 	    drain_vect = N_get_array_2d_d_value(data->drain_bed, col, row) *
 		N_get_array_2d_d_value(data->drain_leak, col, row);
@@ -520,11 +620,11 @@ N_data_star *N_callback_gwflow_2d(void *gwdata, N_geom_data * geom, int col,
     S = -1 * T_s * dx / dy;
 
     /*the diagonal entry of the matrix */
-    C = -1 * (W + E + N + S - Ss / data->dt - river_mat * Az -
+    C = -1 * (W + E + N + S -  Az *Ss / data->dt - river_mat * Az -
 	      drain_mat * Az);
 
     /*the entry in the right side b of Ax = b */
-    V = (q + hc_start * Ss / data->dt) + r + river_vect * Az +
+    V = (q + hc_start * Az * Ss / data->dt) + r + river_vect * Az +
 	drain_vect * Az;
 
     G_debug(5, "N_callback_gwflow_2d: called [%i][%i]", row, col);
@@ -533,4 +633,88 @@ N_data_star *N_callback_gwflow_2d(void *gwdata, N_geom_data * geom, int col,
     mat_pos = N_create_5star(C, W, E, N, S, V);
 
     return mat_pos;
+}
+
+
+
+/* *************************************************************** */
+/* ****************** N_gwflow_2d_calc_water_budget ************** */
+/* *************************************************************** */
+/*!
+ * \brief This function computes the water budget of the entire groundwater
+ *
+ * The water budget is calculated for each active and dirichlet cell from
+ * its surrounding neighbours. This is based on the 5 star mass balance computation
+ * of N_callback_gwflow_2d and the gradient of the water heights in the cells.
+ * The sum of the water budget of each active/dirichlet cell must be near zero
+ * due the effect of numerical inaccuracy of cpu's.
+ *
+ * \param gwdata N_gwflow_data2d *
+ * \param geom N_geom_data *
+ * \param budget N_array_2d
+ * \return void
+ *
+ * */
+void
+N_gwflow_2d_calc_water_budget(N_gwflow_data2d * data, N_geom_data * geom, N_array_2d * budget)
+{
+    int y, x, stat;
+    double h, hc;
+    double val;
+    double sum;
+    N_data_star *dstar;
+
+    int rows = data->status->rows;
+    int cols = data->status->cols;
+
+    sum = 0;
+
+    for (y = 0; y < rows; y++) {
+	G_percent(y, rows - 1, 10);
+	for (x = 0; x < cols; x++) {
+	    stat = N_get_array_2d_c_value(data->status, x, y);
+
+            val = 0.0;
+
+	    if (stat != N_CELL_INACTIVE ) {	/*all active/dirichlet cells */
+
+                /* Compute the flow parameter */
+                dstar = N_callback_gwflow_2d(data, geom, x, y);
+                /* Compute the gradient in each direction pointing from the center */
+                hc = N_get_array_2d_d_value(data->phead, x, y);
+
+                if((int)N_get_array_2d_d_value(data->status, x + 1, y    ) != N_CELL_INACTIVE) {
+                    h = N_get_array_2d_d_value(data->phead,  x + 1, y);
+                    val += dstar->E * (hc - h);
+                }
+                if((int)N_get_array_2d_d_value(data->status, x - 1, y    ) != N_CELL_INACTIVE) {
+                    h = N_get_array_2d_d_value(data->phead,  x - 1, y);
+                    val += dstar->W * (hc - h);
+                }
+                if((int)N_get_array_2d_d_value(data->status, x    , y + 1) != N_CELL_INACTIVE) {
+                    h = N_get_array_2d_d_value(data->phead,  x    , y + 1);
+                    val += dstar->S * (hc - h);
+                }
+                if((int)N_get_array_2d_d_value(data->status, x    , y - 1) != N_CELL_INACTIVE) {
+                    h = N_get_array_2d_d_value(data->phead,  x    , y - 1);
+                    val += dstar->N * (hc - h);
+                }
+
+                sum += val;
+
+                G_free(dstar);
+	    }
+	    else {
+		Rast_set_null_value(&val, 1, DCELL_TYPE);
+	    }
+	    N_put_array_2d_d_value(budget, x, y, val);
+	}
+    }
+
+    if(fabs(sum) < 0.0000000001)
+        G_message(_("The total sum of the water budget: %g\n"), sum);
+    else
+        G_warning(_("The total sum of the water budget is significant larger then 0: %g\n"), sum);
+
+    return;
 }

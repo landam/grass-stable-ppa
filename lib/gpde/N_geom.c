@@ -17,7 +17,7 @@
 *****************************************************************************/
 
 
-#include "grass/N_pde.h"
+#include <grass/N_pde.h>
 
 /* *************************************************************** * 
  * *********** Konstruktor *************************************** * 
@@ -65,12 +65,12 @@ void N_free_geom_data(N_geom_data * geom)
  * If the projection is not planimetric, a double array will be created based on the 
  * number of rows of the provided region
  *
- * \param region3d G3D_Region *
+ * \param region3d RASTER3D_Region *
  * \param geodata N_geom_data * - if a NULL pointer is given, a new structure will be allocatet and returned
  *
  * \return N_geom_data *
  * */
-N_geom_data *N_init_geom_data_3d(G3D_Region * region3d, N_geom_data * geodata)
+N_geom_data *N_init_geom_data_3d(RASTER3D_Region * region3d, N_geom_data * geodata)
 {
     N_geom_data *geom = geodata;
     struct Cell_head region2d;
@@ -90,7 +90,7 @@ N_geom_data *N_init_geom_data_3d(G3D_Region * region3d, N_geom_data * geodata)
 
 	/*convert the 3d into a 2d region and begin the area calculation */
 	G_get_set_window(&region2d);	/*this function is not thread safe */
-	G3d_regionToCellHead(region3d, &region2d);
+	Rast3d_region_to_cell_head(region3d, &region2d);
     }
 
     return N_init_geom_data_2d(&region2d, geom);
@@ -130,7 +130,7 @@ N_geom_data *N_init_geom_data_2d(struct Cell_head * region,
 	/*make a backup from this region */
 	G_get_set_window(&backup);	/*this function is not thread safe */
 	/*set the current region */
-	G_set_window(region);	/*this function is not thread safe */
+	Rast_set_window(region);	/*this function is not thread safe */
 
 	if (geom == NULL)
 	    geom = N_alloc_geom_data();
@@ -170,7 +170,7 @@ N_geom_data *N_init_geom_data_2d(struct Cell_head * region,
 	}
 
 	/*restore the old region */
-	G_set_window(&backup);	/*this function is not thread safe */
+	Rast_set_window(&backup);	/*this function is not thread safe */
     }
 
     return geom;

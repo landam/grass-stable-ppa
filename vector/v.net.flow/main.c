@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 #include <grass/dbmi.h>
 #include <grass/neta.h>
@@ -32,11 +32,11 @@ int main(int argc, char *argv[])
     struct line_cats *Cats;
     struct GModule *module;	/* GRASS module for parsing arguments */
     struct Option *map_in, *map_out, *cut_out;
-    struct Option *field_opt, *abcol, *afcol;
-    struct Option *catsource_opt, *fieldsource_opt, *wheresource_opt;
-    struct Option *catsink_opt, *fieldsink_opt, *wheresink_opt;
+    struct Option *afield_opt, *nfield_opt, *abcol, *afcol, *ncol;
+    struct Option *catsource_opt, *wheresource_opt;
+    struct Option *catsink_opt, *wheresink_opt;
     int with_z;
-    int layer, mask_type;
+    int afield, nfield, mask_type;
     struct varray *varray_source, *varray_sink;
     dglGraph_s *graph;
     int i, nlines, *flow, total_flow;
@@ -55,13 +55,26 @@ int main(int argc, char *argv[])
 
     /* initialize module */
     module = G_define_module();
-    module->keywords = _("vector, network, flow");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("network"));
+    G_add_keyword(_("flow"));
     module->description =
 	_("Computes the maximum flow between two sets of nodes in the network.");
 
     /* Define the different options as defined in gis.h */
     map_in = G_define_standard_option(G_OPT_V_INPUT);
-    field_opt = G_define_standard_option(G_OPT_V_FIELD);
+
+    afield_opt = G_define_standard_option(G_OPT_V_FIELD);
+    afield_opt->key = "alayer";
+    afield_opt->answer = "1";
+    afield_opt->label = _("Arc layer");
+    afield_opt->guisection = _("Cost");
+
+    nfield_opt = G_define_standard_option(G_OPT_V_FIELD);
+    nfield_opt->key = "nlayer";
+    nfield_opt->answer = "2";
+    nfield_opt->label = _("Node layer");
+    nfield_opt->guisection = _("Cost");
 
     map_out = G_define_standard_option(G_OPT_V_OUTPUT);
 
@@ -70,44 +83,42 @@ int main(int argc, char *argv[])
     cut_out->description =
 	_("Name for output vector map containing a minimum cut");
 
-    afcol = G_define_standard_option(G_OPT_COLUMN);
+    afcol = G_define_standard_option(G_OPT_DB_COLUMN);
     afcol->key = "afcolumn";
     afcol->required = NO;
     afcol->description =
-	_("Name of arc forward/both direction(s) capacity column");
+	_("Arc forward/both direction(s) cost column (number)");
+    afcol->guisection = _("Cost");
 
-    abcol = G_define_standard_option(G_OPT_COLUMN);
+    abcol = G_define_standard_option(G_OPT_DB_COLUMN);
     abcol->key = "abcolumn";
     abcol->required = NO;
-    abcol->description = _("Name of arc backward direction capacity column");
+    abcol->description = _("Arc backward direction cost column (number)");
+    abcol->guisection = _("Cost");
 
-    fieldsource_opt = G_define_standard_option(G_OPT_V_FIELD);
-    fieldsource_opt->key = "source_layer";
-    fieldsource_opt->label = _("Source layer number or name");
-    fieldsource_opt->guisection = _("Source");
+    ncol = G_define_standard_option(G_OPT_DB_COLUMN);
+    ncol->key = "ncolumn";
+    ncol->required = NO;
+    ncol->description = _("Node cost column (number)");
+    ncol->guisection = _("Cost");
 
     catsource_opt = G_define_standard_option(G_OPT_V_CATS);
     catsource_opt->key = "source_cats";
     catsource_opt->label = _("Source category values");
     catsource_opt->guisection = _("Source");
 
-    wheresource_opt = G_define_standard_option(G_OPT_WHERE);
+    wheresource_opt = G_define_standard_option(G_OPT_DB_WHERE);
     wheresource_opt->key = "source_where";
     wheresource_opt->label =
 	_("Source WHERE conditions of SQL statement without 'where' keyword");
     wheresource_opt->guisection = _("Source");
-
-    fieldsink_opt = G_define_standard_option(G_OPT_V_FIELD);
-    fieldsink_opt->key = "sink_layer";
-    fieldsink_opt->label = _("Sink layer number or name");
-    fieldsink_opt->guisection = _("Sink");
 
     catsink_opt = G_define_standard_option(G_OPT_V_CATS);
     catsink_opt->key = "sink_cats";
     catsink_opt->label = _("Sink category values");
     catsink_opt->guisection = _("Sink");
 
-    wheresink_opt = G_define_standard_option(G_OPT_WHERE);
+    wheresink_opt = G_define_standard_option(G_OPT_DB_WHERE);
     wheresink_opt->key = "sink_where";
     wheresink_opt->label =
 	_("Sink WHERE conditions of SQL statement without 'where' keyword");
@@ -124,7 +135,7 @@ int main(int argc, char *argv[])
     Cats = Vect_new_cats_struct();
 
     Vect_check_input_output_name(map_in->answer, map_out->answer,
-				 GV_FATAL_EXIT);
+				 G_FATAL_EXIT);
 
     Vect_set_open_level(2);
 
@@ -145,11 +156,12 @@ int main(int argc, char *argv[])
     }
 
     /* parse filter option and select appropriate lines */
-    layer = atoi(field_opt->answer);
+    afield = Vect_get_field_number(&In, afield_opt->answer);
+    nfield = Vect_get_field_number(&In, nfield_opt->answer);
 
     /* Create table */
     Fi = Vect_default_field_info(&Out, 1, NULL, GV_1TABLE);
-    Vect_map_add_dblink(&Out, 1, NULL, Fi->table, "cat", Fi->database,
+    Vect_map_add_dblink(&Out, 1, NULL, Fi->table, GV_KEY_COLUMN, Fi->database,
 			Fi->driver);
     db_init_string(&sql);
     driver = db_start_driver_open_database(Fi->driver, Fi->database);
@@ -168,7 +180,7 @@ int main(int argc, char *argv[])
 	G_fatal_error(_("Unable to create table: '%s'"), db_get_string(&sql));
     }
 
-    if (db_create_index2(driver, Fi->table, "cat") != DB_OK)
+    if (db_create_index2(driver, Fi->table, GV_KEY_COLUMN) != DB_OK)
 	G_warning(_("Cannot create index"));
 
     if (db_grant_on_table
@@ -181,16 +193,19 @@ int main(int argc, char *argv[])
     sink_list = Vect_new_list();
 
     if (NetA_initialise_varray
-	(&In, atoi(fieldsource_opt->answer), GV_POINT,
-	 wheresource_opt->answer, catsource_opt->answer, &varray_source) == 2)
-	G_fatal_error(_("Neither %s nor %s was given"), catsource_opt->key,
-		      wheresource_opt->key);
+	(&In, nfield, GV_POINT,
+	 wheresource_opt->answer, catsource_opt->answer, &varray_source) <= 0) {
+	G_fatal_error(_("No source features selected. "
+			"Please check options '%s', '%s'."),
+			catsource_opt->key, wheresource_opt->key);
+    }
     if (NetA_initialise_varray
-	(&In, atoi(fieldsink_opt->answer), GV_POINT, wheresink_opt->answer,
-	 catsink_opt->answer, &varray_sink) == 2)
-	G_fatal_error(_("Neither %s nor %s was given"), catsink_opt->key,
-		      wheresink_opt->key);
-
+	(&In, nfield, GV_POINT, wheresink_opt->answer,
+	 catsink_opt->answer, &varray_sink) <= 0) {
+	G_fatal_error(_("No sink features selected. "
+			"Please check options '%s', '%s'."),
+			catsink_opt->key, wheresink_opt->key);
+    }
 
     NetA_varray_to_nodes(&In, varray_source, source_list, NULL);
     NetA_varray_to_nodes(&In, varray_sink, sink_list, NULL);
@@ -205,9 +220,11 @@ int main(int argc, char *argv[])
     Vect_hist_copy(&In, &Out);
     Vect_hist_command(&Out);
 
-    Vect_net_build_graph(&In, mask_type, atoi(field_opt->answer), 0,
-			 afcol->answer, abcol->answer, NULL, 0, 0);
-    graph = &(In.graph);
+    if (0 != Vect_net_build_graph(&In, mask_type, afield, nfield, afcol->answer, abcol->answer,
+                                  ncol->answer, 0, 0))
+        G_fatal_error(_("Unable to build graph for vector map <%s>"), Vect_get_full_name(&In));
+    
+    graph = Vect_net_get_graph(&In);
     nlines = Vect_get_num_lines(&In);
     flow = (int *)G_calloc(nlines + 1, sizeof(int));
     if (!flow)
@@ -231,11 +248,11 @@ int main(int argc, char *argv[])
 	if (type == GV_LINE) {
 	    int cat;
 
-	    Vect_cat_get(Cats, layer, &cat);
+	    Vect_cat_get(Cats, afield, &cat);
 	    if (cat == -1)
 		continue;	/*TODO: warning? */
 	    sprintf(buf, "insert into %s values (%d, %f)", Fi->table, cat,
-		    flow[i] / (double)In.cost_multip);
+		    flow[i] / (double)In.dgraph.cost_multip);
 	    db_set_string(&sql, buf);
 	    G_debug(3, db_get_string(&sql));
 

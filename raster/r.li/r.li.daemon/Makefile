@@ -1,14 +1,10 @@
 MODULE_TOPDIR = ../../..
 
-EXTRA_LIBS=$(GISLIB) $(MATHLIB)
+LIB = RLI
+PGM = r.li.daemon
 
-LIB_NAME = grass_rli.$(GRASS_VERSION_NUMBER)
-
-LIB_OBJS = daemon.o list.o worker.o GenericCell.o avl.o avlID.o
-
-DEPENDENCIES = $(GISDEP) 
+DEPENDENCIES = $(GISDEP) $(RASTERDEP)
 
 include $(MODULE_TOPDIR)/include/Make/Lib.make
 
 default: lib
-	$(INSTALL_DATA) description.html $(GISBASE)/docs/html/r.li.daemon.html

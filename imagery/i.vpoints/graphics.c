@@ -1,6 +1,5 @@
 #include "globals.h"
 #include <grass/display.h>
-#include <grass/raster.h>
 
 static View *makeview(double bottom, double top, double left, double right)
 {
@@ -61,8 +60,8 @@ int Init_graphics(void)
     VIEW_MAP2_ZOOM = makeview(2.5, 47.5, 50.0, 100.0);
     VIEW_MENU = makeview(0.0, 2.5, 0.0, 100.0);
 
-    G_init_colors(&VIEW_MAP1->cell.colors);
-    G_init_colors(&VIEW_MAP2->cell.colors);
+    Rast_init_colors(&VIEW_MAP1->cell.colors);
+    Rast_init_colors(&VIEW_MAP2->cell.colors);
 
     return 0;
 }
@@ -81,7 +80,7 @@ int Outline_box(int top, int bottom, int left, int right)
 
 int Text_width(char *text)
 {
-    int top, bottom, left, right;
+    double top, bottom, left, right;
 
     R_get_text_box(text, &top, &bottom, &left, &right);
 

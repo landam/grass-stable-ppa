@@ -60,7 +60,9 @@ int main(int argc, char *argv[])
 				 * (to create a new location) when none exists */
 
     module = G_define_module();
-    module->keywords = _("general, projection");
+    G_add_keyword(_("general"));
+    G_add_keyword(_("projection"));
+    G_add_keyword(_("create location"));
 #ifdef HAVE_OGR
     module->label =
 	_("Prints and manipulates GRASS projection information files "
@@ -168,7 +170,7 @@ int main(int argc, char *argv[])
 	_("Accepts standard GRASS datum codes, or \"list\" to list and exit");
 
     dtrans = G_define_option();
-    dtrans->key = "datumtrans";
+    dtrans->key = "datum_trans";
     dtrans->type = TYPE_INTEGER;
     dtrans->key_desc = "index";
     dtrans->required = NO;
@@ -327,7 +329,7 @@ int main(int argc, char *argv[])
 	    path[sizeof(path)-1] = '\0';
 	}
 	else
-	    G__file_name(path, "", "PROJ_EPSG", "PERMANENT");
+	    G_file_name(path, "", "PROJ_EPSG", "PERMANENT");
 	fp = fopen(path, "w");
 #ifdef HAVE_OGR
 	fprintf(fp, "epsg: %s\n", inepsg->answer);

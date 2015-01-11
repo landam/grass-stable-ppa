@@ -1,6 +1,6 @@
 
 #include <grass/gis.h>
-#include <grass/G3d.h>
+#include <grass/raster3d.h>
 #include "globals.h"
 #include "globals3.h"
 #include "expression.h"
@@ -14,7 +14,7 @@ z() height at center of depth
 
 int f_x(int argc, const int *argt, void **args)
 {
-    G3D_Region *window = &current_region3;
+    RASTER3D_Region *window = &current_region3;
     DCELL *res = args[0];
     DCELL x;
     int i;
@@ -37,7 +37,7 @@ int f_x(int argc, const int *argt, void **args)
 
 int f_y(int argc, const int *argt, void **args)
 {
-    G3D_Region *window = &current_region3;
+    RASTER3D_Region *window = &current_region3;
     DCELL *res = args[0];
     DCELL y;
     int i;
@@ -58,7 +58,7 @@ int f_y(int argc, const int *argt, void **args)
 
 int f_z(int argc, const int *argt, void **args)
 {
-    G3D_Region *window = &current_region3;
+    RASTER3D_Region *window = &current_region3;
     DCELL *res = args[0];
     DCELL z;
     int i;

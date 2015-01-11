@@ -1,8 +1,8 @@
 #include "globals.h"
-#include <grass/raster.h>
+#include <grass/display.h>
 int dot(int x, int y)
 {
-    int vx[5], vy[5];
+    double vx[5], vy[5];
 
     vx[0] = x;
     vy[0] = y - dotsize;

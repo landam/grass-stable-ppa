@@ -6,8 +6,9 @@
  *               Markus Neteler <neteler itc.it>,Brad Douglas <rez touchofmadness.com>,
  *               Huidae Cho <grass4u gmail.com>, Glynn Clements <glynn gclements.plus.com>,
  *               Hamish Bowman <hamish_b yahoo.com>, Soeren Gebbert <soeren.gebbert gmx.de>
+ *               Martin Landa <landa.martin gmail.com>
  * PURPOSE:      
- * COPYRIGHT:    (C) 1999-2006 by the GRASS Development Team
+ * COPYRIGHT:    (C) 1999-2006, 2012 by the GRASS Development Team
  *
  *               This program is free software under the GNU General Public
  *               License (>=v2). Read the file COPYING that comes with GRASS
@@ -20,8 +21,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+
 #include <grass/gis.h>
-#include "local_proto.h"
+#include <grass/raster.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 
 struct order
@@ -37,19 +40,18 @@ struct order
     DCELL dvalue[NFILES];
 };
 
+static int oops(int, const char *, const char *);
 static int by_row(const void *, const void *);
 static int by_point(const void *, const void *);
 
 static int tty = 0;
 
-/* *************************************************************** */
-/* *************************************************************** */
-/* *************************************************************** */
+
 int main(int argc, char *argv[])
 {
-    char *mapset;
     int i, j;
     int nfiles;
+    char *name;
     int fd[NFILES];
     struct Categories cats[NFILES];
     struct Cell_head window;
@@ -58,23 +60,28 @@ int main(int argc, char *argv[])
     RASTER_MAP_TYPE out_type[NFILES];
     CELL *cell[NFILES];
     DCELL *dcell[NFILES];
-
+    struct Map_info Map;
+    struct line_pnts *Points;
+    
     /*   int row, col; */
     double drow, dcol;
     int row_in_window, in_window;
     double east, north;
-    int line;
+    int line, ltype;
     char buffer[1024];
     char **ptr;
-    struct Option *opt1, *opt2, *opt3, *opt4, *opt_fs;
-    struct Flag *label_flag, *cache_flag, *int_flag, *color_flag, *header_flag;
-    char fs;
+    struct _opt {
+        struct Option *input, *cache, *null, *coords, *fs, *points, *output;
+    } opt;
+    struct _flg {
+	struct Flag *label, *cache, *cat_int, *color, *header;
+    } flg;
+    char *fs;
     int Cache_size;
     int done = FALSE;
     int point, point_cnt;
     struct order *cache;
     int cur_row;
-    int projection;
     int cache_hit = 0, cache_miss = 0;
     int cache_hit_tot = 0, cache_miss_tot = 0;
     int pass = 0;
@@ -88,166 +95,175 @@ int main(int argc, char *argv[])
 
     /* Set description */
     module = G_define_module();
-    module->keywords = _("raster, querying");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("querying"));
+    G_add_keyword(_("position"));
     module->description =
-	_("Queries raster map layers on their category values and category labels.");
+	_("Queries raster maps on their category values and category labels.");
 
-    opt1 = G_define_option();
-    opt1->key = "input";
-    opt1->type = TYPE_STRING;
-    opt1->required = YES;
-    opt1->multiple = YES;
-    opt1->gisprompt = "old,cell,raster";
-    opt1->description = _("Name of existing raster map(s) to query");
+    /* TODO: should be G_OPT_R_INPUTS for consistency but needs overall change where used */
+    opt.input = G_define_standard_option(G_OPT_R_MAPS);
+    opt.input->description = _("Name of existing raster map(s) to query");
 
-    opt2 = G_define_option();
-    opt2->key = "cache";
-    opt2->type = TYPE_INTEGER;
-    opt2->required = NO;
-    opt2->multiple = NO;
-    opt2->description = _("Size of point cache");
-    opt2->answer = "500";
-    opt2->guisection = _("Advanced");
+    opt.coords = G_define_standard_option(G_OPT_M_COORDS);
+    opt.coords->description = _("Coordinates for query");
+    opt.coords->guisection = _("Query");
 
-    opt3 = G_define_option();
-    opt3->key = "null";
-    opt3->type = TYPE_STRING;
-    opt3->required = NO;
-    opt3->answer = "*";
-    opt3->description = _("Char string to represent no data cell");
+    opt.points = G_define_standard_option(G_OPT_V_MAP);
+    opt.points->key = "points";
+    opt.points->label = _("Name of vector points map for query");
+    opt.points->required = NO;
+    opt.points->guisection = _("Query");
+    
+    opt.null = G_define_option();
+    opt.null->key = "null";
+    opt.null->type = TYPE_STRING;
+    opt.null->required = NO;
+    opt.null->answer = "*";
+    opt.null->description = _("Char string to represent no data cell");
+    opt.null->guisection = _("Print");
+    
+    opt.output = G_define_standard_option(G_OPT_F_OUTPUT);
+    opt.output->required = NO;
+    opt.output->description =
+	_("Name for output file (if omitted or \"-\" output to stdout)");
 
-    opt_fs = G_define_standard_option(G_OPT_F_SEP);
+    opt.fs = G_define_standard_option(G_OPT_F_SEP);
+    opt.fs->guisection = _("Print");
 
-    opt4 = G_define_option();
-    opt4->key = "east_north";
-    opt4->type = TYPE_DOUBLE;
-    opt4->key_desc = "east,north";
-    opt4->required = NO;
-    opt4->multiple = YES;
-    opt4->description = _("Coordinates for query");
+    opt.cache = G_define_option();
+    opt.cache->key = "cache";
+    opt.cache->type = TYPE_INTEGER;
+    opt.cache->required = NO;
+    opt.cache->multiple = NO;
+    opt.cache->description = _("Size of point cache");
+    opt.cache->answer = "500";
+    opt.cache->guisection = _("Advanced");
+    
+    flg.header = G_define_flag();
+    flg.header->key = 'n';
+    flg.header->description = _("Output header row");
+    flg.header->guisection = _("Print");
 
-    header_flag = G_define_flag();
-    header_flag->key = 'n';
-    header_flag->description = _("Output header row");
+    flg.label = G_define_flag();
+    flg.label->key = 'f';
+    flg.label->description = _("Show the category labels of the grid cell(s)");
+    flg.label->guisection = _("Print");
 
-    label_flag = G_define_flag();
-    label_flag->key = 'f';
-    label_flag->description = _("Show the category labels of the grid cell(s)");
+    flg.color = G_define_flag();
+    flg.color->key = 'r';
+    flg.color->description = _("Output color values as RRR:GGG:BBB");
+    flg.color->guisection = _("Print");
 
-    color_flag = G_define_flag();
-    color_flag->key = 'r';
-    color_flag->description = _("Output color values as RRR:GGG:BBB");
+    flg.cat_int = G_define_flag();
+    flg.cat_int->key = 'i';
+    flg.cat_int->description = _("Output integer category values, not cell values");
+    flg.cat_int->guisection = _("Print");
 
-    int_flag = G_define_flag();
-    int_flag->key = 'i';
-    int_flag->description = _("Output integer category values, not cell values");
-
-    cache_flag = G_define_flag();
-    cache_flag->key = 'c';
-    cache_flag->description = _("Turn on cache reporting");
-    cache_flag->guisection = _("Advanced");
+    flg.cache = G_define_flag();
+    flg.cache->key = 'c';
+    flg.cache->description = _("Turn on cache reporting");
+    flg.cache->guisection = _("Advanced");
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
+    name = opt.output->answer;
+    if (name != NULL && strcmp(name, "-") != 0) {
+	if (NULL == freopen(name, "w", stdout)) {
+	    G_fatal_error(_("Unable to open file <%s> for writing"), name);
+	}
+    }
 
     tty = isatty(0);
 
-    projection = G_projection();
-
-    /* see v.in.ascii for a better solution */
-    if (opt_fs->answer != NULL) {
-	if (strcmp(opt_fs->answer, "space") == 0)
-	    fs = ' ';
-	else if (strcmp(opt_fs->answer, "tab") == 0)
-	    fs = '\t';
-	else if (strcmp(opt_fs->answer, "\\t") == 0)
-	    fs = '\t';
-	else
-	    fs = opt_fs->answer[0];
-    }
-
-    null_str = opt3->answer;
-
+    fs = G_option_to_separator(opt.fs);
+    
+    null_str = opt.null->answer;
 
     if (tty)
 	Cache_size = 1;
     else
-	Cache_size = atoi(opt2->answer);
+	Cache_size = atoi(opt.cache->answer);
 
     if (Cache_size < 1)
 	Cache_size = 1;
 
     cache = (struct order *)G_malloc(sizeof(struct order) * Cache_size);
 
-    /*enable cache report */
-    if (cache_flag->answer)
+    /* enable cache report */
+    if (flg.cache->answer)
 	cache_report = TRUE;
 
-
-    ptr = opt1->answers;
+    /* open raster maps to query */
+    ptr = opt.input->answers;
     nfiles = 0;
     for (; *ptr != NULL; ptr++) {
 	char name[GNAME_MAX];
 
 	if (nfiles >= NFILES)
-	    G_fatal_error(_("%s: can only do up to %d raster maps, sorry\n"),
-			  G_program_name(), NFILES);
+	    G_fatal_error(_("Can only do up to %d raster maps (%d given)"),
+			  NFILES, nfiles);
 
 	strcpy(name, *ptr);
-	if (NULL == (mapset = G_find_cell2(name, "")))
-	    die(name, " - not found");
-	if (0 > (fd[nfiles] = G_open_cell_old(name, mapset)))
-	    die("can't open", name);
+	fd[nfiles] = Rast_open_old(name, "");
 
-	out_type[nfiles] = G_get_raster_map_type(fd[nfiles]);
-	if (int_flag->answer)
+	out_type[nfiles] = Rast_get_map_type(fd[nfiles]);
+	if (flg.cat_int->answer)
 	    out_type[nfiles] = CELL_TYPE;
 
-	if (color_flag->answer) {
-	    G_read_colors(name, mapset, &colors);
+	if (flg.color->answer) {
+	    Rast_read_colors(name, "", &colors);
 	    ncolor[nfiles] = colors;
 	}
 
-	if (label_flag->answer && G_read_cats(name, mapset, &cats[nfiles]) < 0)
-	    die(name, " - can't read category file");
+	if (flg.label->answer && Rast_read_cats(name, "", &cats[nfiles]) < 0)
+	    G_fatal_error(_("Unable to read category file for <%s>"), name);
 
 	nfiles++;
     }
 
+    /* allocate row buffers */
     for (i = 0; i < nfiles; i++) {
-	if (int_flag->answer)
+	if (flg.cat_int->answer)
 	    out_type[i] = CELL_TYPE;
 
-	cell[i] = G_allocate_c_raster_buf();
+	cell[i] = Rast_allocate_c_buf();
 	if (out_type[i] != CELL_TYPE)
-	    dcell[i] = G_allocate_d_raster_buf();
+	    dcell[i] = Rast_allocate_d_buf();
     }
 
+    /* open vector points map */
+    if (opt.points->answer) {
+        Vect_set_open_level(1); /* topology not required */
+        if (Vect_open_old(&Map, opt.points->answer, "") < 0)
+            G_fatal_error(_("Unable to open vector map <%s>"), opt.points->answer);
+    }
+    Points = Vect_new_line_struct();
     G_get_window(&window);
 
+    /* print header row */
+    if(flg.header->answer) {
+	fprintf(stdout, "easting%snorthing%ssite_name", fs, fs);
 
-    if(header_flag->answer) {
-	fprintf(stdout, "easting%cnorthing%csite_name", fs, fs);
-
-	ptr = opt1->answers;
+	ptr = opt.input->answers;
 	for (; *ptr != NULL; ptr++) {
 	    char name[GNAME_MAX];
 	    strcpy(name, *ptr);
 
-	    fprintf(stdout, "%c%s", fs, name);
+	    fprintf(stdout, "%s%s", fs, name);
 
-	    if (label_flag->answer)
-		fprintf(stdout, "%c%s_label", fs, name);
-	    if (color_flag->answer)
-		fprintf(stdout, "%c%s_color", fs, name);
+	    if (flg.label->answer)
+		fprintf(stdout, "%s%s_label", fs, name);
+	    if (flg.color->answer)
+		fprintf(stdout, "%s%s_color", fs, name);
 	}
 
 	fprintf(stdout, "\n");
     }
 
     line = 0;
-    if (!opt4->answers && tty)
+    if (!opt.coords->answers && !opt.points->answers && tty)
 	fprintf(stderr, "enter points, \"end\" to quit\n");
 
     j = 0;
@@ -259,57 +275,78 @@ int main(int argc, char *argv[])
 
 	cache_hit = cache_miss = 0;
 
-	if (!opt4->answers && tty) {
+	if (!opt.coords->answers && !opt.points->answers && tty) {
 	    fprintf(stderr, "\neast north [label] >  ");
 	    Cache_size = 1;
 	}
 	{
 	    point_cnt = 0;
 	    for (i = 0; i < Cache_size; i++) {
-		if (!opt4->answers && fgets(buffer, 1000, stdin) == NULL)
+		if (!opt.coords->answers && !opt.points->answers &&
+                    fgets(buffer, 1000, stdin) == NULL)
 		    done = TRUE;
 		else {
 		    line++;
-		    if ((!opt4->answers &&
+		    if ((!opt.coords->answers && !opt.points->answers &&
 			 (strncmp(buffer, "end\n", 4) == 0 ||
 			  strncmp(buffer, "exit\n", 5) == 0)) ||
-			(opt4->answers && !opt4->answers[j]))
+			(opt.coords->answers && !opt.coords->answers[j])) {
 			done = TRUE;
+                    }
 		    else {
-			*(cache[point_cnt].lab_buf) =
-			    *(cache[point_cnt].east_buf) =
-			    *(cache[point_cnt].north_buf) = 0;
-			if (!opt4->answers)
-			    sscanf(buffer, "%s %s %[^\n]",
-				   cache[point_cnt].east_buf,
-				   cache[point_cnt].north_buf,
-				   cache[point_cnt].lab_buf);
-			else {
-			    strcpy(cache[point_cnt].east_buf,
-				   opt4->answers[j++]);
-			    strcpy(cache[point_cnt].north_buf,
-				   opt4->answers[j++]);
-			}
-			if (*(cache[point_cnt].east_buf) == 0)
-			    continue;	/* skip blank lines */
-
-			if (*(cache[point_cnt].north_buf) == 0) {
-			    oops(line, buffer,
-				 "two coordinates (east north) required");
-			    continue;
-			}
-			if (!G_scan_northing
-			    (cache[point_cnt].north_buf, &north, window.proj)
-			    || !G_scan_easting(cache[point_cnt].east_buf,
-					       &east, window.proj)) {
-			    oops(line, buffer, "invalid coordinate(s)");
-			    continue;
-			}
-
+                        if (opt.points->answer) {
+                            ltype = Vect_read_next_line(&Map, Points, NULL);
+                            if (ltype == -1)
+                                G_fatal_error(_("Unable to read vector map <%s>"), Vect_get_full_name(&Map));
+                            else if (ltype == -2)
+                                done = TRUE;
+                            else if (!(ltype & GV_POINTS)) {
+                                G_warning(_("Line %d is not point or centroid, skipped"), line);
+                                continue;
+                            }
+                            else {
+                                east = Points->x[0];
+                                north = Points->y[0];
+                                sprintf(cache[point_cnt].east_buf, "%.15g", east);
+                                sprintf(cache[point_cnt].north_buf, "%.15g", north);
+                            }
+                        }
+                        else {
+                            *(cache[point_cnt].lab_buf) =
+                                *(cache[point_cnt].east_buf) =
+                                *(cache[point_cnt].north_buf) = 0;
+                            if (!opt.coords->answers)
+                                sscanf(buffer, "%s %s %[^\n]",
+                                       cache[point_cnt].east_buf,
+                                       cache[point_cnt].north_buf,
+                                       cache[point_cnt].lab_buf);
+                            else {
+                                strcpy(cache[point_cnt].east_buf,
+                                       opt.coords->answers[j++]);
+                                strcpy(cache[point_cnt].north_buf,
+                                       opt.coords->answers[j++]);
+                            }
+                            if (*(cache[point_cnt].east_buf) == 0)
+                                continue;	/* skip blank lines */
+                            
+                            if (*(cache[point_cnt].north_buf) == 0) {
+                                oops(line, buffer,
+                                     "two coordinates (east north) required");
+                                continue;
+                            }
+                        
+                            
+                            if (!G_scan_northing(cache[point_cnt].north_buf, &north, window.proj) ||
+                                !G_scan_easting(cache[point_cnt].east_buf, &east, window.proj)) {
+                                oops(line, buffer, "invalid coordinate(s)");
+                                continue;
+                            }
+                        }
+                        
 			/* convert north, east to row and col */
-			drow = G_northing_to_row(north, &window);
-			dcol = G_easting_to_col(east, &window);
-
+			drow = Rast_northing_to_row(north, &window);
+			dcol = Rast_easting_to_col(east, &window);
+                        
 			/* a special case.
 			 *   if north falls at southern edge, or east falls on eastern edge,
 			 *   the point will appear outside the window.
@@ -320,10 +357,12 @@ int main(int argc, char *argv[])
 			if (dcol == window.cols)
 			    dcol--;
 
-			cache[point_cnt].row = (int)drow;
-			cache[point_cnt].col = (int)dcol;
-			cache[point_cnt].point = point_cnt;
-			point_cnt++;
+			if (!done) {
+			    cache[point_cnt].row = (int)drow;
+			    cache[point_cnt].col = (int)dcol;
+			    cache[point_cnt].point = point_cnt;
+			    point_cnt++;
+			}
 		    }
 		}
 	    }
@@ -346,24 +385,18 @@ int main(int argc, char *argv[])
 
 	    if (!in_window) {
 		if (tty)
-		    fprintf(stderr,
-			    "** note ** %s %s is outside your current window\n",
-			    cache[point].east_buf, cache[point].north_buf);
+		    G_warning(_("%s %s is outside your current region"),
+			      cache[point].east_buf, cache[point].north_buf);
 	    }
 
 	    if (cur_row != cache[point].row) {
 		cache_miss++;
 		if (row_in_window)
 		    for (i = 0; i < nfiles; i++) {
-			if (G_get_c_raster_row
-			    (fd[i], cell[i], cache[point].row) < 0)
-			    die(argv[i + 1], " - can't read");
+			Rast_get_c_row(fd[i], cell[i], cache[point].row);
 
-			if (out_type[i] != CELL_TYPE) {
-			    if (G_get_d_raster_row
-				(fd[i], dcell[i], cache[point].row) < 0)
-				die(argv[i + 1], " - can't read");
-			}
+			if (out_type[i] != CELL_TYPE)
+			    Rast_get_d_row(fd[i], dcell[i], cache[point].row);
 		    }
 
 		cur_row = cache[point].row;
@@ -375,20 +408,20 @@ int main(int argc, char *argv[])
 		if (in_window)
 		    cache[point].value[i] = cell[i][cache[point].col];
 		else
-		    G_set_c_null_value(&(cache[point].value[i]), 1);
+		    Rast_set_c_null_value(&(cache[point].value[i]), 1);
 
 		if (out_type[i] != CELL_TYPE) {
 		    if (in_window)
 			cache[point].dvalue[i] = dcell[i][cache[point].col];
 		    else
-			G_set_d_null_value(&(cache[point].dvalue[i]), 1);
+			Rast_set_d_null_value(&(cache[point].dvalue[i]), 1);
 		}
-		if (color_flag->answer) {
+		if (flg.color->answer) {
 		    if (out_type[i] == CELL_TYPE)
-			G_get_c_raster_color(&cell[i][cache[point].col],
+			Rast_get_c_color(&cell[i][cache[point].col],
 					     &red, &green, &blue, &ncolor[i]);
 		    else
-			G_get_d_raster_color(&dcell[i][cache[point].col],
+			Rast_get_d_color(&dcell[i][cache[point].col],
 					     &red, &green, &blue, &ncolor[i]);
 
 		    sprintf(cache[point].clr_buf[i], "%03d:%03d:%03d", red,
@@ -410,29 +443,29 @@ int main(int argc, char *argv[])
 		    cache[point].col, cache[point].row);
 
 
-	    fprintf(stdout, "%s%c%s%c%s", cache[point].east_buf, fs,
+	    fprintf(stdout, "%s%s%s%s%s", cache[point].east_buf, fs,
 		    cache[point].north_buf, fs, cache[point].lab_buf);
 
 	    for (i = 0; i < nfiles; i++) {
 		if (out_type[i] == CELL_TYPE) {
-		    if (G_is_c_null_value(&cache[point].value[i])) {
-			fprintf(stdout, "%c%s", fs, null_str);
-			if (label_flag->answer)
-			    fprintf(stdout, "%c", fs);
-			if (color_flag->answer)
-			    fprintf(stdout, "%c", fs);
+		    if (Rast_is_c_null_value(&cache[point].value[i])) {
+			fprintf(stdout, "%s%s", fs, null_str);
+			if (flg.label->answer)
+			    fprintf(stdout, "%s", fs);
+			if (flg.color->answer)
+			    fprintf(stdout, "%s", fs);
 			continue;
 		    }
-		    fprintf(stdout, "%c%ld", fs, (long)cache[point].value[i]);
+		    fprintf(stdout, "%s%ld", fs, (long)cache[point].value[i]);
 		}
 		else {		/* FCELL or DCELL */
 
-		    if (G_is_d_null_value(&cache[point].dvalue[i])) {
-			fprintf(stdout, "%c%s", fs, null_str);
-			if (label_flag->answer)
-			    fprintf(stdout, "%c", fs);
-			if (color_flag->answer)
-			    fprintf(stdout, "%c", fs);
+		    if (Rast_is_d_null_value(&cache[point].dvalue[i])) {
+			fprintf(stdout, "%s%s", fs, null_str);
+			if (flg.label->answer)
+			    fprintf(stdout, "%s", fs);
+			if (flg.color->answer)
+			    fprintf(stdout, "%s", fs);
 			continue;
 		    }
 		    if (out_type[i] == FCELL_TYPE)
@@ -440,13 +473,13 @@ int main(int argc, char *argv[])
 		    else /* DCELL */
 			sprintf(tmp_buf, "%.15g", cache[point].dvalue[i]);
 		    G_trim_decimal(tmp_buf); /* not needed with %g? */
-		    fprintf(stdout, "%c%s", fs, tmp_buf);
+		    fprintf(stdout, "%s%s", fs, tmp_buf);
 		}
-		if (label_flag->answer)
-		    fprintf(stdout, "%c%s", fs,
-			    G_get_cat(cache[point].value[i], &cats[i]));
-		if (color_flag->answer)
-		    fprintf(stdout, "%c%s", fs, cache[point].clr_buf[i]);
+		if (flg.label->answer)
+		    fprintf(stdout, "%s%s", fs,
+			    Rast_get_c_cat(&(cache[point].value[i]), &cats[i]));
+		if (flg.color->answer)
+		    fprintf(stdout, "%s%s", fs, cache[point].clr_buf[i]);
 	    }
 	    fprintf(stdout, "\n");
 	}
@@ -460,30 +493,36 @@ int main(int argc, char *argv[])
 	cache_hit = cache_miss = 0;
     }
 
-    if (!opt4->answers && tty)
+    if (!opt.coords->answers && !opt.points->answers && tty)
 	fprintf(stderr, "\n");
     if (cache_report & !tty)
 	fprintf(stderr, "Total:    Cache  Hit: %6d  Miss: %6d\n",
 		cache_hit_tot, cache_miss_tot);
 
+    /* close vector points map */
+    if (opt.points->answer) {
+        Vect_close(&Map);
+    }
+    Vect_destroy_line_struct(Points);
+    
     exit(EXIT_SUCCESS);
 }
 
 /* *************************************************************** */
 /* *************************************************************** */
 /* *************************************************************** */
-int oops(int line, char *buf, char *msg)
+static int oops(int line, const char *buf, const char *msg)
 {
     static int first = 1;
 
     if (!tty) {
 	if (first) {
-	    G_warning("%s: ** input errors **\n", G_program_name());
+	    G_warning("Input errors:");
 	    first = 0;
 	}
-	G_warning("line %d: %s\n", line, buf);
+	G_warning("line %d: %s", line, buf);
     }
-    G_warning("** %s **\n", msg);
+    G_warning("%s", msg);
 
     return 0;
 }

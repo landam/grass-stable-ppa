@@ -15,7 +15,7 @@
 
 #include "mapcalc.h"
 
-#include "y.tab.h"
+#include "mapcalc.tab.h"
 
 #ifndef YY_NULL
 #define YY_NULL 0
@@ -213,6 +213,11 @@ F		[fF]
 ";"		|
 "\n"		{	return ';';	}
 
+
+.		{
+			fprintf(stderr, "syntax error: '%*s'\n", yyleng, yytext);
+			yyterminate();
+		}
 %%
 
 int yywrap(void)

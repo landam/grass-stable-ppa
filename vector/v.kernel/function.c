@@ -1,8 +1,10 @@
 #include <math.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 #include "global.h"
+
+static double (*kernelfn)(double term, double bandwidth, double x);
 
 /*********************** Gaussian ****************************/
 /* probability for gaussian distribution */
@@ -25,9 +27,9 @@ double gaussianFunction(double x, double sigma, double dimension)
 
 
 /* probability for gaussian distribution */
-double gaussianKernel(double x, double term)
+double gaussianKernel(double x, double termx)
 {
-    return (term * exp(-(x * x) / 2.));
+    return (termx * exp(-(x * x) / 2.));
 }
 
 
@@ -99,148 +101,210 @@ double euclidean_distance(double *x, double *y, int n)
 }
 
 
-/********************************************************************/
-double gaussianKernel2(int dimension, double bandwidth, double x)
+/*****************kernel density functions******************************/
+
+double gaussianKernel4(double term, double bandwidth, double x)
 {
+    /* term is set by setKernelFunction */
+    /* bandwidth is here SD */
+
+    /*
     double term =
 	1. / (pow(bandwidth, dimension) * pow((2. * M_PI), dimension / 2.));
+    */
 
     x /= bandwidth;
 
-    return (term * exp(-(x * x) / 2.));
+    /* SD = radius (bandwidth) / 4 */
+    return (term * exp((x * x) / -2.));
 }
 
 /* Note: these functions support currently only 1D and 2D, consider this for example 
  * before using them for 3d grid */
-double uniformKernel(int dimension, double bandwidth, double x)
+double uniformKernel(double term, double bandwidth, double x)
 {
-    double k;
+    /* term is set by setKernelFunction */
 
     if (x > bandwidth)
 	return 0;
 
+    /*
     if (dimension == 2)
-	k = 2. / (M_PI * pow(bandwidth, 2));
+	term = 2. / (M_PI * pow(bandwidth, 2));
     else
-	k = 1. / bandwidth;
+	term = 1. / bandwidth;
+    term *= (1. / 2);
 
     x /= bandwidth;
+    */
 
-    return k * (1. / 2);
+    return term;
 }
 
-double triangularKernel(int dimension, double bandwidth, double x)
+double triangularKernel(double term, double bandwidth, double x)
 {
-    double k;
+    /* term is set by setKernelFunction */
 
     if (x > bandwidth)
 	return 0;
 
+    /*
     if (dimension == 2)
-	k = 3. / (M_PI * pow(bandwidth, 2));
+	term = 3. / (M_PI * pow(bandwidth, 2));
     else
-	k = 1. / bandwidth;
+	term = 1. / bandwidth;
+    */
 
     x /= bandwidth;
 
-    return k * (1 - x);
+    return term * (1 - x);
 }
 
-double epanechnikovKernel(int dimension, double bandwidth, double x)
+double epanechnikovKernel(double term, double bandwidth, double x)
 {
-    double k;
+    /* term is set by setKernelFunction */
 
     if (x > bandwidth)
 	return 0;
 
+    /*
     if (dimension == 2)
-	k = 8. / (M_PI * 3. * pow(bandwidth, 2));
+	term = 8. / (M_PI * 3. * pow(bandwidth, 2));
     else
-	k = 1. / bandwidth;
+	term = 1. / bandwidth;
+    term *= (3. / 4.);
+    */
 
     x /= bandwidth;
 
-    return k * (3. / 4. * (1 - x * x));
+    /* return term * (3. / 4. * (1 - x * x)); */
+    return term * (1 - x * x);
 }
 
-double quarticKernel(int dimension, double bandwidth, double x)
+double quarticKernel(double term, double bandwidth, double x)
 {
-    double k;
+    /* term is set by setKernelFunction */
 
     if (x > bandwidth)
 	return 0;
 
+    /*
     if (dimension == 2)
-	k = 16. / (M_PI * 5. * pow(bandwidth, 2));
+	term = 16. / (M_PI * 5. * pow(bandwidth, 2));
     else
-	k = 1. / bandwidth;
+	term = 1. / bandwidth;
+    term *= (15. / 16.);
+    */
 
     x /= bandwidth;
 
-    return k * (15. / 16. * pow(1 - x * x, 2));
+    /* return term * (15. / 16. * pow(1 - x * x, 2)); */
+    return term * pow(1 - x * x, 2);
 }
 
-double triweightKernel(int dimension, double bandwidth, double x)
+double triweightKernel(double term, double bandwidth, double x)
 {
-    double k;
+    /* term is set by setKernelFunction */
 
     if (x > bandwidth)
 	return 0;
 
+    /*
     if (dimension == 2)
-	k = 128. / (M_PI * 35. * pow(bandwidth, 2));
+	term = 128. / (M_PI * 35. * pow(bandwidth, 2));
     else
-	k = 1. / bandwidth;
+	term = 1. / bandwidth;
+    term *= (35. / 32);
+    */
 
     x /= bandwidth;
 
-    return k * (35. / 32 * pow(1 - x * x, 3));
+    /* return term * (35. / 32 * pow(1 - x * x, 3)); */
+    return term * pow(1 - x * x, 3);
 }
 
-double cosineKernel(int dimension, double bandwidth, double x)
+double cosineKernel(double term, double bandwidth, double x)
 {
-    double k;
+    /* term is set by setKernelFunction */
 
     if (x > bandwidth)
 	return 0;
 
+    /*
     if (dimension == 2)
-	k = 1. / (2 * (M_PI / 2 - 1) * pow(bandwidth, 2));
+	term = 1. / (2 * (M_PI / 2 - 1) * pow(bandwidth, 2));
     else
-	k = 1. / bandwidth;
+	term = 1. / bandwidth;
+    term *= (M_PI / 4.);
+    */
 
     x /= bandwidth;
 
-    return k * (M_PI / 4. * cos(M_PI / 2. * x));
+    /* return term * (M_PI / 4. * cos(M_PI / 2. * x)); */
+    return term * cos(M_PI / 2. * x);
 }
 
-double kernelFunction(int function, int dimension, double bandwidth, double x)
+double kernelFunction(double term, double bandwidth, double x)
 {
-    if (dimension > 2 && function != KERNEL_GAUSSIAN) {
-	G_fatal_error(_("Dimension > 2 supported only by gaussian function"));
-    }
+    return kernelfn(term, bandwidth, x);
+}
+
+void setKernelFunction(int function, int dimension, double bandwidth, double *term)
+{
     switch (function) {
     case KERNEL_UNIFORM:
-	return uniformKernel(dimension, bandwidth, x);
+	kernelfn = uniformKernel;
+	if (dimension == 2)
+	    *term = 2. / (M_PI * pow(bandwidth, 2));
+	else
+	    *term = 1. / bandwidth;
+	*term *= (1. / 2);
 	break;
     case KERNEL_TRIANGULAR:
-	return triangularKernel(dimension, bandwidth, x);
+	kernelfn = triangularKernel;
+	if (dimension == 2)
+	    *term = 3. / (M_PI * pow(bandwidth, 2));
+	else
+	    *term = 1. / bandwidth;
 	break;
     case KERNEL_EPANECHNIKOV:
-	return epanechnikovKernel(dimension, bandwidth, x);
+	kernelfn = epanechnikovKernel;
+	if (dimension == 2)
+	    *term = 8. / (M_PI * 3. * pow(bandwidth, 2));
+	else
+	    *term = 1. / bandwidth;
+	*term *= (3. / 4.);
 	break;
     case KERNEL_QUARTIC:
-	return quarticKernel(dimension, bandwidth, x);
+	kernelfn = quarticKernel;
+	if (dimension == 2)
+	    *term = 16. / (M_PI * 5. * pow(bandwidth, 2));
+	else
+	    *term = 1. / bandwidth;
+	*term *= (15. / 16.);
 	break;
     case KERNEL_TRIWEIGHT:
-	return triweightKernel(dimension, bandwidth, x);
+	kernelfn = triweightKernel;
+	if (dimension == 2)
+	    *term = 128. / (M_PI * 35. * pow(bandwidth, 2));
+	else
+	    *term = 1. / bandwidth;
+	*term *= (35. / 32);
 	break;
     case KERNEL_GAUSSIAN:
-	return gaussianKernel2(dimension, bandwidth, x);
+	kernelfn = gaussianKernel4;
+	*term =
+	    1. / (pow(bandwidth, dimension) * pow((2. * M_PI), dimension / 2.));
 	break;
     case KERNEL_COSINE:
-	return cosineKernel(dimension, bandwidth, x);
+	kernelfn = cosineKernel;
+	if (dimension == 2)
+	    *term = 1. / (2 * (M_PI / 2 - 1) * pow(bandwidth, 2));
+	else
+	    *term = 1. / bandwidth;
+	*term *= (M_PI / 4.);
 	break;
+    default:
+	G_fatal_error("Unknown kernel function");
     }
-    G_fatal_error("Unknown kernel function");
 }

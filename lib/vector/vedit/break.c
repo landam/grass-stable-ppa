@@ -23,6 +23,7 @@ static int connect_lines(struct Map_info *, int, int, int,
   \param Map pointer to Map_info
   \param List list of selected lines
   \param coord points location
+  \param thresh threshold
   \param[out] List_updated list of rewritten features (or NULL)
   
   \return number of modified lines
@@ -84,7 +85,6 @@ int Vedit_split_lines(struct Map_info *Map, struct ilist *List,
 	    G_debug(3, "Vedit_split_lines(): line=%d", line);
 
 	    /* copy first line part */
-            Vect_reset_line(Points2);
 	    for (l = 0; l < seg; l++) {
 		Vect_append_point(Points2, x[l], y[l], z[l]);
 	    }
@@ -93,10 +93,7 @@ int Vedit_split_lines(struct Map_info *Map, struct ilist *List,
 	    Vect_append_point(Points2, px, py, 0.0);
 
 	    /* rewrite the line */
-            if (j == 0) 
-                newline = Vect_rewrite_line(Map, line, type, Points2, Cats);
-            else
-                newline = Vect_write_line(Map, type, Points2, Cats);
+	    newline = Vect_rewrite_line(Map, line, type, Points2, Cats);
 	    if (newline < 0) {
 		return -1;
 	    }
@@ -174,6 +171,9 @@ int Vedit_connect_lines(struct Map_info *Map, struct ilist *List,
 	line = List->value[i];
 
 	if (!Vect_line_alive(Map, line))
+	    continue;
+
+	if (Vect_get_line_type(Map, line) & GV_POINTS)
 	    continue;
 
 	node[0] = node[1] = -1;

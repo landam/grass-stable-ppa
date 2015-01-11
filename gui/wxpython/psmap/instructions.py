@@ -41,7 +41,7 @@ import wx
 import grass.script as grass
 
 from core.gcmd          import RunCommand, GError, GMessage, GWarning
-from core.utils         import CmdToTuple, GetCmdString
+from core.utils         import CmdToTuple, GetCmdString, _
 from dbmgr.vinfo        import VectorDBInfo
 from psmap.utils        import *
 
@@ -226,7 +226,6 @@ class Instruction:
                 isBuffer = True
                 buffer.append(line)
 
-
             elif line.startswith('scalebar'):
                 instruction = 'scalebar'
                 isBuffer = True
@@ -283,6 +282,12 @@ class Instruction:
                 instruction = 'vareas'
                 isBuffer = True
                 buffer.append(line)
+
+            elif line.startswith('labels'):
+                instruction = 'labels'
+                isBuffer = True
+                buffer.append(line)
+            
 
 
         
@@ -373,7 +378,8 @@ class Instruction:
                               vlines = ['vector', 'vProperties'],
                               vareas = ['vector', 'vProperties'],
                               colortable = ['rasterLegend'],
-                              vlegend = ['vectorLegend']
+                              vlegend = ['vectorLegend'],
+                              labels = ['labels']
                               )
         
         myInstrDict = dict(page = PageSetup,
@@ -390,7 +396,8 @@ class Instruction:
                            rasterLegend = RasterLegend,
                            vectorLegend = VectorLegend,
                            vector = Vector,
-                           vProperties = VProperties
+                           vProperties = VProperties,
+                           labels = Labels
                            )
         
         myInstruction = psmapInstrDict[instruction]
@@ -1396,7 +1403,7 @@ class RasterLegend(InstructionObject):
                 rows = ceil(maxim / cols )
             else:
                 cat = grass.read_command('r.category', map = raster,
-                                    fs = ':').strip().split('\n')
+                                    sep = ':').strip().split('\n')
                 rows = ceil(float(len(cat)) / cols )
                             
                 
@@ -1813,4 +1820,35 @@ class VProperties(InstructionObject):
             instr['lpos'] = kwargs['vectorMapNumber']
         self.instruction.update(instr)
         
+        return True
+
+class Labels(InstructionObject):
+    """!Class representing labels instruction"""
+    def __init__(self, id):
+        InstructionObject.__init__(self, id = id)
+        self.type = 'labels'
+        # default values
+        self.defaultInstruction = dict(labels=[])
+        # current values
+        self.instruction = dict(self.defaultInstruction)
+        
+    def __str__(self):
+        instr = ''
+        for label in self.instruction['labels']:
+            instr += "labels %s\n" % label
+            instr += "end\n"
+        return instr
+    
+    def Read(self, instruction, text, **kwargs):
+        """!Read instruction and save information"""
+        for line in text:
+            try:
+                if line.startswith('labels'):
+                    labels = line.split(None, 1)[1]
+                    self.instruction['labels'].append(labels)
+            except(IndexError, ValueError):
+                GError(_("Failed to read instruction %s") % instruction)
+                return False
+        
+
         return True

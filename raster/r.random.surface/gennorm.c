@@ -1,5 +1,4 @@
 /* gennorm.c                                                    */
-#undef MAIN
 #include <math.h>
 #include <grass/gis.h>
 #include "ransurf.h"
@@ -21,6 +20,6 @@ void GenNorm(void)
 	G_debug(3, "(c):%.12lf", c);
 	Norm[i] = c;
     }
-    
+
     return;
 }

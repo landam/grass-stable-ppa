@@ -30,9 +30,3 @@ r.mapcalc "atcorr_diff = ETM4_400x400_atms_corr - ETM4_400x400.corrected"
 r.colors atcorr_diff color=differences
 
 r.univar atcorr_diff
-
-d.mon x0
-d.rast ETM4_400x400.raw
-d.rast ETM4_400x400.corrected
-d.rast.leg atcorr_diff
-

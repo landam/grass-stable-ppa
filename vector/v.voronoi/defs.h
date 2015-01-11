@@ -1,13 +1,9 @@
-#ifdef MAIN
-struct Cell_head Window;
-BOUND_BOX Box;
-struct Map_info In, Out;
-int Type;
-int All;
-#else
+
 extern struct Cell_head Window;
-extern BOUND_BOX Box;
+extern struct bound_box Box;
 extern struct Map_info In, Out;
 extern int Type;
-extern int All;
-#endif
+extern int Field;
+extern int in_area;
+extern int skeleton;
+extern double segf;

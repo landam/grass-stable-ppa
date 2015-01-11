@@ -13,7 +13,7 @@
  * PURPOSE:      this program makes a watershed basin raster map using the 
  *               drainage pointer map, from an outlet point defined by an 
  *               easting and a northing.
- * COPYRIGHT:    (C) 1999-2006 by the GRASS Development Team
+ * COPYRIGHT:    (C) 1999-2006, 2010, 2013 by the GRASS Development Team
  *
  *               This program is free software under the GNU General Public
  *               License (>=v2). Read the file COPYING that comes with GRASS
@@ -24,109 +24,97 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#define MAIN
+#include <grass/gis.h>
+#include <grass/raster.h>
+#include <grass/glocale.h>
+
 #include "basin.h"
 #include "outletP.h"
-#undef MAIN
-#include <grass/gis.h>
-#include <grass/glocale.h>
+
+SHORT drain[3][3]	= {{ 7,6,5 },{ 8,-17,4 },{ 1,2,3 }};
+SHORT updrain[3][3]	= {{ 3,2,1 },{ 4,-17,8 },{ 5,6,7 }};
+char dr_mod[9]	= {0,1,1,1,0,-1,-1,-1,0};
+char dc_mod[9]	= {0,1,0,-1,-1,-1,0,1,1};
+char basin_name[GNAME_MAX], swale_name[GNAME_MAX],
+  half_name[GNAME_MAX], elev_name[GNAME_MAX], armsed_name[GNAME_MAX];
+int nrows, ncols, done, total;
+int array_size, high_index, do_index;
+char *drain_ptrs, ha_f, el_f, ar_f;
+RAMSEG ba_seg, pt_seg, sl_seg;
+int ncols_less_one, nrows_less_one;
+NODE *to_do;
+FILE *arm_fd, *fp;
+FLAG *doner, *swale, *left;
+CELL *bas;
+double half_res, diag, max_length, dep_slope;
+struct Cell_head window;
 
 int main(int argc, char *argv[])
 {
     double N, E;
     int row, col, basin_fd, drain_fd;
     CELL *cell_buf;
-    char drain_name[GNAME_MAX], *drain_mapset, E_f, dr_f, ba_f, N_f, errr;
+    char drain_name[GNAME_MAX];
     struct GModule *module;
-    struct Option *opt1, *opt2, *opt3, *opt4;
-    char *buf;
+    struct {
+      struct Option *input, *output, *coords;
+    } opt;
 
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, hydrology");
-    module->description = _("Watershed basin creation program.");
+    module->description = _("Creates watershed basins from a drainage direction map.");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("hydrology"));
+    G_add_keyword(_("watershed"));
+	
+    opt.input = G_define_standard_option(G_OPT_R_INPUT);
+    opt.input->description = _("Name of input drainage direction map");
+
+    opt.output = G_define_standard_option(G_OPT_R_OUTPUT);
+    opt.output->description = _("Name for output watershed basin map");
     
-    opt1 = G_define_option();
-    opt1->key = "drainage";
-    opt1->type = TYPE_STRING;
-    opt1->required = YES;
-    opt1->gisprompt = "old,cell,raster";
-    opt1->description = _("Name of input raster map");
-
-    opt2 = G_define_option();
-    opt2->key = "basin";
-    opt2->type = TYPE_STRING;
-    opt2->required = YES;
-    opt2->gisprompt = "new,cell,raster";
-    opt2->description = _("Name of raster map to contain results");
-
-    opt3 = G_define_option();
-    opt3->key = "easting";
-    opt3->type = TYPE_STRING;
-    opt3->key_desc = "x";
-    opt3->multiple = NO;
-    opt3->required = YES;
-    opt3->description = _("The map E grid coordinates");
-
-    opt4 = G_define_option();
-    opt4->key = "northing";
-    opt4->type = TYPE_STRING;
-    opt4->key_desc = "y";
-    opt4->multiple = NO;
-    opt4->required = YES;
-    opt4->description = _("The map N grid coordinates");
+    opt.coords = G_define_standard_option(G_OPT_M_COORDS);
+    opt.coords->description = _("Coordinates of outlet point");
+    opt.coords->required = YES;
 
     /*   Parse command line */
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    if (G_get_window(&window) < 0) {
-	G_asprintf(&buf, _("Unable to read current window parameters"));
-	G_fatal_error(buf);
-    }
+    G_get_window(&window);
 
-    strcpy(drain_name, opt1->answer);
-    strcpy(basin_name, opt2->answer);
-    if (!G_scan_easting(*opt3->answers, &E, G_projection())) {
-	G_warning(_("Illegal east coordinate <%s>\n"), opt3->answer);
-	G_usage();
-	exit(EXIT_FAILURE);
-    }
-    if (!G_scan_northing(*opt4->answers, &N, G_projection())) {
-	G_warning(_("Illegal north coordinate <%s>\n"), opt4->answer);
-	G_usage();
-	exit(EXIT_FAILURE);
-    }
+    strcpy(drain_name, opt.input->answer);
+    strcpy(basin_name, opt.output->answer);
 
+    if (!G_scan_easting(opt.coords->answers[0], &E, G_projection()))
+        G_fatal_error(_("Illegal east coordinate '%s'"), opt.coords->answers[0]);
+    if (!G_scan_northing(opt.coords->answers[1], &N, G_projection()))
+        G_fatal_error(_("Illegal north coordinate '%s'"), opt.coords->answers[1]);
+
+    G_debug(1, "easting = %.4f northing = %.4f", E, N);
     if (E < window.west || E > window.east || N < window.south ||
 	N > window.north) {
-	G_warning(_("Warning, ignoring point outside window: \n    %.4f,%.4f\n"),
+	G_warning(_("Ignoring point outside computation region: %.4f,%.4f"),
 		  E, N);
     }
 
     G_get_set_window(&window);
-    dr_f = ba_f = N_f = E_f = errr = 0;
 
-    drain_mapset = do_exist(drain_name);
-    do_legal(basin_name);
-    nrows = G_window_rows();
-    ncols = G_window_cols();
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
     total = nrows * ncols;
     nrows_less_one = nrows - 1;
     ncols_less_one = ncols - 1;
-    drain_fd = G_open_cell_old(drain_name, drain_mapset);
-
-    if (drain_fd < 0)
-	G_fatal_error(_("Unable to open drainage pointer map"));
+    drain_fd = Rast_open_old(drain_name, "");
 
     drain_ptrs =
 	(char *)G_malloc(sizeof(char) * size_array(&pt_seg, nrows, ncols));
     bas = (CELL *) G_calloc(size_array(&ba_seg, nrows, ncols), sizeof(CELL));
-    cell_buf = G_allocate_cell_buf();
+    cell_buf = Rast_allocate_c_buf();
 
     for (row = 0; row < nrows; row++) {
-	G_get_map_row(drain_fd, cell_buf, row);
+	Rast_get_c_row(drain_fd, cell_buf, row);
 	for (col = 0; col < ncols; col++) {
 	    if (cell_buf[col] == 0) 
 		total--;
@@ -139,24 +127,23 @@ int main(int argc, char *argv[])
     if (row >= 0 && col >= 0 && row < nrows && col < ncols)
 	overland_cells(row, col);
     G_free(drain_ptrs);
-    cell_buf = G_allocate_cell_buf();
-    basin_fd = G_open_cell_new(basin_name);
-
-    if (basin_fd < 0)
-	G_fatal_error(_("Unable to open new basin map"));
+    cell_buf = Rast_allocate_c_buf();
+    basin_fd = Rast_open_c_new(basin_name);
 
     for (row = 0; row < nrows; row++) {
+        G_percent(row, nrows, 5);
 	for (col = 0; col < ncols; col++) {
 	    cell_buf[col] = bas[SEG_INDEX(ba_seg, row, col)];
 	    if (cell_buf[col] == 0)
-		G_set_null_value(&cell_buf[col], 1, CELL_TYPE);
+		Rast_set_null_value(&cell_buf[col], 1, CELL_TYPE);
 	}
-	G_put_raster_row(basin_fd, cell_buf, CELL_TYPE);
+	Rast_put_row(basin_fd, cell_buf, CELL_TYPE);
     }
+    G_percent(1, 1, 1);
+
     G_free(bas);
     G_free(cell_buf);
-    if (G_close_cell(basin_fd) < 0)
-	G_fatal_error(_("Unable to close new basin map layer"));
+    Rast_close(basin_fd);
 
-    return 0;
+    exit(EXIT_SUCCESS);
 }

@@ -34,6 +34,7 @@
 #include <grass/dbmi.h>
 #include <grass/shapefil.h>
 #include <grass/gis.h>
+#include <grass/glocale.h>
 #include "globals.h"
 #include "proto.h"
 
@@ -113,7 +114,7 @@ int load_table_head(int t)
     /* load */
     dbf = DBFOpen(db.tables[t].file, "r");
     if (dbf == NULL) {
-	append_error("Cannot open dbf file.\n");
+	db_d_append_error(_("Unable to open DBF file."));
 	return DB_FAILED;
     }
 
@@ -166,7 +167,7 @@ int load_table(int t)
 
     dbf = DBFOpen(db.tables[t].file, "r");
     if (dbf == NULL) {
-	append_error("Cannot open dbf file.\n");
+	db_d_append_error(_("Unable to open DBF file."));
 	return DB_FAILED;
     }
 
@@ -236,7 +237,7 @@ int save_table(int t)
     /* Construct our temp name because shapelib doesn't like '.' in name */
     G__temp_element(element);
     sprintf(fname, "%d.dbf", getpid());
-    G__file_name(name, element, fname, G_mapset());
+    G_file_name(name, element, fname, G_mapset());
     G_debug(2, "Write table to tempfile: '%s'", name);
 
     dbf = DBFCreate(name);
@@ -305,7 +306,8 @@ int save_table(int t)
 
     /* Copy */
     if (G_rename_file(name, db.tables[t].file)) {
-	append_error("Cannot move %s\nto %s\n", name, db.tables[t].file);
+	db_d_append_error(_("Unable to move '%s' to '%s'."),
+			    name, db.tables[t].file);
 	return DB_FAILED;
     };
 

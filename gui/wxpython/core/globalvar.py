@@ -3,7 +3,7 @@
 
 @brief Global variables used by wxGUI
 
-(C) 2007-2012 by the GRASS Development Team
+(C) 2007-2011 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -21,30 +21,43 @@ if not os.getenv("GISBASE"):
 # path to python scripts
 ETCDIR = os.path.join(os.getenv("GISBASE"), "etc")
 ETCICONDIR = os.path.join(os.getenv("GISBASE"), "etc", "gui", "icons")
-ETCWXDIR = os.path.join(ETCDIR, "wxpython")
+ETCWXDIR = os.path.join(ETCDIR, "gui", "wxpython")
 ETCIMGDIR = os.path.join(ETCDIR, "gui", "images")
 ETCSYMBOLDIR = os.path.join(ETCDIR, "gui", "images", "symbols")
 
 from core.debug import Debug
 
-sys.path.append(os.path.join(ETCDIR, "python"))
-import grass.script as grass
+# cannot import from the core.utils module to avoid cross dependencies
+try:
+    # intended to be used also outside this module
+    import gettext
+    _ = gettext.translation('grasswxpy', os.path.join(os.getenv("GISBASE"), 'locale')).ugettext
+except IOError:
+    # using no translation silently
+    def null_gettext(string):
+        return string
+    _ = null_gettext
+
+if os.path.join(ETCDIR, "python") not in sys.path:
+    sys.path.append(os.path.join(ETCDIR, "python"))
+
+from grass.script.core import get_commands
+
 
 def CheckWxVersion(version = [2, 8, 11, 0]):
     """!Check wx version"""
     ver = wx.version().split(' ')[0]
     if map(int, ver.split('.')) < version:
         return False
-    
+
     return True
 
 def CheckForWx():
     """!Try to import wx module and check its version"""
     if 'wx' in sys.modules.keys():
         return
-    
-    minVersion = [2, 8, 1, 1]
 
+    minVersion = [2, 8, 10, 1]
     try:
         try:
             import wxversion
@@ -54,7 +67,7 @@ def CheckForWx():
         wxversion.ensureMinimal(str(minVersion[0]) + '.' + str(minVersion[1]))
         import wx
         version = wx.version().split(' ')[0]
-        
+
         if map(int, version.split('.')) < minVersion:
             raise ValueError('Your wxPython version is %s.%s.%s.%s' % tuple(version.split('.')))
 
@@ -68,7 +81,7 @@ def CheckForWx():
     except locale.Error, e:
         print >> sys.stderr, "Unable to set locale:", e
         os.environ['LC_ALL'] = ''
-    
+
 if not os.getenv("GRASS_WXBUNDLED"):
     CheckForWx()
 import wx
@@ -85,7 +98,7 @@ QUERYLAYER = 'qlayer'
 FNPageStyle = FN.FNB_VC8 | \
     FN.FNB_BACKGROUND_GRADIENT | \
     FN.FNB_NODRAG | \
-    FN.FNB_TABS_BORDER_SIMPLE 
+    FN.FNB_TABS_BORDER_SIMPLE
 
 FNPageDStyle = FN.FNB_FANCY_TABS | \
     FN.FNB_BOTTOM | \
@@ -103,56 +116,28 @@ DIALOG_LAYER_SIZE = (100, -1)
 DIALOG_COLOR_SIZE = (30, 30)
 
 MAP_WINDOW_SIZE = (800, 600)
-GM_WINDOW_SIZE = (500, 600)
+
+GM_WINDOW_MIN_SIZE = (525, 400)
+# small for ms window which wraps the menu
+# small for max os x which has the global menu
+# small for ubuntu when menuproxy is defined
+# not defined UBUNTU_MENUPROXY on linux means standard menu,
+# so the probably problem
+# UBUNTU_MENUPROXY= means ubuntu with disabled global menu [1]
+# use UBUNTU_MENUPROXY=0 to disbale global menu on ubuntu but in the same time
+# to get smaller lmgr
+# [1] https://wiki.ubuntu.com/DesktopExperienceTeam/ApplicationMenu#Troubleshooting
+if sys.platform in ('win32', 'darwin') or os.environ.get('UBUNTU_MENUPROXY'):
+    GM_WINDOW_SIZE = (GM_WINDOW_MIN_SIZE[0], 600)
+else:
+    GM_WINDOW_SIZE = (600, 600)
 
 if sys.platform == 'win32':
     BIN_EXT = '.exe'
-    SCT_EXT = '.bat'
+    SCT_EXT = '.py'
 else:
     BIN_EXT = SCT_EXT = ''
 
-def GetGRASSCommands():
-    """!Create list of available GRASS commands to use when parsing
-    string from the command line
-
-    @return list of commands (set) and directory of scripts (collected
-    by extension - MS Windows only)
-    """
-    gisbase = os.environ['GISBASE']
-    cmd = list()
-    if sys.platform == 'win32':
-        scripts = { SCT_EXT : list() }
-    else:
-        scripts = {}
-    
-    # scan bin/
-    if os.path.exists(os.path.join(gisbase, 'bin')):
-        for fname in os.listdir(os.path.join(gisbase, 'bin')):
-            if scripts: # win32
-                name, ext = os.path.splitext(fname)
-                if ext != '.manifest':
-                    cmd.append(name)
-                if ext in scripts.keys():
-                    scripts[ext].append(name)
-            else:
-                cmd.append(fname)
-    
-    # scan scripts/ (not on MS Windows)
-    if not scripts and os.path.exists(os.path.join(gisbase, 'scripts')):
-        for fname in os.listdir(os.path.join(gisbase, 'scripts')):
-            cmd.append(fname)
-    
-    # scan gui/scripts/
-    if os.path.exists(os.path.join(gisbase, 'etc', 'gui', 'scripts')):
-        os.environ["PATH"] = os.getenv("PATH") + os.pathsep + os.path.join(gisbase, 'etc', 'gui', 'scripts')
-        os.environ["PATH"] = os.getenv("PATH") + os.pathsep + os.path.join(gisbase, 'etc', 'wxpython', 'scripts')
-        
-        pattern = "_wrapper"
-        for script in os.listdir(os.path.join(gisbase, 'etc', 'gui', 'scripts')):
-            if script[-len(pattern):] != pattern: # ignore wrappers
-                cmd.append(script)
-    
-    return set(cmd), scripts
 
 def UpdateGRASSAddOnCommands(eList = None):
     """!Update list of available GRASS AddOns commands to use when
@@ -161,11 +146,14 @@ def UpdateGRASSAddOnCommands(eList = None):
     @param eList list of AddOns commands to remove
     """
     global grassCmd, grassScripts
-    
+
     # scan addons (path)
-    if not os.getenv('GRASS_ADDON_PATH'):
-        return
-        
+    addonPath = os.getenv('GRASS_ADDON_PATH', '')
+    addonBase = os.getenv('GRASS_ADDON_BASE')
+    if addonBase:
+        addonPath += os.pathsep + os.path.join(addonBase, 'bin') + os.pathsep + \
+            os.path.join(addonBase, 'scripts')
+
     # remove commands first
     if eList:
         for ext in eList:
@@ -174,20 +162,27 @@ def UpdateGRASSAddOnCommands(eList = None):
         Debug.msg(1, "Number of removed AddOn commands: %d", len(eList))
 
     nCmd = 0
-    for path in os.getenv('GRASS_ADDON_PATH').split(os.pathsep):
+    pathList = os.getenv('PATH', '').split(os.pathsep)
+    for path in addonPath.split(os.pathsep):
         if not os.path.exists(path) or not os.path.isdir(path):
             continue
+        
+        # check if addon is in the path
+        if pathList and path not in pathList:
+            os.environ['PATH'] = path + os.pathsep + os.environ['PATH']
+        
         for fname in os.listdir(path):
             if fname in ['docs', 'modules.xml']:
                 continue
             if grassScripts: # win32
                 name, ext = os.path.splitext(fname)
-                if ext not in [BIN_EXT, SCT_EXT]:
-                    continue
                 if name not in grassCmd:
-                    grassCmd.add(name)
-                    Debug.msg(3, "AddOn commands: %s", name)
-                    nCmd += 1
+                    if ext not in [BIN_EXT, SCT_EXT]:
+                        continue
+                    if name not in grassCmd:
+                        grassCmd.add(name)
+                        Debug.msg(3, "AddOn commands: %s", name)
+                        nCmd += 1
                 if ext == SCT_EXT and \
                         ext in grassScripts.keys() and \
                         name not in grassScripts[ext]:
@@ -197,67 +192,11 @@ def UpdateGRASSAddOnCommands(eList = None):
                     grassCmd.add(fname)
                     Debug.msg(3, "AddOn commands: %s", fname)
                     nCmd += 1
-                    
+
     Debug.msg(1, "Number of new AddOn commands: %d", nCmd)
 
-def SetLanguage():
-    import locale
-    
-    language = os.getenv('LANG')
-    if not language:
-        return
-    
-    language = language.split('.')[0] # Split off ignored .encoding part if present
-    orig_language = language
-    try:
-        locale.setlocale(locale.LC_ALL, language)
-    except locale.Error, e:
-        if sys.platform != 'win32': # Don't try on Windows, it will probably not work
-            # sys.stderr.write("Failed to set LC_ALL to %s (%s)\n" % (language, e))
-            try:
-                # Locale lang.encoding might be missing. Let's try
-                # UTF-8 encoding before giving up as on Linux systems
-                # lang.UTF-8 locales are more common than legacy
-                # ISO-8859 ones.
-                language = locale.normalize('%s.UTF-8' % (language))
-                locale.setlocale(locale.LC_ALL, language)
-            except locale.Error, e:
-                # If we got so far, provided locale is not supported
-                # on this system
-                sys.stderr.write("Failed to set LC_ALL to %s (%s)\n" % (language, e))
-                ### locale.getdefaultlocale() is probably related to gettext?
-                # try:
-                #     default_locale = locale.getdefaultlocale()
-                # except:
-                #     default_locale = None
-                # if default_locale and default_locale[0]:
-                #     language = default_locale[0]
-                # else:
-                language = 'C'
-    
-    # Set up environment for subprocesses
-    for lc in ('LC_CTYPE', 'LC_MESSAGES', 'LC_TIME', 'LC_COLLATE', 'LC_MONETARY', 'LC_PAPER',
-               'LC_NAME', 'LC_ADDRESS', 'LC_TELEPHONE', 'LC_MEASUREMENT', 'LC_IDENTIFICATION'):
-        os.environ[lc] = language
-    
-    Debug.msg(1, "Language setttings: (WX) %s / (GRASS) %s", language, orig_language)
-    
-    # Some code in GRASS might not like other decimal separators than .
-    # Other potential sources for problems are: LC_TIME LC_CTYPE
-    locale.setlocale(locale.LC_NUMERIC, 'C')
-    os.environ['LC_NUMERIC'] = 'C'
-    if os.getenv('LC_ALL'):
-        del os.environ['LC_ALL'] # Remove LC_ALL to not override LC_NUMERIC
-    
-    # Even if setting locale has failed, let's set LANG in a hope,
-    # that UI will use it GRASS texts will be in selected language,
-    # system messages (i.e. OK, Cancel etc.) - in system default
-    # language
-    os.environ['LANGUAGE'] = orig_language
-    os.environ['LANG'] = orig_language
-
 """@brief Collected GRASS-relared binaries/scripts"""
-grassCmd, grassScripts = GetGRASSCommands()
+grassCmd, grassScripts = get_commands()
 Debug.msg(1, "Number of GRASS commands: %d", len(grassCmd))
 UpdateGRASSAddOnCommands()
 
@@ -272,5 +211,3 @@ else:
 
 """@Check version of wxPython, use agwStyle for 2.8.11+"""
 hasAgw = CheckWxVersion()
-
-SetLanguage()

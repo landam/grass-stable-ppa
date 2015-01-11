@@ -1,23 +1,3 @@
-
-/****************************************************************
- *
- * MODULE:     v.edit
- *
- * PURPOSE:    Editing vector map.
- *
- * AUTHOR(S):  GRASS Development Team
- *             Wolf Bergenheim, Jachym Cepicky, Martin Landa
- *
- * COPYRIGHT:  (C) 2006-2008 by the GRASS Development Team
- *
- *             This program is free software under the
- *             GNU General Public License (>=v2).
- *             Read the file COPYING that comes with GRASS
- *             for details.
- *
- * TODO:       3D support
- ****************************************************************/
-
 #include "global.h"
 
 /**
@@ -33,17 +13,19 @@
 int parser(int argc, char *argv[], struct GParams *params,
 	   enum mode *action_mode)
 {
+    char *desc_tool, *desc_query, *desc_snap;
+
     /* parameters */
     params->map = G_define_standard_option(G_OPT_V_MAP);
-    params->map->description = _("Name of vector map to edit");
+    params->map->label = _("Name of vector map to edit");
 
     params->fld = G_define_standard_option(G_OPT_V_FIELD);
-    params->fld->gisprompt = "new_layer,layer,layer";
+    params->fld->gisprompt = "old,layer,layer";
     params->fld->guisection = _("Selection");
 
     params->type = G_define_standard_option(G_OPT_V_TYPE);
-    params->type->answer = "point,line,boundary,centroid";
     params->type->options = "point,line,boundary,centroid";
+    params->type->answer = "point,line,boundary,centroid";
     params->type->guisection = _("Selection");
 
     params->tool = G_define_option();
@@ -52,64 +34,69 @@ int parser(int argc, char *argv[], struct GParams *params,
     params->tool->required = YES;
     params->tool->multiple = NO;
     params->tool->description = _("Tool");
-    params->tool->descriptions = _("create;"
-				   "Create new (empty) vector map;"
-				   "add;"
-				   "Add new features to existing vector map;"
-				   "delete;"
-				   "Delete selected features from vector map;"
-				   "move;"
-				   "Move selected features in vector map;"
-				   "vertexmove;"
-				   "Move vertex of selected vector lines;"
-				   "vertexdel;"
-				   "Remove vertex from selected vector lines;"
-				   "vertexadd;"
-				   "Add new vertex to selected vector lines;"
-				   "merge;"
-				   "Merge selected vector lines;"
-				   "break;"
-				   "Break/split vector lines;"
-				   "select;"
-				   "Select lines and print their ID's;"
-				   "catadd;"
-				   "Set new categories to selected vector features "
-				   "for defined layer;"
-				   "catdel;"
-				   "Delete categories from selected vector features "
-				   "for defined layer;"
-				   "copy;"
-				   "Copy selected features;"
-				   "snap;"
-				   "Snap vector features in given threshold;"
-				   "flip;"
-				   "Flip direction of selected vector lines;"
-				   "connect;"
-				   "Connect two lines;"
-				   "zbulk;"
-				   "Z bulk-labeling (automated assignment of z coordinate to "
-				   "vector lines);"
-				   "chtype;"
-				   "Change feature type (point<->centroid, line<->boundary)");
+    desc_tool = NULL;
+    G_asprintf(&desc_tool,
+	       "create;%s;"
+	       "add;%s;"
+	       "delete;%s;"
+	       "move;%s;"
+	       "vertexmove;%s;"
+	       "vertexdel;%s;"
+	       "vertexadd;%s;"
+	       "merge;%s;"
+	       "break;%s;"
+	       "select;%s;"
+	       "catadd;%s;"
+	       "catdel;%s;"
+	       "copy;%s;"
+	       "snap;%s;"
+	       "flip;%s;"
+	       "connect;%s;"
+	       "zbulk;%s;"
+	       "chtype;%s;"
+	       "areadel;%s",
+	       _("Create new (empty) vector map"),
+	       _("Add new features to existing vector map"),
+	       _("Delete selected features from vector map"),
+	       _("Move selected features in vector map"),
+	       _("Move vertex of selected vector lines"),
+	       _("Remove vertex from selected vector lines"),
+	       _("Add new vertex to selected vector lines"),
+	       _("Merge selected vector lines"),
+	       _("Break/split vector lines"),
+	       _("Select lines and print their ID's"),
+	       _("Set new categories to selected vector features "
+		 "for defined layer"),
+	       _("Delete categories from selected vector features "
+		 "for defined layer"),
+	       _("Copy selected features"),
+	       _("Snap vector features in given threshold"),
+	       _("Flip direction of selected vector lines"),
+	       _("Connect two lines"),
+	       _("Z bulk-labeling (automated assignment of z coordinate to "
+		 "vector lines)"),
+	       _("Change feature type (point<->centroid, line<->boundary)"),
+	       _("Delete selected areas from vector map (based on selected centroids)"));
+    params->tool->descriptions = desc_tool;
     params->tool->options = "create,add,delete,copy,move,flip,catadd,catdel,"
 	"merge,break,snap,connect,chtype,"
-	"vertexadd,vertexdel,vertexmove,zbulk,select";
+	"vertexadd,vertexdel,vertexmove,areadel,zbulk,select";
 
     params->in = G_define_standard_option(G_OPT_F_INPUT);
     params->in->required = NO;
-    params->in->label = _("ASCII file to be converted to binary vector map");
+    params->in->label = _("Name of file containing data in GRASS ASCII vector format");
     params->in->description =
-	_("If not given (or \"-\") reads from standard input");
+	_("\"-\" reads from standard input");
     params->in->guisection = _("Input");
 
     params->move = G_define_option();
     params->move->key = "move";
-    params->move->key_desc = "x,y";
+    params->move->key_desc = "x,y,z";
     params->move->type = TYPE_DOUBLE;
     params->move->required = NO;
     params->move->multiple = NO;
     params->move->description =
-	_("Difference in x,y direction for moving feature or vertex");
+	_("Difference in x,y,z direction for moving feature or vertex");
 
     params->maxdist = G_define_option();
     params->maxdist->key = "thresh";
@@ -155,7 +142,7 @@ int parser(int argc, char *argv[], struct GParams *params,
     params->poly->description = _("Polygon for selecting features");
     params->poly->guisection = _("Selection");
 
-    params->where = G_define_standard_option(G_OPT_WHERE);
+    params->where = G_define_standard_option(G_OPT_DB_WHERE);
     params->where->guisection = _("Selection");
 
     params->query = G_define_option();
@@ -166,10 +153,14 @@ int parser(int argc, char *argv[], struct GParams *params,
     params->query->description =
 	_("For 'shorter' use negative threshold value, "
 	  "positive value for 'longer'");
-    params->query->descriptions =
-	_("length;Select only lines or boundaries shorter"
-	  "/longer than threshold distance;"
-	  "dangle;Select dangles shorter/longer than " "threshold distance");
+    desc_query = NULL;
+    G_asprintf(&desc_query,
+               "length;%s;"
+	       "dangle;%s",
+	       _("Select only lines or boundaries shorter"
+		 "/longer than threshold distance"),
+	       _("Select dangles shorter/longer than threshold distance"));
+    params->query->descriptions = desc_query;
     params->query->guisection = _("Selection");
 
     params->bmaps = G_define_standard_option(G_OPT_V_MAPS);
@@ -183,9 +174,15 @@ int parser(int argc, char *argv[], struct GParams *params,
     params->snap->options = "no,node,vertex";
     params->snap->description =
 	_("Snap added or modified features in the given threshold to the nearest existing feature");
-    params->snap->descriptions =
-	_("no;Not apply snapping;" "node;Snap only to node;"
-	  "vertex;Allow snapping also to vertex");
+    desc_snap = NULL;
+    G_asprintf(&desc_snap,
+	       "no;%s;"
+	       "node;%s;"
+	       "vertex;%s",
+	       _("Not apply snapping"),
+	       _("Snap only to node"),
+	       _("Allow snapping also to vertex"));
+    params->snap->descriptions = desc_snap;
     params->snap->answer = "no";
 
     params->zbulk = G_define_option();
@@ -211,9 +208,7 @@ int parser(int argc, char *argv[], struct GParams *params,
     params->header->description = _("Do not expect header of input data");
     params->header->guisection = _("Input");
 
-    params->topo = G_define_flag();
-    params->topo->key = 't';
-    params->topo->description = _("Do not build topology");
+    params->topo = G_define_standard_flag(G_FLG_V_TOPO);
 
     params->move_first = G_define_flag();
     params->move_first->key = '1';
@@ -236,59 +231,62 @@ int parser(int argc, char *argv[], struct GParams *params,
     /*
        check that the given arguments makes sense together
      */
-    if (G_strcasecmp(params->tool->answer, "create") == 0) {
+    if (strcmp(params->tool->answer, "create") == 0) {
 	*action_mode = MODE_CREATE;
     }
-    else if (G_strcasecmp(params->tool->answer, "add") == 0) {
+    else if (strcmp(params->tool->answer, "add") == 0) {
 	*action_mode = MODE_ADD;
     }
-    else if (G_strcasecmp(params->tool->answer, "delete") == 0) {
+    else if (strcmp(params->tool->answer, "delete") == 0) {
 	*action_mode = MODE_DEL;
     }
-    else if (G_strcasecmp(params->tool->answer, "move") == 0) {
+    else if (strcmp(params->tool->answer, "move") == 0) {
 	*action_mode = MODE_MOVE;
     }
-    else if (G_strcasecmp(params->tool->answer, "merge") == 0) {
+    else if (strcmp(params->tool->answer, "merge") == 0) {
 	*action_mode = MODE_MERGE;
     }
-    else if (G_strcasecmp(params->tool->answer, "break") == 0) {
+    else if (strcmp(params->tool->answer, "break") == 0) {
 	*action_mode = MODE_BREAK;
     }
-    else if (G_strcasecmp(params->tool->answer, "connect") == 0) {
+    else if (strcmp(params->tool->answer, "connect") == 0) {
 	*action_mode = MODE_CONNECT;
     }
-    else if (G_strcasecmp(params->tool->answer, "vertexadd") == 0) {
+    else if (strcmp(params->tool->answer, "vertexadd") == 0) {
 	*action_mode = MODE_VERTEX_ADD;
     }
-    else if (G_strcasecmp(params->tool->answer, "vertexdel") == 0) {
+    else if (strcmp(params->tool->answer, "vertexdel") == 0) {
 	*action_mode = MODE_VERTEX_DELETE;
     }
-    else if (G_strcasecmp(params->tool->answer, "vertexmove") == 0) {
+    else if (strcmp(params->tool->answer, "vertexmove") == 0) {
 	*action_mode = MODE_VERTEX_MOVE;
     }
-    else if (G_strcasecmp(params->tool->answer, "select") == 0) {
+    else if (strcmp(params->tool->answer, "select") == 0) {
 	*action_mode = MODE_SELECT;
     }
-    else if (G_strcasecmp(params->tool->answer, "catadd") == 0) {
+    else if (strcmp(params->tool->answer, "catadd") == 0) {
 	*action_mode = MODE_CATADD;
     }
-    else if (G_strcasecmp(params->tool->answer, "catdel") == 0) {
+    else if (strcmp(params->tool->answer, "catdel") == 0) {
 	*action_mode = MODE_CATDEL;
     }
-    else if (G_strcasecmp(params->tool->answer, "copy") == 0) {
+    else if (strcmp(params->tool->answer, "copy") == 0) {
 	*action_mode = MODE_COPY;
     }
-    else if (G_strcasecmp(params->tool->answer, "snap") == 0) {
+    else if (strcmp(params->tool->answer, "snap") == 0) {
 	*action_mode = MODE_SNAP;
     }
-    else if (G_strcasecmp(params->tool->answer, "flip") == 0) {
+    else if (strcmp(params->tool->answer, "flip") == 0) {
 	*action_mode = MODE_FLIP;
     }
-    else if (G_strcasecmp(params->tool->answer, "zbulk") == 0) {
+    else if (strcmp(params->tool->answer, "zbulk") == 0) {
 	*action_mode = MODE_ZBULK;
     }
-    else if (G_strcasecmp(params->tool->answer, "chtype") == 0) {
+    else if (strcmp(params->tool->answer, "chtype") == 0) {
 	*action_mode = MODE_CHTYPE;
+    }
+    else if (strcmp(params->tool->answer, "areadel") == 0) {
+	*action_mode = MODE_AREA_DEL;
     }
     else {
 	G_fatal_error(_("Operation '%s' not implemented"),

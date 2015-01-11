@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 #include <grass/dgl/graph.h>
 
@@ -100,11 +100,12 @@ int NetA_articulation_points(dglGraph_s * graph,
 			min_tin[node_id] = min_tin[to];
 		    current_edge[node_id] = dglEdgeset_T_Next(&current[node_id]);	/*proceed to the next edge */
 		}
-		for (; current_edge[node_id]; current_edge[node_id] = dglEdgeset_T_Next(&current[node_id])) {	/* try next edges */
+		/*try next edges */
+		for (; current_edge[node_id]; current_edge[node_id] = dglEdgeset_T_Next(&current[node_id])) {
 		    dglInt32_t *to =
 			dglEdgeGet_Tail(graph, current_edge[node_id]);
 		    if (to == parent[node_id])
-			continue;	/*skip parrent */
+			continue;	/*skip parent */
 		    int to_id = dglNodeGet_Id(graph, to);
 
 		    if (tin[to_id]) {	/*back edge, cannot be a bridge/articualtion point */

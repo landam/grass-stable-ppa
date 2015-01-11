@@ -21,15 +21,30 @@
 #define __LOCAL_PROTO_H__
 
 #include <grass/gis.h>
+#include <grass/raster.h>
+#include <grass/glocale.h>
+#include <grass/raster3d.h>
+
+struct maps_info {
+	int num;
+	char **names;
+	char **mapsets;
+	int *map_types;
+	DCELL *min;
+	DCELL *max;
+
+};
+
+#define RASTER_TYPE   1
+#define RASTER3D_TYPE 2
 
 /* stats.c */
-int get_stats(const char *, const char *, struct Cell_stats *);
-void get_fp_stats(const char *name, const char *mapset,
-		  struct FP_stats *statf,
-		  DCELL min, DCELL max, int geometric, int geom_abs);
+int get_stats(struct maps_info *, struct Cell_stats *);
+void get_fp_stats(struct maps_info *, struct FP_stats *statf,
+		  DCELL min, DCELL max, int geometric, int geom_abs, int);
 
-/* main.c */
-int main(int, char *[]);
+/* edit_colors.c */
+int edit_colors(int, char **, int, const char *, const char*);
 
 /* rules.c */
 int read_color_rules(FILE *, struct Colors *, DCELL, DCELL, int);

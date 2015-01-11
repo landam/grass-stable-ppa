@@ -1,18 +1,18 @@
 /*!
- * \file db/dbmi_client/column.c
- * 
- * \brief DBMI Library (client) - column info
- *
- * (C) 1999-2008 by the GRASS Development Team
- *
- * This program is free software under the GNU General Public
- * License (>=v2). Read the file COPYING that comes with GRASS
- * for details.
- *
- * \author Joel Jones (CERL/UIUC), Radim Blazek
- * \author Update by Glynn Clement <glynn gclements.plus.com>
- * and Martin Landa <landa.martin gmail.com>
- */
+  \file lib/db/dbmi_client/column.c
+  
+  \brief DBMI Library (client) - column info
+  
+  (C) 1999-2008, 2011 by the GRASS Development Team
+  
+  This program is free software under the GNU General Public
+  License (>=v2). Read the file COPYING that comes with GRASS
+  for details.
+  
+  \author Joel Jones (CERL/UIUC), Radim Blazek
+  \author Update by Glynn Clement <glynn gclements.plus.com>
+  \author Martin Landa <landa.martin gmail.com>
+*/
 
 #include <stdlib.h>
 #include <string.h>
@@ -24,6 +24,22 @@
   \brief Get column sqltype
 
   See db_sqltype_name().
+
+  Supported types:
+   - DB_SQL_TYPE_UNKNOWN
+   - DB_SQL_TYPE_CHARACTER
+   - DB_SQL_TYPE_SMALLINT
+   - DB_SQL_TYPE_INTEGER
+   - DB_SQL_TYPE_REAL
+   - DB_SQL_TYPE_DOUBLE_PRECISION
+   - DB_SQL_TYPE_DECIMAL
+   - DB_SQL_TYPE_NUMERIC
+   - DB_SQL_TYPE_DATE
+   - DB_SQL_TYPE_TIME
+   - DB_SQL_TYPE_TIMESTAMP
+   - DB_SQL_TYPE_INTERVAL
+   - DB_SQL_TYPE_TEXT
+   - DB_SQL_TYPE_SERIAL
 
   \param driver DB driver
   \param tab table name
@@ -38,7 +54,7 @@ int db_column_sqltype(dbDriver * driver, const char *tab, const char *col)
     dbString table_name;
     dbColumn *column;
     int ncol, cl, type;
-
+    
     type = -1;
 
     db_init_string(&table_name);
@@ -56,7 +72,7 @@ int db_column_sqltype(dbDriver * driver, const char *tab, const char *col)
 	    break;
 	}
     }
-
+    
     db_free_table(table);
 
     return type;
@@ -66,6 +82,12 @@ int db_column_sqltype(dbDriver * driver, const char *tab, const char *col)
   \brief Get column ctype
 
   See db_sqltype_to_Ctype().
+
+  Supported types:
+   - DB_C_TYPE_STRING
+   - DB_C_TYPE_INT
+   - DB_C_TYPE_DOUBLE
+   - DB_C_TYPE_DATETIME
 
   \param driver DB driver
   \param tab table name
@@ -104,7 +126,7 @@ int db_get_column(dbDriver * Driver, const char *tname, const char *cname,
 {
     int i, ncols, ret;
     dbTable *Table;
-    dbColumn *Col, *NCol;
+    dbColumn *Col;
     dbString tabname;
 
     db_init_string(&tabname);
@@ -124,25 +146,7 @@ int db_get_column(dbDriver * Driver, const char *tname, const char *cname,
     for (i = 0; i < ncols; i++) {
 	Col = db_get_table_column(Table, i);
 	if (G_strcasecmp(db_get_column_name(Col), cname) == 0) {
-	    NCol = (dbColumn *) malloc(sizeof(dbColumn));
-	    db_init_column(NCol);
-	    db_set_string(&(NCol->columnName), db_get_column_name(Col));
-	    db_set_string(&(NCol->description),
-			  db_get_column_description(Col));
-	    NCol->sqlDataType = Col->sqlDataType;
-	    NCol->hostDataType = Col->hostDataType;
-	    db_copy_value(&(NCol->value), &(Col->value));
-	    NCol->dataLen = Col->dataLen;
-	    NCol->precision = Col->precision;
-	    NCol->scale = Col->scale;
-	    NCol->nullAllowed = Col->nullAllowed;
-	    NCol->hasDefaultValue = Col->hasDefaultValue;
-	    NCol->useDefaultValue = Col->useDefaultValue;
-	    db_copy_value(&(NCol->defaultValue), &(Col->defaultValue));
-	    NCol->select = Col->select;
-	    NCol->update = Col->update;
-
-	    *Column = NCol;
+	    *Column = db_copy_column(NULL, Col);
 	    ret = DB_OK;
 	    break;
 	}

@@ -26,9 +26,10 @@
 #include <grass/glocale.h>
 
 #include <grass/config.h>
-#define MAIN
+
 #include "patch.h"
 
+jmp_buf jmp;
 
 struct CHOICE *choice;
 
@@ -44,7 +45,7 @@ int main(int argc, char **argv)
     choice = (struct CHOICE *)G_calloc(1, sizeof(struct CHOICE));
 
     module = G_define_module();
-    module->keywords = _("raster, landscape structure analysis, patch index");
+    G_add_keyword(_("raster"));
     module->description =
 	_("Calculates attribute, patch size, core (interior) size, shape, "
 	  "fractal dimension, and perimeter measures for sets of patches "

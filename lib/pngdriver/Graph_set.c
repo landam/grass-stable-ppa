@@ -13,57 +13,57 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-#ifndef __MINGW32__
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef __MINGW32__
+#include <windows.h>
+#else
 #include <sys/mman.h>
 #endif
 
 #include <grass/gis.h>
+#include <grass/colors.h>
+#include <grass/glocale.h>
 #include "pngdriver.h"
 
-char *file_name;
-int currentColor;
-int true_color;
-int auto_write;
-int has_alpha;
-int mapped;
-
-int clip_top, clip_bot, clip_left, clip_rite;
-int width, height;
-void *image;
-unsigned int *grid;
-unsigned char png_palette[256][4];
-unsigned int background;
-int modified;
+struct png_state png;
 
 static void map_file(void)
 {
-#ifndef __MINGW32__
-    size_t size = HEADER_SIZE + width * height * sizeof(unsigned int);
+    size_t size = HEADER_SIZE + png.width * png.height * sizeof(unsigned int);
     void *ptr;
     int fd;
 
-    fd = open(file_name, O_RDWR);
+    fd = open(png.file_name, O_RDWR);
     if (fd < 0)
 	return;
 
+#ifdef __MINGW32__
+    png.handle = CreateFileMapping((HANDLE) _get_osfhandle(fd),
+				   NULL, PAGE_READWRITE,
+				   0, size, NULL);
+    if (!png.handle)
+	return;
+    ptr = MapViewOfFile(png.handle, FILE_MAP_WRITE, 0, 0, size);
+    if (!ptr)
+	return;
+#else
     ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (off_t) 0);
     if (ptr == MAP_FAILED)
 	return;
+#endif
 
-    if (grid)
-	G_free(grid);
-    grid = (int *)((char *)ptr + HEADER_SIZE);
+    if (png.grid)
+	G_free(png.grid);
+    png.grid = (unsigned int *)((char *) ptr + HEADER_SIZE);
 
     close(fd);
 
-    mapped = 1;
-#endif
+    png.mapped = 1;
 }
 
-int PNG_Graph_set(int argc, char **argv)
+int PNG_Graph_set(void)
 {
     unsigned int red, grn, blu;
     int do_read = 0;
@@ -76,22 +76,19 @@ int PNG_Graph_set(int argc, char **argv)
     if (!p || strlen(p) == 0)
 	p = FILE_NAME;
 
-    file_name = p;
+    png.file_name = p;
 
     p = getenv("GRASS_TRUECOLOR");
-    true_color = p && strcmp(p, "TRUE") == 0;
+    png.true_color = !p || strcmp(p, "FALSE") != 0;
 
-    G_message("PNG: GRASS_TRUECOLOR status: %s",
-	      true_color ? "TRUE" : "FALSE");
-
-    p = getenv("GRASS_PNG_AUTO_WRITE");
-    auto_write = p && strcmp(p, "TRUE") == 0;
+    G_verbose_message(_("png: truecolor status %s"),
+		      png.true_color ? _("enabled") : _("disabled"));
 
     p = getenv("GRASS_PNG_MAPPED");
     do_map = p && strcmp(p, "TRUE") == 0;
 
     if (do_map) {
-	char *ext = file_name + strlen(file_name) - 4;
+	char *ext = png.file_name + strlen(png.file_name) - 4;
 
 	if (G_strcasecmp(ext, ".bmp") != 0)
 	    do_map = 0;
@@ -100,54 +97,57 @@ int PNG_Graph_set(int argc, char **argv)
     p = getenv("GRASS_PNG_READ");
     do_read = p && strcmp(p, "TRUE") == 0;
 
-    if (do_read && access(file_name, 0) != 0)
+    if (do_read && access(png.file_name, 0) != 0)
 	do_read = 0;
 
-    width = screen_right - screen_left;
-    height = screen_bottom - screen_top;
+    png.width = screen_width;
+    png.height = screen_height;
 
-    clip_top = screen_top;
-    clip_bot = screen_bottom;
-    clip_left = screen_left;
-    clip_rite = screen_right;
+    png.clip_top = 0;
+    png.clip_bot = png.height;
+    png.clip_left = 0;
+    png.clip_rite = png.width;
 
     p = getenv("GRASS_TRANSPARENT");
-    has_alpha = p && strcmp(p, "TRUE") == 0;
+    png.has_alpha = p && strcmp(p, "TRUE") == 0;
 
-    init_color_table();
+    png_init_color_table();
 
     p = getenv("GRASS_BACKGROUNDCOLOR");
-    if (p && *p && sscanf(p, "%02x%02x%02x", &red, &grn, &blu) == 3)
-	background = get_color(red, grn, blu, has_alpha ? 255 : 0);
+    if (p && *p && 
+	(sscanf(p, "%02x%02x%02x", &red, &grn, &blu) == 3 ||
+	 G_str_to_color(p, (int *)&red, (int *)&grn, (int *)&blu) == 1)) {
+	png.background = png_get_color(red, grn, blu, png.has_alpha ? 255 : 0);
+    }
     else {
 	/* 0xffffff = white, 0x000000 = black */
 	if (strcmp(DEFAULT_FG_COLOR, "white") == 0)
 	    /* foreground: white, background: black */
-	    background = get_color(0, 0, 0, has_alpha ? 255 : 0);
+	    png.background = png_get_color(0, 0, 0, png.has_alpha ? 255 : 0);
 	else
 	    /* foreground: black, background: white */
-	    background = get_color(255, 255, 255, has_alpha ? 255 : 0);
+	    png.background = png_get_color(255, 255, 255, png.has_alpha ? 255 : 0);
     }
-
-    G_message
-	("PNG: collecting to file: %s,\n     GRASS_WIDTH=%d, GRASS_HEIGHT=%d",
-	 file_name, width, height);
+    
+    G_verbose_message(_("png: collecting to file '%s'"), png.file_name);
+    G_verbose_message(_("png: image size %dx%d"),
+		      png.width, png.height);
 
     if (do_read && do_map)
 	map_file();
 
-    if (!mapped)
-	grid = G_malloc(width * height * sizeof(unsigned int));
+    if (!png.mapped)
+	png.grid = G_malloc(png.width * png.height * sizeof(unsigned int));
 
     if (!do_read) {
 	PNG_Erase();
-	modified = 1;
+	png.modified = 1;
     }
 
-    if (do_read && !mapped)
+    if (do_read && !png.mapped)
 	read_image();
 
-    if (do_map && !mapped) {
+    if (do_map && !png.mapped) {
 	write_image();
 	map_file();
     }

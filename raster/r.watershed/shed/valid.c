@@ -16,19 +16,16 @@ int valid_basins(char *accum_name, OUTPUT * output)
 
     window = &(output->window);
     /*
-       nrows = G_window_rows ();
-       ncols = G_window_cols ();
+       nrows = Rast_window_rows ();
+       ncols = Rast_window_cols ();
      */
-    if (NULL == (mapset = G_find_cell(accum_name, ""))) {
+    if (NULL == (mapset = G_find_raster(accum_name, ""))) {
 	free_output(output);
 	G_fatal_error(_("accum file missing in valid_basins()"));
     }
-    if (-1 == (fd = G_open_cell_old(accum_name, mapset))) {
-	free_output(output);
-	G_fatal_error(_("unable to open accum file in valid_basins()"));
-    }
+    fd = Rast_open_old(accum_name, mapset);
 
-    buf = G_allocate_cell_buf();
+    buf = Rast_allocate_c_buf();
     basin_facts = output->basin_facts;
     for (i = output->num_basins - 1; i >= 0; i--) {
 	basin = &(basin_facts[i]);
@@ -48,7 +45,7 @@ int valid_basins(char *accum_name, OUTPUT * output)
 	       G_fatal_error("r:%d c:%d big error", r,c);
 	       }
 	     */
-	    G_get_c_raster_row(fd, buf, r);
+	    Rast_get_c_row(fd, buf, r);
 	    if (buf[c] < 0) {
 		basin->valid = 0;
 		if (down_basin != NULL)

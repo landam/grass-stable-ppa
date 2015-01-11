@@ -39,6 +39,7 @@
 #include <string.h>
 #include <math.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 void writeHeader(FILE * outf);
@@ -101,7 +102,6 @@ int main(int argc, char *argv[])
 
     CELL *cell;
     char *name;
-    char *mapset;
     int fd;
     int nrows, ncols;
     double bias;
@@ -118,22 +118,15 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, export");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("export"));
     module->description =
-	_("Converts a raster map layer into a height-field file for POVRAY.");
+	_("Converts a raster map layer into a height-field file for POV-Ray.");
 
     /* Define the different options */
-    parm.map = G_define_option();
-    parm.map->key = "map";
-    parm.map->type = TYPE_STRING;
-    parm.map->required = YES;
-    parm.map->gisprompt = "old,cell,raster";
-    parm.map->description = _("Name of an existing raster map");
+    parm.map = G_define_standard_option(G_OPT_R_INPUT);
 
-    parm.tga = G_define_option();
-    parm.tga->key = "tga";
-    parm.tga->type = TYPE_STRING;
-    parm.tga->required = YES;
+    parm.tga = G_define_standard_option(G_OPT_F_OUTPUT);
     parm.tga->description =
 	_("Name of output povray file (TGA height field file)");
 
@@ -169,14 +162,8 @@ int main(int argc, char *argv[])
 	sscanf(parm.scaleFactor->answer, "%lf", &verticalScale);
 
     name = parm.map->answer;
-    mapset = G_find_cell2(name, "");
-    if (mapset == NULL)
-	G_fatal_error(_("Raster map <%s> not found"), name);
 
-    fd = G_open_cell_old(name, mapset);
-    if (fd < 0)
-	G_fatal_error(_("Unable to open raster map <%s>"), name);
-
+    fd = Rast_open_old(name, "");
 
     outfilename = parm.tga->answer;
     if (outfilename == NULL)
@@ -185,10 +172,10 @@ int main(int argc, char *argv[])
     if (NULL == (outf = fopen(outfilename, "wb")))
 	G_fatal_error(_("Unable to open output file <%s>"), outfilename);
 
-    cell = G_allocate_cell_buf();
+    cell = Rast_allocate_c_buf();
 
-    nrows = G_window_rows();
-    ncols = G_window_cols();
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
     if (nrows > YMAX || ncols > XMAX)
 	G_fatal_error(_("Raster map is too big! Exceeds %d columns or %d rows"),
 		      XMAX, YMAX);
@@ -207,9 +194,9 @@ int main(int argc, char *argv[])
     northMost = region.north;
     southMost = region.south;
 
-    G_init_range(&range);
-    G_read_range(name, mapset, &range);
-    G_get_range_min_max(&range, &range_min, &range_max);
+    Rast_init_range(&range);
+    Rast_read_range(name, "", &range);
+    Rast_get_range_min_max(&range, &range_min, &range_max);
     if (range.min < 0 || range.max < 0)
 	G_warning(_("Negative elevation values in input"));
 
@@ -231,7 +218,7 @@ int main(int argc, char *argv[])
     (void)processProfiles(fd, outf);
 
     fclose(outf);
-    G_close_cell(fd);
+    Rast_close(fd);
 
     exit(EXIT_SUCCESS);
 }
@@ -271,10 +258,9 @@ void processProfiles(int inputFile, FILE * outputF)
     int c, r;
     double tempFloat;
 
-    cell = G_allocate_cell_buf();
+    cell = Rast_allocate_c_buf();
     for (r = 0; r < rowCount; r++) {
-	if (G_get_map_row(inputFile, cell, r) < 0)
-	    exit(1);
+	Rast_get_c_row(inputFile, cell, r);
 	/* break; */
 
 	for (c = 0; c < columnCount; c++) {

@@ -12,7 +12,6 @@
 */
 
 #include <math.h>
-
 #include <grass/glocale.h>
 #include <grass/vedit.h>
 

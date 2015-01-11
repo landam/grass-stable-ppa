@@ -32,23 +32,59 @@
 #include <string.h>
 #include <unistd.h>
 
-#define USERMAIN
-
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/site.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
+#include <grass/bitmap.h>
+#include <grass/dbmi.h>
+#include <grass/glocale.h>
+#include <grass/raster3d.h>
+
 #include "userglobs.h"
-
-/* include G3d defs */
-#include <grass/G3d.h>
-
 #include "oct.h"
 #include "surf.h"
 #include "dataoct.h"
 #include "user.h"
-#include <grass/bitmap.h>
-#include <grass/dbmi.h>
-#include <grass/glocale.h>
+
+double /* pargr */ xmin, xmax, ymin, ymax, zmin, zmax, wmin, wmax;
+double /* norm */ xmin0, xmax0, ymin0, ymax0, zmin0, zmax0, wmin0, wmax0,
+    delt, dnorm;
+double /* MAT */ *A;
+double /* PRISP */ fi, rsm, fstar2, alphat, betat;
+
+double /* out */ *b, *w;
+double /* orig */ x0utm, y0utm, z0utm;
+double /* gcmax */ gmin, gmax, c1min, c1max, c2min, c2max, c3min, c3max;
+double /* gcmax */ a1min, a1max, a2min, a2max;
+float *zero_array1, *zero_array2, *zero_array3, *zero_array4, *zero_array5,
+    *zero_array6, *zero_array7;
+int out_cond1, out_cond2;
+double xmn, xmx, ymn, ymx, zmn, zmx;
+double z_orig_in, tb_res_in;
+int cursegm;
+int totsegm;
+int iw2;
+int n_rows_in;			/* fix by JH 04/24/02 */
+int cv;
+int sig1;
+
+char msg[80];
+
+struct Map_info Map;
+dbString sql;
+dbDriver *driver;
+dbHandle handle;
+struct field_info *f;
+struct line_pnts *Pnts;
+struct line_cats *Cats;
+char buf[1024];
+int count;
+
+FILE *dev, *cvdevf;
+FCELL *zero_array_cell;
+RASTER3D_Region current_region;
+
 
 /* pargr */
 double ns_res, ew_res, tb_res;
@@ -112,47 +148,47 @@ int fdcell, fdcout;
    04/01/2005 (jh) - variable smoothing and CV
  */
 
-char *input;
-char *cellinp = NULL;
-char *cellout = NULL;
-char *mapset = NULL;
+const char *input;
+const char *cellinp;
+const char *cellout;
+const char *mapset;
 
-char *scol = NULL;
-char *outz = NULL;
-char *gradient = NULL;
-char *aspect1 = NULL;
-char *aspect2 = NULL;
-char *ncurv = NULL;
-char *gcurv = NULL;
-char *mcurv = NULL;
+const char *scol;
+const char *outz;
+const char *gradient;
+const char *aspect1;
+const char *aspect2;
+const char *ncurv;
+const char *gcurv;
+const char *mcurv;
 
-char *maskmap = NULL;
-char *redinp = NULL;
-char *devi = NULL;
-char *cvdev = NULL;
+const char *maskmap;
+const char *redinp;
+const char *devi;
+const char *cvdev;
 
 int sdisk, disk;
-FILE *Tmp_fd_z = NULL;
-char *Tmp_file_z = NULL;
+FILE *Tmp_fd_z;
+const char *Tmp_file_z;
 
-FILE *Tmp_fd_dx = NULL;
-char *Tmp_file_dx = NULL;
-FILE *Tmp_fd_dy = NULL;
-char *Tmp_file_dy = NULL;
-FILE *Tmp_fd_dz = NULL;
-char *Tmp_file_dz = NULL;
-FILE *Tmp_fd_xx = NULL;
-char *Tmp_file_xx = NULL;
-FILE *Tmp_fd_yy = NULL;
-char *Tmp_file_yy = NULL;
-FILE *Tmp_fd_xy = NULL;
-char *Tmp_file_xy = NULL;
-FILE *Tmp_fd_cell = NULL;
-char *Tmp_file_cell = NULL;
+FILE *Tmp_fd_dx;
+const char *Tmp_file_dx;
+FILE *Tmp_fd_dy;
+const char *Tmp_file_dy;
+FILE *Tmp_fd_dz;
+const char *Tmp_file_dz;
+FILE *Tmp_fd_xx;
+const char *Tmp_file_xx;
+FILE *Tmp_fd_yy;
+const char *Tmp_file_yy;
+FILE *Tmp_fd_xy;
+const char *Tmp_file_xy;
+FILE *Tmp_fd_cell;
+const char *Tmp_file_cell;
 
 struct BM *bitmask;
 struct Cell_head cellhd;
-G3D_Region out_region;
+RASTER3D_Region out_region;
 
 int main(int argc, char *argv[])
 {
@@ -165,11 +201,11 @@ int main(int argc, char *argv[])
     int LINEQS();
     int CRSTG();
     double CRST();
-    double amax1();
-    double amin1();
+    double amax1(double, double);
+    double amin1(double, double);
     int max1();
     int min1();
-    int per, npmin;
+    int npmin;
     int ii, i, n_rows, n_cols, n_levs;
     double x_orig, y_orig, z_orig;
     char dminchar[64];
@@ -199,59 +235,33 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, interpolation");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("voxel"));
+    G_add_keyword(_("surface"));
+    G_add_keyword(_("interpolation"));
+    G_add_keyword(_("RST"));
     module->description =
 	_("Interpolates point data to a 3D raster map using "
 	  "regularized spline with tension (RST) algorithm.");
 
-    if (G_get_set_window(&cellhd) == -1)
-	G_fatal_error("G_get_set_window() failed");
-
-    G3d_getWindow(&current_region);
-    G3d_readWindow(&current_region, NULL);
-
-    ew_res = current_region.ew_res;
-    ns_res = current_region.ns_res;
-    n_cols = current_region.cols;
-    n_rows = current_region.rows;
-    x_orig = current_region.west;
-    y_orig = current_region.south;
-    n_levs = current_region.depths;
-    tb_res = current_region.tb_res;
-    z_orig = current_region.bottom;
-
-    dmin = amin1(ew_res, ns_res) / 2;
-    disk = n_rows * n_cols * sizeof(float);
-    sprintf(dminchar, "%lf", dmin);
-
-    nsizr = n_rows;
-    nsizc = n_cols;
-    nsizl = n_levs;
-    n_rows_in = n_rows;		/* fix by JH 04/24/02 */
-
-    parm.input = G_define_option();
-    parm.input->key = "input";
-    parm.input->type = TYPE_STRING;
+    parm.input = G_define_standard_option(G_OPT_V_INPUT);
     parm.input->required = YES;
-    parm.input->gisprompt = "old,vector,vector";
-    parm.input->description = _("Name of the vector map with input x,y,z,w");
-
-    parm.cellinp = G_define_option();
+    parm.input->label = _("Name of input 3D vector points map");
+    parm.input->description = NULL; /* no OGR support */
+    
+    parm.cellinp = G_define_standard_option(G_OPT_R_INPUT);
     parm.cellinp->key = "cellinp";
-    parm.cellinp->type = TYPE_STRING;
     parm.cellinp->required = NO;
-    parm.cellinp->gisprompt = "old,cell,raster";
     parm.cellinp->description =
-	_("Name of the surface raster map for cross-section");
-
-    parm.colnum = G_define_option();
+	_("Name of input surface raster map for cross-section");
+    parm.cellinp->guisection = _("Optional inputs");
+    
+    parm.colnum = G_define_standard_option(G_OPT_DB_COLUMN);
     parm.colnum->key = "wcolumn";
-    parm.colnum->type = TYPE_STRING;
     parm.colnum->required = NO;
     parm.colnum->description =
-	_("Name of the column containing w attribute to interpolate");
-    parm.colnum->answer = "flt1";
-
+	_("Name of column containing w attribute to interpolate");
+    
     parm.fi = G_define_option();
     parm.fi->key = "tension";
     parm.fi->type = TYPE_DOUBLE;
@@ -268,38 +278,32 @@ int main(int argc, char *argv[])
     parm.rsm->description = _("Smoothing parameter");
     parm.rsm->guisection = _("Settings");
 
-    parm.scol = G_define_option();
+    parm.scol = G_define_standard_option(G_OPT_DB_COLUMN);
     parm.scol->key = "scolumn";
-    parm.scol->type = TYPE_STRING;
     parm.scol->required = NO;
     parm.scol->description =
-	_("Name of the column with smoothing parameters");
+	_("Name of column with smoothing parameters");
     parm.scol->guisection = _("Settings");
 
-    parm.wheresql = G_define_standard_option(G_OPT_WHERE);
+    parm.wheresql = G_define_standard_option(G_OPT_DB_WHERE);
 
-    parm.devi = G_define_option();
+    parm.devi = G_define_standard_option(G_OPT_V_OUTPUT);
     parm.devi->key = "devi";
-    parm.devi->type = TYPE_STRING;
     parm.devi->required = NO;
-    parm.devi->gisprompt = "new,vector,vector";
-    parm.devi->description = _("Output deviations vector point file");
-    parm.devi->guisection = _("Analysis");
+    parm.devi->description = _("Name for output deviations vector map");
+    parm.devi->guisection = _("Outputs");
 
-    parm.cvdev = G_define_option();
+    parm.cvdev = G_define_standard_option(G_OPT_V_OUTPUT);
     parm.cvdev->key = "cvdev";
-    parm.cvdev->type = TYPE_STRING;
     parm.cvdev->required = NO;
-    parm.cvdev->gisprompt = "new,vector,vector";
-    parm.cvdev->description = _("Output cross-validation vector map");
-    parm.cvdev->guisection = _("Analysis");
+    parm.cvdev->description = _("Name for output cross-validation vector map");
+    parm.cvdev->guisection = _("Outputs");
 
-    parm.maskmap = G_define_option();
+    parm.maskmap = G_define_standard_option(G_OPT_R_INPUT);
     parm.maskmap->key = "maskmap";
-    parm.maskmap->type = TYPE_STRING;
     parm.maskmap->required = NO;
-    parm.maskmap->gisprompt = "old,cell,raster";
-    parm.maskmap->description = _("Name of the raster map used as mask");
+    parm.maskmap->description = _("Name of input raster map used as mask");
+    parm.maskmap->guisection = _("Optional inputs");
 
     parm.segmax = G_define_option();
     parm.segmax->key = "segmax";
@@ -330,7 +334,6 @@ int main(int argc, char *argv[])
     parm.dmin1 = G_define_option();
     parm.dmin1->key = "dmin";
     parm.dmin1->type = TYPE_DOUBLE;
-    parm.dmin1->answer = dminchar;
     parm.dmin1->required = NO;
     parm.dmin1->description =
 	_("Minimum distance between points (to remove almost identical points)");
@@ -353,76 +356,54 @@ int main(int argc, char *argv[])
     parm.zmult->description = _("Conversion factor for z-values");
     parm.zmult->guisection = _("Settings");
 
-    parm.cellout = G_define_option();
+    parm.cellout = G_define_standard_option(G_OPT_R_OUTPUT);
     parm.cellout->key = "cellout";
-    parm.cellout->type = TYPE_STRING;
     parm.cellout->required = NO;
-    parm.cellout->gisprompt = "new,cell,raster";
-    parm.cellout->description = _("Output cross-section raster map");
-    parm.cellout->guisection = _("Output_options");
+    parm.cellout->description = _("Name for output cross-section raster map");
+    parm.cellout->guisection = _("Outputs");
 
-    parm.outz = G_define_option();
+    parm.outz = G_define_standard_option(G_OPT_R3_OUTPUT);
     parm.outz->key = "elev";
-    parm.outz->type = TYPE_STRING;
     parm.outz->required = NO;
-    parm.outz->multiple = NO;
-    parm.outz->gisprompt = "new,grid3,3d raster";
-    parm.outz->description = _("Output elevation g3d-file");
+    parm.outz->description = _("Name for output elevation 3D raster map");
+    parm.outz->guisection = _("Outputs");
 
-    parm.gradient = G_define_option();
+    parm.gradient = G_define_standard_option(G_OPT_R3_OUTPUT);
     parm.gradient->key = "gradient";
-    parm.gradient->type = TYPE_STRING;
     parm.gradient->required = NO;
-    parm.gradient->multiple = NO;
-    parm.gradient->gisprompt = "new,grid3,3d raster";
-    parm.gradient->description = _("Output gradient magnitude g3d-file");
-    parm.gradient->guisection = _("Output_options");
+    parm.gradient->description = _("Name for output gradient magnitude 3D raster map");
+    parm.gradient->guisection = _("Outputs");
 
-    parm.aspect1 = G_define_option();
+    parm.aspect1 = G_define_standard_option(G_OPT_R3_OUTPUT);
     parm.aspect1->key = "aspect1";
-    parm.aspect1->type = TYPE_STRING;
     parm.aspect1->required = NO;
-    parm.aspect1->multiple = NO;
-    parm.aspect1->gisprompt = "new,grid3,3d raster";
     parm.aspect1->description =
-	_("Output gradient horizontal angle g3d-file");
-    parm.aspect1->guisection = _("Output_options");
+	_("Name for output gradient horizontal angle 3D raster map");
+    parm.aspect1->guisection = _("Outputs");
 
-    parm.aspect2 = G_define_option();
+    parm.aspect2 = G_define_standard_option(G_OPT_R3_OUTPUT);
     parm.aspect2->key = "aspect2";
-    parm.aspect2->type = TYPE_STRING;
     parm.aspect2->required = NO;
-    parm.aspect2->multiple = NO;
-    parm.aspect2->gisprompt = "new,grid3,3d raster";
-    parm.aspect2->description = _("Output gradient vertical angle g3d-file");
-    parm.aspect2->guisection = _("Output_options");
+    parm.aspect2->description = _("Name for output gradient vertical angle 3D raster map");
+    parm.aspect2->guisection = _("Outputs");
 
-    parm.ncurv = G_define_option();
+    parm.ncurv = G_define_standard_option(G_OPT_R3_OUTPUT);
     parm.ncurv->key = "ncurv";
-    parm.ncurv->type = TYPE_STRING;
     parm.ncurv->required = NO;
-    parm.ncurv->multiple = NO;
-    parm.ncurv->gisprompt = "new,grid3,3d raster";
-    parm.ncurv->description = _("Output change of gradient g3d-file");
-    parm.ncurv->guisection = _("Output_options");
+    parm.ncurv->description = _("Name for output change of gradient 3D raster map");
+    parm.ncurv->guisection = _("Outputs");
 
-    parm.gcurv = G_define_option();
+    parm.gcurv = G_define_standard_option(G_OPT_R3_OUTPUT);
     parm.gcurv->key = "gcurv";
-    parm.gcurv->type = TYPE_STRING;
     parm.gcurv->required = NO;
-    parm.gcurv->multiple = NO;
-    parm.gcurv->gisprompt = "new,grid3,3d raster";
-    parm.gcurv->description = _("Output gaussian curvature g3d-file");
-    parm.gcurv->guisection = _("Output_options");
+    parm.gcurv->description = _("Name for output gaussian curvature 3D raster map");
+    parm.gcurv->guisection = _("Outputs");
 
-    parm.mcurv = G_define_option();
+    parm.mcurv = G_define_standard_option(G_OPT_R3_OUTPUT);
     parm.mcurv->key = "mcurv";
-    parm.mcurv->type = TYPE_STRING;
     parm.mcurv->required = NO;
-    parm.mcurv->multiple = NO;
-    parm.mcurv->gisprompt = "new,grid3,3d raster";
-    parm.mcurv->description = _("Output mean curvature g3d-file");
-    parm.mcurv->guisection = _("Output_options");
+    parm.mcurv->description = _("Name for output mean curvature 3D raster map");
+    parm.mcurv->guisection = _("Outputs");
 
     flag.cv = G_define_flag();
     flag.cv->key = 'c';
@@ -432,7 +413,33 @@ int main(int argc, char *argv[])
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    per = 1;			/*flag.per->answer; */
+    G_get_set_window(&cellhd);
+
+    Rast3d_get_window(&current_region);
+    Rast3d_read_window(&current_region, NULL);
+
+    ew_res = current_region.ew_res;
+    ns_res = current_region.ns_res;
+    n_cols = current_region.cols;
+    n_rows = current_region.rows;
+    x_orig = current_region.west;
+    y_orig = current_region.south;
+    n_levs = current_region.depths;
+    tb_res = current_region.tb_res;
+    z_orig = current_region.bottom;
+
+    dmin = amin1(ew_res, ns_res) / 2;
+    disk = n_rows * n_cols * sizeof(float);
+    sprintf(dminchar, "%lf", dmin);
+
+    nsizr = n_rows;
+    nsizc = n_cols;
+    nsizl = n_levs;
+    n_rows_in = n_rows;		/* fix by JH 04/24/02 */
+
+    if (!parm.dmin1->answer)
+	parm.dmin1->answer = dminchar;
+
     iw2 = 1;
     sig1 = 0;
     input = parm.input->answer;
@@ -470,9 +477,10 @@ int main(int argc, char *argv[])
 	rsm = -1;		/* used in InterpLib to indicate variable smoothing */
 
     if (cv != (cvdev != NULL))
-	G_fatal_error(_("Both crossvalidation options (-c, cvdev) must be specified"));
+        G_fatal_error(_("Both crossvalidation options (-%c, %s) must be specified"),
+                      flag.cv->key, parm.cvdev->key);
     if (cv && devi != NULL)
-	G_fatal_error(_("Both crossvalidation and deviations file specified"));
+	G_fatal_error(_("Both crossvalidation and deviations must be specified"));
     if (cellinp == NULL && outz == NULL && cellout == NULL && gradient == NULL
 	&& aspect1 == NULL && aspect2 == NULL && ncurv == NULL &&
 	gcurv == NULL && mcurv == NULL) {
@@ -483,8 +491,8 @@ int main(int argc, char *argv[])
 	(cellinp != NULL || outz != NULL || cellout != NULL ||
 	 gradient != NULL || aspect1 != NULL || aspect2 != NULL ||
 	 ncurv != NULL || gcurv != NULL || mcurv != NULL || devi != NULL))
-	G_fatal_error
-	    ("The crossvalidation cannot be computed simultanuously with output grids or devi file");
+	G_fatal_error("Crossvalidation cannot be computed simultanuously "
+                      "with output grids or devi file");
 
     z_orig_in = z_orig;
     tb_res_in = tb_res;
@@ -547,7 +555,7 @@ int main(int argc, char *argv[])
      */
     if (TESTOUT) {
 	if ((fd4 = fopen("testout", "w+")) == NULL)
-	    G_fatal_error("Unable to open testout");
+	    G_fatal_error("Unable To open testout");
     }
 
     Vect_set_open_level(1);
@@ -575,13 +583,14 @@ int main(int argc, char *argv[])
 	    Vect_open_new(&Map, cvdev, 1);
 	Vect_hist_command(&Map);
 	f = Vect_default_field_info(&Map, 1, NULL, GV_1TABLE);
-	Vect_map_add_dblink(&Map, 1, NULL, f->table, "cat", f->database,
+	Vect_map_add_dblink(&Map, 1, NULL, f->table, GV_KEY_COLUMN, f->database,
 			    f->driver);
 	/* Create new table */
 	db_zero_string(&sql);
 	sprintf(buf, "create table %s ( ", f->table);
 	db_append_string(&sql, buf);
-	db_append_string(&sql, "cat integer");
+	db_append_string(&sql, GV_KEY_COLUMN);
+	db_append_string(&sql, " integer");
 	db_append_string(&sql, ", flt1 double precision");
 	db_append_string(&sql, ")");
 	G_debug(1, db_get_string(&sql));
@@ -593,7 +602,7 @@ int main(int argc, char *argv[])
 	if (db_execute_immediate(driver, &sql) != DB_OK) {
 	    db_close_database(driver);
 	    db_shutdown_driver(driver);
-	    G_fatal_error(_("Cannot create table: %s"), db_get_string(&sql));
+	    G_fatal_error(_("Unable To create table: %s"), db_get_string(&sql));
 	}
 	count = 1;
     }
@@ -601,15 +610,11 @@ int main(int argc, char *argv[])
     if (ii > 0) {
 	if ((cellinp != NULL) && (cellout != NULL)) {
 	    mapset = NULL;
-	    mapset = G_find_cell2(cellinp, "");
+	    mapset = G_find_raster2(cellinp, "");
 	    if (mapset == NULL)
 		G_fatal_error(_("Raster map <%s> not found"), cellinp);
-	    fdcell = G_open_cell_old(cellinp, mapset);
-	    if (fdcell < 0)
-		G_fatal_error(_("Unable to open raster map <%s>"), cellinp);
-	    fdcout = G_open_fp_cell_new(cellout);
-	    if (fdcout < 0)
-		G_fatal_error(_("Cannot open %s"), cellout);
+	    fdcell = Rast_open_old(cellinp, mapset);
+	    fdcout = Rast_open_fp_new(cellout);
 	    zero_array_cell = (FCELL *) G_malloc(sizeof(FCELL) * n_cols);
 	    if (!zero_array_cell)
 		clean_fatal_error("Not enough memory for zero_array_cell\n");
@@ -625,15 +630,11 @@ int main(int argc, char *argv[])
 		if (!
 		    (fwrite
 		     (zero_array_cell, sizeof(FCELL), n_cols, Tmp_fd_cell)))
-		    clean_fatal_error
-			("Not enough disk space--cannot write temp files");
+		    clean_fatal_error(_("Not enough disk space - cannot write temp files"));
 	    }
-	} else
-	  G_warning("Unable to create cellout raster map without cellinp");
+	}
 	ertot = 0.;
-	if (per)
-	    fprintf(stderr, "Percent complete: ");
-
+        
 	out_cond1 = (outz != NULL) || (gradient != NULL) || (aspect1 != NULL)
 	    || (aspect2 != NULL) || (gcurv != NULL) || (mcurv != NULL) ||
 	    (ncurv != NULL);
@@ -642,133 +643,126 @@ int main(int argc, char *argv[])
 	    /* allocating temp array for writing to corresponding temp file */
 	    zero_array1 = (float *)G_malloc(sizeof(float) * n_cols);
 	    if (!zero_array1)
-		clean_fatal_error("Not enough memory for zero_array1\n");
+		clean_fatal_error(_("Not enough memory"));
 	    for (i = 0; i < n_cols; i++)
 		zero_array1[i] = 0.;
 	    Tmp_file_z = G_tempfile();
 	    if (NULL == (Tmp_fd_z = fopen(Tmp_file_z, "w+"))) {
-		sprintf(msg, "Can't open temp file [%s] ", Tmp_file_z);
+		sprintf(msg, _("Unable to open temp file '%s'"), Tmp_file_z);
 		clean_fatal_error(msg);
 	    }
 	    /* filling temp file with zeroes */
 	    for (i = 0; i < n_levs * n_rows; i++) {
 		if (!(fwrite(zero_array1, sizeof(float), n_cols, Tmp_fd_z)))
-		    clean_fatal_error
-			("Not enough disk space -- cannot write temp files");
+		    clean_fatal_error(_("Not enough disk space - cannot write temp files"));
 	    }
 	}
 	if (gradient != NULL) {
 	    /* allocating temp array for writing to corresponding temp file */
 	    zero_array2 = (float *)G_malloc(sizeof(float) * n_cols);
 	    if (!zero_array2)
-		clean_fatal_error("Not enough memory for zero_array2\n");
+		clean_fatal_error(_("Not enough memory"));
 	    for (i = 0; i < n_cols; i++)
 		zero_array2[i] = 0.;
 	    Tmp_file_dx = G_tempfile();
 	    if (NULL == (Tmp_fd_dx = fopen(Tmp_file_dx, "w+"))) {
-		sprintf(msg, "Can't open temp file [%s] ", Tmp_file_dx);
+		sprintf(msg, _("Unable to open temp file '%s'"), Tmp_file_dx);
 		clean_fatal_error(msg);
 	    }
 	    /* filling temp file with zeroes */
 	    for (i = 0; i < n_levs * n_rows; i++) {
 		if (!(fwrite(zero_array2, sizeof(float), n_cols, Tmp_fd_dx)))
-		    clean_fatal_error
-			("Not enough disk space -- cannot write temp files");
+		    clean_fatal_error(_("Not enough disk space - cannot write temp files"));
 	    }
 	}
 	if (aspect1 != NULL) {
 	    /* allocating temp array for writing to corresponding temp file */
 	    zero_array3 = (float *)G_malloc(sizeof(float) * n_cols);
 	    if (!zero_array3)
-		clean_fatal_error("Not enough memory for zero_array3\n");
+		clean_fatal_error(_("Not enough memory"));
 	    for (i = 0; i < n_cols; i++)
 		zero_array3[i] = 0.;
 	    Tmp_file_dy = G_tempfile();
 	    if (NULL == (Tmp_fd_dy = fopen(Tmp_file_dy, "w+"))) {
-		sprintf(msg, "Can't open temp file [%s] ", Tmp_file_dy);
+		sprintf(msg, _("Unable to open temp file '%s'"), Tmp_file_dy);
 		clean_fatal_error(msg);
 	    }
 	    /* filling temp file with zeroes */
 	    for (i = 0; i < n_levs * n_rows; i++) {
 		if (!(fwrite(zero_array3, sizeof(float), n_cols, Tmp_fd_dy)))
-		    clean_fatal_error
-			("Not enough disk space -- cannot write temp files");
+		    clean_fatal_error(_("Not enough disk space - cannot write temp files"));
 	    }
 	}
 	if (aspect2 != NULL) {
 	    /* allocating temp array for writing to corresponding temp file */
 	    zero_array4 = (float *)G_malloc(sizeof(float) * n_cols);
 	    if (!zero_array4)
-		clean_fatal_error("Not enough memory for zero_array4\n");
+		clean_fatal_error(_("Not enough memory"));
 	    for (i = 0; i < n_cols; i++)
 		zero_array4[i] = 0.;
 	    Tmp_file_dz = G_tempfile();
 	    if (NULL == (Tmp_fd_dz = fopen(Tmp_file_dz, "w+"))) {
-		sprintf(msg, "Can't open temp file [%s] ", Tmp_file_dz);
+		sprintf(msg, _("Unable to open temp file '%s'"), Tmp_file_dz);
 		clean_fatal_error(msg);
 	    }
 	    /* filling temp file with zeroes */
 	    for (i = 0; i < n_levs * n_rows; i++) {
 		if (!(fwrite(zero_array4, sizeof(float), n_cols, Tmp_fd_dz)))
-		    clean_fatal_error
-			("Not enough disk space -- cannot write temp files");
+		    clean_fatal_error(_("Not enough disk space - cannot write temp files"));
 	    }
 	}
 	if (ncurv != NULL) {
 	    /* allocating temp array for writing to corresponding temp file */
 	    zero_array5 = (float *)G_malloc(sizeof(float) * n_cols);
 	    if (!zero_array5)
-		clean_fatal_error("Not enough memory for zero_array5\n");
+		clean_fatal_error(_("Not enough memory"));
 	    for (i = 0; i < n_cols; i++)
 		zero_array5[i] = 0.;
 	    Tmp_file_xx = G_tempfile();
 	    if (NULL == (Tmp_fd_xx = fopen(Tmp_file_xx, "w+"))) {
-		sprintf(msg, "Can't open temp file [%s] ", Tmp_file_xx);
+		sprintf(msg, _("Unable to open temp file '%s'"), Tmp_file_xx);
 		clean_fatal_error(msg);
 	    }
 	    /* filling temp file with zeroes */
 	    for (i = 0; i < n_levs * n_rows; i++) {
 		if (!(fwrite(zero_array5, sizeof(float), n_cols, Tmp_fd_xx)))
-		    clean_fatal_error
-			("Not enough disk space -- cannot write temp files");
+		    clean_fatal_error(_("Not enough disk space - cannot write temp files"));
 	    }
 	}
 	if (gcurv != NULL) {
 	    /* allocating temp array for writing to corresponding temp file */
 	    zero_array6 = (float *)G_malloc(sizeof(float) * n_cols);
 	    if (!zero_array6)
-		clean_fatal_error("Not enough memory for zero_array6\n");
+		clean_fatal_error(_("Not enough memory"));
 	    for (i = 0; i < n_cols; i++)
 		zero_array6[i] = 0.;
 	    Tmp_file_yy = G_tempfile();
 	    if (NULL == (Tmp_fd_yy = fopen(Tmp_file_yy, "w+"))) {
-		sprintf(msg, "Can't open temp file [%s] ", Tmp_file_yy);
+		sprintf(msg, _("Unable to open temp file '%s'"), Tmp_file_yy);
 		clean_fatal_error(msg);
 	    }
 	    /* filling temp file with zeroes */
 	    for (i = 0; i < n_levs * n_rows; i++) {
 		if (!(fwrite(zero_array6, sizeof(float), n_cols, Tmp_fd_yy)))
-		    clean_fatal_error
-			("Not enough disk space -- cannot write temp files");
+		    clean_fatal_error(_("Not enough disk space - cannot write temp files"));
 	    }
 	}
 	if (mcurv != NULL) {
 	    /* allocating temp array for writing to corresponding temp file */
 	    zero_array7 = (float *)G_malloc(sizeof(float) * n_cols);
 	    if (!zero_array7)
-		clean_fatal_error("Not enough memory for zero_array7\n");
+		clean_fatal_error(_("Not enough memory"));
 	    for (i = 0; i < n_cols; i++)
 		zero_array7[i] = 0.;
 	    Tmp_file_xy = G_tempfile();
 	    if (NULL == (Tmp_fd_xy = fopen(Tmp_file_xy, "w+"))) {
-		sprintf(msg, "Can't open temp file [%s] ", Tmp_file_xy);
+		sprintf(msg, _("Unable to open temp file '%s'"), Tmp_file_xy);
 		clean_fatal_error(msg);
 	    }
 	    /* filling temp file with zeroes */
 	    for (i = 0; i < n_levs * n_rows; i++) {
 		if (!(fwrite(zero_array7, sizeof(float), n_cols, Tmp_fd_xy)))
-		    clean_fatal_error
-			("Not enough disk space -- cannot write temp files");
+		    clean_fatal_error(_("Not enough disk space - cannot write temp files"));
 	    }
 	}
 	cursegm = 0;
@@ -805,30 +799,28 @@ int main(int argc, char *argv[])
 
 	    OUTGR();
 	    if ((cellinp != NULL)) {
-		G_close_cell(fdcout);
+		Rast_close(fdcout);
 		if ((cellout != NULL)) {
-		    G_short_history(cellout, "raster", &hist);
+		    Rast_short_history(cellout, "raster", &hist);
 		    /* TODO: next lines need to be verified! */
-		    sprintf(hist.edhist[0], "tension=%f, smoothing=%f", fi,
-			    rsm);
-		    sprintf(hist.edhist[1],
-			    "dnorm=%f, dmin=%f, wmult=%f, zmult=%f", dnorm,
-			    atof(parm.dmin1->answer), wmult, zmult);
-		    sprintf(hist.edhist[2], "segmax=%d, npmin=%d, npmax=%d, rmsdevi=%f",
-			    KMAX, npmin, KMAXPOINTS, sqrt(ertot / KMAX2));
-		    sprintf(hist.edhist[3], "wmin_data=%f, wmax_data=%f",
-			    wmin, wmax);
+		    Rast_append_format_history(
+			&hist, "tension=%f, smoothing=%f", fi, rsm);
+		    Rast_append_format_history(
+			&hist, "dnorm=%f, dmin=%f, wmult=%f, zmult=%f", dnorm,
+			atof(parm.dmin1->answer), wmult, zmult);
+		    Rast_append_format_history(
+			&hist, "segmax=%d, npmin=%d, npmax=%d, rmsdevi=%f",
+			KMAX, npmin, KMAXPOINTS, sqrt(ertot / KMAX2));
+		    Rast_append_format_history(
+			&hist, "wmin_data=%f, wmax_data=%f", wmin, wmax);
 		    /* ? sprintf (hist.edhist[4], "wmin_int=%f, wmax_int=%f", wminac, wmaxac); */
-		    hist.edlinecnt = 5;
 
-		    G_command_history(&hist);
-		    G_write_history(cellout, &hist);
-		    G_message(_("Raster map <%s> created"), cellout);
-
+		    Rast_command_history(&hist);
+		    Rast_write_history(cellout, &hist);
 		    fclose(Tmp_fd_cell);
 		    unlink(Tmp_file_cell);
 		}
-		G_close_cell(fdcell);
+		Rast_close(fdcell);
 	    }
 	    if (outz != NULL) {
 		fclose(Tmp_fd_z);
@@ -863,7 +855,6 @@ int main(int argc, char *argv[])
 		db_close_database_shutdown_driver(driver);
 		Vect_build(&Map);
 		Vect_close(&Map);
-		G_message(_("Vector map <%s> created"), cvdev);
 	    }
 
 	    fprintf(stderr, "\n");

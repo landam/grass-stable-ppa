@@ -1,5 +1,5 @@
-#ifndef GRASS_DGRAPH_H
-#define GRASS_DGRAPH_H
+#ifndef GRASS_DdglGraph_s_H
+#define GRASS_DdglGraph_s_H
 
 /* pg comes from "planar graph" */
 /* every edge is directed. Nevertheless, we can visit it on both sides */
@@ -33,6 +33,6 @@ struct planar_graph* pg_create_struct(int n, int e);
 void pg_destroy_struct(struct planar_graph *pg);
 int pg_existsedge(struct planar_graph *pg, int v1, int v2);
 void pg_addedge(struct planar_graph *pg, int v1, int v2);
-struct planar_graph* pg_create(struct line_pnts *Points);
+struct planar_graph* pg_create(const struct line_pnts *Points);
 
 #endif

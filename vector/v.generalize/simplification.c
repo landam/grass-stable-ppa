@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 #include "point.h"
 #include "pq.h"
@@ -225,7 +225,6 @@ int vertex_reduction(struct line_pnts *Points, double eps, int with_z)
  */
 int reumann_witkam(struct line_pnts *Points, double thresh, int with_z)
 {
-    int seg1, seg2;
     int i, count;
     POINT x0, x1, x2, sub, diff;
     double subd, diffd, sp, dist;
@@ -238,19 +237,17 @@ int reumann_witkam(struct line_pnts *Points, double thresh, int with_z)
 
     thresh *= thresh;
 
-    seg1 = 0;
-    seg2 = 1;
     count = 1;
 
-    point_assign(Points, 0, with_z, &x1);
-    point_assign(Points, 1, with_z, &x2);
+    point_assign(Points, 0, with_z, &x1, 0);
+    point_assign(Points, 1, with_z, &x2, 0);
     point_subtract(x2, x1, &sub);
     subd = point_dist2(sub);
 
 
     for (i = 2; i < n; i++) {
 
-	point_assign(Points, i, with_z, &x0);
+	point_assign(Points, i, with_z, &x0, 0);
 	point_subtract(x1, x0, &diff);
 	diffd = point_dist2(diff);
 	sp = point_dot(diff, sub);
@@ -259,8 +256,8 @@ int reumann_witkam(struct line_pnts *Points, double thresh, int with_z)
 	 * all variables which do not change for each line-point calculation */
 	if (dist > thresh) {
 
-	    point_assign(Points, i - 1, with_z, &x1);
-	    point_assign(Points, i, with_z, &x2);
+	    point_assign(Points, i - 1, with_z, &x1, 0);
+	    point_assign(Points, i, with_z, &x2, 0);
 	    point_subtract(x2, x1, &sub);
 	    subd = point_dist2(sub);
 

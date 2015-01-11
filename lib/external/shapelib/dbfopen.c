@@ -1,5 +1,5 @@
 /******************************************************************************
- * $Id: dbfopen.c 32581 2008-08-06 19:30:45Z neteler $
+ * $Id: dbfopen.c 32582 2008-08-06 19:37:34Z neteler $
  *
  * Project:  Shapelib
  * Purpose:  Implementation of .dbf access API documented in dbf_api.html.
@@ -111,7 +111,7 @@
 #include <ctype.h>
 #include <string.h>
 
-SHP_CVSID("$Id: dbfopen.c 32581 2008-08-06 19:30:45Z neteler $")
+SHP_CVSID("$Id: dbfopen.c 32582 2008-08-06 19:37:34Z neteler $")
 
 #ifndef FALSE
 #  define FALSE		0

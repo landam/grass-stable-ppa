@@ -16,7 +16,7 @@
 
 #include <stdlib.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 #include "visibility.h"
 #include "proto.h"
@@ -29,7 +29,6 @@ int main(int argc, char *argv[])
     struct GModule *module;	/* GRASS module for parsing arguments */
     struct Option *input, *output;	/* The input map */
     struct Option *coor, *ovis;
-    char *mapset;
 
     struct Point *points;
     struct Line *lines;
@@ -43,8 +42,11 @@ int main(int argc, char *argv[])
 
     /* initialize module */
     module = G_define_module();
-    module->keywords = _("vector, path, visibility");
-    module->description = _("Visibility graph construction.");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("network"));
+    G_add_keyword(_("shortest path"));
+    G_add_keyword(_("visibility"));
+    module->description = _("Performs visibility graph construction.");
 
     /* define the arguments needed */
     input = G_define_standard_option(G_OPT_V_INPUT);
@@ -69,18 +71,12 @@ int main(int argc, char *argv[])
 	exit(EXIT_FAILURE);
 
     Vect_check_input_output_name(input->answer, output->answer,
-				 GV_FATAL_EXIT);
+				 G_FATAL_EXIT);
 
     Vect_set_open_level(2);
 
-    mapset = G_find_vector2(input->answer, NULL);	/* finds the map */
-
-    if (mapset == NULL)
-	G_fatal_error("Vector map <%s> not found", input->answer);
-
-    if (Vect_open_old(&in, input->answer, mapset) < 1)	/* opens the map */
-	G_fatal_error(_("Unable to open vector map <%s>"),
-		      G_fully_qualified_name(input->answer, mapset));
+    if (Vect_open_old(&in, input->answer, "") < 1)	/* opens the map */
+	G_fatal_error(_("Unable to open vector map <%s>"), input->answer);
 
     if (Vect_open_new(&out, output->answer, WITHOUT_Z) < 0) {
 	Vect_close(&in);
@@ -88,17 +84,13 @@ int main(int argc, char *argv[])
     }
 
     if (ovis->answer != NULL) {
-	mapset = G_find_vector2(ovis->answer, NULL);
-
-	if (Vect_open_old(&vis, ovis->answer, mapset) < 1)
-	    G_fatal_error(_("Unable to open vector map <%s>"),
-			  G_fully_qualified_name(ovis->answer, mapset));
+	if (Vect_open_old(&vis, ovis->answer, "") < 1)
+	    G_fatal_error(_("Unable to open vector map <%s>"), ovis->answer);
 
 	if (Vect_copy_map_lines(&vis, &out) > 0)
 	    G_fatal_error(_("Unable to copy elements from vector map <%s>"),
-			  G_fully_qualified_name(ovis->answer, mapset));
+			  ovis->answer);
     }
-
 
     if (G_projection() == PROJECTION_LL)
 	G_warning(_("Lat-long projection"));
@@ -128,6 +120,10 @@ int main(int argc, char *argv[])
 
     G_free(points);
     G_free(lines);
+
+    Vect_copy_head_data(&in, &out);
+    Vect_hist_copy(&in, &out);
+    Vect_hist_command(&out);
 
     Vect_build(&out);
     Vect_close(&out);

@@ -5,14 +5,19 @@
 /* program to map out drainage basin structure  */
 /* this one uses the A * search algorithm       */
 /* written by Chuck Ehlschlaeger                */
-/* last modified 03/26/91                       */
+/* updated by Markus Metz                       */
+/* last modified 22/10/09                       */
 #include <math.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
+
+#define GW_LARGE_INT off_t
+
 #include "cseg.h"
+#include "flag.h"
 
 #define AR_SIZE			16
 #define AR_INCR			16
-#define SHORT			int
 #define NOMASK			1
 #define MIN_SLOPE		.00001
 #define MIN_GRADIENT_DEGREES	1
@@ -20,8 +25,8 @@
 #define METER_TO_FOOT		(1 / 0.3048)
 #define MAX_BYTES		10485760
 #define PAGE_BLOCK		1024
-#define SROW			200
-#define SCOL   			200
+#define SROW			64
+#define SCOL   			64
 #define RITE			1
 #define LEFT			2
 #define NEITHER			0
@@ -29,39 +34,71 @@
 #define TSTSTR(a)	(fprintf (stderr, "%s\n", a))
 #define TST(a)		(fprintf (stderr, "%e\n", (double) (a)))
 
+/* flag positions */
+#define NULLFLAG         0      /* elevation is NULL */
+#define EDGEFLAG         1      /* edge cell */
+#define INLISTFLAG       2      /* in open A* list */
+#define WORKEDFLAG       3      /* in closed A* list/ accumulation done */
+#define SWALEFLAG        4      /* swale */
+#define PITFLAG          5      /* user-defined real depression */
+#define RUSLEBLOCKFLAG   6      /* is RUSLE block */
+/* #define XXXFLAG   7 */ /* last bit unused */
+
+
 #define POINT       struct points
 POINT {
-    SHORT r, c; /* , downr, downc */
-    int nxt;
+    int r, c;
 };
 
-#define HEAP    struct heap_item
-HEAP {
-   int point;
+#define HEAP_PNT    struct heap_point
+HEAP_PNT {
+   GW_LARGE_INT added;
    CELL ele;
+   POINT pnt;
+};
+
+#define WAT_ALT    struct wat_altitude
+WAT_ALT {
+   CELL ele;
+   DCELL wat;
+};
+
+#define ASP_FLAG    struct aspect_flag
+ASP_FLAG {
+   char asp;
+   char flag;
+};
+
+#define OC_STACK struct overland_cells_stack
+OC_STACK {
+    int row, col;
 };
 
 extern struct Cell_head window;
 
 extern int mfd, c_fac, abs_acc, ele_scale;
-extern SSEG heap_index;
-extern int heap_size;
-extern int first_astar, first_cum, nxt_avail_pt, total_cells, do_points;
-extern SHORT nrows, ncols;
+extern SSEG search_heap;
+extern int nrows, ncols;
+extern GW_LARGE_INT heap_size;
+extern GW_LARGE_INT first_astar, first_cum, nxt_avail_pt, total_cells, do_points;
+extern CELL n_basins;
+extern OC_STACK *ocs;
+extern int ocs_alloced;
 extern double half_res, diag, max_length, dep_slope;
 extern int bas_thres, tot_parts;
 extern SSEG astar_pts;
-extern BSEG worked, in_list, s_b, swale;
-extern CSEG dis, alt, asp, bas, haf, r_h, dep;
-extern DSEG wat;
-extern DSEG slp, s_l, s_g, l_s, ril;
-extern CELL one, zero;
+extern BSEG s_b;
+extern CSEG dis, bas, haf, r_h, dep;
+extern SSEG watalt, aspflag;
+extern DSEG tci, slp, s_l, s_g, l_s, ril;
+extern double segs_mb;
+extern char zero, one;
 extern double ril_value, d_zero, d_one;
-extern SHORT sides;
-extern SHORT drain[3][3];
-extern SHORT updrain[3][3];
-extern SHORT nextdr[8];
-extern SHORT nextdc[8];
+extern int sides;
+extern char drain[3][3];
+extern char updrain[3][3];
+extern int nextdr[8];
+extern int nextdc[8];
 extern char ele_name[GNAME_MAX], pit_name[GNAME_MAX];
 extern char run_name[GNAME_MAX], ob_name[GNAME_MAX];
 extern char ril_name[GNAME_MAX], dep_name[GNAME_MAX];
@@ -69,12 +106,35 @@ extern char ril_name[GNAME_MAX], dep_name[GNAME_MAX];
 extern const char *this_mapset;
 extern char seg_name[GNAME_MAX], bas_name[GNAME_MAX], haf_name[GNAME_MAX], thr_name[8];
 extern char ls_name[GNAME_MAX], st_name[GNAME_MAX], sl_name[GNAME_MAX], sg_name[GNAME_MAX];
-extern char wat_name[GNAME_MAX], asp_name[GNAME_MAX], arm_name[GNAME_MAX], dis_name[GNAME_MAX];
+extern char wat_name[GNAME_MAX], asp_name[GNAME_MAX], tci_name[GNAME_MAX];
+extern char arm_name[GNAME_MAX], dis_name[GNAME_MAX];
 extern char ele_flag, pit_flag, run_flag, dis_flag, ob_flag;
-extern char wat_flag, asp_flag, arm_flag, ril_flag, dep_flag;
+extern char wat_flag, asp_flag, arm_flag, ril_flag, dep_flag, tci_flag;
 extern char bas_flag, seg_flag, haf_flag, er_flag;
 extern char st_flag, sb_flag, sg_flag, sl_flag, ls_flag;
 extern FILE *fp;
+
+/* the flags:
+ * ele_flag    elevation map given
+ * pit_flag    pit (depression) map given
+ * run_flag    initial surface runoff given
+ * dis_flag    ???
+ * ob_flag     blocking map for RUSLE given
+ * wat_flag    write accumulation output
+ * asp_flag    write direction output
+ * arm_flag    unused, for interactive mode
+ * ril_flag    percentage disturbed land given
+ * dep_flag    ???
+ * st_flag     do stream extraction
+ * bas_flag    write basin output
+ * seg_flag    write stream output
+ * haf_flag    write half-basin output
+ * er_flag     do RUSLE
+ * sb_flag     ???
+ * sg_flag     write RUSLE S factor     
+ * sl_flag     slope length, unused
+ * ls_flag     write RUSLE LS factor
+ */
 
 /* close_maps.c */
 int close_maps(void);
@@ -87,22 +147,22 @@ CELL def_basin(int, int, CELL, double, CELL);
 
 /* do_astar.c */
 int do_astar(void);
-int add_pt(SHORT, SHORT, CELL, CELL);
-int drop_pt(void);
-int sift_up(int, CELL);
-double get_slope(SHORT, SHORT, SHORT, SHORT, CELL, CELL);
-int replace(SHORT, SHORT, SHORT, SHORT);
+int add_pt(int, int, CELL);
+double get_slope(int, int, int, int, CELL, CELL);
 
 /* do_cum.c */
 int do_cum(void);
 int do_cum_mfd(void);
 double mfd_pow(double, int);
 
+/* do_stream.c */
+int do_stream(void);
+
 /* find_pour.c */
 int find_pourpts(void);
 
 /* haf_side.c */
-int haf_basin_side(SHORT, SHORT, SHORT);
+int haf_basin_side(int, int, int);
 
 /* init_vars.c */
 int init_vars(int, char *[]);
@@ -119,7 +179,7 @@ int sg_factor(void);
 int len_slp_equ(double, double, double, int, int);
 
 /* slope_len.c */
-int slope_length(SHORT, SHORT, SHORT, SHORT);
+int slope_length(int, int, int, int);
 
 /* split_str.c */
 CELL split_stream(int, int, int[], int[], int, CELL, double, CELL);

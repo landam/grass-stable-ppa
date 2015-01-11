@@ -1,6 +1,6 @@
 
 /**
- * \file format.c
+ * \file lib/segment/format.c
  *
  * \brief Segment formatting routines.
  *
@@ -9,28 +9,28 @@
  *
  * \author GRASS GIS Development Team
  *
- * \date 2005-2006
+ * \date 2005-2009
  */
 
-#include <grass/config.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
 #include <limits.h>
-#include <grass/segment.h>
+#include <grass/gis.h>
+#include <grass/glocale.h>
+#include "local_proto.h"
 
 
-static int _segment_format(int, int, int, int, int, int, int);
+static int _segment_format(int, off_t, off_t, int, int, int, int);
 static int write_int(int, int);
+static int write_off_t(int, off_t);
 static int zero_fill(int, off_t);
 
 /* fd must be open for write */
 
 
 /**
- * \fn int segment_format (int fd, int nrows, int ncols, int srows, int scols, int len)
- *
  * \brief Format a segment file.
  *
  * The segmentation routines require a disk file to be used for paging 
@@ -59,15 +59,13 @@ static int zero_fill(int, off_t);
  * \return -3 if illegal parameters are passed
  */
 
-int segment_format(int fd, int nrows, int ncols, int srows, int scols,
+int segment_format(int fd, off_t nrows, off_t ncols, int srows, int scols,
 		   int len)
 {
     return _segment_format(fd, nrows, ncols, srows, scols, len, 1);
 }
 
 /**
- * \fn int segment_format_nofill (int fd, int nrows, int ncols, int srows, int scols, int len)
- *
  * \brief Format a segment file.
  *
  * The segmentation routines require a disk file to be used for paging 
@@ -99,7 +97,7 @@ int segment_format(int fd, int nrows, int ncols, int srows, int scols,
  * \return -3 if illegal parameters are passed
  */
 
-int segment_format_nofill(int fd, int nrows, int ncols, int srows, int scols,
+int segment_format_nofill(int fd, off_t nrows, off_t ncols, int srows, int scols,
 			  int len)
 {
     return _segment_format(fd, nrows, ncols, srows, scols, len, 0);
@@ -107,16 +105,45 @@ int segment_format_nofill(int fd, int nrows, int ncols, int srows, int scols,
 
 
 static int _segment_format(int fd,
-			   int nrows, int ncols,
+			   off_t nrows, off_t ncols,
 			   int srows, int scols, int len, int fill)
 {
     off_t nbytes;
     int spr, size;
 
     if (nrows <= 0 || ncols <= 0 || len <= 0 || srows <= 0 || scols <= 0) {
-	G_warning("segment_format(fd,%d,%d,%d,%d,%d): illegal value(s)",
+	G_warning("segment_format(fd,%lld,%lld,%d,%d,%d): illegal value(s)",
 		  nrows, ncols, srows, scols, len);
 	return -3;
+    }
+
+    spr = ncols / scols;
+    if (ncols % scols)
+	spr++;
+
+    size = srows * scols * len;
+
+    if (sizeof(off_t) == 4 && sizeof(double) >= 8) {
+	double d_size;
+	off_t o_size;
+
+	/* calculate total number of segments */
+	d_size = (double) spr * ((nrows + srows - 1) / srows);
+	/* multiply with segment size */
+	d_size *= size;
+
+	/* add header */
+	d_size += 2 * sizeof(off_t) + 3 * sizeof(int);
+
+	o_size = (off_t) d_size;
+
+	/* this test assumes that all off_t values can be exactly 
+	 * represented as double if sizeof(off_t) = 4 and sizeof(double) >= 8 */
+	if ((double) o_size != d_size) {
+	    G_warning(_("Segment format: file size too large"));
+	    G_warning(_("Please recompile with Large File Support (LFS)"));
+	    return -1;
+	}
     }
 
     if (lseek(fd, 0L, SEEK_SET) == (off_t) -1) {
@@ -124,19 +151,13 @@ static int _segment_format(int fd,
 	return -1;
     }
 
-    if (!write_int(fd, nrows) || !write_int(fd, ncols)
+    if (!write_off_t(fd, nrows) || !write_off_t(fd, ncols)
 	|| !write_int(fd, srows) || !write_int(fd, scols)
 	|| !write_int(fd, len))
 	return -1;
 
     if (!fill)
 	return 1;
-
-    spr = ncols / scols;
-    if (ncols % scols)
-	spr++;
-
-    size = srows * scols * len;
 
     /* calculate total number of segments */
     nbytes = spr * ((nrows + srows - 1) / srows);
@@ -165,11 +186,20 @@ static int write_int(int fd, int n)
     return 1;
 }
 
+static int write_off_t(int fd, off_t n)
+{
+    if (write(fd, &n, sizeof(off_t)) != sizeof(off_t)) {
+	G_warning("segment_format(): Unable to write (%s)", strerror(errno));
+	return 0;
+    }
+
+    return 1;
+}
 
 static int zero_fill(int fd, off_t nbytes)
 {
 #ifndef USE_LSEEK
-    char buf[10240];
+    char buf[16384];
     register char *b;
     register int n;
 

@@ -1,24 +1,24 @@
+/*!
+  \file lib/cairodriver/Driver.c
 
-/****************************************************************************
- *
- * MODULE:       Cairo driver
- * AUTHOR(S):    Lars Ahlzen <lars@ahlzen.com>
- * COPYRIGHT:    (C) 2007 Lars Ahlzen
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *****************************************************************************/
+  \brief GRASS cairo display driver - driver initialization
+
+  (C) 2007-2008, 2011 by Lars Ahlzen and the GRASS Development Team
+  
+  This program is free software under the GNU General Public License
+  (>=v2). Read the file COPYING that comes with GRASS for details.
+  
+  \author Lars Ahlzen <lars ahlzen.com> (original contibutor)
+  \author Glynn Clements  
+*/
 
 #include "cairodriver.h"
 
+/*!
+  \brief Initialize display driver
+
+  \return pointer driver structure
+*/
 const struct driver *Cairo_Driver(void)
 {
     static struct driver drv;
@@ -27,39 +27,30 @@ const struct driver *Cairo_Driver(void)
     if (initialized)
 	return &drv;
 
-    drv.Box_abs = Cairo_Box_abs;
-    drv.Box_rel = NULL;
-    drv.Client_Open = NULL;
-    drv.Client_Close = Cairo_Client_Close;
+    drv.name = "cairo";
+    drv.Box = Cairo_Box;
     drv.Erase = Cairo_Erase;
-    drv.Get_with_box = NULL;
-    drv.Get_with_line = NULL;
-    drv.Get_with_pointer = NULL;
     drv.Graph_set = Cairo_Graph_set;
     drv.Graph_close = Cairo_Graph_close;
     drv.Line_width = Cairo_Line_width;
-    drv.Panel_save = NULL;
-    drv.Panel_restore = NULL;
-    drv.Panel_delete = NULL;
-    drv.Polydots_abs = NULL;
-    drv.Polydots_rel = NULL;
-    drv.Polyline_abs = Cairo_Polyline_abs;
-    drv.Polyline_rel = NULL;
-    drv.Polygon_abs = Cairo_Polygon_abs;
-    drv.Polygon_rel = NULL;
     drv.Set_window = Cairo_Set_window;
-    drv.Begin_scaled_raster = Cairo_begin_scaled_raster;
-    drv.Scaled_raster = Cairo_scaled_raster;
-    drv.End_scaled_raster = Cairo_end_scaled_raster;
-    drv.Respond = Cairo_Respond;
-    drv.Work_stream = NULL;
-    drv.Do_work = NULL;
-    drv.lookup_color = Cairo_lookup_color;
-    drv.color = Cairo_color;
-    drv.draw_line = Cairo_draw_line;
-    drv.draw_point = Cairo_draw_point;
-    drv.draw_bitmap = Cairo_draw_bitmap;
-    drv.draw_text = NULL;
+    drv.Begin_raster = Cairo_begin_raster;
+    drv.Raster = Cairo_raster;
+    drv.End_raster = Cairo_end_raster;
+    drv.Begin = Cairo_Begin;
+    drv.Move = Cairo_Move;
+    drv.Cont = Cairo_Cont;
+    drv.Close = Cairo_Close;
+    drv.Stroke = Cairo_Stroke;
+    drv.Fill = Cairo_Fill;
+    drv.Point = Cairo_Point;
+    drv.Color = Cairo_Color;
+    drv.Bitmap = Cairo_Bitmap;
+    drv.Text = Cairo_Text;
+    drv.Text_box = Cairo_text_box;
+    drv.Set_font = Cairo_set_font;
+    drv.Font_list = Cairo_font_list;
+    drv.Font_info = Cairo_font_info;
 
     initialized = 1;
 

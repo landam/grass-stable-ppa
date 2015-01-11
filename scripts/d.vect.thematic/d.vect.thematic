@@ -232,7 +232,7 @@ if [ "$1" != "@ARGS_PARSED@" ] ; then
     exec g.parser "$0" "$@"
 fi
 
-PROG=`basename "$0"`
+PROG=`basename $0`
 
 #### check if we have awk
 if [ ! -x "`which awk`" ] ; then
@@ -361,14 +361,15 @@ if [ "$GIS_FLAG_S" -eq 1 ] ; then
     export GRASS_PNG_AUTO_WRITE
 fi
 
-table=`v.db.connect "$GIS_OPT_MAP" -gl layer="$GIS_OPT_LAYER" fs="|" | cut -f2 -d'|'`
-database=`v.db.connect "$GIS_OPT_MAP" -gl layer="$GIS_OPT_LAYER" fs="|" | cut -f4 -d'|'`
-driver=`v.db.connect "$GIS_OPT_MAP" -gl layer="$GIS_OPT_LAYER" fs="|" | cut -f5 -d'|'`
+table=`v.db.connect $GIS_OPT_MAP -g sep=";" | grep -w $GIS_OPT_LAYER | awk -F ";" '{print $2}'`
+database=`v.db.connect $GIS_OPT_MAP -g sep=";" | grep -w $GIS_OPT_LAYER | awk -F ";" '{print $4}'`
+driver=`v.db.connect $GIS_OPT_MAP -g sep=";" | grep -w $GIS_OPT_LAYER | awk -F ";" '{print $5}'`
 
-if [ -z "$table" ] ; then
+if [ -z "$table" ]
+    then
     g.message -e message="No table connected or layer <$GIS_OPT_LAYER> does not exist."
     exit 1
-fi
+ fi
 
 # update color values to the table?
 if [ "$GIS_FLAG_U" -eq 1 ] ; then
@@ -391,15 +392,15 @@ echo "Group $group" > "$TMP3"
 # Calculate statistics for thematic intervals
 if [ -z "$GIS_OPT_WHERE" ] ; then
   if [ "$GIS_OPT_TYPE" = "line" ] ; then
-     v.univar -e -g map=$GIS_OPT_MAP type=line column=$GIS_OPT_COLUMN layer="$GIS_OPT_LAYER" > "$TMP1"
+     v.univar -e -g map=$GIS_OPT_MAP type=line column=$GIS_OPT_COLUMN > "$TMP1"
   else
-     v.univar -e -g map=$GIS_OPT_MAP type=point,centroid column=$GIS_OPT_COLUMN layer="$GIS_OPT_LAYER" > "$TMP1"
+     v.univar -e -g map=$GIS_OPT_MAP type=point,centroid column=$GIS_OPT_COLUMN > "$TMP1"
   fi
 else
   if [ "$GIS_OPT_TYPE" = "line" ] ; then
-     v.univar -e -g map=$GIS_OPT_MAP type=line column=$GIS_OPT_COLUMN where="$GIS_OPT_WHERE" layer="$GIS_OPT_LAYER" > "$TMP1"
+     v.univar -e -g map=$GIS_OPT_MAP type=line column=$GIS_OPT_COLUMN where="$GIS_OPT_WHERE" > "$TMP1"
  else
-     v.univar -e -g map=$GIS_OPT_MAP type=point,centroid column=$GIS_OPT_COLUMN where="$GIS_OPT_WHERE" layer="$GIS_OPT_LAYER" > "$TMP1"
+     v.univar -e -g map=$GIS_OPT_MAP type=point,centroid column=$GIS_OPT_COLUMN where="$GIS_OPT_WHERE" > "$TMP1"
  fi
 fi
   

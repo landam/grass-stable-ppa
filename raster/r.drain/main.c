@@ -25,6 +25,7 @@
  *
  *****************************************************************************/
 
+#include <grass/config.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -40,16 +41,16 @@
 #include <unistd.h>
 
 #include <grass/gis.h>
-#include <grass/site.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 
 #define DEBUG
 #include "tinf.h"
 #include "local.h"
 
 /* should probably be updated to a pointer array & malloc/realloc as needed */
-#define MAX_POINTS 1024
+#define POINTS_INCREMENT 1024
 
 /* define a data structure to hold the point data */
 struct point
@@ -66,20 +67,20 @@ int main(int argc, char **argv)
     int fe, fd, dir_fd;
     int i, have_points = 0;
     int new_id;
-    int nrows, ncols, points_row[MAX_POINTS], points_col[MAX_POINTS], npoints;
+    int nrows, ncols;
+    int *points_row = NULL, *points_col = NULL, npoints;
+    int increment_count;
     int cell_open(), cell_open_new();
     int map_id, dir_id;
-    char map_name[GNAME_MAX], *map_mapset, new_map_name[GNAME_MAX],
-	dir_name[GNAME_MAX], *dir_mapset;
+    char map_name[GNAME_MAX], new_map_name[GNAME_MAX], dir_name[GNAME_MAX];
     char *tempfile1, *tempfile2, *tempfile3;
-    char *search_mapset;
     struct History history;
 
     struct Cell_head window;
     struct Option *opt1, *opt2, *coordopt, *vpointopt, *opt3, *opt4;
     struct Flag *flag1, *flag2, *flag3, *flag4;
     struct GModule *module;
-    int in_type, dir_data_type;
+    int in_type;
     void *in_buf;
     void *dir_buf;
     CELL *out_buf;
@@ -88,7 +89,8 @@ int main(int argc, char **argv)
 
     struct point *list;
     struct point *thispoint;
-    int ival, bsz, start_row, start_col, mode;
+    int ival, start_row, start_col, mode;
+    off_t bsz;
     int costmode = 0;
     double east, north, val;
     struct point *drain(int, struct point *, int, int);
@@ -100,49 +102,45 @@ int main(int argc, char **argv)
     struct Map_info vout;
     int cat;
     double x, y;
-    char vect[GNAME_MAX], *vect_mapset;
 
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, hydrology");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("hydrology"));
+    G_add_keyword(_("cost surface"));
     module->description =
-	_("Traces a flow through an elevation model on a raster map.");
+	_("Traces a flow through an elevation model or cost surface on a raster map.");
 
-    opt1 = G_define_standard_option(G_OPT_R_ELEV);
-    opt1->key = "input";
-
-    opt3 = G_define_option();
-    opt3->key = "indir";
-    opt3->type = TYPE_STRING;
-    opt3->gisprompt = "old,cell,raster";
-    opt3->description =
-	_("Name of movement direction map associated with the cost surface");
-    opt3->required = NO;
+    opt1 = G_define_standard_option(G_OPT_R_INPUT);
+    opt1->description = _("Name of input elevation or cost surface raster map");
     
+    opt3 = G_define_standard_option(G_OPT_R_INPUT);
+    opt3->key = "indir";
+    opt3->description =
+	_("Name of input movement direction map associated with the cost surface");
+    opt3->required = NO;
+    opt3->guisection = _("Cost surface");
+
     opt2 = G_define_standard_option(G_OPT_R_OUTPUT);
     
-    opt4 = G_define_option();
-    opt4->key = "voutput";
-    opt4->type = TYPE_STRING;
-    opt4->gisprompt = "new,vector,vector";
+    opt4 = G_define_standard_option(G_OPT_V_OUTPUT);
+    opt4->key = "vector_output";
     opt4->required = NO;
-    opt4->description =
-	_("Output drain vector map (recommended for cost surface made using knight's move)");
-
-    coordopt = G_define_option();
-    coordopt->key = "coordinate";
-    coordopt->type = TYPE_STRING;
-    coordopt->required = NO;
-    coordopt->multiple = YES;
-    coordopt->key_desc = "x,y";
-    coordopt->description = _("Map coordinates of starting point(s) (E,N)");
+    opt4->label =
+        _("Name for output drain vector map");
+    opt4->description = _("Recommended for cost surface made using knight's move");
+    
+    coordopt = G_define_standard_option(G_OPT_M_COORDS);
+    coordopt->key = "start_coordinates";
+    coordopt->description = _("Coordinates of starting point(s) (E,N)");
     coordopt->guisection = _("Start");
 
     vpointopt = G_define_standard_option(G_OPT_V_INPUTS);
-    vpointopt->key = "vector_points";
+    vpointopt->key = "start_points";
     vpointopt->required = NO;
-    vpointopt->description = _("Name of vector map(s) containing starting point(s)");
+    vpointopt->label = _("Name of starting vector points map(s)");
+    vpointopt->description = NULL;
     vpointopt->guisection = _("Start");
 
     flag1 = G_define_flag();
@@ -152,15 +150,18 @@ int main(int argc, char **argv)
     flag2 = G_define_flag();
     flag2->key = 'a';
     flag2->description = _("Accumulate input values along the path");
+    flag2->guisection = _("Path settings");
 
     flag3 = G_define_flag();
     flag3->key = 'n';
     flag3->description = _("Count cell numbers along the path");
+    flag3->guisection = _("Path settings");
 
     flag4 = G_define_flag();
     flag4->key = 'd';
     flag4->description =
-	_("The input surface is a cost surface (if checked, a direction surface must also be specified");
+	_("The input raster map is a cost surface (direction surface must also be specified)");
+    flag4->guisection = _("Cost surface");
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
@@ -171,54 +172,35 @@ int main(int argc, char **argv)
 
     if (flag4->answer) {
 	costmode = 1;
-	G_message(_
-		  ("Directional drain selected... checking for direction raster"));
+	G_verbose_message(_("Directional drain selected... checking for direction raster map"));
     }
     else {
-	G_message(_("Surface/Hydrology drain selected"));
+	G_verbose_message(_("Surface/Hydrology drain selected"));
     }
 
     if (costmode == 1) {
 	if (!opt3->answer) {
-	    G_fatal_error(_
-			  ("Direction raster not specified, if direction flag is on, a direction raster must be given"));
+	    G_fatal_error(_("Direction raster map <%s> not specified, if direction flag is on, "
+                            "a direction raster must be given"), opt3->key);
 	}
 	strcpy(dir_name, opt3->answer);
-	dir_mapset = G_find_cell2(dir_name, "");
-	if (dir_mapset == NULL)
-	    G_fatal_error(_("Raster map <%s> not found"), dir_name);
-	else {
-	    G_message(_("Direction raster found <%s>"), dir_name);
-	}
-	dir_data_type = G_raster_map_type(dir_name, dir_mapset);
     }
     if (costmode == 0) {
 	if (opt3->answer) {
-	    G_fatal_error(_
-			  ("Direction map <%s> should not be specified for Surface/Hydrology drains"),
+	    G_fatal_error(_("Direction raster map <%s> should not be specified for Surface/Hydrology drains"),
 			  opt3->answer);
 	}
     }
 
     if (opt4->answer) {
-	G_message(_("Outputting a vector path"));
-	if (G_legal_filename(opt4->answer) < 0)
-	    G_fatal_error(_("<%s> is an illegal file name"), opt4->answer);
-	/*G_ask_vector_new("",vect); */
 	if (0 > Vect_open_new(&vout, opt4->answer, 0)) {
-	    G_fatal_error(_("Unable to create vector map <%s>"),
+            G_fatal_error(_("Unable to create vector map <%s>"),
 			  opt4->answer);
 	}
 	Vect_hist_command(&vout);
     }
-
-    /* get the name of the elevation map layer for filling */
-    map_mapset = G_find_cell(map_name, "");
-    if (!map_mapset)
-	G_fatal_error(_("Raster map <%s> not found"), map_name);
-
     /*      allocate cell buf for the map layer */
-    in_type = G_raster_map_type(map_name, map_mapset);
+    in_type = Rast_map_type(map_name, "");
 
     /* set the pointers for multi-typed functions */
     set_func_pointers(in_type);
@@ -236,25 +218,22 @@ int main(int argc, char **argv)
 
     /* get the window information  */
     G_get_window(&window);
-    nrows = G_window_rows();
-    ncols = G_window_cols();
-    if (opt4->answer) {
-	Points = Vect_new_line_struct();
-	Cats = Vect_new_cats_struct();
-    }
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
 
     /* calculate true cell resolution */
-    m = (struct metrics *)G_malloc(nrows * sizeof(struct metrics));
-
-    if (m == NULL)
-	G_fatal_error(_("Metrics allocation"));
+    m = (struct metrics *)G_malloc(nrows * sizeof(struct metrics));    
+    points_row = (int*)G_calloc(POINTS_INCREMENT, sizeof(int));
+    points_col = (int*)G_calloc(POINTS_INCREMENT, sizeof(int));
+    
+    increment_count = 1;
     npoints = 0;
     if (coordopt->answer) {
 	for (i = 0; coordopt->answers[i] != NULL; i += 2) {
 	    G_scan_easting(coordopt->answers[i], &east, G_projection());
 	    G_scan_northing(coordopt->answers[i + 1], &north, G_projection());
-	    start_col = (int)G_easting_to_col(east, &window);
-	    start_row = (int)G_northing_to_row(north, &window);
+	    start_col = (int)Rast_easting_to_col(east, &window);
+	    start_row = (int)Rast_northing_to_row(north, &window);
 
 	    if (start_row < 0 || start_row > nrows ||
 		start_col < 0 || start_col > ncols) {
@@ -265,38 +244,53 @@ int main(int argc, char **argv)
 	    points_row[npoints] = start_row;
 	    points_col[npoints] = start_col;
 	    npoints++;
-	    if (npoints >= MAX_POINTS)
-		G_fatal_error(_("Too many start points"));
+	    if (npoints == POINTS_INCREMENT * increment_count)
+	    {
+		increment_count++;
+		points_row = (int*)G_realloc(points_row, POINTS_INCREMENT * increment_count * sizeof(int));
+		points_col = (int*)G_realloc(points_col, POINTS_INCREMENT * increment_count * sizeof(int));
+	    }
 	    have_points = 1;
 	}
     }
-    if (vpointopt->answer) {
+    if (vpointopt->answers) {
 	for (i = 0; vpointopt->answers[i] != NULL; i++) {
-	    struct Map_info *fp;
+	    struct Map_info In;
+	    struct bound_box box;
+	    int type;
 
-	    /* struct start_pt  *new_start_pt; */
-	    Site *site = NULL;	/* pointer to Site */
-	    int dims, strs, dbls;
-	    RASTER_MAP_TYPE cat;
+	    Points = Vect_new_line_struct();
+	    Cats = Vect_new_cats_struct();
 
-	    search_mapset = G_find_sites(vpointopt->answers[i], "");
-	    if (search_mapset == NULL)
-		G_fatal_error(_("Vector map <%s> not found"),
-			      vpointopt->answers[i]);
+	    Vect_set_open_level(1); /* topology not required */
 
-	    fp = G_fopen_sites_old(vpointopt->answers[i], search_mapset);
+	    if (1 > Vect_open_old(&In, vpointopt->answers[i], ""))
+		G_fatal_error(_("Unable to open vector map <%s>"), vpointopt->answers[i]);
 
-	    if (0 != G_site_describe(fp, &dims, &cat, &strs, &dbls))
-		G_fatal_error(_("Failed to guess site file format"));
+	    G_message(_("Reading vector map <%s> with start points..."),
+                      Vect_get_full_name(&In));
+            
+	    Vect_rewind(&In);
 
-	    site = G_site_new_struct(cat, dims, strs, dbls);
+	    Vect_region_box(&window, &box);
 
-	    for (; (G_site_get(fp, site) != EOF);) {
-		if (!G_site_in_region(site, &window))
+	    while (1) {
+		/* register line */
+		type = Vect_read_next_line(&In, Points, Cats);
+
+		/* Note: check for dead lines is not needed, because they are skipped by V1_read_next_line_nat() */
+		if (type == -1) {
+		    G_warning(_("Unable to read vector map"));
+		    continue;
+		}
+		else if (type == -2) {
+		    break;
+		}
+		if (!Vect_point_in_box(Points->x[0], Points->y[0], 0, &box))
 		    continue;
 
-		start_col = (int)G_easting_to_col(site->east, &window);
-		start_row = (int)G_northing_to_row(site->north, &window);
+		start_col = (int)Rast_easting_to_col(Points->x[0], &window);
+		start_row = (int)Rast_northing_to_row(Points->y[0], &window);
 
 		/* effectively just a duplicate check to G_site_in_region() ??? */
 		if (start_row < 0 || start_row > nrows || start_col < 0 ||
@@ -306,16 +300,23 @@ int main(int argc, char **argv)
 		points_row[npoints] = start_row;
 		points_col[npoints] = start_col;
 		npoints++;
-		if (npoints >= MAX_POINTS)
-		    G_fatal_error(_("Too many start points"));
+		if (npoints == POINTS_INCREMENT * increment_count)
+		{
+		    increment_count++;
+		    points_row = (int*)G_realloc(points_row, POINTS_INCREMENT * increment_count * sizeof(int));
+		    points_col = (int*)G_realloc(points_col, POINTS_INCREMENT * increment_count * sizeof(int));
+		}
 		have_points = 1;
 	    }
+	    Vect_close(&In);
 
 	    /* only catches maps out of range until something is found, not after */
 	    if (!have_points) {
 		G_warning(_("Starting vector map <%s> contains no points in the current region"),
 			  vpointopt->answers[i]);
 	    }
+	    Vect_destroy_line_struct(Points);
+	    Vect_destroy_cats_struct(Cats);
 	}
     }
     if (have_points == 0)
@@ -363,7 +364,7 @@ int main(int argc, char **argv)
     in_buf = get_buf();
 
     /* open the original map and get its file id  */
-    map_id = G_open_cell_old(map_name, map_mapset);
+    map_id = Rast_open_old(map_name, "");
 
     /* get some temp files */
     tempfile1 = G_tempfile();
@@ -377,24 +378,24 @@ int main(int argc, char **argv)
 	get_row(map_id, in_buf, i);
 	write(fe, in_buf, bnd.sz);
     }
-    G_close_cell(map_id);
+    Rast_close(map_id);
 
     if (costmode == 1) {
-	dir_buf = G_allocate_d_raster_buf();
-	dir_id = G_open_cell_old(dir_name, dir_mapset);
+	dir_buf = Rast_allocate_d_buf();
+	dir_id = Rast_open_old(dir_name, "");
 	tempfile3 = G_tempfile();
 	dir_fd = open(tempfile3, O_RDWR | O_CREAT, 0666);
 
 	for (i = 0; i < nrows; i++) {
-	    G_get_d_raster_row(dir_id, dir_buf, i);
+	    Rast_get_d_row(dir_id, dir_buf, i);
 	    write(dir_fd, dir_buf, ncols * sizeof(DCELL));
 	}
-	G_close_cell(dir_id);
+	Rast_close(dir_id);
     }
 
     /* only necessary for non-dir drain */
     if (costmode == 0) {
-	G_verbose_message(_("Calculating flow directions..."));
+	G_message(_("Calculating flow directions..."));
 
 	/* fill one-cell pits and take a first stab at flow directions */
 	filldir(fe, fd, nrows, &bnd, m);
@@ -436,8 +437,8 @@ int main(int argc, char **argv)
 
 	/* Output will be a cell map */
 	/* open a new file and allocate an output buffer */
-	new_id = G_open_cell_new(new_map_name);
-	out_buf = G_allocate_c_raster_buf();
+	new_id = Rast_open_c_new(new_map_name);
+	out_buf = Rast_allocate_c_buf();
 
 	/* mark each cell */
 	thispoint = list;
@@ -463,25 +464,24 @@ int main(int argc, char **argv)
 	}
 
 	/* build the output map */
-	G_message(_("Writing raster map <%s>..."),
-		  new_map_name);
+	G_message(_("Writing output raster map..."));
 	for (i = 0; i < nrows; i++) {
 	    G_percent(i, nrows, 2);
-	    G_set_c_null_value(out_buf, ncols);
+	    Rast_set_c_null_value(out_buf, ncols);
 	    thispoint = list;
 	    while (thispoint->next != NULL) {
 		if (thispoint->row == i)
 		    out_buf[thispoint->col] = (int)thispoint->value;
 		thispoint = thispoint->next;
 	    }
-	    G_put_c_raster_row(new_id, out_buf);
+	    Rast_put_c_row(new_id, out_buf);
 	}
 	G_percent(1, 1, 1);
     }
     else {			/* mode = 1 or 2 */
 	/* Output will be of the same type as input */
 	/* open a new file and allocate an output buffer */
-	new_id = G_open_raster_new(new_map_name, in_type);
+	new_id = Rast_open_new(new_map_name, in_type);
 	out_buf = get_buf();
 	bsz = ncols * bpe();
 
@@ -535,6 +535,8 @@ int main(int argc, char **argv)
 
     /* Output a vector path */
     if (opt4->answer) {
+	Points = Vect_new_line_struct();
+	Cats = Vect_new_cats_struct();
 	/* Need to modify for multiple paths */
 	thispoint = list;
 	i = 1;
@@ -566,13 +568,13 @@ int main(int argc, char **argv)
     }
 
     /* close files and free buffers */
-    G_close_cell(new_id);
+    Rast_close(new_id);
 
-    G_put_cell_title(new_map_name, "Surface flow trace");
+    Rast_put_cell_title(new_map_name, "Surface flow trace");
 
-    G_short_history(new_map_name, "raster", &history);
-    G_command_history(&history);
-    G_write_history(new_map_name, &history);
+    Rast_short_history(new_map_name, "raster", &history);
+    Rast_command_history(&history);
+    Rast_write_history(new_map_name, &history);
 
     close(fe);
     close(fd);
@@ -581,13 +583,16 @@ int main(int argc, char **argv)
     unlink(tempfile2);
     G_free(in_buf);
     G_free(out_buf);
+    if(points_row)
+	G_free(points_row);
+    if(points_col)
+	G_free(points_col);
 
     if (costmode == 1) {
 	close(dir_fd);
 	unlink(tempfile3);
 	G_free(dir_buf);
     }
-    G_done_msg(" ");
     
     exit(EXIT_SUCCESS);
 }
@@ -598,7 +603,7 @@ struct point *drain(int fd, struct point *list, int nrow, int ncol)
     CELL direction;
     CELL *dir;
 
-    dir = G_allocate_c_raster_buf();
+    dir = Rast_allocate_c_buf();
     next_row = list->row;
     next_col = list->col;
 
@@ -660,11 +665,11 @@ struct point *drain_cost(int dir_fd, struct point *list, int nrow, int ncol)
      * read next. This is repeated via a while loop until a null direction is found.
      */
 
-    int neighbour, row, col, next_row, next_col, go = 1;
+    int neighbour, next_row, next_col, go = 1;
     DCELL direction;
     DCELL *dir_buf;
 
-    dir_buf = G_allocate_d_raster_buf();
+    dir_buf = Rast_allocate_d_buf();
 
     next_row = list->row;
     next_col = list->col;
@@ -684,69 +689,69 @@ struct point *drain_cost(int dir_fd, struct point *list, int nrow, int ncol)
 	    G_message(_("direction read: %lf, neighbour found: %i"),
 		      direction, neighbour);
 	switch (neighbour) {
-	case 1800:
-	    next_row = list->row;
-	    next_col = list->col + 1;
-	    break;
-	case 0:
-	    next_row = list->row;
-	    next_col = list->col - 1;
-	    break;
-	case 900:
-	    next_row = list->row + 1;
-	    next_col = list->col;
-	    break;
-	case 2700:
+	case 225: /* ENE */
 	    next_row = list->row - 1;
-	    next_col = list->col;
+	    next_col = list->col + 2;
 	    break;
-	case 1350:
-	    next_col = list->col + 1;
-	    next_row = list->row + 1;
-	    break;
-	case 450:
-	    next_col = list->col - 1;
-	    next_row = list->row + 1;
-	    break;
-	case 3150:
-	    next_row = list->row - 1;
-	    next_col = list->col - 1;
-	    break;
-	case 2250:
+	case 450: /* NE */
 	    next_row = list->row - 1;
 	    next_col = list->col + 1;
 	    break;
-	case 1125:
-	    next_row = list->row + 2;
-	    next_col = list->col + 1;
-	    break;
-	case 675:
-	    next_row = list->row + 2;
-	    next_col = list->col - 1;
-	    break;
-	case 2925:
-	    next_row = list->row - 2;
-	    next_col = list->col - 1;
-	    break;
-	case 2475:
+	case 675: /* NNE */
 	    next_row = list->row - 2;
 	    next_col = list->col + 1;
 	    break;
-	case 1575:
-	    next_row = list->row + 1;
-	    next_col = list->col + 2;
+	case 900: /* N */
+	    next_row = list->row - 1;
+	    next_col = list->col;
 	    break;
-	case 225:
+	case 1125: /* NNW */
+	    next_row = list->row - 2;
+	    next_col = list->col - 1;
+	    break;
+	case 1350: /* NW */
+	    next_col = list->col - 1;
+	    next_row = list->row - 1;
+	    break;
+	case 1575: /* WNW */
+	    next_col = list->col - 2;
+	    next_row = list->row - 1;
+	    break;
+	case 1800: /* W*/
+	    next_row = list->row;
+	    next_col = list->col - 1;
+	    break;
+	case 2025: /* WSW */
 	    next_row = list->row + 1;
 	    next_col = list->col - 2;
 	    break;
-	case 3375:
-	    next_row = list->row - 1;
-	    next_col = list->col - 2;
+	case 2250: /* SW */
+	    next_row = list->row + 1;
+	    next_col = list->col - 1;
 	    break;
-	case 2025:
-	    next_row = list->row - 1;
+	case 2475: /* SSW */
+	    next_row = list->row + 2;
+	    next_col = list->col - 1;
+	    break;
+	case 2700: /* S */
+	    next_row = list->row + 1;
+	    next_col = list->col;
+	    break;
+	case 2925: /* SSE */
+	    next_row = list->row + 2;
+	    next_col = list->col + 1;
+	    break;
+	case 3150: /* SE */
+	    next_row = list->row + 1;
+	    next_col = list->col + 1;
+	    break;
+	case 3375: /* ESE */
+	    next_row = list->row + 1;
 	    next_col = list->col + 2;
+	    break;
+	case 3600: /* E */
+	    next_row = list->row;
+	    next_col = list->col + 1;
 	    break;
 	    /* default:
 	       break;

@@ -1,15 +1,18 @@
+
 MODULE_TOPDIR = ../..
 
 PGM = g.mapsets
-GUI = $(GISBASE)/etc/g.mapsets.tcl
+GUI = $(ETC)/gui/scripts/g.mapsets_picker.py
 
-LIBES     = $(GISLIB)
-DEPENDENCIES= $(GISDEP)
+LIBES = $(GISLIB)
+DEPENDENCIES = $(GISDEP)
 
 include $(MODULE_TOPDIR)/include/Make/Module.make
 
 default: cmd $(GUI)
 
-$(GUI): g.mapsets.tcl
-	if [ ! -d $(GISBASE)/etc ]; then $(MKDIR) $(GISBASE)/etc; fi
-	$(INSTALL) g.mapsets.tcl $(GUI)
+$(ETC)/gui/scripts/%: % | $(ETC)/gui/scripts
+	$(INSTALL) $< $@
+
+$(ETC)/gui/scripts:
+	$(MKDIR) $@

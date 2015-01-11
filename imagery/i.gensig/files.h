@@ -7,7 +7,7 @@ struct files
     struct Categories training_labels;
 
     int *band_fd;
-    CELL **band_cell;
+    DCELL **band_cell;
     int nbands;
 };
 int closefiles(struct files *);
@@ -17,6 +17,6 @@ int compute_means(struct files *, struct Signature *);
 int read_training_map(CELL *, int, int, struct files *);
 
 #ifdef _l_parms_h
-int read_training_labels(struct parms *, struct files *);
+void read_training_labels(struct parms *, struct files *);
 int openfiles(struct parms *, struct files *);
 #endif

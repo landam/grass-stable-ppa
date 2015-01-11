@@ -2,26 +2,115 @@
 #include <unistd.h>
 #include <math.h>
 #include <grass/gis.h>
-#include <grass/raster.h>
 #include <grass/display.h>
 #include <grass/colors.h>
-#include <grass/Vect.h>
-#include <grass/form.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 #include "what.h"
+
+/* TODO: remove leftover from interactive querying */
 static int nlines = 50;
 
 #define WDTH 5
+#define SEP "------------------------------------------------------------------"
 
-int what(double east, double north, double maxdist, int width,
-	 int mwidth, int topo, int showextra, int script)
+static void F_generate(const char *drvname, const char *dbname,
+		       const char *tblname, const char *key, int keyval,
+		       char **form)
+{
+    int col, ncols, sqltype, more;
+    char buf[5000];
+    const char *colname;
+    dbString sql, html, str;
+    dbDriver *driver;
+    dbHandle handle;
+    dbCursor cursor;
+    dbTable *table;
+    dbColumn *column;
+    dbValue *value;
+
+    G_debug(2,
+	    "F_generate(): drvname = '%s', dbname = '%s', tblname = '%s', key = '%s', keyval = %d",
+	    drvname, dbname, tblname, key, keyval);
+
+    db_init_string(&sql);
+    db_init_string(&html);	/* here is the result stored */
+    db_init_string(&str);
+
+    G_debug(2, "Open driver");
+    driver = db_start_driver(drvname);
+    if (!driver)
+	G_fatal_error("Cannot open driver");
+
+    G_debug(2, "Driver opened");
+
+    db_init_handle(&handle);
+    db_set_handle(&handle, dbname, NULL);
+    G_debug(2, "Open database");
+    if (db_open_database(driver, &handle) != DB_OK)
+	G_fatal_error("Cannot open database");
+
+    G_debug(2, "Database opened");
+
+    /* TODO: test if table exist first, but this should be tested by application befor
+     *        F_generate() is called, because it may be correct (connection defined in DB
+     *        but table does not exist) */
+
+    sprintf(buf, "select * from %s where %s = %d", tblname, key, keyval);
+    G_debug(2, "%s", buf);
+    db_set_string(&sql, buf);
+    if (db_open_select_cursor(driver, &sql, &cursor, DB_SEQUENTIAL) != DB_OK)
+	G_fatal_error("Cannot open select cursor");
+
+    G_debug(2, "Select Cursor opened");
+
+    table = db_get_cursor_table(&cursor);
+
+    if (db_fetch(&cursor, DB_NEXT, &more) != DB_OK)
+	G_fatal_error("Cannot fetch next record");
+
+    if (!more) {
+	G_warning("No database record");
+	*form = G_store("No record selected.");
+    }
+    else {
+	ncols = db_get_table_number_of_columns(table);
+
+	/* Start form */
+	for (col = 0; col < ncols; col++) {
+	    column = db_get_table_column(table, col);
+	    sqltype = db_get_column_sqltype(column);
+	    value = db_get_column_value(column);
+	    db_convert_value_to_string(value, sqltype, &str);
+	    colname = db_get_column_name(column);
+
+	    G_debug(2, "%s: %s", colname, db_get_string(&str));
+
+	    sprintf(buf, "%s : %s\n", colname, db_get_string(&str));
+	    db_append_string(&html, buf);
+	}
+    }
+    G_debug(2, "FORM STRING:%s", db_get_string(&html));
+
+    db_close_cursor(&cursor);
+    db_close_database(driver);
+    db_shutdown_driver(driver);
+
+    *form = G_store(db_get_string(&html));
+
+    db_free_string(&sql);
+    db_free_string(&html);
+    db_free_string(&str);
+}
+
+void what(struct Map_info *Map, int nvects, char **vect, double east, double north,
+          double maxdist, int qtype, int topo, int showextra, int script, int *field)
 {
     int type;
     char east_buf[40], north_buf[40];
     double sq_meters, sqm_to_sqft, acres, hectares, sq_miles;
     double z, l;
-    int notty = 0;
     int getz;
     struct field_info *Fi;
     plus_t line, area, centroid;
@@ -48,21 +137,27 @@ int what(double east, double north, double maxdist, int width,
 	getz = 0;
 	z = 0;
 	l = 0;
+	line = 0;
 
 	Vect_reset_cats(Cats);
 	Vect_reset_line(Points);
 
 	/* Try to find point first and only if no one was found try lines,
 	 *  otherwise point on line could not be selected and similarly for areas */
-	line =
-	    Vect_find_line(&Map[i], east, north, 0.0, GV_POINT | GV_CENTROID,
-			   maxdist, 0, 0);
-	if (line == 0) {
+	
+	type = (GV_POINTS & qtype);
+	if (type) {
+	    line =
+		Vect_find_line(&Map[i], east, north, 0.0, type,
+			       maxdist, 0, 0);
+	}
+	type = ((GV_LINE | GV_BOUNDARY | GV_FACE) & qtype);
+	if (line == 0 && type) {
 	    line = Vect_find_line(&Map[i], east, north, 0.0,
-				  GV_LINE | GV_BOUNDARY | GV_FACE, maxdist, 0, 0);
+				  type, maxdist, 0, 0);
 	}
 
-	if (line == 0) {
+	if (line == 0 && (qtype & GV_AREA)) {
 	    area = Vect_find_area(&Map[i], east, north);
 	    getz = Vect_tin_get_z(&Map[i], east, north, &z, NULL, NULL);
 	}
@@ -78,12 +173,9 @@ int what(double east, double north, double maxdist, int width,
 			    north_buf);
 		}
 		else {
-		    fprintf(stdout, "\nEast: %s\nNorth: %s\n", east_buf,
+		    fprintf(stdout, "East: %s\nNorth: %s\n", east_buf,
 			    north_buf);
 		}
-		if (notty)
-		    fprintf(stderr, "\nEast: %s\nNorth: %s\n", east_buf,
-			    north_buf);
 	    }
 	    nlines++;
 	}
@@ -92,26 +184,21 @@ int what(double east, double north, double maxdist, int width,
 	if ((str = strchr(buf, '@')))
 	    *str = 0;
 
-	if (line + area > 0 || G_verbose() >= G_verbose_std()) {
-	    if (script) {
-		fprintf(stdout, "Map=%s\nMapset=%s\n", Map[i].name,
-			Map[i].mapset);
-	    }
-	    else {
-		fprintf(stdout, "\nMap: %s \nMapset: %s\n", Map[i].name,
-			Map[i].mapset);
-	    }
-	    if (notty)
-		fprintf(stderr, "\nMap: %s \nMapset: %s\n", Map[i].name,
-			Map[i].mapset);
+	if (script) {
+	    fprintf(stdout, "\nMap=%s\nMapset=%s\n", Map[i].name,
+		    Map[i].mapset);
 	}
+	else {
+	    fprintf(stdout, "%s", SEP);
+	    fprintf(stdout, "\nMap: %s \nMapset: %s\n", Map[i].name,
+		    Map[i].mapset);
+	}
+	
 	nlines++;
 
 	if (line + area == 0) {
-	    if (line + area > 0 || G_verbose() >= G_verbose_std()) {
+	    if (!script) {
 		fprintf(stdout, _("Nothing Found.\n"));
-		if (notty)
-		    fprintf(stderr, _("Nothing Found.\n"));
 	    }
 	    nlines++;
 	    continue;
@@ -119,24 +206,28 @@ int what(double east, double north, double maxdist, int width,
 
 	if (line > 0) {
 	    type = Vect_read_line(&Map[i], Points, Cats, line);
+
+	    if (field[i] != -1 && !Vect_cat_get(Cats, field[i], NULL))
+	      continue;
+	    
 	    switch (type) {
 	    case GV_POINT:
-		sprintf(buf, "Point\n");
+		sprintf(buf, "Point");
 		break;
 	    case GV_LINE:
-		sprintf(buf, "Line\n");
+		sprintf(buf, "Line");
 		break;
 	    case GV_BOUNDARY:
-		sprintf(buf, "Boundary\n");
+		sprintf(buf, "Boundary");
 		break;
 	    case GV_FACE:
-		sprintf(buf, "Face\n");
+		sprintf(buf, "Face");
 		break;
 	    case GV_CENTROID:
-		sprintf(buf, "Centroid\n");
+		sprintf(buf, "Centroid");
 		break;
 	    default:
-		sprintf(buf, "Unknown\n");
+		sprintf(buf, "Unknown");
 	    }
 	    if (type & GV_LINES) {
 		if (G_projection() == 3)
@@ -150,7 +241,10 @@ int what(double east, double north, double maxdist, int width,
 		int n, node[2], nnodes, nnlines, nli, nodeline, left, right;
 		float angle;
 
-		Vect_get_line_areas(&(Map[i]), line, &left, &right);
+		if (type & GV_BOUNDARY)
+		    Vect_get_line_areas(&(Map[i]), line, &left, &right);
+		else
+		    left = right = 0;
 		if (script) {
 		    fprintf(stdout, "Feature_max_distance=%f\n", maxdist);
 		    fprintf(stdout,
@@ -169,12 +263,13 @@ int what(double east, double north, double maxdist, int width,
 		    fprintf(stdout, _("Length: %f\n"), l);
 		}
 		else {		/* points */
-		    nnodes = 1;
+		    nnodes = 0;
 		    if (!script)
 			fprintf(stdout, "\n");
 		}
 
-		Vect_get_line_nodes(&(Map[i]), line, &node[0], &node[1]);
+		if (nnodes > 0)
+		    Vect_get_line_nodes(&(Map[i]), line, &node[0], &node[1]);
 
 		for (n = 0; n < nnodes; n++) {
 		    double nx, ny, nz;
@@ -218,7 +313,7 @@ int what(double east, double north, double maxdist, int width,
 			fprintf(stdout, "Length=%f\n", l);
 		}
 		else {
-		    fprintf(stdout, _("Type: %s"), buf);
+		    fprintf(stdout, _("Type: %s\n"), buf);
 		    fprintf(stdout, _("Id: %d\n"), line);
 		    if (type & GV_LINES)
 			fprintf(stdout, _("Length: %f\n"), l);
@@ -348,14 +443,6 @@ int what(double east, double north, double maxdist, int width,
 		    fprintf(stdout, _("Acres: %.3f\nSq Miles: %.4f\n"),
 			    acres, sq_miles);
 		}
-		if (notty) {
-		    fprintf(stderr,
-			    _("Sq Meters: %.3f\nHectares: %.3f\n"),
-			    sq_meters, hectares);
-		    fprintf(stderr,
-			    _("Acres: %.3f\nSq Miles: %.4f\n"),
-			    acres, sq_miles);
-		}
 		nlines += 3;
 	    }
 	    centroid = Vect_get_area_centroid(&Map[i], area);
@@ -381,8 +468,6 @@ int what(double east, double north, double maxdist, int width,
 		}
 		Fi = Vect_get_field(&(Map[i]), Cats->field[j]);
 		if (Fi != NULL && showextra) {
-		    int format = F_TXT, edit_mode = F_VIEW;
-
 		    if (script) {
 			fprintf(stdout,
 				"Driver=%s\nDatabase=%s\nTable=%s\nKey_column=%s\n",
@@ -394,8 +479,7 @@ int what(double east, double north, double maxdist, int width,
 				Fi->driver, Fi->database, Fi->table, Fi->key);
 		    }
 		    F_generate(Fi->driver, Fi->database, Fi->table,
-			       Fi->key, Cats->cat[j], NULL, NULL,
-			       edit_mode, format, &form);
+			       Fi->key, Cats->cat[j], &form);
 
 		    if (script) {
 			formbuf1 = G_str_replace(form, " : ", "=");
@@ -414,6 +498,4 @@ int what(double east, double north, double maxdist, int width,
     }				/* for nvects */
 
     fflush(stdout);
-
-    return 0;
 }

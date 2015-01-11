@@ -3,8 +3,9 @@
 #include <unistd.h>
 #include <string.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/dbmi.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 
 /* *  convert dig_cats to database table
@@ -13,7 +14,7 @@
 int attributes(char *in, struct Map_info *Out)
 {
     int i, cat, count;
-    char *mapset;
+    const char *mapset;
     struct Categories Cats;
     char buf[1024];
     dbString sql, lab;
@@ -37,13 +38,13 @@ int attributes(char *in, struct Map_info *Out)
 	return 0;
     }
 
-    if (G_read_vector_cats(in, mapset, &Cats) == -1) {
+    if (Rast_read_vector_cats(in, mapset, &Cats) == -1) {
 	G_warning(_("Unable to open dig_cats file"));
 	return -1;
     }
 
     fi = Vect_default_field_info(Out, 1, NULL, GV_1TABLE);
-    Vect_map_add_dblink(Out, 1, NULL, fi->table, "cat", fi->database,
+    Vect_map_add_dblink(Out, 1, NULL, fi->table, GV_KEY_COLUMN, fi->database,
 			fi->driver);
 
     /* Get maximum column length */
@@ -81,9 +82,9 @@ int attributes(char *in, struct Map_info *Out)
 		      db_get_string(&sql));
     }
 
-    if (db_create_index2(driver, fi->table, "cat") != DB_OK)
+    if (db_create_index2(driver, fi->table, GV_KEY_COLUMN) != DB_OK)
 	G_warning(_("Unable to create index for table <%s>, key <%s>"),
-		  fi->table, "cat");
+		  fi->table, GV_KEY_COLUMN);
 
     if (db_grant_on_table
 	(driver, fi->table, DB_PRIV_SELECT, DB_GROUP | DB_PUBLIC) != DB_OK)

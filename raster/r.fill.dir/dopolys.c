@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 void recurse_list(int flag, int *cells, int sz, int start)
@@ -54,7 +55,7 @@ int dopolys(int fd, int fm, int nl, int ns)
     for (i = 1; i < nl - 1; i += 1) {
 	read(fd, dir, bufsz);
 	for (j = 1; j < ns - 1; j += 1) {
-	    if (G_is_c_null_value(&dir[j]) || dir[j] >= 0)
+	    if (Rast_is_c_null_value(&dir[j]) || dir[j] >= 0)
 		continue;
 	    cells[found++] = i;
 	    cells[found++] = j;
@@ -80,7 +81,8 @@ int dopolys(int fd, int fm, int nl, int ns)
 	    recurse_list(flag, cells, found, i);
 	}
     }
-    G_message(_("Found %d unresolved areas"), flag);
+    G_message(_n("Found %d unresolved area", 
+        "Found %d unresolved areas", flag), flag);
 
     /* Compose a new raster map to contain the resulting assignments */
     lseek(fm, 0, SEEK_SET);

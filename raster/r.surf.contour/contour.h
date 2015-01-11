@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <math.h>
-#include <grass/gis.h>
+#include <grass/raster.h>
 #include "flag.h"
-#include "seg.h"
 
 #define NODE		struct _n_o_d_e_
 #define INIT_AR		64
@@ -17,34 +16,27 @@ NODE {
     double d;
 };
 
-#ifdef MAIN
-#define GLOBAL
-#else
-#define GLOBAL extern
-#endif
-
-GLOBAL int nrows;
-GLOBAL int ncols;
-GLOBAL int minc;
-GLOBAL int minr;
-GLOBAL int maxc;
-GLOBAL int maxr;
-GLOBAL int array_size;
-GLOBAL double i_val_l_f;
-GLOBAL DSEG con;
-GLOBAL FLAG *seen, *mask;
-GLOBAL BSEG bseen, bmask;
-GLOBAL NODE *zero;
-GLOBAL char on, off;
+extern int nrows;
+extern int ncols;
+extern int minc;
+extern int minr;
+extern int maxc;
+extern int maxr;
+extern int array_size;
+extern double i_val_l_f;
+extern DCELL **con;
+extern FLAG *seen, *mask;
+extern NODE *zero;
 
 /* add_in.c */
-NODE *add_in_slow(int, int, int, int, NODE *, int *);
 NODE *add_in(int, int, int, int, NODE *, int *);
 
 /* addpts.c */
-NODE *addpts_slow(NODE *, int, int, int, int, int *);
 NODE *addpts(NODE *, int, int, int, int, int *);
 
 /* find_con.c */
-int find_con_slow(int, int, double *, double *, DCELL *, DCELL *);
 int find_con(int, int, double *, double *, DCELL *, DCELL *);
+
+/* read_cell.c */
+DCELL **read_cell(const char *);
+void free_cell(DCELL **);

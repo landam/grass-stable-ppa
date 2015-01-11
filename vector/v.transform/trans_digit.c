@@ -1,25 +1,5 @@
-/* **************************************************************************
- *
- * MODULE:       v.transform
- * AUTHOR(S):    See other files as well...
- *               Eric G. Miller <egm2@jps.net>
- *               Radim Blazek
- *               DB support added by Martin Landa (08/2007)
- *
- * PURPOSE:      To transform a vector layer's coordinates via a set of tie
- *               points.
- *
- * COPYRIGHT:    (C) 2002-2007 by the GRASS Development Team
- *
- *               This program is free software under the GNU General Public
- *              License (>=v2). Read the file COPYING that comes with GRASS
- *              for details.
- *
- *****************************************************************************/
-
 #include <math.h>
-#include <grass/libtrans.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/gis.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
@@ -27,12 +7,12 @@
 
 #define PI M_PI
 
-int
-transform_digit_file(struct Map_info *Old, struct Map_info *New,
-		     int shift_file, double ztozero, int swap, double *trans_params_def,
-		     char *table, char **columns, int field)
+int transform_digit_file(struct Map_info *Old, struct Map_info *New,
+			 double ztozero, int swap, double *trans_params_def,
+			 char **columns, int field)
 {
-    int i, type, cat, ret;
+    int i, type, cat, line, ret;
+    int verbose, format;
     unsigned int j;
     double *trans_params;
     double ang, x, y;
@@ -50,14 +30,10 @@ transform_digit_file(struct Map_info *Old, struct Map_info *New,
     Points = Vect_new_line_struct();
     Cats = Vect_new_cats_struct();
 
-    if (table || field > 0) {
-	if (table) {
-	    fi = Vect_default_field_info(Old, 1, NULL, GV_1TABLE);
-	    fi->table = table;
-	}
-	else
-	    fi = Vect_get_field(Old, field);
-	
+    driver = NULL;
+    fi = NULL;
+    if (field > 0) {
+	fi = Vect_get_field(Old, field);
 
 	driver = db_start_driver_open_database(fi->driver, fi->database);
 	if (!driver)
@@ -69,12 +45,13 @@ transform_digit_file(struct Map_info *Old, struct Map_info *New,
     else {
 	trans_params = trans_params_def;
 	ang = PI * trans_params[IDX_ZROT] / 180;
-	fi = NULL;
-	driver = NULL;
     }
 
+    line = 0;
     ret = 1;
-    while (1) {
+    format = G_info_format();
+    verbose = G_verbose() > G_verbose_min();
+    while (TRUE) {
 	type = Vect_read_next_line(Old, Points, Cats);
 
 	if (type == -1)	{	/* error */
@@ -87,6 +64,16 @@ transform_digit_file(struct Map_info *Old, struct Map_info *New,
 	    break;
 	}
 
+	if (field != -1 && !Vect_cat_get(Cats, field, NULL))
+	    continue;
+	
+	if (verbose && line % 1000 == 0) {
+	    if (format == G_INFO_FORMAT_PLAIN)
+		fprintf(stderr, "%d..", line);
+	    else
+		fprintf(stderr, "%11d\b\b\b\b\b\b\b\b\b\b\b", line);
+	}
+	
 	if (swap) {
 	    for (i = 0; i < Points->n_points; i++) {
 		x = Points->x[i];
@@ -144,28 +131,22 @@ transform_digit_file(struct Map_info *Old, struct Map_info *New,
 
 	/* transform points */
 	for (i = 0; i < Points->n_points; i++) {
-	    if (shift_file) {
-		transform_a_into_b(Points->x[i], Points->y[i],
-				   &(Points->x[i]), &(Points->y[i]));
-	    }
-	    else {
-		G_debug(3, "idx=%d, cat=%d, xshift=%g, yshift=%g, zshift=%g, "
-			"xscale=%g, yscale=%g, zscale=%g, zrot=%g",
-			i, cat, trans_params[IDX_XSHIFT],
-			trans_params[IDX_YSHIFT], trans_params[IDX_ZSHIFT],
-			trans_params[IDX_XSCALE], trans_params[IDX_YSCALE],
-			trans_params[IDX_ZSCALE], trans_params[IDX_ZROT]);
+	    G_debug(3, "idx=%d, cat=%d, xshift=%g, yshift=%g, zshift=%g, "
+		    "xscale=%g, yscale=%g, zscale=%g, zrot=%g",
+		    i, cat, trans_params[IDX_XSHIFT],
+		    trans_params[IDX_YSHIFT], trans_params[IDX_ZSHIFT],
+		    trans_params[IDX_XSCALE], trans_params[IDX_YSCALE],
+		    trans_params[IDX_ZSCALE], trans_params[IDX_ZROT]);
 
-		/* transform point */
-		x = trans_params[IDX_XSHIFT] +
-		    trans_params[IDX_XSCALE] * Points->x[i] * cos(ang)
-		    - trans_params[IDX_YSCALE] * Points->y[i] * sin(ang);
-		y = trans_params[IDX_YSHIFT] +
-		    trans_params[IDX_XSCALE] * Points->x[i] * sin(ang)
-		    + trans_params[IDX_YSCALE] * Points->y[i] * cos(ang);
-		Points->x[i] = x;
-		Points->y[i] = y;
-	    }
+	    /* transform point */
+	    x = trans_params[IDX_XSHIFT] +
+		trans_params[IDX_XSCALE] * Points->x[i] * cos(ang)
+		- trans_params[IDX_YSCALE] * Points->y[i] * sin(ang);
+	    y = trans_params[IDX_YSHIFT] +
+		trans_params[IDX_XSCALE] * Points->x[i] * sin(ang)
+		+ trans_params[IDX_YSCALE] * Points->y[i] * cos(ang);
+	    Points->x[i] = x;
+	    Points->y[i] = y;
 
 	    /* ztozero shifts oldmap z to zero, zshift shifts rescaled object
 	     * to target elevation: */
@@ -175,8 +156,12 @@ transform_digit_file(struct Map_info *Old, struct Map_info *New,
 	}
 
 	Vect_write_line(New, type, Points, Cats);
+	line++;
     }
 
+    if (verbose && format != G_INFO_FORMAT_PLAIN)
+	fprintf(stderr, "\r");
+    
     if (field > 0) {
 	db_close_database_shutdown_driver(driver);
 	G_free((void *)trans_params);

@@ -9,9 +9,9 @@
 #define RAD2DEG(a) ((a) * 180.0 / M_PI)
 
 
-int print_window(struct Cell_head *window, int print_flag)
+void print_window(struct Cell_head *window, int print_flag)
 {
-    char *prj, *datum, *ellps;
+    const char *prj, *datum, *ellps;
     int x, width = 11;
 
     char north[30], south[30], east[30], west[30], nsres[30], ewres[30],
@@ -783,6 +783,4 @@ int print_window(struct Cell_head *window, int print_flag)
 	    G_warning(_("Lat/Long calculations are not possible from a simple XY system"));
 	}
     }
-
-    return 0;
 }

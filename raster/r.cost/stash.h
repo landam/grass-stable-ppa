@@ -13,7 +13,7 @@
  *               input raster map layer whose cell category values
  *               represent cost.
  *
- * COPYRIGHT:    (C) 2006 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2006-2009 by the GRASS Development Team
  *
  *               This program is free software under the GNU General Public
  *               License (>=v2). Read the file COPYING that comes with GRASS
@@ -35,38 +35,14 @@ struct start_pt
 {
     int row;
     int col;
+    int value;
     struct start_pt *next;
 };
-
-#ifdef MAIN
-
-struct variables
-{
-    char *alias;
-    int position;
-}
-
-variables[] = {
-    {
-    "output", CUM_COST_LAYER}, {
-    "input", COST_LAYER}, {
-    "coor", START_PT}, {
-    "outdir", MOVE_DIR_LAYER}
-};
-
-char cum_cost_layer[GNAME_MAX], move_dir_layer[GNAME_MAX];
-char cost_layer[GNAME_MAX];
-struct start_pt *head_start_pt = NULL;
-struct start_pt *head_end_pt = NULL;
-
-#else
 
 extern char cum_cost_layer[], move_dir_layer[];
 extern char cost_layer[];
 extern struct start_pt *head_start_pt;
 extern struct start_pt *head_end_pt;
-
-#endif
 
 int process_answers(char **, struct start_pt **, struct start_pt **);
 int time_to_stop(int, int);

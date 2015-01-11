@@ -104,10 +104,10 @@ int main(int argc, char *argv[])
 static int find(FILE * fd, char *element)
 {
     int len1 = 0, len2 = 0;
-    char *mapset;
+    const char *mapset;
     int n;
 
-    fseek(fd, 0L, SEEK_SET);
+    G_fseek(fd, 0L, SEEK_SET);
     fwrite(&len1, sizeof(len1), 1L, fd);
     fwrite(&len2, sizeof(len2), 1L, fd);
 
@@ -117,7 +117,7 @@ static int find(FILE * fd, char *element)
 	struct dirent *dp;
 	DIR *dfd;
 
-	G__file_name(dir, element, "", mapset);
+	G_file_name(dir, element, "", mapset);
 	if ((dfd = opendir(dir)) == NULL)
 	    continue;
 
@@ -141,7 +141,7 @@ static int find(FILE * fd, char *element)
 	return 0;
 
     fflush(fd);
-    fseek(fd, 0L, SEEK_SET);
+    G_fseek(fd, 0L, SEEK_SET);
     fwrite(&len1, sizeof(len1), 1L, fd);
     fwrite(&len2, sizeof(len2), 1L, fd);
 

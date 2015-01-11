@@ -35,9 +35,44 @@ Further modifications tracked by CVS
 #include <stdlib.h>
 #include <math.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
-#define MAIN
 #include "main.h"
+
+struct Cell_head window;
+CELL *cell, *mask;
+double *rowlook, *collook, *lat_diff,	/* distances between latitudes */
+  ew2;
+
+short ll;			/* TRUE if latitude-longitude projection */
+
+/* function pointers for LL function substitutes */
+
+int first_west(EW *, SHORT);
+int first_west_LL(EW *, SHORT);
+int (*init_row_search) (EW *, SHORT);	/* function pointer */
+
+int completed_row(EW *);
+int completed_row_LL(EW *);
+
+ /* function pointer */
+int (*comp_row_search) (EW *);
+
+int find_neighbors(EW *, NEIGHBOR *, SHORT, SHORT, int, SHORT *);
+int find_neighbors_LL(EW *, NEIGHBOR *, SHORT, SHORT, int, SHORT *);
+
+ /* function pointer */
+int (*locate_neighbors) (EW *, NEIGHBOR *, SHORT, SHORT, int, SHORT *);
+
+int exhaust_search(EW *, NEIGHBOR *, SHORT, SHORT);
+int exhaust_search_LL(EW *, NEIGHBOR *, SHORT, SHORT);
+
+/* function pointer */
+int (*exhaust_row) (EW *, NEIGHBOR *, SHORT, SHORT);
+
+double offset_distance(SHORT);
+double offset_distance_LL(SHORT);
+double (*check_offset) (SHORT);	/* function pointer */
 
 static int error_flag = 0;
 static char *input;
@@ -45,7 +80,6 @@ static char *output;
 
 int main(int argc, char **argv)
 {
-    char *layer_mapset, *current_mapset;
     MELEMENT *rowlist;
     SHORT nrows, ncols;
     SHORT datarows;
@@ -66,7 +100,10 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, interpolation");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("surface"));
+    G_add_keyword(_("interpolation"));
+    G_add_keyword(_("IDW"));
     module->description =
 	_("Surface interpolation utility for raster map.");
 
@@ -97,54 +134,39 @@ int main(int argc, char **argv)
     input = parm.input->answer;
     output = parm.output->answer;
 
-    current_mapset = G_mapset();
-
     /*  Get database window parameters                              */
     G_get_window(&window);
 
-    /* Make sure layer_map is available                                     */
-    layer_mapset = G_find_cell(input, "");
-    if (layer_mapset == NULL)
-	G_fatal_error(_("Raster map <%s> not found"), input);
-
-    /* check if specified output layer name is legal                */
-    if (G_legal_filename(output) < 0)
-	G_fatal_error(_("<%s> is an illegal file name"), output);
-
     /*  find number of rows and columns in window                   */
-    nrows = G_window_rows();
-    ncols = G_window_cols();
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
 
     /* create distance squared or latitude lookup tables */
     /* initialize function pointers */
     lookup_and_function_ptrs(nrows, ncols);
 
     /*  allocate buffers for row i/o                                */
-    cell = G_allocate_cell_buf();
-    if ((maskfd = G_maskfd()) >= 0 || error_flag) {	/* apply mask to output */
+    cell = Rast_allocate_c_buf();
+    if ((maskfd = Rast_maskfd()) >= 0 || error_flag) {	/* apply mask to output */
 	if (error_flag)		/* use input as mask when -e option chosen */
-	    maskfd = G_open_cell_old(input, layer_mapset);
-	mask = G_allocate_cell_buf();
+	    maskfd = Rast_open_old(input, "");
+	mask = Rast_allocate_c_buf();
     }
     else
 	mask = NULL;
 
     /*  Open input cell layer for reading                           */
-    fd = G_open_cell_old(input, layer_mapset);
-    if (fd < 0)
-	G_fatal_error(_("Unable to open raster map <%s>"), input);
+    fd = Rast_open_old(input, "");
 
     /* Store input data in array-indexed doubly-linked lists and close input file */
     rowlist = row_lists(nrows, ncols, &datarows, &n, fd, cell);
-    G_close_cell(fd);
+    Rast_close(fd);
     if (npoints > n)
 	npoints = n;
 
 
     /* open cell layer for writing output              */
-    fd = G_open_cell_new(output);
-    if (fd < 0)
-	G_fatal_error(_("Unable to create raster map <%s>"), output);
+    fd = Rast_open_c_new(output);
 
     /* call the interpolation function                              */
     interpolate(rowlist, nrows, ncols, datarows, npoints, fd, maskfd);
@@ -155,11 +177,11 @@ int main(int argc, char **argv)
     G_free(collook);
     if (ll)
 	free_dist_params();
-    G_close_cell(fd);
+    Rast_close(fd);
     /* writing history file */
-    G_short_history(output, "raster", &history);
-    G_command_history(&history);
-    G_write_history(output, &history);
+    Rast_short_history(output, "raster", &history);
+    Rast_command_history(&history);
+    Rast_write_history(output, &history);
 
     G_done_msg(" ");
     
@@ -230,15 +252,16 @@ interpolate(MELEMENT rowlist[], SHORT nrows, SHORT ncols, SHORT datarows,
     nbr_head->searchptr = &(nbr_head->Mptr);	/* see replace_neighbor */
 #endif
 
-    G_message(_("Interpolating raster map <%s> (%d rows)... "), output,
-	      nrows);
+    G_message(_n("Interpolating raster map <%s> (%d row)...", 
+        "Interpolating raster map <%s> (%d rows)...", nrows),
+        output, nrows);
 
     for (row = 0; row < nrows; row++) {	/*  loop over rows      */
 	G_percent(row+1, nrows, 2);
 
 	/* if mask occurs, read current row of the mask */
-	if (mask && G_get_map_row(maskfd, mask, row) < 0)
-	    G_fatal_error(_("Cannot read row"));
+	if (mask)
+	    Rast_get_c_row(maskfd, mask, row);
 
 	/* prepare search array for next row of interpolations */
 	for (ewptr = search, Rptr = rowlist; ewptr <= lastrow;
@@ -278,7 +301,7 @@ interpolate(MELEMENT rowlist[], SHORT nrows, SHORT ncols, SHORT datarows,
 	    }
 	}			/* end of loop over columns */
 
-	G_put_raster_row(out_fd, cell, CELL_TYPE);
+	Rast_put_row(out_fd, cell, CELL_TYPE);
 
 	/* advance current row pointer if necessary */
 	if (current_row->start->y == row && current_row != lastrow)
@@ -686,9 +709,7 @@ MELEMENT *row_lists(
 
     for (row = 0, Rptr = rowlist; row < rows; row++) {
 	G_percent(row+1, rows, 2);
-	if (G_get_map_row_nomask(fd, cell, row) < 0)
-	    G_fatal_error(_("Unable to read raster map row %d"),
-			  row);
+	Rast_get_c_row_nomask(fd, cell, row);
 
 	for (col = 0; col < cols; col++) {
 	    if (cell[col] != 0) {

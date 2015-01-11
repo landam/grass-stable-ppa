@@ -17,7 +17,7 @@
  * **************************************************************/
 #include <stdlib.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 
 int remove_zero_line(struct Map_info *Map, int otype, struct Map_info *Err)
@@ -37,8 +37,7 @@ int remove_zero_line(struct Map_info *Map, int otype, struct Map_info *Err)
     G_debug(1, "nlines =  %d", nlines);
 
     for (line = 1; line <= nlines; line++) {
-	G_percent(line, nlines, 1);
-
+	G_percent(line, nlines, 2);
 	if (!Vect_line_alive(Map, line))
 	    continue;
 
@@ -47,7 +46,7 @@ int remove_zero_line(struct Map_info *Map, int otype, struct Map_info *Err)
 	if (!((type & GV_LINES) && (type & otype)))
 	    continue;
 
-	if (Vect_line_length(Points) > 0.0)
+	if (Vect_line_prune(Points) > 1)
 	    continue;
 
 	Vect_delete_line(Map, line);
@@ -59,10 +58,10 @@ int remove_zero_line(struct Map_info *Map, int otype, struct Map_info *Err)
 	count++;
     }
 
-    G_verbose_message(_("Lines / boundaries removed: %d"), count);
-
     Vect_destroy_line_struct(Points);
     Vect_destroy_cats_struct(Cats);
+
+    G_verbose_message(_("Lines / boundaries removed: %d"), count);
 
     return count;
 

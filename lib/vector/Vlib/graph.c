@@ -1,29 +1,24 @@
 /*!
-   \file graph.c
+   \file lib/vector/Vlib/graph.c
 
    \brief Vector library - graph manipulation
 
    Higher level functions for reading/writing/manipulating vectors.
 
-   TODO: Vect_graph_free ( GRAPH *graph )
+   \todo Vect_graph_free ( dglGraph_s *graph )
 
-   (C) 2001-2008 by the GRASS Development Team
+   (C) 2001-2009 by the GRASS Development Team
 
-   This program is free software under the 
-   GNU General Public License (>=v2). 
-   Read the file COPYING that comes with GRASS
-   for details.
+   This program is free software under the GNU General Public License
+   (>=v2).  Read the file COPYING that comes with GRASS for details.
 
    \author Radim Blazek
-
-   \date 2001-2008
  */
 
 #include <stdlib.h>
 #include <string.h>
-#include <grass/gis.h>
 #include <grass/dbmi.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 
 static int From_node;		/* from node set in SP and used by clipper for first arc */
@@ -73,7 +68,7 @@ static int clipper(dglGraph_s * pgraph,
 
    \return void
  */
-void Vect_graph_init(GRAPH * graph, int nodes_costs)
+void Vect_graph_init(dglGraph_s * graph, int nodes_costs)
 {
     dglInt32_t opaqueset[16] =
 	{ 360000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -92,14 +87,14 @@ void Vect_graph_init(GRAPH * graph, int nodes_costs)
    \brief Build network graph.
 
    Internal format for edge costs is integer, costs are multiplied
-   before conversion to int by 1000. 
-   Costs -1 for infinity i.e. arc or node is closed and cannot be traversed.
+   before conversion to int by 1000.  Costs -1 for infinity i.e. arc
+   or node is closed and cannot be traversed.
 
    \param graph poiter to graph structure
 
    \return void
  */
-void Vect_graph_build(GRAPH * graph)
+void Vect_graph_build(dglGraph_s * graph)
 {
     int ret;
 
@@ -114,8 +109,8 @@ void Vect_graph_build(GRAPH * graph)
    \brief Add edge to graph. 
 
    Internal format for edge costs is integer, costs are multiplied
-   before conversion to int by 1000.  Costs -1 for infinity i.e. arc or
-   node is closed and cannot be traversed.
+   before conversion to int by 1000.  Costs -1 for infinity i.e. arc
+   or node is closed and cannot be traversed.
 
    \param graph poiter to graph structure
    \param from from node
@@ -126,7 +121,7 @@ void Vect_graph_build(GRAPH * graph)
    \return void
  */
 void
-Vect_graph_add_edge(GRAPH * graph, int from, int to, double costs, int id)
+Vect_graph_add_edge(dglGraph_s * graph, int from, int to, double costs, int id)
 {
     int ret;
     dglInt32_t dglcosts;
@@ -147,8 +142,8 @@ Vect_graph_add_edge(GRAPH * graph, int from, int to, double costs, int id)
    \brief Set node costs
 
    Internal format for edge costs is integer, costs are multiplied
-   before conversion to int by 1000.  Costs -1 for infinity i.e. arc or
-   node is closed and cannot be traversed.
+   before conversion to int by 1000.  Costs -1 for infinity i.e. arc
+   or node is closed and cannot be traversed.
 
    \param graph poiter to graph structure
    \param node node id
@@ -156,7 +151,7 @@ Vect_graph_add_edge(GRAPH * graph, int from, int to, double costs, int id)
 
    \return void
  */
-void Vect_graph_set_node_costs(GRAPH * graph, int node, double costs)
+void Vect_graph_set_node_costs(dglGraph_s * graph, int node, double costs)
 {
     dglInt32_t dglcosts;
 
@@ -186,7 +181,7 @@ void Vect_graph_set_node_costs(GRAPH * graph, int node, double costs)
    \return -1 destination unreachable
  */
 int
-Vect_graph_shortest_path(GRAPH * graph, int from, int to, struct ilist *List,
+Vect_graph_shortest_path(dglGraph_s * graph, int from, int to, struct ilist *List,
 			 double *cost)
 {
     int i, line, *pclip, cArc, nRet;

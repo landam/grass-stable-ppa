@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 /* typedef unsigned short uint16;
@@ -65,7 +66,7 @@ int main(int argc, char *argv[])
     int *pval_i;		/* for misc use */
     float *pval_f;		/* for misc use */
     double *pval_d;		/* for misc use */
-    char c, *buff;		/* for misc use */
+    char c;			/* for misc use */
 
     char map_name[65], map_title[1024];	/* 65 = 64 + null-terminator */
     double map_name_d[1024];	/* I'm not sure why you'd save char strings as double, but whatever */
@@ -79,52 +80,32 @@ int main(int argc, char *argv[])
     struct History history;
 
     struct Option *inputfile, *outputfile;
-    struct Flag *verbose;	/* remove for GRASS 7 */
     struct GModule *module;
 
     int cf;
     FILE *fp1;
 
-
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, import");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("import"));
     module->description =
 	_("Imports a binary MAT-File(v4) to a GRASS raster.");
 
 
     /* Define the different options */
-    inputfile = G_define_option();
-    inputfile->key = "input";
-    inputfile->type = TYPE_STRING;
+    inputfile = G_define_standard_option(G_OPT_F_INPUT);
     inputfile->required = YES;
-    inputfile->gisprompt = "old_file,file,input";
-    inputfile->description = _("Name of an existing MAT-File(v4)");
+    inputfile->gisprompt = "old,mat,file";
+    inputfile->description = _("Name of input MAT-File(v4)");
 
-    outputfile = G_define_option();
-    outputfile->key = "output";
-    outputfile->type = TYPE_STRING;
+    outputfile = G_define_standard_option(G_OPT_R_OUTPUT);
     outputfile->required = NO;
-    outputfile->gisprompt = "new,cell,raster";
-    outputfile->description = _("Name for the output raster map (override)");
-
-    /* please, remove before GRASS 7 released */
-    verbose = G_define_flag();
-    verbose->key = 'v';
-    verbose->description = _("Verbose mode");
-
+    outputfile->description = _("Name for output raster map (override)");
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
-
-
-    /* remove for GRASS 7  */
-    if (verbose->answer) {
-	putenv("GRASS_VERBOSE=3");
-	G_warning(_("The '-v' flag is superseded and will be removed "
-		    "in future. Please use '--verbose' instead."));
-    }
 
   /******  SETUP  ****************************************************/
     /* Check Endian State of Host Computer */
@@ -148,7 +129,7 @@ int main(int argc, char *argv[])
 
     /* Check Endian State of File */
     fread(&format_block, sizeof(int), 1, fp1);
-    fseek(fp1, 0, SEEK_SET);	/* frewind() */
+    G_fseek(fp1, 0, SEEK_SET);	/* frewind() */
 
     file_endianness = format_block / 1000;	/* 0=little, 1=big */
     if (file_endianness != machine_endianness)
@@ -309,21 +290,21 @@ int main(int argc, char *argv[])
 		G_debug(1, " double map");
 		map_type = DCELL_TYPE;
 		array_data =
-		    G_calloc(mrows * (ncols + 1), G_raster_size(map_type));
+		    G_calloc(mrows * (ncols + 1), Rast_cell_size(map_type));
 		fread(array_data, sizeof(double), mrows * ncols, fp1);
 		break;
 	    case 1:
 		G_debug(1, " float map");
 		map_type = FCELL_TYPE;
 		array_data =
-		    G_calloc(mrows * (ncols + 1), G_raster_size(map_type));
+		    G_calloc(mrows * (ncols + 1), Rast_cell_size(map_type));
 		fread(array_data, sizeof(float), mrows * ncols, fp1);
 		break;
 	    case 2:
 		G_debug(1, " int map");
 		map_type = CELL_TYPE;
 		array_data =
-		    G_calloc(mrows * (ncols + 1), G_raster_size(map_type));
+		    G_calloc(mrows * (ncols + 1), Rast_cell_size(map_type));
 		fread(array_data, sizeof(int), mrows * ncols, fp1);
 		break;
 	    default:
@@ -336,16 +317,16 @@ int main(int argc, char *argv[])
 	    switch (data_format) {
 		/*   0=double       1=float   2=32bit signed int   5=8bit unsigned int(text)   */
 	    case 0:
-		fseek(fp1, mrows * ncols * sizeof(double), SEEK_CUR);
+		G_fseek(fp1, mrows * ncols * sizeof(double), SEEK_CUR);
 		break;
 	    case 1:
-		fseek(fp1, mrows * ncols * sizeof(float), SEEK_CUR);
+		G_fseek(fp1, mrows * ncols * sizeof(float), SEEK_CUR);
 		break;
 	    case 2:
-		fseek(fp1, mrows * ncols * sizeof(int), SEEK_CUR);
+		G_fseek(fp1, mrows * ncols * sizeof(int), SEEK_CUR);
 		break;
 	    case 5:
-		fseek(fp1, mrows * ncols * sizeof(char), SEEK_CUR);
+		G_fseek(fp1, mrows * ncols * sizeof(char), SEEK_CUR);
 		break;
 	    default:
 		G_fatal_error("unusual array");
@@ -384,8 +365,6 @@ int main(int argc, char *argv[])
     }
 
     G_strip(map_name);		/* remove leading and trailing whitespace */
-    if (G_legal_filename(map_name) != 1)
-	G_fatal_error(_("<%s> is an illegal file name"), map_name);
 
 
     /* set region info */
@@ -405,10 +384,8 @@ int main(int argc, char *argv[])
 
     region.proj = G_projection();
     region.zone = G_zone();
-    buff = G_adjust_Cell_head(&region, 1, 1);
-    if (buff)
-	G_fatal_error(buff);
-    G_set_window(&region);
+    G_adjust_Cell_head(&region, 1, 1);
+    Rast_set_window(&region);
 
     G_verbose_message("");
     G_verbose_message(_("Map <%s> bounds set to:"), map_name);
@@ -423,11 +400,9 @@ int main(int argc, char *argv[])
     G_verbose_message("");
 
     /* prep memory */
-    raster = G_allocate_raster_buf(map_type);
+    raster = Rast_allocate_buf(map_type);
 
-    cf = G_open_raster_new(map_name, map_type);
-    if (cf < 0)
-	G_fatal_error(_("Unable to create raster map <%s>"), outfile);
+    cf = Rast_open_new(map_name, map_type);
 
     /* write new raster map */
     G_verbose_message(_("Writing new raster map..."));
@@ -442,61 +417,58 @@ int main(int argc, char *argv[])
 	    array_ptr =
 		G_incr_void_ptr(array_ptr,
 				(row +
-				 col * mrows) * G_raster_size(map_type));
+				 col * mrows) * Rast_cell_size(map_type));
 
 	    if (is_nan(array_ptr, map_type))
-		G_set_null_value(rastline_ptr, 1, map_type);
+		Rast_set_null_value(rastline_ptr, 1, map_type);
 	    else {
 		switch (map_type) {
 		case CELL_TYPE:
 		    pval_i = (int *)array_ptr;
-		    G_set_raster_value_c(rastline_ptr, (CELL) pval_i[0],
+		    Rast_set_c_value(rastline_ptr, (CELL) pval_i[0],
 					 map_type);
 		    break;
 		case FCELL_TYPE:
 		    pval_f = (float *)array_ptr;
-		    G_set_raster_value_f(rastline_ptr, (FCELL) pval_f[0],
+		    Rast_set_f_value(rastline_ptr, (FCELL) pval_f[0],
 					 map_type);
 		    break;
 		case DCELL_TYPE:
 		    pval_d = (double *)array_ptr;
-		    G_set_raster_value_d(rastline_ptr, (DCELL) pval_d[0],
+		    Rast_set_d_value(rastline_ptr, (DCELL) pval_d[0],
 					 map_type);
 		    break;
 		default:
-		    G_close_cell(cf);
+		    Rast_close(cf);
 		    G_fatal_error(_("Please contact the GRASS development team"));
 		}
 	    }
 	    rastline_ptr =
-		G_incr_void_ptr(rastline_ptr, G_raster_size(map_type));
+		G_incr_void_ptr(rastline_ptr, Rast_cell_size(map_type));
 	}
 
 #ifdef DEBUG
 	fprintf(stderr, "row[%d]=[", row);
 	rastline_ptr = raster;
 	for (col = 0; col < ncols; col++) {
-	    if (G_is_null_value(rastline_ptr, map_type))
+	    if (Rast_is_null_value(rastline_ptr, map_type))
 		fprintf(stderr, "_");
 	    else
 		fprintf(stderr, "+");
 	    rastline_ptr =
-		G_incr_void_ptr(rastline_ptr, G_raster_size(map_type));
+		G_incr_void_ptr(rastline_ptr, Rast_cell_size(map_type));
 	}
 	fprintf(stderr, "]\n");
 #endif
 
-	if (1 != G_put_raster_row(cf, raster, map_type)) {
-	    G_close_cell(cf);
-	    G_fatal_error(_("Writing raster map, row %d"), row);
-	}
+	Rast_put_row(cf, raster, map_type);
 
 	G_percent(row, mrows, 5);
     }
 
     G_percent(row, mrows, 5);	/* finish it off */
 
-    G_close_cell(cf);
+    Rast_close(cf);
 
     G_free(array_data);
     G_free(raster);
@@ -505,11 +477,11 @@ int main(int argc, char *argv[])
     if (!have_title)
 	strncpy(map_title, infile, 1023);
 
-    G_put_cell_title(map_name, map_title);
+    Rast_put_cell_title(map_name, map_title);
 
-    G_short_history(map_name, "raster", &history);
-    G_command_history(&history);
-    G_write_history(map_name, &history);
+    Rast_short_history(map_name, "raster", &history);
+    Rast_command_history(&history);
+    Rast_write_history(map_name, &history);
 
     G_done_msg("");
 
@@ -533,7 +505,7 @@ int is_nan(void *p, RASTER_MAP_TYPE dtype)
 
     switch (dtype) {
     case CELL_TYPE:		/* int doesn't have a IEEE NaN value, but we'll accept GRASS's version */
-	if (G_is_null_value(p, dtype))
+	if (Rast_is_null_value(p, dtype))
 	    return 1;
 	break;
     case FCELL_TYPE:

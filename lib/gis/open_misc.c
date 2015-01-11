@@ -40,7 +40,7 @@ static int G__open_misc(const char *dir,
 
     /* READ */
     if (mode == 0) {
-	if (G__name_is_fully_qualified(name, xname, xmapset)) {
+	if (G_name_is_fully_qualified(name, xname, xmapset)) {
 	    if (*mapset && strcmp(xmapset, mapset) != 0) {
  		G_warning(_("G__open_misc(read): mapset <%s> doesn't match xmapset <%s>"),
  			  mapset, xmapset);
@@ -55,14 +55,14 @@ static int G__open_misc(const char *dir,
 	if (!mapset)
 	    return -1;
 
-	G__file_name_misc(path, dir, element, name, mapset);
+	G_file_name_misc(path, dir, element, name, mapset);
 
 	return open(path, 0);
     }
     /* WRITE */
     if (mode == 1 || mode == 2) {
 	mapset = G_mapset();
-	if (G__name_is_fully_qualified(name, xname, xmapset)) {
+	if (G_name_is_fully_qualified(name, xname, xmapset)) {
 	    if (strcmp(xmapset, mapset) != 0) {
  		G_warning(_("G__open_misc(write): xmapset <%s> != G_mapset() <%s>"),
 			  xmapset, mapset);
@@ -74,7 +74,7 @@ static int G__open_misc(const char *dir,
 	if (G_legal_filename(name) == -1)
 	    return -1;
 
-	G__file_name_misc(path, dir, element, name, mapset);
+	G_file_name_misc(path, dir, element, name, mapset);
 	if (mode == 1 || access(path, 0) != 0) {
 	    G__make_mapset_element_misc(dir, name);
 	    close(creat(path, 0666));

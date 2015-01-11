@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <grass/gis.h>
 #include "sw_defs.h"
 
 /* implicit parameters: nsites, sqrt_nsites, xmin, xmax, ymin, ymax,
@@ -6,7 +7,7 @@
    Performance suffers if they are wrong; better to make nsites,
    deltax, and deltay too big than too small.  (?) */
 
-int voronoi(int triangulate, struct Site *(*nextsite) (void))
+int voronoi(struct Site *(*nextsite) (void))
 {
     struct Site *newsite, *bot, *top, *temp, *p;
     struct Site *v;
@@ -14,10 +15,10 @@ int voronoi(int triangulate, struct Site *(*nextsite) (void))
     int pm;
     struct Halfedge *lbnd, *rbnd, *llbnd, *rrbnd, *bisector;
     struct Edge *e;
+    int counter = 0;
 
     PQinitialize();
     bottomsite = (*nextsite) ();
-    out_site(bottomsite);
     ELinitialize();
 
     newsite = (*nextsite) ();
@@ -25,9 +26,13 @@ int voronoi(int triangulate, struct Site *(*nextsite) (void))
 	if (!PQempty())
 	    newintstar = PQ_min();
 
-	if (newsite != (struct Site *)NULL && (PQempty()
-					       || newsite->coord.y < newintstar.y || (newsite->coord.y == newintstar.y && newsite->coord.x < newintstar.x))) {	/* new site is smallest */
-	    out_site(newsite);
+	if (newsite != (struct Site *)NULL && 
+	    (PQempty() || newsite->coord.y < newintstar.y || 
+	    (newsite->coord.y == newintstar.y && 
+	    newsite->coord.x < newintstar.x))) {	/* new site is smallest */
+
+	    G_percent(counter++, nsites, 2);
+
 	    lbnd = ELleftbnd(&(newsite->coord));
 	    rbnd = ELright(lbnd);
 	    bot = rightreg(lbnd);
@@ -54,16 +59,14 @@ int voronoi(int triangulate, struct Site *(*nextsite) (void))
 		   temp->coord.y == newsite->coord.y);
 	    newsite = temp;
 	}
-	else if (!PQempty())
+	else if (!PQempty()) {
 	    /* intersection is smallest */
-	{
 	    lbnd = PQextractmin();
 	    llbnd = ELleft(lbnd);
 	    rbnd = ELright(lbnd);
 	    rrbnd = ELright(rbnd);
 	    bot = leftreg(lbnd);
 	    top = rightreg(rbnd);
-	    out_triple(bot, top, rightreg(lbnd));
 
 	    v = lbnd->vertex;
 	    makevertex(v);
@@ -96,10 +99,7 @@ int voronoi(int triangulate, struct Site *(*nextsite) (void))
 	    break;
     }
 
-    for (lbnd = ELright(ELleftend); lbnd != ELrightend; lbnd = ELright(lbnd)) {
-	e = lbnd->ELedge;
-	out_ep(e);
-    }
+    G_percent(1, 1, 1);
 
     return 0;
 }

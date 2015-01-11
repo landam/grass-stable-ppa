@@ -26,7 +26,7 @@
  *               program can be run repeatedly, using the output elevations from
  *               one run as input to the next run until all problems are 
  *               resolved.
- * COPYRIGHT:    (C) 2001 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2001, 2010 by the GRASS Development Team
  *
  *               This program is free software under the GNU General Public
  *               License (>=v2). Read the file COPYING that comes with GRASS
@@ -48,23 +48,24 @@
 #include <unistd.h>
 
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 #define DEBUG
 #include "tinf.h"
 #include "local.h"
 
+static int dir_type(int type, int dir);
+
 int main(int argc, char **argv)
 {
-
     int fe, fd, fm;
-    int i, j, type, dir_type();
+    int i, j, type;
     int new_id;
     int nrows, ncols, nbasins;
-    int cell_open(), cell_open_new();
     int map_id, dir_id, bas_id;
-    char map_name[GNAME_MAX], *map_mapset, new_map_name[GNAME_MAX];
-    char *tempfile1, *tempfile2, *tempfile3;
+    char map_name[GNAME_MAX], new_map_name[GNAME_MAX];
+    const char *tempfile1, *tempfile2, *tempfile3;
     char dir_name[GNAME_MAX];
     char bas_name[GNAME_MAX];
 
@@ -76,66 +77,52 @@ int main(int argc, char **argv)
     void *in_buf;
     CELL *out_buf;
     struct band3 bnd, bndC;
+    struct Colors colors; 
 
     /*  Initialize the GRASS environment variables */
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, hydrology");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("hydrology"));
     module->description =
 	_("Filters and generates a depressionless elevation map and a "
 	  "flow direction map from a given elevation raster map.");
+    
+    opt1 = G_define_standard_option(G_OPT_R_ELEV);
+    opt1->key = "input";
+    
+    opt2 = G_define_standard_option(G_OPT_R_OUTPUT);
+    opt2->description = _("Name for output depressionless elevation raster map");
+    
+    opt4 = G_define_standard_option(G_OPT_R_OUTPUT);
+    opt4->key = "outdir";
+    opt4->description = _("Name for output flow direction map for depressionless elevation raster map");
 
-    opt1 = G_define_standard_option(G_OPT_R_INPUT);
-    opt1->description =
-	_("Name of existing raster map containing elevation surface");
-
-    opt2 = G_define_option();
-    opt2->key = "elevation";
-    opt2->type = TYPE_STRING;
-    opt2->required = YES;
-    opt2->gisprompt = "new,cell,raster";
-    opt2->description = _("Output elevation raster map after filling");
-
-    opt4 = G_define_option();
-    opt4->key = "direction";
-    opt4->type = TYPE_STRING;
-    opt4->required = YES;
-    opt4->gisprompt = "new,cell,raster";
-    opt4->description = _("Output direction raster map");
-
-    opt5 = G_define_option();
+    opt5 = G_define_standard_option(G_OPT_R_OUTPUT);
     opt5->key = "areas";
-    opt5->type = TYPE_STRING;
     opt5->required = NO;
-    opt5->gisprompt = "new,cell,raster";
-    opt5->description = _("Output raster map of problem areas");
+    opt5->description = _("Name for output raster map of problem areas");
 
     opt3 = G_define_option();
-    opt3->key = "type";
+    opt3->key = "format";
     opt3->type = TYPE_STRING;
     opt3->required = NO;
     opt3->description =
-	_("Output aspect direction format (agnps, answers, or grass)");
+	_("Aspect direction format");
+    opt3->options = "agnps,answers,grass";
     opt3->answer = "grass";
-    /* TODO after feature freeze
-       opt3->options    = "agnps,answers,grass";
-     */
-
+    
     flag1 = G_define_flag();
     flag1->key = 'f';
     flag1->description = _("Find unresolved areas only");
-    flag1->answer = '0';
-
-
+    
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    if (flag1->answer != '0' && opt5->answer == NULL) {
-	fprintf(stdout,
-		"\nThe \"f\" flag requires that you name a file for the output area map\n");
-	fprintf(stdout, "\tEnter the file name, or <Enter> to quit:  ");
-	scanf("%s", opt5->answer);
+    if (flag1->answer && opt5->answer == NULL) {
+	G_fatal_error(_("The '%c' flag requires '%s'to be specified"),
+		      flag1->key, opt5->key);
     }
 
     type = 0;
@@ -147,43 +134,31 @@ int main(int argc, char **argv)
 
     if (strcmp(opt3->answer, "agnps") == 0)
 	type = 1;
-    else if (strcmp(opt3->answer, "AGNPS") == 0)
-	type = 1;
     else if (strcmp(opt3->answer, "answers") == 0)
-	type = 2;
-    else if (strcmp(opt3->answer, "ANSWERS") == 0)
 	type = 2;
     else if (strcmp(opt3->answer, "grass") == 0)
 	type = 3;
-    else if (strcmp(opt3->answer, "GRASS") == 0)
-	type = 3;
-
+    
     G_debug(1, "output type (1=AGNPS, 2=ANSWERS, 3=GRASS): %d", type);
 
-    if (type == 0)
-	G_fatal_error
-	    ("direction format must be either agnps, answers, or grass.");
     if (type == 3)
-	G_warning("Direction map is D8 resolution, i.e. 45 degrees.");
-
-    /* get the name of the elevation map layer for filling */
-    map_mapset = G_find_cell(map_name, "");
-    if (!map_mapset)
-	G_fatal_error(_("Raster map <%s> not found"), map_name);
-
+	G_verbose_message(_("Direction map is D8 resolution, i.e. 45 degrees"));
+    
     /* open the maps and get their file id  */
-    map_id = G_open_cell_old(map_name, map_mapset);
-
+    map_id = Rast_open_old(map_name, "");
+    if (Rast_read_colors(map_name, "", &colors) < 0)
+        G_warning(_("Unable to read color table for raster map <%s>"), map_name);
+    
     /* allocate cell buf for the map layer */
-    in_type = G_get_raster_map_type(map_id);
+    in_type = Rast_get_map_type(map_id);
 
     /* set the pointers for multi-typed functions */
     set_func_pointers(in_type);
 
     /* get the window information  */
     G_get_window(&window);
-    nrows = G_window_rows();
-    ncols = G_window_cols();
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
 
     /* buffers for internal use */
     bndC.ns = ncols;
@@ -209,12 +184,14 @@ int main(int argc, char **argv)
     fd = open(tempfile2, O_RDWR | O_CREAT, 0666);	/* dirn */
     fm = open(tempfile3, O_RDWR | O_CREAT, 0666);	/* problems */
 
-    G_message(_("Reading map..."));
+    G_message(_("Reading input elevation raster map..."));
     for (i = 0; i < nrows; i++) {
+	G_percent(i, nrows, 2);
 	get_row(map_id, in_buf, i);
 	write(fe, in_buf, bnd.sz);
     }
-    G_close_cell(map_id);
+    G_percent(1, 1, 1);
+    Rast_close(map_id);
 
     /* fill single-cell holes and take a first stab at flow directions */
     G_message(_("Filling sinks..."));
@@ -226,7 +203,7 @@ int main(int argc, char **argv)
 
     /* mark and count the sinks in each internally drained basin */
     nbasins = dopolys(fd, fm, nrows, ncols);
-    if (flag1->answer == '0') {
+    if (!flag1->answer) {
 	/* determine the watershed for each sink */
 	wtrshed(fm, fd, nrows, ncols, 4);
 
@@ -248,29 +225,31 @@ int main(int argc, char **argv)
     G_free(bnd.b[1]);
     G_free(bnd.b[2]);
 
-    out_buf = G_allocate_c_raster_buf();
+    out_buf = Rast_allocate_c_buf();
     bufsz = ncols * sizeof(CELL);
 
     lseek(fe, 0, SEEK_SET);
-    new_id = G_open_raster_new(new_map_name, in_type);
+    new_id = Rast_open_new(new_map_name, in_type);
 
     lseek(fd, 0, SEEK_SET);
-    dir_id = G_open_raster_new(dir_name, CELL_TYPE);
+    dir_id = Rast_open_new(dir_name, CELL_TYPE);
 
     if (opt5->answer != NULL) {
 	lseek(fm, 0, SEEK_SET);
-	bas_id = G_open_raster_new(bas_name, CELL_TYPE);
+	bas_id = Rast_open_new(bas_name, CELL_TYPE);
 
 	for (i = 0; i < nrows; i++) {
 	    read(fm, out_buf, bufsz);
-	    G_put_raster_row(bas_id, out_buf, CELL_TYPE);
+	    Rast_put_row(bas_id, out_buf, CELL_TYPE);
 	}
 
-	G_close_cell(bas_id);
+	Rast_close(bas_id);
 	close(fm);
     }
 
+    G_important_message(_("Writing output raster maps..."));
     for (i = 0; i < nrows; i++) {
+        G_percent(i, nrows, 5);
 	read(fe, in_buf, bnd.sz);
 	put_row(new_id, in_buf);
 
@@ -279,14 +258,17 @@ int main(int argc, char **argv)
 	for (j = 0; j < ncols; j += 1)
 	    out_buf[j] = dir_type(type, out_buf[j]);
 
-	G_put_raster_row(dir_id, out_buf, CELL_TYPE);
-
+	Rast_put_row(dir_id, out_buf, CELL_TYPE);
     }
+    G_percent(1, 1, 1);
 
-    G_close_cell(new_id);
+    /* copy color table from input */
+    Rast_write_colors(new_map_name, G_mapset(), &colors);
+
+    Rast_close(new_id);
     close(fe);
-
-    G_close_cell(dir_id);
+    
+    Rast_close(dir_id);
     close(fd);
 
     G_free(in_buf);
@@ -295,7 +277,7 @@ int main(int argc, char **argv)
     exit(EXIT_SUCCESS);
 }
 
-int dir_type(int type, int dir)
+static int dir_type(int type, int dir)
 {
     if (type == 1) {		/* AGNPS aspect format */
 	if (dir == 128)

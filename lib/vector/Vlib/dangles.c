@@ -1,25 +1,20 @@
 /*!
-   \file dangles.c
+   \file lib/vector/Vlib/dangles.c
 
    \brief Vector library - clean geometry (dangles)
 
    Higher level functions for reading/writing/manipulating vectors.
 
-   (C) 2001-2008 by the GRASS Development Team
+   (C) 2001-2009 by the GRASS Development Team
 
-   This program is free software under the 
-   GNU General Public License (>=v2). 
-   Read the file COPYING that comes with GRASS
-   for details.
+   This program is free software under the GNU General Public License
+   (>=v2).  Read the file COPYING that comes with GRASS for details.
 
    \author Radim Blazek
-
-   \date 2001-2008
- */
+*/
 
 #include <stdlib.h>
-#include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 
 #define REMOVE_DANGLE 0
@@ -32,21 +27,22 @@ static void dangles(struct Map_info *, int, int, double,
 /*!
    \brief Remove dangles from vector map.
 
-   Remove dangles of given type shorter than maxlength from vector map.
+   Remove dangles of given type shorter than maxlength from vector
+   map.
 
    Line is considered to be a dangle if on at least one end node is no
-   other line of given type(s).  If a dangle is formed by more lines,
+   other line of given type(s). If a dangle is formed by more lines,
    such string of lines is taken as one dangle and either deleted are
    all parts or nothing.
 
-   Optionally deleted dangles are written to error map. 
+   Optionally deleted dangles are written to error map.
 
    Input map must be opened on level 2 for update.
 
    \param Map input map where have to be deleted
    \param type type of dangles (GV_LINES, GV_LINE or GV_BOUNDARY)
    \param maxlength maxlength of dangles or -1 for all dangles
-   \param Err vector map where deleted dangles are written or NULL
+   \param[out] Err vector map where deleted dangles are written or NULL
 
    \return
  */
@@ -62,9 +58,9 @@ Vect_remove_dangles(struct Map_info *Map, int type, double maxlength,
 
    Change boundary dangles to lines. 
 
-   Boundary is considered to be a dangle if on at least one end node is
-   no other boundary.  If a dangle is formed by more boundaries, such
-   string of boundaries is taken as one dangle.
+   Boundary is considered to be a dangle if on at least one end node
+   is no other boundary. If a dangle is formed by more boundaries,
+   such string of boundaries is taken as one dangle.
 
    Optionally deleted dangles are written to error map. 
 
@@ -72,7 +68,7 @@ Vect_remove_dangles(struct Map_info *Map, int type, double maxlength,
 
    \param Map input map where have to be deleted
    \param maxlength maxlength of dangles or -1 for all dangles
-   \param Err vector map where deleted dangles are written or NULL
+   \param[out] Err vector map where deleted dangles are written or NULL
 
    \return 
  */
@@ -97,6 +93,7 @@ Vect_chtype_dangles(struct Map_info *Map, double maxlength,
    \param Map input map where have to be deleted
    \param type type of dangles (GV_LINES, GV_LINE or GV_BOUNDARY)
    \param maxlength maxlength of dangles or -1 for all dangles
+   \param[out] List list of selected features
 
    \return
  */
@@ -118,7 +115,7 @@ Vect_select_dangles(struct Map_info *Map, int type, double maxlength,
    2 for update at least on GV_BUILD_BASE.
 
    Parameters:
-   Map input map where have to be deleted
+   Map input map where dangles have to be deleted
    type type of dangles 
    option dangle option (REMOVE_DANGLE, CHTYPE_DANGLE, SELECT_DANGLE)
    maxlength maxlength of dangles or -1 for all dangles
@@ -148,13 +145,13 @@ static void dangles(struct Map_info *Map, int type, int option,
 
     if (option == CHTYPE_DANGLE) {
 	type = GV_BOUNDARY;	/* process boundaries only */
-	lmsg = "changed lines";
+	lmsg = _("Changed");
     }
     else if (option == REMOVE_DANGLE) {
-	lmsg = "removed lines";
+	lmsg = _("Removed");
     }
     else {
-	lmsg = "selected lines";
+	lmsg = _("Selected");
     }
 
     if (List_dangle)
@@ -262,4 +259,6 @@ static void dangles(struct Map_info *Map, int type, int option,
 	    dangles_removed++;
 	}			/* lcount == 1 */
     }				/* node <= nnodes */
+    G_verbose_message(_("%s lines: %d"), lmsg, lines_removed);
+    G_verbose_message(_("%s dangles: %d"), lmsg, dangles_removed);
 }

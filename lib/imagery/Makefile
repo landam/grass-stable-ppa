@@ -1,11 +1,13 @@
 MODULE_TOPDIR = ../..
 
-LIB_NAME = $(IMAGERY_LIBNAME)
+LIB = IMAGERY
+
+EXTRA_INC = $(VECT_INC)
+EXTRA_CFLAGS = $(VECT_CFLAGS)
 
 include $(MODULE_TOPDIR)/include/Make/Lib.make
 include $(MODULE_TOPDIR)/include/Make/Doxygen.make
 
-EXTRA_LIBS = $(GMATHLIB) $(GISLIB) $(MATHLIB)
 
 default: lib
 

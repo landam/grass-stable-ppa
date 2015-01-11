@@ -2,6 +2,7 @@
 #include <string.h>
 #include <math.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "local_proto.h"
 
@@ -86,7 +87,6 @@ int gethead(FILE * fd,
     int n, s, e, w, r, c;
     char label[100], value[100];
     char buf[1024];
-    char *err;
     int ret, len;
 
     /* rsb fix */
@@ -110,7 +110,7 @@ int gethead(FILE * fd,
 	len = strlen(buf);
 
 	*label = *value = '\0';
-	if (NULL == G_strstr(buf, ":"))
+	if (NULL == strstr(buf, ":"))
 	    break;
 	if (sscanf(buf, "%[^:]:%s", label, value) != 2)
 	    break;
@@ -171,7 +171,7 @@ int gethead(FILE * fd,
 	}
 
 	if (strcmp(label, "multiplier") == 0) {
-	    if (G_is_d_null_value(mult)) {	/* if mult not set on commant line */
+	    if (Rast_is_d_null_value(mult)) {	/* if mult not set on commant line */
 		if (sscanf(value, "%lf", mult) != 1) {
 		    G_warning(_("illegal multiplier field: using 1.0"));
 		    *mult = 1.0;
@@ -205,7 +205,7 @@ int gethead(FILE * fd,
 
     if (!(*nval))
 	*nval = G_store("*");
-    if (G_is_d_null_value(mult))
+    if (Rast_is_d_null_value(mult))
 	*mult = 1.0;
     /* if data type is not set, then scan data to find out data type */
     if (*d_type < 0) {
@@ -220,10 +220,7 @@ int gethead(FILE * fd,
 	}
     }
 
-    if ((err = G_adjust_Cell_head(cellhd, 1, 1))) {
-	G_warning(err);
-	return 0;
-    }
+    G_adjust_Cell_head(cellhd, 1, 1);
 
     return 1;
 }
@@ -272,7 +269,7 @@ int file_scan(FILE * fd)
     char tmpbuf[TMPBUFSIZE];
     size_t size = TMPBUFSIZE;
 
-    if ((curpos = ftell(fd)) == -1)
+    if ((curpos = G_ftell(fd)) == -1)
 	return -1;
     while (!feof(fd)) {
 	if (size != fread(tmpbuf, sizeof(char), size, fd)) {
@@ -280,10 +277,10 @@ int file_scan(FILE * fd)
 		return -1;
 	}
 	if (strstr(tmpbuf, DOT) != NULL) {
-	    fseek(fd, curpos - 1L, SEEK_SET);
+	    G_fseek(fd, curpos - 1L, SEEK_SET);
 	    return 0;
 	}
     }
-    fseek(fd, curpos - 1L, SEEK_SET);
+    G_fseek(fd, curpos - 1L, SEEK_SET);
     return 1;
 }

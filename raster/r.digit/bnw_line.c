@@ -19,7 +19,6 @@
 
 #include <stdlib.h>
 #include <grass/display.h>
-#include <grass/raster.h>
 
 
 int

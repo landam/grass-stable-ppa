@@ -1,5 +1,5 @@
 /*!
-   \file merge_lines.c
+   \file lib/vector/Vlib/merge_lines.c
 
    \brief Vector library - clean geometry (merge lines/boundaries)
 
@@ -15,11 +15,9 @@
    \author Markus Metz
  */
 
-#include <grass/config.h>
 #include <stdlib.h>
 #include <math.h>
-#include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 
 /* compare category structures
@@ -89,6 +87,8 @@ int Vect_merge_lines(struct Map_info *Map, int type, int *new_lines,
     struct line_cats *MCats, *Cats;
     struct P_line *Line;
 
+    type &= GV_LINES;
+
     if (!(type & GV_LINES)) {
 	G_warning
 	    ("Merging is done with lines or boundaries only, not with other types");
@@ -126,7 +126,8 @@ int Vect_merge_lines(struct Map_info *Map, int type, int *new_lines,
 
 	/* go backward as long as there is only one other line/boundary at the current node */
 	G_debug(3, "go backward");
-	next_node = Line->N1;
+	Vect_get_line_nodes(Map, line, &next_node, NULL);
+
 	first = -line;
 	while (1) {
 	    node_n_lines = Vect_get_node_n_lines(Map, next_node);
@@ -151,10 +152,12 @@ int Vect_merge_lines(struct Map_info *Map, int type, int *new_lines,
 		abs(next_line) != line) {
 		first = next_line;
 
-		if (first < 0)
-		    next_node = Plus->Line[-first]->N1;
-		else
-		    next_node = Plus->Line[first]->N2;
+		if (first < 0) {
+		    Vect_get_line_nodes(Map, -first, &next_node, NULL);
+		}
+		else {
+		    Vect_get_line_nodes(Map, first, NULL, &next_node);
+		}
 	    }
 	    else
 		break;
@@ -166,14 +169,16 @@ int Vect_merge_lines(struct Map_info *Map, int type, int *new_lines,
 	/* reverse direction */
 	last = -first;
 
-	if (last < 0)
-	    next_node = Plus->Line[-last]->N1;
-	else
-	    next_node = Plus->Line[last]->N2;
+	if (last < 0) {
+	    Vect_get_line_nodes(Map, -last, &next_node, NULL);
+	}
+	else {
+	    Vect_get_line_nodes(Map, last, NULL, &next_node);
+	}
 
 	Vect_reset_list(List);
 	while (1) {
-	    Vect_list_append(List, last);
+	    G_ilist_add(List, last);
 	    node_n_lines = Vect_get_node_n_lines(Map, next_node);
 	    lines_type = 0;
 	    next_line = last;
@@ -195,10 +200,12 @@ int Vect_merge_lines(struct Map_info *Map, int type, int *new_lines,
 		abs(next_line) != abs(first)) {
 		last = next_line;
 
-		if (last < 0)
-		    next_node = Plus->Line[-last]->N1;
-		else
-		    next_node = Plus->Line[last]->N2;
+		if (last < 0) {
+		    Vect_get_line_nodes(Map, -last, &next_node, NULL);
+		}
+		else {
+		    Vect_get_line_nodes(Map, last, NULL, &next_node);
+		}
 	    }
 	    else
 		break;
@@ -227,7 +234,7 @@ int Vect_merge_lines(struct Map_info *Map, int type, int *new_lines,
 	    newl++;
 	}
 
-	nlines = Vect_get_num_lines(Map);
+	/* nlines = Vect_get_num_lines(Map); */
     }
 
     G_verbose_message(_("%d boundaries merged"), merged);

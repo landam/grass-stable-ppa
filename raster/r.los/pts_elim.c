@@ -12,6 +12,7 @@
 
 #include <math.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/segment.h>
 #include <grass/glocale.h>
 #include "point.h"
@@ -113,7 +114,7 @@ struct point *hidden_point_elimination(struct point *head, int viewpt_elev,
 			    row_viewpt - CHECKED_PT_Y,
 			    col_viewpt + CHECKED_PT_X);
 
-		if (mask == 0 || G_is_null_value(&mask, CELL_TYPE)) {
+		if (mask == 0 || Rast_is_null_value(&mask, CELL_TYPE)) {
 		    head = delete(CHECKED_PT, head, seg_out_p,
 				  row_viewpt, col_viewpt);
 		    goto next_iter;
@@ -148,7 +149,10 @@ struct point *hidden_point_elimination(struct point *head, int viewpt_elev,
 		    }
 
 		    if (fabs(BLOCKING_PT_ORIENTATION - CHECKED_PT_ORIENTATION)
-			< fabs(BLOCKING_PT_ORIENTATION - correct_neighbor_orientation)) {	/* yes, the point neighboring the blocking point      */
+			<
+			fabs(BLOCKING_PT_ORIENTATION -
+			     correct_neighbor_orientation))
+		    {		/* yes, the point neighboring the blocking point      */
 			/* must be taken into consideration                     */
 
 			if (CHECKED_PT_Y == correct_neighbor_y && CHECKED_PT_X == correct_neighbor_x) ;	/* same point   */
@@ -197,7 +201,7 @@ struct point *hidden_point_elimination(struct point *head, int viewpt_elev,
 	if (patt_flag == 1) {
 	    segment_get(seg_patt_p, &mask, row_viewpt - BLOCKING_PT_Y,
 			col_viewpt + BLOCKING_PT_X);
-	    if (mask == 0 || G_is_null_value(&mask, CELL_TYPE)) {
+	    if (mask == 0 || Rast_is_null_value(&mask, CELL_TYPE)) {
 	    
 	      /* Commenting out the following fixes a bug in r.los.
 		 In that program the 8 cells around the viewpoint
@@ -286,6 +290,7 @@ double find_orientation(int x, int y, int quadrant)
 double
 find_inclination(int x, int y, int viewpt_elev, SEGMENT * seg_in_p,
 		 int row_viewpt, int col_viewpt, int docurv, double ellps_a)
+
 {
     double del_x, del_y, dist;
     int abs();

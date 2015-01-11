@@ -46,9 +46,9 @@ solarzenith=`echo $sunangleabovehorizon | awk '{printf "%f", 90. - $1}'`
 echo "Sun position ($DATETIME): solarzenith: $solarzenith, sunazimuth: $sunazimuth"
 
 # shade relief
-r.shaded.relief map=myplane_pyr shadedmap=myplane_pyr_shaded altitude=$sunangleabovehorizon azimuth=$sunazimuth
-d.mon stop=x0 > /dev/null
-d.mon x0
+r.shaded.relief input=myplane_pyr output=myplane_pyr_shaded altitude=$sunangleabovehorizon azimuth=$sunazimuth
+d.mon stop=wx0 2> /dev/null
+d.mon wx0
 d.rast myplane_pyr_shaded
 
 # pre-run: illumination map
@@ -68,42 +68,41 @@ echo "Original" | d.text color=black
 # making the 'band' reflectance file from the shade map
 r.mapcalc "myplane_pyr_band = double((myplane_pyr_shaded - 60.)/18.)"
 r.colors myplane_pyr_band color=gyr
-d.mon stop=x0 > /dev/null
-d.mon x0
-d.rast.leg myplane_pyr_band
+d.mon stop=wx0 2> /dev/null
+d.mon wx0
+d.rast myplane_pyr_band
+d.legend myplane_pyr_band
 echo "Band reflectance" | d.text color=black
 
 ## test it:
 # percent
 METHOD=percent
 i.topo.corr input=myplane_pyr_band output=myplane_pyr_topocorr_${METHOD} basemap=myplane_pyr_illumination zenith=$solarzenith method=$METHOD
-d.mon stop=x1 > /dev/null
-d.mon x1
+d.mon stop=wx1 2> /dev/null
+d.mon wx1
 d.rast.leg myplane_pyr_topocorr_${METHOD}.myplane_pyr_band
 echo "METHOD=percent" | d.text color=black
 
 # minnaert
 METHOD=minnaert
 i.topo.corr input=myplane_pyr_band output=myplane_pyr_topocorr_${METHOD} basemap=myplane_pyr_illumination zenith=$solarzenith method=$METHOD
-d.mon stop=x2 > /dev/null
-d.mon x2
+d.mon stop=wx2 2> /dev/null
+d.mon wx2
 d.rast.leg myplane_pyr_topocorr_${METHOD}.myplane_pyr_band
 echo "METHOD=minnaert" | d.text color=black
 
 # c-factor
 METHOD=c-factor
 i.topo.corr input=myplane_pyr_band output=myplane_pyr_topocorr_${METHOD} basemap=myplane_pyr_illumination zenith=$solarzenith method=$METHOD
-d.mon stop=x3 > /dev/null
-d.mon x3
+d.mon stop=wx3 2> /dev/null
+d.mon wx3
 d.rast.leg myplane_pyr_topocorr_${METHOD}.myplane_pyr_band
 echo "METHOD=c-factor" | d.text color=black
 
 # cosine
 METHOD=cosine
 i.topo.corr input=myplane_pyr_band output=myplane_pyr_topocorr_${METHOD} basemap=myplane_pyr_illumination zenith=$solarzenith method=$METHOD
-d.mon stop=x4 > /dev/null
-d.mon x4
+d.mon stop=wx4 2> /dev/null
+d.mon wx4
 d.rast.leg myplane_pyr_topocorr_${METHOD}.myplane_pyr_band
 echo "METHOD=cosine" | d.text color=black
-
-exit 0

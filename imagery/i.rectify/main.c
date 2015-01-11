@@ -25,9 +25,11 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "global.h"
+
+#include <grass/raster.h>
 #include <grass/glocale.h>
-#include "crs.h"
+
+#include "global.h"
 
 char *seg_mb;
 
@@ -42,6 +44,11 @@ func interpolate;
 double E12[10], N12[10];
 double E21[10], N21[10];
 
+double *E12_t, *N12_t;
+double *E21_t, *N21_t;
+
+struct Control_Points cp;
+
 /* DELETED WITH CRS MODIFICATIONS
    double E12a, E12b, E12c, N12a, N12b, N12c;
    double E21a, E21b, E21c, N21a, N21b, N21c;
@@ -53,10 +60,12 @@ void err_exit(char *, char *);
 /* modify this table to add new methods */
 struct menu menu[] = {
     {p_nearest, "nearest", "nearest neighbor"},
-    {p_bilinear, "bilinear", "bilinear"},
+    {p_bilinear, "linear", "linear interpolation"},
     {p_cubic, "cubic", "cubic convolution"},
-    {p_bilinear_f, "bilinear_f", "bilinear with fallback"},
+    {p_lanczos, "lanczos", "lanczos filter"},
+    {p_bilinear_f, "linear_f", "linear  interpolation with fallback"},
     {p_cubic_f, "cubic_f", "cubic convolution with fallback"},
+    {p_lanczos_f, "lanczos_f", "lanczos filter with fallback"},
     {NULL, NULL, NULL}
 };
 
@@ -81,13 +90,14 @@ int main(int argc, char *argv[])
      *mem,			/* amount of memory for cache */
      *interpol;			/* interpolation method:
 				   nearest neighbor, bilinear, cubic */
-    struct Flag *c, *a;
+    struct Flag *c, *a, *t;
     struct GModule *module;
 
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("imagery, rectify");
+    G_add_keyword(_("imagery"));
+    G_add_keyword(_("rectify"));
     module->description =
 	_("Rectifies an image by computing a coordinate "
 	  "transformation for each pixel in the image based on the "
@@ -108,6 +118,8 @@ int main(int argc, char *argv[])
     val = G_define_option();
     val->key = "order";
     val->type = TYPE_INTEGER;
+    val->options = "1-3";
+    val->answer = "1";
     val->required = YES;
     val->description = _("Rectification polynom order (1-3)");
 
@@ -144,6 +156,10 @@ int main(int argc, char *argv[])
     a->key = 'a';
     a->description = _("Rectify all raster maps in group");
 
+    t = G_define_flag();
+    t->key = 't';
+    t->description = _("Use thin plate spline");
+
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
@@ -179,13 +195,18 @@ int main(int argc, char *argv[])
 	k++;
     }
 
-    if (order < 1 || order > MAXORDER)
+    if (!t->answer && (order < 1 || order > 3))  /* MAXORDER in lib/imagery/georef.c */
 	G_fatal_error(_("Invalid order (%d); please enter 1 to %d"), order,
-		      MAXORDER);
+		      3);
+    if (t->answer)
+	order = 0;
 
     /* determine the number of files in this group */
-    if (I_get_group_ref(group, &ref) <= 0)
+    if (I_get_group_ref(group, &ref) <= 0) {
+	G_warning(_("Location: %s"), G_location());
+	G_warning(_("Mapset: %s"), G_mapset());
 	G_fatal_error(_("Group <%s> does not exist"), grp->answer);
+    }
 
     if (ref.nfiles <= 0) {
 	G_important_message(_("Group <%s> contains no raster maps; run i.group"),
@@ -208,7 +229,7 @@ int main(int argc, char *argv[])
 
 	for (m = 0; m < k; m++) {
 	    got_file = 0;
-	    if (G__name_is_fully_qualified(ifile->answers[m], xname, xmapset)) {
+	    if (G_name_is_fully_qualified(ifile->answers[m], xname, xmapset)) {
 		name = xname;
 		mapset = xmapset;
 	    }
@@ -265,7 +286,7 @@ int main(int argc, char *argv[])
 	    if (G_legal_filename(result) < 0)
 		G_fatal_error(_("Extension <%s> is illegal"), extension);
 		
-	    if (G_find_cell(result, G_mapset())) {
+	    if (G_find_raster2(result, G_mapset())) {
 		G_warning(_("The following raster map already exists in"));
 		G_warning(_("target LOCATION %s, MAPSET %s:"),
 			  G_location(), G_mapset());
@@ -288,18 +309,11 @@ int main(int argc, char *argv[])
 		G_warning(_("Target resolution must be > 0, ignored"));
 	}
 	/* Calculate smallest region */
-	if (a->answer) {
-	    if (G_get_cellhd(ref.file[0].name, ref.file[0].mapset, &cellhd) <
-		0)
-		G_fatal_error(_("Unable to read header of raster map <%s>"),
-			      ref.file[0].name);
-	}
-	else {
-	    if (G_get_cellhd(ifile->answers[0], ref.file[0].mapset, &cellhd) <
-		0)
-		G_fatal_error(_("Unable to read header of raster map <%s>"),
-			      ifile->answers[0]);
-	}
+	if (a->answer)
+	    Rast_get_cellhd(ref.file[0].name, ref.file[0].mapset, &cellhd);
+	else
+	    Rast_get_cellhd(ifile->answers[0], ref.file[0].mapset, &cellhd);
+
 	georef_window(&cellhd, &target_window, order, res);
     }
 

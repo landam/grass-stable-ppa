@@ -5,9 +5,9 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <grass/colors.h>
 #include <grass/glocale.h>
 #include "clr.h"
-#include "ps_info.h"
 #include "local_proto.h"
 
 #define KEY(x) (strcmp(x,key)==0)

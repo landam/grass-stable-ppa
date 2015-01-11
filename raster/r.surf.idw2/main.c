@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include "local_proto.h"
 #include <grass/glocale.h>
 
@@ -57,7 +58,10 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, interpolation");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("surface"));
+    G_add_keyword(_("interpolation"));
+    G_add_keyword(_("IDW"));
     module->description = _("Surface generation program.");
 
     parm.input = G_define_standard_option(G_OPT_R_INPUT);
@@ -79,9 +83,6 @@ int main(int argc, char *argv[])
     if ((G_projection() == PROJECTION_LL))
 	G_fatal_error(_("Lat/long databases not supported by r.surf.idw2. Use r.surf.idw instead!"));
 
-    if (G_legal_filename(parm.output->answer) < 0)
-	G_fatal_error(_("<%s> is an illegal file name"), parm.output->answer);
-
     if (sscanf(parm.npoints->answer, "%d", &search_points) != 1 ||
 	search_points < 1)
 	G_fatal_error(_("%s=%s - illegal number of interpolation points"),
@@ -99,29 +100,26 @@ int main(int argc, char *argv[])
     /* get the window, allocate buffers, etc. */
     G_get_set_window(&window);
 
-    cell = G_allocate_cell_buf();
+    cell = Rast_allocate_c_buf();
 
-    if ((maskfd = G_maskfd()) >= 0)
-	mask = G_allocate_cell_buf();
+    if ((maskfd = Rast_maskfd()) >= 0)
+	mask = Rast_allocate_c_buf();
     else
 	mask = NULL;
 
-    fd = G_open_cell_new(parm.output->answer);
-    if (fd < 0)
-	G_fatal_error(_("Unable to create raster map <%s>"),
-		      parm.output->answer);
+    fd = Rast_open_c_new(parm.output->answer);
 
-    G_message(_("Interpolating raster map <%s>... %d rows... "),
+    G_message(_n("Interpolating raster map <%s>... %d row... ",
+        "Interpolating raster map <%s>... %d rows... ", window.rows),
 	      parm.output->answer, window.rows);
 
     north = window.north - window.ns_res / 2.0;
     for (row = 0; row < window.rows; row++) {
 	G_percent(row, window.rows, 2);
 
-	if (mask) {
-	    if (G_get_map_row(maskfd, mask, row) < 0)
-		G_fatal_error(_("Cannot get row"));
-	}
+	if (mask)
+	    Rast_get_c_row(maskfd, mask, row);
+
 	north += window.ns_res;
 	east = window.west - window.ew_res / 2.0;
 	for (col = 0; col < window.cols; col++) {
@@ -179,17 +177,17 @@ int main(int argc, char *argv[])
 	    cell[col] = (CELL) (sum1 / sum2 + 0.5);
 	}
 
-	G_put_raster_row(fd, cell, CELL_TYPE);
+	Rast_put_row(fd, cell, CELL_TYPE);
     }
 
     G_free(points);
     G_free(cell);
-    G_close_cell(fd);
+    Rast_close(fd);
 
     /* writing history file */
-    G_short_history(parm.output->answer, "raster", &history);
-    G_command_history(&history);
-    G_write_history(parm.output->answer, &history);
+    Rast_short_history(parm.output->answer, "raster", &history);
+    Rast_command_history(&history);
+    Rast_write_history(parm.output->answer, &history);
     G_done_msg(" ");
 
     exit(EXIT_SUCCESS);

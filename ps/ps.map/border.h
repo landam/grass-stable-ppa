@@ -10,12 +10,8 @@
 
 struct border
 {
-    double R, G, B;
+    double r, g, b;
     double width;
 };
 
-#ifdef MAIN
-struct border brd;
-#else
 extern struct border brd;
-#endif

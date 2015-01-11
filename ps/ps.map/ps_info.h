@@ -1,4 +1,4 @@
-#include <grass/gis.h>
+#include <grass/raster.h>
 #include "clr.h"
 
 /* Font sizes */
@@ -26,7 +26,7 @@ struct PS_data
     struct Colors colors;
     struct Categories cats;
     CELL min_color, max_color;
-    char *cell_mapset;
+    const char *cell_mapset;
     char *cell_name;
     char *plfile;
     char *commentfile;
@@ -83,13 +83,6 @@ struct PS_data
 #ifdef GREY
 #undef GREY
 #endif
-#ifdef MAIN
-struct PS_data PS;
-int WHITE = 0;
-int BLACK = 1;
-int GREY = 9;
-int sec_draw;
-#else
+
 extern struct PS_data PS;
 extern int WHITE, BLACK, GREY, sec_draw;
-#endif

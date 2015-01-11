@@ -1,156 +1,131 @@
-/*
- *************************************************************************
- * G_get_window (window)
- *     struct Cell_head *window
- *
- *      read the current mapset window
- *      dies if error
- *
- *************************************************************************
- * G_get_default_window (window)
- *     struct Cell_head *window
- *
- *      read the default window for the location
- *      dies if error
- *
- *************************************************************************
- * char *
- * G__get_window (window, element, name, mapset)
- *      read the window 'name' in 'element' in 'mapset'
- *      returns NULL if ok, error message if not
- ************************************************************************/
+/*!
+  \file lib/gis/get_window.c
+
+  \brief GIS Library - Get window (i.e. GRASS region)
+
+  (C) 2001-2009, 2011 by the GRASS Development Team
+  
+  This program is free software under the GNU General Public License
+  (>=v2). Read the file COPYING that comes with GRASS for details.
+
+  \author Original author CERL
+*/
 
 #include <stdlib.h>
-#include "G.h"
+
 #include <grass/gis.h>
 #include <grass/glocale.h>
 
+#include "G.h"
+
+static struct state {
+    int initialized;
+    struct Cell_head dbwindow;
+} state;
+
+static struct state *st = &state;
 
 /*!
- * \brief read the database region
- *
- * Reads the database region as stored in the WIND file in the user's
- * current mapset <b>into region.</b>
- * 3D values are set to defaults if not available in WIND file.
- * An error message is printed and exit( ) is called if there is a problem reading
- * the region.
- * <b>Note.</b> GRASS applications that read or write raster maps should not
- * use this routine since its use implies that the active module region will not
- * be used. Programs that read or write raster map data (or vector data) can
- * query the active module region <i>using G_window_rows and
- * G_window_cols..</i>
- *
- *  \param region
- *  \return int
- */
-
-int G_get_window(struct Cell_head *window)
+  \brief Read the database region
+  
+  Reads the database region as stored in the WIND file in the user's
+  current mapset into region.
+  
+  3D values are set to defaults if not available in WIND file.  An
+  error message is printed and exit() is called if there is a problem
+  reading the region.
+  
+  <b>Note:</b> GRASS applications that read or write raster maps
+  should not use this routine since its use implies that the active
+  module region will not be used. Programs that read or write raster
+  map data (or vector data) can query the active module region using
+  Rast_window_rows() and Rast_window_cols().
+  
+  \param[out] window pointer to Cell_head
+*/
+void G_get_window(struct Cell_head *window)
 {
-    static int first = 1;
-    static struct Cell_head dbwindow;
-    char *regvar;
+    const char *regvar;
+
+    if (G_is_initialized(&st->initialized)) {
+	*window = st->dbwindow;
+	return;
+    }
 
     /* Optionally read the region from environment variable */
     regvar = getenv("GRASS_REGION");
 
     if (regvar) {
-	char **tokens, *delm = ";";
-	char *err;
-
-	tokens = G_tokenize(regvar, delm);
-
-	err = G__read_Cell_head_array(tokens, window, 0);
-
+	char **tokens = G_tokenize(regvar, ";");
+	G__read_Cell_head_array(tokens, &st->dbwindow, 0);
 	G_free_tokens(tokens);
-
-	if (err) {
-	    G_fatal_error(_("region for current mapset %s\nrun \"g.region\""),
-			  err);
-	    G_free(err);
-	}
-
-	return 1;
     }
-
-    if (first) {
-	char *wind, *err;
-
-	wind = getenv("WIND_OVERRIDE");
+    else {
+	char *wind = getenv("WIND_OVERRIDE");
 	if (wind)
-	    err = G__get_window(&dbwindow, "windows", wind, G_mapset());
+	    G__get_window(&st->dbwindow, "windows", wind, G_mapset());
 	else
-	    err = G__get_window(&dbwindow, "", "WIND", G_mapset());
-
-	if (err) {
-	    G_fatal_error(_("region for current mapset %s\nrun \"g.region\""),
-			  err);
-	    G_free(err);
-	}
+	    G__get_window(&st->dbwindow, "", "WIND", G_mapset());
     }
 
-    first = 0;
-    G_copy(window, &dbwindow, sizeof(dbwindow));
+    *window = st->dbwindow;
 
     if (!G__.window_set) {
 	G__.window_set = 1;
-	G_copy(&G__.window, &dbwindow, sizeof(dbwindow));
+	G__.window = st->dbwindow;
     }
 
-    return 1;
+    G_initialize_done(&st->initialized);
 }
-
 
 /*!
- * \brief read the default region
- *
- * Reads the default region for the location into <b>region.</b>
- * 3D values are set to defaults if not available in WIND file.
- * An error message is printed and exit( ) is called if there is a problem
- * reading the default region.
- *
- *  \param region
- *  \return int
- */
-
-int G_get_default_window(struct Cell_head *window)
+  \brief Read the default region
+  
+  Reads the default region for the location into <i>region.</i> 3D
+  values are set to defaults if not available in WIND file.
+  
+  An error message is printed and exit() is called if there is a
+  problem reading the default region.
+  
+  \param[out] window pointer to Cell_head
+*/
+void G_get_default_window(struct Cell_head *window)
 {
-    char *err;
-
-    if ((err = G__get_window(window, "", "DEFAULT_WIND", "PERMANENT"))) {
-	G_fatal_error(_("default region %s"), err);
-	G_free(err);
-    }
-    return 1;
+    G__get_window(window, "", "DEFAULT_WIND", "PERMANENT");
 }
 
-char *G__get_window(struct Cell_head *window,
-		    const char *element, const char *name, const char *mapset)
+/*!
+  \brief Get window (region) of selected map
+  
+  G_fatal_error() is called on error
+  
+  \param window pointer to Cell_head
+  \param element element type
+  \param name map name
+  \param mapset mapset name
+*/
+void G__get_window(struct Cell_head *window,
+		   const char *element, const char *name, const char *mapset)
 {
-    FILE *fd;
-    char *err;
+    FILE *fp;
 
-    G_zero((char *)window, sizeof(struct Cell_head));
+    G_zero(window, sizeof(struct Cell_head));
 
     /* Read from file */
-    if (!(fd = G_fopen_old(element, name, mapset))) {
-	/*
-	   char path[GPATH_MAX];
-	   G__file_name (path,element,name,mapset);
-	   fprintf (stderr, "G__get_window(%s)\n",path);
-	 */
-	return G_store(_("is not set"));
-    }
+    fp = G_fopen_old(element, name, mapset);
+    if (!fp)
+	G_fatal_error(_("Unable to open element file <%s> for <%s@%s>"),
+			element, name, mapset);
 
-    err = G__read_Cell_head(fd, window, 0);
-    fclose(fd);
+    G__read_Cell_head(fp, window, 0);
+    fclose(fp);
+}
 
-    if (err) {
-	char msg[1024];
-
-	sprintf(msg, _("is invalid\n%s"), err);
-	G_free(err);
-	return G_store(msg);
-    }
-
-    return NULL;
+/*!
+  \brief Unset current window
+*/
+void G_unset_window()
+{
+    st->initialized = 0;
+    G__.window_set = 0;
 }

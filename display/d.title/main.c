@@ -19,30 +19,35 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <grass/display.h>
-#include <grass/raster.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
+#include <grass/spawn.h>
 #include <grass/glocale.h>
-#define MAIN
+
 #include "options.h"
 #include "local_proto.h"
 
+const char *map_name;
+const char *color;
+float size;
+int type;
+
 int main(int argc, char **argv)
 {
-    char *mapset;
     struct Cell_head window;
     struct Categories cats;
     struct GModule *module;
     struct Option *opt1, *opt2, *opt3;
     struct Flag *fancy_mode, *simple_mode, *draw;
     char *tmpfile;
-    char command[GPATH_MAX + 12];
     FILE *fp;
 
     /* Initialize the GIS calls */
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("display, cartography");
+    G_add_keyword(_("display"));
+    G_add_keyword(_("cartography"));
     module->description =
 	_("Create a TITLE for a raster map in a form suitable "
 	  "for display with d.text.");
@@ -54,7 +59,7 @@ int main(int argc, char **argv)
     opt2->type = TYPE_STRING;
     opt2->answer = DEFAULT_FG_COLOR;
     opt2->required = NO;
-    opt2->options = D_color_list();
+    opt2->gisprompt = "old_color,color,color";
     opt2->description = _("Sets the text color");
 
     opt3 = G_define_option();
@@ -84,9 +89,9 @@ int main(int argc, char **argv)
 	exit(EXIT_FAILURE);
 
 
-    strcpy(map_name, opt1->answer);
+    map_name = opt1->answer;
 
-    strcpy(color, opt2->answer);
+    color = opt2->answer;
 
     if (opt3->answer != NULL)
 	sscanf(opt3->answer, "%f", &size);
@@ -99,18 +104,11 @@ int main(int argc, char **argv)
     if (!strlen(map_name))
 	G_fatal_error(_("No map name given"));
 
-    /* Make sure map is available */
-    mapset = G_find_cell(map_name, "");
-    if (mapset == NULL)
-	G_fatal_error(_("Raster map <%s> not found"), map_name);
+    Rast_get_cellhd(map_name, "", &window);
 
-    if (G_get_cellhd(map_name, mapset, &window) == -1)
-	G_fatal_error(_("Unable to read header of raster map <%s@%s>"),
-		      map_name, mapset);
-
-    if (G_read_cats(map_name, mapset, &cats) == -1)
-	G_fatal_error(_("Unable to read category file of raster map <%s@%s>"),
-		      map_name, mapset);
+    if (Rast_read_cats(map_name, "", &cats) == -1)
+	G_fatal_error(_("Unable to read category file of raster map <%s>"),
+		      map_name);
 
 
     if (draw->answer) {
@@ -123,16 +121,16 @@ int main(int argc, char **argv)
 
 
     if (type == NORMAL)
-	normal(mapset, &window, &cats, simple_mode->answer, fp);
+	normal(&window, &cats, simple_mode->answer, fp);
     else
-	fancy(mapset, &window, &cats, fp);
+	fancy(&window, &cats, fp);
 
 
     if (draw->answer) {
+	char inarg[GPATH_MAX];
 	fclose(fp);
-	sprintf(command, "d.text < \"%s\"", tmpfile);
-	G_debug(3, "cmd = [%s]", command);
-	G_system(command);
+	sprintf(inarg, "input=%s", tmpfile);
+	G_spawn("d.text", "d.text", inarg, NULL);
 	unlink(tmpfile);
 	/* note a tmp file will remain, created by d.text so it can survive d.redraw */
     }

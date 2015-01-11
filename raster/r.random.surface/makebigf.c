@@ -1,5 +1,4 @@
 /* makebigf.c                                                           */
-#undef MAIN
 #include "ransurf.h"
 #include "local_proto.h"
 

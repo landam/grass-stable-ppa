@@ -49,12 +49,13 @@ int GPJ_get_ellipsoid_params(double *a, double *e2, double *rf)
 }
 
 int
-GPJ__get_ellipsoid_params(struct Key_Value *proj_keys,
+GPJ__get_ellipsoid_params(const struct Key_Value *proj_keys,
 			  double *a, double *e2, double *rf)
 {
     struct gpj_ellps estruct;
     struct gpj_datum dstruct;
-    char *str, *str1, *str3;
+    const char *str, *str3;
+    char *str1, *ellps;
 
     str = G_find_key_value("datum", proj_keys);
 
@@ -62,30 +63,34 @@ GPJ__get_ellipsoid_params(struct Key_Value *proj_keys,
 	/* If 'datum' key is present, look up correct ellipsoid
 	 * from datum.table */
 
-	str = G_store(dstruct.ellps);
+	ellps = G_store(dstruct.ellps);
 	GPJ_free_datum(&dstruct);
 
     }
     else
 	/* else use ellipsoid defined in PROJ_INFO */
-	str = G_find_key_value("ellps", proj_keys);
+	ellps = G_store(G_find_key_value("ellps", proj_keys));
 
-    if (str != NULL) {
-	if (GPJ_get_ellipsoid_by_name(str, &estruct) < 0) {
-	    G_fatal_error(_("Invalid ellipsoid <%s> in file"), str);
-	}
-	else {
-	    *a = estruct.a;
-	    *e2 = estruct.es;
-	    *rf = estruct.rf;
-	    GPJ_free_ellps(&estruct);
-	    return 1;
-	}
+    if (ellps != NULL && *ellps) {
+	if (GPJ_get_ellipsoid_by_name(ellps, &estruct) < 0)
+	    G_fatal_error(_("Invalid ellipsoid <%s> in file"), ellps);
+
+	*a = estruct.a;
+	*e2 = estruct.es;
+	*rf = estruct.rf;
+	GPJ_free_ellps(&estruct);
+	G_free(ellps);
+
+	return 1;
     }
     else {
+	if (ellps)    /* *ellps = '\0' */
+	    G_free(ellps);
+
 	str3 = G_find_key_value("a", proj_keys);
 	if (str3 != NULL) {
-	    G_asprintf(&str, "a=%s", str3);
+	    char *str4;
+	    G_asprintf(&str4, "a=%s", str3);
 	    if ((str3 = G_find_key_value("es", proj_keys)) != NULL)
 		G_asprintf(&str1, "e=%s", str3);
 	    else if ((str3 = G_find_key_value("f", proj_keys)) != NULL)
@@ -98,7 +103,7 @@ GPJ__get_ellipsoid_params(struct Key_Value *proj_keys,
 		G_fatal_error(_("No secondary ellipsoid descriptor "
 				"(rf, es or b) in file"));
 
-	    if (get_a_e2_rf(str, str1, a, e2, rf) == 0)
+	    if (get_a_e2_rf(str4, str1, a, e2, rf) == 0)
 		G_fatal_error(_("Invalid ellipsoid descriptors "
 				"(a, rf, es or b) in file"));
 	    return 1;
@@ -228,8 +233,8 @@ struct ellps_list *read_ellipsoid_table(int fatal)
 	    err++;
 	    sprintf(buf, " %d", line);
 	    if (*badlines)
-		G_strcat(badlines, ",");
-	    G_strcat(badlines, buf);
+		strcat(badlines, ",");
+	    strcat(badlines, buf);
 	    continue;
 	}
 
@@ -252,8 +257,8 @@ struct ellps_list *read_ellipsoid_table(int fatal)
 	    err++;
 	    sprintf(buf, " %d", line);
 	    if (*badlines)
-		G_strcat(badlines, ",");
-	    G_strcat(badlines, buf);
+		strcat(badlines, ",");
+	    strcat(badlines, buf);
 	    continue;
 	}
     }
@@ -264,9 +269,10 @@ struct ellps_list *read_ellipsoid_table(int fatal)
 	return outputlist;
 
     (fatal ? G_fatal_error : G_warning)(
-	err == 1
-	? _("Line%s of ellipsoid table file <%s> is invalid")
-	: _("Lines%s of ellipsoid table file <%s> are invalid"),
+	_n(
+        ("Line%s of ellipsoid table file <%s> is invalid"),
+	("Lines%s of ellipsoid table file <%s> are invalid"),
+        err), 
 	badlines, file);
 
     return outputlist;

@@ -1,4 +1,5 @@
 #include <grass/gis.h>
+#include <grass/raster.h>
 /*
  * creates new category and color structures from the patching
  * files category and color files
@@ -17,7 +18,6 @@ int support(char **names,
 	    struct Colors *colr, int *colr_ok, RASTER_MAP_TYPE out_type)
 {
     int i;
-    char *mapset;
     struct Categories pcats;
     struct Colors pcolr;
     CELL n;
@@ -25,13 +25,12 @@ int support(char **names,
     int red, grn, blu;
     int do_cats, do_colr;
 
-    mapset = G_find_cell(names[0], "");
     *cats_ok = 1;
     *colr_ok = 1;
-    if (G_read_cats(names[0], mapset, cats) < 0)
+    if (Rast_read_cats(names[0], "", cats) < 0)
 	*cats_ok = 0;
     G_suppress_warnings(1);
-    if (G_read_colors(names[0], mapset, colr) < 0)
+    if (Rast_read_colors(names[0], "", colr) < 0)
 	*colr_ok = 0;
     G_suppress_warnings(0);
 
@@ -39,34 +38,37 @@ int support(char **names,
 	return 0;
 
     for (i = 1; i < nfiles; i++) {
-	mapset = G_find_cell(names[i], "");
-	do_cats = *cats_ok && (G_read_cats(names[i], mapset, &pcats) >= 0);
+	do_cats = *cats_ok && (Rast_read_cats(names[i], "", &pcats) >= 0);
 	G_suppress_warnings(1);
-	do_colr = *colr_ok && (G_read_colors(names[i], mapset, &pcolr) >= 0);
+	do_colr = *colr_ok && (Rast_read_colors(names[i], "", &pcolr) >= 0);
 	G_suppress_warnings(0);
 	if (!do_cats && !do_colr)
 	    continue;
 	if (out_type == CELL_TYPE) {
-	    G_rewind_cell_stats(statf + i);
-	    while (G_next_cell_stat(&n, &count, statf + i))
-		if (n && !G_find_cell_stat(n, &count, statf)) {
+	    Rast_rewind_cell_stats(statf + i);
+	    while (Rast_next_cell_stat(&n, &count, statf + i))
+		if (n && !Rast_find_cell_stat(n, &count, statf)) {
 		    if (do_cats) {
-			G_update_cell_stats(&n, 1, statf);
-			G_set_cat(n, G_get_cat(n, &pcats), cats);
+			Rast_update_cell_stats(&n, 1, statf);
+			Rast_set_c_cat(&n, &n, Rast_get_c_cat((CELL *) &n, &pcats), cats);
 		    }
 		    if (do_colr) {
-			G_get_color(n, &red, &grn, &blu, &pcolr);
-			G_set_color(n, red, grn, blu, colr);
+			Rast_get_c_color(&n, &red, &grn, &blu, &pcolr);
+			Rast_set_c_color(n, red, grn, blu, colr);
 		    }
 		}
 	}
-	/* else the color will be the color of the first map */
+	else {
+	    /* the color would be the color of the first map,
+	     * possibly not covering the range of the other maps */
+	    *colr_ok = 0;
+	}
 
 	if (do_cats)
-	    G_free_cats(&pcats);
+	    Rast_free_cats(&pcats);
 	if (do_colr)
 	    /* otherwise this memory is used in colr pointer */
-	    G_free_colors(&pcolr);
+	    Rast_free_colors(&pcolr);
     }
     return 1;
 }

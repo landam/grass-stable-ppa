@@ -7,7 +7,7 @@
  *               Hamish Bowman <hamish_b yahoo.com>, Jan-Oliver Wagner <jan intevation.de>,
  *               Markus Neteler <neteler itc.it>
  * PURPOSE:      
- * COPYRIGHT:    (C) 1999-2013 by the GRASS Development Team
+ * COPYRIGHT:    (C) 1999-2006, 2010 by the GRASS Development Team
  *
  *               This program is free software under the GNU General Public
  *               License (>=v2). Read the file COPYING that comes with GRASS
@@ -19,6 +19,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "rule.h"
 
@@ -31,7 +32,7 @@ int main(int argc, char *argv[])
     char buf[1024];
     RULE *rules, *tail;
     int any;
-    char *old_mapset;
+    const char *old_mapset;
     FILE *srcfp;
     int tty;
     struct GModule *module;
@@ -46,25 +47,24 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, reclassification");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("reclassification"));
     module->label = _("Reclassify raster map based on category values.");
     module->description =
 	_("Creates a new raster map whose category values are based "
 	  "upon a reclassification of the categories in an existing "
 	  "raster map.");
-    
+
     parm.input = G_define_standard_option(G_OPT_R_INPUT);
-    parm.input->description = _("Raster map to be reclassified");
-
+    parm.input->description = _("Name of raster map to be reclassified");
+    
     parm.output = G_define_standard_option(G_OPT_R_OUTPUT);
-
+    
     parm.rules = G_define_standard_option(G_OPT_F_INPUT);
     parm.rules->key = "rules";
     parm.rules->label = _("File containing reclass rules");
     parm.rules->description = _("\"-\" to read from stdin");
-    parm.rules->required = NO;
-    parm.rules->guisection = _("Required");
-
+    
     parm.title = G_define_option();
     parm.title->key = "title";
     parm.title->required = NO;
@@ -74,19 +74,16 @@ int main(int argc, char *argv[])
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    old_mapset = G_find_cell2(parm.input->answer, "");
+    old_mapset = G_find_raster2(parm.input->answer, "");
     if (old_mapset == NULL)
 	G_fatal_error(_("Raster map <%s> not found"), parm.input->answer);
-
-    if (G_legal_filename(parm.output->answer) < 0)
-	G_fatal_error(_("<%s> is an illegal file name"), parm.output->answer);
 
     if (strcmp(parm.input->answer, parm.output->answer) == 0 &&
 	strcmp(old_mapset, G_mapset()) == 0)
 	G_fatal_error(_("Input map can NOT be the same as output map"));
 
     srcfp = stdin;
-    if (parm.rules->answer && strcmp("-", parm.rules->answer) != 0) {
+    if (strcmp(parm.rules->answer, "-") != 0) {
 	srcfp = fopen(parm.rules->answer, "r");
 	if (!srcfp)
 	    G_fatal_error(_("Cannot open rules file <%s>"),
@@ -94,10 +91,10 @@ int main(int argc, char *argv[])
     }
     tty = isatty(fileno(srcfp));
 
-    G_init_cats(0, "", &cats);
-    map_type = G_raster_map_type(parm.input->answer, old_mapset);
-    G_read_fp_range(parm.input->answer, old_mapset, &range);
-    G_get_fp_range_min_max(&range, &min, &max);
+    Rast_init_cats("", &cats);
+    map_type = Rast_map_type(parm.input->answer, old_mapset);
+    Rast_read_fp_range(parm.input->answer, old_mapset, &range);
+    Rast_get_fp_range_min_max(&range, &min, &max);
     rules = tail = NULL;
     any = 0;
 
@@ -109,7 +106,7 @@ int main(int argc, char *argv[])
 		    (double)min, (double)max);
 	else if (map_type == DCELL_TYPE)
 	    fprintf(stdout, _("DCELL: Data range is %.15g to %.15g\n"),
-                    (double)min, (double)max);
+		    (double)min, (double)max);
 	else
 	    fprintf(stdout, _("CELL: Data range is %ld to %ld\n"), (long)min,
 		    (long)max);

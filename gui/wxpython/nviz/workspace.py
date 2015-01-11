@@ -17,9 +17,10 @@ This program is free software under the GNU General Public License
 import copy
 
 from core.settings import UserSettings
+from core.utils import _
 
 try:
-    from nviz import wxnviz
+    from nviz      import wxnviz
 except ImportError:
     wxnviz = None
 
@@ -120,6 +121,10 @@ class NvizSettings(object):
                     desc = 'slice'
                 data['draw']['mode'] = { 'value' : sel,
                                          'desc' : desc, }
+            elif control == 'box':
+                box = UserSettings.Get(group = 'nviz', key = 'volume', subkey = ['draw', 'box'])
+                data['draw']['box'] = {'enabled': box}
+
             else:
                 data['draw'][control] = {}
                 data['draw'][control]['isosurface'] = { 'value' : value }
@@ -203,8 +208,16 @@ class NvizSettings(object):
         # height
         data['height'] = { 'value' : UserSettings.Get(group='nviz', key='vector',
                                                       subkey=['lines', 'height']) }
+        # thematic
+        data['thematic'] = {'rgbcolumn' : UserSettings.Get(group='nviz', key='vector',
+                                                      subkey=['lines', 'rgbcolumn']),
+                            'sizecolumn' : UserSettings.Get(group='nviz', key='vector',
+                                                      subkey=['lines', 'sizecolumn']),
+                            'layer': 1,
+                            'usecolor' : False,
+                            'usewidth' : False}
         if 'object' in data:
-            for attrb in ('color', 'width', 'mode', 'height'):
+            for attrb in ('color', 'width', 'mode', 'height', 'thematic'):
                 data[attrb]['update'] = None
         
     def SetVectorPointsDefaultProp(self, data):
@@ -235,8 +248,16 @@ class NvizSettings(object):
         data['height'] = { 'value' : UserSettings.Get(group='nviz', key='vector',
                                                       subkey=['points', 'height']) }
         
+        data['thematic'] = {'rgbcolumn' : UserSettings.Get(group='nviz', key='vector',
+                                                      subkey=['points', 'rgbcolumn']),
+                            'sizecolumn' : UserSettings.Get(group='nviz', key='vector',
+                                                      subkey=['points', 'sizecolumn']),
+                            'layer': 1,
+                            'usecolor' : False,
+                            'usesize' : False}
         if 'object' in data:
-            for attrb in ('size', 'width', 'marker', 'color', 'height'):
+            for attrb in ('size', 'width', 'marker',
+                          'color', 'height', 'thematic'):
                 data[attrb]['update'] = None
         
     def GetDrawMode(self, mode=None, style=None, shade=None, string=False):

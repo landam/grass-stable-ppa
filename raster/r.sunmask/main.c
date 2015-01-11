@@ -39,17 +39,19 @@
  *                    but it's somewhat slow with non-CELL maps
  *********************************************************************/
 
-#define MAIN
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 #include "global.h"
 #include "solpos00.h"
+
+float asol, phi0, sun_zenith, sun_azimuth;	/* from nadir, from north */
+int sunset;
 
 /* to be displayed in r.sunmask */
 static char *SOLPOSVERSION = "11 April 2001";
@@ -75,7 +77,6 @@ double raster_value(union RASTER_PTR buf, int data_type, int col);
 
 int main(int argc, char *argv[])
 {
-    char *mapset;
     extern struct Cell_head window;
     union RASTER_PTR elevbuf, tmpbuf, outbuf;
     CELL min, max;
@@ -91,7 +92,7 @@ int main(int argc, char *argv[])
 	struct Option *opt1, *opt2, *opt3, *opt4, *north, *east, *year,
 	    *month, *day, *hour, *minutes, *seconds, *timezone;
     } parm;
-    struct Flag *flag1, *flag2, *flag3, *flag4;
+    struct Flag *flag1, *flag3, *flag4;
     struct GModule *module;
     char *name, *outname;
     double dazi, dalti;
@@ -112,7 +113,9 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, sun position");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("solar"));
+    G_add_keyword(_("sun position"));
     module->label = _("Calculates cast shadow areas from sun position and elevation raster map.");
     module->description = _("Either exact sun position (A) is specified, or date/time to calculate "
 			    "the sun position (B) by r.sunmask itself.");
@@ -221,11 +224,6 @@ int main(int argc, char *argv[])
     flag1->key = 'z';
     flag1->description = _("Don't ignore zero elevation");
 
-    flag2 = G_define_flag();
-    flag2->key = 'v';
-    flag2->description =
-	_("Verbose output (also print out sun position etc.)");
-
     flag3 = G_define_flag();
     flag3->key = 's';
     flag3->description = _("Calculate sun position only and exit");
@@ -314,7 +312,7 @@ int main(int argc, char *argv[])
        - timezone: DO NOT ADJUST FOR DAYLIGHT SAVINGS TIME.
        - timezone: negative for zones west of Greenwich
        - lat/long: east and north positive
-       - the atmospheric refraction is calculated for 1013hPa, 15�C 
+       - the atmospheric refraction is calculated for 1013hPa, 15 degC
        - time: local time from your watch
 
        Order of parameters:
@@ -330,18 +328,20 @@ int main(int argc, char *argv[])
 	/* Remove +0.5 above if you want round-down instead of round-to-nearest */
 	sretr = (int)floor(pdat->sretr);	/* sunrise */
 	dsretr = pdat->sretr;
-	sretr_sec = (int)
+	sretr_sec =
+	    (int)
 	    floor(((dsretr - floor(dsretr)) * 60 -
 		   floor((dsretr - floor(dsretr)) * 60)) * 60);
 	ssetr = (int)floor(pdat->ssetr);	/* sunset */
 	dssetr = pdat->ssetr;
-	ssetr_sec = (int)
+	ssetr_sec =
+	    (int)
 	    floor(((dssetr - floor(dssetr)) * 60 -
 		   floor((dssetr - floor(dssetr)) * 60)) * 60);
 
 	/* print the results */
 	if (retval == 0) {	/* error check */
-	    if (flag2->answer || (flag3->answer && !flag2->answer)) {
+	    if (flag3->answer) {
 		if (flag4->answer) {
 		    fprintf(stdout, "date=%d/%02d/%02d\n", pdat->year,
 			    pdat->month, pdat->day);
@@ -440,30 +440,25 @@ int main(int argc, char *argv[])
 
     if (!outname)
 	G_fatal_error(_("Option <%s> required"), parm.opt2->key);
+
+    elev_fd = Rast_open_old(name, "");
+    output_fd = Rast_open_c_new(outname);
     
-    /* Search for output layer in all mapsets ? yes. */
-    mapset = G_find_cell2(name, "");
-
-    if ((elev_fd = G_open_cell_old(name, mapset)) < 0)
-	G_fatal_error(_("Unable to open raster map <%s>"), name);
-    if ((output_fd = G_open_cell_new(outname)) < 0)
-	G_fatal_error(_("Unable to create raster map <%s>"), outname);
-
-    data_type = G_get_raster_map_type(elev_fd);
-    elevbuf.v = G_allocate_raster_buf(data_type);
-    tmpbuf.v = G_allocate_raster_buf(data_type);
-    outbuf.v = G_allocate_raster_buf(CELL_TYPE);	/* binary map */
+    data_type = Rast_get_map_type(elev_fd);
+    elevbuf.v = Rast_allocate_buf(data_type);
+    tmpbuf.v = Rast_allocate_buf(data_type);
+    outbuf.v = Rast_allocate_buf(CELL_TYPE);	/* binary map */
 
     if (data_type == CELL_TYPE) {
-	if ((G_read_range(name, mapset, &range)) < 0)
+	if ((Rast_read_range(name, "", &range)) < 0)
 	    G_fatal_error(_("Unable to open range file for raster map <%s>"), name);
-	G_get_range_min_max(&range, &min, &max);
+	Rast_get_range_min_max(&range, &min, &max);
 	dmin = (double)min;
 	dmax = (double)max;
     }
     else {
-	G_read_fp_range(name, mapset, &fprange);
-	G_get_fp_range_min_max(&fprange, &dmin, &dmax);
+	Rast_read_fp_range(name, "", &fprange);
+	Rast_get_fp_range_min_max(&fprange, &dmin, &dmax);
     }
 
     azi = 2 * M_PI * dazi / 360;
@@ -477,22 +472,21 @@ int main(int argc, char *argv[])
 	G_percent(row1, window.rows, 2);
 	col1 = 0;
 	drow = -1;
-	if (G_get_raster_row(elev_fd, elevbuf.v, row1, data_type) < 0)
-	    G_fatal_error(_("Unable to read raster map <%s> row %d"),
-			  name, row1);
-
+	Rast_get_row(elev_fd, elevbuf.v, row1, data_type);
+	
 	while (col1 < window.cols) {
 	    dvalue = raster_value(elevbuf, data_type, col1);
 	    /*              outbuf.c[col1]=1; */
-	    G_set_null_value(&outbuf.c[col1], 1, CELL_TYPE);
+	    Rast_set_null_value(&outbuf.c[col1], 1, CELL_TYPE);
 	    OK = 1;
-	    east = G_col_to_easting(col1 + 0.5, &window);
-	    north = G_row_to_northing(row1 + 0.5, &window);
+	    east = Rast_col_to_easting(col1 + 0.5, &window);
+	    north = Rast_row_to_northing(row1 + 0.5, &window);
 	    east1 = east;
 	    north1 = north;
 	    if (dvalue == 0.0 && !zeros)
 		OK = 0;
-	    while (OK == 1) {
+	    while (OK == 1)
+	    {
 		east += estep;
 		north += nstep;
 		if (north > window.north || north < window.south
@@ -505,11 +499,11 @@ int main(int argc, char *argv[])
 		    if ((maxh) > (dmax - dvalue))
 			OK = 0;
 		    else {
-			dcol = G_easting_to_col(east, &window);
-			if (drow != G_northing_to_row(north, &window)) {
-			    drow = G_northing_to_row(north, &window);
-			    G_get_raster_row(elev_fd, tmpbuf.v, (int)drow,
-					     data_type);
+			dcol = Rast_easting_to_col(east, &window);
+			if (drow != Rast_northing_to_row(north, &window)) {
+			    drow = Rast_northing_to_row(north, &window);
+			    Rast_get_row(elev_fd, tmpbuf.v, (int)drow,
+					 data_type);
 			}
 			dvalue2 = raster_value(tmpbuf, data_type, (int)dcol);
 			if ((dvalue2 - dvalue) > (maxh)) {
@@ -523,19 +517,19 @@ int main(int argc, char *argv[])
 	    col1 += 1;
 	}
 	G_debug(3, "Writing result row %i of %i", row1, window.rows);
-	G_put_raster_row(output_fd, outbuf.c, CELL_TYPE);
+	Rast_put_row(output_fd, outbuf.c, CELL_TYPE);
 	row1 += 1;
     }
     G_percent(1, 1, 1);
 
-    G_close_cell(output_fd);
-    G_close_cell(elev_fd);
+    Rast_close(output_fd);
+    Rast_close(elev_fd);
 
     /* writing history file */
-    G_short_history(outname, "raster", &hist);
-    G_snprintf(hist.datsrc_1, RECORD_LEN, "raster elevation map: %s", name);
-    G_command_history(&hist);
-    G_write_history(outname, &hist);
+    Rast_short_history(outname, "raster", &hist);
+    Rast_format_history(&hist, HIST_DATSRC_1, "raster elevation map %s", name);
+    Rast_command_history(&hist);
+    Rast_write_history(outname, &hist);
 
     exit(EXIT_SUCCESS);
 }

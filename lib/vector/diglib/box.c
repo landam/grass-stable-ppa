@@ -15,23 +15,18 @@
  *
  *****************************************************************************/
 #include <stdlib.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 
 /* 
  *  dig_line_box ()
  *  set box to points extent
  */
-int dig_line_box(struct line_pnts *Points, BOUND_BOX * Box)
+int dig_line_box(const struct line_pnts *Points, struct bound_box * Box)
 {
     int i;
 
     if (Points->n_points <= 0) {
-	Box->N = 0;
-	Box->S = 0;
-	Box->E = 0;
-	Box->W = 0;
-	Box->T = 0;
-	Box->B = 0;
+	G_zero(Box, sizeof(struct bound_box));
 	return 0;
     }
 
@@ -66,7 +61,7 @@ int dig_line_box(struct line_pnts *Points, BOUND_BOX * Box)
  *  dig_box_copy ()
  *  Copy B to A.
  */
-int dig_box_copy(BOUND_BOX * A, BOUND_BOX * B)
+int dig_box_copy(struct bound_box * A, struct bound_box * B)
 {
 
     A->N = B->N;
@@ -83,7 +78,7 @@ int dig_box_copy(BOUND_BOX * A, BOUND_BOX * B)
  * dig_box_extend ()
  * Extend A by B.
  */
-int dig_box_extend(BOUND_BOX * A, BOUND_BOX * B)
+int dig_box_extend(struct bound_box * A, struct bound_box * B)
 {
 
     if (B->N > A->N)

@@ -1,15 +1,24 @@
 
 # common dependencies and rules for building subdirs
 
-include $(MODULE_TOPDIR)/include/Make/Platform.make
-include $(MODULE_TOPDIR)/include/Make/Grass.make
+include $(MODULE_TOPDIR)/include/Make/Vars.make
 include $(MODULE_TOPDIR)/include/Make/Rules.make
+include $(MODULE_TOPDIR)/include/Make/Html.make
+
+# don't install *.png, *.jpg for directories
+# to prevent problems with r.out.png etc
+IMGSRC := 
 
 subdirs:
 	@list='$(SUBDIRS)'; \
 	for subdir in $$list; do \
-	    echo $$subdir ; \
 	    $(MAKE) -C $$subdir || echo $(CURDIR)/$$subdir >> $(ERRORLOG) ; \
+	done
+
+installsubdirs:
+	@list='$(SUBDIRS)'; \
+	for subdir in $$list; do \
+	    $(MAKE) -C $$subdir install ; \
 	done
 
 cleansubdirs:
@@ -19,17 +28,21 @@ cleansubdirs:
 	    $(MAKE) -C $$subdir clean; \
 	done
 
-installsubdirs:
+%-recursive:
 	@list='$(SUBDIRS)'; \
 	for subdir in $$list; do \
-	    echo $$subdir ; \
-	    $(MAKE) -C $$subdir install; \
+	    $(MAKE) -C $$subdir $*; \
 	done
 
-.PHONY: subdirs cleansubdirs installsubdirs parsubdirs $(SUBDIRS)
+clean: clean-recursive
+
+depend: depend-recursive
+
+htmldir: html
+
+.PHONY: subdirs parsubdirs htmldir $(SUBDIRS)
 
 parsubdirs: $(SUBDIRS)
 
 $(SUBDIRS):
 	$(MAKE) -C $@ || echo $(CURDIR)/$@ >> $(ERRORLOG)
-

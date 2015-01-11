@@ -23,8 +23,6 @@
 #include <grass/gprojects.h>
 #include <grass/glocale.h>
 
-#define MAIN
-
 /* Finder function for datum conversion lookup tables */
 #define FINDERFUNC set_proj_lib
 #define PERMANENT "PERMANENT"
@@ -58,10 +56,10 @@ static int nopt1;
  *          1 otherwise
  **/
 
-int pj_get_kv(struct pj_info *info, struct Key_Value *in_proj_keys,
-	      struct Key_Value *in_units_keys)
+int pj_get_kv(struct pj_info *info, const struct Key_Value *in_proj_keys,
+	      const struct Key_Value *in_units_keys)
 {
-    char *str;
+    const char *str;
     int i;
     double a, es, rf;
     int returnval = 1;
@@ -215,12 +213,12 @@ int pj_get_kv(struct pj_info *info, struct Key_Value *in_proj_keys,
 	    alloc_options(buffa);
 	    returnval = 3;
 	}
-	G_free(datum);
 	/* else there'll be no datum transformation taking place here... */
     }
     else {
 	returnval = 4;
     }
+    G_free(datum);
 
     /* Set finder function for locating datum conversion tables PK */
     pj_set_finder(FINDERFUNC);
@@ -393,7 +391,7 @@ const char *set_proj_lib(const char *name)
  *         returned NULL for either co-ordinate system)
  **/
 
-int pj_print_proj_params(struct pj_info *iproj, struct pj_info *oproj)
+int pj_print_proj_params(const struct pj_info *iproj, const struct pj_info *oproj)
 {
     char *str;
 

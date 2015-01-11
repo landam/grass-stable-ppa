@@ -1,5 +1,6 @@
 #include <string.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 int opencell(char *fullname, char *name, char *mapset)
@@ -8,7 +9,7 @@ int opencell(char *fullname, char *name, char *mapset)
     int fd;
 
     strcpy(name, fullname);
-    m = G_find_cell2(name, "");
+    m = G_find_raster2(name, "");
     if (m == NULL) {
 	G_warning(_("Raster map <%s> not found"), name);
 	return -1;
@@ -19,9 +20,7 @@ int opencell(char *fullname, char *name, char *mapset)
     else
 	strcpy(mapset, m);
 
-    fd = G_open_cell_old(name, mapset);
-    if (fd < 0)
-	G_warning(_("Unable to open raster map <%s>"), name);
+    fd = Rast_open_old(name, mapset);
 
     return fd;
 }

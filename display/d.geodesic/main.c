@@ -22,7 +22,6 @@
 #include <string.h>
 #include <grass/gis.h>
 #include <grass/display.h>
-#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "local_proto.h"
 
@@ -30,7 +29,6 @@ int main(int argc, char *argv[])
 {
     int line_color;
     int text_color;
-    int use_mouse;
     double lon1, lat1, lon2, lat2;
     char *deftcolor;
     struct GModule *module;
@@ -42,7 +40,8 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("display, distance");
+    G_add_keyword(_("display"));
+    G_add_keyword(_("distance"));
     module->description =
 	_("Displays a geodesic line, tracing the shortest distance "
 	"between two geographic points along a great circle, in "
@@ -52,7 +51,7 @@ int main(int argc, char *argv[])
     parm.coor->key = "coor";
     parm.coor->key_desc = "lon1,lat1,lon2,lat2";
     parm.coor->type = TYPE_STRING;
-    parm.coor->required = NO;
+    parm.coor->required = YES;
     parm.coor->description = _("Starting and ending coordinates");
 
     parm.lcolor = G_define_option();
@@ -60,7 +59,7 @@ int main(int argc, char *argv[])
     parm.lcolor->type = TYPE_STRING;
     parm.lcolor->required = NO;
     parm.lcolor->description = _("Line color");
-    parm.lcolor->options = D_color_list();
+    parm.lcolor->gisprompt = "old_color,color,color";
     parm.lcolor->answer = DEFAULT_FG_COLOR;
 
     parm.tcolor = G_define_option();
@@ -68,42 +67,35 @@ int main(int argc, char *argv[])
     parm.tcolor->type = TYPE_STRING;
     parm.tcolor->required = NO;
     parm.tcolor->description = _("Text color or \"none\"");
-    /*    parm.tcolor->options    = D_color_list(); */
+    parm.tcolor->gisprompt = "old_color,color,color";
 
-    if (argc > 1 && G_parser(argc, argv))
+    if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
 
     if (G_projection() != PROJECTION_LL)
 	G_fatal_error(_("Location is not %s"), G__projection_name(PROJECTION_LL));
 
-    use_mouse = 1;
-    if (parm.coor->answer) {
-	if (parm.coor->answers[0] == NULL)
-	    G_fatal_error(_("No coordinates given"));
+    if (parm.coor->answers[0] == NULL)
+	G_fatal_error(_("No coordinates given"));
 
-	if (!G_scan_easting(parm.coor->answers[0], &lon1, G_projection())) {
-	    G_usage();
-	    G_fatal_error(_("%s - illegal longitude"), parm.coor->answers[0]);
-	}
-	if (!G_scan_northing(parm.coor->answers[1], &lat1, G_projection())) {
-	    G_usage();
-	    G_fatal_error(_("%s - illegal longitude"), parm.coor->answers[1]);
-	}
-	if (!G_scan_easting(parm.coor->answers[2], &lon2, G_projection())) {
-	    G_usage();
-	    G_fatal_error(_("%s - illegal longitude"), parm.coor->answers[2]);
-	}
-	if (!G_scan_northing(parm.coor->answers[3], &lat2, G_projection())) {
-	    G_usage();
-	    G_fatal_error(_("%s - illegal longitude"), parm.coor->answers[3]);
-	}
-	use_mouse = 0;
-    }
+    if (!G_scan_easting(parm.coor->answers[0], &lon1, G_projection()))
+	G_fatal_error(_("%s - illegal longitude"), parm.coor->answers[0]);
 
-    if (R_open_driver() != 0)
-	G_fatal_error(_("No graphics device selected"));
+    if (!G_scan_northing(parm.coor->answers[1], &lat1, G_projection()))
+	G_fatal_error(_("%s - illegal longitude"), parm.coor->answers[1]);
 
+    if (!G_scan_easting(parm.coor->answers[2], &lon2, G_projection()))
+	G_fatal_error(_("%s - illegal longitude"), parm.coor->answers[2]);
+
+    if (!G_scan_northing(parm.coor->answers[3], &lat2, G_projection()))
+	G_fatal_error(_("%s - illegal longitude"), parm.coor->answers[3]);
+
+
+    if (D_open_driver() != 0)
+      	G_fatal_error(_("No graphics device selected. "
+			"Use d.mon to select graphics device."));
+    
     line_color = D_translate_color(parm.lcolor->answer);
     if (!line_color)
 	line_color = D_translate_color(parm.lcolor->answer =
@@ -121,15 +113,10 @@ int main(int argc, char *argv[])
     else
 	text_color = D_translate_color(parm.tcolor->answer);
 
-    setup_plot();
-    if (use_mouse)
-	mouse(line_color, text_color);
-    else
-	plot(lon1, lat1, lon2, lat2, line_color, text_color);
+    plot(lon1, lat1, lon2, lat2, line_color, text_color);
+    
+    D_save_command(G_recreate_command());
+    D_close_driver();
 
-    if (!use_mouse)
-	D_add_to_list(G_recreate_command());
-
-    R_close_driver();
     exit(EXIT_SUCCESS);
 }

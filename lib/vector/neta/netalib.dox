@@ -2,6 +2,8 @@
 
 by GRASS Development Team (http://grass.osgeo.org)
 
+\tableofcontents
+
 This library is used for network-based analysis, see <tt>v.net.*</tt>
 modules for implementation issues.
 
@@ -37,9 +39,7 @@ modules for implementation issues.
 
 \section netaSeeAlso See Also
 
- - \ref Vector_Library
+ - \ref vectorlib
   
  - \ref dbmilib
-
-Last change: $Date: 2010-04-10 20:00:54 +0200 (Sat, 10 Apr 2010) $
 */

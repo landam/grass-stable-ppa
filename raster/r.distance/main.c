@@ -8,11 +8,11 @@
  * PURPOSE:      Locates the closest points between objects in two 
  *               raster maps.
  *
- * COPYRIGHT:    (C) 2003 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2003, 2012 by the GRASS Development Team
  *
- *               This program is free software under the GNU General Public
- *               License (>=v2). Read the file COPYING that comes with GRASS
- *               for details.
+ *               This program is free software under the GNU General
+ *               Public License (>=v2). Read the file COPYING that
+ *               comes with GRASS for details.
  *
  ***************************************************************************/
 
@@ -35,7 +35,8 @@ int main(int argc, char *argv[])
 
     /* Set description */
     module = G_define_module();
-    module->keywords = _("raster, distance");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("distance"));
     module->description =
 	_("Locates the closest points between objects in two raster maps.");
 
@@ -50,5 +51,5 @@ int main(int argc, char *argv[])
 
     report(&parms);
 
-    return 0;
+    exit(EXIT_SUCCESS);
 }

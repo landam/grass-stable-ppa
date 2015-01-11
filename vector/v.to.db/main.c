@@ -7,7 +7,7 @@
  *               Glynn Clements <glynn gclements.plus.com>,
  *               Markus Neteler <neteler itc.it>
  * PURPOSE:      load values from vector to database
- * COPYRIGHT:    (C) 2000-2006 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2000-2010 by the GRASS Development Team
  *
  *               This program is free software under the GNU General Public
  *               License (>=v2). Read the file COPYING that comes with GRASS
@@ -16,9 +16,12 @@
  *****************************************************************************/
 
 #include <stdlib.h>
-#define MAIN
 #include <grass/glocale.h>
 #include "global.h"
+
+struct value *Values;
+struct options options;
+struct vstat vstat;
 
 int main(int argc, char *argv[])
 {
@@ -30,8 +33,10 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, database, attribute table");
-    module->description = _("Populates database values from vector features.");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("attribute table"));
+    G_add_keyword(_("database"));
+    module->description = _("Populates attribute values from vector features.");
 
     parse_command_line(argc, argv);
 
@@ -40,7 +45,7 @@ int main(int argc, char *argv[])
 
     /* open map */
     Vect_set_open_level(2);
-    Vect_open_old(&Map, options.name, options.mapset);
+    Vect_open_old(&Map, options.name, "");
 
     Fi = Vect_get_field(&Map, options.field);
 
@@ -61,7 +66,7 @@ int main(int argc, char *argv[])
 	n = 0;
     }
     G_debug(2, "%d unique cats", n);
-    Values = (VALUE *) G_calloc(n + 1, sizeof(VALUE));
+    Values = (struct value *) G_calloc(n + 1, sizeof(struct value));
     vstat.rcat = 0;
 
     /* Read values from map */
@@ -78,7 +83,7 @@ int main(int argc, char *argv[])
 
     conv_units();
 
-    if (options.print) {
+    if (options.print || options.total) {
 	report();
     }
     else {
@@ -88,7 +93,7 @@ int main(int argc, char *argv[])
 
     Vect_close(&Map);
 
-    if (!(options.print && options.total)) {
+    if (!(options.print || options.total)) {
 	print_stat();
     }
 

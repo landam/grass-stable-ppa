@@ -2,12 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 #include "conv.h"
 #include "local_proto.h"
 
-int read_line(GVFILE *, struct line_pnts *);
+int read_line(struct gvfile *, struct line_pnts *);
 
 /* read old 3.0 or 4.0 dig file into array 
    returns number of elements read into array
@@ -16,6 +16,7 @@ int read_dig(FILE * Digin, struct Map_info *Mapout,
 	     struct Line **plines, int endian, int att)
 {
     char buf[100];
+    struct Plus_head *In_plus;
     struct dig_head In_head;
     int lalloc, line = 0, type, portable = 1;
     int npoints = 0, nlines = 0, nbounds = 0;
@@ -26,7 +27,7 @@ int read_dig(FILE * Digin, struct Map_info *Mapout,
     double dbuf;
     int ibuf;
     long lbuf;
-    GVFILE gvf;
+    struct gvfile gvf;
 
     dig_file_init(&gvf);
     gvf.file = Digin;
@@ -35,6 +36,8 @@ int read_dig(FILE * Digin, struct Map_info *Mapout,
     /* set conversion matrices */
     dig_init_portable(&(In_head.port), endian);
 
+    In_plus = &(Mapout->plus);
+    
     /* Version 3 dig files were not portable and some version 4 
      * files may be also non portable */
 
@@ -77,12 +80,12 @@ int read_dig(FILE * Digin, struct Map_info *Mapout,
 	return -1;
 
     if (buf[0] != '%' || buf[1] != '%') {	/* Version3.0 */
-	In_head.Version_Major = 3;
+	In_head.coor_version.major = 3;
 	portable = 0;		/* input vector is not portable format */
 	G_message(_("Input file is version 3."));
     }
     else {
-	In_head.Version_Major = 4;
+	In_head.coor_version.major = 4;
 	G_message(_("Input file is version 4."));
 	/* determine if in portable format or not */
 	if (buf[6] == 1 && (~buf[6] & 0xff) == (buf[7] & 0xff)) {	/* portable ? */
@@ -204,7 +207,7 @@ int read_dig(FILE * Digin, struct Map_info *Mapout,
 /* read_line() reads element from file
    returns element type
  */
-int read_line(GVFILE * Gvf, struct line_pnts *nline)
+int read_line(struct gvfile * Gvf, struct line_pnts *nline)
 {
     int n_points;
     long itype;

@@ -20,14 +20,15 @@
  * Source best viewed with tabstop=4
  */
 
-#include<stdio.h>
-#include<regex.h>
-#include<fcntl.h>
-#include<stdlib.h>
-#include<string.h>
-#include<sys/types.h>
-#include<sys/stat.h>
-#include<unistd.h>
+#include <grass/config.h>
+#include <stdio.h>
+#include <regex.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "opt.h"
 #include "../type.h"
@@ -128,8 +129,7 @@ int main(int argc, char **argv)
     GNO_BEGIN			/* short  long        default     variable        help */
 	GNO_OPTION("i", "input", NULL, &pszFilein, "Input text file")
 	GNO_OPTION("o", "output", NULL, &pszGraphout, "Output graph file")
-    GNO_END if (GNO_PARSE(argc, argv) < 0)
-    {
+	GNO_END if (GNO_PARSE(argc, argv) < 0) {
 	return 1;
     }
     /*
@@ -238,8 +238,8 @@ int main(int argc, char **argv)
 
     while (fgets(sz, sizeof(sz), fp)) {
 #ifndef VERBOSE
-	if (!(cOut++ % 512) || ftell(fp) == statdata.st_size)
-	    printf("Parse input file ... status: %ld/%ld\r", ftell(fp),
+	if (!(cOut++ % 512) || G_ftell(fp) == statdata.st_size)
+	    printf("Parse input file ... status: %ld/%ld\r", G_ftell(fp),
 		   statdata.st_size);
 	fflush(stdout);
 #endif

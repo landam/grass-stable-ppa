@@ -1,5 +1,5 @@
 /*!
-   \file vector/neta/centality.c
+   \file lib/vector/neta/centrality.c
 
    \brief Network Analysis library - centrality
 
@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 #include <grass/dgl/graph.h>
 #include <grass/neta.h>
@@ -27,7 +27,7 @@
    Array degree has to be properly initialised to nnodes+1 elements
 
    \param graph input graph
-   \param[out] array of degrees
+   \param[out] degree array of degrees
  */
 void NetA_degree_centrality(dglGraph_s * graph, double *degree)
 {

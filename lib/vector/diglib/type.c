@@ -14,8 +14,7 @@
  * \date 2001
  */
 
-#include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 
 /*!
    \brief Convert type to store type
@@ -51,7 +50,7 @@ int dig_type_to_store(int type)
 /*!
    \brief Convert type from store type
 
-   \param type feature store type
+   \param stype feature store type
 
    \return type
  */

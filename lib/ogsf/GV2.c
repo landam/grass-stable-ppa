@@ -1,26 +1,23 @@
 /*!
-   \file GV2.c
+   \file lib/ogsf/GV2.c
 
    \brief OGSF library - loading and manipulating vector sets (higher level functions)
 
-   GRASS OpenGL gsurf OGSF Library 
+   (C) 1999-2008, 2011 by the GRASS Development Team
 
-   (C) 1999-2008 by the GRASS Development Team
-
-   This program is free software under the 
-   GNU General Public License (>=v2). 
-   Read the file COPYING that comes with GRASS
-   for details.
+   This program is free software under the GNU General Public License
+   (>=v2).  Read the file COPYING that comes with GRASS for details.
 
    \author Bill Brown USACERL, GMSL/University of Illinois
-   \author Doxygenized by Martin Landa <landa.martin gmail.com>
+   \author Updated by Martin landa <landa.martin gmail.com>
+   (doxygenized in May 2008, thematic mapping in June 2011)
  */
 
 #include <stdlib.h>
 #include <string.h>
 
 #include <grass/gis.h>
-#include <grass/gstypes.h>
+#include <grass/ogsf.h>
 
 #include "gsget.h"
 
@@ -72,10 +69,10 @@ int GV_new_vector(void)
 
 	G_debug(3, "GV_new_vector(): id=%d", nv->gvect_id);
 
-	return (nv->gvect_id);
+	return nv->gvect_id;
     }
 
-    return (-1);
+    return -1;
 }
 
 /*!
@@ -217,7 +214,7 @@ int GV_get_vectname(int id, char **filename)
 }
 
 /*!
-   \brief Set vector set mode
+   \brief Set vector style
 
    \param id vector set id
    \param mem non-zero for use memory
@@ -228,48 +225,113 @@ int GV_get_vectname(int id, char **filename)
    \return -1 on error (invalid vector set id)
    \return 1 on success
  */
-int GV_set_vectmode(int id, int mem, int color, int width, int flat)
+int GV_set_style(int id, int mem, int color, int width, int flat)
 {
     geovect *gv;
 
     if (NULL == (gv = gv_get_vect(id))) {
-	return (-1);
+	return -1;
     }
 
     gv->use_mem = mem;
-    gv->color = color;
-    gv->width = width;
     gv->flat_val = flat;
+    gv->style->color = color;
+    gv->style->width = width;
 
-    return (1);
+    return 1;
 }
 
+
 /*!
-   \brief Get vector set mode
+   \brief Get vector style
 
    \param id vector set id
-   \param[out] mem
+   \param[out] mem non-zero for use memory
    \param[out] color color value
-   \param[out] width
-   \param[out] flat
+   \param[out] width line width
+   \param[out] flat non-zero for flat mode
 
    \return -1 on error (invalid vector set id)
    \return 1 on success
  */
-int GV_get_vectmode(int id, int *mem, int *color, int *width, int *flat)
+int GV_get_style(int id, int *mem, int *color, int *width, int *flat)
 {
     geovect *gv;
 
     if (NULL == (gv = gv_get_vect(id))) {
-	return (-1);
+	return -1;
     }
 
     *mem = gv->use_mem;
-    *color = gv->color;
-    *width = gv->width;
+    *color = gv->style->color;
+    *width = gv->style->width;
     *flat = gv->flat_val;
 
-    return (1);
+    return 1;
+}
+
+/*!
+   \brief Set vector set style for thematic mapping
+   
+   Updates also style for each geoline.
+   
+   \param id vector set id
+   \param layer layer number for thematic mapping
+   \param color color column name
+   \param width width column name
+   \param colors pointer to Colors structure or NULL
+
+   \return 1 on success
+   \return -1 on error (point set not found)
+ */
+int GV_set_style_thematic(int id, int layer, const char* color, const char* width,
+			  struct Colors *color_rules)
+{
+    geovect *gv;
+
+    if (NULL == (gv = gv_get_vect(id))) {
+	return -1;
+    }
+
+    if(!gv->tstyle)
+	gv->tstyle = (gvstyle_thematic *)G_malloc(sizeof(gvstyle_thematic));
+    G_zero(gv->tstyle, sizeof(gvstyle_thematic));
+    
+    gv->tstyle->active = 1;
+    gv->tstyle->layer = layer;
+    if (color)
+	gv->tstyle->color_column = G_store(color);
+    if (width)
+	gv->tstyle->width_column = G_store(width);
+
+    Gv_load_vect_thematic(gv, color_rules);
+
+    return 1;
+}
+
+/*!
+   \brief Make style for thematic mapping inactive
+   
+   \param id vector set id
+
+   \return 1 on success
+   \return -1 on error (point set not found)
+ */
+int GV_unset_style_thematic(int id)
+{
+    geovect *gv;
+
+    G_debug(4, "GV_unset_style_thematic(): id=%d", id);
+
+    if (NULL == (gv = gv_get_vect(id))) {
+	return -1;
+    }
+
+    if (gv->tstyle) {
+	gv->tstyle->active = 0;
+    }
+
+    return 1;
 }
 
 /*!
@@ -439,7 +501,7 @@ void GV_draw_vect(int vid)
 }
 
 /*!
-   \brief Draw all vector sets
+   \brief Draw all loaded vector sets
  */
 void GV_alldraw_vect(void)
 {
@@ -453,7 +515,9 @@ void GV_alldraw_vect(void)
 }
 
 /*!
-   \brief Draw vector sets
+   \brief Draw vector set (fast mode)
+
+   \todo Seems to be broken, nothing is drawn
 
    \param vid vector set id
  */
@@ -473,6 +537,20 @@ void GV_draw_fastvect(int vid)
 		gvd_vect(gv, gs, 1);
 	    }
 	}
+    }
+
+    return;
+}
+
+/*!
+   \brief Draw all loaded vector sets (fast mode)
+ */
+void GV_alldraw_fastvect(void)
+{
+    int id;
+
+    for (id = 0; id < Next_vect; id++) {
+	GV_draw_fastvect(Vect_ID[id]);
     }
 
     return;

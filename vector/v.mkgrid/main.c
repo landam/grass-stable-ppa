@@ -7,11 +7,11 @@
  *               Hamish Bowman <hamish_b yahoo.com>,
  *               Jachym Cepicky <jachym les-ejk.cz>, Markus Neteler <neteler itc.it>
  * PURPOSE:      
- * COPYRIGHT:    (C) 1999-2007 by the GRASS Development Team
+ * COPYRIGHT:    (C) 1999-2009 by the GRASS Development Team
  *
- *               This program is free software under the GNU General Public
- *               License (>=v2). Read the file COPYING that comes with GRASS
- *               for details.
+ *               This program is free software under the GNU General
+ *               Public License (>=v2). Read the file COPYING that
+ *               comes with GRASS for details.
  *
  *****************************************************************************/
 
@@ -19,10 +19,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+
 #include <grass/gis.h>
 #include <grass/dbmi.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
+
 #include "grid_structs.h"
 #include "local_proto.h"
 
@@ -34,6 +36,7 @@ int main(int argc, char *argv[])
 
     /* store filename and path  */
     char *dig_file;
+    
     char buf[2000];
 
     /* Other local variables */
@@ -43,10 +46,10 @@ int main(int argc, char *argv[])
     struct Cell_head window;
     struct Map_info Map;
     struct Option *vectname, *grid, *coord, *box, *angle, *position_opt, *breaks;
-    struct Flag *q;
+    struct GModule *module;
     struct Flag *points_fl;
     int points_p;
-    struct GModule *module;
+    char *desc;
 
     struct line_pnts *Points;
     struct line_cats *Cats;
@@ -60,16 +63,16 @@ int main(int argc, char *argv[])
 
     /* Set description */
     module = G_define_module();
-    module->keywords = _("vector, geometry");
-    module->description =
-	_("Creates a GRASS vector map of a user-defined grid.");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("geometry"));
+    module->description = _("Creates a vector map of a user-defined grid.");
 
     vectname = G_define_standard_option(G_OPT_V_OUTPUT);
     vectname->key = "map";
 
     grid = G_define_option();
     grid->key = "grid";
-    grid->key_desc = "rows,columns";
+    grid->key_desc = _("rows,columns");
     grid->type = TYPE_INTEGER;
     grid->required = YES;
     grid->multiple = NO;
@@ -83,8 +86,12 @@ int main(int argc, char *argv[])
     position_opt->options = "region,coor";
     position_opt->answer = "region";
     position_opt->description = _("Where to place the grid");
-    position_opt->descriptions = _("region;current region;"
-				   "coor;use 'coor' and 'box' options");
+    desc = NULL;
+    G_asprintf(&desc,
+            "region;%s;coor;%s",
+            _("current region"),
+            _("use 'coor' and 'box' options"));
+    position_opt->descriptions = desc;
 
     coord = G_define_option();
     coord->key = "coor";
@@ -97,7 +104,7 @@ int main(int argc, char *argv[])
 
     box = G_define_option();
     box->key = "box";
-    box->key_desc = "width,height";
+    box->key_desc = _("width,height");
     box->type = TYPE_DOUBLE;
     box->required = NO;
     box->multiple = NO;
@@ -117,30 +124,16 @@ int main(int argc, char *argv[])
     breaks->required = NO;
     breaks->description =
 	_("Number of horizontal vertex points per grid cell");
-    breaks->options = "3-30";
+    breaks->options = "0-60";
     breaks->answer = "3";
 
-    points_fl = G_define_flag ();
+    points_fl = G_define_flag();
     points_fl->key = 'p';
     points_fl->description =
 	_("Create grid of points instead of areas and centroids");
 
-    /* please, remove before GRASS 7 released */
-    q = G_define_flag();
-    q->key = 'q';
-    q->description = _("Quiet; No chatter");
-    q->answer = 0;
-
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
-
-
-    /* please, remove before GRASS 7 released */
-    if (q->answer) {
-	putenv("GRASS_VERBOSE=0");
-	G_warning(_("The '-q' flag is superseded and will be removed "
-		    "in future. Please use '--quiet' instead."));
-    }
 
 
     points_p = points_fl->answer;
@@ -165,10 +158,15 @@ int main(int argc, char *argv[])
     /* Position */
     if (position_opt->answer[0] == 'r') {	/* region */
 	if (coord->answer)
-	    G_warning("'coor' option ignored with 'position=region'");
+	    G_fatal_error(_("'coor' and 'position=region' are exclusive options"));
 
 	if (box->answer)
-	    G_warning("'box' option ignored with 'position=region'");
+	    G_fatal_error(_("'box' and 'position=region' are exclusive options"));
+
+	if (grid_info.angle != 0.0) {
+	    G_fatal_error(_("'angle' and 'position=region' are exclusive options"));
+	    grid_info.angle = 0.0;
+	}
 
 	grid_info.origin_x = window.west;
 	grid_info.origin_y = window.south;
@@ -178,11 +176,6 @@ int main(int argc, char *argv[])
 
 	G_debug(2, "x = %e y = %e l = %e w = %e", grid_info.origin_x,
 		grid_info.origin_y, grid_info.length, grid_info.width);
-
-	if (grid_info.angle != 0.0) {
-	    G_warning("'angle' ignored ");
-	    grid_info.angle = 0.0;
-	}
     }
     else {
 	if (!coord->answer)
@@ -263,7 +256,7 @@ int main(int argc, char *argv[])
 	G_fatal_error(_("Unable to grant privileges on table <%s>"),
 		      Fi->table);
 
-    if (! points_p) {
+    if (!points_p) {
 	/* create areas */
 	write_grid(&grid_info, &Map, nbreaks);
     }
@@ -272,6 +265,7 @@ int main(int argc, char *argv[])
     G_verbose_message(_("Creating centroids..."));
 
     /* Write out centroids and attributes */
+    db_begin_transaction(Driver);
     attCount = 0;
     for (i = 0; i < grid_info.num_rows; ++i) {
 	for (j = 0; j < grid_info.num_cols; ++j) {
@@ -291,27 +285,33 @@ int main(int argc, char *argv[])
 	    Vect_cat_set(Cats, 1, attCount + 1);
 	    Vect_write_line(&Map, point_type, Points, Cats);
 
-	    if (grid_info.num_rows < 27 && grid_info.num_cols < 27) {
+	    sprintf(buf, "insert into %s values ", Fi->table);
+	    if (db_set_string(&sql, buf) != DB_OK)
+		G_fatal_error(_("Unable to fill attribute table"));
+
+            if (grid_info.num_rows < 27 && grid_info.num_cols < 27) {
 		sprintf(buf,
-			"insert into %s values ( %d, %d, %d, '%c', '%c' )",
-			Fi->table, attCount + 1, grid_info.num_rows - i,
+			"( %d, %d, %d, '%c', '%c' )",
+			attCount + 1, grid_info.num_rows - i,
 			j + 1, 'A' + grid_info.num_rows - i - 1, 'A' + j);
 	    }
 	    else {
-		sprintf(buf, "insert into %s values ( %d, %d, %d )",
-			Fi->table, attCount + 1, i + 1, j + 1);
+		sprintf(buf, "( %d, %d, %d )",
+			attCount + 1, i + 1, j + 1);
 	    }
-	    db_set_string(&sql, buf);
+            if (db_append_string(&sql, buf) != DB_OK)
+                    G_fatal_error(_("Unable to fill attribute table"));
 
 	    G_debug(3, "SQL: %s", db_get_string(&sql));
 
 	    if (db_execute_immediate(Driver, &sql) != DB_OK) {
 		G_fatal_error(_("Unable to insert new record: %s"),
-			      db_get_string(&sql));
+			    db_get_string(&sql));
 	    }
 	    attCount++;
 	}
     }
+    db_commit_transaction(Driver);
 
     db_close_database_shutdown_driver(Driver);
 

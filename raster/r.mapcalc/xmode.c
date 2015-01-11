@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include "globals.h"
 #include "expression.h"
 #include "func_proto.h"
@@ -57,6 +58,13 @@ int f_mode(int argc, const int *argt, void **args)
     static int value_size;
     int size = argc * sizeof(double);
     int i, j;
+
+    if (argc < 1)
+	return E_ARG_LO;
+
+    for (i = 1; i <= argc; i++)
+	if (argt[i] != argt[0])
+	    return E_ARG_TYPE;
 
     if (size > value_size) {
 	value_size = size;

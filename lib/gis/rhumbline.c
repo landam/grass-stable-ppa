@@ -32,15 +32,18 @@
 #include "pi.h"
 
 
-static int adjust_lat(double *);
+static void adjust_lat(double *);
 
 #if 0
-static int adjust_lon(double *);
+static void adjust_lon(double *);
 #endif /* unused */
 
-static double TAN_A, TAN1, TAN2, L;
-static int parallel;
+static struct state {
+    double TAN_A, TAN1, TAN2, L;
+    int parallel;
+} state;
 
+static struct state *st = &state;
 
 /**
  * \brief Start rhumbline calculations.
@@ -61,25 +64,25 @@ int G_begin_rhumbline_equation(double lon1, double lat1, double lon2,
     adjust_lat(&lat2);
 
     if (lon1 == lon2) {
-	parallel = 1;		/* a lie */
-	L = lat1;
+	st->parallel = 1;		/* a lie */
+	st->L = lat1;
 	return 0;
     }
     if (lat1 == lat2) {
-	parallel = 1;
-	L = lat1;
+	st->parallel = 1;
+	st->L = lat1;
 	return 1;
     }
-    parallel = 0;
+    st->parallel = 0;
     lon1 = Radians(lon1);
     lon2 = Radians(lon2);
     lat1 = Radians(lat1);
     lat2 = Radians(lat2);
 
-    TAN1 = tan(M_PI_4 + lat1 / 2.0);
-    TAN2 = tan(M_PI_4 + lat2 / 2.0);
-    TAN_A = (lon2 - lon1) / (log(TAN2) - log(TAN1));
-    L = lon1;
+    st->TAN1 = tan(M_PI_4 + lat1 / 2.0);
+    st->TAN2 = tan(M_PI_4 + lat2 / 2.0);
+    st->TAN_A = (lon2 - lon1) / (log(st->TAN2) - log(st->TAN1));
+    st->L = lon1;
 
     return 1;
 }
@@ -96,34 +99,30 @@ int G_begin_rhumbline_equation(double lon1, double lat1, double lon2,
 
 double G_rhumbline_lat_from_lon(double lon)
 {
-    if (parallel)
-	return L;
+    if (st->parallel)
+	return st->L;
 
     lon = Radians(lon);
 
-    return Degrees(2 * atan(exp((lon - L) / TAN_A) * TAN1) - M_PI_2);
+    return Degrees(2 * atan(exp((lon - st->L) / st->TAN_A) * st->TAN1) - M_PI_2);
 }
 
 
 #if 0
-static int adjust_lon(double *lon)
+static void adjust_lon(double *lon)
 {
     while (*lon > 180.0)
 	*lon -= 360.0;
     while (*lon < -180.0)
 	*lon += 360.0;
-
-    return 0;
 }
 #endif /* unused */
 
 
-static int adjust_lat(double *lat)
+static void adjust_lat(double *lat)
 {
     if (*lat > 90.0)
 	*lat = 90.0;
     if (*lat < -90.0)
 	*lat = -90.0;
-
-    return 0;
 }

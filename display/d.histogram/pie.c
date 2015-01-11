@@ -29,8 +29,10 @@
  */
 
 #include <string.h>
-#include <grass/display.h>
+
 #include <grass/raster.h>
+#include <grass/display.h>
+
 #include "pie.h"
 
 /*#define DEBUG */
@@ -56,12 +58,12 @@ int pie(struct stat_list *dist_stats,	/* list of distribution statistics */
     long int num_cats;
     long int tic_every;		/* spacing, in units of category value, of tics */
     long int tic_unit;
-    int t, b, l, r;
-    int tt, tb, tl, tr;
-    int x_line[5];		/* for border of histogram */
-    int y_line[5];
-    int x_box[6];		/* for histogram bar coordinates */
-    int y_box[6];
+    double t, b, l, r;
+    double tt, tb, tl, tr;
+    double x_line[5];		/* for border of histogram */
+    double y_line[5];
+    double x_box[6];		/* for histogram bar coordinates */
+    double y_box[6];
     double height, width;
     double xscale;		/* scaling factors */
     double yscale;
@@ -70,17 +72,16 @@ int pie(struct stat_list *dist_stats,	/* list of distribution statistics */
     char tic_name[80];
     DCELL dmin, dmax, range_dmin, range_dmax, dval;
 
-    /* get coordinates of current screen window, in pixels */
-    D_get_screen_window(&t, &b, &l, &r);
-    R_set_window(t, b, l, r);
+    /* get coordinates of current screen window */
+    D_get_src(&t, &b, &l, &r);
 
     /* create legend box border, to be drawn later */
     height = b - t;
     width = r - l;
-    x_line[4] = x_line[0] = x_line[1] = l + (int)(BAR_X1 * width);
-    y_line[4] = y_line[0] = y_line[3] = b - (int)(BAR_Y1 * height);
-    x_line[2] = x_line[3] = l + (int)(BAR_X2 * width);
-    bar_height = y_line[1] = y_line[2] = b - (int)(BAR_Y2 * height);
+    x_line[4] = x_line[0] = x_line[1] = l + (BAR_X1 * width);
+    y_line[4] = y_line[0] = y_line[3] = b - (BAR_Y1 * height);
+    x_line[2] = x_line[3] = l + (BAR_X2 * width);
+    bar_height = y_line[1] = y_line[2] = b - (BAR_Y2 * height);
 
     /* figure scaling factors and offsets */
     num_cats = dist_stats->maxcat - dist_stats->mincat + 1;
@@ -109,9 +110,9 @@ int pie(struct stat_list *dist_stats,	/* list of distribution statistics */
 	max_tics = (x_line[2] - x_line[1]) / XTIC_DIST;
 	i = 0;
 	if (is_fp) {
-	    G_get_fp_range_min_max(&fp_range, &range_dmin, &range_dmax);
-	    if (G_is_d_null_value(&range_dmin) ||
-		G_is_d_null_value(&range_dmax))
+	    Rast_get_fp_range_min_max(&fp_range, &range_dmin, &range_dmax);
+	    if (Rast_is_d_null_value(&range_dmin) ||
+		Rast_is_d_null_value(&range_dmax))
 		G_fatal_error("Floating point data range is empty");
 
 	    while ((range_dmax - range_dmin) / tics[i].every > max_tics)
@@ -126,9 +127,9 @@ int pie(struct stat_list *dist_stats,	/* list of distribution statistics */
     }
     else {
 	if (is_fp && !cat_ranges) {
-	    G_get_fp_range_min_max(&fp_range, &range_dmin, &range_dmax);
-	    if (G_is_d_null_value(&range_dmin) ||
-		G_is_d_null_value(&range_dmax))
+	    Rast_get_fp_range_min_max(&fp_range, &range_dmin, &range_dmax);
+	    if (Rast_is_d_null_value(&range_dmin) ||
+		Rast_is_d_null_value(&range_dmax))
 		G_fatal_error("Floating point data range is empty");
 	}
 	tic_every = 1;
@@ -146,9 +147,9 @@ int pie(struct stat_list *dist_stats,	/* list of distribution statistics */
     ptr = dist_stats->ptr;
     arc_counter = 0;
     for (i = dist_stats->mincat; i <= dist_stats->maxcat; i++) {
-	text_height = (height) * 0.7 * TEXT_HEIGHT;
-	text_width = (width) * 0.7 * TEXT_WIDTH;
-	R_text_size(text_width, text_height);
+	text_height = height * 0.7 * TEXT_HEIGHT;
+	text_width = width * 0.7 * TEXT_WIDTH;
+	D_text_size(text_width, text_height);
 	draw = NO;
 	/* figure color and height of the slice of pie 
 	 *
@@ -166,15 +167,15 @@ int pie(struct stat_list *dist_stats,	/* list of distribution statistics */
 		draw = NO;
 	    else {
 		draw = YES;
-		G_set_d_null_value(&dval, 1);
-		arc = (double)360 *((double)dist_stats->null_stat
+		Rast_set_d_null_value(&dval, 1);
+		arc = 360.0 *((double)dist_stats->null_stat
 				    / (double)dist_stats->sumstat);
-		draw_slice_filled(colors, dval, (int)color, (double)ORIGIN_X,
-				  (double)ORIGIN_Y, (double)RADIUS,
+		draw_slice_filled(colors, dval, color, ORIGIN_X,
+				  ORIGIN_Y, RADIUS,
 				  arc_counter, arc);
 		/*OUTLINE THE SLICE
-		   draw_slice_unfilled(colors, (int)color,(double)ORIGIN_X,(double)ORIGIN_Y,
-		   (double)RADIUS,arc_counter,arc); */
+		   draw_slice_unfilled(colors, color,ORIGIN_X,ORIGIN_Y,
+		   RADIUS,arc_counter,arc); */
 		arc_counter += arc;
 		D_d_color(dval, colors);
 	    }
@@ -186,38 +187,27 @@ int pie(struct stat_list *dist_stats,	/* list of distribution statistics */
 		draw = YES;
 		if (is_fp) {
 		    if (cat_ranges)
-			G_get_ith_d_raster_cat(&cats, (CELL) i, &dmin, &dmax);
+			Rast_get_ith_d_cat(&cats, (CELL) i, &dmin, &dmax);
 		    else {
-			dmin =
-			    range_dmin + (double)i *(range_dmax -
-						     range_dmin) /
-			    (double)nsteps;
-			dmax =
-			    range_dmin + (double)(i + 1) * (range_dmax -
-							    range_dmin) /
-			    (double)nsteps;
+			dmin = range_dmin + i * (range_dmax - range_dmin) / nsteps;
+			dmax = range_dmin + (i + 1) * (range_dmax - range_dmin) / nsteps;
 		    }
-		    arc =
-			(double)360 *((double)ptr->stat /
-				      (double)dist_stats->sumstat);
-		    draw_slice(colors, 1, dmin, dmax, (int)color,
-			       (double)ORIGIN_X, (double)ORIGIN_Y,
-			       (double)RADIUS, arc_counter, arc);
+		    arc = 360.0 * ptr->stat / dist_stats->sumstat;
+		    draw_slice(colors, 1, dmin, dmax, color, ORIGIN_X, ORIGIN_Y,
+			       RADIUS, arc_counter, arc);
 		    arc_counter += arc;
 		    D_d_color(dmin, colors);
 		    /*OUTLINE THE SLICE */
-		    draw_slice_unfilled(colors, (int)color, (double)ORIGIN_X,
-					(double)ORIGIN_Y, (double)RADIUS,
+		    draw_slice_unfilled(colors, color, ORIGIN_X,
+					ORIGIN_Y, RADIUS,
 					arc_counter, arc);
 		}
 		else {
 		    bar_color = ptr->cat;
-		    arc =
-			(double)360 *((double)ptr->stat /
-				      (double)dist_stats->sumstat);
-		    draw_slice_filled(colors, (DCELL) bar_color, (int)color,
-				      (double)ORIGIN_X, (double)ORIGIN_Y,
-				      (double)RADIUS, arc_counter, arc);
+		    arc = 360.0 * ptr->stat / dist_stats->sumstat;
+		    draw_slice_filled(colors, (DCELL) bar_color, color,
+				      ORIGIN_X, ORIGIN_Y,
+				      RADIUS, arc_counter, arc);
 		    D_color((CELL) bar_color, colors);
 		    arc_counter += arc;
 		}
@@ -237,40 +227,29 @@ int pie(struct stat_list *dist_stats,	/* list of distribution statistics */
 		    draw = YES;
 		    if (is_fp) {
 			if (cat_ranges)
-			    G_get_ith_d_raster_cat(&cats, (CELL) i, &dmin,
-						   &dmax);
+			    Rast_get_ith_d_cat(&cats, (CELL) i, &dmin, &dmax);
 			else {
-			    dmin =
-				range_dmin + (double)i *(range_dmax -
-							 range_dmin) /
-				(double)nsteps;
-			    dmax =
-				range_dmin + (double)(i + 1) * (range_dmax -
-								range_dmin) /
-				(double)nsteps;
+			    dmin = range_dmin + i * (range_dmax - range_dmin) / nsteps;
+			    dmax = range_dmin + (i + 1) * (range_dmax - range_dmin) / nsteps;
 			}
-			arc =
-			    (double)360 *((double)ptr->stat /
-					  (double)dist_stats->sumstat);
-			draw_slice(colors, 1, dmin, dmax, (int)color,
-				   (double)ORIGIN_X, (double)ORIGIN_Y,
-				   (double)RADIUS, arc_counter, arc);
+			arc = 360.0 * ptr->stat / dist_stats->sumstat;
+			draw_slice(colors, 1, dmin, dmax, color,
+				   ORIGIN_X, ORIGIN_Y,
+				   RADIUS, arc_counter, arc);
 			arc_counter += arc;
 			/*OUTLINE THE SLICE */
-			draw_slice_unfilled(colors, (int)color,
-					    (double)ORIGIN_X,
-					    (double)ORIGIN_Y, (double)RADIUS,
+			draw_slice_unfilled(colors, color,
+					    ORIGIN_X,
+					    ORIGIN_Y, RADIUS,
 					    arc_counter, arc);
 			D_d_color(dmin, colors);
 		    }
 		    else {
 			bar_color = ptr->cat;
-			arc =
-			    (double)360 *((double)ptr->stat /
-					  (double)dist_stats->sumstat);
+			arc = 360.0 * ptr->stat / dist_stats->sumstat;
 			draw_slice_filled(colors, (DCELL) bar_color,
-					  (int)color, (double)ORIGIN_X,
-					  (double)ORIGIN_Y, (double)RADIUS,
+					  color, ORIGIN_X,
+					  ORIGIN_Y, RADIUS,
 					  arc_counter, arc);
 			D_color((CELL) bar_color, colors);
 			arc_counter += arc;
@@ -285,7 +264,7 @@ int pie(struct stat_list *dist_stats,	/* list of distribution statistics */
 		     */
 		    draw = NO;
 		    bar_color = D_translate_color("black");
-		    R_standard_color(bar_color);
+		    D_use_color(bar_color);
 		}
 		else
 		    draw = NO;
@@ -312,7 +291,7 @@ int pie(struct stat_list *dist_stats,	/* list of distribution statistics */
 				       0.5 * xscale + j + 1);
 			y_box[0] = y_box[3] = y_box[4] = y_line[0];
 			y_box[1] = y_box[2] = bar_height;
-			R_polygon_abs(x_box, y_box, 4);
+			D_polygon_abs(x_box, y_box, 4);
 		    }
 		}
 		else {		/* draw 1-color bar, color is already set */
@@ -325,7 +304,7 @@ int pie(struct stat_list *dist_stats,	/* list of distribution statistics */
 				   0.5 * xscale);
 		    y_box[0] = y_box[3] = y_box[4] = y_line[0];
 		    y_box[1] = y_box[2] = bar_height;
-		    R_polygon_abs(x_box, y_box, 4);
+		    D_polygon_abs(x_box, y_box, 4);
 		}
 	    }
 	    else {		/* color is already set for 1-color bar */
@@ -335,8 +314,7 @@ int pie(struct stat_list *dist_stats,	/* list of distribution statistics */
 		    xoffset + (i - dist_stats->mincat) * xscale;
 		y_box[0] = yoffset;
 		y_box[1] = bar_height;
-		R_move_abs((int)x_box[0], (int)y_box[0]);
-		R_cont_abs((int)x_box[1], (int)y_box[1]);
+		D_line_abs(x_box[0], y_box[0], x_box[1], y_box[1]);
 	    }
 	}
 
@@ -347,67 +325,76 @@ int pie(struct stat_list *dist_stats,	/* list of distribution statistics */
 	if ((rem((long int)i, tic_every) == 0L ||
 	     ((i == dist_stats->mincat) && nodata))
 	    && !(nodata && i == dist_stats->mincat + 1)) {
+
 	    /* draw a numbered tic-mark */
-	    R_standard_color(color);
-	    R_move_abs((int)
-		       (xoffset + (i - dist_stats->mincat) * xscale -
-			0.5 * xscale), (int)(b - BAR_Y1 * (height)));
-	    R_cont_rel((int)0, (int)(BIG_TIC * (height)));
+	    D_use_color(color);
+	    D_begin();
+	    D_move_abs(xoffset
+		       + (i - dist_stats->mincat) * xscale
+		       - 0.5 * xscale,
+		       b - BAR_Y1 * height);
+	    D_cont_rel(0, BIG_TIC * height);
+	    D_end();
+	    D_stroke();
+
 	    if (nodata && i == dist_stats->mincat)
 		sprintf(txt, "null");
 	    else if (is_fp)
 		sprintf(txt, "%d", (int)(dmin / (double)tic_unit));
 	    else
 		sprintf(txt, "%d", (int)(i / tic_unit));
-	    text_height = (height) * TEXT_HEIGHT;
-	    text_width = (width) * TEXT_WIDTH;
-	    R_text_size(text_width, text_height);
-	    R_get_text_box(txt, &tt, &tb, &tl, &tr);
+	    text_height = height * TEXT_HEIGHT;
+	    text_width = width * TEXT_WIDTH;
+	    D_text_size(text_width, text_height);
+	    D_get_text_box(txt, &tt, &tb, &tl, &tr);
 	    while ((tr - tl) > XTIC_DIST) {
 		text_width *= 0.95;
 		text_height *= 0.95;
-		R_text_size(text_width, text_height);
-		R_get_text_box(txt, &tt, &tb, &tl, &tr);
+		D_text_size(text_width, text_height);
+		D_get_text_box(txt, &tt, &tb, &tl, &tr);
 	    }
-	    R_move_abs((int)
-		       (xoffset + (i - dist_stats->mincat) * xscale -
-			0.5 * xscale - (tr - tl) / 2),
-		       (int)(b - XNUMS_Y * (height)));
-	    R_text(txt);
+	    D_pos_abs(xoffset
+		      + (i - dist_stats->mincat) * xscale
+		      - 0.5 * xscale
+		      - (tr - tl) / 2,
+		      b - XNUMS_Y * height);
+	    D_text(txt);
 	}
-	else if (rem(i, tic_unit) == (float)0) {
+	else if (rem(i, tic_unit) == 0.0) {
 	    /* draw a tic-mark */
-	    R_standard_color((int)color);
-	    R_move_abs((int)
-		       (xoffset + (i - dist_stats->mincat) * xscale -
-			0.5 * xscale), (int)(b - BAR_Y1 * (height)));
-	    R_cont_rel((int)0, (int)(SMALL_TIC * (height)));
+	    D_use_color(color);
+	    D_begin();
+	    D_move_abs(xoffset
+		       + (i - dist_stats->mincat) * xscale
+		       - 0.5 * xscale,
+		       b - BAR_Y1 * height);
+	    D_cont_rel(0, SMALL_TIC * height);
+	    D_end();
+	    D_stroke();
 	}
     }
 
     /* draw border around pie */
-    R_standard_color((int)color);
-    draw_slice_unfilled(colors, (int)color, (double)ORIGIN_X,
-			(double)ORIGIN_Y, (double)RADIUS, (double)0,
-			(double)360);
+    D_use_color(color);
+    draw_slice_unfilled(colors, color, ORIGIN_X, ORIGIN_Y, RADIUS, 0.0, 360.0);
 
     /* draw border around legend bar */
-    R_standard_color((int)color);
-    R_polyline_abs(x_line, y_line, 5);
+    D_use_color(color);
+    D_polyline_abs(x_line, y_line, 5);
 
     /* draw the x-axis label */
     if (tic_unit != 1)
 	sprintf(xlabel, "Cell Values %s", tic_name);
     else
 	sprintf(xlabel, "Cell Values");
-    text_height = (height) * TEXT_HEIGHT;
-    text_width = (width) * TEXT_WIDTH;
-    R_text_size(text_width, text_height);
-    R_get_text_box(xlabel, &tt, &tb, &tl, &tr);
-    R_move_abs((int)(l + (width) / 2 - (tr - tl) / 2),
-	       (int)(b - LABEL * (height)));
-    R_standard_color((int)color);
-    R_text(xlabel);
+    text_height = height * TEXT_HEIGHT;
+    text_width = width * TEXT_WIDTH;
+    D_text_size(text_width, text_height);
+    D_get_text_box(xlabel, &tt, &tb, &tl, &tr);
+    D_pos_abs(l + width / 2 - (tr - tl) / 2,
+	      b - LABEL * height);
+    D_use_color(color);
+    D_text(xlabel);
 
     return 0;
 }

@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "coin.h"
 
@@ -37,7 +38,6 @@ const char *dumpname;
 const char *statname;
 FILE *dumpfile;
 
-const char *mapset1, *mapset2;
 const char *map1name, *map2name;
 int ncat1, ncat2;
 
@@ -63,7 +63,8 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, statistics");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("statistics"));
     module->description =
 	_("Tabulates the mutual occurrence (coincidence) "
 	  "of categories for two raster map layers.");
@@ -112,21 +113,19 @@ int main(int argc, char *argv[])
 
     /* restore region back to the original */
     G_get_window(&window);
-    G_set_window(&window);
+    Rast_set_window(&window);
 
     dumpname = G_tempfile();
     statname = G_tempfile();
 
-    window_cells = G_window_rows() * G_window_cols();
+    window_cells = Rast_window_rows() * Rast_window_cols();
 
     map1name = parm.map1->answer;
     map2name = parm.map2->answer;
 
-    mapset1 = G_find_cell2(map1name, "");
-    if (!mapset1)
+    if (!G_find_raster2(map1name, ""))
 	G_fatal_error(_("Raster map <%s> not found"), map1name);
-    mapset2 = G_find_cell2(map2name, "");
-    if (!mapset2)
+    if (!G_find_raster2(map2name, ""))
 	G_fatal_error(_("Raster map <%s> not found"), map2name);
 
     make_coin();

@@ -33,7 +33,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 
@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
     char *in_name, *out_name, *bbox_name;
     struct GModule *module;
     struct Option *old, *new, *bbox;
-    struct Flag *append, *table_flag;
+    struct Flag *append, *table_flag, *no_topo;
     struct Map_info InMap, OutMap, BBoxMap;
     int n_files;
     int do_table;
@@ -65,9 +65,10 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, geometry");
-    module->description = _("Create a new vector map layer "
-			    "by combining other vector map layers.");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("geometry"));
+    module->description = _("Creates a new vector map "
+			    "by combining other vector maps.");
 
     old = G_define_standard_option(G_OPT_V_INPUTS);
 
@@ -90,6 +91,8 @@ int main(int argc, char *argv[])
     table_flag->description =
 	_("Only the table of layer 1 is currently supported");
 
+    no_topo = G_define_standard_flag(G_FLG_V_TOPO);
+
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
@@ -104,7 +107,7 @@ int main(int argc, char *argv[])
     i = 0;
     while (old->answers[i]) {
 	in_name = old->answers[i++];
-	Vect_check_input_output_name(in_name, new->answer, GV_FATAL_EXIT);
+	Vect_check_input_output_name(in_name, new->answer, G_FATAL_EXIT);
 
 	Vect_set_open_level(2);
 	Vect_open_old_head(&InMap, in_name, "");
@@ -240,6 +243,8 @@ int main(int argc, char *argv[])
     }
 
     if (append->answer) {
+	if (no_topo->answer)
+	    Vect_set_open_level(1);
 	Vect_open_update(&OutMap, out_name, G_mapset());
 	if (out_is_3d == WITH_Z && !Vect_is_3d(&OutMap)) {
 	    G_warning(_("The output map is not 3D"));
@@ -306,8 +311,7 @@ int main(int argc, char *argv[])
 	int add_cat;
 
 	in_name = old->answers[i++];
-	G_important_message(_("Patching vector map <%s@%s>..."), in_name,
-			    G_find_vector2(in_name, ""));
+	G_important_message(_("Patching vector map <%s>..."), in_name);
 	if (bbox_name)
 	    Vect_set_open_level(2);	/* needed for Vect_map_box() */
 	else
@@ -365,13 +369,14 @@ int main(int argc, char *argv[])
     Vect_set_map_name(&OutMap, "Output from v.patch");
     Vect_set_person(&OutMap, G_whoami());
 
-    Vect_build(&OutMap);
+    if (!no_topo->answer)
+	Vect_build(&OutMap);
     Vect_close(&OutMap);
 
     if (bbox_name) {
 	Vect_set_map_name(&BBoxMap, "Output from v.patch (bounding boxes)");
 	Vect_set_person(&BBoxMap, G_whoami());
-	G_important_message("");
+	G_important_message(" ");
 	G_important_message(_("Building topology for vector map <%s>..."),
 			    bbox_name);
 	Vect_build(&BBoxMap);
@@ -518,7 +523,7 @@ int patch(struct Map_info *InMap, struct Map_info *OutMap, int add_cat,
     }
 
     if (BBoxMap) {		/* inspired by v.in.region */
-	BOUND_BOX box;
+	struct bound_box box;
 	double diff_long, mid_long;
 	static int cat;
 

@@ -1,70 +1,66 @@
 """!
-@package lmrg.menudata
+@package lmgr.menudata
 
-@brief Complex list for menu entries for wxGUI
+@brief wxGUI Layer Manager - menu data
 
 Classes:
- - menudata::MenuData
+ - menudata::LayerManagerMenuData
 
-Usage:
-@code
-python menudata.py [action] [manager|modeler]
-@endcode
 
-where <i>action</i>:
- - strings (default)
- - tree
- - commands
- - dump
-
-(C) 2007-2011 by the GRASS Development Team
+(C) 2007-2012 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
 
-@author Michael Barton (Arizona State University)
-@author Yann Chemin <yann.chemin gmail.com>
 @author Martin Landa <landa.martin gmail.com>
-@author Glynn Clements
-@author Anna Kratochvilova <kratochanna gmail.com>
 """
 
 import os
-import sys
 
+from core.menutree  import MenuTreeModelBuilder
+from core.toolboxes import getMenudataFile
 from core.globalvar import ETCWXDIR
-from core.menudata  import MenuData
+from core.gcmd import GError
+from core.utils import _
 
-class ManagerData(MenuData):
-    def __init__(self, filename = None):
+
+class LayerManagerMenuData(MenuTreeModelBuilder):
+    def __init__(self, filename=None):
+        if filename:
+            expandAddons = False
+        else:
+            expandAddons = True
+
+        fallback = os.path.join(ETCWXDIR, 'xml', 'menudata.xml')
         if not filename:
-            gisbase = os.getenv('GISBASE')
-	    filename = os.path.join(ETCWXDIR, 'xml', 'menudata.xml')
-        
-        MenuData.__init__(self, filename)
-        
-    def GetModules(self):
-        """!Create dictionary of modules used to search module by
-        keywords, description, etc."""
-        modules = dict()
-        
-        for node in self.tree.getiterator():
-            if node.tag == 'menuitem':
-                module = description = ''
-                keywords = []
-                for child in node.getchildren():
-                    if child.tag == 'help':
-                        description = child.text
-                    if child.tag == 'command':
-                        module = child.text
-                    if child.tag == 'keywords':
-                        if child.text:
-                            keywords = child.text.split(',')
-                    
-                if module:
-                    modules[module] = { 'desc': description,
-                                        'keywords' : keywords }
-                    if len(keywords) < 1:
-                        print >> sys.stderr, "WARNING: Module <%s> has no keywords" % module
-                
-        return modules
+            filename = getMenudataFile(userRootFile='main_menu.xml',
+                                       newFile='menudata.xml',
+                                       fallback=fallback)
+        try:
+            MenuTreeModelBuilder.__init__(self, filename, expandAddons=expandAddons)
+        except (ValueError, AttributeError, TypeError):
+            GError(_("Unable to parse user toolboxes XML files. "
+                     "Default main menu will be loaded."))
+            fallback = os.path.join(ETCWXDIR, 'xml', 'menudata.xml')
+            MenuTreeModelBuilder.__init__(self, fallback)
+
+
+class LayerManagerModuleTree(MenuTreeModelBuilder):
+    def __init__(self, filename=None):
+        if filename:
+            expandAddons = False
+        else:
+            expandAddons = True
+
+        fallback = os.path.join(ETCWXDIR, 'xml', 'module_tree_menudata.xml')
+        if not filename:
+            filename = getMenudataFile(userRootFile='module_tree.xml',
+                                       newFile='module_tree_menudata.xml',
+                                       fallback=fallback)
+        # TODO: try-except useless?
+        try:
+            MenuTreeModelBuilder.__init__(self, filename, expandAddons=expandAddons)
+        except (ValueError, AttributeError, TypeError):
+            GError(_("Unable to parse user toolboxes XML files. "
+                     "Default module tree will be loaded."))
+            MenuTreeModelBuilder.__init__(self, fallback)

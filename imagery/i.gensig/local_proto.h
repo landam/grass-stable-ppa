@@ -1,3 +1,5 @@
+#include <grass/raster.h>
+
 /* alloc.c */
 double *vector(int, int);
 double **matrix(int, int, int, int);
@@ -17,6 +19,3 @@ int tred2(double **, int, double[], double[]);
 
 /* lookup_class.c */
 int lookup_class(CELL *, int, CELL *, int, CELL *);
-
-/* opencell.c */
-CELL *open_cell(char *, char *, int *);

@@ -1,6 +1,6 @@
 How to release GRASS GIS binaries and source code
 
-$Date: 2013-07-27 21:52:36 +0200 (Sat, 27 Jul 2013) $
+$Date: 2014-03-27 20:53:25 +0100 (Thu, 27 Mar 2014) $
 
 Note: This text contains *some* rules only applicable to the
       development coordinator (currently Markus Neteler, PSC Chair).
@@ -54,9 +54,9 @@ Contents
       vim include/VERSION
 
 #example:
-6
-4
-3RC3
+7
+0
+0RC1
 2013
       rm -f include/VERSION~
 
@@ -88,7 +88,7 @@ Contents
           echo $RELEASETAG
 
           URL=https://svn.osgeo.org/grass
-          svn copy $URL/grass/branches/releasebranch_6_4 \
+          svn copy $URL/grass/branches/releasebranch_7_0 \
 	       $URL/grass/tags/$RELEASETAG \
 	       -m "Tagging release grass_${MAJOR}_${MINOR}_${RELEASE}"
       
@@ -112,9 +112,9 @@ Contents
     vim include/VERSION
 
 #example
-6
-4
-4svn
+7
+0
+0svn
 2013
 
     rm -f include/VERSION~
@@ -128,12 +128,13 @@ Contents
     echo $SERVER2
 
    # copy along with associated files:
-     scp -p grass-$VERSION.* AUTHORS COPYING ChangeLog_$VERSION.gz INSTALL \
-         REQUIREMENTS.html SUBMITTING SUBMITTING_DOCS \
-         SUBMITTING_PYTHON SUBMITTING_TCLTK SUBMITTING_SCRIPTS neteler@$SERVER1
-     scp -p grass-$VERSION.* AUTHORS COPYING ChangeLog_$VERSION.gz INSTALL \
-         REQUIREMENTS.html SUBMITTING SUBMITTING_DOCS \
-         SUBMITTING_PYTHON SUBMITTING_TCLTK SUBMITTING_SCRIPTS neteler@$SERVER2
+     scp -p grass-$VERSION.* AUTHORS COPYING ChangeLog_$VERSION.gz \
+         INSTALL REQUIREMENTS.html SUBMITTING SUBMITTING_DOCS \
+         SUBMITTING_PYTHON SUBMITTING_SCRIPTS neteler@$SERVER1
+     scp -p grass-$VERSION.* AUTHORS COPYING ChangeLog_$VERSION.gz \
+         INSTALL REQUIREMENTS.html SUBMITTING SUBMITTING_DOCS \
+         SUBMITTING_PYTHON SUBMITTING_SCRIPTS neteler@$SERVER2
+    
 
  o update web site to new version: CMS
     - News section
@@ -155,7 +156,7 @@ Contents
          scp -r * neteler@grass.osgeo.org:/osgeo/grass/grass-cms/grass$MAJOR$MINOR/manuals/
          scp -r * neteler@download.osgeo.org:/osgeo/download/grass/grass$MAJOR$MINOR/manuals/
 
- o stable release: update cronjob 'cron_grass6_releasebranch_64_src_snapshot.sh' to next but one
+ o stable release: update cronjob 'cron_grass_HEAD_src_snapshot.sh' to next but one
                    release tag for the differences
 
 2. Tell others about it:
@@ -223,17 +224,23 @@ Contents
 1. see SVN book:
    http://svnbook.red-bean.com/en/1.1/ch04s07.html
 
-   GRASS 6.4 development branch:
-          BRANCH=develbranch_6
+   GRASS 7.0 release branch:
+          BRANCH=releasebranch_7_0
           URL=https://svn.osgeo.org/grass
           svn copy $URL/grass/trunk \
                    $URL/grass/branches/$BRANCH \
-                   -m "Development branch for GRASS 6.4.x"
+                   -m "Development branch for GRASS 7.0.x"
 
 
    Switching current local copy to above development branch:
    (http://svnbook.red-bean.com/en/1.1/ch04s05.html)
            cd /path/to/your/local/copy/trunk
-           svn switch https://svn.osgeo.org/grass/grass/branches/develbranch_6 .
+           svn switch https://svn.osgeo.org/grass/grass/branches/releasebranch_7_0 .
 
+----------
+GRASS GIS 7.0 release branch creation
+
+svn copy https://svn.osgeo.org/grass/grass/trunk/ \
+    https://svn.osgeo.org/grass/grass/branches/releasebranch_7_0 \
+    -m "Creating the GRASS GIS 7.0 release branch (development started in 04/2008, r31142)"
 

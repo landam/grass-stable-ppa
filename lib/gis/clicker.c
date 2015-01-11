@@ -9,26 +9,23 @@
 #include <stdio.h>
 #include <grass/gis.h>
 
-static int G_clicker_prev = 0;
+static struct state {
+    int prev;
+} state;
 
-int G_clicker(void)
+static struct state *st = &state;
+
+void G_clicker(void)
 {
-    int x, format;
-    static char clicks[] = "|/-\\";
+    static const char clicks[] = "|/-\\";
+    int format = G_info_format();
 
-    /* be verbose only 1> */
-    format = G_info_format();
     if (format == G_INFO_FORMAT_SILENT || G_verbose() < 1)
-        return 0;
+	return;
 
-    if (G_clicker_prev == -1 || G_clicker_prev == 3)
-	x = 0;
-    else
-	x = G_clicker_prev + 1;
+    st->prev++;
+    st->prev %= 4;
 
-    fprintf(stderr, "%1c\b", clicks[x]);
+    fprintf(stderr, "%1c\b", clicks[st->prev]);
     fflush(stderr);
-    G_clicker_prev = x;
-
-    return 0;
 }

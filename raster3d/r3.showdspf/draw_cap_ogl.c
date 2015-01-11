@@ -314,7 +314,7 @@ int draw_cap(XHeadp, XB_spec, XCap)
 	for (x = Cap->minx; x < Cap->maxx; x++) {
 	    Polys[0].data[0] = Polys[0].data[4] =
 		(double)Cap->D_buff[row + xdim + x];
-	     /*BL*/ Polys[0].data[1] = (double)Cap->D_buff[row + xdim + x + 1];	/* BR */
+	    /*BL*/ Polys[0].data[1] = (double)Cap->D_buff[row + xdim + x + 1];	/* BR */
 	    Polys[0].data[2] = (double)Cap->D_buff[row + x + 1];	/* TR */
 	    Polys[0].data[3] = (double)Cap->D_buff[row + x];	/* TL */
 

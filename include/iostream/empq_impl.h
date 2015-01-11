@@ -1,7 +1,8 @@
 /****************************************************************************
  * 
- *  MODULE:	iostream
+ *  MODULE:     iostream
  *
+
  *  COPYRIGHT (C) 2007 Laura Toma
  *   
  * 
@@ -25,18 +26,19 @@
  *  the Free Software Foundation; either version 2 of the License, or
  *  (at your option) any later version.
  *
+
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *****************************************************************************/
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  General Public License for more details.  *
+ *  **************************************************************************/
+
 
 #ifndef __EMPQ_IMPL_H
 #define __EMPQ_IMPL_H
 
 #include <ostream>
-using namespace std;
+#include <vector>
 
 #include "empq.h"
 

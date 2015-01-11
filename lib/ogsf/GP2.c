@@ -1,26 +1,24 @@
 /*!
-   \file GP2.c
+   \file lib/ogsf/GP2.c
 
    \brief OGSF library - loading and manipulating point sets (higher level functions)
 
-   GRASS OpenGL gsurf OGSF Library 
+   (C) 1999-2008, 2011 by the GRASS Development Team
 
-   (C) 1999-2008 by the GRASS Development Team
-
-   This program is free software under the 
-   GNU General Public License (>=v2). 
-   Read the file COPYING that comes with GRASS
-   for details.
+   This program is free software under the GNU General Public License
+   (>=v2). Read the file COPYING that comes with GRASS for details.
 
    \author Bill Brown USACERL (January 1994)
-   \author Doxygenized by Martin landa <landa.martin gmail.com> (May 2008)
+   \author Updated by Martin landa <landa.martin gmail.com>
+   (doxygenized in May 2008, thematic mapping in June 2011)
  */
 
 #include <stdlib.h>
 #include <string.h>
 
 #include <grass/gis.h>
-#include <grass/gstypes.h>
+#include <grass/ogsf.h>
+#include <grass/glocale.h>
 
 #include "gsget.h"
 
@@ -39,8 +37,10 @@ int GP_site_exists(int id)
 {
     int i, found = 0;
 
+    G_debug(4, "GP_site_exists(%d)", id);
+
     if (NULL == gp_get_site(id)) {
-	return (0);
+	return 0;
     }
 
     for (i = 0; i < Next_site && !found; i++) {
@@ -51,7 +51,7 @@ int GP_site_exists(int id)
 
     G_debug(3, "GP_site_exists(): found=%d", found);
 
-    return (found);
+    return found;
 }
 
 /*!
@@ -72,10 +72,10 @@ int GP_new_site(void)
 
 	G_debug(3, "GP_new_site() id=%d", np->gsite_id);
 
-	return (np->gsite_id);
+	return np->gsite_id;
     }
 
-    return (-1);
+    return -1;
 }
 
 /*!
@@ -85,7 +85,7 @@ int GP_new_site(void)
  */
 int GP_num_sites(void)
 {
-    return (gp_num_sites());
+    return gp_num_sites();
 }
 
 /*!
@@ -107,17 +107,17 @@ int *GP_get_site_list(int *numsites)
     if (Next_site) {
 	ret = (int *)G_malloc(Next_site * sizeof(int));	/* G_fatal_error */
 	if (!ret) {
-	    return (NULL);
+	    return NULL;
 	}
 
 	for (i = 0; i < Next_site; i++) {
 	    ret[i] = Site_ID[i];
 	}
 
-	return (ret);
+	return ret;
     }
 
-    return (NULL);
+    return NULL;
 }
 
 /*!
@@ -132,7 +132,7 @@ int GP_delete_site(int id)
 {
     int i, j, found = 0;
 
-    G_debug(3, "GP_delete_site(): id=%d", id);
+    G_debug(4, "GP_delete_site(%d)", id);
 
     if (GP_site_exists(id)) {
 	gp_delete_site(id);
@@ -148,21 +148,20 @@ int GP_delete_site(int id)
 
 	if (found) {
 	    --Next_site;
-	    return (1);
+	    return 1;
 	}
     }
 
-    return (-1);
+    return -1;
 }
 
 /*!
    \brief Load point set from file
 
-   Check to see if handle already loaded, if so - free before loading new 
-   for now, always load to memory 
+   Check to see if handle already loaded, if so - free before loading
+   new for now, always load to memory.
 
-   \todo load file handle & ready for reading instead of using
-   memory
+   \todo load file handle & ready for reading instead of using memory
 
    \param id point set id
    \param filename point set filename
@@ -174,8 +173,10 @@ int GP_load_site(int id, const char *filename)
 {
     geosite *gp;
 
+    G_debug(3, "GP_load_site(id=%d, name=%s)", id, filename);
+
     if (NULL == (gp = gp_get_site(id))) {
-	return (-1);
+	return -1;
     }
 
     if (gp->points) {
@@ -184,14 +185,13 @@ int GP_load_site(int id, const char *filename)
 
     gp->filename = G_store(filename);
 
-    gp->points = Gp_load_sites(filename, &(gp->n_sites),
-			       &(gp->has_z), &(gp->has_att));
-
+    gp->points = Gp_load_sites(filename, &(gp->n_sites), &(gp->has_z));
+    
     if (gp->points) {
-	return (1);
+	return 1;
     }
 
-    return (-1);
+    return -1;
 }
 
 /*!
@@ -200,7 +200,7 @@ int GP_load_site(int id, const char *filename)
    Note: char array is allocated by G_store()
 
    \param id point set id
-   \param[out] &filename point set filename
+   \param[out] filename point set filename
 
    \return -1 on error (point set not found)
    \return 1 on success
@@ -209,155 +209,200 @@ int GP_get_sitename(int id, char **filename)
 {
     geosite *gp;
 
+    G_debug(4, "GP_get_sitename(%d)", id);
+
     if (NULL == (gp = gp_get_site(id))) {
-	return (-1);
+	return -1;
     }
 
     *filename = G_store(gp->filename);
 
-    return (1);
+    return 1;
 }
 
 /*!
-   \brief Get point set mode
- */
-int GP_get_sitemode(int id, int *atmod, int *color, int *width, float *size,
-		    int *marker)
-{
-    geosite *gp;
-
-    if (NULL == (gp = gp_get_site(id))) {
-	return (-1);
-    }
-
-    *atmod = gp->attr_mode;
-    *color = gp->color;
-    *width = gp->width;
-    *marker = gp->marker;
-    *size = gp->size;
-
-    return (1);
-}
-
-/*!
-   \brief Set point set mode
+   \brief Get point set style
 
    \param id point set id
-   \param atmod
-   \param color icon color
-   \param width 
-   \param size icon size
-   \param marker icon symbol
 
+   \return 1 on success
    \return -1 on error (point set not found)
  */
-int GP_set_sitemode(int id, int atmod, int color, int width, float size,
-		    int marker)
+int GP_get_style(int id, int *color, int *width, float *size, int *symbol)
 {
     geosite *gp;
 
+    G_debug(4, "GP_get_style(%d)", id);
+
     if (NULL == (gp = gp_get_site(id))) {
-	return (-1);
+	return -1;
     }
 
-    gp->attr_mode = atmod;	/* FIX this - probably should be seperate */
-    gp->color = color;
-    gp->width = width;
-    gp->marker = marker;
-    gp->size = size;
+    *color = gp->style->color;
+    *width = gp->style->width;
+    *symbol = gp->style->symbol;
+    *size = gp->style->size;
 
-    return (1);
+    return 1;
 }
 
 /*!
-   \brief Set attribute mode color
+   \brief Set point style
 
-   \todo make similar routines for attmode_size, attmode_marker (use transform)
-
-   \param id surface id
-   \param filename filename
-
-   \return 1 for success
-   \return 0 for no attribute info
-   \return -1 for bad parameter
- */
-int GP_attmode_color(int id, const char *filename)
-{
-    geosite *gp;
-
-    if (NULL == (gp = gp_get_site(id))) {
-	return (-1);
-    }
-
-    if (!gp->has_att) {
-	return (0);
-    }
-
-    if (Gp_set_color(filename, gp->points)) {
-	gp->attr_mode = ST_ATT_COLOR;
-	return (1);
-    }
-
-    return (-1);
-}
-
-/*!
-   \brief Set attribute mode to none
+   Supported icon symbols (markers):
+    - ST_X
+    - ST_BOX
+    - ST_SPHERE
+    - ST_CUBE
+    - ST_DIAMOND
+    - ST_DEC_TREE
+    - ST_CON_TREE
+    - ST_ASTER
+    - ST_GYRO
+    - ST_HISTOGRAM
 
    \param id point set id
+   \param color icon color
+   \param width icon line width
+   \param size icon size
+   \param symbol icon symbol
 
-   \return -1 on error (invalid point set id)
    \return 1 on success
+   \return -1 on error (point set not found)
  */
-int GP_attmode_none(int id)
+int GP_set_style(int id, int color, int width, float size, int symbol)
 {
     geosite *gp;
 
+    G_debug(4, "GP_set_style(id=%d, color=%d, width=%d, size=%f, symbol=%d)", id, color, width, size,
+	    symbol);
+
     if (NULL == (gp = gp_get_site(id))) {
-	return (-1);
+	return -1;
     }
 
-    gp->attr_mode = ST_ATT_NONE;
+    gp->style->color = color;
+    gp->style->symbol = symbol;
+    gp->style->size = size;
+    gp->style->width = width;
 
-    return (1);
+    return 1;
 }
 
 /*!
-   \brief Set z-mode
+   \brief Set point set style for thematic mapping
 
-   \param id poin set id
-   \param use_z use z ?
+   Updates also style for each geopoint.
+   
+   \param id point set id
+   \param layer layer number for thematic mapping (-1 for undefined)
+   \param color icon color column name
+   \param width icon line width column name
+   \param size icon size column name
+   \param symbol icon symbol column name
+   \param colors pointer to Colors structure or NULL
 
    \return 1 on success
-   \return 0 no z
+   \return -1 on error (point set not found)
+ */
+int GP_set_style_thematic(int id, int layer, const char* color, const char* width,
+			  const char* size, const char* symbol, struct Colors *color_rules)
+{
+    geosite *gp;
+    
+    G_debug(4, "GP_set_style_thematic(id=%d, layer=%d, color=%s, width=%s, size=%s, symbol=%s)", id, layer,
+	    color, width, size, symbol);
+
+    if (NULL == (gp = gp_get_site(id))) {
+	return -1;
+    }
+
+    if(!gp->tstyle)
+	gp->tstyle = (gvstyle_thematic *)G_malloc(sizeof(gvstyle_thematic));
+    G_zero(gp->tstyle, sizeof(gvstyle_thematic));
+    
+    gp->tstyle->active = 1;
+    gp->tstyle->layer = layer;
+    if (color)
+	gp->tstyle->color_column = G_store(color);
+    if (symbol)
+	gp->tstyle->symbol_column = G_store(symbol);
+    if (size)
+	gp->tstyle->size_column = G_store(size);
+    if (width)
+	gp->tstyle->width_column = G_store(width);
+
+    Gp_load_sites_thematic(gp, color_rules);
+
+    return 1;
+}
+
+/*!
+   \brief Make style for thematic mapping inactive
+   
+   \param id point set id
+
+   \return 1 on success
+   \return -1 on error (point set not found)
+ */
+int GP_unset_style_thematic(int id)
+{
+    geosite *gp;
+
+    G_debug(4, "GP_unset_style_thematic(): id=%d", id);
+
+    if (NULL == (gp = gp_get_site(id))) {
+	return -1;
+    }
+
+    if (gp->tstyle) {
+	gp->tstyle->active = 0;
+    }
+
+    return 1;
+}
+
+/*!
+   \brief Set z mode for point set
+
+   \param id point set id
+   \param use_z TRUE to use z-coordinaces when vector map is 3D
+
+   \return 1 on success
+   \return 0 vector map is not 3D
    \return -1 on error (invalid point set id)
  */
+/* I don't see who is using it? Why it's required? */
 int GP_set_zmode(int id, int use_z)
 {
     geosite *gp;
 
+    G_debug(3, "GP_set_zmode(%d,%d)", id, use_z);
+
     if (NULL == (gp = gp_get_site(id))) {
-	return (-1);
+	return -1;
     }
 
     if (use_z) {
 	if (gp->has_z) {
 	    gp->use_z = 1;
-	    return (1);
+	    return 1;
 	}
 
-	return (0);
+	return 0;
     }
 
     gp->use_z = 0;
-    return (1);
+    return 1;
 }
 
 /*!
    \brief Get z-mode
 
+   \todo Who's using this?
+   
    \param id point set id
-   \param[out] use_z use z
+   \param[out] use_z non-zero code to use z
 
    \return -1 on error (invalid point set id)
    \return 1 on success
@@ -366,19 +411,21 @@ int GP_get_zmode(int id, int *use_z)
 {
     geosite *gp;
 
+    G_debug(4, "GP_get_zmode(%d)", id);
+
     if (NULL == (gp = gp_get_site(id))) {
-	return (-1);
+	return -1;
     }
 
     *use_z = gp->use_z;
-    return (1);
+    return 1;
 }
 
 /*!
-   \brief Set trans ?
+   \brief Set transformation params
 
    \param id point set id
-   \param xtrans,ytrans,ztrans x/y/z trans values
+   \param xtrans,ytrans,ztrans x/y/z values
  */
 void GP_set_trans(int id, float xtrans, float ytrans, float ztrans)
 {
@@ -398,10 +445,10 @@ void GP_set_trans(int id, float xtrans, float ytrans, float ztrans)
 }
 
 /*!
-   \brief Get trans
+   \brief Get transformation params
 
    \param id point set id
-   \param xtrans,ytrans,ztrans x/y/z trans values
+   \param[out] xtrans,ytrans,ztrans x/y/z values
  */
 void GP_get_trans(int id, float *xtrans, float *ytrans, float *ztrans)
 {
@@ -422,7 +469,7 @@ void GP_get_trans(int id, float *xtrans, float *ytrans, float *ztrans)
 }
 
 /*!
-   \brief Select surface
+   \brief Select surface for given point set
 
    \param hp point set id
    \param hs surface id
@@ -434,8 +481,10 @@ int GP_select_surf(int hp, int hs)
 {
     geosite *gp;
 
+    G_debug(3, "GP_select_surf(%d,%d)", hp, hs);
+
     if (GP_surf_is_selected(hp, hs)) {
-	return (1);
+	return 1;
     }
 
     gp = gp_get_site(hp);
@@ -443,10 +492,10 @@ int GP_select_surf(int hp, int hs)
     if (gp && GS_surf_exists(hs)) {
 	gp->drape_surf_id[gp->n_surfs] = hs;
 	gp->n_surfs += 1;
-	return (1);
+	return 1;
     }
 
-    return (-1);
+    return -1;
 }
 
 /*!
@@ -463,8 +512,10 @@ int GP_unselect_surf(int hp, int hs)
     geosite *gp;
     int i, j;
 
+    G_debug(3, "GP_unselect_surf(%d,%d)", hp, hs);
+
     if (!GP_surf_is_selected(hp, hs)) {
-	return (1);
+	return 1;
     }
 
     gp = gp_get_site(hp);
@@ -477,12 +528,12 @@ int GP_unselect_surf(int hp, int hs)
 		}
 
 		gp->n_surfs -= 1;
-		return (1);
+		return 1;
 	    }
 	}
     }
 
-    return (-1);
+    return -1;
 }
 
 /*!
@@ -499,17 +550,19 @@ int GP_surf_is_selected(int hp, int hs)
     int i;
     geosite *gp;
 
+    G_debug(3, "GP_surf_is_selected(%d,%d)", hp, hs);
+
     gp = gp_get_site(hp);
 
     if (gp) {
 	for (i = 0; i < gp->n_surfs; i++) {
 	    if (hs == gp->drape_surf_id[i]) {
-		return (1);
+		return 1;
 	    }
 	}
     }
 
-    return (0);
+    return 0;
 }
 
 /*!
@@ -538,11 +591,8 @@ void GP_draw_site(int id)
 
 		if (gs) {
 		    gpd_2dsite(gp, gs, 0);
-#ifdef TRACE_GP_FUNCS
-		    G_debug(3, "Drawing site %d on Surf %d", id,
+		    G_debug(5, "Drawing site %d on Surf %d", id,
 			    gp->drape_surf_id[i]);
-		    print_site_fields(gp);
-#endif
 		}
 	    }
 	}
@@ -582,10 +632,10 @@ int GP_Set_ClientData(int id, void *clientd)
 
     if (gp) {
 	gp->clientdata = clientd;
-	return (1);
+	return 1;
     }
 
-    return (-1);
+    return -1;
 }
 
 /*!
@@ -605,5 +655,56 @@ void *GP_Get_ClientData(int id)
 	return (gp->clientdata);
     }
 
-    return (NULL);
+    return NULL;
+}
+
+/*!
+  \brief Determine point marker symbol for string
+
+  Supported markers:
+    - ST_X
+    - ST_BOX
+    - ST_SPHERE
+    - ST_CUBE
+    - ST_DIAMOND
+    - ST_DEC_TREE
+    - ST_CON_TREE
+    - ST_ASTER
+    - ST_GYRO
+    - ST_HISTOGRAM
+
+  \param str string buffer
+
+  \return marker code (default: ST_SPHERE)
+*/
+int GP_str_to_marker(const char *str)
+{
+    int marker;
+
+    if (strcmp(str, "x") == 0)
+	marker = ST_X;
+    else if (strcmp(str, "box") == 0)
+	marker = ST_BOX;
+    else if (strcmp(str, "sphere") == 0)
+	marker = ST_SPHERE;
+    else if (strcmp(str, "cube") == 0)
+	marker = ST_CUBE;
+    else if (strcmp(str, "diamond") == 0)
+	marker = ST_DIAMOND;
+    else if (strcmp(str, "dec_tree") == 0)
+	marker = ST_DEC_TREE;
+    else if (strcmp(str, "con_tree") == 0)
+	marker = ST_CON_TREE;
+    else if (strcmp(str, "aster") == 0)
+	marker = ST_ASTER;
+    else if (strcmp(str, "gyro") == 0)
+	marker = ST_GYRO;
+    else if (strcmp(str, "histogram") == 0)
+	marker = ST_HISTOGRAM;
+    else {
+	G_warning(_("Unknown icon marker, using \"sphere\""));
+	marker = ST_SPHERE;
+    }
+
+    return marker;
 }

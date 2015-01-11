@@ -22,13 +22,18 @@ int parse_command_line(int argc, char *argv[])
 	struct Option *col;
 	struct Option *units;
 	struct Option *qcol;
+        struct Option *fs;
     } parms;
     struct
     {
 	struct Flag *p, *s, *t;
     } flags;
+    char *desc;
 
     parms.vect = G_define_standard_option(G_OPT_V_MAP);
+
+    parms.field = G_define_standard_option(G_OPT_V_FIELD);
+    parms.field->label = _("Layer number or name (write to)");
 
     parms.type = G_define_standard_option(G_OPT_V_TYPE);
     parms.type->options = "point,line,boundary,centroid";
@@ -37,15 +42,8 @@ int parse_command_line(int argc, char *argv[])
     parms.type->description =
 	_("For coor valid point/centroid, "
 	  "for length valid line/boundary");
-
-    parms.field = G_define_standard_option(G_OPT_V_FIELD);
-    parms.field->label = _("Layer number (write to)");
-
-    parms.qfield = G_define_standard_option(G_OPT_V_FIELD);
-    parms.qfield->key = "qlayer";
-    parms.qfield->label = _("Query layer number (read from)");
-    parms.qfield->guisection = _("Query");
-
+    parms.type->guisection = _("Selection");
+    
     parms.option = G_define_option();
     parms.option->key = "option";
     parms.option->type = TYPE_STRING;
@@ -54,55 +52,75 @@ int parse_command_line(int argc, char *argv[])
     parms.option->options =
 	"cat,area,compact,fd,perimeter,length,count,coor,start,end,sides,query,slope,sinuous,azimuth";
     parms.option->description = _("Value to upload");
-    parms.option->descriptions =
-	"cat;insert new row for each category if doesn't exist yet;"
-	"area;area size;"
-	"compact;compactness of an area, calculated as \n"
-	"              compactness = perimeter / (2 * sqrt(PI * area));"
-	"fd;fractal dimension of boundary defining a polygon, calculated as \n"
-	"              fd = 2 * (log(perimeter) / log(area));"
-	"perimeter;perimeter length of an area;"
-	"length;line length;"
-	"count;number of features for each category;"
-	"coor;point coordinates, X,Y or X,Y,Z;"
-	"start;line/boundary starting point coordinates, X,Y or X,Y,Z;"
-	"end;line/boundary end point coordinates, X,Y or X,Y,Z;"
-	"sides;categories of areas on the left and right side of the boundary, "
-	"'qlayer' is used for area category;"
-	"query;result of a database query for all records of the geometry"
-	"(or geometries) from table specified by 'qlayer' option;"
-	"slope;slope steepness of vector line or boundary;"
-	"sinuous;line sinuousity, calculated as line length / distance between end points;"
-	"azimuth;line azimuth, calculated as angle between North direction and endnode direction at startnode";
+    desc = NULL;
+    G_asprintf(&desc,
+	       "cat;%s;"
+	       "area;%s;"
+	       "compact;%s;"
+	       "fd;%s;"
+	       "perimeter;%s;"
+	       "length;%s;"
+	       "count;%s;"
+	       "coor;%s;"
+	       "start;%s;"
+	       "end;%s;"
+	       "sides;%s;"
+	       "query;%s;"
+	       "slope;%s;"
+	       "sinuous;%s;"
+	       "azimuth;%s;",
+	       _("insert new row for each category if doesn't exist yet"),
+	       _("area size"),
+	       _("compactness of an area, calculated as \n"
+		 "              compactness = perimeter / (2 * sqrt(PI * area))"),
+	       _("fractal dimension of boundary defining a polygon, calculated as \n"
+		 "              fd = 2 * (log(perimeter) / log(area))"),
+	       _("perimeter length of an area"),
+	       _("line length"),
+	       _("number of features for each category"),
+	       _("point coordinates, X,Y or X,Y,Z"),
+	       _("line/boundary starting point coordinates, X,Y or X,Y,Z"),
+	       _("line/boundary end point coordinates, X,Y or X,Y,Z"),
+	       _("categories of areas on the left and right side of the boundary, "
+		 "'qlayer' is used for area category"),
+	       _("result of a database query for all records of the geometry"
+		 "(or geometries) from table specified by 'qlayer' option"),
+	       _("slope steepness of vector line or boundary"),
+	       _("line sinuousity, calculated as line length / distance between end points"),
+	       _("line azimuth, calculated as angle between North direction and endnode direction at startnode"));
+    parms.option->descriptions = desc;
 
-    parms.units = G_define_option();
-    parms.units->key = "units";
-    parms.units->type = TYPE_STRING;
-    parms.units->required = NO;
-    parms.units->multiple = NO;
+    parms.col = G_define_standard_option(G_OPT_DB_COLUMNS);
+    parms.col->label = _("Name of attribute column(s) to populate");
+    parms.col->required = YES;
+
+    parms.units = G_define_standard_option(G_OPT_M_UNITS);
     parms.units->options =
-	"mi,miles,f,feet,me,meters,k,kilometers,a,acres,h,hectares,r,radians,d,degrees";
-    parms.units->label = _("Units");
-    parms.units->description =
-	_("mi(les),f(eet),me(ters),k(ilometers),a(cres),h(ectares),r(adians),d(egrees)");
-
-    parms.col = G_define_standard_option(G_OPT_COLUMNS);
-
-    parms.qcol = G_define_option();
+	"miles,feet,meters,kilometers,acres,hectares,radians,degrees";
+    
+    parms.qfield = G_define_standard_option(G_OPT_V_FIELD);
+    parms.qfield->key = "qlayer";
+    parms.qfield->label = _("Query layer number or name (read from)");
+    parms.qfield->guisection = _("Query");
+    parms.qfield->required = NO;
+    
+    parms.qcol = G_define_standard_option(G_OPT_DB_COLUMN);
     parms.qcol->key = "qcolumn";
     parms.qcol->label = _("Name of attribute column used for 'query' option");
     parms.qcol->description = _("E.g. 'cat', 'count(*)', 'sum(val)'");
-    parms.qcol->type = TYPE_STRING;
-    parms.qcol->key_desc = "name";
     parms.qcol->required = NO;
-    parms.qcol->multiple = NO;
     parms.qcol->guisection = _("Query");
 
+    parms.fs = G_define_standard_option(G_OPT_F_SEP);
+    parms.fs->label = _("Field separator for print mode");
+    parms.fs->guisection = _("Print");
+    
     flags.p = G_define_flag();
     flags.p->key = 'p';
     flags.p->description = _("Print only");
     flags.p->guisection = _("Print");
-
+    flags.p->suppress_required = YES;
+    
     flags.s = G_define_flag();
     flags.s->key = 's';
     flags.s->description = _("Only print SQL statements");
@@ -111,21 +129,26 @@ int parse_command_line(int argc, char *argv[])
     flags.t = G_define_flag();
     flags.t->key = 'c';
     flags.t->description =
-	_("In print mode prints totals for options: length,area,count");
+	_("Print also totals for option length, area, or count");
     flags.t->guisection = _("Print");
+    flags.t->suppress_required = YES;
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
+
+    /* check for required options */
+    if (!parms.vect->answer)
+        G_fatal_error(_("Required parameter <%s> not set:\n\t(%s)"),
+                      parms.vect->key, parms.vect->description);
+    if (!parms.option->answer)
+        G_fatal_error(_("Required parameter <%s> not set:\n\t(%s)"),
+                      parms.option->key, parms.option->description);
 
     options.print = flags.p->answer;
     options.sql = flags.s->answer;
     options.total = flags.t->answer;
 
     options.name = parms.vect->answer;
-    options.mapset = G_find_vector2(options.name, NULL);
-
-    if (options.mapset == NULL)
-	G_fatal_error(_("Vector map <%s> not found"), options.name);
 
     options.type = Vect_option_to_types(parms.type);
     options.field = atoi(parms.field->answer);
@@ -134,6 +157,8 @@ int parse_command_line(int argc, char *argv[])
     options.option = parse_option(parms.option->answer);
     options.units = parse_units(parms.units->answer);
 
+    options.fs = G_option_to_separator(parms.fs);
+    
     /* Check number of columns */
     ncols = 0;
     options.col[0] = NULL;
@@ -144,7 +169,7 @@ int parse_command_line(int argc, char *argv[])
 	ncols++;
     }
 
-    if (!options.print) {
+    if (!options.print && ! options.total) {
 	if (options.option == O_AREA || options.option == O_LENGTH || options.option == O_COUNT ||
 	    options.option == O_QUERY || options.option == O_COMPACT || options.option == O_FD ||
 	    options.option == O_PERIMETER || options.option == O_SLOPE || options.option == O_SINUOUS ||

@@ -4,13 +4,14 @@
  * MODULE:       v.out.svg
  * AUTHOR(S):    Original author Klaus Foerster
  *               Klaus Foerster - klaus.foerster@uibk.ac.at
+ *               OGR support by Martin Landa <landa.martin gmail.com> (2009)
  * PURPOSE:      Export GRASS vector map to SVG with custom
  *               coordinate-precision and optional attributes
- * COPYRIGHT:    (C) 2006 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2006-2009 by the GRASS Development Team
  *
- *               This program is free software under the GNU General Public
- *               License (>=v2). Read the file COPYING that comes with GRASS
- *               for details.
+ *               This program is free software under the GNU General
+ *               Public License (>=v2). Read the file COPYING that
+ *               comes with GRASS for details.
  *
  *****************************************************************************/
 
@@ -21,7 +22,7 @@
 #include <grass/glocale.h>
 #include <grass/gis.h>
 #include <grass/dbmi.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 
 #define SVG_NS   "http://www.w3.org/2000/svg"
 #define XLINK_NS "http://www.w3.org/1999/xlink"
@@ -50,12 +51,11 @@ int main(int argc, char *argv[])
     int do_attr = 0, attr_cols[8], attr_size = 0, db_open = 0, cnt = 0;
 
     double width, radius;
-    char *mapset;
     struct Option *in_opt, *out_opt, *prec_opt, *type_opt, *attr_opt,
 	*field_opt;
     struct GModule *module;
     struct Map_info In;
-    BOUND_BOX box;
+    struct bound_box box;
 
     /* vector */
     struct line_pnts *Points;
@@ -73,10 +73,13 @@ int main(int argc, char *argv[])
 
     /* parse command-line */
     module = G_define_module();
-    module->description = _("Exports a GRASS vector map to SVG.");
-    module->keywords = _("vector, export");
+    module->description = _("Exports a vector map to SVG file.");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("export"));
 
     in_opt = G_define_standard_option(G_OPT_V_INPUT);
+
+    field_opt = G_define_standard_option(G_OPT_V_FIELD_ALL);
 
     out_opt = G_define_standard_option(G_OPT_F_OUTPUT);
     out_opt->description = _("Name for SVG output file");
@@ -99,15 +102,12 @@ int main(int argc, char *argv[])
     prec_opt->multiple = NO;
     prec_opt->description = _("Coordinate precision");
 
-    attr_opt = G_define_option();
+    attr_opt = G_define_standard_option(G_OPT_DB_COLUMNS);
     attr_opt->key = "attribute";
-    attr_opt->type = TYPE_STRING;
     attr_opt->required = NO;
     attr_opt->multiple = YES;
     attr_opt->description = _("Attribute(s) to include in output SVG");
-
-    field_opt = G_define_standard_option(G_OPT_V_FIELD);
-
+    
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
@@ -133,16 +133,12 @@ int main(int argc, char *argv[])
 	G_fatal_error(_("Precision must not be higher than 15"));
     }
 
-    /* parse field number */
-    field = atoi(field_opt->answer);
-
     /* open input vector */
-    if ((mapset = G_find_vector2(in_opt->answer, "")) == NULL) {
-	G_fatal_error(_("Vector map <%s> not found"), in_opt->answer);
-    }
-
     Vect_set_open_level(2);
-    Vect_open_old(&In, in_opt->answer, mapset);
+    Vect_open_old2(&In, in_opt->answer, "", field_opt->answer);
+
+    /* parse field number */
+    field = Vect_get_field_number(&In, field_opt->answer);
 
     /* open db-driver to attribs */
     db_init_string(&dbstring);
@@ -201,7 +197,7 @@ int main(int argc, char *argv[])
 
     /* open output SVG-file and print SVG-header with viewBox and Namenspaces */
     if ((fpsvg = fopen(out_opt->answer, "w")) == NULL) {
-	G_fatal_error(_("Unable to open SVG file <%s>"), out_opt->answer);
+	G_fatal_error(_("Unable to create SVG file <%s>"), out_opt->answer);
     }
 
     fprintf(fpsvg, "<svg xmlns=\"%s\" xmlns:xlink=\"%s\" xmlns:gg=\"%s\" ",
@@ -218,7 +214,7 @@ int main(int argc, char *argv[])
     /* extract areas if any or requested */
     if (type == TYPE_POLY) {
 	if (Vect_get_num_areas(&In) == 0) {
-	    G_warning(_("No areas found, skipping %s"), "type=poly");
+	    G_warning(_("No areas found, skipping %"), "type=poly");
 	}
 	else {
             int nareas;
@@ -278,6 +274,9 @@ int main(int argc, char *argv[])
 		if (!(Vect_read_line(&In, Points, Cats, i) & GV_POINTS))
                     continue;
                 
+		if (field != -1 && !Vect_cat_get(Cats, field, NULL))
+		    continue;
+                
 		for (j = 0; j < Points->n_points; j++) {
 		    fprintf(fpsvg, "  <circle ");
 		    if (Cats->n_cats > 0) {
@@ -310,6 +309,9 @@ int main(int argc, char *argv[])
                 
 		if (!(Vect_read_line(&In, Points, Cats, i) & GV_LINES))
                     continue;
+                
+                if (field != -1 && !Vect_cat_get(Cats, field, NULL))
+		    continue;
                 
 		fprintf(fpsvg, "  <path ");
 		if (Cats->n_cats > 0) {
@@ -403,7 +405,7 @@ static int mk_attribs(int cat, struct field_info *Fi, dbDriver * Driver,
 	for (i = 0; i < attr_size; i++) {
 	    Column = db_get_table_column(Table, attr_cols[i]);
 	    db_convert_column_value_to_string(Column, &dbstring);
-	    G_strcpy(buf, db_get_column_name(Column));
+	    strcpy(buf, db_get_column_name(Column));
 	    fprintf(fpsvg, "gg:%s=\"", G_tolcase(buf));
 	    print_escaped_for_xml(db_get_string(&dbstring));
 	    fprintf(fpsvg, "\" ");

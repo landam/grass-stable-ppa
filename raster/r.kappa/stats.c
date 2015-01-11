@@ -19,7 +19,7 @@ int stats(void)
 {
     char buf[1024];
     char mname[GNAME_MAX], rname[GMAPSET_MAX];
-    char *mmapset, *rmapset;
+    const char *mmapset, *rmapset;
     int i, nl;
     size_t ns;
     FILE *fd;
@@ -28,12 +28,12 @@ int stats(void)
     int argc = 0;
 
     strcpy(mname, maps[0]);
-    mmapset = G_find_cell2(mname, "");
+    mmapset = G_find_raster2(mname, "");
     if (mmapset == NULL)
 	G_fatal_error(_("Raster map <%s> not found"), maps[0]);
 
     strcpy(rname, maps[1]);
-    rmapset = G_find_cell2(rname, "");
+    rmapset = G_find_raster2(rname, "");
     if (rmapset == NULL)
 	G_fatal_error(_("Raster map <%s> not found"), maps[1]);
 
@@ -43,7 +43,7 @@ int stats(void)
 
     argv[argc++] = "-cin";
 
-    argv[argc++] = "fs=:";
+    argv[argc++] = "separator=:";
 
     sprintf(buf, "input=%s,%s",
 	    G_fully_qualified_name(maps[1], mmapset),

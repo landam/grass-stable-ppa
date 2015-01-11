@@ -3,7 +3,6 @@
  ** Author: Paul W. Carlson     March 1992
  */
 
-#include "ps_info.h"
 #include "local_proto.h"
 
 int box_path(double t, double b, double l, double r)

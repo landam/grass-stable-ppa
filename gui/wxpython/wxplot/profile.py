@@ -7,7 +7,7 @@ Classes:
  - profile::ProfileFrame
  - profile::ProfileToolbar
 
-(C) 2011-2012 by the GRASS Development Team
+(C) 2011-2014 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -20,9 +20,13 @@ import sys
 import math
 
 import wx
-import wx.lib.plot as plot
+try:
+    import wx.lib.plot as plot
+except ImportError, e:
+    print >> sys.stderr, e
 
 import grass.script as grass
+from core.utils import _
 
 try:
     import numpy
@@ -42,19 +46,25 @@ from core.gcmd         import RunCommand, GWarning, GError, GMessage
 class ProfileFrame(BasePlotFrame):
     """!Mainframe for displaying profile of one or more raster maps. Uses wx.lib.plot.
     """
-    def __init__(self, parent, id = wx.ID_ANY, style = wx.DEFAULT_FRAME_STYLE,
-                 size = wx.Size(700, 400),
-                 rasterList = [], **kwargs):
-        BasePlotFrame.__init__(self, parent, size = size, **kwargs)
+    def __init__(self, parent, controller, units, size=wx.Size(700, 400),
+                 rasterList = None, **kwargs):
+        BasePlotFrame.__init__(self, parent=parent, size=size, **kwargs)
 
+        self.controller = controller
+        self.controller.transectChanged.connect(self.SetTransect)
+        self.transect = []
         self.toolbar = ProfileToolbar(parent = self)
         self.SetToolBar(self.toolbar)
         self.SetTitle(_("GRASS Profile Analysis Tool"))
-        
+        self._units = units
+
         #
         # Init variables
         #
-        self.rasterList = rasterList
+        if rasterList is None:
+            self.rasterList = []
+        else:
+            self.rasterList = rasterList
         self.plottype = 'profile'
         self.coordstr = ''              # string of coordinates for r.profile
         self.seglist = []               # segment endpoint list
@@ -64,66 +74,68 @@ class ProfileFrame(BasePlotFrame):
         self.colorList =  ["blue", "red", "green", "yellow", "magenta", "cyan",
                            "aqua", "black", "grey", "orange", "brown", "purple", "violet",
                            "indigo"]
-
-        self._initOpts()
         
+        self._initOpts()
+
         if len(self.rasterList) > 0: # set raster name(s) from layer manager if a map is selected
             self.raster = self.InitRasterOpts(self.rasterList, self.plottype)
         else:
             self.raster = {}
                 
         # determine units (axis labels)
-        if self.parent.Map.projinfo['units'] != '':
-            self.xlabel = _('Distance (%s)') % self.parent.Map.projinfo['units']
+        # maybe, we should not accept these invalid units
+        # but ok, trying to handle it here
+        if self._units is not None and self._units != '':
+            self.xlabel = _('Distance (%s)') % self._units
         else:
             self.xlabel = _("Distance along transect")
         self.ylabel = _("Cell values")
+
+        # Bind events
+        self.Bind(wx.EVT_CLOSE, self.OnCloseWindow)
         
     def _initOpts(self):
         """!Initialize plot options
         """
         self.InitPlotOpts('profile')
 
+    def SetTransect(self, coords):
+        self.transect = coords
+        if coords:
+            self.OnCreateProfile(None)
+        else:
+            self.OnErase(None)
+
     def OnDrawTransect(self, event):
         """!Draws transect to profile in map display
         """
-        self.mapwin.polycoords = []
-        self.seglist = []
-        self.mapwin.ClearLines(self.mapwin.pdc)
-        self.ppoints = ''
+        if self.controller.IsActive():
+            self.controller.Stop()
+        self.controller.Start()
 
         self.parent.SetFocus()
         self.parent.Raise()
-        
-        self.mapwin.mouse['use'] = 'profile'
-        self.mapwin.mouse['box'] = 'line'
-        self.mapwin.pen = wx.Pen(colour = 'Red', width = 2, style = wx.SHORT_DASH)
-        self.mapwin.polypen = wx.Pen(colour = 'dark green', width = 2, style = wx.SHORT_DASH)
-        self.mapwin.SetCursor(self.Parent.cursors["cross"])
 
     def OnSelectRaster(self, event):
         """!Select raster map(s) to profile
         """
         dlg = ProfileRasterDialog(parent = self)
-        dlg.CenterOnParent()
+
         if dlg.ShowModal() == wx.ID_OK:
             self.rasterList = dlg.rasterList
             self.raster = self.InitRasterOpts(self.rasterList, self.plottype)
             
             # plot profile
-            if len(self.mapwin.polycoords) > 0 and len(self.rasterList) > 0:
+            if len(self.transect) > 0 and len(self.rasterList) > 0:
                 self.OnCreateProfile(event = None)
 
         dlg.Destroy()
 
     def SetupProfile(self):
-        """!Create coordinate string for profiling. Create segment list for
-           transect segment markers.
+        """!Create coordinate string for profiling. Create segment
+           list for transect segment markers.
         """
-
-        #
         # create list of coordinate points for r.profile
-        #                
         dist = 0
         cumdist = 0
         self.coordstr = ''
@@ -131,8 +143,8 @@ class ProfileFrame(BasePlotFrame):
         
         region = grass.region()
         insideRegion = True
-        if len(self.mapwin.polycoords) > 0:
-            for point in self.mapwin.polycoords:
+        if len(self.transect) > 0:
+            for point in self.transect:
                 if not (region['w'] <= point[0] <= region['e'] and region['s'] <= point[1] <= region['n']):
                     insideRegion = False
                 # build string of coordinate points for r.profile
@@ -140,32 +152,31 @@ class ProfileFrame(BasePlotFrame):
                     self.coordstr = '%d,%d' % (point[0], point[1])
                 else:
                     self.coordstr = '%s,%d,%d' % (self.coordstr, point[0], point[1])
-
+        
         if not insideRegion:
             GWarning(message = _("Not all points of profile lie inside computational region."),
                      parent = self)
-
+        
         if len(self.rasterList) == 0:
             return
-
+        
         # title of window
         self.ptitle = _('Profile of')
-
-        #
+        
         # create list of coordinates for transect segment markers
-        #
-        if len(self.mapwin.polycoords) > 0:
+        if len(self.transect) > 0:
             self.seglist = []
-            for point in self.mapwin.polycoords:
+            for point in self.transect:
                 # get value of raster cell at coordinate point
                 ret = RunCommand('r.what',
                                  parent = self,
                                  read = True,
-                                 input = self.rasterList[0],
-                                 east_north = '%d,%d' % (point[0],point[1]))
+                                 map = self.rasterList[0],
+                                 coordinates = '%d,%d' % (point[0],point[1]))
                 
                 val = ret.splitlines()[0].split('|')[3]
-                if val == None or val == '*': continue
+                if val == None or val == '*':
+                    continue
                 val = float(val)
                 
                 # calculate distance between coordinate points
@@ -173,14 +184,14 @@ class ProfileFrame(BasePlotFrame):
                     dist = math.sqrt(math.pow((lasteast-point[0]),2) + math.pow((lastnorth-point[1]),2))
                 cumdist += dist
                 
-                #store total transect length
+                # store total transect length
                 self.transect_length = cumdist
-
+                
                 # build a list of distance,value pairs for each segment of transect
                 self.seglist.append((cumdist,val))
                 lasteast = point[0]
                 lastnorth = point[1]
-
+            
             # delete extra first segment point
             try:
                 self.seglist.pop(0)
@@ -231,8 +242,8 @@ class ProfileFrame(BasePlotFrame):
         ret = RunCommand("r.profile",
                          parent = self,
                          input = raster,
-                         profile = coords,
-                         res = transect_res,
+                         coordinates = coords,
+                         resolution = transect_res,
                          null = "nan",
                          quiet = True,
                          read = True)
@@ -259,7 +270,7 @@ class ProfileFrame(BasePlotFrame):
         points. Profile transect is drawn, using methods in mapdisp.py
         """
             
-        if len(self.mapwin.polycoords) == 0 or len(self.rasterList) == 0:
+        if len(self.transect) == 0 or len(self.rasterList) == 0:
             dlg = wx.MessageDialog(parent = self,
                                    message = _('You must draw a transect to profile in the map display window.'),
                                    caption = _('Nothing to profile'),
@@ -268,17 +279,11 @@ class ProfileFrame(BasePlotFrame):
             dlg.Destroy()
             return
 
-        self.mapwin.SetCursor(self.parent.cursors["default"])
-        self.SetCursor(self.parent.cursors["default"])
-        self.SetGraphStyle()
+        self.SetCursor(wx.StockCursor(wx.CURSOR_ARROW))
+
         self.SetupProfile()
         p = self.CreatePlotList()
         self.DrawPlot(p)
-
-        # reset transect
-        self.mapwin.mouse['begin'] = self.mapwin.mouse['end'] = (0.0,0.0)
-        self.mapwin.mouse['use'] = 'pointer'
-        self.mapwin.mouse['box'] = 'point'
 
     def CreatePlotList(self):
         """!Create a plot data list from transect datalist and
@@ -353,9 +358,8 @@ class ProfileFrame(BasePlotFrame):
                     fd = open(pfile[-1], "w")
                 except IOError, e:
                     GError(parent = self,
-                           message = _("Unable to open file <%(file)s> for "
-                                       "writing.\nReason: %(e)s") % {'file': pfile[-1],
-                                                                     'e': e})
+                           message = _("Unable to open file <%s> for writing.\n"
+                                       "Reason: %s") % (pfile[-1], e))
                     dlg.Destroy()
                     return
                 
@@ -366,8 +370,7 @@ class ProfileFrame(BasePlotFrame):
         
         dlg.Destroy()
         if pfile:
-            message = _("%(l)d files created:\n%(p)s") % {'l': len(pfile),
-                                                          'p':'\n'.join(pfile)}
+            message = _("%d files created:\n%s") % (len(pfile), '\n'.join(pfile))
         else:
             message = _("No files generated.")
         
@@ -409,6 +412,10 @@ class ProfileFrame(BasePlotFrame):
         if stats.Show() == wx.ID_CLOSE:
             stats.Destroy()       
 
+    def OnCloseWindow(self, event):
+        if self.controller.IsActive():
+            self.controller.Stop()
+        self.Destroy()
     
 class ProfileToolbar(BaseToolbar):
     """!Toolbar for profiling raster map

@@ -1,4 +1,3 @@
-
 /****************************************************************************
 *
 * MODULE:       Symbol library 
@@ -14,6 +13,7 @@
 *   	    	for details.
 *
 *****************************************************************************/
+
 #include <stdlib.h>
 #include <math.h>
 #include <grass/gis.h>
@@ -21,13 +21,14 @@
 
 #define PI M_PI
 
-void add_coor(SYMBCHAIN * chain, int x, int y)
+
+void add_coor(SYMBCHAIN *chain, double x, double y)
 {
-    G_debug(5, "    add_coor %d, %d", x, y);
+    G_debug(5, "    add_coor %f, %f", x, y);
     if (chain->scount == chain->salloc) {
 	chain->salloc += 10;
-	chain->sx = (int *)G_realloc(chain->sx, chain->salloc * sizeof(int));
-	chain->sy = (int *)G_realloc(chain->sy, chain->salloc * sizeof(int));
+	chain->sx = (double *)G_realloc(chain->sx, chain->salloc * sizeof(double));
+	chain->sy = (double *)G_realloc(chain->sy, chain->salloc * sizeof(double));
     }
     chain->sx[chain->scount] = x;
     chain->sy[chain->scount] = y;
@@ -39,14 +40,14 @@ void add_coor(SYMBCHAIN * chain, int x, int y)
  *   ch - chain number 
  *   rotation - degrees CCW from East
  */
-int stroke_chain(SYMBPART * part, int ch, double s, double rotation)
+int stroke_chain(SYMBPART *part, int ch, double s, double rotation)
 {
     int k, l, first;
     SYMBEL *elem;
     SYMBCHAIN *chain;
     double r;
     double a1, a2, da;
-    int x, y, x0, y0;
+    double x, y, x0, y0;
 
     G_debug(5, "  stroke_chain(): ch = %d", ch);
     chain = part->chain[ch];
@@ -63,7 +64,7 @@ int stroke_chain(SYMBPART * part, int ch, double s, double rotation)
 		y = s * elem->coor.line.y[l];
 
 		if (rotation != 0.0)
-		    G_rotate_around_point_int(0, 0, &x, &y, rotation);
+		    G_rotate_around_point(0, 0, &x, &y, rotation);
 
 		add_coor(chain, x, y);
 		if (first) {
@@ -96,7 +97,7 @@ int stroke_chain(SYMBPART * part, int ch, double s, double rotation)
 		    y = s * elem->coor.arc.y + s * r * sin(a1);
 
 		    if (rotation != 0.0)
-			G_rotate_around_point_int(0, 0, &x, &y, rotation);
+			G_rotate_around_point(0, 0, &x, &y, rotation);
 
 		    add_coor(chain, x, y);
 		    if (first) {
@@ -118,7 +119,7 @@ int stroke_chain(SYMBPART * part, int ch, double s, double rotation)
 		    y = s * elem->coor.arc.y + s * r * sin(a1);
 
 		    if (rotation != 0.0)
-			G_rotate_around_point_int(0, 0, &x, &y, rotation);
+			G_rotate_around_point(0, 0, &x, &y, rotation);
 
 		    add_coor(chain, x, y);
 		    if (first) {
@@ -143,19 +144,25 @@ int stroke_chain(SYMBPART * part, int ch, double s, double rotation)
     return 0;
 }
 
-/* 
- *  Stroke symbol to form used for Xdriver.
+/*!
+ * \brief Stroke symbol to form used for Xdriver.
  *
  *  tolerance currently not supported
+ *
+ * \param Symb  pointer to 
+ * \param size  symbol size
+ * \param rotation  symbol rotation, degrees CCW from East
+ * \param tolerance  currently not supported
+ *
  */
-void S_stroke(SYMBOL *Symb, int size, double rotation, int tolerance)
+void S_stroke(SYMBOL *Symb, double size, double rotation, int tolerance)
 {
     int i, j;
     double s;
     SYMBPART *part;
 
-    G_debug(3, "S_stroke(): size = %d rotation = %f tolerance = %d", size,
-	    rotation, tolerance);
+    G_debug(3, "S_stroke(): size = %.2f, rotation = %.2f, tolerance = %d",
+	    size, rotation, tolerance);
 
     /* TODO: support for tolerance */
 

@@ -6,7 +6,7 @@
 * AUTHOR(S):    Original author 
 *               Soeren Gebbert soerengebbert at gmx de
 * 		27 Feb 2006 Berlin
-* PURPOSE:      Converts 3D raster maps (G3D) into the VTK-Ascii format  
+* PURPOSE:      Converts 3D raster maps (RASTER3D) into the VTK-Ascii format  
 *
 * COPYRIGHT:    (C) 2005 by the GRASS Development Team
 *
@@ -23,19 +23,15 @@ typedef struct
 {
     struct Option *input, *output, *rgbmaps, *vectormaps, *null_val, *top,
 	*bottom, *decimals, *elevscale;
-    struct Flag *mask, *point, *origin, *structgrid, *coorcorr;
+    struct Flag *mask, *point, *origin, *structgrid, *coorcorr, *scalell;
     /*struct Flag *xml; *//*maybe xml support in the future */
 } paramType;
 
 
 /*global structs */
-#ifdef MAIN
-paramType param;		/*Parameters */
-#else
 extern paramType param;		/*Parameters */
-#endif
 
 /*prototype */
-void set_params();
+void set_params(void);
 
 #endif

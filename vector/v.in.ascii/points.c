@@ -4,7 +4,7 @@
 #include <ctype.h>
 #include <grass/gis.h>
 #include <grass/dbmi.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 #include "local_proto.h"
 
@@ -161,9 +161,9 @@ int points_analyse(FILE * ascii_in, FILE * ascii, char *fs,
 			    }
 			}
 			else {
-			    fprintf(stderr, "Current row: '%s'\n", buf_raw);
-			    G_fatal_error(_("Unparsable longitude value in column <%d>: %s"),
-					  i, tokens[i]);
+                            fprintf(stderr, _("Current row %d:\n%s\n"), row, buf_raw);
+			    G_fatal_error(_("Unparsable longitude value in column num %d: %s"),
+					  i + 1, tokens[i]);
 			}
 		    }
 
@@ -180,8 +180,8 @@ int points_analyse(FILE * ascii_in, FILE * ascii, char *fs,
 			    }
 			}
 			else {
-			    fprintf(stderr, "Current row: '%s'\n", buf_raw);
-			    G_fatal_error(_("Unparsable latitude value in column <%d>: %s"),
+			    fprintf(stderr, _("Current row %d:\n%s\n"), row, buf_raw);
+			    G_fatal_error(_("Unparsable latitude value in column num %d: %s"),
 					  i, tokens[i]);
 			}
 		    }
@@ -298,7 +298,8 @@ int points_to_bin(FILE * ascii, int rowlen, struct Map_info *Map,
     Points = Vect_new_line_struct();
     Cats = Vect_new_cats_struct();
 
-    buf = (char *)G_malloc(rowlen + 1);
+    /* actually last 2 characters won't be read */
+    buf = (char *)G_malloc(rowlen + 2);
     db_init_string(&sql);
     db_init_string(&val);
 
@@ -307,7 +308,8 @@ int points_to_bin(FILE * ascii, int rowlen, struct Map_info *Map,
 	Vect_hist_write(Map, buf2);
     }
 
-    while (G_getl2(buf, rowlen, ascii) != 0) {
+    /* rowlen + 2 to read till the end of line on both UNIX and Windows */
+    while (G_getl2(buf, rowlen + 2, ascii) != 0) {
 	int i, len;
 	double x, y, z;
 	char **tokens;

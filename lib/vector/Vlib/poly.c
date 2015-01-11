@@ -1,27 +1,22 @@
 /*!
-   \file poly.c
+   \file lib/vector/Vlib/poly.c
 
    \brief Vector library - polygon related fns
 
    Higher level functions for reading/writing/manipulating vectors.
 
-   (C) 2001-2008 by the GRASS Development Team
+   (C) 2001-2009 by the GRASS Development Team
 
-   This program is free software under the 
-   GNU General Public License (>=v2). 
-   Read the file COPYING that comes with GRASS
-   for details.
+   This program is free software under the GNU General Public License
+   (>=v2).  Read the file COPYING that comes with GRASS for details.
 
    \author Original author CERL, probably Dave Gerdes or Mike Higgins.
-   Update to GRASS 5.7 Radim Blazek and David D. Gray.
-
-   \date 2001
+   \author Update to GRASS 5.7 Radim Blazek and David D. Gray.
  */
 
 #include <math.h>
 #include <stdlib.h>
-#include <grass/Vect.h>
-#include <grass/gis.h>
+#include <grass/vector.h>
 #include <grass/linkm.h>
 #include <grass/glocale.h>
 
@@ -36,11 +31,10 @@ struct Slink
 static int comp_double(double *, double *);
 static int V__within(double, double, double);
 int Vect__intersect_line_with_poly();
-static void destroy_links(struct link_head *, struct Slink *);
-static int Vect__divide_and_conquer(struct Slink *, struct line_pnts *,
+static void destroy_links(struct Slink *);
+static int Vect__divide_and_conquer(struct Slink *, const struct line_pnts *,
 				    struct link_head *, double *, double *,
 				    int);
-
 
 /*!
    \brief Get point inside area and outside all islands.
@@ -58,7 +52,7 @@ static int Vect__divide_and_conquer(struct Slink *, struct line_pnts *,
    \return -1 on error
  */
 int
-Vect_get_point_in_area(struct Map_info *Map, int area, double *X, double *Y)
+Vect_get_point_in_area(const struct Map_info *Map, int area, double *X, double *Y)
 {
     static struct line_pnts *Points;
     static struct line_pnts **IPoints;
@@ -92,7 +86,8 @@ Vect_get_point_in_area(struct Map_info *Map, int area, double *X, double *Y)
 				 IPoints[i]))
 	    return -1;
     }
-    return (Vect_get_point_in_poly_isl(Points, IPoints, n_isles, X, Y));
+    return (Vect_get_point_in_poly_isl((const struct line_pnts*) Points,
+				       (const struct line_pnts**) IPoints, n_isles, X, Y));
 
     return -1;
 }
@@ -102,23 +97,15 @@ static int comp_double(double *i, double *j)
     if (*i < *j)
 	return -1;
 
-    if (*i > *j)
-	return 1;
-
-    return 0;
+    return (*i > *j);
 }
 
 static int V__within(double a, double x, double b)
 {
-    double tmp;
+    if (a < b)
+	return (x >= a && x <= b);
 
-    if (a > b) {
-	tmp = a;
-	a = b;
-	b = tmp;
-    }
-
-    return (x >= a && x <= b);
+    return (x >= b && x <= a);
 }
 
 /*
@@ -138,7 +125,7 @@ static int V__within(double a, double x, double b)
    \return -1 on error 
  */
 int
-Vect__intersect_line_with_poly(struct line_pnts *Points,
+Vect__intersect_line_with_poly(const struct line_pnts *Points,
 			       double y, struct line_pnts *Inter)
 {
     int i;
@@ -177,7 +164,7 @@ Vect__intersect_line_with_poly(struct line_pnts *Points,
    \return 0 on success
    \return -1 on error
  */
-int Vect_get_point_in_poly(struct line_pnts *Points, double *X, double *Y)
+int Vect_get_point_in_poly(const struct line_pnts *Points, double *X, double *Y)
 {
     double cent_x, cent_y;
     struct Slink *Head;
@@ -228,7 +215,7 @@ int Vect_get_point_in_poly(struct line_pnts *Points, double *X, double *Y)
     *Y = cent_y;		/* pick line segment (x_min, cent_y) - (x_max, cent_y) */
     ret = Vect__divide_and_conquer(Head, Points, Token, X, Y, 10);
 
-    destroy_links(Token, Head);
+    destroy_links(Head);
 
     if (ret < 0) {
 	G_warning("Vect_get_point_in_poly(): %s",
@@ -265,7 +252,7 @@ int Vect_get_point_in_poly(struct line_pnts *Points, double *X, double *Y)
  */
 static int
 Vect__divide_and_conquer(struct Slink *Head,
-			 struct line_pnts *Points,
+			 const struct line_pnts *Points,
 			 struct link_head *Token,
 			 double *X, double *Y, int levels)
 {
@@ -303,7 +290,7 @@ Vect__divide_and_conquer(struct Slink *Head,
     return Vect__divide_and_conquer(Head, Points, Token, X, Y, --levels);
 }
 
-static void destroy_links(struct link_head *Token, struct Slink *Head)
+static void destroy_links(struct Slink *Head)
 {
     struct Slink *p, *tmp;
 
@@ -311,7 +298,7 @@ static void destroy_links(struct link_head *Token, struct Slink *Head)
 
     while (p != NULL) {
 	tmp = p->next;
-	link_dispose(Token, (VOID_T *) p);
+	link_dispose((struct link_head *)Head, (VOID_T *) p);
 	p = tmp;
     }
 }
@@ -327,7 +314,7 @@ static void destroy_links(struct link_head *Token, struct Slink *Head)
    \return -1 on error
  */
 int
-Vect_find_poly_centroid(struct line_pnts *points,
+Vect_find_poly_centroid(const struct line_pnts *points,
 			double *cent_x, double *cent_y)
 {
     int i;
@@ -378,7 +365,7 @@ Vect_find_poly_centroid(struct line_pnts *points,
    int area,
    double cent_x, double cent_y)
    {
-   P_AREA *Area;
+   struct P_area *Area;
    static struct line_pnts *TPoints;
    static int first_time = 1;
    int isle;
@@ -408,22 +395,21 @@ Vect_find_poly_centroid(struct line_pnts *points,
    \brief Get point inside polygon but outside the islands specifiled in IPoints.
 
    Take a line and intersect it with the polygon and any islands.
-   sort the list of X values from these intersections.  This will
-   be a list of segments alternating  IN/OUT/IN/OUt of the polygon.
-   Pick the largest IN segment and take the midpoint. 
+   sort the list of X values from these intersections. This will be a
+   list of segments alternating IN/OUT/IN/OUT of the polygon. Pick the
+   largest IN segment and take the midpoint.
 
-   \param Points polygon
-   \param IPoints isles
+   \param Points polygon (boundary)
+   \param IPoints isles (list of isle boundaries)
    \param n_isles number of isles
    \param[out] att_x,att_y point coordinates
 
    \return 0 on success
    \return -1 on error
  */
-int
-Vect_get_point_in_poly_isl(struct line_pnts *Points,
-			   struct line_pnts **IPoints, int n_isles,
-			   double *att_x, double *att_y)
+int Vect_get_point_in_poly_isl(const struct line_pnts *Points,
+			       const struct line_pnts **IPoints, int n_isles,
+			       double *att_x, double *att_y)
 {
     static struct line_pnts *Intersects;
     static int first_time = 1;
@@ -453,9 +439,8 @@ Vect_get_point_in_poly_isl(struct line_pnts *Points,
     /* get centroid */
     Vect_find_poly_centroid(Points, &cent_x, &cent_y);
     /* is it w/in poly? */
-    if (Vect_point_in_poly(cent_x, cent_y, Points) == 1)
-	/* if the point is iside the polygon */
-    {
+    if (Vect_point_in_poly(cent_x, cent_y, Points) == 1) {
+	/* if the point is inside the polygon */
 	for (i = 0; i < n_isles; i++) {
 	    if (Vect_point_in_poly(cent_x, cent_y, IPoints[i]) >= 1) {
 		point_in_sles = 1;
@@ -485,7 +470,7 @@ Vect_get_point_in_poly_isl(struct line_pnts *Points,
 	if (Points->y[i] >= cent_y)
 	    hi_y = Points->y[i];
     }
-    /* first going throught boundary points */
+    /* first going through boundary points */
     for (i = 0; i < Points->n_points; i++) {
 	if ((Points->y[i] < cent_y) &&
 	    ((cent_y - Points->y[i]) < (cent_y - lo_y)))
@@ -551,7 +536,7 @@ Vect_get_point_in_poly_isl(struct line_pnts *Points,
  * Returns: -1 point exactly on segment
  *          number of intersections
  */
-static int segments_x_ray(double X, double Y, struct line_pnts *Points)
+static int segments_x_ray(double X, double Y, const struct line_pnts *Points)
 {
     double x1, x2, y1, y2;
     double x_inter;
@@ -565,17 +550,27 @@ static int segments_x_ray(double X, double Y, struct line_pnts *Points)
      * Coordinates exactly on ray are considered to be slightly above. */
 
     n_intersects = 0;
-    for (n = 0; n < Points->n_points - 1; n++) {
-	x1 = Points->x[n];
-	y1 = Points->y[n];
-	x2 = Points->x[n + 1];
-	y2 = Points->y[n + 1];
+    for (n = 1; n < Points->n_points; n++) {
+	x1 = Points->x[n - 1];
+	y1 = Points->y[n - 1];
+	x2 = Points->x[n];
+	y2 = Points->y[n];
 
 	G_debug(3, "X = %f Y = %f x1 = %f y1 = %f x2 = %f y2 = %f", X, Y, x1,
 		y1, x2, y2);
 
-	/* I know, it should be possible to do that with less conditions, but it should be 
-	 * enough readable also! */
+	/* I know, it should be possible to do that with less conditions,
+	 * but it should be enough readable also! */
+
+	/* first, skip segments that obviously do not intersect with test ray */
+
+	/* segment above (X is not important) */
+	if (y1 > Y && y2 > Y)
+	    continue;
+
+	/* segment below (X is not important) */
+	if (y1 < Y && y2 < Y)
+	    continue;
 
 	/* segment left from X -> no intersection */
 	if (x1 < X && x2 < X)
@@ -586,32 +581,28 @@ static int segments_x_ray(double X, double Y, struct line_pnts *Points)
 	    return -1;
 
 	/* on vertical boundary */
-	if ((x1 == x2 && x1 == X) &&
-	    ((y1 <= Y && y2 >= Y) || (y1 >= Y && y2 <= Y)))
-	    return -1;
+	if (x1 == x2 && x1 == X) {
+	    if ((y1 <= Y && y2 >= Y) || (y1 >= Y && y2 <= Y))
+		return -1;
+	}
 
 	/* on horizontal boundary */
-	if ((y1 == y2 && y1 == Y) &&
-	    ((x1 <= X && x2 >= X) || (x1 >= X && x2 <= X)))
-	    return -1;
+	if (y1 == y2 && y1 == Y) {
+	    if ((x1 <= X && x2 >= X) || (x1 >= X && x2 <= X))
+		return -1;
+	    else
+		continue; 	/* segment on ray (X is not important) */
+	}
 
 	/* segment on ray (X is not important) */
-	if (y1 == Y && y2 == Y)
-	    continue;
-
-	/* segment above (X is not important) */
-	if (y1 > Y && y2 > Y)
-	    continue;
-
-	/* segment below (X is not important) */
-	if (y1 < Y && y2 < Y)
-	    continue;
+	/* if (y1 == Y && y2 == Y)
+	    continue; */
 
 	/* one end on Y second above (X is not important) */
 	if ((y1 == Y && y2 > Y) || (y2 == Y && y1 > Y))
 	    continue;
 
-	/* For following cases we know that at least one of x1 and x2 is  >= X */
+	/* For following cases we know that at least one of x1 and x2 is >= X */
 
 	/* one end of segment on Y second below Y */
 	if (y1 == Y && y2 < Y) {
@@ -636,13 +627,13 @@ static int segments_x_ray(double X, double Y, struct line_pnts *Points)
 	    x_inter = dig_x_intersect(x1, x2, y1, y2, Y);
 	    G_debug(3, "x_inter = %f", x_inter);
 	    if (x_inter == X)
-		return 1;
+		return 1;	/* point on segment, but assume inside ? */
 	    else if (x_inter > X)
 		n_intersects++;
 
 	    continue;		/* would not be necessary, just to check, see below */
 	}
-	/* should not be reached (one condition is not necessary, but it is may be better readable
+	/* should not be reached (one condition is not necessary, but it is maybe better readable
 	 * and it is a check) */
 	G_warning
 	    ("segments_x_ray() %s: X = %f Y = %f x1 = %f y1 = %f x2 = %f y2 = %f",
@@ -662,7 +653,7 @@ static int segments_x_ray(double X, double Y, struct line_pnts *Points)
    \return 1 - inside 
    \return 2 - on the boundary (exactly may be said only for vertex of vertical/horizontal line)
  */
-int Vect_point_in_poly(double X, double Y, struct line_pnts *Points)
+int Vect_point_in_poly(double X, double Y, const struct line_pnts *Points)
 {
     int n_intersects;
 
@@ -674,10 +665,9 @@ int Vect_point_in_poly(double X, double Y, struct line_pnts *Points)
     if (n_intersects == -1)
 	return 2;
 
-    if (n_intersects % 2)
-	return 1;
-    else
-	return 0;
+    /* odd number of intersections: inside, return 1 
+     * even number of intersections: outside, return 0 */
+    return (n_intersects & 1);
 }
 
 /*!
@@ -686,22 +676,23 @@ int Vect_point_in_poly(double X, double Y, struct line_pnts *Points)
    \param X,Y point coordinates
    \param Map vector map
    \param area area id
+   \param box area bounding box
 
    \return 0 - outside
    \return 1 - inside 
    \return 2 - on the boundary (exactly may be said only for vertex of vertical/horizontal line)
  */
 int
-Vect_point_in_area_outer_ring(double X, double Y, struct Map_info *Map,
-			      int area)
+Vect_point_in_area_outer_ring(double X, double Y, const struct Map_info *Map,
+			      int area, struct bound_box *box)
 {
     static int first = 1;
     int n_intersects, inter;
     int i, line;
     static struct line_pnts *Points;
-    struct Plus_head *Plus;
-    P_LINE *Line;
-    P_AREA *Area;
+    struct bound_box lbox;
+    const struct Plus_head *Plus;
+    struct P_area *Area;
 
     G_debug(3, "Vect_point_in_area_outer_ring(): x = %f y = %f area = %d", X,
 	    Y, area);
@@ -715,18 +706,26 @@ Vect_point_in_area_outer_ring(double X, double Y, struct Map_info *Map,
     Area = Plus->Area[area];
 
     /* First it must be in box */
-    if (X < Area->W || X > Area->E || Y > Area->N || Y < Area->S)
+    if (X < box->W || X > box->E || Y > box->N || Y < box->S)
 	return 0;
 
     n_intersects = 0;
+
     for (i = 0; i < Area->n_lines; i++) {
 	line = abs(Area->lines[i]);
 	G_debug(3, "  line[%d] = %d", i, line);
 
-	Line = Plus->Line[line];
+	/* this is slow, but the fastest of all alternatives */
+	Vect_get_line_box(Map, line, &lbox);
 
+	/* slower as long as the spatial index is in memory: */
+	/*
+	Vect_read_line(Map, Points, NULL, line);
+	Vect_line_box(Points, &lbox);
+	*/
+	
 	/* dont check lines that obviously do not intersect with test ray */
-	if ((Line->N < Y) || (Line->S > Y) || (Line->E < X))
+	if ((lbox.N < Y) || (lbox.S > Y) || (lbox.E < X))
 	    continue;
 
 	Vect_read_line(Map, Points, NULL, line);
@@ -740,10 +739,9 @@ Vect_point_in_area_outer_ring(double X, double Y, struct Map_info *Map,
 	G_debug(3, "  n_intersects = %d", n_intersects);
     }
 
-    if (n_intersects % 2)
-	return 1;
-    else
-	return 0;
+    /* odd number of intersections: inside, return 1 
+     * even number of intersections: outside, return 0 */
+    return (n_intersects & 1);
 }
 
 /*!
@@ -752,20 +750,22 @@ Vect_point_in_area_outer_ring(double X, double Y, struct Map_info *Map,
    \param X,Y point coordinates
    \param Map vector map
    \param isle isle id
+   \param box isle bounding box
 
    \return 0 - outside
    \return 1 - inside 
    \return 2 - on the boundary (exactly may be said only for vertex of vertical/horizontal line)
  */
-int Vect_point_in_island(double X, double Y, struct Map_info *Map, int isle)
+int Vect_point_in_island(double X, double Y, const struct Map_info *Map,
+                         int isle, struct bound_box *box)
 {
     static int first = 1;
     int n_intersects, inter;
     int i, line;
     static struct line_pnts *Points;
-    struct Plus_head *Plus;
-    P_LINE *Line;
-    P_ISLE *Isle;
+    struct bound_box lbox;
+    const struct Plus_head *Plus;
+    struct P_isle *Isle;
 
     G_debug(3, "Vect_point_in_island(): x = %f y = %f isle = %d", X, Y, isle);
 
@@ -777,17 +777,24 @@ int Vect_point_in_island(double X, double Y, struct Map_info *Map, int isle)
     Plus = &(Map->plus);
     Isle = Plus->Isle[isle];
 
-    if (X < Isle->W || X > Isle->E || Y > Isle->N || Y < Isle->S)
+    if (X < box->W || X > box->E || Y > box->N || Y < box->S)
 	return 0;
 
     n_intersects = 0;
     for (i = 0; i < Isle->n_lines; i++) {
 	line = abs(Isle->lines[i]);
 
-	Line = Plus->Line[line];
+	/* this is slow, but the fastest of all alternatives */
+	Vect_get_line_box(Map, line, &lbox);
 
+	/* slower as long as the spatial index is in memory: */
+	/*
+	Vect_read_line(Map, Points, NULL, line);
+	Vect_line_box(Points, &lbox);
+	*/
+	
 	/* dont check lines that obviously do not intersect with test ray */
-	if ((Line->N < Y) || (Line->S > Y) || (Line->E < X))
+	if ((lbox.N < Y) || (lbox.S > Y) || (lbox.E < X))
 	    continue;
 
 	Vect_read_line(Map, Points, NULL, line);
@@ -798,8 +805,7 @@ int Vect_point_in_island(double X, double Y, struct Map_info *Map, int isle)
 	n_intersects += inter;
     }
 
-    if (n_intersects % 2)
-	return 1;
-    else
-	return 0;
+    /* odd number of intersections: inside, return 1 
+     * even number of intersections: outside, return 0 */
+    return (n_intersects & 1);
 }

@@ -1,5 +1,4 @@
 #include "globals.h"
-#include <grass/raster.h>
 #include <grass/display.h>
 #include <stdlib.h>
 
@@ -27,8 +26,8 @@ int drawcell(View * view, int initflag)
     }
 
     if (read_colors) {
-	G_free_colors(colors);
-	if (G_read_colors(view->cell.name, view->cell.mapset, colors) < 0)
+	Rast_free_colors(colors);
+	if (Rast_read_colors(view->cell.name, view->cell.mapset, colors) < 0)
 	    return 0;
 	/* set_menu_colors(colors); */
     }
@@ -47,9 +46,9 @@ int drawcell(View * view, int initflag)
 	Erase_view(VIEW_MAP2_ZOOM);
     }
 
-    G_set_window(&view->cell.head);
-    nrows = G_window_rows();
-    ncols = G_window_cols();
+    Rast_set_window(&view->cell.head);
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
 
     left = view->cell.left;
     top = view->cell.top;
@@ -60,18 +59,15 @@ int drawcell(View * view, int initflag)
     if (getenv("NO_DRAW"))
 	return 1;
 
-    fd = G_open_cell_old(view->cell.name, view->cell.mapset);
-    if (fd < 0)
-	return 0;
-    dcell = G_allocate_d_raster_buf();
+    fd = Rast_open_old(view->cell.name, view->cell.mapset);
+    dcell = Rast_allocate_d_buf();
 
     sprintf(msg, "Displaying %s ...", view->cell.name);
     Menu_msg(msg);
 
     D_cell_draw_setup(top, top + nrows, left, left + ncols);
     for (row = 0; row < nrows; row++) {
-	if (G_get_d_raster_row_nomask(fd, dcell, row) < 0)
-	    break;
+	Rast_get_d_row_nomask(fd, dcell, row);
 	D_draw_d_raster(row, dcell, colors);
     }
     D_cell_draw_end();
@@ -80,7 +76,7 @@ int drawcell(View * view, int initflag)
     if (view == VIEW_MAP2 || view == VIEW_MAP2_ZOOM)
 	cellmap_present = 1;	/* for drawcell */
 
-    G_close_cell(fd);
+    Rast_close(fd);
     G_free(dcell);
 
 

@@ -28,10 +28,12 @@ extern func_t f_or2;
 extern func_t f_bitand;
 extern func_t f_bitor;
 extern func_t f_bitxor;
+extern args_t c_logop;
+
 extern func_t f_shiftl;
 extern func_t f_shiftr;
 extern func_t f_shiftru;
-extern args_t c_logop;
+extern args_t c_shiftop;
 
 extern func_t f_not;
 extern func_t f_bitnot;
@@ -72,16 +74,21 @@ extern func_t f_isnull;
 extern args_t c_isnull;
 
 extern func_t f_graph;
+extern func_t f_graph2;
 extern args_t c_graph;
 
 extern func_t f_min;
 extern func_t f_max;
+extern func_t f_nmin;
+extern func_t f_nmax;
 extern args_t c_varop;
 
 extern func_t f_median;
+extern func_t f_nmedian;
 extern args_t c_median;
 
 extern func_t f_mode;
+extern func_t f_nmode;
 extern args_t c_mode;
 
 extern func_t f_rand;

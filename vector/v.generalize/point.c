@@ -19,7 +19,7 @@
 
 #include <math.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 #include "point.h"
 
@@ -50,8 +50,12 @@ inline double point_dist2(POINT a)
 }
 
 inline void point_assign(struct line_pnts *Points, int index, int with_z,
-			 POINT * res)
+			 POINT * res, int is_loop)
 {
+    if (is_loop) {
+	while (index >= Points->n_points - 1)
+	    index -= Points->n_points - 1;
+    }
     res->x = Points->x[index];
     res->y = Points->y[index];
     if (with_z) {
@@ -116,10 +120,6 @@ POINT_LIST *point_list_new(POINT p)
     POINT_LIST *pl;
 
     pl = G_malloc(sizeof(POINT_LIST));
-
-    if (!pl) {
-	G_fatal_error(_("Out of memory"));
-    }
 
     pl->next = NULL;
     pl->p = p;

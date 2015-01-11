@@ -19,6 +19,7 @@ import os
 import sys
 
 from grass.lib.gis    import *
+from grass.lib.raster import *
 
 # check if GRASS is running or not
 if not os.environ.has_key("GISBASE"):
@@ -34,12 +35,12 @@ else:
 G_gisinit('')
 
 # find map in search path
-mapset = G_find_cell2(input, '')
+mapset = G_find_raster2(input, '')
 if not mapset:
     sys.exit("Raster map <%s> not found" % input)
 
 # determine the inputmap type (CELL/FCELL/DCELL)
-data_type = G_raster_map_type(input, mapset)
+data_type = Rast_map_type(input, mapset)
 
 if data_type == CELL_TYPE:
     ptype = POINTER(c_int)
@@ -53,24 +54,24 @@ elif data_type == DCELL_TYPE:
 
 print "Raster map <%s> contains data type %s." % (input, type_name)
 
-in_fd   = G_open_cell_old(input, mapset)
-in_rast = G_allocate_raster_buf(data_type)
+in_fd   = Rast_open_old(input, mapset)
+in_rast = Rast_allocate_buf(data_type)
 in_rast = cast(c_void_p(in_rast), ptype)
 
-rows = G_window_rows()
-cols = G_window_cols()
+rows = Rast_window_rows()
+cols = Rast_window_cols()
 print "Current region is %d rows x %d columns" % (rows, cols)
 
 # iterate through map rows
 print "Map data:"
 for row_n in xrange(rows):
     # read a row of raster data into memory, then print it
-    G_get_raster_row(in_fd, in_rast, row_n, data_type)
+    Rast_get_row(in_fd, in_rast, row_n, data_type)
     print row_n, in_rast[0:cols]
     # TODO check for NULL
 
 # closed map and cleanup memory allocation
-G_close_cell(in_fd)
+Rast_close(in_fd)
 G_free(in_rast)
 
 def check_null(value):

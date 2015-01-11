@@ -1,10 +1,10 @@
 #include "vizual.h"
-#include <grass/G3d.h>
+#include <grass/raster3d.h>
 
 int viz_make_header(hf, dmin, dmax, g3reg)
      file_info *hf;
      double dmin, dmax;
-     G3D_Region *g3reg;
+     RASTER3D_Region *g3reg;
 {
 
     hf->min = dmin;

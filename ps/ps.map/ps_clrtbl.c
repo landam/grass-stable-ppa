@@ -3,8 +3,8 @@
  ** Author: Paul W. Carlson     April 1992
  */
 
+#include <grass/raster.h>
 #include <grass/glocale.h>
-#include "ps_info.h"
 #include "colortable.h"
 #include "local_proto.h"
 
@@ -24,7 +24,7 @@ int PS_colortable(void)
     int center_cols;
     DCELL dmin, dmax, val;
     struct Colors colors;
-    double t, l, r;
+    double t, l /*, r */;
     double x1, x2, y, dy, fontsize, tl;
     double col_width;
     int do_color;
@@ -35,20 +35,20 @@ int PS_colortable(void)
     G_message(_("Creating color table for <%s in %s>..."),
 	      ct.name, ct.mapset);
 
-    if (G_read_cats(ct.name, ct.mapset, &PS.cats) == -1) {
+    if (Rast_read_cats(ct.name, ct.mapset, &PS.cats) == -1) {
 	G_warning(_("Category file for <%s> not available"), ct.name);
 	return 1;
     }
 
-    if (G_read_colors(ct.name, ct.mapset, &colors) == -1)
+    if (Rast_read_colors(ct.name, ct.mapset, &colors) == -1)
 	G_warning(_("Unable to read colors for colorbar"));
 
-    rast_type = G_raster_map_type(ct.name, ct.mapset);
+    rast_type = Rast_map_type(ct.name, ct.mapset);
 
     do_color = (PS.grey == 0 && PS.level == 2);
 
     /* How many categories to show */
-    num_cats = G_number_of_raster_cats(&PS.cats);
+    num_cats = Rast_number_of_cats(&PS.cats);
     G_debug(3, "clrtbl: %d categories", num_cats);
     if (!num_cats) {
 	G_warning(_("Your cats/ file is invalid. A cats/ file with categories "
@@ -80,7 +80,7 @@ int PS_colortable(void)
     if (ct.width <= 0.0 || ct.width > PS.page_width - PS.right_marg - ct.x)
 	ct.width = PS.page_width - PS.right_marg - ct.x;
 
-    r = l + 72.0 * ct.width;
+    /* r = l + 72.0 * ct.width; */ /* unused */
     col_width = ct.width / (double)ct.cols;
 
     G_debug(3, "clrtbl: adjusted ct.x=[%.3f] ct.y=[%.3f] ct.width=[%.3f] "
@@ -95,9 +95,9 @@ int PS_colortable(void)
 	    fprintf(PS.fp, "(%s)\n", "no data");
 	else {
 	    fprintf(PS.fp, "(%s)\n",
-		    G_get_ith_d_raster_cat(&PS.cats, i - 1, &dmin, &dmax));
+		    Rast_get_ith_d_cat(&PS.cats, i - 1, &dmin, &dmax));
 	    G_debug(5, "i=%d  dmin=%f  dmax=%f  catlabel=[%s]", i, dmin, dmax,
-		    G_get_ith_d_raster_cat(&PS.cats, i - 1, &dmin, &dmax));
+		    Rast_get_ith_d_cat(&PS.cats, i - 1, &dmin, &dmax));
 	}
     }
     fprintf(PS.fp, "] def\n");
@@ -146,7 +146,7 @@ int PS_colortable(void)
 
 	    /* fill box and outline in black */
 	    if (i) {
-		label = G_get_ith_d_raster_cat(&PS.cats, i - 1, &dmin, &dmax);
+		label = Rast_get_ith_d_cat(&PS.cats, i - 1, &dmin, &dmax);
 		G_debug(5, "j=%d i=%d label=[%s]", j, i, label);
 	    }
 
@@ -154,23 +154,23 @@ int PS_colortable(void)
 
 	    x2 = x1 + fontsize;
 
-	    if (!i || dmax == dmin)
+	    if (!i || dmax == dmin) {
 		/* draw a 1-color rectangle */
-	    {
+
 		/* set box fill color */
 		if (!i)
-		    G_get_null_value_color(&R, &G, &B, &colors);
+		    Rast_get_null_value_color(&R, &G, &B, &colors);
 		else {
 		    if (rast_type == CELL_TYPE) {
 			CELL cmin = (CELL)dmin;
-			G_get_c_raster_color(&cmin, &R, &G, &B, &colors);
+			Rast_get_c_color(&cmin, &R, &G, &B, &colors);
 		    }
 		    else if (rast_type == FCELL_TYPE) {
 			FCELL fmin = (FCELL)dmin;
-			G_get_f_raster_color(&fmin, &R, &G, &B, &colors);
+			Rast_get_f_color(&fmin, &R, &G, &B, &colors);
 		    }
 		    else if (rast_type == DCELL_TYPE)
-			G_get_raster_color(&dmin, &R, &G, &B, &colors, rast_type);
+			Rast_get_color(&dmin, &R, &G, &B, &colors, rast_type);
 		    else G_fatal_error("Please contact development team");
 
 		    G_debug(5, "    dmin=%f  RGB=%d:%d:%d", dmin, R, G, B);
@@ -199,17 +199,17 @@ int PS_colortable(void)
 /* grey border	fprintf(PS.fp, "B F .247 .247 .247 C 1 W stroke\n"); */
 		fprintf(PS.fp, "B F ");
 		set_ps_color(&ct.color);
-		fprintf(PS.fp, "1 W stroke\n");
+		fprintf(PS.fp, "%.2f W stroke\n", ct.lwidth);
 	    }
-	    else
+	    else {
 		/* split the rectangle into NSTEPS horizontal strips and
 		   draw each with the corresponding value's color */
-	    {
+
 		for (jj = 0; jj < NSTEPS; jj++) {
 		    /* set box fill color */
 		    val = dmin + (double)jj *(dmax - dmin) / NSTEPS;
 
-		    G_get_d_raster_color(&val, &R, &G, &B, &colors);
+		    Rast_get_d_color(&val, &R, &G, &B, &colors);
 		    fprintf(PS.fp, "%.3f %.3f %.3f C\n",
 			    (double)R / 255., (double)G / 255.,
 			    (double)B / 255.);
@@ -226,7 +226,7 @@ int PS_colortable(void)
 		    fprintf(PS.fp, "B CF stroke\n");
 		}		/* done filling the box */
 
-		/* outline the box in black */
+		/* outline the box in the specified color, see above */
 		fprintf(PS.fp, "%.1f ", x1);
 		if (center_cols)
 		    fprintf(PS.fp, "mvx ");
@@ -235,7 +235,10 @@ int PS_colortable(void)
 		if (center_cols)
 		    fprintf(PS.fp, "mvx ");
 		fprintf(PS.fp, "%.1f ", y + fontsize);
-		fprintf(PS.fp, "B BW stroke\n");
+		fprintf(PS.fp, "B ");
+		set_ps_color(&ct.color);
+		fprintf(PS.fp, "%.2f W stroke\n", ct.lwidth);
+
 	    }	/* done drawing the box */
 
 	    /* do the text */
@@ -254,7 +257,7 @@ int PS_colortable(void)
     if (PS.min_y > y)
 	PS.min_y = y;
 
-    G_free_colors(&colors);
+    Rast_free_colors(&colors);
 
     return 0;
 }

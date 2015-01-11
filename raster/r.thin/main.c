@@ -11,7 +11,7 @@
  *               Glynn Clements <glynn gclements.plus.com>, Hamish Bowman <hamish_b yahoo.com>,
  *               Jan-Oliver Wagner <jan intevation.de>
  * PURPOSE:      Cell-file line thinning
- * COPYRIGHT:    (C) 1999-2006, 2010 by the GRASS Development Team
+ * COPYRIGHT:    (C) 1999-2006 by the GRASS Development Team
  *
  *               This program is free software under the GNU General Public
  *               License (>=v2). Read the file COPYING that comes with GRASS
@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include "local_proto.h"
 #include <grass/glocale.h>
 
@@ -52,10 +53,11 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, thin");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("geometry"));
     module->description =
 	_("Thins non-zero cells that denote linear "
-	  "features in a raster map.");
+	  "features in a raster map layer.");
 
     opt1 = G_define_standard_option(G_OPT_R_INPUT);
 
@@ -79,10 +81,10 @@ int main(int argc, char *argv[])
     thin_lines(iterations);
     close_file(output);
 
-    G_put_cell_title(output, "Thinned linear features");
-    G_short_history(output, "raster", &history);
-    G_command_history(&history);
-    G_write_history(output, &history);
+    Rast_put_cell_title(output, "Thinned linear features");
+    Rast_short_history(output, "raster", &history);
+    Rast_command_history(&history);
+    Rast_write_history(output, &history);
 
     exit(EXIT_SUCCESS);
 }

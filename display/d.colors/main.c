@@ -8,7 +8,7 @@
  *               Eric G. Miller <egm2 jps.net>, 
  *               Glynn Clements <glynn gclements.plus.com>, 
  *               Hamish Bowman <hamish_b yahoo.com>
- * PURPOSE:      Enables user to change color table of raster map layers
+ * PURPOSE:      Enables the user to change color table of raster map layers
  * COPYRIGHT:    (C) 1999-2007 by the GRASS Development Team
  *
  *               This program is free software under the GNU General Public
@@ -20,7 +20,6 @@
 #include <grass/gis.h>
 #include <grass/glocale.h>
 #include <grass/display.h>
-#include <grass/raster.h>
 #include "colors.h"
 
 int main(int argc, char **argv)
@@ -37,17 +36,10 @@ int main(int argc, char **argv)
     /* Initialize the GIS calls */
     G_gisinit(argv[0]);
 
-    /* Try to get default raster name, don't fail so --interface-description works */
-    /* don't let R_open_driver() kill us */
-    R__open_quiet();
-    if (R_open_driver() == 0) {
-	if (D_get_cell_name(name) < 0)
-	    *name = 0;
-	R_close_driver();
-    }
-
     module = G_define_module();
-    module->keywords = _("display, raster");
+    G_add_keyword(_("display"));
+    G_add_keyword(_("color table"));
+    G_add_keyword(_("raster"));
     module->description =
 	"Allows the user to interactively change the color table "
 	"of a raster map layer displayed on the graphics monitor.";
@@ -70,7 +62,7 @@ int main(int argc, char **argv)
     /* Make sure map is available */
     if (map->answer == NULL)
 	exit(0);
-    mapset = G_find_cell2(map->answer, "");
+    mapset = G_find_raster2(map->answer, "");
     if (mapset == NULL) {
 	char msg[256];
 
@@ -78,7 +70,7 @@ int main(int argc, char **argv)
 	G_fatal_error(msg);
     }
 
-    if (G_raster_map_is_fp(map->answer, mapset)) {
+    if (Rast_map_is_fp(map->answer, mapset)) {
 	sprintf(buff,
 		"Raster file [%s] is floating point! \nd.colors only works with integer maps",
 		map->answer);

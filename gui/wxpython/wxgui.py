@@ -23,8 +23,13 @@ import sys
 import getopt
 
 if __name__ == "__main__":
-    sys.path.append(os.path.join(os.getenv('GISBASE'), 'etc', 'wxpython'))
+    gui_wx_path = os.path.join(os.getenv('GISBASE'), 'etc', 'gui', 'wxpython')
+    if gui_wx_path not in sys.path:
+        sys.path.append(gui_wx_path)
+
 from core import globalvar
+from core.utils import _
+
 import wx
 try:
     import wx.lib.agw.advancedsplash as SC
@@ -53,7 +58,7 @@ class GMApp(wx.App):
         """
         if not globalvar.CheckWxVersion([2, 9]):
             wx.InitAllImageHandlers()
-
+        
         # create splash screen
         introImagePath = os.path.join(globalvar.ETCIMGDIR, "silesia_splash.png")
         introImage     = wx.Image(introImagePath, wx.BITMAP_TYPE_PNG)
@@ -77,10 +82,10 @@ class GMApp(wx.App):
         # create and show main frame
         mainframe = GMFrame(parent = None, id = wx.ID_ANY,
                             workspace = self.workspaceFile)
-
+        
         mainframe.Show()
         self.SetTopWindow(mainframe)
-
+        
         return True
 
 class Usage(Exception):
@@ -93,7 +98,7 @@ def printHelp():
     print >> sys.stderr, " python wxgui.py [options]"
     print >> sys.stderr, "%sOptions:" % os.linesep
     print >> sys.stderr, " -w\t--workspace file\tWorkspace file to load"
-    sys.exit(0)
+    sys.exit(1)
 
 def process_opt(opts, args):
     """!Process command-line arguments"""
@@ -111,8 +116,6 @@ def process_opt(opts, args):
     return (workspaceFile,)
 
 def main(argv = None):
-    import gettext
-    gettext.install('grasswxpy', os.path.join(os.getenv("GISBASE"), 'locale'), unicode = True)
     
     if argv is None:
         argv = sys.argv

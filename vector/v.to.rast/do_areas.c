@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/raster.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 #include "local.h"
@@ -20,7 +21,7 @@ static int compare(const void *, const void *);
 
 
 int do_areas(struct Map_info *Map, struct line_pnts *Points,
-	     dbCatValArray * Cvarr, int ctype, int field, int use,
+	     dbCatValArray * Cvarr, int ctype, int use,
 	     double value, int value_type)
 {
     int i;
@@ -30,7 +31,7 @@ int do_areas(struct Map_info *Map, struct line_pnts *Points,
     if (nareas <= 0)
 	return 0;
 
-    G_message(_("Reading areas..."));
+    G_important_message(_("Reading areas..."));
     for (i = 0; i < nareas; i++) {
 	/* Note: in old version (grass5.0) there was a check here if the current area 
 	 *        is identical to previous one. I don't see any reason for this in topological vectors */
@@ -87,9 +88,10 @@ int do_areas(struct Map_info *Map, struct line_pnts *Points,
 }
 
 
-int sort_areas(struct Map_info *Map, struct line_pnts *Points, int field)
+int sort_areas(struct Map_info *Map, struct line_pnts *Points,
+               int field, struct cat_list *cat_list)
 {
-    int i, centroid;
+    int i, centroid, nareas_selected;
     struct line_cats *Cats;
     CELL cat;
 
@@ -106,33 +108,45 @@ int sort_areas(struct Map_info *Map, struct line_pnts *Points, int field)
 	(struct list *)G_calloc(nareas * sizeof(char), sizeof(struct list));
 
     /* store area size,cat,index in list */
+    nareas_selected = 0;
     for (i = 0; i < nareas; i++) {
+
+	centroid = Vect_get_area_centroid(Map, i + 1);
+	SETNULL(&cat);
+	if (centroid <= 0) {
+	    G_debug(2,_("Area without centroid (OK for island)"));
+	}
+	else {
+	    Vect_read_line(Map, NULL, Cats, centroid);
+	    if (field > 0) {
+		if (Vect_cats_in_constraint(Cats, field, cat_list)) {
+		    Vect_cat_get(Cats, field, &cat);
+		    nareas_selected++;
+		}
+		else {
+		    G_debug(2, _("Area centroid without category"));
+		}
+	    }
+	    else {
+		/* field < 1, process all areas with centroid */
+		cat = 0;
+		nareas_selected++;
+	    }
+	}
+
 	list[i].index = i + 1;
 	Vect_get_area_points(Map, i + 1, Points);
 	list[i].size =
 	    G_area_of_polygon(Points->x, Points->y, Points->n_points);
 
-	centroid = Vect_get_area_centroid(Map, i + 1);
-	if (centroid <= 0) {
-	    SETNULL(&cat);
-	    G_debug(2,_("Area without centroid (OK for island)"));
-	}
-	else {
-	    Vect_read_line(Map, NULL, Cats, centroid);
-	    Vect_cat_get(Cats, field, &cat);
-	    if (cat < 0) {
-		SETNULL(&cat);
-		G_warning(_("Area centroid without category"));
-	    }
-	}
-
 	list[i].cat = cat;
     }
+    if (nareas_selected > 0) {
+	/* sort the list by size */
+	qsort(list, nareas * sizeof(char), sizeof(struct list), compare);
+    }
 
-    /* sort the list by size */
-    qsort(list, nareas * sizeof(char), sizeof(struct list), compare);
-
-    return nareas;
+    return nareas_selected;
 }
 
 

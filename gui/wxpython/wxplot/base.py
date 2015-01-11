@@ -19,7 +19,10 @@ import os
 import sys
 
 import wx
-import wx.lib.plot as plot
+try:
+    import wx.lib.plot as plot
+except ImportError, e:
+    print >> sys.stderr, e
 
 from core.globalvar    import ETCICONDIR
 from core.settings     import UserSettings
@@ -27,6 +30,7 @@ from wxplot.dialogs    import TextDialog, OptDialog
 from core.render       import Map
 from icons.icon        import MetaIcon
 from gui_core.toolbars import BaseIcons
+from core.utils import _
 
 import grass.script as grass
 
@@ -37,7 +41,7 @@ PlotIcons = {
                               label = _('Draw transect in map display window to profile')),
     'options'      : MetaIcon(img = 'settings',
                               label = _('Plot options')),
-    'statistics'   : MetaIcon(img = 'check',
+    'statistics'   : MetaIcon(img = 'stats',
                               label = _('Plot statistics')),
     'save'         : MetaIcon(img = 'save',
                               label = _('Save profile data to CSV file')),
@@ -46,13 +50,12 @@ PlotIcons = {
 
 class BasePlotFrame(wx.Frame):
     """!Abstract PyPlot display frame class"""
-    def __init__(self, parent = None, id = wx.ID_ANY, size = wx.Size(700, 400),
-                 style = wx.DEFAULT_FRAME_STYLE, rasterList = [],  **kwargs):
+    def __init__(self, parent=None, size=wx.Size(700, 400),
+                 style=wx.DEFAULT_FRAME_STYLE, rasterList=[],  **kwargs):
 
-        wx.Frame.__init__(self, parent, id, size = size, style = style, **kwargs)
+        wx.Frame.__init__(self, parent, id=wx.ID_ANY, size = size, style = style, **kwargs)
         
-        self.parent = parent            # MapFrame for a plot type
-        self.mapwin = self.parent.MapWindow
+        self.parent = parent # MapFrame for a plot type
         self.Map    = Map()             # instance of render.Map to be associated with display
         self.rasterList = rasterList    #list of rasters to plot
         self.raster = {}    # dictionary of raster maps and their plotting parameters
@@ -99,15 +102,9 @@ class BasePlotFrame(wx.Frame):
         self.xlabel = ""        # default X-axis label
         self.ylabel = ""        # default Y-axis label
 
-        #
-        # Bind various events
-        #
-        self.Bind(wx.EVT_CLOSE, self.OnCloseWindow)
-        
         self.CentreOnScreen()
         
         self._createColorDict()
-
 
     def _createColorDict(self):
         """!Create color dictionary to return wx.Colour tuples
@@ -115,7 +112,7 @@ class BasePlotFrame(wx.Frame):
                 
         self.colorDict = {}
         for clr in grass.named_colors.iterkeys():
-            if clr == 'white' or clr == 'black': continue
+            if clr == 'white': continue
             r = grass.named_colors[clr][0] * 255
             g = grass.named_colors[clr][1] * 255
             b = grass.named_colors[clr][2] * 255
@@ -124,7 +121,7 @@ class BasePlotFrame(wx.Frame):
     def InitPlotOpts(self, plottype):
         """!Initialize options for entire plot
         """        
-        self.plottype = plottype                # profile
+        self.plottype = plottype                # histogram, profile, or scatter
 
         self.properties = {}                    # plot properties
         self.properties['font'] = {}
@@ -180,7 +177,6 @@ class BasePlotFrame(wx.Frame):
         """
 
         rdict = {} # initialize a dictionary
-
         self.properties['raster'] = UserSettings.Get(group = self.plottype, key = 'raster')
 
         for r in rasterList:
@@ -199,8 +195,8 @@ class BasePlotFrame(wx.Frame):
             if ret['units'] not in ('(none)', '"none"', '', None):
                 rdict[r]['units'] = ret['units']
             
-            rdict[r]['plegend'] = r.split('@')[0]
-            rdict[r]['datalist'] = [] # list of cell value,frequency pairs for plotting
+            rdict[r]['plegend'] = r   # use fully-qualified names
+            rdict[r]['datalist'] = [] # list of cell value,frequency pairs for plotting histogram
             rdict[r]['pline'] = None
             rdict[r]['datatype'] = ret['datatype']
 
@@ -218,7 +214,7 @@ class BasePlotFrame(wx.Frame):
             else:
                 rdict[r]['pstyle'] = 'solid'
                         
-            if idx <= len(self.colorList):
+            if idx < len(self.colorList):
                 if idx == 0:
                     # use saved color for first plot
                     if self.properties['raster']['pcolor'] != None:
@@ -233,6 +229,70 @@ class BasePlotFrame(wx.Frame):
                 g = randint(0, 255)
                 rdict[r]['pcolor'] = ((r,g,b,255))
         
+        return rdict
+            
+    def InitRasterPairs(self, rasterList, plottype):
+        """!Initialize or update raster dictionary with raster pairs for
+            bivariate scatterplots
+        """
+        
+        if len(rasterList) == 0: return
+        
+        rdict = {} # initialize a dictionary
+        for rpair in rasterList:
+            idx = rasterList.index(rpair)
+            
+            try:
+                ret0 = grass.raster_info(rpair[0])
+                ret1 = grass.raster_info(rpair[1])
+
+            except:
+                continue
+                # if r.info cannot parse map, skip it
+
+            self.raster[rpair] = UserSettings.Get(group = plottype, key = 'rasters') # some default settings
+            rdict[rpair] = {} # initialize sub-dictionaries for each raster in the list
+            rdict[rpair][0] = {}
+            rdict[rpair][1] = {}
+            rdict[rpair][0]['units'] = ''
+            rdict[rpair][1]['units'] = ''
+
+            if ret0['units'] not in ('(none)', '"none"', '', None):
+                rdict[rpair][0]['units'] = ret0['units']
+            if ret1['units'] not in ('(none)', '"none"', '', None):
+                rdict[rpair][1]['units'] = ret1['units']
+                
+            rdict[rpair]['plegend'] = rpair[0].split('@')[0] + ' vs ' + rpair[1].split('@')[0]
+            rdict[rpair]['datalist'] = [] # list of cell value,frequency pairs for plotting histogram
+            rdict[rpair][0]['datatype'] = ret0['datatype']
+            rdict[rpair][1]['datatype'] = ret1['datatype']
+                 
+            #    
+            #initialize with saved values
+            #
+            if self.properties['raster']['ptype'] != None and \
+                self.properties['raster']['ptype'] != '':
+                rdict[rpair]['ptype'] = self.properties['raster']['ptype']
+            else:
+                rdict[rpair]['ptype'] = 'dot'
+            if self.properties['raster']['psize'] != None:
+                rdict[rpair]['psize'] = self.properties['raster']['psize']
+            else:
+                 rdict[rpair]['psize'] = 1
+            if self.properties['raster']['pfill'] != None and \
+                self.properties['raster']['pfill'] != '':
+                rdict[rpair]['pfill'] = self.properties['raster']['pfill']
+            else:
+                 rdict[rpair]['pfill'] = 'solid'
+            
+            if idx <= len(self.colorList):
+                rdict[rpair]['pcolor'] = self.colorDict[self.colorList[idx]]
+            else:
+                r = randint(0, 255)
+                b = randint(0, 255)
+                g = randint(0, 255)
+                rdict[rpair]['pcolor'] = ((r,g,b,255))
+            
         return rdict
 
     def SetGraphStyle(self):
@@ -301,10 +361,11 @@ class BasePlotFrame(wx.Frame):
     def DrawPlot(self, plotlist):
         """!Draw line and point plot from list plot elements.
         """
+        xlabel, ylabel = self._getPlotLabels()
         self.plot = plot.PlotGraphics(plotlist,
-                                         self.ptitle,
-                                         self.xlabel,
-                                         self.ylabel)
+                                      self.ptitle,
+                                      xlabel,
+                                      ylabel)
 
         if self.properties['x-axis']['prop']['type'] == 'custom':
             self.client.SetXSpec('min')
@@ -360,6 +421,7 @@ class BasePlotFrame(wx.Frame):
     def OnRedraw(self, event):
         """!Redraw the plot window. Unzoom to original size
         """
+        self.UpdateLabels()
         self.client.Reset()
         self.client.Redraw()
        
@@ -367,10 +429,6 @@ class BasePlotFrame(wx.Frame):
         """!Erase the plot window
         """
         self.client.Clear()
-        self.mapwin.ClearLines(self.mapwin.pdc)
-        self.mapwin.ClearLines(self.mapwin.pdcTmp)
-        self.mapwin.polycoords = []
-        self.mapwin.Refresh()
 
     def SaveToFile(self, event):
         """!Save plot to graphics file
@@ -406,7 +464,6 @@ class BasePlotFrame(wx.Frame):
         """
         point = wx.GetMousePosition()
         popt = wx.Menu()
-
         # Add items to the menu
         settext = wx.MenuItem(popt, wx.ID_ANY, _('Text settings'))
         popt.AppendItem(settext)
@@ -431,24 +488,44 @@ class BasePlotFrame(wx.Frame):
         dlg.ShowModal()
         dlg.Destroy()
 
+
+    def _getPlotLabels(self):
+        def log(txt):
+            return "log( " + txt  + " )" 
+
+        x = self.xlabel
+        if self.properties['x-axis']['prop']['log']:
+            x = log(x)
+
+        y = self.ylabel
+        if self.properties['y-axis']['prop']['log']:
+            y = log(y)
+
+        return x, y
+
     def OnPlotText(self, dlg):
-        """!Custom text settings.
+        """!Custom text settings for histogram plot.
         """
         self.ptitle = dlg.ptitle
         self.xlabel = dlg.xlabel
         self.ylabel = dlg.ylabel
+
+        if self.plot:
+            self.plot.setTitle(dlg.ptitle)
+            
+        self.OnRedraw(event = None)
+    
+    def UpdateLabels(self):
+        x, y = self._getPlotLabels()
 
         self.client.SetFont(self.properties['font']['wxfont'])
         self.client.SetFontSizeTitle(self.properties['font']['prop']['titleSize'])
         self.client.SetFontSizeAxis(self.properties['font']['prop']['axisSize'])
 
         if self.plot:
-            self.plot.setTitle(dlg.ptitle)
-            self.plot.setXLabel(dlg.xlabel)
-            self.plot.setYLabel(dlg.ylabel)
+            self.plot.setXLabel(x)
+            self.plot.setYLabel(y)
 
-        self.OnRedraw(event = None)
-    
     def PlotText(self, event):
         """!Set custom text values for profile title and axis labels.
         """
@@ -469,11 +546,11 @@ class BasePlotFrame(wx.Frame):
         dlg = OptDialog(parent = self, id = wx.ID_ANY, 
                         plottype = self.plottype, 
                         title = _('Plot settings'))
-
         btnval = dlg.ShowModal()
 
         if btnval == wx.ID_SAVE or btnval == wx.ID_OK or btnval == wx.ID_CANCEL:
-            dlg.Destroy()            
+            dlg.Destroy() 
+        self.Update()
 
     def PrintMenu(self, event):
         """!Print options and output menu
@@ -502,21 +579,4 @@ class BasePlotFrame(wx.Frame):
         self.client.Printout()
 
     def OnQuit(self, event):
-        self.Close(True)
-
-    def OnCloseWindow(self, event):
-        """!Close plot window and clean up
-        """
-        try:
-            self.mapwin.ClearLines()
-            self.mapwin.mouse['begin'] = self.mapwin.mouse['end'] = (0.0, 0.0)
-            self.mapwin.mouse['use'] = 'pointer'
-            self.mapwin.mouse['box'] = 'point'
-            self.mapwin.polycoords = []
-            self.mapwin.UpdateMap(render = False, renderVector = False)
-        except:
-            pass
-        
-        self.mapwin.SetCursor(self.Parent.cursors["default"])
-        self.Destroy()
-        
+        self.Close(True)        

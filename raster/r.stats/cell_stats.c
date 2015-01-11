@@ -3,7 +3,7 @@
 #include "global.h"
 
 int cell_stats(int fd[], int with_percents, int with_counts,
-	       int with_areas, int with_labels, char *fmt)
+	       int with_areas, int do_sort, int with_labels, char *fmt)
 {
     CELL **cell;
     int i;
@@ -16,7 +16,7 @@ int cell_stats(int fd[], int with_percents, int with_counts,
     /* allocate i/o buffers for each raster map */
     cell = (CELL **) G_calloc(nfiles, sizeof(CELL *));
     for (i = 0; i < nfiles; i++)
-	cell[i] = G_allocate_cell_buf();
+	cell[i] = Rast_allocate_c_buf();
 
     /* if we want area totals, set this up.
      * distinguish projections which are planimetric (all cells same size)
@@ -47,9 +47,7 @@ int cell_stats(int fd[], int with_percents, int with_counts,
 	G_percent(row, nrows, 2);
 
 	for (i = 0; i < nfiles; i++) {
-	    if (G_get_c_raster_row(fd[i], cell[i], row) < 0)
-		G_fatal_error(_("Unable to read raster <map %d of %d> row %d"),
-				i+1, nfiles, row);
+	    Rast_get_c_row(fd[i], cell[i], row);
 
 	    /* include max FP value in nsteps'th bin */
 	    if(is_fp[i])
@@ -66,7 +64,7 @@ int cell_stats(int fd[], int with_percents, int with_counts,
 
     G_percent(row, nrows, 2);
 
-    sort_cell_stats();
+    sort_cell_stats(do_sort);
     print_cell_stats(fmt, with_percents, with_counts, with_areas, with_labels,
 		     fs);
 

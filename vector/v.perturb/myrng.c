@@ -21,15 +21,10 @@ int myrng(double *numbers, int n,
     if (rng == zufall)		/* uniform */
 	for (i = 0; i < n; ++i)
 	    numbers[i] -= 0.5, numbers[i] *= 2 * p1;
-    else if (rng == normalen)
-	/* gaussian */
+    else if (rng == normalen)	/* gaussian */
 	/* is this how to do transformation? */
 	for (i = 0; i < n; ++i)
 	    numbers[i] *= p2, numbers[i] += p1;
-
-    /*
-       for(i=0;i<n;++i)
-       G_debug(0,"%g",numbers[i]);
-     */
+    
     return 0;
 }

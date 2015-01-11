@@ -25,6 +25,7 @@
 
 
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "r.flow.h"
 #include "io.h"
@@ -44,26 +45,26 @@ static void precompute_ew_dists(void);
 
 void precompute(void)
 {
-    G_message(_("Precomputing: e/w distances"));
+    G_verbose_message(_("Precomputing e/w distances..."));
     precompute_ew_dists();
-    G_message(_("Precomputing: quantization tolerances"));
+    G_verbose_message(_("Precomputing quantization tolerances..."));
     precompute_epsilons();
     if (parm.up) {
-	G_message(_("Precomputing: inverted elevations"));
+	G_verbose_message(_("Precomputing inverted elevations..."));
 	upslope_correction();
     }
     if (!parm.aspin) {
-	G_message(_("Precomputing: interpolated border elevations"));
+	G_verbose_message(_("Precomputing interpolated border elevations..."));
 	interpolate_border();
     }
 
     if (!parm.mem) {
 	if (parm.aspin) {
-	    G_message(_("Precomputing: re-oriented aspects"));
+	    G_verbose_message(_("Precomputing re-oriented aspects..."));
 	    reflect_and_sentinel();
 	}
 	else {
-	    G_message(_("Precomputing: aspects"));
+	    G_verbose_message(_("Precomputing aspects..."));
 	    precompute_aspects();
 	}
     }
@@ -79,9 +80,9 @@ static void precompute_ew_dists(void)
 
     if (G_projection() == PROJECTION_LL) {
 	for (row = 0; row < region.rows; row++) {
-	    northing = G_row_to_northing(row + 0.5, &region);
-	    ew_dist[row] = G_distance(G_col_to_easting(0., &region), northing,
-				      G_col_to_easting(1., &region),
+	    northing = Rast_row_to_northing(row + 0.5, &region);
+	    ew_dist[row] = G_distance(Rast_col_to_easting(0., &region), northing,
+				      Rast_col_to_easting(1., &region),
 				      northing);
 	}
     }
@@ -177,7 +178,7 @@ static void reflect_and_sentinel(void)
 	for (col = 0; col < region.cols; col++) {
 	    if (aspect(row, col) == 0)
 		/* put(as, row, col, (int) UNDEF); */
-		G_set_d_null_value(&(as.buf[row][col]), 1);
+		Rast_set_d_null_value(&(as.buf[row][col]), 1);
 	    else if (aspect(row, col) < 90)
 		put(as, row, col, 90 - aspect(row, col));
 	    else
@@ -201,7 +202,7 @@ static void precompute_aspects(void)
 	for (col = 0; col < region.cols; col++) {
 	    temp = aspect_fly(n++, c++, s++, d);
 	    if (temp == UNDEF)
-		G_set_d_null_value(&(as.buf[row][col]), 1);
+		Rast_set_d_null_value(&(as.buf[row][col]), 1);
 	    else
 		put(as, row, col, temp);
 	}

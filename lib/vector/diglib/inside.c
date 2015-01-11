@@ -15,35 +15,24 @@
  *              for details.
  *
  *****************************************************************************/
-#include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 
 double
 dig_x_intersect(double beg_x,
 		double end_x, double beg_y, double end_y, double Y)
 {
-    double b, a;
+    double b;
+    
+    /* solve simple linear equation to get X = a + b * Y
+     * with
+     * b = (end_x - beg_x) / (end_y - beg_y)
+     * a = beg_x - b * beg_y
+     * 
+     * simplify a + b * Y: 
+     * a + b * Y = beg_x - b * beg_y + b * Y
+     * a + b * Y = beg_x + b * (Y - beg_y) */
 
     b = (end_x - beg_x) / (end_y - beg_y);
-    a = beg_x - b * beg_y;
-    return (a + b * Y);
-}
 
-int dig_in_area_bbox(P_AREA * Area, double x, double y)
-{
-#ifdef GDEBUG
-    G_debug(3, "BBOX: (x,y) (%lf, %lf)\n", x, y);
-    G_debug(3, "NSEW:  %lf, %lf, %lf, %lf\n", Area->N, Area->S, Area->E,
-	    Area->W);
-#endif
-    if (x < Area->W)
-	return (0);
-    if (x > Area->E)
-	return (0);
-    if (y < Area->S)
-	return (0);
-    if (y > Area->N)
-	return (0);
-
-    return (1);
+    return beg_x + b * (Y - beg_y);
 }

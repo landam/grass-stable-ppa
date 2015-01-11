@@ -16,16 +16,17 @@
    Tomas Paudits (February 2004)
  */
 
+#include <string.h>
 #include <grass/gis.h>
-#include <grass/G3d.h>
-#include <grass/gstypes.h>
+#include <grass/raster3d.h>
+#include <grass/ogsf.h>
 #include <grass/glocale.h>
 #include "gsget.h"
 
 static int Vol_ID[MAX_VOLS];
 static int Next_vol = 0;
 
-static G3D_Region wind3;
+static RASTER3D_Region wind3;
 static double Region[6];
 
 /*!
@@ -35,8 +36,27 @@ static double Region[6];
  */
 void GVL_libinit(void)
 {
-    G3d_initDefaults();
-    G3d_getWindow(&wind3);
+    Rast3d_init_defaults();
+    Rast3d_get_window(&wind3);
+
+    Region[0] = wind3.north;
+    Region[1] = wind3.south;
+    Region[2] = wind3.west;
+    Region[3] = wind3.east;
+    Region[4] = wind3.top;
+    Region[5] = wind3.bottom;
+
+    return;
+}
+
+/*!
+   \brief Initialize 3D region
+
+   Set region extent (N,S,W,E,T,B)
+ */
+void GVL_init_region(void)
+{
+    Rast3d_read_window(&wind3, NULL);
 
     Region[0] = wind3.north;
     Region[1] = wind3.south;
@@ -73,7 +93,7 @@ int GVL_get_region(float *n, float *s, float *w, float *e, float *t, float *b)
 
    \todo gvl_file.c use this - change
 
-   \return pointer to G3D_Region struct (static)
+   \return pointer to RASTER3D_Region struct (static)
  */
 void *GVL_get_window()
 {
@@ -238,8 +258,7 @@ int GVL_load_vol(int id, const char *filename)
     geovol *gvl;
     int handle;
 
-    G_debug(3, "GVL_load_vol(): id=%d, name=%s",
-	    id, filename);
+    G_debug(3, "GVL_load_vol(): id=%d, name=%s", id, filename);
 
     if (NULL == (gvl = gvl_get_vol(id))) {
 	return (-1);
@@ -247,7 +266,7 @@ int GVL_load_vol(int id, const char *filename)
 
     G_message(_("Loading 3d raster map <%s>..."), filename);
 
-    if (0 > (handle = gvl_file_newh(filename, VOL_FTYPE_G3D)))
+    if (0 > (handle = gvl_file_newh(filename, VOL_FTYPE_RASTER3D)))
 	return (-1);
 
     gvl->hfile = handle;
@@ -276,7 +295,7 @@ int GVL_get_volname(int id, char *filename)
 	return (-1);
     }
 
-    G_strcpy(filename, gvl_file_get_name(gvl->hfile));
+    strcpy(filename, gvl_file_get_name(gvl->hfile));
 
     return (1);
 }
@@ -297,11 +316,11 @@ void GVL_get_dims(int id, int *rows, int *cols, int *depths)
 	*rows = gvl->rows;
 	*cols = gvl->cols;
 	*depths = gvl->depths;
-
-	G_debug(3, "GVL_get_dims() id=%d, rows=%d, cols=%d, depths=%d",
-	    gvl->gvol_id, gvl->rows, gvl->cols, gvl->depths);
     }
 
+    G_debug(3, "GVL_get_dims() id=%d, rows=%d, cols=%d, depths=%d",
+	    gvl->gvol_id, gvl->rows, gvl->cols, gvl->depths);
+    
     return;
 }
 
@@ -355,6 +374,27 @@ int GVL_get_trans(int id, float *xtrans, float *ytrans, float *ztrans)
 }
 
 /*!
+   \brief Set drawing wire box
+
+   \param id volume set id
+   \param draw_wire 1 for drawing wire, 0 otherwise
+ */
+void GVL_set_draw_wire(int id, int draw_wire)
+{
+    geovol *gvl;
+
+    G_debug(3, "GVL_set_draw_wire");
+
+    gvl = gvl_get_vol(id);
+
+    if (gvl) {
+	gvl->draw_wire = draw_wire;
+    }
+
+    return;
+}
+
+/*!
    \brief Draw volume set
 
    \param vid volume set id
@@ -367,6 +407,9 @@ void GVL_draw_vol(int vid)
 
     if (gvl) {
 	gvld_vol(gvl);
+        if (gvl->draw_wire) {
+	    gvld_wind3_box(gvl);
+        }
     }
 
     return;
@@ -781,7 +824,7 @@ int GVL_isosurf_get_att(int id, int isosurf_id,
 		*constant = isosurf->att[att].constant;
 	    }
 	    else if (src == MAP_ATT) {
-		G_strcpy(mapname, gvl_file_get_name(isosurf->att[att].hfile));
+		strcpy(mapname, gvl_file_get_name(isosurf->att[att].hfile));
 	    }
 
 	    return (1);

@@ -134,8 +134,7 @@ int main(int argc, char **argv)
 		   "Avoid node ids sorting at insertion - default False")
 	GNO_OPTION("v", "version", "1", &pszVersion,
 		   "Output Graph Version {1,2,3} - default 1")
-    GNO_END if (GNO_PARSE(argc, argv) < 0)
-    {
+	GNO_END if (GNO_PARSE(argc, argv) < 0) {
 	return 1;
     }
 

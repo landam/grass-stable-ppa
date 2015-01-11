@@ -1,4 +1,5 @@
 BUGS:
+Date: 2004-11-09
  * non-square volumes (if re-adjusting the settings with g3.region)
    are not exported correctly.
 
@@ -7,8 +8,9 @@ BUGS:
 
  * with -m flag the "Probe" crashes in Vis5D
 
-G3D library bug?
-        G3d_getValueRegion (map, x, y, z, d1p, typeIntern);                  
+
+RASTER3D library bug?
+        Rast3d_getValueRegion (map, x, y, z, d1p, typeIntern);                  
      produces output with different orientation comparing to:
-        G3d_getValue(map, x, y, z, d1p, typeIntern); 
+        Rast3d_getValue(map, x, y, z, d1p, typeIntern); 
 

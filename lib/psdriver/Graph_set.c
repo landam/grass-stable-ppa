@@ -14,21 +14,20 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <time.h>
+#include <math.h>
 
 #include <grass/gis.h>
+#include <grass/glocale.h>
 #include "psdriver.h"
 
 #define DATE_FORMAT "%c"
 
-const char *file_name;
-FILE *outfp;
-int true_color;
-int width, height;
-int encapsulated;
-int no_header, no_trailer;
+struct ps_state ps;
 
+static const char *file_name;
+
+static double width, height;
 static int landscape;
-static int left, right, bot, top;
 
 struct paper
 {
@@ -66,7 +65,7 @@ static void write_prolog(void)
     if (!prolog_fp)
 	G_fatal_error("Unable to open prolog file");
 
-    if (encapsulated)
+    if (ps.encapsulated)
 	output("%%!PS-Adobe-3.0 EPSF-3.0\n");
     else
 	output("%%!PS-Adobe-3.0\n");
@@ -76,7 +75,9 @@ static void write_prolog(void)
     output("%%%%Title: %s\n", file_name);
     output("%%%%For: %s\n", G_whoami());
     output("%%%%Orientation: %s\n", landscape ? "Landscape" : "Portrait");
-    output("%%%%BoundingBox: %d %d %d %d\n", left, bot, right, top);
+    output("%%%%BoundingBox: %d %d %d %d\n",
+	   (int)floor(ps.left), (int)floor(ps.bot),
+	   (int)ceil(ps.right), (int)ceil(ps.top));
     output("%%%%CreationDate: %s\n", date_str);
     output("%%%%EndComments\n");
 
@@ -87,7 +88,7 @@ static void write_prolog(void)
 	if (!fgets(buf, sizeof(buf), prolog_fp))
 	    break;
 
-	fputs(buf, outfp);
+	fputs(buf, ps.outfp);
     }
     output("%%%%EndProlog\n");
 
@@ -98,27 +99,27 @@ void write_setup(void)
 {
     output("%%%%BeginSetup\n");
 
-    output("%d %d translate\n", left, bot);
+    output("%.1f %.1f translate\n", ps.left, ps.bot);
 
     if (landscape)
 	output("90 rotate 0 1 -1 scale\n");
     else
-	output("0 %d translate 1 -1 scale\n", height);
+	output("0 %.1f translate 1 -1 scale\n", height);
 
-    output("%d %d BEGIN\n", width, height);
+    output("%.1f %.1f BEGIN\n", width, height);
 
     output("%%%%EndSetup\n");
     output("%%%%Page: 1 1\n");
 }
 
-static int in2pt(double x)
+static double in2pt(double x)
 {
-    return (int)(x * 72);
+    return x * 72;
 }
 
-static void swap(int *x, int *y)
+static void swap(double *x, double *y)
 {
-    int tmp = *x;
+    double tmp = *x;
 
     *x = *y;
     *y = tmp;
@@ -130,16 +131,16 @@ static void get_paper(void)
     const struct paper *paper;
     int i;
 
-    width = screen_right - screen_left;
-    height = screen_bottom - screen_top;
+    width = screen_width;
+    height = screen_height;
 
-    left = 0;
-    right = width;
-    bot = 0;
-    top = height;
+    ps.left = 0;
+    ps.right = width;
+    ps.bot = 0;
+    ps.top = height;
 
     if (landscape)
-	swap(&right, &top);
+	swap(&ps.right, &ps.top);
 
     if (!name)
 	return;
@@ -154,22 +155,22 @@ static void get_paper(void)
 	    break;
     }
 
-    left = in2pt(paper->left);
-    right = in2pt(paper->width) - in2pt(paper->right);
-    bot = in2pt(paper->bot);
-    top = in2pt(paper->height) - in2pt(paper->top);
+    ps.left = in2pt(paper->left);
+    ps.right = in2pt(paper->width) - in2pt(paper->right);
+    ps.bot = in2pt(paper->bot);
+    ps.top = in2pt(paper->height) - in2pt(paper->top);
 
-    width = right - left;
+    width = ps.right - ps.left;
     height = in2pt(paper->height) - in2pt(paper->top) - in2pt(paper->bot);
 
     if (landscape)
 	swap(&width, &height);
 
-    screen_right = screen_left + width;
-    screen_bottom = screen_top + height;
+    ps.right = ps.left + width;
+    ps.bot = ps.top + height;
 }
 
-int PS_Graph_set(int argc, char **argv)
+int PS_Graph_set(void)
 {
     const char *p;
 
@@ -181,42 +182,40 @@ int PS_Graph_set(int argc, char **argv)
 
     file_name = p;
     p = file_name + strlen(file_name) - 4;
-    encapsulated = (G_strcasecmp(p, ".eps") == 0);
+    ps.encapsulated = (G_strcasecmp(p, ".eps") == 0);
 
     p = getenv("GRASS_TRUECOLOR");
-    true_color = p && strcmp(p, "TRUE") == 0;
+    ps.true_color = p && strcmp(p, "TRUE") == 0;
 
     p = getenv("GRASS_LANDSCAPE");
     landscape = p && strcmp(p, "TRUE") == 0;
 
     p = getenv("GRASS_PS_HEADER");
-    no_header = p && strcmp(p, "FALSE") == 0;
+    ps.no_header = p && strcmp(p, "FALSE") == 0;
 
     p = getenv("GRASS_PS_TRAILER");
-    no_trailer = p && strcmp(p, "FALSE") == 0;
+    ps.no_trailer = p && strcmp(p, "FALSE") == 0;
 
-    G_message("PS: GRASS_TRUECOLOR status: %s",
-	      true_color ? "TRUE" : "FALSE");
+    G_verbose_message(_("ps: truecolor status %s"),
+		      ps.true_color ? _("enabled") : _("disabled"));
 
     get_paper();
 
-    init_color_table();
+    ps.outfp = fopen(file_name, ps.no_header ? "a" : "w");
 
-    outfp = fopen(file_name, no_header ? "a" : "w");
-
-    if (!outfp)
+    if (!ps.outfp)
 	G_fatal_error("Unable to open output file: %s", file_name);
 
-    if (!no_header) {
+    if (!ps.no_header) {
 	write_prolog();
 	write_setup();
     }
 
-    G_message
-	("PS: collecting to file: %s,\n     GRASS_WIDTH=%d, GRASS_HEIGHT=%d",
-	 file_name, width, height);
+    G_verbose_message(_("ps: collecting to file '%s'"), file_name);
+    G_verbose_message(_("ps: image size %dx%d"),
+		      screen_width, screen_height);
 
-    fflush(outfp);
+    fflush(ps.outfp);
 
     return 0;
 }
@@ -226,6 +225,6 @@ void output(const char *fmt, ...)
     va_list va;
 
     va_start(va, fmt);
-    vfprintf(outfp, fmt, va);
+    vfprintf(ps.outfp, fmt, va);
     va_end(va);
 }

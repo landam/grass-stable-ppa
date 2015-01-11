@@ -31,7 +31,7 @@
 #%option
 #% key: coord
 #% type: string
-#% required: no
+#% required: yes
 #% multiple: yes
 #% key_desc: easting,northing
 #% description: Comma separated list of coordinate pairs
@@ -39,6 +39,7 @@
 #%flag
 #% key: i
 #% description: Read coordinate pairs from stdin
+#% suppress_required: yes
 #%end
 
 import os, sys

@@ -22,7 +22,6 @@
 ############################## Make Variables ###############################
 
 CC                  = @CC@
-#FC                  = @F77@
 CXX                 = @CXX@
 LEX                 = @LEX@
 YACC                = @YACC@
@@ -40,74 +39,61 @@ ARCH                = @host@
 UNIX_BIN            = @BINDIR@
 INST_DIR            = @INSTDIR@
 
-PLAT_OBJS           = @PLAT_OBJS@
+GRASS_HOME          = @GRASS_HOME@
+RUN_GISBASE         = @GISBASE@
+
+GRASS_VERSION_MAJOR = @GRASS_VERSION_MAJOR@
+GRASS_VERSION_MINOR = @GRASS_VERSION_MINOR@
+GRASS_VERSION_RELEASE = @GRASS_VERSION_RELEASE@
+GRASS_VERSION_DATE  = @GRASS_VERSION_DATE@
+GRASS_VERSION_SVN   = @GRASS_VERSION_SVN@
+
 STRIPFLAG           = @STRIPFLAG@
-CC_SEARCH_FLAGS     = @CC_SEARCH_FLAGS@
 LD_SEARCH_FLAGS     = @LD_SEARCH_FLAGS@
 LD_LIBRARY_PATH_VAR = @LD_LIBRARY_PATH_VAR@
-LIB_RUNTIME_DIR     = $(ARCH_LIBDIR)
+
+#generate static (ST) or shared (SH)
+GRASS_LIBRARY_TYPE  = @GRASS_LIBRARY_TYPE@
 
 #static libs:
 STLIB_LD            = @STLIB_LD@
 STLIB_PREFIX        = lib
-STLIB_SUFFIX        = .a
+STLIB_SUFFIX        = @STLIB_SUFFIX@
 
 #shared libs
 SHLIB_PREFIX        = lib
 SHLIB_LD            = @SHLIB_LD@
-SHLIB_LD_EXTRAS     = @GRASS_SHLIB_LD_EXTRAS@
-SHLIB_LD_FLAGS      = @SHLIB_LD_FLAGS@
-SHLIB_LD_LIBS       = @SHLIB_LD_LIBS@
+SHLIB_LDFLAGS       = @SHLIB_LD_FLAGS@
 SHLIB_CFLAGS        = @SHLIB_CFLAGS@
 SHLIB_SUFFIX        = @SHLIB_SUFFIX@
 EXE                 = @EXEEXT@
-
-
-# GRASS dirs
-GRASS_HOME          = @GRASS_HOME@
-RUN_GISBASE         = @GISBASE@
-RUN_GISRC           = ${ARCH_DISTDIR}/demolocation/.grassrc${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}
 
 DEFAULT_DATABASE    =
 DEFAULT_LOCATION    =
 
 CPPFLAGS            = @CPPFLAGS@
-CFLAGS1             = @CFLAGS@
-CXXFLAGS1           = @CXXFLAGS@
+CFLAGS              = @CFLAGS@
+CXXFLAGS            = @CXXFLAGS@
 INCLUDE_DIRS        = @INCLUDE_DIRS@
-
-COMPILE_FLAGS       = $(CPPFLAGS) $(CFLAGS1) $(INCLUDE_DIRS)
-COMPILE_FLAGS_CXX   = $(CPPFLAGS) $(CXXFLAGS1) $(INCLUDE_DIRS)
 LINK_FLAGS          = @LDFLAGS@
 
 DLLIB               = @DLLIB@
 XCFLAGS             = @X_CFLAGS@
-XMINC               = @XMINC@
 XLIBPATH            = @X_LIBS@
 XLIB                = @X_PRE_LIBS@ @XLIB@
-XTLIB               = @XTLIB@
-XMLIB               = @XMLIB@
 XEXTRALIBS          = @X_EXTRA_LIBS@
 USE_X11             = @USE_X11@
 
-COMPATLIB           = @COMPATLIB@
-CURSES              = @CURSESLIB@ $(COMPATLIB)
-USE_CURSES          = @USE_CURSES@
 MATHLIB             = @MATHLIB@ 
-XDRLIB              = @XDRLIB@ @ZLIBINCPATH@ @ZLIBLIBPATH@ @ZLIB@
 ICONVLIB            = @ICONVLIB@
 INTLLIB             = @INTLLIB@
 SOCKLIB             = @SOCKLIB@
 
 #ZLIB:
-ZLIB                = @ZLIBINCPATH@ @ZLIBLIBPATH@ @ZLIB@
+ZLIB                = @ZLIB@
 ZLIBINCPATH         = @ZLIBINCPATH@
 ZLIBLIBPATH         = @ZLIBLIBPATH@
 
-#DBM:
-#DBMINCPATH          = @DBMINCPATH@
-#DBMLIBPATH          = @DBMLIBPATH@
-#DBMLIB              = @DBMLIB@
 DBMIEXTRALIB        = @DBMIEXTRALIB@
 
 #readline
@@ -120,22 +106,23 @@ HISTORYLIB          = @HISTORYLIB@
 PQINCPATH           = @PQINCPATH@
 PQLIBPATH           = @PQLIBPATH@
 PQLIB               = @PQLIB@
+USE_POSTGRES        = @USE_POSTGRES@
 
 #MySQL:
 MYSQLINCPATH        = @MYSQLINCPATH@
 MYSQLLIBPATH        = @MYSQLLIBPATH@
 MYSQLLIB            = @MYSQLLIB@
-MYSQLDLIB            = @MYSQLDLIB@
+MYSQLDLIB           = @MYSQLDLIB@
 
 #SQLite:
-SQLITEINCPATH        = @SQLITEINCPATH@
-SQLITELIBPATH        = @SQLITELIBPATH@
-SQLITELIB            = @SQLITELIB@
+SQLITEINCPATH       = @SQLITEINCPATH@
+SQLITELIBPATH       = @SQLITELIBPATH@
+SQLITELIB           = @SQLITELIB@
 
 #FFMPEG
-FFMPEGINCPATH        = @FFMPEGINCPATH@
-FFMPEGLIBPATH        = @FFMPEGLIBPATH@
-FFMPEGLIB            = @FFMPEGLIB@
+FFMPEGINCPATH       = @FFMPEGINCPATH@
+FFMPEGLIBPATH       = @FFMPEGLIBPATH@
+FFMPEGLIB           = @FFMPEGLIB@
 
 #ODBC:
 ODBCINC             = @ODBCINC@
@@ -146,33 +133,18 @@ PNGINC              = @PNGINC@
 PNGLIB              = @PNGLIB@
 USE_PNG             = @USE_PNG@
 
-JPEGINCPATH         = @JPEGINCPATH@
-JPEGLIBPATH         = @JPEGLIBPATH@
-JPEGLIB             = @JPEGLIB@
-
 TIFFINCPATH         = @TIFF_INCLUDE_DIRS@
 TIFFLIBPATH         = @TIFF_LIBRARY_DIRS@
 TIFFLIB             = @TIFFLIB@
 
 #openGL files for NVIZ/r3.showdspf
 OPENGLINC           = @OPENGLINC@
-OPENGLWINC          = @OPENGLWINC@
 OPENGLLIB           = @OPENGLLIB@
 OPENGLULIB          = @OPENGLULIB@
-OPENGLWM            = @OPENGLWM@
-# USE_GLWM            = @USE_GLWM@
 OPENGL_X11          = @OPENGL_X11@
 OPENGL_AQUA         = @OPENGL_AQUA@
 OPENGL_WINDOWS      = @OPENGL_WINDOWS@
 USE_OPENGL          = @USE_OPENGL@
-
-#tcl/tk stuff
-TCLINCDIR           = @TCLINCDIR@
-TKINCDIR            = @TKINCDIR@
-TCLTKLIBPATH        = @TCLTKLIBPATH@
-TCLTKLIBS           = @TCLTKLIBS@
-TCLVERSION          = @TCL_VERSION@
-MACOSX_ARCHS_TCLTK  = @MACOSX_ARCHS_TCLTK@
 
 #FFTW:
 FFTWINC             = @FFTWINC@
@@ -180,15 +152,26 @@ FFTWLIB             = @FFTWLIB@
 
 #LAPACK/BLAS stuff for gmath lib:
 BLASLIB             = @BLASLIB@
-BLASINC				= @BLASINC@
+BLASINC             = @BLASINC@
 LAPACKLIB           = @LAPACKLIB@
-LAPACKINC			= @LAPACKINC@
+LAPACKINC           = @LAPACKINC@
 
 #GDAL/OGR
 GDALLIBS            = @GDAL_LIBS@
 GDALCFLAGS          = @GDAL_CFLAGS@
 USE_GDAL            = @USE_GDAL@
 USE_OGR             = @USE_OGR@
+
+#NetCDF
+NETCDFLIBS          = @NETCDF_LIBS@
+NETCDFCFLAGS        = @NETCDF_CFLAGS@    
+USE_NETCDF          = @USE_NETCDF@
+
+#LAS LiDAR through libLAS
+LASLIBS             = @LIBLAS_LIBS@
+LASCFLAGS           = @LIBLAS_CFLAGS@
+LASINC              = @LIBLAS_INC@
+USE_LIBLAS          = @USE_LIBLAS@
 
 #GEOS
 GEOSLIBS            = @GEOS_LIBS@
@@ -212,18 +195,14 @@ OPENDWGLIB          = @OPENDWGLIB@
 USE_OPENDWG         = @USE_OPENDWG@
 
 #cairo
-CAIROINC            = @CAIROINC@
-CAIROLIB            = @CAIROLIB@
-USE_CAIRO           = @USE_CAIRO@
+CAIROINC                  = @CAIROINC@
+CAIROLIB                  = @CAIROLIB@
+USE_CAIRO                 = @USE_CAIRO@
+CAIRO_HAS_XRENDER         = @CAIRO_HAS_XRENDER@
+CAIRO_HAS_XRENDER_SURFACE = @CAIRO_HAS_XRENDER_SURFACE@
 
 #Python
 PYTHON              = python
-PYTHONINC           = @PYTHONINC@
-PYTHONCFLAGS        = @PYTHONCFLAGS@
-PYTHONLDFLAGS       = @PYTHONLDFLAGS@
-SWIG                = @SWIG@
-USE_PYTHON          = @USE_PYTHON@
-MACOSX_ARCHS_PYTHON = @MACOSX_ARCHS_PYTHON@
 
 #wxWidgets
 WXVERSION           = @WXVERSION@
@@ -239,11 +218,31 @@ REGEXLIBPATH        = @REGEXLIBPATH@
 REGEXLIB            = @REGEXLIB@
 USE_REGEX           = @USE_REGEX@
 
+#pthreads
+PTHREADINCPATH      = @PTHREADINCPATH@
+PTHREADLIBPATH      = @PTHREADLIBPATH@
+PTHREADLIB          = @PTHREADLIB@
+USE_PTHREAD         = @USE_PTHREAD@
+
+#OpenMP
+OMPINCPATH          = @OMPINCPATH@
+OMPLIBPATH          = @OMPLIBPATH@
+OMPLIB              = @OMPLIB@
+OMPCFLAGS           = @OMPCFLAGS@
+USE_OPENMP          = @USE_OPENMP@
+
+#OpenCL
+OCLINCPATH          = @OCLINCPATH@
+OCLLIBPATH          = @OCLLIBPATH@
+OCLLIB              = @OCLLIB@
+USE_OPENCL          = @USE_OPENCL@
+
 #i18N
 HAVE_NLS            = @HAVE_NLS@
 
 #Large File Support (LFS)
 USE_LARGEFILES      = @USE_LARGEFILES@
+LFS_CFLAGS          = @LFS_CFLAGS@
 
 #BSD sockets
 HAVE_SOCKET         = @HAVE_SOCKET@
@@ -254,4 +253,4 @@ MACOSX_ARCHS        = @MACOSX_ARCHS@
 MACOSX_SDK          = @MACOSX_SDK@
 
 # Cross compilation
-CROSS_COMPILING = @CROSS_COMPILING@ 
+CROSS_COMPILING     = @CROSS_COMPILING@ 

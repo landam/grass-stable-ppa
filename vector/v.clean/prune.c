@@ -16,7 +16,7 @@
  * **************************************************************/
 #include <stdlib.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 
 
@@ -41,15 +41,15 @@ prune(struct Map_info *Out, int otype, double thresh, struct Map_info *Err)
     int norig;
     struct line_pnts *Points, *TPoints, *BPoints, *Points_orig;
     struct line_cats *Cats;
-    BOUND_BOX box;
-    struct ilist *List;
+    struct bound_box box;
+    struct boxlist *List;
 
     Points = Vect_new_line_struct();
     Points_orig = Vect_new_line_struct();
     TPoints = Vect_new_line_struct();
     BPoints = Vect_new_line_struct();
     Cats = Vect_new_cats_struct();
-    List = Vect_new_list();
+    List = Vect_new_boxlist(1);
 
     nlines = Vect_get_num_lines(Out);
 
@@ -59,8 +59,6 @@ prune(struct Map_info *Out, int otype, double thresh, struct Map_info *Err)
 	Vect_build_partial(Err, GV_BUILD_BASE);
 
     for (line = 1; line <= nlines; line++) {
-
-	G_percent(line, nlines, 1);
 
 	if (!Vect_line_alive(Out, line))
 	    continue;
@@ -124,7 +122,7 @@ prune(struct Map_info *Out, int otype, double thresh, struct Map_info *Err)
 		struct line_pnts **AXLines, **BXLines;
 		int naxlines, nbxlines;
 
-		bline = List->value[i];
+		bline = List->id[i];
 		if (bline == line)
 		    continue;
 
@@ -134,7 +132,8 @@ prune(struct Map_info *Out, int otype, double thresh, struct Map_info *Err)
 		 * intersections should be found if any */
 
 		AXLines = BXLines = NULL;
-		Vect_line_intersection(TPoints, BPoints, &AXLines, &BXLines,
+		Vect_line_intersection(TPoints, BPoints, &box, &List->box[i],
+		                       &AXLines, &BXLines,
 				       &naxlines, &nbxlines, 0);
 
 		G_debug(4,
@@ -165,7 +164,7 @@ prune(struct Map_info *Out, int otype, double thresh, struct Map_info *Err)
 
 	    if (intersect) {
 		G_debug(3,
-			"The pruned boundary intersects another boundary -> not pruned");
+			"The pruned boundary instersects another boundary -> not pruned");
 		not_pruned_lines++;
 		continue;
 	    }
@@ -214,8 +213,8 @@ prune(struct Map_info *Out, int otype, double thresh, struct Map_info *Err)
 	}
     }
 
-    G_important_message(_("\n%d vertices from input %d (vertices of given type) removed, i.e. %.2f %%"),
-			nremoved, nvertices, 100.0 * nremoved / nvertices);
+    G_important_message(_("%d vertices from input %d (vertices of given type) removed, i.e. %.2f %%"),
+			nremoved, nvertices, 100.0 * nremoved / (nvertices ? nvertices : 1));
 
     if (not_pruned_lines > 0)
 	G_message(_("%d boundaries not pruned because pruning would damage topology"),
@@ -226,7 +225,7 @@ prune(struct Map_info *Out, int otype, double thresh, struct Map_info *Err)
     Vect_destroy_line_struct(TPoints);
     Vect_destroy_line_struct(BPoints);
     Vect_destroy_cats_struct(Cats);
-    Vect_destroy_list(List);
+    Vect_destroy_boxlist(List);
 
     return 1;
 }

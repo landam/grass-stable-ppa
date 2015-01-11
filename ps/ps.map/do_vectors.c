@@ -9,11 +9,10 @@
 #include <string.h>
 #include <grass/gis.h>
 #include <grass/glocale.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/symbol.h>
 #include "clr.h"
 #include "vector.h"
-#include "ps_info.h"
 #include "local_proto.h"
 
 int do_vectors(int after_masking)
@@ -35,7 +34,6 @@ int do_vectors(int after_masking)
 		  vector.layer[n].name, vector.layer[n].mapset);
 
 	Vect_set_open_level(2);
-	Vect_set_fatal_error(GV_FATAL_PRINT);
 	if (2 >
 	    Vect_open_old(&Map, vector.layer[n].name,
 			  vector.layer[n].mapset)) {
@@ -140,7 +138,6 @@ int do_vpoints(int after_masking)
 		  vector.layer[n].name, vector.layer[n].mapset);
 
 	Vect_set_open_level(2);
-	Vect_set_fatal_error(GV_FATAL_PRINT);
 	if (2 >
 	    Vect_open_old(&Map, vector.layer[n].name,
 			  vector.layer[n].mapset)) {
@@ -152,7 +149,7 @@ int do_vpoints(int after_masking)
 	    continue;
 	}
 
-	PS_vpoints_plot(&Map, n, LINE_DRAW_LINE);
+	PS_vpoints_plot(&Map, n);
 
 	Vect_close(&Map);
 	fprintf(PS.fp, "[] 0 setdash\n");

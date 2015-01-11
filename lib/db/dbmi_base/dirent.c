@@ -1,3 +1,17 @@
+/*!
+  \file lib/db/dbmi_base/dirent.c
+  
+  \brief DBMI Library (base) - directory entities management
+  
+  (C) 1999-2010 by the GRASS Development Team
+  
+  This program is free software under the GNU General Public License
+  (>=v2). Read the file COPYING that comes with GRASS for details.
+  
+  \author Joel Jones (CERL/UIUC)
+  \author Upgraded to GRASS 5.7 by Radim Blazek
+*/
+
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -19,18 +33,21 @@ typedef struct dirent dir_entry;
 extern DIR *opendir();
 extern dir_entry *readdir();
 
-static int get_perm();
-static void sort_dirent();
-
+static int cmp_dirent(const void *, const void *);
+static int get_perm(char *);
+static void sort_dirent(dbDirent *, int);
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
-/* read directory and build an array of dbDirent's */
-/* append one entry with name = NULL to mark end of array */
+  \brief Read directory and build an array of dbDirent's
+  
+  Append one entry with name = NULL to mark end of array
+  
+  \param dirname directory name
+  \param[out] n number of entities
+
+  \return pointer to dbDirent
+  \return NULL on error
+*/
 dbDirent *db_dirent(const char *dirname, int *n)
 {
     DIR *dp;
@@ -92,11 +109,11 @@ dbDirent *db_dirent(const char *dirname, int *n)
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
+  \brief Free dbDirent
+
+  \param dirent pointer to dbDirent
+  \param count number of entities in the array
+*/
 void db_free_dirent_array(dbDirent * dirent, int count)
 {
     int i;
@@ -139,11 +156,13 @@ static void sort_dirent(dbDirent * a, int n)
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
+  \brief Allocate dirent array
+
+  \param count number of entities in the array
+
+  \return pointer to dbDirent array
+  \return NULL on failure
+*/
 dbDirent *db_alloc_dirent_array(int count)
 {
     int i;

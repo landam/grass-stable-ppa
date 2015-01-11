@@ -10,10 +10,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/colors.h>
+#include <grass/raster.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 #include "vector.h"
-#include "ps_info.h"
 #include "local_proto.h"
 
 #define KEY(x) (strcmp(key,x)==0)
@@ -53,7 +54,6 @@ int read_vpoints(char *name, char *mapset)
     sprintf(fullname, "%s in %s", name, mapset);
 
     Vect_set_open_level(2);
-    Vect_set_fatal_error(GV_FATAL_PRINT);
     if (2 > Vect_open_old(&Map, name, mapset)) {
 	error(fullname, "", "can't open vector map");
 	gobble_input();
@@ -106,10 +106,10 @@ int read_vpoints(char *name, char *mapset)
 	    G_strip(data);
 	    vector.layer[vec].ltype = 0;
 
-	    if (G_strstr(data, "point"))
+	    if (strstr(data, "point"))
 		vector.layer[vec].ltype |= GV_POINT;
 
-	    if (G_strstr(data, "centroid"))
+	    if (strstr(data, "centroid"))
 		vector.layer[vec].ltype |= GV_CENTROID;
 
 	    continue;
@@ -236,15 +236,6 @@ int read_vpoints(char *name, char *mapset)
 	    continue;
 	}
 
-	/* 
-	   GRASS 6.3: sizecol renamed to sizecolumn
-	   remove sizecol test and the warning in GRASS7
-	 */
-	if (KEY("sizecol")) {
-	    G_warning(_("The mapping instruction <%s> will be renamed to <%s> "
-		       "in future versions of GRASS. Please use <%s> instead."),
-		      "sizecol", "sizecolumn", "sizecolumn");
-	}
 	if (KEY("sizecol") || KEY("sizecolumn")) {
 	    G_strip(data);
 	    vector.layer[vec].sizecol = G_store(data);

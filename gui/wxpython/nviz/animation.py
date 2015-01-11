@@ -18,10 +18,9 @@ import os
 import copy
 
 import wx
-from wx.lib.newevent import NewEvent
 
-wxAnimationFinished, EVT_ANIM_FIN = NewEvent()
-wxAnimationUpdateIndex, EVT_ANIM_UPDATE_IDX = NewEvent()
+from grass.pydispatch.signal import Signal
+from core.utils import _
 
 class Animation:
     """!Class represents animation as a sequence of states (views).
@@ -32,16 +31,24 @@ class Animation:
     def __init__(self, mapWindow, timer):
         """!Animation constructor
         
+        Signals:
+            animationFinished - emitted when animation finished
+                              - attribute 'mode'
+            animationUpdateIndex - emitted during animation to update gui
+                                 - attributes 'index' and 'mode'
+        
         @param mapWindow glWindow where rendering takes place
         @param timer timer for recording and replaying
         """
+        self.animationFinished = Signal('Animation.animationFinished')
+        self.animationUpdateIndex = Signal('Animation.animationUpdateIndex')
         
         self.animationList = []         # view states
         self.timer = timer
         self.mapWindow = mapWindow
         self.actions = {'record': self.Record,
                         'play': self.Play}
-        self.formats = ['ppm', 'tif']   # currently supported formats
+        self.formats = ['tif', 'ppm']   # currently supported formats
         self.mode = 'record'            # current mode (record, play, save)
         self.paused = False             # recording/replaying paused
         self.currentFrame = 0           # index of current frame
@@ -149,15 +156,11 @@ class Animation:
         
     def PostFinishedEvent(self):
         """!Animation ends"""
-        toolWin = self.mapWindow.GetToolWin()
-        event = wxAnimationFinished(mode = self.mode)
-        wx.PostEvent(toolWin, event)
+        self.animationFinished.emit(mode=self.mode)
         
     def PostUpdateIndexEvent(self, index):
         """!Frame index changed, update tool window"""
-        toolWin = self.mapWindow.GetToolWin()
-        event = wxAnimationUpdateIndex(index = index, mode = self.mode)
-        wx.PostEvent(toolWin, event)
+        self.animationUpdateIndex(index=index, mode=self.mode)
         
     def StopSaving(self):
         """!Abort image files generation"""
@@ -177,12 +180,24 @@ class Animation:
         w, h = self.mapWindow.GetClientSizeTuple()
         toolWin = self.mapWindow.GetToolWin()
         
+        formatter = ':04.0f'
+        n = len(self.animationList)
+        if n < 10:
+            formatter = ':01.0f'
+        elif n < 100:
+            formatter = ':02.0f'
+        elif n < 1000:
+            formatter = ':03.0f'
+
         self.currentFrame = 0
         self.mode = 'save'
         for params in self.animationList:
             if not self.stopSaving:
                 self.UpdateView(params)
-                filename = prefix + "_" + str(self.currentFrame) + '.' + self.formats[format]
+                number = ('{frame' + formatter +'}').format(frame=self.currentFrame)
+                filename = "{prefix}_{number}.{ext}".format(prefix=prefix,
+                                                            number=number,
+                                                            ext=self.formats[format])
                 filepath = os.path.join(path, filename)
                 self.mapWindow.SaveToFile(FileName = filepath, FileType = self.formats[format],
                                                   width = w, height = h)

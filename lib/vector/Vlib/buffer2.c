@@ -1,11 +1,11 @@
 /*!
-   \file buffer2.c
+   \file lib/vector/Vlib/buffer2.c
 
    \brief Vector library - nearest, adjust, parallel lines
 
    Higher level functions for reading/writing/manipulating vectors.
 
-   (C) 2001-2008 by the GRASS Development Team
+   (C) 2001-2009 by the GRASS Development Team
 
    This program is free software under the 
    GNU General Public License (>=v2). 
@@ -14,14 +14,11 @@
 
    \author Original author Radim Blazek (see buffer.c)
    \author Rewritten by Rosen Matev (Google Summer of Code 2008)
-
-   \date 2008
  */
 
 #include <stdlib.h>
 #include <math.h>
-#include <grass/Vect.h>
-#include <grass/gis.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 
 #include "dgraph.h"
@@ -443,9 +440,8 @@ static void convolution_line(struct line_pnts *Points, double da, double db,
 		/* no need to append point in this case */
 	    }
 	    else
-		G_fatal_error
-		    ("unexpected result of line_intersection() res = %d",
-		     res);
+		G_fatal_error(_("Unexpected result of line_intersection() res = %d"),
+			      res);
 	}
 
 	if (round && (!inner_corner) && (!turns360 || caps)) {
@@ -511,8 +507,7 @@ static void extract_contour(struct planar_graph *pg, struct pg_edge *first,
     double opt_angle, tangle;
     int opt_j, opt_side, opt_flag;
 
-    G_debug(3,
-	    "extract_contour(): v1=%d, v2=%d, side=%d, stop_at_line_end=%d",
+    G_debug(3, "extract_contour(): v1=%d, v2=%d, side=%d, stop_at_line_end=%d",
 	    first->v1, first->v2, side, stop_at_line_end);
 
     Vect_reset_line(nPoints);
@@ -533,11 +528,7 @@ static void extract_contour(struct planar_graph *pg, struct pg_edge *first,
     eangle = atan2(vert->y - vert0->y, vert->x - vert0->x);
 
     while (1) {
-	if (nPoints->n_points > 0 && (nPoints->x[nPoints->n_points - 1] != vert0->x ||
-	    nPoints->y[nPoints->n_points - 1] != vert0->y))
-	    Vect_append_point(nPoints, vert0->x, vert0->y, 0);
-	else
-	    Vect_append_point(nPoints, vert0->x, vert0->y, 0);
+	Vect_append_point(nPoints, vert0->x, vert0->y, 0);
 	G_debug(4, "ec: v0=%d, v=%d, eside=%d, edge->v1=%d, edge->v2=%d", v0,
 		v, eside, edge->v1, edge->v2);
 	G_debug(4, "ec: append point x=%.18f y=%.18f", vert0->x, vert0->y);
@@ -595,7 +586,7 @@ static void extract_contour(struct planar_graph *pg, struct pg_edge *first,
 	    break;
 	if (opt_side == 1) {
 	    if (vert->edges[opt_j]->visited_right) {
-		G_warning(_("Next edge was visited but it is not the first one !!! breaking loop"));
+		G_warning(_("Next edge was visited (right) but it is not the first one !!! breaking loop"));
 		G_debug(4,
 			"ec: v0=%d, v=%d, eside=%d, edge->v1=%d, edge->v2=%d",
 			v, (edge->v1 == v) ? (edge->v2) : (edge->v1),
@@ -606,7 +597,7 @@ static void extract_contour(struct planar_graph *pg, struct pg_edge *first,
 	}
 	else {
 	    if (vert->edges[opt_j]->visited_left) {
-		G_warning(_("Next edge was visited but it is not the first one !!! breaking loop"));
+		G_warning(_("Next edge was visited (left) but it is not the first one !!! breaking loop"));
 		G_debug(4,
 			"ec: v0=%d, v=%d, eside=%d, edge->v1=%d, edge->v2=%d",
 			v, (edge->v1 == v) ? (edge->v2) : (edge->v1),
@@ -993,7 +984,7 @@ static void buffer_lines(struct line_pnts *area_outer, struct line_pnts **area_i
 
    See also Vect_line_buffer().
 
-   \param InPoints input line geometry
+   \param Points input line geometry
    \param da distance along major axis
    \param db distance along minor axis
    \param dalpha angle between 0x and major axis
@@ -1004,7 +995,7 @@ static void buffer_lines(struct line_pnts *area_outer, struct line_pnts **area_i
    \param[out] inner_count number of holes
    \param[out] iPoints array of output polygon's holes (cw order)
  */
-void Vect_line_buffer2(struct line_pnts *Points, double da, double db,
+void Vect_line_buffer2(const struct line_pnts *Points, double da, double db,
 		       double dalpha, int round, int caps, double tol,
 		       struct line_pnts **oPoints,
 		       struct line_pnts ***iPoints, int *inner_count)
@@ -1019,7 +1010,7 @@ void Vect_line_buffer2(struct line_pnts *Points, double da, double db,
 
     G_debug(2, "Vect_line_buffer()");
 
-    Vect_line_prune(Points);
+    Vect_line_prune((struct line_pnts *)Points);
 
     if (Points->n_points == 1)
 	return Vect_point_buffer2(Points->x[0], Points->y[0], da, db,
@@ -1069,7 +1060,7 @@ void Vect_line_buffer2(struct line_pnts *Points, double da, double db,
    \param[out] inner_count number of holes
    \param[out] iPoints array of output polygon's holes (cw order)
  */
-void Vect_area_buffer2(struct Map_info *Map, int area, double da, double db,
+void Vect_area_buffer2(const struct Map_info *Map, int area, double da, double db,
 		       double dalpha, int round, int caps, double tol,
 		       struct line_pnts **oPoints,
 		       struct line_pnts ***iPoints, int *inner_count)
@@ -1128,11 +1119,11 @@ void Vect_area_buffer2(struct Map_info *Map, int area, double da, double db,
    \param px input point x-coordinate
    \param py input point y-coordinate
    \param da distance along major axis
-   \param da distance along minor axis
+   \param db distance along minor axis
    \param dalpha angle between 0x and major axis
    \param round make corners round
    \param tol maximum distance between theoretical arc and output segments
-   \param[out] nPoints output polygon outer border (ccw order)
+   \param[out] oPoints output polygon outer border (ccw order)
  */
 void Vect_point_buffer2(double px, double py, double da, double db,
 			double dalpha, int round, double tol,

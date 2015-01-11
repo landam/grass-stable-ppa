@@ -38,8 +38,8 @@
 #include <grass/bitmap.h>
 
 
-#define BM_col_to_byte(x)  ((x)/8)
-#define BM_col_to_bit(x)   ((x)%8)
+#define BM_col_to_byte(x)  ((x) >> 3)  /* x / 8 */
+#define BM_col_to_bit(x)   ((x) & 7)   /* x % 8 */
 
 static int Mode = BM_FLAT;
 static int Size = 1;
@@ -84,7 +84,7 @@ struct BM *BM_create(int x, int y)
 /*!
  * \brief Destroy bitmap and free all associated memory
  *
- *  \param struct BM *map
+ *  \param map
  *  \return int returns 0
  */
 int BM_destroy(struct BM *map)
@@ -141,8 +141,8 @@ int BM_destroy(struct BM *map)
  *
  * returns 0 on success or -1 on error
  *
- *  \param int mode
- *  \param int size
+ *  \param mode
+ *  \param size
  *  \return int
  */
 
@@ -242,12 +242,12 @@ int BM_get(struct BM *map, int x, int y)
  *  \return int
  */
 
-int BM_get_map_size(struct BM *map)
+size_t BM_get_map_size(struct BM *map)
 {
     if (map->sparse)
 	return BM_get_map_size_sparse(map);
 
-    return map->bytes * map->rows;
+    return (size_t) map->bytes * map->rows;
 }
 
 

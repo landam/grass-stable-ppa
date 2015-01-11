@@ -19,46 +19,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 #include "local_proto.h"
-
-int full_open_old(Gfile * gf, char *fname)
-{
-    gf->fd = -1;
-
-    snprintf(gf->name, 127, "%s", fname);
-
-    gf->mapset = G_find_cell2(gf->name, "");
-    if (gf->mapset == NULL)
-	G_fatal_error(_("Raster map <%s> not found"), gf->name);
-
-    gf->fd = G_open_cell_old(gf->name, gf->mapset);
-    if (gf->fd < 0)
-	G_fatal_error(_("Unable to open raster map <%s@%s>"), gf->name,
-		      gf->mapset);
-
-    gf->type = G_raster_map_type(gf->name, gf->mapset);
-
-    return gf->fd;
-}
-
-int full_open_new(Gfile * gf, char *fname, RASTER_MAP_TYPE ftype)
-{
-    gf->fd = -1;
-
-    snprintf(gf->name, 127, "%s", fname);
-    if (G_legal_filename(gf->name) < 0)
-	G_fatal_error(_("<%s> is an illegal name"), gf->name);
-
-    gf->type = ftype;
-    gf->mapset = G_mapset();
-    gf->fd = G_open_raster_new(gf->name, gf->type);
-    if (gf->fd < 0)
-	G_fatal_error(_("Unable to create raster map <%s>"), gf->name);
-    
-    return gf->fd;
-}
 
 int main(int argc, char *argv[])
 {
@@ -66,25 +30,25 @@ int main(int argc, char *argv[])
     struct GModule *module;
     struct Cell_head hd_band, hd_dem, window;
 
-    char bufname[128];		/* TODO: use GNAME_MAX? */
-
     int i;
     struct Option *base, *output, *input, *zeni, *azim, *metho;
-    struct Flag *ilum;
+    struct Flag *ilum, *scl;
 
     Gfile dem, out, band;
     double zenith, azimuth;
     int method = COSINE;
+    int do_scale;
 
     /* initialize GIS environment */
     G_gisinit(argv[0]);
 
     /* initialize module */
     module = G_define_module();
+    G_add_keyword(_("imagery"));
+    G_add_keyword(_("terrain"));
+    G_add_keyword(_("topographic correction"));
     module->description = _("Computes topographic correction of reflectance.");
-    module->keywords =
-	_("imagery, terrain, topographic correction");
-    
+
     /* It defines the different parameters */
 
     input = G_define_standard_option(G_OPT_R_INPUTS);
@@ -125,6 +89,10 @@ int main(int argc, char *argv[])
     ilum->key = 'i';
     ilum->description = _("Output sun illumination terrain model");
     
+    scl = G_define_flag();
+    scl->key = 's';
+    scl->description = _("Scale output to input and copy color rules");
+    
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
@@ -132,48 +100,41 @@ int main(int argc, char *argv[])
 	G_fatal_error(_("Solar azimuth is necessary to calculate illumination terrain model"));
 
     if (!ilum->answer && input->answer == NULL)
-	G_fatal_error(_("Reflectance maps are necessary to make topographic correction"));
+	G_fatal_error
+	    (_("Reflectance maps are necessary to make topographic correction"));
 
     zenith = atof(zeni->answer);
+    out.type = DCELL_TYPE;
+    do_scale = scl->answer;
 
     /* Evaluate only cos_i raster file */
     /* i.topo.corr -i out=cosi.on07 base=SRTM_v2 zenith=33.3631 azimuth=59.8897 */
     if (ilum->answer) {
+	Rast_get_window(&window);
 	azimuth = atof(azim->answer);
 	/* Warning: make buffers and output after set window */
-	full_open_old(&dem, base->answer);
+	strcpy(dem.name, base->answer);
 	/* Set window to DEM file */
-	G_get_window(&window);
-	G_get_cellhd(dem.name, dem.mapset, &hd_dem);
-	G_align_window(&window, &hd_dem);
-	G_set_window(&window);
+	Rast_get_window(&window);
+	Rast_get_cellhd(dem.name, "", &hd_dem);
+	Rast_align_window(&window, &hd_dem);
+	dem.fd = Rast_open_old(dem.name, "");
+	dem.type = Rast_get_map_type(dem.fd);
 	/* Open and buffer of the output file */
-	full_open_new(&out, output->answer, DCELL_TYPE);
-	out.rast = G_allocate_raster_buf(out.type);
+	strcpy(out.name, output->answer);
+	out.fd = Rast_open_new(output->answer, DCELL_TYPE);
+	out.rast = Rast_allocate_buf(out.type);
 	/* Open and buffer of the elevation file */
-	if (dem.type == CELL_TYPE) {
-	    dem.rast = G_allocate_raster_buf(CELL_TYPE);
-	    eval_c_cosi(&out, &dem, zenith, azimuth);
-	}
-	else if (dem.type == FCELL_TYPE) {
-	    dem.rast = G_allocate_raster_buf(FCELL_TYPE);
-	    eval_f_cosi(&out, &dem, zenith, azimuth);
-	}
-	else if (dem.type == DCELL_TYPE) {
-	    dem.rast = G_allocate_raster_buf(DCELL_TYPE);
-	    eval_d_cosi(&out, &dem, zenith, azimuth);
-	}
-	else {
-	    G_fatal_error(_("Elevation raster map of unknown type"));
-	}
+	dem.rast = Rast_allocate_buf(dem.type);
+	eval_cosi(&out, &dem, zenith, azimuth);
 	/* Close files, buffers, and write history */
 	G_free(dem.rast);
-	G_close_cell(dem.fd);
+	Rast_close(dem.fd);
 	G_free(out.rast);
-	G_close_cell(out.fd);
-	G_short_history(out.name, "raster", &history);
-	G_command_history(&history);
-	G_write_history(out.name, &history);
+	Rast_close(out.fd);
+	Rast_short_history(out.name, "raster", &history);
+	Rast_command_history(&history);
+	Rast_write_history(out.name, &history);
     }
     /* Evaluate topographic correction for all bands */
     /* i.topo.corr input=on07.toar.1 out=tcor base=cosi.on07 zenith=33.3631 method=c-factor */
@@ -196,61 +157,66 @@ int main(int argc, char *argv[])
 	else
 	    G_fatal_error(_("Invalid method: %s"), metho->answer);
 
-	full_open_old(&dem, base->answer);
+	dem.fd = Rast_open_old(base->answer, "");
+	dem.type = Rast_get_map_type(dem.fd);
+	Rast_close(dem.fd);
 	if (dem.type == CELL_TYPE)
 	    G_fatal_error(_("Illumination model is of CELL type"));
 
 	for (i = 0; input->answers[i] != NULL; i++) {
-	    G_message("Band %s: ", input->answers[i]);
+	    G_message(_("Band %s: "), input->answers[i]);
 	    /* Abre fichero de bandas y el de salida */
-	    full_open_old(&band, input->answers[i]);
+	    strcpy(band.name, input->answers[i]);
+	    Rast_get_cellhd(band.name, "", &hd_band);
+	    Rast_set_window(&hd_band);	/* Antes de out_open y allocate para mismo size */
+	    band.fd = Rast_open_old(band.name, "");
+	    band.type = Rast_get_map_type(band.fd);
 	    if (band.type != DCELL_TYPE) {
-		G_warning(_("Reflectance of raster map <%s> is not of DCELL type - ignored"),
+		G_warning(_("Reflectance of <%s> is not of DCELL type - ignored."),
 			  input->answers[i]);
-		G_close_cell(band.fd);
+		Rast_close(band.fd);
 		continue;
 	    }
-	    G_get_cellhd(band.name, band.mapset, &hd_band);
-	    G_set_window(&hd_band);	/* Antes de out_open y allocate para mismo tamaño */
 	    /* ----- */
-	    snprintf(bufname, 127, "%s.%s", output->answer,
+	    dem.fd = Rast_open_old(base->answer, "");
+	    snprintf(out.name, GNAME_MAX - 1, "%s.%s", output->answer,
 		     input->answers[i]);
-	    full_open_new(&out, bufname, DCELL_TYPE);
-	    out.rast = G_allocate_raster_buf(out.type);
-	    band.rast = G_allocate_raster_buf(band.type);
-	    dem.rast = G_allocate_raster_buf(dem.type);
+	    out.fd = Rast_open_new(out.name, DCELL_TYPE);
+	    out.rast = Rast_allocate_buf(out.type);
+	    band.rast = Rast_allocate_buf(band.type);
+	    dem.rast = Rast_allocate_buf(dem.type);
 	    /* ----- */
-	    eval_tcor(method, &out, &dem, &band, zenith);
+	    eval_tcor(method, &out, &dem, &band, zenith, do_scale);
 	    /* ----- */
 	    G_free(dem.rast);
+	    Rast_close(dem.fd);
 	    G_free(band.rast);
-	    G_close_cell(band.fd);
+	    Rast_close(band.fd);
 	    G_free(out.rast);
-	    G_close_cell(out.fd);
-	    G_short_history(out.name, "raster", &history);
-	    G_command_history(&history);
-	    G_write_history(out.name, &history);
+	    Rast_close(out.fd);
+	    Rast_short_history(out.name, "raster", &history);
+	    Rast_command_history(&history);
+	    Rast_write_history(out.name, &history);
 
-	    char command[300];
-
-	    /* TODO: better avoid system() */
-	    sprintf(command, "r.colors map=%s color=grey", out.name);
-	    system(command);
-
-/* new but not functional:
 	    {
 		struct FPRange range;
 		DCELL min, max;
 		struct Colors grey;
-		G_read_fp_range(out.name, G_mapset(), &range);
-		G_get_fp_range_min_max(&range, &min, &max);
-		G_make_grey_scale_colors(&grey, min, max);
-		G_write_colors(out.name, G_mapset(), &grey);
-	    }
-*/
+		int make_colors = 1;
 
+		if (do_scale) {
+		    if (Rast_read_colors(band.name, "", &grey) >= 0)
+			make_colors = 0;
+		}
+		
+		if (make_colors) {
+		    Rast_read_fp_range(out.name, G_mapset(), &range);
+		    Rast_get_fp_range_min_max(&range, &min, &max);
+		    Rast_make_grey_scale_colors(&grey, min, max);
+		}
+		Rast_write_colors(out.name, G_mapset(), &grey);
+	    }
 	}
-	G_close_cell(dem.fd);
     }
 
     exit(EXIT_SUCCESS);

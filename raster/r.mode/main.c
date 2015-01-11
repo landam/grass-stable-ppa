@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include "local_proto.h"
 #include <grass/glocale.h>
 
@@ -34,10 +35,13 @@ int main(int argc, char *argv[])
     {
 	struct Option *base, *cover, *output;
     } parm;
-    char *basemap, *base_mapset;
-    char *covermap, *cover_mapset;
+    char *basemap;
+    char *covermap;
     char *outmap;
-    char command[1024];
+    char input[GNAME_MAX*2+8];
+    char output[GNAME_MAX+8];
+    const char *args[5];
+    struct Popen stats_child, reclass_child;
     struct Categories cover_cats;
     FILE *stats, *reclass;
     int first;
@@ -47,7 +51,9 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, statistics");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("algebra"));
+    G_add_keyword(_("statistics"));
     module->description =
 	_("Finds the mode of values in a cover map within "
 	  "areas assigned the same category value in a "
@@ -81,40 +87,29 @@ int main(int argc, char *argv[])
     covermap = parm.cover->answer;
     outmap = parm.output->answer;
 
-    base_mapset = G_find_cell2(basemap, "");
-    if (base_mapset == NULL) {
-	G_fatal_error(_("%s: base raster map not found"), basemap);
-    }
-
-    cover_mapset = G_find_cell2(covermap, "");
-    if (cover_mapset == NULL) {
-	G_fatal_error(_("%s: cover raster map not found"), covermap);
-    }
-    if (G_legal_filename(outmap) < 0) {
-	G_fatal_error(_("<%s> is an illegal file name"), outmap);
-    }
-    if (strcmp(G_mapset(), base_mapset) == 0 && strcmp(basemap, outmap) == 0) {
-	G_fatal_error(_("%s: base map and output map must be different"),
-		      outmap);
-    }
-    if (G_read_cats(covermap, cover_mapset, &cover_cats) < 0) {
+    if (Rast_read_cats(covermap, "", &cover_cats) < 0) {
 	G_fatal_error(_("%s: Unable to read category labels"), covermap);
     }
 
-    strcpy(command, "r.stats -an \"");
-    strcat(command, G_fully_qualified_name(basemap, base_mapset));
-    strcat(command, ",");
-    strcat(command, G_fully_qualified_name(covermap, cover_mapset));
-    strcat(command, "\"");
+    sprintf(input, "input=%s,%s", basemap, covermap);
 
-    /* printf(command); */
-    stats = popen(command, "r");
+    args[0] = "r.stats";
+    args[1] = "-an";
+    args[2] = input;
+    args[3] = NULL;
 
-    sprintf(command, "r.reclass i=\"%s\" o=\"%s\"",
-	    G_fully_qualified_name(basemap, base_mapset), outmap);
+    stats = G_popen_read(&stats_child, "r.stats", args);
 
-    /* printf(command); */
-    reclass = popen(command, "w");
+    sprintf(input, "input=%s", basemap);
+    sprintf(output, "output=%s", outmap);
+
+    args[0] = "r.reclass";
+    args[1] = input;
+    args[2] = output;
+    args[3] = "rules=-";
+    args[4] = NULL;
+
+    reclass = G_popen_write(&reclass_child, "r.reclass", args);
 
     first = 1;
     while (read_stats(stats, &basecat, &covercat, &value)) {
@@ -125,7 +120,7 @@ int main(int argc, char *argv[])
 	    max = value;
 	}
 	if (basecat != catb) {
-	    write_reclass(reclass, catb, catc, G_get_cat(catc, &cover_cats));
+	  write_reclass(reclass, catb, catc, Rast_get_c_cat((CELL *) &catc, &cover_cats));
 	    catb = basecat;
 	    catc = covercat;
 	    max = value;
@@ -138,10 +133,10 @@ int main(int argc, char *argv[])
     if (first) {
 	catb = catc = 0;
     }
-    write_reclass(reclass, catb, catc, G_get_cat(catc, &cover_cats));
+    write_reclass(reclass, catb, catc, Rast_get_c_cat((CELL *) &catc, &cover_cats));
 
-    pclose(stats);
-    pclose(reclass);
+    G_popen_close(&reclass_child);
+    G_popen_close(&stats_child);
 
-    exit(0);
+    return 0;
 }

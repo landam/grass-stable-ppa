@@ -1,4 +1,5 @@
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include "format.h"
 #include "local_proto.h"
 
@@ -37,8 +38,8 @@ int begin_rasterization(int nrows, int f)
     if (max_rows <= 0)
 	max_rows = 512;
 
-    G_get_set_window(&region);
-    G_get_set_window(&page);
+    Rast_get_window(&region);
+    Rast_get_window(&page);
 
     pages = (region.rows + max_rows - 1) / max_rows;
 
@@ -81,7 +82,7 @@ int begin_rasterization(int nrows, int f)
 	break;
     }
     if (format != USE_CELL)
-	cell = G_allocate_cell_buf();
+	cell = Rast_allocate_c_buf();
 
     at_row = 0;
     configure_plot();
@@ -138,6 +139,7 @@ int configure_plot(void)
     /* change the region */
     page.north = region.north - at_row * region.ns_res;
     page.south = page.north - nrows * region.ns_res;
+    /* Rast_set_[inpu|output]_window not working but G_set_window ??? */
     G_set_window(&page);
 
     /* configure the plot routines */
@@ -157,7 +159,7 @@ int output_raster(int fd)
 	    for (j = 0; j < page.cols; j++) {
 		cell[j] = (CELL) raster.c[i][j];
 		if (cell[j] == 0)
-		    G_set_null_value(&cell[j], 1, CELL_TYPE);
+		    Rast_set_null_value(&cell[j], 1, CELL_TYPE);
 	    }
 	    break;
 
@@ -165,7 +167,7 @@ int output_raster(int fd)
 	    for (j = 0; j < page.cols; j++) {
 		cell[j] = (CELL) raster.u[i][j];
 		if (cell[j] == 0)
-		    G_set_null_value(&cell[j], 1, CELL_TYPE);
+		    Rast_set_null_value(&cell[j], 1, CELL_TYPE);
 	    }
 	    break;
 
@@ -173,20 +175,19 @@ int output_raster(int fd)
 	    for (j = 0; j < page.cols; j++) {
 		cell[j] = (CELL) raster.s[i][j];
 		if (cell[j] == 0)
-		    G_set_null_value(&cell[j], 1, CELL_TYPE);
+		    Rast_set_null_value(&cell[j], 1, CELL_TYPE);
 	    }
 	    break;
 
 	case USE_CELL:
 	    cell = raster.cell[i];
 	    if (cell == 0)
-		G_set_null_value(&cell, 1, CELL_TYPE);
+		Rast_set_null_value(&cell, 1, CELL_TYPE);
 	    break;
 	}
 
 	G_percent(i, page.rows, 2);
-	if (G_put_raster_row(fd, cell, CELL_TYPE) < 0)
-	    return ERROR;
+	Rast_put_row(fd, cell, CELL_TYPE);
     }
     G_percent(i, page.rows, 2);
     return configure_plot();

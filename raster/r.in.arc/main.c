@@ -22,6 +22,7 @@
 #include <unistd.h>
 #endif
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "local_proto.h"
 
@@ -56,19 +57,16 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, import");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("import"));
+    G_add_keyword("ASCII");
     module->description =
-	_("Converts an ESRI ARC/INFO ascii raster file (GRID) "
-	  "into a (binary) raster map layer.");
-
-    parm.input = G_define_option();
-    parm.input->key = "input";
-    parm.input->type = TYPE_STRING;
-    parm.input->required = YES;
+	_("Converts an ESRI ARC/INFO ascii raster file (GRID) into a GRASS raster map.");
+    
+    parm.input = G_define_standard_option(G_OPT_F_INPUT);
     parm.input->description =
-	_("ARC/INFO ASCII raster file (GRID) to be imported");
-    parm.input->gisprompt = "old_file,file,input";
-
+	_("Name of ARC/INFO ASCII raster file (GRID) to be imported");
+    
     parm.output = G_define_standard_option(G_OPT_R_OUTPUT);
 
     parm.type = G_define_option();
@@ -81,7 +79,7 @@ int main(int argc, char *argv[])
 
     parm.title = G_define_option();
     parm.title->key = "title";
-    parm.title->key_desc = "\"phrase\"";
+    parm.title->key_desc = "phrase";
     parm.title->type = TYPE_STRING;
     parm.title->required = NO;
     parm.title->description = _("Title for resultant raster map");
@@ -97,7 +95,8 @@ int main(int argc, char *argv[])
 	exit(EXIT_FAILURE);
     input = parm.input->answer;
     output = parm.output->answer;
-    if (title = parm.title->answer)
+    title = parm.title->answer;
+    if (title)
 	G_strip(title);
 
     sscanf(parm.mult->answer, "%lf", &mult_fact);
@@ -128,57 +127,54 @@ int main(int argc, char *argv[])
 
     nrows = cellhd.rows;
     ncols = cellhd.cols;
-    if (G_set_window(&cellhd) < 0)
-	G_fatal_error(_("Can't set window"));
+    Rast_set_window(&cellhd);
 
-    if (nrows != G_window_rows())
+    if (nrows != Rast_window_rows())
 	G_fatal_error(_("OOPS: rows changed from %d to %d"), nrows,
-		      G_window_rows());
-    if (ncols != G_window_cols())
+		      Rast_window_rows());
+    if (ncols != Rast_window_cols())
 	G_fatal_error(_("OOPS: cols changed from %d to %d"), ncols,
-		      G_window_cols());
+		      Rast_window_cols());
 
     switch (rtype) {
     case CELL_TYPE:
-	cell = G_allocate_c_raster_buf();
+	cell = Rast_allocate_c_buf();
 	break;
     case FCELL_TYPE:
-	fcell = G_allocate_f_raster_buf();
+	fcell = Rast_allocate_f_buf();
 	break;
     case DCELL_TYPE:
-	dcell = G_allocate_d_raster_buf();
+	dcell = Rast_allocate_d_buf();
 	break;
     }
-    cf = G_open_raster_new(output, rtype);
-    if (cf < 0)
-	G_fatal_error(_("Unable to create raster map <%s>"), output);
+    cf = Rast_open_new(output, rtype);
 
     for (row = 0; row < nrows; row++) {
 	G_percent(row, nrows, 5);
 	for (col = 0; col < ncols; col++) {
 	    if (fscanf(fd, "%lf", &x) != 1) {
-		G_unopen_cell(cf);
+		Rast_unopen(cf);
 		G_fatal_error(_("Data conversion failed at row %d, col %d"),
 			      row + 1, col + 1);
 	    }
 	    switch (rtype) {
 	    case CELL_TYPE:
 		if ((int)x == missingval)
-		    G_set_c_null_value(cell + col, 1);
+		    Rast_set_c_null_value(cell + col, 1);
 		else
 		    cell[col] = (CELL) x *mult_fact;
 
 		break;
 	    case FCELL_TYPE:
 		if ((int)x == missingval)
-		    G_set_f_null_value(fcell + col, 1);
+		    Rast_set_f_null_value(fcell + col, 1);
 		else
 		    fcell[col] = (FCELL) x *mult_fact;
 
 		break;
 	    case DCELL_TYPE:
 		if ((int)x == missingval)
-		    G_set_d_null_value(dcell + col, 1);
+		    Rast_set_d_null_value(dcell + col, 1);
 		else
 		    dcell[col] = (DCELL) x *mult_fact;
 
@@ -187,23 +183,23 @@ int main(int argc, char *argv[])
 	}
 	switch (rtype) {
 	case CELL_TYPE:
-	    G_put_c_raster_row(cf, cell);
+	    Rast_put_c_row(cf, cell);
 	    break;
 	case FCELL_TYPE:
-	    G_put_f_raster_row(cf, fcell);
+	    Rast_put_f_row(cf, fcell);
 	    break;
 	case DCELL_TYPE:
-	    G_put_d_raster_row(cf, dcell);
+	    Rast_put_d_row(cf, dcell);
 	    break;
 	}
     }
     /* G_message(_("CREATING SUPPORT FILES FOR %s"), output); */
-    G_close_cell(cf);
+    Rast_close(cf);
     if (title)
-	G_put_cell_title(output, title);
-    G_short_history(output, "raster", &history);
-    G_command_history(&history);
-    G_write_history(output, &history);
+	Rast_put_cell_title(output, title);
+    Rast_short_history(output, "raster", &history);
+    Rast_command_history(&history);
+    Rast_write_history(output, &history);
 
 
     exit(EXIT_SUCCESS);
@@ -220,7 +216,7 @@ int file_cpy(FILE * from, FILE * to)
 	if (!size) {
 	    if (written) {
 		fflush(to);
-		fseek(to, 0l, 0);
+		G_fseek(to, 0l, 0);
 	    }
 	    return (0);
 	}

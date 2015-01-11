@@ -4,8 +4,13 @@ PGM = db.test
 
 include $(MODULE_TOPDIR)/include/Make/Script.make
 
-default: script tests
+TEST_SRC := $(wildcard test*)
+TEST_DST := $(patsubst %,$(ETC)/db.test/%,$(TEST_SRC))
 
-tests:
-	if [ ! -d $(ETC)/db.test ]; then $(MKDIR) $(ETC)/db.test; fi
-	$(INSTALL_DATA) test* $(ETC)/db.test/
+default: script $(TEST_DST)
+
+$(ETC)/db.test/%: % | $(ETC)/db.test
+	$(INSTALL_DATA) $< $@
+
+$(ETC)/db.test:
+	$(MKDIR) $@

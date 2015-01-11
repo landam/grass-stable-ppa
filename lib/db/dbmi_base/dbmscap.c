@@ -1,3 +1,17 @@
+/*!
+  \file lib/db/dbmi_base/dbmscap.c
+  
+  \brief DBMI Library (base) - DBmscap management
+  
+  (C) 1999-2009 by the GRASS Development Team
+  
+  This program is free software under the GNU General Public
+  License (>=v2). Read the file COPYING that comes with GRASS
+  for details.
+  
+  \author Joel Jones (CERL/UIUC), Radim Blazek
+*/
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -15,9 +29,10 @@ static char *dbmscap_files[] = {
     NULL
 };
 
-static void add_entry();
+static void
+add_entry(dbDbmscap ** list, char *name, char *startup, char *comment);
 
-static char *dbmscap_filename(err_flag)
+static char *dbmscap_filename(int err_flag)
 {
     char *file;
     int i;
@@ -37,33 +52,32 @@ static char *dbmscap_filename(err_flag)
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
+  \brief Get dbmscap file name
+
+  \return pointer to string with file name
+*/
 const char *db_dbmscap_filename(void)
 {
     return dbmscap_filename(1);
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
+  \brief Check dbms
+
+  \return 1 if true
+  \return 0 if false
+*/
 int db_has_dbms(void)
 {
     return (dbmscap_filename(0) != NULL);
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
+  \brief Copy dbmscap entry
+
+  \param dst destination
+  \param src source
+*/
 void db_copy_dbmscap_entry(dbDbmscap * dst, dbDbmscap * src)
 {
     strcpy(dst->driverName, src->driverName);
@@ -72,18 +86,17 @@ void db_copy_dbmscap_entry(dbDbmscap * dst, dbDbmscap * src)
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
-/* dbmscap file was used in grass5.0 but it is not used in
- * grass5.7 until we find it necessary. All code for dbmscap
- * file is commented here. 
- *
- * Instead of in dbmscap file db_read_dbmscap() searches 
- * for available dbmi drivers in $(GISBASE)/driver/db/  */
+  \brief Read dbmscap
+  
+  dbmscap file was used in grass5.0 but it is not used in
+  grass5.7 until we find it necessary. All code for dbmscap
+  file is commented here. 
+  
+  Instead of in dbmscap file db_read_dbmscap() searches 
+  for available dbmi drivers in $(GISBASE)/driver/db/
 
+  \return pointer to dbDbmscap
+*/
 dbDbmscap *db_read_dbmscap(void)
 {
     /*  
@@ -171,7 +184,7 @@ dbDbmscap *db_read_dbmscap(void)
 
 #ifdef __MINGW32__
 	/* skip manifest files on Windows */
-	if (G_strstr(ent->d_name, ".manifest"))
+	if (strstr(ent->d_name, ".manifest"))
 	    continue;
 #endif
 
@@ -196,8 +209,7 @@ dbDbmscap *db_read_dbmscap(void)
     return list;
 }
 
-static void
-add_entry(dbDbmscap ** list, char *name, char *startup, char *comment)
+static void add_entry(dbDbmscap ** list, char *name, char *startup, char *comment)
 {
     dbDbmscap *head, *cur, *tail;
 
@@ -227,11 +239,10 @@ add_entry(dbDbmscap ** list, char *name, char *startup, char *comment)
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
+  \brief Free dbmscap 
+
+  \param list pointer to dbDbmscap
+*/
 void db_free_dbmscap(dbDbmscap * list)
 {
     dbDbmscap *next, *cur;

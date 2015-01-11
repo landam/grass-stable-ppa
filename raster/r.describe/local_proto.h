@@ -19,8 +19,10 @@
 #ifndef __R_DESC_LOCAL_PROTO_H__
 #define __R_DESC_LOCAL_PROTO_H__
 
+#include <grass/raster.h>
+
 /* describe.c */
-int describe(char *, char *, int, char *, int, int, int, int, int);
+int describe(const char *, int, char *, int, int, int, int, int);
 
 /* dumplist.c */
 int long_list(struct Cell_stats *, DCELL, DCELL, char *, int, RASTER_MAP_TYPE,

@@ -16,12 +16,12 @@
  *
  *****************************************************************************/
 
-#include <grass/G3d.h>
+#include <stdlib.h>
+#include <grass/raster3d.h>
 #include <grass/config.h>
 
 #define TOGGLE(x) ((x) = (x) ? 0 : 1)
 
-#define MAIN
 #include <Xm/Xm.h>
 #include <Xm/Form.h>
 
@@ -53,6 +53,18 @@
 #ifndef WAIT_ANY
 #define WAIT_ANY ((pid_t) -1)
 #endif
+
+GLuint Material_1_Dlist;
+OGLMotifWindowData MainOGLWindow;
+OGLMotifWindowData ColormapWindow;
+GLuint MainDlist;
+XtAppContext App_context;
+
+file_info Headfax;	/* contains info about data itself */
+file_info G3header;	/* contains info about data itself */
+int G_sign;
+int X_sign;
+long D_offset;		/*offset to data in grid3 file */
 
 void set_threshold_button(int i);
 char *check_get_any_dspname();
@@ -94,7 +106,7 @@ int main(int argc, char **argv)
     XEvent event;
     int i, fdes[2];
     void *g3map;
-    G3D_Region g3reg;
+    RASTER3D_Region g3reg;
     char *p, *mapset;
     double dmin, dmax;
     fd_set set;
@@ -152,7 +164,7 @@ int main(int argc, char **argv)
 	/* opens grid3 file to read in original data 
 	 */
 
-	G3d_setErrorFun(G3d_printError);
+	Rast3d_set_error_fun(Rast3d_print_error);
 
 	/* open g3 file for reading */
 	if (NULL == (mapset = G_find_file2("grid3", g3->answer, ""))) {
@@ -160,20 +172,20 @@ int main(int argc, char **argv)
 	    G_fatal_error(buff);
 	}
 
-	g3map = G3d_openCellOld(g3->answer, mapset, G3D_DEFAULT_WINDOW,
-				G3D_TILE_SAME_AS_FILE, G3D_USE_CACHE_DEFAULT);
+	g3map = Rast3d_open_cell_old(g3->answer, mapset, RASTER3D_DEFAULT_WINDOW,
+				RASTER3D_TILE_SAME_AS_FILE, RASTER3D_USE_CACHE_DEFAULT);
 
 	if (NULL == g3map) {
 	    sprintf(buff, "Unable to open 3D raster map <%s>", g3->answer);
 	    G_fatal_error(buff);
 	}
 
-	if (0 == G3d_range_load(g3map)) {
+	if (0 == Rast3d_range_load(g3map)) {
 	    sprintf(buff, "Unable to read range of 3D raster map <%s>", g3->answer);
 	    G_fatal_error(buff);
 	}
-	G3d_range_min_max(g3map, &dmin, &dmax);
-	G3d_getRegionStructMap(g3map, &g3reg);
+	Rast3d_range_min_max(g3map, &dmin, &dmax);
+	Rast3d_get_region_struct_map(g3map, &g3reg);
 
 	viz_make_header(&G3header, dmin, dmax, &g3reg);
 	init_caps(&D_Cap, &g3reg);

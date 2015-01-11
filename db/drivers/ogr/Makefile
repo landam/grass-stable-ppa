@@ -1,29 +1,12 @@
 MODULE_TOPDIR = ../../..
 
-DEPENDENCIES = $(GISDEP)
+DEPENDENCIES = $(DBMIDRIVERDEP) $(DBMIBASEDEP) $(GISDEP)
 
-include $(MODULE_TOPDIR)/include/Make/Platform.make
-include $(MODULE_TOPDIR)/include/Make/Grass.make
-include $(MODULE_TOPDIR)/include/Make/Rules.make
+PGM = ogr
+include $(MODULE_TOPDIR)/include/Make/DB.make
 
-DRIVER=$(DBDRIVERDIR)/ogr$(EXE)
-
-LIBES = $(DBMIDRIVERLIB) $(DBMIBASELIB) $(DBMIEXTRALIB) $(SQLPLIB) $(DBSTUBSLIB) \
-	$(GISLIB) $(DATETIMELIB) $(GDALLIBS)
+LIBES = $(DBMIDRIVERLIB) $(DBMIBASELIB) $(GISLIB) $(GDALLIBS)
 EXTRA_CFLAGS = $(GDALCFLAGS)
-EXTRA_INC = -I$(MODULE_TOPDIR)/lib/db/dbmi_driver
+EXTRA_LDFLAGS = $(PQLIBPATH)
 
-DRVDOC=$(GISBASE)/docs/html/grass-ogr.html
-
-OBJS = $(subst .c,.o,$(wildcard *.c))
-
-ARCH_OBJS := $(foreach obj,$(OBJS),$(OBJDIR)/$(obj))
-
-default: $(DRIVER) $(DRVDOC)
-
-$(DRIVER): $(ARCH_OBJS)
-	$(CC) $(LDFLAGS) -o $@ $(ARCH_OBJS) $(PQLIBPATH) $(FMODE_OBJ) $(LIBES) \
-		$(MATHLIB) $(XDRLIB)
-
-$(DRVDOC): grass-ogr.html
-	$(INSTALL_DATA) grass-ogr.html $(DRVDOC)
+default: dbmi

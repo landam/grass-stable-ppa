@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <grass/gis.h>
 #include "viz.h"
 
 static unsigned char Buffer[10000];	/* buffer for outputting data to file */
@@ -155,11 +156,11 @@ int read_cube(Cube_data * Cube, file_info * headfax)
 
 	first = 0;
 
-	start = ftell(fp);
-	fseek(fp, 0L, 2);
-	stop = ftell(fp);
+	start = G_ftell(fp);
+	G_fseek(fp, 0L, 2);
+	stop = G_ftell(fp);
 	fsize = stop - start + 1;
-	fseek(fp, start, 0);
+	G_fseek(fp, start, 0);
 	if (fptr) {
 	    free(fptr);
 	    fptr = NULL;
@@ -193,13 +194,13 @@ int read_cube(Cube_data * Cube, file_info * headfax)
     size |= inchar;
 
     if (0 >= (ret = my_fread(Buffer, 1, size, fp))) {
-	fprintf(stderr, "Error reading display file offset %ld\n", ftell(fp));
+	fprintf(stderr, "Error reading display file offset %"PRI_OFF_T"\n", G_ftell(fp));
 	return (-1);
     }
 
     if (ret != size) {
-	fprintf(stderr, "Error (size) reading display file offset %ld\n",
-		ftell(fp));
+	fprintf(stderr, "Error (size) reading display file offset %"PRI_OFF_T"\n",
+		G_ftell(fp));
 	return (-1);
     }
 
@@ -284,7 +285,7 @@ int my_fread(char *buf, int size, int cnt, FILE * fp)
 int reset_reads(file_info * headfax)
 {
     if (!fsize)
-	fseek(headfax->dspfinfp, headfax->Dataoff, 0);
+	G_fseek(headfax->dspfinfp, headfax->Dataoff, 0);
     else
 	cptr = 0;
 
@@ -293,7 +294,7 @@ int reset_reads(file_info * headfax)
 
 int new_dspf(file_info * hfax)
 {
-    fseek(hfax->dspfinfp, hfax->Dataoff, 0);
+    G_fseek(hfax->dspfinfp, hfax->Dataoff, 0);
     cptr = fsize = 0;
 
     return 0;

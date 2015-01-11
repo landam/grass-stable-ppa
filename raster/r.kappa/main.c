@@ -24,19 +24,20 @@
 #include <stdio.h>
 #include <string.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "local_proto.h"
 #include "kappa.h"
 
 struct Cell_head window;
 
-char *maps[2];
-char *output;
-char *title;
+const char *maps[2];
+const char *output;
+const char *title;
 long *matr;
 long *rlst;
 int ncat;
-char *stats_file;
+const char *stats_file;
 
 LAYER *layers;
 int nlayers;
@@ -45,7 +46,7 @@ GSTATS *Gstats;
 size_t nstats;
 
 /* function prototypes */
-static void layer(char *s);
+static void layer(const char *s);
 
 int main(int argc, char **argv)
 {
@@ -58,16 +59,18 @@ int main(int argc, char **argv)
 
     struct
     {
-	struct Flag *n, *w, *q, *h;
+	struct Flag *n, *w, *h;
     } flags;
 
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, statistics");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("statistics"));
+    G_add_keyword(_("classification"));
     module->description =
-	_("Calculate error matrix and kappa "
-	  "parameter for accuracy assessment of classification " "result.");
+	_("Calculates error matrix and kappa "
+	  "parameter for accuracy assessment of classification result.");
 
     parms.map = G_define_standard_option(G_OPT_R_INPUT);
     parms.map->key = "classification";
@@ -81,8 +84,10 @@ int main(int argc, char **argv)
 
     parms.output = G_define_standard_option(G_OPT_F_OUTPUT);
     parms.output->required = NO;
-    parms.output->description =
+    parms.output->label =
 	_("Name for output file containing error matrix and kappa");
+    parms.output->description = _("If not given, print to startdard output");
+    parms.output->guisection = _("Output settings");
 
     parms.titles = G_define_option();
     parms.titles->key = "title";
@@ -90,20 +95,18 @@ int main(int argc, char **argv)
     parms.titles->required = NO;
     parms.titles->description = _("Title for error matrix and kappa");
     parms.titles->answer = "ACCURACY ASSESSMENT";
+    parms.titles->guisection = _("Output settings");
 
     flags.w = G_define_flag();
     flags.w->key = 'w';
     flags.w->label = _("Wide report");
     flags.w->description = _("132 columns (default: 80)");
-
-    /* please, remove before GRASS 7 released */
-    flags.q = G_define_flag();
-    flags.q->key = 'q';
-    flags.q->description = _("Quiet");
+    flags.w->guisection = _("Formatting");
 
     flags.h = G_define_flag();
     flags.h->key = 'h';
     flags.h->description = _("No header in the report");
+    flags.h->guisection = _("Formatting");
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
@@ -118,13 +121,6 @@ int main(int argc, char **argv)
     output = parms.output->answer;
 
     title = parms.titles->answer;
-
-    /* please, remove before GRASS 7 released */
-    if (flags.q->answer) {
-	G_putenv("GRASS_VERBOSE", "0");
-	G_warning(_("The '-q' flag is superseded and will be removed "
-		    "in future. Please use '--quiet' instead"));
-    }
 
     /* run r.stats to obtain statistics of map layers */
     stats();
@@ -143,18 +139,19 @@ int main(int argc, char **argv)
 }
 
 
-static void layer(char *s)
+static void layer(const char *s)
 {
-    char name[GNAME_MAX], *mapset;
+    char name[GNAME_MAX];
+    const char *mapset;
     int n;
 
     strcpy(name, s);
-    if ((mapset = G_find_cell2(name, "")) == NULL)
+    if ((mapset = G_find_raster2(name, "")) == NULL)
 	G_fatal_error(_("Raster map <%s> not found"), s);
 
     n = nlayers++;
     layers = (LAYER *) G_realloc(layers, 2 * sizeof(LAYER));
     layers[n].name = G_store(name);
     layers[n].mapset = mapset;
-    G_read_cats(name, mapset, &layers[n].labels);
+    Rast_read_cats(name, mapset, &layers[n].labels);
 }

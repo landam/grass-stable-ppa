@@ -26,7 +26,7 @@ import grass.script as grass
 
 class DebugMsg:
     """!wxGUI debugging
-
+    
     @code
     g.gisenv set=WX_DEBUG=[0-5]
     @endcode

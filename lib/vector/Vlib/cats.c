@@ -1,31 +1,29 @@
 /*!
- * \file cats.c
+ * \file lib/vector/Vlib/cats.c
  *
  * \brief Vector library - Category management
  *
  * Higher level functions for reading/writing/manipulating vectors.
  *
- * (C) 2001-2009 by the GRASS Development Team
+ * (C) 2001-2012 by the GRASS Development Team
  *
- * This program is free software under the 
- * GNU General Public License (>=v2). 
- * Read the file COPYING that comes with GRASS
- * for details.
+ * This program is free software under the GNU General Public License
+ * (>=v2).  Read the file COPYING that comes with GRASS for details.
  *
- * \author Original author CERL, probably Dave Gerdes or Mike
- * Higgins
+ * \author Original author CERL, probably Dave Gerdes or Mike Higgins
  * \author Update to GRASS 5.7 Radim Blazek and David D. Gray.
  * \author Various updates by Martin Landa <landa.martin gmail.com>
+ * \author Various updates by Markus Metz
  */
 
 #include <stdlib.h>
 #include <string.h>
-#include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
+#include <grass/dbmi.h>
 #include <grass/glocale.h>
 
 static int cmp(const void *pa, const void *pb);
-struct line_cats *Vect__new_cats_struct(void);
+static struct line_cats *Vect__new_cats_struct(void);
 
 
 /*!
@@ -57,7 +55,7 @@ struct line_cats *Vect_new_cats_struct()
 
    \return struct line_cats *
  */
-struct line_cats *Vect__new_cats_struct()
+static struct line_cats *Vect__new_cats_struct()
 {
     struct line_cats *p;
 
@@ -74,13 +72,12 @@ struct line_cats *Vect__new_cats_struct()
 }
 
 /*!
-   \brief Frees all memory associated with line_cats structure, including the struct itself.
+   \brief Frees all memory associated with line_cats structure,
+   including the struct itself.
 
    \param p line_cats structure
-
-   \return 0
  */
-int Vect_destroy_cats_struct(struct line_cats *p)
+void Vect_destroy_cats_struct(struct line_cats *p)
 {
     if (p) {			/* probably a moot test */
 	if (p->n_cats) {
@@ -89,14 +86,13 @@ int Vect_destroy_cats_struct(struct line_cats *p)
 	}
 	G_free((void *)p);
     }
-
-    return 0;
 }
 
 /*!
-   \brief Add new field/cat to category structure if doesn't exist yet.
+   \brief Add new field/cat to category structure if doesn't exist
+   yet.
 
-   \param[in] Cats line_cats structure
+   \param[in,out] Cats line_cats structure
    \param[in] field layer number
    \param[in] cat category number
 
@@ -147,37 +143,40 @@ int Vect_cat_set(struct line_cats *Cats, int field, int cat)
 /*!
    \brief Get first found category of given field.
 
-   'cat' is set to first category found or -1 if field was not found
+   <em>cat</em> is set to first category found or -1 if field was not
+   found
 
-   \param[in] Cats line_cats structure
-   \param[in] field layer number
-   \param[in] cat pointer to variable where cat will be written
+   \param Cats pointer line_cats structure
+   \param field layer number
+   \param[out] cat pointer to variable where cat will be written (can be NULL)
 
-   \return 1 found
+   \return number of found cats for given field (first reported)
    \return 0 layer does not exist
  */
-int Vect_cat_get(struct line_cats *Cats, int field, int *cat)
+int Vect_cat_get(const struct line_cats *Cats, int field, int *cat)
 {
-    register int n;
+    int n, ret;
 
+    /* field was not found */    
+    ret = 0;
+    if (cat)
+	*cat = -1;
+    
     /* check input value */
-    /*
-       if (field < 1 || field > GV_FIELD_MAX)
-       return (0);
-     */
-
-    *cat = -1;
+    if (field < 1 || field > GV_FIELD_MAX)
+	return (0);
 
     /* go through cats and find if field exist */
     for (n = 0; n < Cats->n_cats; n++) {
 	if (Cats->field[n] == field) {
-	    *cat = Cats->cat[n];
-	    return (1);
+	    if (cat && ret == 0) {
+		*cat = Cats->cat[n];
+	    }
+	    ret++;
 	}
     }
-
-    /* field was not found */
-    return (0);
+    
+    return ret;
 }
 
 /*!
@@ -190,7 +189,7 @@ int Vect_cat_get(struct line_cats *Cats, int field, int *cat)
    \return number of found categories
    \return -1 on invalid field
  */
-int Vect_field_cat_get(struct line_cats *Cats, int field, struct ilist *cats)
+int Vect_field_cat_get(const struct line_cats *Cats, int field, struct ilist *cats)
 {
     int n;
     
@@ -203,9 +202,8 @@ int Vect_field_cat_get(struct line_cats *Cats, int field, struct ilist *cats)
     
     /* go through cats and find if field exist */
     for (n = 0; n < Cats->n_cats; n++) {
-	if (Cats->field[n] != field)
-	    continue;
-	Vect_list_append(cats, Cats->cat[n]);
+	if (Cats->field[n] == field)
+	    Vect_list_append(cats, Cats->cat[n]);
     }
 
     return cats->n_values;
@@ -214,15 +212,15 @@ int Vect_field_cat_get(struct line_cats *Cats, int field, struct ilist *cats)
 /*!
    \brief Delete all categories of given layer
 
-   \param[in] Cats line_cats structure
-   \param[in] field layer number
+   \param[in,out] Cats line_cats structure
+   \param field layer number
 
-   \return 1 deleted
+   \return number of categories deleted
    \return 0 layer does not exist
  */
 int Vect_cat_del(struct line_cats *Cats, int field)
 {
-    int n, m, found = 0;
+    int n, m, found;
 
     /* check input value */
     /*
@@ -231,17 +229,16 @@ int Vect_cat_del(struct line_cats *Cats, int field)
      */
 
     /* go through cats and find if field exist */
+    m = 0;
     for (n = 0; n < Cats->n_cats; n++) {
-	if (Cats->field[n] == field) {
-	    for (m = n; m < Cats->n_cats - 1; m++) {
-		Cats->field[m] = Cats->field[m + 1];
-		Cats->cat[m] = Cats->cat[m + 1];
-	    }
-	    Cats->n_cats--;
-	    found = 1;
-	    n--;		/* check again this position */
+	if (Cats->field[n] != field) {
+	    Cats->field[m] = Cats->field[n];
+	    Cats->cat[m] = Cats->cat[n];
+	    m++;
 	}
     }
+    found = Cats->n_cats - m;
+    Cats->n_cats = m;
 
     return (found);
 }
@@ -249,35 +246,37 @@ int Vect_cat_del(struct line_cats *Cats, int field)
 /*!
    \brief Delete field/cat from line_cats structure
 
-   \param[in] Cats line_cats structure
-   \param[in] field layer number
-   \param[in] cat category to be deleted or -1 to delete all cats of given field
+   \param[in,out] Cats line_cats structure
+   \param field layer number
+   \param cat category to be deleted or -1 to delete all cats of given field
 
-   \return 1 deleted
+   \return number of categories deleted
    \return 0 field/category number does not exist
  */
 int Vect_field_cat_del(struct line_cats *Cats, int field, int cat)
 {
-    register int n, m, found = 0;
+    register int n, m, found;
 
     /* check input value */
     /*
        if (field < 1 || field > GV_FIELD_MAX)
        return (0);
      */
+     
+    if (cat == -1)
+	return Vect_cat_del(Cats, field);
 
     /* go through cats and find if field exist */
+    m = 0;
     for (n = 0; n < Cats->n_cats; n++) {
-	if (Cats->field[n] == field && (Cats->cat[n] == cat || cat == -1)) {
-	    for (m = n; m < Cats->n_cats - 1; m++) {
-		Cats->field[m] = Cats->field[m + 1];
-		Cats->cat[m] = Cats->cat[m + 1];
-	    }
-	    Cats->n_cats--;
-	    found = 1;
-	    n--;		/* check again this position */
+	if (Cats->field[n] != field || Cats->cat[n] != cat) {
+	    Cats->field[m] = Cats->field[n];
+	    Cats->cat[m] = Cats->cat[n];
+	    m++;
 	}
     }
+    found = Cats->n_cats - m;
+    Cats->n_cats = m;
 
     return (found);
 }
@@ -302,8 +301,8 @@ int Vect_reset_cats(struct line_cats *Cats)
 /*!
    \brief Allocate memory for cat_list structure.
 
-   \return poiter to allocated structure
-   \return NULL on out of memory
+   \return pointer to allocated structure
+   \return NULL if out of memory
  */
 struct cat_list *Vect_new_cat_list()
 {
@@ -312,14 +311,9 @@ struct cat_list *Vect_new_cat_list()
     p = (struct cat_list *)G_malloc(sizeof(struct cat_list));
 
     /* n_ranges MUST be initialized to zero */
-    if (p) {
-	p->n_ranges = 0;
-	p->alloc_ranges = 0;
-	p->field = 0;
-	p->min = NULL;
-	p->max = NULL;
-    }
-
+    if (p)
+        G_zero(p, sizeof(struct cat_list));
+    
     return p;
 }
 
@@ -327,11 +321,9 @@ struct cat_list *Vect_new_cat_list()
 /*!
    \brief Frees allocated cat_list memory.
 
-   \param[in] p line_cats structure
-
-   \return 0
+   \param p pointer to line_cats structure
  */
-int Vect_destroy_cat_list(struct cat_list *p)
+void Vect_destroy_cat_list(struct cat_list *p)
 {
     if (p) {			/* probably a moot test */
 	if (p->n_ranges) {
@@ -340,18 +332,35 @@ int Vect_destroy_cat_list(struct cat_list *p)
 	}
 	G_free((void *)p);
     }
-
-    return 0;
 }
 
 
 /*!
-   \brief Convert string of categories and cat ranges separated by commas to cat_list.
+   \brief Converts string of categories and cat ranges separated by commas to cat_list.
 
-   Examples of string: 2,3,5-9,20. str - input string
+   \par Examples of string:
+   \verbatim
+   5,6,7
+   3-9
+   2,3,5-9,20\endverbatim
+   
+   \par Example:
+   \code
+   ...
+   str = "2,3,5-9,20"
+   cat_list = Vect_new_cat_list()
 
-   \param[in] str cat list string
-   \param[out] list result cat_list structure
+   Vect_str_to_cat_list(str, cat_list)
+   \endcode
+   \verbatim
+   cat_list->field = 0
+   cat_list->n_ranges = 4
+   cat_list->min = {2, 3, 5, 20}
+   cat_list->max = {2, 3, 9, 20}
+   \endverbatim
+
+   \param str category list as a string
+   \param[in,out] list pointer to cat_list structure
 
    \return number of errors in ranges
  */
@@ -426,13 +435,13 @@ int Vect_str_to_cat_list(const char *str, struct cat_list *list)
 /*!
    \brief Convert ordered array of integers to cat_list structure.
 
-   \param[in] vals array of integers
-   \param[in] nvals number of values
-   \param[out] list result cat_list structure
+   \param vals array of integers
+   \param nvals number of values
+   \param[in,out] list pointer to cat_list structure
 
    \return number of ranges
  */
-int Vect_array_to_cat_list(int *vals, int nvals, struct cat_list *list)
+int Vect_array_to_cat_list(const int *vals, int nvals, struct cat_list *list)
 {
     int i, range;
 
@@ -464,15 +473,75 @@ int Vect_array_to_cat_list(int *vals, int nvals, struct cat_list *list)
 }
 
 /*!
+   \brief Convert cat_list struct to ordered array of unique integers.
+   
+   Output array do not contain duplicate items.
+
+   Allocated array should be freed by G_free().
+   
+   \param cat_list pointer to cat_list struct
+   \param[out] vals array of integers
+   \param[out] nvals number of values
+
+   \return 0 on success
+   \return -1 on failure
+ */
+int Vect_cat_list_to_array(const struct cat_list *list, int **vals, int *nvals)
+{
+    int i, j, k, n, n_cats, n_ucats, last_cat;
+    int *cats, *ucats;
+    
+    G_debug(1, "Vect_cat_list_to_array()");
+
+    *nvals = n_cats = 0;
+    cats = NULL;
+    for (i = 0; i < list->n_ranges; i++) {
+        n = list->max[i] - list->min[i] + 1;
+        if (n < 1)
+            return -1;
+        
+        /* realloc array */
+        cats = (int *) G_realloc(cats, sizeof(int) * (n_cats + n));
+
+        for (j = n_cats, k = 0; j < n_cats + n; j++, k++) {
+            cats[j] = list->min[i] + k;
+        }
+        n_cats += n;
+    }
+
+    /* sort array */
+    qsort(cats, n_cats, sizeof(int), cmp);
+
+    /* skip duplicated values */
+    ucats = G_malloc(sizeof(int) * n_cats);
+    last_cat = ucats[0] = cats[0];
+    n_ucats = 1;
+    for (i = 1; i < n_cats; i++) {
+        if (last_cat == cats[i])
+            continue;
+        last_cat = ucats[n_ucats++] = cats[i];
+    }
+    G_free(cats);
+    
+    /* reallocate array for unique values */
+    ucats = (int *) G_realloc(ucats, sizeof(int) * n_ucats);
+    
+    *nvals = n_ucats;
+    *vals = ucats;
+    
+    return 0;
+}
+
+/*!
    \brief Check if category number is in list.
 
-   \param[in] cat category number
-   \param[in] list cat_list structure
+   \param cat category number
+   \param list cat_list structure
 
    \return TRUE if cat is in list
-   \return FALSE if it is not
+   \return FALSE if not
  */
-int Vect_cat_in_cat_list(int cat, struct cat_list *list)
+int Vect_cat_in_cat_list(int cat, const struct cat_list *list)
 {
     int i;
 
@@ -484,28 +553,165 @@ int Vect_cat_in_cat_list(int cat, struct cat_list *list)
 }
 
 /*!
+   \brief Set category constraints using 'where' or 'cats' option and layer number.
+
+   \param Map pointer to Map_info structure
+   \param layer layer number
+   \param where where statement
+   \param catstr category list as string
+
+   \return pointer to cat_list structure or NULL
+ */
+struct cat_list *Vect_cats_set_constraint(struct Map_info *Map, int layer,
+                                         char *where, char *catstr)
+{
+    struct cat_list *list = NULL;
+    int ret;
+
+    if (layer < 1) {
+	G_warning(_("Layer number must be > 0 for category constraints"));
+	/* no valid constraints, all categories qualify */
+	return list;
+    }
+
+    /* where has precedence over cats */
+    if (where) {
+	struct field_info *Fi = NULL;
+	dbDriver *driver = NULL;
+	int ncats, *cats = NULL;
+	int i, j;
+
+	if (catstr)
+	    G_warning(_("'%s' and '%s' parameters were supplied, cats will be ignored"), "where", "cats");
+
+	Fi = Vect_get_field(Map, layer);
+	if (!Fi) {
+	    G_fatal_error(_("Database connection not defined for layer %d"),
+			  layer);
+	}
+
+	G_verbose_message(_("Loading categories from table <%s>..."), Fi->table);
+
+	driver = db_start_driver_open_database(Fi->driver, Fi->database);
+	if (driver == NULL)
+	    G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
+			  Fi->database, Fi->driver);
+	
+	ncats = db_select_int(driver, Fi->table, Fi->key, where,
+			      &cats);
+	if (ncats == -1)
+		G_fatal_error(_("Unable select records from table <%s>"),
+			      Fi->table);
+	G_verbose_message(_n("One category loaded", "%d categories loaded", ncats), ncats);
+	    
+	db_close_database_shutdown_driver(driver);
+
+	/* sort */
+	qsort(cats, ncats, sizeof(int), cmp);
+	
+	/* remove duplicates */
+	j = 1;
+	for (i = 1; i < ncats; i++) {
+	    if (cats[i] != cats[j - 1]) {
+		cats[j] = cats[i];
+		j++;
+	    }
+	}
+	ncats = j;
+	
+	/* convert to cat list */
+	list = Vect_new_cat_list();
+	
+	ret = Vect_array_to_cat_list(cats, ncats, list);
+	if (ret == 0)
+	    G_warning(_("No categories selected with '%s' option"), "where");
+	
+	if (cats)
+	    G_free(cats);
+    }
+    else if (catstr) {
+	list = Vect_new_cat_list();
+
+	ret = Vect_str_to_cat_list(catstr, list);
+	if (ret > 0)
+	    G_warning(_("%d errors in '%s' option"), ret, "cats");
+    }
+    
+    if (list) {
+	if (list->n_ranges < 1) {
+	    Vect_destroy_cat_list(list);
+	    list = NULL;
+	}
+	else
+	    list->field = layer;
+    }
+	
+    return list;
+}
+
+/*!
+   \brief Check if categories match with category constraints.
+
+   \param Cats line_cats structure
+   \param layer layer number
+   \param list cat_list structure
+
+   \return 0 no match, categories are outside constraints
+   \return 1 match, categories are inside constraints
+ */
+int Vect_cats_in_constraint(struct line_cats *Cats, int layer,
+			      struct cat_list *list)
+{
+    int i;
+
+    if (layer < 1) {
+	G_warning(_("Layer number must be > 0 for category constraints"));
+	/* no valid constraint, all categories qualify */
+	return 1;
+    }
+
+    if (list) {
+	for (i = 0; i < Cats->n_cats; i++) {
+	    if (Cats->field[i] == layer &&
+		Vect_cat_in_cat_list(Cats->cat[i], list)) {
+		return 1;
+	    }
+	}
+	return 0;
+    }
+
+    for (i = 0; i < Cats->n_cats; i++) {
+	if (Cats->field[i] == layer)
+	    return 1;
+    }
+	
+    return 0;
+}
+
+
+/*!
    \brief Check if category is in ordered array of integers.
 
-   \param[in] cat category number
-   \param[in] array ordered array of integers
-   \param[in] ncats number of categories in array
+   \param cat category number
+   \param array ordered array of integers
+   \param ncats number of categories in array
 
    \return TRUE if cat is in list
    \return FALSE if it is not
  */
-int Vect_cat_in_array(int cat, int *array, int ncats)
+int Vect_cat_in_array(int cat, const int *array, int ncats)
 {
     int *i;
 
     i = bsearch((void *)&cat, (void *)array, (size_t) ncats,
 		sizeof(int), cmp);
 
-    if (i != NULL)
-	return (TRUE);
-
-    return (FALSE);
+    return (i != NULL);
 }
 
+/* return -1 if *p1 < *p2
+ * return  1 if *p1 > *p2
+ * return  0 if *p1 == *p2 */
 static int cmp(const void *pa, const void *pb)
 {
     int *p1 = (int *)pa;
@@ -513,7 +719,5 @@ static int cmp(const void *pa, const void *pb)
 
     if (*p1 < *p2)
 	return -1;
-    if (*p1 > *p2)
-	return 1;
-    return 0;
+    return (*p1 > *p2);
 }

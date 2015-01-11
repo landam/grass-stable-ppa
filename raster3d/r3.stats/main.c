@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <grass/gis.h>
-#include <grass/G3d.h>
+#include <grass/raster3d.h>
 #include <grass/glocale.h>
 
 #define COMPARE_PRECISION 0.000000001
@@ -60,7 +60,7 @@ static stat_table *create_stat_table(int nsteps, equal_val_array * values,
 			      double min, double max);
 static void free_stat_table(stat_table * stats);
 static void print_stat_table(stat_table * stats);
-static void update_stat_table(stat_table * stats, G3D_Region * region);
+static void update_stat_table(stat_table * stats, RASTER3D_Region * region);
 static void heapsort_eqvals(equal_val_array * data, int n);
 static void downheap_eqvals(equal_val_array * data, int n, int k);
 static void check_range_value(stat_table * stats, double value);
@@ -271,7 +271,7 @@ void free_stat_table(stat_table * stats)
 /* *************************************************************** */
 /* **** Compute the volume, percentage and sums ****************** */
 /* *************************************************************** */
-void update_stat_table(stat_table * stats, G3D_Region * region)
+void update_stat_table(stat_table * stats, RASTER3D_Region * region)
 {
     int i;
     double vol = region->ns_res * region->ew_res * region->tb_res;
@@ -554,7 +554,7 @@ int main(int argc, char *argv[])
     int map_type;
     char *infile = NULL;
     void *map = NULL;
-    G3D_Region region;
+    RASTER3D_Region region;
     unsigned int rows, cols, depths;
     unsigned int x, y, z;
 
@@ -565,7 +565,8 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster3d, voxel, statistics");
+    G_add_keyword(_("raster3d"));
+    G_add_keyword(_("statistics"));
     module->description = _("Generates volume statistics for 3D raster maps.");
 
     /* Define the different options */
@@ -590,10 +591,10 @@ int main(int argc, char *argv[])
 
 
     /*Set the defaults */
-    G3d_initDefaults();
+    Rast3d_init_defaults();
 
     /*get the current region */
-    G3d_getWindow(&region);
+    Rast3d_get_window(&region);
 
     cols = region.cols;
     rows = region.rows;
@@ -607,17 +608,17 @@ int main(int argc, char *argv[])
 
     infile = inputfile->answer;
 
-    if (NULL == G_find_grid3(infile, ""))
-	G3d_fatalError(_("3D raster map <%s> not found"), infile);
+    if (NULL == G_find_raster3d(infile, ""))
+	Rast3d_fatal_error(_("3D raster map <%s> not found"), infile);
 
     map =
-	G3d_openCellOld(infile, G_find_grid3(infile, ""), &region,
-			G3D_TILE_SAME_AS_FILE, G3D_USE_CACHE_DEFAULT);
+	Rast3d_open_cell_old(infile, G_find_raster3d(infile, ""), &region,
+			RASTER3D_TILE_SAME_AS_FILE, RASTER3D_USE_CACHE_DEFAULT);
 
     if (map == NULL)
-	G3d_fatalError(_("Unable to open 3D raster map <%s>"), infile);
+	Rast3d_fatal_error(_("Unable to open 3D raster map <%s>"), infile);
 
-    map_type = G3d_tileTypeMap(map);
+    map_type = Rast3d_tile_type_map(map);
 
     /* calculate statistics for groups of equal values */
     if ((equal->answer)) {
@@ -630,8 +631,8 @@ int main(int argc, char *argv[])
 	    for (y = 0; y < rows; y++) {
 		for (x = 0; x < cols; x++) {
 		    if (map_type == FCELL_TYPE) {
-			G3d_getValue(map, x, y, z, &val_f, map_type);
-			if (!G3d_isNullValueNum(&val_f, map_type)) {
+			Rast3d_get_value(map, x, y, z, &val_f, map_type);
+			if (!Rast3d_is_null_value_num(&val_f, map_type)) {
 			    /*the first entry */
 			    if (eqvals == NULL)
 				eqvals =
@@ -644,8 +645,8 @@ int main(int argc, char *argv[])
 			}
 		    }
 		    else if (map_type == DCELL_TYPE) {
-			G3d_getValue(map, x, y, z, &val_d, map_type);
-			if (!G3d_isNullValueNum(&val_d, map_type)) {
+			Rast3d_get_value(map, x, y, z, &val_d, map_type);
+			if (!Rast3d_is_null_value_num(&val_d, map_type)) {
 			    /*the first entry */
 			    if (eqvals == NULL)
 				eqvals =
@@ -678,8 +679,8 @@ int main(int argc, char *argv[])
 	/*create the statistic table based on value ranges */
 
 	/* get the range of the map */
-	G3d_range_load(map);
-	G3d_range_min_max(map, &min, &max);
+	Rast3d_range_load(map);
+	Rast3d_range_min_max(map, &min, &max);
 
 	stats = create_stat_table(nsteps, NULL, min, max);
 
@@ -689,15 +690,15 @@ int main(int argc, char *argv[])
 	    for (y = 0; y < rows; y++) {
 		for (x = 0; x < cols; x++) {
 		    if (map_type == FCELL_TYPE) {
-			G3d_getValue(map, x, y, z, &val_f, map_type);
-			if (!G3d_isNullValueNum(&val_f, map_type)) {
+			Rast3d_get_value(map, x, y, z, &val_f, map_type);
+			if (!Rast3d_is_null_value_num(&val_f, map_type)) {
 			    check_range_value(stats, (double)val_f);
 			    n++;
 			}
 		    }
 		    else if (map_type == DCELL_TYPE) {
-			G3d_getValue(map, x, y, z, &val_d, map_type);
-			if (!G3d_isNullValueNum(&val_d, map_type)) {
+			Rast3d_get_value(map, x, y, z, &val_d, map_type);
+			if (!Rast3d_is_null_value_num(&val_d, map_type)) {
 			    check_range_value(stats, val_d);
 			    n++;
 			}

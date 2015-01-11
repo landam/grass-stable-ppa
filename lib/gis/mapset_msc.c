@@ -9,6 +9,7 @@
    (>=v2). Read the file COPYING that comes with GRASS for details.
  */
 
+#include <grass/config.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -41,7 +42,7 @@ int G__make_mapset_element(const char *p_element)
     if (*element == 0)
 	return 0;
 
-    G__file_name(p = path, "", "", G_mapset());
+    G_file_name(p = path, NULL, NULL, G_mapset());
     while (*p)
 	p++;
     /* add trailing slash if missing */
@@ -117,7 +118,7 @@ int G__mapset_permissions(const char *mapset)
     char path[GPATH_MAX];
     struct stat info;
 
-    G__file_name(path, "", "", mapset);
+    G_file_name(path, "", "", mapset);
 
     if (G_stat(path, &info) != 0)
 	return -1;

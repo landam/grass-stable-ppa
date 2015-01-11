@@ -1,7 +1,7 @@
 /*
  ****************************************************************************
  *
- * MODULE:       v.vol.rst: program for 3D (volume) interpolation and geometry
+ * MODULE:       s.vol.rst: program for 3D(volume) interpolation and geometry
  *               analysis from scattered point data using regularized spline
  *               with tension
  *
@@ -11,9 +11,9 @@
  *               GRASS 4.2, GRASS 5.0 version and modifications:
  *               H. Mitasova,  I. Kosinovsky, D. Gerdes, J. Hofierka
  *
- * PURPOSE:      v.vol.rst interpolates the values to 3-dimensional grid from
+ * PURPOSE:      s.vol.rst interpolates the values to 3-dimensional grid from
  *               point data (climatic stations, drill holes etc.) given in a
- *               3D vector point input. Output grid3 file is elev. 
+ *               sites file named input. Output grid3 file is elev. 
  *               Regularized spline with tension is used for the
  *               interpolation.
  *
@@ -21,18 +21,19 @@
  *               I. Kosinovsky, D. Gerdes, J. Hofierka
  *
  *               This program is free software under the GNU General Public
- *               License (>=v2). Read the file COPYING that comes with GRASS
- *               for details.
+ *              License (>=v2). Read the file COPYING that comes with GRASS
+ *              for details.
  *
  *****************************************************************************/
-
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <math.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/raster.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 
 #include <grass/site.h>
@@ -42,7 +43,7 @@
 #include "userextern.h"
 #include "userglobs.h"
 #include "user.h"
-#include <grass/G3d.h>
+#include <grass/raster3d.h>
 #include "points.h"
 #include <grass/bitmap.h>
 
@@ -246,7 +247,7 @@ COGRR1(double x_or, double y_or, double z_or, int n_rows, int n_cols,
     int POINT();
     int ind, ind1;
     static int first_time_z = 1;
-    int offset, offset1, offset2;
+    off_t offset, offset1, offset2;
     int bmask = 1;
     static FCELL *cell = NULL;
 
@@ -280,7 +281,7 @@ COGRR1(double x_or, double y_or, double z_or, int n_rows, int n_cols,
     }
 
     if (cell == NULL)
-	cell = G_allocate_f_raster_buf();
+	cell = Rast_allocate_f_buf();
 
     for (i = 1; i <= n_points; i++) {
 	points[i - 1].x = (points[i - 1].x - x_or) / dnorm;
@@ -417,11 +418,9 @@ COGRR1(double x_or, double y_or, double z_or, int n_rows, int n_cols,
 		    w[m] = wm;
 		    w2[m] = wm * wm;
 		}
-		if ((cellinp != NULL) && (cellout != NULL) && (i == ngstl)) {
-		    if (G_get_f_raster_row(fdcell, cell, n_rows_in - k) < 0)	/* fix by JH 04/24/02 */
-			G_fatal_error
-			    ("Could not get row (eventually WIND3 does not match WIND)");
-		}
+		if ((cellinp != NULL) && (cellout != NULL) && (i == ngstl))
+		    Rast_get_f_row(fdcell, cell, n_rows_in - k);
+
 		for (l = ngstc; l <= nszc; l++) {
 		    LSIZE = LSIZE + 1;
 		    if (maskmap != NULL)
@@ -570,9 +569,7 @@ COGRR1(double x_or, double y_or, double z_or, int n_rows, int n_cols,
 		offset2 = offset + ind;	/* rows*cols offset */
 
 		if ((cellinp != NULL) && (cellout != NULL) && (i == ngstl)) {
-		    if (fseek(Tmp_fd_cell, (long)(ind * sizeof(FCELL)), 0) ==
-			-1)
-			return 0;
+		    G_fseek(Tmp_fd_cell, ((off_t)ind * sizeof(FCELL)), 0);
 		    if (!
 			(fwrite
 			 (zero_array_cell + ind1, sizeof(FCELL),
@@ -581,9 +578,7 @@ COGRR1(double x_or, double y_or, double z_or, int n_rows, int n_cols,
 			    ("Not enough disk space--cannot write files");
 		}
 		if (outz != NULL) {
-		    if (fseek(Tmp_fd_z, (long)(offset2 * sizeof(float)), 0) ==
-			-1)
-			return 0;
+		    G_fseek(Tmp_fd_z, (off_t)(offset2 * sizeof(float)), 0);
 		    if (!
 			(fwrite
 			 (zero_array1 + ind1, sizeof(float), nszc - ngstc + 1,
@@ -592,9 +587,7 @@ COGRR1(double x_or, double y_or, double z_or, int n_rows, int n_cols,
 			    ("Not enough disk space--cannot write files");
 		}
 		if (gradient != NULL) {
-		    if (fseek(Tmp_fd_dx, (long)(offset2 * sizeof(float)), 0)
-			== -1)
-			return 0;
+		    G_fseek(Tmp_fd_dx, (off_t)(offset2 * sizeof(float)), 0);
 		    if (!
 			(fwrite
 			 (zero_array2 + ind1, sizeof(float), nszc - ngstc + 1,
@@ -603,9 +596,7 @@ COGRR1(double x_or, double y_or, double z_or, int n_rows, int n_cols,
 			    ("Not enough disk space--cannot write files");
 		}
 		if (aspect1 != NULL) {
-		    if (fseek(Tmp_fd_dy, (long)(offset2 * sizeof(float)), 0)
-			== -1)
-			return 0;
+		    G_fseek(Tmp_fd_dy, (off_t)(offset2 * sizeof(float)), 0);
 		    if (!
 			(fwrite
 			 (zero_array3 + ind1, sizeof(float), nszc - ngstc + 1,
@@ -614,9 +605,7 @@ COGRR1(double x_or, double y_or, double z_or, int n_rows, int n_cols,
 			    ("Not enough disk space--cannot write files");
 		}
 		if (aspect2 != NULL) {
-		    if (fseek(Tmp_fd_dz, (long)(offset2 * sizeof(float)), 0)
-			== -1)
-			return 0;
+		    G_fseek(Tmp_fd_dz, (off_t)(offset2 * sizeof(float)), 0);
 		    if (!
 			(fwrite
 			 (zero_array4 + ind1, sizeof(float), nszc - ngstc + 1,
@@ -625,9 +614,7 @@ COGRR1(double x_or, double y_or, double z_or, int n_rows, int n_cols,
 			    ("Not enough disk space--cannot write files");
 		}
 		if (ncurv != NULL) {
-		    if (fseek(Tmp_fd_xx, (long)(offset2 * sizeof(float)), 0)
-			== -1)
-			return 0;
+		    G_fseek(Tmp_fd_xx, (off_t)(offset2 * sizeof(float)), 0);
 		    if (!
 			(fwrite
 			 (zero_array5 + ind1, sizeof(float), nszc - ngstc + 1,
@@ -636,9 +623,7 @@ COGRR1(double x_or, double y_or, double z_or, int n_rows, int n_cols,
 			    ("Not enough disk space--cannot write files");
 		}
 		if (gcurv != NULL) {
-		    if (fseek(Tmp_fd_yy, (long)(offset2 * sizeof(float)), 0)
-			== -1)
-			return 0;
+		    G_fseek(Tmp_fd_yy, (off_t)(offset2 * sizeof(float)), 0);
 		    if (!
 			(fwrite
 			 (zero_array6 + ind1, sizeof(float), nszc - ngstc + 1,
@@ -647,9 +632,7 @@ COGRR1(double x_or, double y_or, double z_or, int n_rows, int n_cols,
 			    ("Not enough disk space--cannot write files");
 		}
 		if (mcurv != NULL) {
-		    if (fseek(Tmp_fd_xy, (long)(offset2 * sizeof(float)), 0)
-			== -1)
-			return 0;
+		    G_fseek(Tmp_fd_xy, (off_t)(offset2 * sizeof(float)), 0);
 		    if (!
 			(fwrite
 			 (zero_array7 + ind1, sizeof(float), nszc - ngstc + 1,

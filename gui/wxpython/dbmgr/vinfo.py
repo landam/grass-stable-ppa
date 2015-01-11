@@ -6,7 +6,7 @@
 List of classes:
  - vinfo::VectorDBInfo
 
-(C) 2007-2011 by the GRASS Development Team
+(C) 2007-2013 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -22,11 +22,16 @@ import wx
 from gui_core.gselect import VectorDBInfo as VectorDBInfoBase
 from core.gcmd        import RunCommand
 from core.settings    import UserSettings
-
+from core.utils import _
 import grass.script as grass
 
-def unicodeValue(value):
-    """!Encode value"""
+def GetUnicodeValue(value):
+    """!Get unicode value
+
+    @param value value to be recoded
+
+    @return unicode value
+    """
     if type(value) == types.UnicodeType:
         return value
     
@@ -34,11 +39,11 @@ def unicodeValue(value):
     if not enc and 'GRASS_DB_ENCODING' in os.environ:
         enc = os.environ['GRASS_DB_ENCODING']
     else:
-        enc = 'utf-8'
+        enc = 'utf-8' # assuming UTF-8
     
-    return unicode(value, enc, errors = 'replace')
+    return unicode(str(value), enc, errors = 'replace')
 
-def createDbInfoDesc(panel, mapDBInfo, layer):
+def CreateDbInfoDesc(panel, mapDBInfo, layer):
     """!Create database connection information content"""
     infoFlexSizer = wx.FlexGridSizer (cols = 2, hgap = 1, vgap = 1)
     infoFlexSizer.AddGrowableCol(1)
@@ -111,7 +116,7 @@ class VectorDBInfo(VectorDBInfoBase):
                     if self.tables[table][key]['ctype'] != types.StringType:
                         value = self.tables[table][key]['ctype'] (value)
                     else:
-                        value = unicodeValue(value)
+                        value = GetUnicodeValue(value)
                 self.tables[table][key]['values'].append(value)
             
             for key, value in record.iteritems():
@@ -159,7 +164,7 @@ class VectorDBInfo(VectorDBInfoBase):
                     if self.tables[table][name]['ctype'] != type(''):
                         value = self.tables[table][name]['ctype'] (value)
                     else:
-                        value = unicodeValue(value)
+                        value = GetUnicodeValue(value)
                 else:
                     value = None
                 self.tables[table][name]['values'].append(value)

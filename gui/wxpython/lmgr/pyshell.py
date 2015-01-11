@@ -24,6 +24,7 @@ from wx.py.shell   import Shell as PyShell
 from wx.py.version import VERSION
 
 import grass.script as grass
+from core.utils import _
 
 class PyShellWindow(wx.Panel):
     """!Python Shell Window"""
@@ -36,8 +37,9 @@ class PyShellWindow(wx.Panel):
             _("Type %s for more GRASS scripting related information.") % "\"help(grass)\"" + "\n" + \
             _("Type %s to add raster or vector to the layer tree.") % "\"AddLayer()\"" + "\n\n"
         self.shell = PyShell(parent = self, id = wx.ID_ANY,
-                             introText = self.intro, locals = {'grass' : grass,
-                                                               'AddLayer' : self.AddLayer})
+                             introText = self.intro,
+                             locals={'grass': grass,
+                                     'AddLayer': self.AddLayer})
         
         sys.displayhook = self._displayhook
         

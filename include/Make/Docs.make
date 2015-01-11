@@ -9,15 +9,14 @@ GRASS_PDFDIR=		$(DOCSDIR)/pdf
 
 htmldocs-single:
 	$(MAKE) -C . htmldox-single
-	for dir in lib gui/wxpython ; do \
+	for dir in lib rfc gui/wxpython ; do \
 	  $(MAKE) -C $$dir htmldox-single ; \
 	done
 
 # generate programmer's manual as multiple HTML documents:
-
 docs_dirs = \
 	lib/db \
-	lib/g3d \
+	lib/raster3d \
 	lib/gis \
 	lib/gmath \
 	lib/gpde \
@@ -27,7 +26,8 @@ docs_dirs = \
 	lib/segment \
 	lib/vector \
 	lib/vector/dglib \
-	gui/wxpython
+	gui/wxpython \
+	rfc
 
 htmldocs_dirs := $(patsubst %,%/html,$(docs_dirs))
 latexdocs_dirs := $(patsubst %,%/latex,$(docs_dirs))

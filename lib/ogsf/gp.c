@@ -1,16 +1,12 @@
 /*!
-   \file gp.c
+   \file lib/ogsf/gp.c
 
-   \brief OGSF library - loading and manipulating point sets
+   \brief OGSF library - loading and manipulating point sets (lower level functions)
 
-   GRASS OpenGL gsurf OGSF Library 
+   (C) 1999-2008, 2011 by the GRASS Development Team
 
-   (C) 1999-2008 by the GRASS Development Team
-
-   This program is free software under the 
-   GNU General Public License (>=v2). 
-   Read the file COPYING that comes with GRASS
-   for details.
+   This program is free software under the GNU General Public License
+   (>=v2). Read the file COPYING that comes with GRASS for details.
 
    \author Bill Brown USACERL, GMSL/University of Illinois (January 1994)
    \author Doxygenized by Martin Landa <landa.martin gmail.com> (May 2008)
@@ -19,7 +15,7 @@
 #include <stdlib.h>
 
 #include <grass/gis.h>
-#include <grass/gstypes.h>
+#include <grass/ogsf.h>
 
 #define FIRST_SITE_ID 21720
 
@@ -37,15 +33,15 @@ geosite *gp_get_site(int id)
 {
     geosite *gp;
 
-    G_debug(5, "gp_get_site");
+    G_debug(5, "gp_get_site(%d)", id);
 
     for (gp = Site_top; gp; gp = gp->next) {
 	if (gp->gsite_id == id) {
-	    return (gp);
+	    return gp;
 	}
     }
 
-    return (NULL);
+    return NULL;
 }
 
 /*!
@@ -60,7 +56,7 @@ geosite *gp_get_prev_site(int id)
 {
     geosite *pp;
 
-    G_debug(5, "gp_get_prev_site");
+    G_debug(5, "gp_get_prev_site(%d)", id);
 
     for (pp = Site_top; pp; pp = pp->next) {
 	if (pp->gsite_id == id - 1) {
@@ -68,7 +64,7 @@ geosite *gp_get_prev_site(int id)
 	}
     }
 
-    return (NULL);
+    return NULL;
 }
 
 /*!
@@ -85,7 +81,7 @@ int gp_num_sites(void)
 
     G_debug(5, "gp_num_sites(): n=%d", i);
 
-    return (i);
+    return i;
 }
 
 /*!
@@ -101,14 +97,14 @@ geosite *gp_get_last_site(void)
     G_debug(5, "gp_get_last_site");
 
     if (!Site_top) {
-	return (NULL);
+	return NULL;
     }
 
     for (lp = Site_top; lp->next; lp = lp->next) ;
 
     G_debug(5, " last site id: %d", lp->gsite_id);
 
-    return (lp);
+    return lp;
 }
 
 /*!
@@ -120,14 +116,13 @@ geosite *gp_get_last_site(void)
 geosite *gp_get_new_site(void)
 {
     geosite *np, *lp;
-
-    G_debug(5, "gp_get_new_site");
-
+    
     np = (geosite *) G_malloc(sizeof(geosite));	/* G_fatal_error */
     if (!np) {
-	return (NULL);
+	return NULL;
     }
-
+    G_zero(np, sizeof(geosite));
+    
     lp = gp_get_last_site();
     if (lp) {
 	lp->next = np;
@@ -137,10 +132,18 @@ geosite *gp_get_new_site(void)
 	Site_top = np;
 	np->gsite_id = FIRST_SITE_ID;
     }
+    np->style = (gvstyle *) G_malloc(sizeof(gvstyle));
+    if (!np->style)
+	return NULL;
+    G_zero(np->style, sizeof (gvstyle));
+    np->hstyle = (gvstyle *) G_malloc(sizeof(gvstyle));
+    if (!np->hstyle)
+	return NULL;
+    G_zero(np->hstyle, sizeof (gvstyle));
 
-    np->next = NULL;
-
-    return (np);
+    G_debug(5, "gp_get_new_site id=%d", np->gsite_id);
+    
+    return np;
 }
 
 /*!
@@ -182,65 +185,31 @@ void gp_update_drapesurfs(void)
  */
 int gp_set_defaults(geosite * gp)
 {
-    int i;
     float dim;
 
-    G_debug(5, "gp_set_defaults");
-
     if (!gp) {
-	return (-1);
+	return -1;
     }
+    G_debug(5, "gp_set_defaults() id=%d", gp->gsite_id);
 
     GS_get_longdim(&dim);
 
-    gp->filename = NULL;
-    gp->n_sites = gp->use_z = gp->n_surfs = gp->use_mem = 0;
-    gp->x_trans = gp->y_trans = gp->z_trans = 0.0;
-    gp->size = dim / 100.;
-    gp->points = NULL;
-    gp->width = 1;
-    gp->color = 0xFFFFFF;
-    gp->marker = ST_X;
-    gp->has_z = gp->has_att = 0;
-    gp->attr_mode = ST_ATT_NONE;
-    gp->next = NULL;
-    for (i = 0; i < MAX_SURFS; i++) {
-	gp->drape_surf_id[i] = 0;
-    }
+    gp->style->color = 0xF0F0F0;
+    gp->style->size = dim / 100.;
+    gp->style->width = 1;
+    gp->style->symbol = ST_X;
+    gp->hstyle->color = 0xFF0000;
+    gp->hstyle->size = dim / 150.;
+    gp->hstyle->symbol = ST_X;
+    gp->tstyle = NULL;
 
-    return (1);
-}
-
-/*!
-   \brief Print point set fields, debugging
-
-   \param gp pointer to geosite struct
- */
-void print_site_fields(geosite * gp)
-{
-    int i;
-
-    fprintf(stderr, "n_sites=%d use_z=%d n_surfs=%d use_mem=%d\n",
-	    gp->n_sites, gp->use_z, gp->n_surfs, gp->use_mem);
-    fprintf(stderr, "x_trans=%.2f x_trans=%.2f x_trans=%.2f\n",
-	    gp->x_trans, gp->y_trans, gp->z_trans);
-    fprintf(stderr, "size = %.2f\n", gp->size);
-    fprintf(stderr, "points = %lx\n", (unsigned long)gp->points);
-    fprintf(stderr, "width = %d\n", gp->width);
-    fprintf(stderr, "color = %x\n", gp->color);
-    fprintf(stderr, "marker = %d\n", gp->marker);
-    fprintf(stderr, "has_z = %d, has_att = %d\n", gp->has_z, gp->has_att);
-    fprintf(stderr, "attr_mode = %d\n", gp->attr_mode);
-
-    for (i = 0; i < MAX_SURFS; i++) {
-	fprintf(stderr, "drape_surf_id[%d] = %d\n", i, gp->drape_surf_id[i]);
-    }
-
-    return;
+    return 1;
 }
 
 /*!
    \brief Initialize geosite struct
+
+   \todo Currently does nothing
 
    \param gp pointer to geosite struct
 
@@ -252,10 +221,10 @@ int gp_init_site(geosite * gp)
     G_debug(5, "gp_init_site");
 
     if (!gp) {
-	return (-1);
+	return -1;
     }
 
-    return (0);
+    return 0;
 }
 
 /*!
@@ -279,7 +248,7 @@ void gp_delete_site(int id)
 }
 
 /*!
-   \brief Free geosite struct
+   \brief Free allocated geosite struct
 
    \param fp pointer to geosite struct
 
@@ -291,7 +260,7 @@ int gp_free_site(geosite * fp)
     geosite *gp;
     int found = 0;
 
-    G_debug(5, "gp_free_site");
+    G_debug(5, "gp_free_site(id=%d)", fp->gsite_id);
 
     if (Site_top) {
 	if (fp == Site_top) {
@@ -327,35 +296,49 @@ int gp_free_site(geosite * fp)
 	return (1);
     }
 
-    return (-1);
+    return -1;
 }
 
 /*!
-   \brief Free geosite
+   \brief Free geosite (lower level)
 
    \param fp pointer to geosite struct
  */
 void gp_free_sitemem(geosite * fp)
 {
     geopoint *gpt, *tmp;
-
+    
     G_free((void *)fp->filename);
     fp->filename = NULL;
+    if (fp->style) {
+	G_free(fp->style);
+    }
+    if (fp->hstyle) {
+	G_free(fp->hstyle);
+    }
     if (fp->points) {
 	for (gpt = fp->points; gpt;) {
-	    if (gpt->cattr) {
-		G_free(gpt->cattr);
+	    G_free(gpt->cats);
+	    if(gpt->style) {
+		G_free(gpt->style);
 	    }
-
+	    
 	    tmp = gpt;
 	    gpt = gpt->next;
 	    G_free(tmp);
 	}
-
+	
 	fp->n_sites = 0;
 	fp->points = NULL;
     }
 
+    if (fp->tstyle) {
+	G_free(fp->tstyle->color_column);
+	G_free(fp->tstyle->symbol_column);
+	G_free(fp->tstyle->size_column);
+	G_free(fp->tstyle->width_column);
+    }
+    
     return;
 }
 

@@ -19,7 +19,7 @@
 #include <string.h>
 #include <time.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 
@@ -126,7 +126,7 @@ int mst(struct Map_info *Map, int *trms, int ntrms,	/* array of terminal, number
 	int sp,			/* Steiner point (node) to be tested with terminals, (0 = ignore) */
 	int rebuild)
 {				/* rebuild the sorted list of costs for terminals */
-    int i, j, node1, node2, ret, com1, com2, t1, t2, line;
+    int i, j, node1, node2, com1, com2, t1, t2, line;
     static int k;
     int tcpos, scpos;		/* current position in the term_costs / sp_costs */
     double tcst;
@@ -146,7 +146,7 @@ int mst(struct Map_info *Map, int *trms, int ntrms,	/* array of terminal, number
 	    for (j = i + 1; j < ntrms; j++) {
 		term_costs[k].term1 = i;
 		term_costs[k].term2 = j;
-		ret = get_node_costs(trms[i], trms[j], &tcst);
+		get_node_costs(trms[i], trms[j], &tcst);
 		term_costs[k].cost = tcst;
 		k++;
 	    }
@@ -164,7 +164,7 @@ int mst(struct Map_info *Map, int *trms, int ntrms,	/* array of terminal, number
 	for (i = 0; i < ntrms; i++) {
 	    sp_costs[i].term1 = -1;	/* not needed */
 	    sp_costs[i].term2 = i;
-	    ret = get_node_costs(sp, trms[i], &tcst);
+	    get_node_costs(sp, trms[i], &tcst);
 	    sp_costs[i].cost = tcst;
 	}
 	qsort((void *)sp_costs, ntrms, sizeof(COST), cmp);
@@ -292,7 +292,7 @@ int mst(struct Map_info *Map, int *trms, int ntrms,	/* array of terminal, number
 	if (AList != NULL) {
 	    node1 = trms[t1];
 	    node2 = trms[t2];
-	    ret = Vect_net_shortest_path(Map, node1, node2, List, NULL);
+	    Vect_net_shortest_path(Map, node1, node2, List, NULL);
 	    for (j = 0; j < List->n_values; j++) {
 		Vect_list_append(AList, abs(List->value[j]));
 	    }
@@ -326,13 +326,13 @@ int main(int argc, char **argv)
 	*term_opt, *nsp_opt;
     struct Flag *geo_f;
     struct GModule *module;
-    char *mapset;
     struct Map_info Map, Out;
     int *testnode;		/* array all nodes: 1 - should be tested as Steiner, 
 				 * 0 - no need to test (unreachable or terminal) */
     struct ilist *TList;	/* list of terminal nodes */
     struct ilist *StArcs;	/* list of arcs on Steiner tree */
     struct ilist *StNodes;	/* list of nodes on Steiner tree */
+    struct boxlist *pointlist;
     double cost, tmpcost;
     struct cat_list *Clist;
     struct line_cats *Cats;
@@ -342,13 +342,15 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, network, steiner tree");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("network"));
+    G_add_keyword(_("steiner tree"));
     module->label =
-	_("Create Steiner tree for the network and given terminals");
+	_("Creates Steiner tree for the network and given terminals.");
     module->description =
 	_("Note that 'Minimum Steiner Tree' problem is NP-hard "
 	  "and heuristic algorithm is used in this module so "
-	  "the result may be sub optimal");
+	  "the result may be sub optimal.");
 
     map = G_define_standard_option(G_OPT_V_INPUT);
     output = G_define_standard_option(G_OPT_V_OUTPUT);
@@ -356,17 +358,17 @@ int main(int argc, char **argv)
     type_opt = G_define_standard_option(G_OPT_V_TYPE);
     type_opt->options = "line,boundary";
     type_opt->answer = "line,boundary";
-    type_opt->description = _("Arc type");
+    type_opt->label = _("Arc type");
 
     afield_opt = G_define_standard_option(G_OPT_V_FIELD);
     afield_opt->key = "alayer";
     afield_opt->answer = "1";
-    afield_opt->description = _("Arc layer");
+    afield_opt->label = _("Arc layer");
 
     tfield_opt = G_define_standard_option(G_OPT_V_FIELD);
     tfield_opt->key = "nlayer";
     tfield_opt->answer = "2";
-    tfield_opt->description = _("Node layer (used for terminals)");
+    tfield_opt->label = _("Node layer (used for terminals)");
 
     afcol = G_define_option();
     afcol->key = "acolumn";
@@ -420,32 +422,32 @@ int main(int argc, char **argv)
     else
 	geo = 0;
 
-    Vect_check_input_output_name(map->answer, output->answer, GV_FATAL_EXIT);
-
-    mapset = G_find_vector2(map->answer, NULL);
-
-    if (mapset == NULL)
-	G_fatal_error(_("Vector map <%s> not found"), map->answer);
+    Vect_check_input_output_name(map->answer, output->answer, G_FATAL_EXIT);
 
     Vect_set_open_level(2);
-    Vect_open_old(&Map, map->answer, mapset);
+    Vect_open_old(&Map, map->answer, "");
     nnodes = Vect_get_num_nodes(&Map);
+    nlines = Vect_get_num_lines(&Map);
 
     /* Create list of terminals based on list of categories */
-    for (i = 1; i <= nnodes; i++) {
-	nlines = Vect_get_node_n_lines(&Map, i);
-	for (j = 0; j < nlines; j++) {
-	    line = abs(Vect_get_node_line(&Map, i, j));
-	    ltype = Vect_read_line(&Map, NULL, Cats, line);
-	    if (!(ltype & GV_POINT))
-		continue;
-	    if (!(Vect_cat_get(Cats, tfield, &cat)))
-		continue;
-	    if (Vect_cat_in_cat_list(cat, Clist)) {
-		Vect_list_append(TList, i);
-	    }
+    for (i = 1; i <= nlines; i++) {
+	ltype = Vect_get_line_type(&Map, i);
+	if (!(ltype & GV_POINT))
+	    continue;
+
+	Vect_read_line(&Map, Points, Cats, i);
+	node = Vect_find_node(&Map, Points->x[0], Points->y[0], Points->z[0], 0, 0);
+	if (!node) {
+	    G_warning(_("Point is not connected to the network"));
+	    continue;
+	}
+	if (!(Vect_cat_get(Cats, tfield, &cat)))
+	    continue;
+	if (Vect_cat_in_cat_list(cat, Clist)) {
+	    Vect_list_append(TList, i);
 	}
     }
+
     nterms = TList->n_values;
     fprintf(stdout, "Number of terminals: %d\n", nterms);
 
@@ -615,11 +617,22 @@ int main(int argc, char **argv)
 	    StNodes->n_values);
 
     k = 0;
+    pointlist = Vect_new_boxlist(0);
     for (i = 0; i < StNodes->n_values; i++) {
+	double x, y, z;
+	struct bound_box box;
+	
 	node = StNodes->value[i];
+	
+	Vect_get_node_coor(&Map, node, &x, &y, &z);
+	box.E = box.W = x;
+	box.N = box.S = y;
+	box.T = box.B = z;
+	Vect_select_lines_by_box(&Map, &box, GV_POINT, pointlist);
+	
 	nlines = Vect_get_node_n_lines(&Map, node);
-	for (j = 0; j < nlines; j++) {
-	    line = abs(Vect_get_node_line(&Map, node, j));
+	for (j = 0; j < pointlist->n_values; j++) {
+	    line = pointlist->id[j];
 	    ltype = Vect_read_line(&Map, Points, Cats, line);
 	    if (!(ltype & GV_POINT))
 		continue;

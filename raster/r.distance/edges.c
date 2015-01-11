@@ -17,6 +17,10 @@
  ***************************************************************************/
 
 #include <stdlib.h>
+
+#include <grass/raster.h>
+#include <grass/glocale.h>
+
 #include "defs.h"
 
 void print_edge_info(struct Map *map)
@@ -41,8 +45,8 @@ void find_edge_cells(struct Map *map)
 
     G_message(_("Reading map %s ..."), map->fullname);
 
-    ncols = G_window_cols();
-    nrows = G_window_rows();
+    ncols = Rast_window_cols();
+    nrows = Rast_window_rows();
 
     buf0 = (CELL *) G_calloc(ncols + 2, sizeof(CELL));
     buf1 = (CELL *) G_calloc(ncols + 2, sizeof(CELL));
@@ -54,9 +58,7 @@ void find_edge_cells(struct Map *map)
 	buf2[col] = 0;
     }
 
-    fd = G_open_cell_old(map->name, map->mapset);
-    if (fd < 0)
-	exit(1);
+    fd = Rast_open_old(map->name, map->mapset);
 
     init_edge_list(map);
 
@@ -69,8 +71,7 @@ void find_edge_cells(struct Map *map)
 	buf2 = tmp;
 
 	/* read a row */
-	if (G_get_map_row(fd, &buf1[1], row) < 0)
-	    exit(1);
+	Rast_get_c_row(fd, &buf1[1], row);
 
 	for (col = 1; col <= ncols; col++) {
 	    if (buf1[col]	/* is a valid category */
@@ -83,7 +84,7 @@ void find_edge_cells(struct Map *map)
     }
     G_percent(row, nrows, 2);
 
-    G_close_cell(fd);
+    Rast_close(fd);
 
     G_free(buf0);
     G_free(buf1);

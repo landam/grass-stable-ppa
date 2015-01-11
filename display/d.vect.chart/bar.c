@@ -1,8 +1,7 @@
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/display.h>
-#include <grass/raster.h>
 #include <grass/symbol.h>
 #include "global.h"
 
@@ -10,7 +9,7 @@ int
 bar(double cx, double cy, int size, double scale, double *val, int ncols,
     COLOR * ocolor, COLOR * colors, int y_center, double *max_reference)
 {
-    int i, j;
+    int i;
     double max;
     double x0, y0;
     double bw;			/* bar width */
@@ -59,11 +58,8 @@ bar(double cx, double cy, int size, double scale, double *val, int ncols,
 	    Vect_append_point(max_Points, x0 + i * bw, y0, 0);
 
 	    /* the outline color : default is black */
-	    R_RGB_color(ocolor->r, ocolor->g, ocolor->b);
-	    for (j = 1; j < max_Points->n_points; j++) {
-		G_plot_line(max_Points->x[j], max_Points->y[j],
-			    max_Points->x[j - 1], max_Points->y[j - 1]);
-	    }
+	    D_RGB_color(ocolor->r, ocolor->g, ocolor->b);
+	    D_polyline_abs(max_Points->x, max_Points->y, max_Points->n_points);
 	}
     }
 
@@ -79,15 +75,12 @@ bar(double cx, double cy, int size, double scale, double *val, int ncols,
 	Vect_append_point(Points, x0 + i * bw, y0, 0);
 
 	if (!colors[i].none) {
-	    R_RGB_color(colors[i].r, colors[i].g, colors[i].b);
-	    D_polygon(Points->x, Points->y, Points->n_points);
+	    D_RGB_color(colors[i].r, colors[i].g, colors[i].b);
+	    D_polygon_abs(Points->x, Points->y, Points->n_points);
 	}
 
-	R_RGB_color(ocolor->r, ocolor->g, ocolor->b);
-	for (j = 1; j < Points->n_points; j++) {
-	    G_plot_line(Points->x[j], Points->y[j], Points->x[j - 1],
-			Points->y[j - 1]);
-	}
+	D_RGB_color(ocolor->r, ocolor->g, ocolor->b);
+	D_polyline_abs(Points->x, Points->y, Points->n_points);
     }
 
     /* tidy up */

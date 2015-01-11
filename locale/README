@@ -1,7 +1,11 @@
 HOWTO translate GRASS messages
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-$Date: 2012-02-25 14:14:51 +0100 (Sat, 25 Feb 2012) $
+This file contains following sections:
+1. Instructions for programmers;
+2. A translation workflow overview;
+3. A detailed explanation of translation workflow, testing;
+4. Some notes and links
 
 [ Web page: http://grass.osgeo.org/devel/i18n.php ]
 
@@ -48,15 +52,62 @@ NOTE: Also G_warning() and G_fatal_error() need the message
 NOTE2: Also the parameters/flags of each module needs the
        macro _().
 
+NOTE3: Notices to translators can be added by placing
+       a comment line starting with GTC tag just above
+       message to be translated:
+        /* GTC A comma separated keyword list. 
+           Should not contain spaces! */
+        keywords = _("first,second,third");
+
+NOTE4:  Any string containing a number that requires a correct plural form of
+        a noun, has to pass trough ngettext function implemented in GRASS
+        as a _n() macro.
+        _n("Message in English for singular case", "Message in English for
+        plural case", number) 
+
+Examples of messages with plural forms.
+Wrong:
+    G_message( _("%d map(s) from mapset <%s> removed"), n, ms);
+    G_message( n == 1 ? _("One file removed") : _("%d files removed"), n);
+    G_warning( _("%d %s without geometry skipped"), n, 
+        n == 1 ? "feature" : "features"); 
+    G_message( _("%d maps selected"), n);
+    G_message( n == 1 ? _("Remove map") : _("Remove maps"));
+
+Correct:
+    G_message( _n("%d map from mapset <%s> removed", 
+        "%d maps from mapset <%s> removed", n), n, ms);
+    /* Notice double use of number "n" - as an argument for 
+    both functions - _n() and G_message() */
+    G_message( _n("One file removed", "%d files removed", n) n);
+    /* Both of forms of singular case "%d file" or "One file" are correct. 
+    The choice between them is purely stylistic one. */
+    G_warning( _n("One feature without geometry skipped", 
+        "%d features without geometry skipped", n), n);
+    G_message( _n("%d map selected", "%d maps selected", n), n);
+    /* Altough in English it is not necessary to provide a separate
+    text if "n" always is >1, in other languages is a difference if "n"
+    is i.e. 2-4, or n==10 etc. */
+    G_message( _n("Remove map", "Remove maps", n));
+    /* Number it self doesn't have to be used in the output text */
+        
+        
 All these messages strings will be then automatically 
 extracted into the message files.
 
 See for example ./vector/v.what.rast/main.c
 
-NOTE3: Such lines
+NOTE4: Such lines
         fprintf (stdout,"\n");
   do not need a change as no translation is needed.
 
+A detailed example of adapting code for use in multiple languages
+can be found in gettext manual.
+How to prepare program source: 
+http://www.gnu.org/software/gettext/manual/gettext.html#Sources
+
+More advanced tricks like resolving ambiguties and handling of plural forms:
+http://www.gnu.org/software/gettext/manual/gettext.html#Programmers
 
 ------------------------------------------------------
 
@@ -134,7 +185,6 @@ DETAILED PROCEDURE :
    This will create
     ./templates/grasslibs.pot
     ./templates/grassmods.pot
-    ./templates/grasstcl.pot
     ./templates/grasswxpy.pot
 
 
@@ -156,7 +206,6 @@ DETAILED PROCEDURE :
        to the ./po/ directory (for example German language):
         mv ./template/grasslibs.pot ./po/grasslibs_de.po
         mv ./template/grassmods.pot ./po/grassmods_de.po
-        mv ./template/grasstcl.pot ./po/grasstcl_de.po
         mv ./template/grasswxpy.pot ./po/grasswxpy_de.po
 
        Get the two characters indicating the language from this
@@ -191,13 +240,11 @@ DETAILED PROCEDURE :
    Run 'kbabel' or equivalent program
     kbabel ./po/grasslibs_<LANGUAGE>.po
     kbabel ./po/grassmods_<LANGUAGE>.po
-    kbabel ./po/grasstcl_<LANGUAGE>.po
     kbabel ./po/grasswxpy_<LANGUAGE>.po
 
    For example (German):
     kbabel ./po/grasslibs_de.po
     kbabel ./po/grassmods_de.po
-    kbabel ./po/grasstcl_de.po
     kbabel ./po/grasswxpy_de.po
 
    KBABEL: You may load .po files from other projects [see footnote 1].
@@ -231,7 +278,6 @@ DETAILED PROCEDURE :
    If possible, please send diffs against CVS:
    svn diff grasslibs_LANG.po > grasslibs_LANG_po.diff
    svn diff grassmods_LANG.po > grassmods_LANG_po.diff
-   svn diff grasstcl_LANG.po > grasstcl_LANG_po.diff
    svn diff grasswxpy_LANG.po > grasswxpy_LANG_po.diff
 
    If you updated .c files with _() macros as explained
