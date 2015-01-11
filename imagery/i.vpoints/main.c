@@ -28,7 +28,7 @@
 #include <string.h>
 #include <signal.h>
 #include <grass/gis.h>
-#include <grass/raster.h>
+#include <grass/display.h>
 #include <grass/glocale.h>
 #include "globals.h"
 
@@ -91,7 +91,8 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("imagery, geometry");
+    G_add_keyword(_("imagery"));
+    G_add_keyword(_("geometry"));
     module->description =
 	_("Set registration points for an imagery group from a vector map "
 	  "or keyboard entry.");
@@ -107,7 +108,7 @@ int main(int argc, char *argv[])
 	exit(EXIT_FAILURE);
 
 
-    G_suppress_masking();	/* to do this for target location */
+    Rast_suppress_masking();	/* to do this for target location */
 
     interrupt_char = G_intr_char();
     tempfile1 = G_tempfile();
@@ -122,7 +123,7 @@ int main(int argc, char *argv[])
 
     /* parse group name */
     /* only enforce local-mapset-only due to I_get_group_ref() not liking "@mapset" */
-    if (G__name_is_fully_qualified(grp->answer, group.name, xmapset)) {
+    if (G_name_is_fully_qualified(grp->answer, group.name, xmapset)) {
 	if (0 != strcmp(G_mapset(), xmapset))
 	    G_fatal_error(_("[%s] Only local groups may be used"),
 			  grp->answer);
@@ -181,7 +182,8 @@ int main(int argc, char *argv[])
 	    quit(0);
 	/* display this file in "map1" */
     }
-    while (G_get_cellhd(name, mapset, &cellhd) < 0);
+    while (!G_find_raster2(name, mapset));
+    Rast_get_cellhd(name, mapset, &cellhd);
 
     G_adjust_window_to_box(&cellhd, &VIEW_MAP1->cell.head, VIEW_MAP1->nrows,
 			   VIEW_MAP1->ncols);

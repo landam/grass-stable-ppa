@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "global.h"
 
@@ -26,8 +27,8 @@ struct cache *readcell(int fdi, const char *size)
     int nblocks;
     int i;
 
-    nrows = G_window_rows();
-    ncols = G_window_cols();
+    nrows = Rast_input_window_rows();
+    ncols = Rast_input_window_cols();
 
     ny = (nrows + BDIM - 1) / BDIM;
     nx = (ncols + BDIM - 1) / BDIM;
@@ -75,7 +76,7 @@ struct cache *readcell(int fdi, const char *size)
 	    if (row + y >= nrows)
 		break;
 
-	    G_get_d_raster_row(fdi, &tmpbuf[y * nx * BDIM], row + y);
+	    Rast_get_d_row(fdi, &tmpbuf[y * nx * BDIM], row + y);
 	}
 
 	for (x = 0; x < nx; x++)

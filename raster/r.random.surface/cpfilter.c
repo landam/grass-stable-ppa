@@ -1,5 +1,4 @@
 /* cpfilter.c                                                           */
-#undef MAIN
 #include "ransurf.h"
 
 void CopyFilter(FILTER * FPtr, FILTER Filter)

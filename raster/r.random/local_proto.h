@@ -1,6 +1,8 @@
 #ifndef __LOCAL_PROTO_H__
 #define __LOCAL_PHOTO_H__
 
+#include <grass/raster.h>
+
 /* raster_ptr.c: From Huidae Cho ... */
 union RASTER_PTR
 {
@@ -23,7 +25,7 @@ int is_null_value(struct RASTER_MAP_PTR buf, int col);
 /* Put all the state infomation into a struct */
 struct rr_state
 {
-    char *inraster, *inrcover, *outraster, *mapset, *cmapset, *outvector;
+    char *inraster, *inrcover, *outraster, *outvector;
     int use_nulls, docover, fd_old, fd_cold, fd_new;
     long nCells, nNulls, nRand, cnCells, cnNulls;
     struct RASTER_MAP_PTR nulls, cnulls, buf, cover, min, max, cmin, cmax;

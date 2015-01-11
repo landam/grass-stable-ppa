@@ -1,18 +1,5 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
-<head>
- <title>Raster data processing in GRASS GIS</title>
- <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
- <meta name="Author" content="Markus Neteler/GRASS Development Team">
- <link rel="stylesheet" href="grassdocs.css" type="text/css">
-</head>
-<body bgcolor="white">
-
-<img src="grass_logo.png" alt="GRASS logo"><hr align=center size=6 noshade>
-
-<!-- meta page description: Raster data processing -->
-<h2>Raster data processing in GRASS GIS</h2>
-
+<!-- meta page description: Raster data processing in GRASS GIS -->
+<!-- meta page index: raster -->
 <h3>Raster maps in general</h3>
 
 A "raster map" is a data layer consisting of a gridded array of cells.
@@ -27,8 +14,8 @@ grid cells at the edge of the map, but along the edge of the map itself.
 i.e. the geographic extent of the map is described by the outer bounds of
 all cells within the map.
 
-<P>
-As a general rule in GRASS:
+<p>
+As a general rule in GRASS GIS:
 <ol>
 <li> Raster output maps have their bounds and resolution equal to those
 of the current computational region.
@@ -45,11 +32,11 @@ There are a few exceptions to this:
 reading non-georeferenced data, the imported map will usually have its
 lower-left corner at (0,0) in the location's coordinate system; the user
 needs to use <a href="r.region.html">r.region</a> to "place" the imported map.
-<P>
+<p>
 Some programs which need to perform specific types of resampling (e.g.
 <a href="r.resamp.rst.html">r.resamp.rst</a>) read the input maps at
 their original resolution then do the resampling themselves.
-<P>
+<p>
 <a href="r.proj.html">r.proj</a> has to deal with two regions (source
 and destination) simultaneously; both will have an impact upon the
 final result.
@@ -62,14 +49,14 @@ offers options such as on-the-fly location creation or extension of
 the default region to match the extent of the imported raster map.
 For special cases, other import modules are available. The full map
 is always imported.
-<P>
+<p>
 For importing scanned maps, the user will need to create a
 x,y-location, scan the map in the desired resolution and save it into
 an appropriate raster format (e.g. tiff, jpeg, png, pbm) and then use
 <a href="r.in.gdal.html">r.in.gdal</a> to import it. Based on
 reference points the scanned map can be recified to obtain geocoded
 data.
-<P>
+<p>
 Raster maps are exported with <a href="r.out.gdal.html">r.out.gdal</a>
 into common formats. Also <a href="r.out.bin.html">r.out.bin</a>,
 <a href="r.out.vtk.html">r.out.vtk</a>, <a href="r.out.ascii.html">r.out.ascii</a>
@@ -145,10 +132,10 @@ raster. Any samples taken within this margin will be null.</li>
 <li><a href="r.resamp.rst.html">r.resamp.rst</a> Regularized Spline with Tension 
 (RST) interpolation 2D: Behaves similarly, i.e. it computes a surface assuming 
 that the values are samples at each raster cell's centre, and samples the surface
-at each region cell's centre.
-<p>
-
-<li>For <a href="r.resamp.stats.html">r.resamp.stats</a> without <b>-w</b>, the value of 
+at each region cell's centre.</li>
+<li><a href="r.resamp.bspline.html">r.resamp.bspline</a> Bicubic or bilinear 
+spline interpolation with Tykhonov regularization.</li>
+<li>For <a href="r.resamp.stats.html">r.resamp.stats</a> without <b>-w</b>, the value of
 each region cell is the chosen aggregate of the values from all of the raster
 cells whose centres fall within the bounds of the region cell.
 <br>
@@ -173,12 +160,12 @@ Furthermore, there are modules available for reinterpolation of "sparse"
 <li> Interpolating from contour lines (<a href="r.contour.html">r.contour</a>)</li>
 </ul>
 
-For Lidar and similar data, <a href="r.in.xyz.html">r.in.xyz</a> supports loading
-and binning of ungridded x,y,z ASCII data into a new raster map. The user may choose from
-a variety of statistical methods in creating the new raster.
+For Lidar and similar data, <a href="r.in.lidar.html">r.in.lidar</a> and <a href="r.in.xyz.html">r.in.xyz</a>
+support loading and binning of ungridded x,y,z ASCII data into a new raster map.
+The user may choose from a variety of statistical methods in creating the new raster map.
 <p>
 
-Otherwise, for interpolation of scattered data, use the <EM>v.surf.*</EM> set of
+Otherwise, for interpolation of scattered data, use the <em>v.surf.*</em> set of
 modules.
 
 <h4>Raster MASKs</h4>
@@ -192,15 +179,15 @@ The mask is read as an integer map. If MASK is actually a
 floating-point map, the values will be converted to integers using the
 map's quantisation rules (this defaults to round-to-nearest, but can
 be changed with r.quant).
-<P>
+<p>
 (see <a href="r.mask.html">r.mask</a>)
 
 <h3>Raster map statistics</h3>
 
 A couple of commands are available to calculate local statistics
 (<a href="r.neighbors.html">r.neighbors</a>), and global statistics
-(<a href="r.statistics.html">r.statistics</a>, <a href="r.surf.area.html">r.surf.area</a>,
-<a href="r.sum.html">r.sum</a>).  Profiles and transects can be generated
+(<a href="r.statistics.html">r.statistics</a>, <a href="r.surf.area.html">r.surf.area</a>).
+Profiles and transects can be generated
 (<a href="d.profile.html">d.profile</a>, <a href="r.profile.html">r.profile</a>,
 <a href="r.transect.html">r.transect</a>) as well as histograms
 (<a href="d.histogram.html">d.histogram</a>) and polar diagrams
@@ -215,9 +202,16 @@ href="r.stats.html">r.stats</a>, <a href="r.volume.html">r.volume</a>).
 The <a href="r.mapcalc.html">r.mapcalc</a> command provides raster map
 algebra methods.
 The <a href="r.resamp.stats.html">r.resamp.stats</a> command resamples raster
-map layers using various aggregation methods, the <a href="r.average.html">r.average</a>
+map layers using various aggregation methods, the <a href="r.statistics.html">r.statistics</a>
 command aggregates one map based on a second map. 
-<a href="r.resamp.interp.html">r.resamp.interp</a> resamples raster map layers using interpolation.
+<a href="r.resamp.interp.html">r.resamp.interp</a> resamples raster map 
+layers using interpolation.
+
+<h3>Regression analysis</h3>
+
+Both linear (<a href="r.regression.line.html">r.regression.line</a>) and
+multiple regression (<a href="r.regression.multi.html">r.regression.multi</a>)
+are supported.
 
 <h3>Hydrologic modeling toolbox</h3>
 
@@ -251,12 +245,12 @@ floating-point. In most GRASS resources, 2D raster maps are usually
 called "raster", their integer data type "CELL", single-precision
 floating-point data type "FCELL" and double-precision floating-point
 "DCELL". The 3D raster map type is usually called "3D raster" but other
-names like "G3D", "voxel", "volume", "GRID3D" or "3d cell" are common.
+names like "RASTER3D", "voxel", "volume", "GRID3D" or "3d cell" are common.
 3D raster's single-precision data type is most often called "float", and the
 double-precision one "double".
 
 <p>
-GRASS raster format is architecture independent and portable between
+The GRASS GIS raster format is architecture independent and portable between
 32bit and 64bit machines.
 
 <p>
@@ -266,15 +260,9 @@ important to know that operations on NULL cells lead to NULL cells.
 <h3>See also</h3>
 
 <ul>
-<li><a href=vectorintro.html>Introduction to GRASS vector map processing</a></li>
-<li><a href=raster3dintro.html>Introduction to GRASS 3D raster map (voxel) processing</a></li>
+  <li><a href="raster3dintro.html">Introduction into 3D raster data (voxel) processing</a></li>
+  <li><a href="vectorintro.html">Introduction into vector data processing</a></li>
+  <li><a href="imageryintro.html">Introduction into image processing</a></li>
+  <li><a href="databaseintro.html">Database management</a></li>
+  <li><a href="projectionintro.html">Projections and spatial transformations</a></li>
 </ul>
-
-<HR>
-<P>
-<a href="index.html">Main index</a> - <a href="raster.html">raster index</a>
- - <a href="full_index.html">full index</a>
-</P>
-<P>&copy; 2008-2012 <a href="http://grass.osgeo.org">GRASS Development Team</a></P>
-</body>
-</html>

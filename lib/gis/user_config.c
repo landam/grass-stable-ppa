@@ -25,6 +25,7 @@
  * \date 2007-04-14
  */
 
+#include <grass/config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>

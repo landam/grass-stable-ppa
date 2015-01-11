@@ -1,11 +1,11 @@
 /*!
-   \file box.c
+   \file lib/vector/Vlib/box.c
 
-   \brief Vector library - bounding box related fns
+   \brief Vector library - bounding box
 
    Higher level functions for reading/writing/manipulating vectors.
 
-   (C) 2001-2008 by the GRASS Development Team
+   (C) 2001-2009 by the GRASS Development Team
 
    This program is free software under the 
    GNU General Public License (>=v2). 
@@ -13,13 +13,11 @@
    for details.
 
    \author Radim Blazek
-
-   \date 2001-2008
  */
 
 #include <stdlib.h>
-#include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
+#include <grass/glocale.h>
 
 /*!
    \brief Tests for point in box
@@ -30,15 +28,12 @@
    \return 1 point is in box
    \return 0 point is not in box
  */
-int Vect_point_in_box(double x, double y, double z, BOUND_BOX * Box)
+int Vect_point_in_box(double x, double y, double z, const struct bound_box *Box)
 {
 
-    if (x >= Box->W && x <= Box->E &&
-	y >= Box->S && y <= Box->N && z >= Box->B && z <= Box->T) {
-	return 1;
-    }
-
-    return 0;
+    return (x >= Box->W && x <= Box->E &&
+	    y >= Box->S && y <= Box->N && 
+	    z >= Box->B && z <= Box->T);
 }
 
 /*!
@@ -50,7 +45,7 @@ int Vect_point_in_box(double x, double y, double z, BOUND_BOX * Box)
    \return 1 boxes overlap
    \return 0 boxes do not overlap
  */
-int Vect_box_overlap(BOUND_BOX * A, BOUND_BOX * B)
+int Vect_box_overlap(const struct bound_box *A, const struct bound_box *B)
 {
 
     if (A->E < B->W || A->W > B->E ||
@@ -69,7 +64,7 @@ int Vect_box_overlap(BOUND_BOX * A, BOUND_BOX * B)
 
    \return 1
  */
-int Vect_box_copy(BOUND_BOX * A, BOUND_BOX * B)
+int Vect_box_copy(struct bound_box *A, const struct bound_box *B)
 {
 
     A->N = B->N;
@@ -90,7 +85,7 @@ int Vect_box_copy(BOUND_BOX * A, BOUND_BOX * B)
 
    \return 1
  */
-int Vect_box_extend(BOUND_BOX * A, BOUND_BOX * B)
+int Vect_box_extend(struct bound_box *A, const struct bound_box *B)
 {
 
     if (B->N > A->N)
@@ -113,18 +108,18 @@ int Vect_box_extend(BOUND_BOX * A, BOUND_BOX * B)
 /*!
  * \brief Clip coordinates to box, if necessary, lines extending outside of a box.
  *
- * A line represented by the coordinates <b>x, y</b> and <b>c_x, c_y</b> is clipped to
- * the window defined by <b>s</b> (south), <b>n</b> (north), <b>w</b>
- * (west), and <b>e</b> (east). Note that the following constraints must be
+ * A line represented by the coordinates <em>x, y</em> and <em>c_x, c_y</em> is clipped to
+ * the window defined by <em>s</em> (south), <em>n</em> (north), <em>w</em>
+ * (west), and <em>e</em> (east). Note that the following constraints must be
  * true:
  * w <e
  * s <n
- * The <b>x</b> and <b>c_x</b> are values to be compared to <b>w</b> and
- * <b>e.</b> The <b>y</b> and <b>c_y</b> are values to be compared to
- * <b>s</b> and <b>n.</b>
- * The <b>x</b> and <b>c_x</b> values returned lie between <b>w</b> and 
- * <b>e.</b> The <b>y</b> and <b>c_y</b> values returned lie between 
- * <b>s</b> and <b>n.</b>
+ * The <em>x</em> and <em>c_x</em> are values to be compared to <em>w</em> and
+ * <em>e.</em> The <em>y</em> and <em>c_y</em> are values to be compared to
+ * <em>s</em> and <em>n.</em>
+ * The <em>x</em> and <em>c_x</em> values returned lie between <em>w</em> and 
+ * <em>e.</em> The <em>y</em> and <em>c_y</em> values returned lie between 
+ * <em>s</em> and <em>n.</em>
  *
  *  \param x, y coordinates (w, e)
  *  \param c_x,c_y coordinates (s, n)
@@ -133,9 +128,7 @@ int Vect_box_extend(BOUND_BOX * A, BOUND_BOX * B)
  *  \return 1 if any clipping occured
  *  \return 0 otherwise
  */
-
-int
-Vect_box_clip(double *x, double *y, double *c_x, double *c_y, BOUND_BOX * Box)
+int Vect_box_clip(double *x, double *y, double *c_x, double *c_y, const struct bound_box *Box)
 {
     int mod;
 
@@ -194,48 +187,77 @@ Vect_box_clip(double *x, double *y, double *c_x, double *c_y, BOUND_BOX * Box)
 }
 
 
-
 /*!
-   \brief Get boundary box of line
+   \brief Get bounding box of given feature
+
+   Vector map must be open at topological level and built with level
+   >= GV_BUILD_BASE.
 
    \param Map vector map
-   \param line line id
+   \param line feature id
    \param[out] Box bounding box
 
    \return 1 on success
    \return 0 line is dead
+   \return -1 on error
  */
-int Vect_get_line_box(struct Map_info *Map, int line, BOUND_BOX * Box)
+int Vect_get_line_box(const struct Map_info *Map, int line, struct bound_box *Box)
 {
     struct Plus_head *Plus;
-    P_LINE *Line;
+    struct P_line *Line;
+    int type;
+    static struct line_pnts *Points = NULL;
 
-    Plus = &(Map->plus);
+    Plus = (struct Plus_head *) &(Map->plus);
+    if (line < 1 || line > Plus->n_lines) {
+      G_warning(_("Attempt to access feature with invalid id (%d)"), line);
+      return -1;
+    }
+    
     Line = Plus->Line[line];
-
     if (Line == NULL) {		/* dead */
-	Box->N = 0;
-	Box->S = 0;
-	Box->E = 0;
-	Box->W = 0;
-	Box->T = 0;
-	Box->B = 0;
+	Box->N = Box->S = Box->E = Box->W = Box->T = Box->B = 0. / 0.;
 	return 0;
     }
-    else {
-	Box->N = Line->N;
-	Box->S = Line->S;
-	Box->E = Line->E;
-	Box->W = Line->W;
-	Box->T = Line->T;
-	Box->B = Line->B;
+	
+    type = Line->type;
+
+    /* GV_LINES: retrieve box from spatial index */
+    if (type & GV_LINES) {
+	if (dig_find_line_box(Plus, line, Box) == 0) {
+	    G_warning(_("Unable to determine bbox for feature %d"), line);
+            return -1;
+        }
+        
+	if (!Vect_is_3d(Map)) {
+	    Box->T =  PORT_DOUBLE_MAX;
+	    Box->B = -PORT_DOUBLE_MAX;
+	}
+
+	return 1;
+    }
+
+    /* all other: read line */
+    if (Points == NULL)
+	Points = Vect_new_line_struct();
+
+    Vect_read_line(Map, Points, NULL, line);
+    dig_line_box(Points, Box);
+
+    if (!Vect_is_3d(Map)) {
+	Box->T =  PORT_DOUBLE_MAX;
+	Box->B = -PORT_DOUBLE_MAX;
     }
 
     return 1;
 }
 
+
 /*!
-   \brief Get boundary box of area
+   \brief Get bounding box of area
+
+   Vector map must be open at topological level and built with level
+   >= GV_BUILD_AREAS.
 
    \param Map vector map
    \param area area id
@@ -243,86 +265,97 @@ int Vect_get_line_box(struct Map_info *Map, int line, BOUND_BOX * Box)
 
    \return 1 on success
    \return 0 area is dead
+   \return -1 on error
  */
-int Vect_get_area_box(struct Map_info *Map, int area, BOUND_BOX * Box)
+int Vect_get_area_box(const struct Map_info *Map, int area, struct bound_box *Box)
 {
     struct Plus_head *Plus;
-    P_AREA *Area;
+    struct P_area *Area;
 
-    Plus = &(Map->plus);
+    Plus = (struct Plus_head *) &(Map->plus);
+    if (area < 1 || area > Plus->n_areas) {
+        G_warning(_("Attempt to access area with invalid id (%d)"), area);
+        return -1;
+    }
+
     Area = Plus->Area[area];
 
     if (Area == NULL) {		/* dead */
-	Box->N = 0;
-	Box->S = 0;
-	Box->E = 0;
-	Box->W = 0;
-	Box->T = 0;
-	Box->B = 0;
+	Box->N = Box->S = Box->E = Box->W = Box->T = Box->B = 0. / 0.;
 	return 0;
     }
-    else {
-	Box->N = Area->N;
-	Box->S = Area->S;
-	Box->E = Area->E;
-	Box->W = Area->W;
-	Box->T = Area->T;
-	Box->B = Area->B;
+
+    if (dig_find_area_box(Plus, area, Box) == 0) {
+        G_warning(_("Unable to determine bbox for area %d"), area);
+        return -1;
+    }
+
+    if (!Vect_is_3d(Map)) {
+	Box->T =  PORT_DOUBLE_MAX;
+	Box->B = -PORT_DOUBLE_MAX;
     }
 
     return 1;
 }
 
 /*!
-   \brief Get boundary box of isle
+   \brief Get bounding box of isle
+
+   Vector map must be open at topological level and built with level
+   >= GV_BUILD_AREAS.
 
    \param Map vector map
    \param isle isle id
    \param[out] Box bounding box
 
    \return 1 on success
-   \return 0 isle is dead
+   \return 0 isle is dead / bounding box not found
+   \return -1 on error
  */
-int Vect_get_isle_box(struct Map_info *Map, int isle, BOUND_BOX * Box)
+int Vect_get_isle_box(const struct Map_info *Map, int isle, struct bound_box *Box)
 {
     struct Plus_head *Plus;
-    P_ISLE *Isle;
+    struct P_isle *Isle;
 
-    Plus = &(Map->plus);
+    Plus = (struct Plus_head *) &(Map->plus);
+
+    if (isle < 1 || isle > Plus->n_isles) {
+        G_warning(_("Attempt to access area with invalid id (%d)"), isle);
+        return -1;
+    }
+
     Isle = Plus->Isle[isle];
 
     if (Isle == NULL) {		/* dead */
-	Box->N = 0;
-	Box->S = 0;
-	Box->E = 0;
-	Box->W = 0;
-	Box->T = 0;
-	Box->B = 0;
+	Box->N = Box->S = Box->E = Box->W = Box->T = Box->B = 0. / 0.;
 	return 0;
     }
-    else {
-	Box->N = Isle->N;
-	Box->S = Isle->S;
-	Box->E = Isle->E;
-	Box->W = Isle->W;
-	Box->T = Isle->T;
-	Box->B = Isle->B;
+
+    if (dig_find_isle_box(Plus, isle, Box) == 0) {
+	G_warning(_("Unable to determine bbox for isle %d"), isle);
+        return -1;
+    }
+
+    if (!Vect_is_3d(Map)) {
+	Box->T =  PORT_DOUBLE_MAX;
+	Box->B = -PORT_DOUBLE_MAX;
     }
 
     return 1;
 }
 
 /*!
-   \brief Get boundary box of map
+   \brief Get bounding box of map (all features in the map)
 
    \param Map vector map
    \param[out] Box bouding box
 
-   \return 1 on success, 0 on error
+   \return 1 on success
+   \return 0 on error
  */
-int Vect_get_map_box(struct Map_info *Map, BOUND_BOX * Box)
+int Vect_get_map_box(const struct Map_info *Map, struct bound_box *Box)
 {
-    struct Plus_head *Plus;
+    const struct Plus_head *Plus;
 
     Plus = &(Map->plus);
 
@@ -338,14 +371,15 @@ int Vect_get_map_box(struct Map_info *Map, BOUND_BOX * Box)
 
 
 /*!
-   \brief Copy region Window to Box
+   \brief Copy region window to bounding box
 
    \param Window region structure (raster-based)
    \param[out] Box boundary box (vector-based)
 
-   \return 1 on success, 0 on error
+   \return 1 on success
+   \return 0 on error
  */
-int Vect_region_box(struct Cell_head *Window, BOUND_BOX * Box)
+int Vect_region_box(const struct Cell_head *Window, struct bound_box *Box)
 {
 
     Box->N = Window->north;

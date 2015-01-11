@@ -11,8 +11,8 @@ static dbDriver *driver = NULL;
 static dbString sql, str;
 static char buf[1000];
 
-void write_vect(struct Map_info *Map, char *layer, char *entity, char *label,
-		int arr_size, int type)
+void write_vect(struct Map_info *Map, char *layer, char *entity, char *handle,
+		char *label, int arr_size, int type)
 {
     struct line_cats *Cats;
     int i, field, cat;
@@ -30,6 +30,7 @@ void write_vect(struct Map_info *Map, char *layer, char *entity, char *label,
 	sprintf(buf, "insert into %s (%s"
 		", layer"
 		", entity"
+		", handle"
 		", label" ") values (%d, '", Fi[i]->table, Fi[i]->key, cat);
 
 	if (layer) {
@@ -46,6 +47,17 @@ void write_vect(struct Map_info *Map, char *layer, char *entity, char *label,
 	}
 	strcat(buf, "', '");
 
+	if (handle) {
+	    if (strlen(handle) > 16) {
+		G_warning(_("Entity handle truncated to 16 characters."));
+		handle[16] = 0;
+	    }
+	    db_set_string(&str, handle);
+	    db_double_quote_string(&str);
+	    strcat(buf, db_get_string(&str));
+	}
+	strcat(buf, "', '");
+
 	if (label) {
 	    db_set_string(&str, label);
 	    db_double_quote_string(&str);
@@ -55,7 +67,8 @@ void write_vect(struct Map_info *Map, char *layer, char *entity, char *label,
 
 	db_set_string(&sql, buf);
 	if (db_execute_immediate(driver, &sql) != DB_OK)
-	    G_fatal_error(_("Unable to insert new record: %s"), db_get_string(&sql));
+	    G_fatal_error(_("Unable to insert new record: %s"),
+			  db_get_string(&sql));
 	db_free_string(&sql);
     }
     else
@@ -135,7 +148,7 @@ static int get_field_cat(struct Map_info *Map, char *layer, int *field,
 	x = field_name[0];
     G_str_to_sql(field_name);
     if (x)
-        field_name[0] = x;
+	field_name[0] = x;
 
     for (i = 0; i < num_fields; i++) {
 	/* field name already exists */
@@ -210,6 +223,7 @@ static int get_field_cat(struct Map_info *Map, char *layer, int *field,
     sprintf(buf, "create table %s (cat integer"
 	    ", layer varchar(%d)"
 	    ", entity varchar(%d)"
+	    ", handle varchar(16)"
 	    ", label varchar(%d)"
 	    ")", Fi[i]->table, DXF_BUF_SIZE, DXF_BUF_SIZE, DXF_BUF_SIZE);
     db_set_string(&sql, buf);
@@ -220,12 +234,13 @@ static int get_field_cat(struct Map_info *Map, char *layer, int *field,
 
     if (db_grant_on_table
 	(driver, Fi[i]->table, DB_PRIV_SELECT, DB_GROUP | DB_PUBLIC) != DB_OK)
-	G_fatal_error(_("Unable to grant privileges on table <%s>"), Fi[i]->table);
+	G_fatal_error(_("Unable to grant privileges on table <%s>"),
+		      Fi[i]->table);
     if (db_create_index2(driver, Fi[i]->table, Fi[i]->key) != DB_OK)
 	G_warning(_("Unable to create index for table <%s>, key <%s>"),
 		  Fi[i]->table, Fi[i]->key);
 
-    if (Vect_map_add_dblink(Map, *field, field_name, Fi[i]->table, "cat",
+    if (Vect_map_add_dblink(Map, *field, field_name, Fi[i]->table, GV_KEY_COLUMN,
 			    Fi[i]->database, Fi[i]->driver))
 	G_warning(_("Unable to add database link for vector map <%s>"),
 		  Vect_get_full_name(Map));

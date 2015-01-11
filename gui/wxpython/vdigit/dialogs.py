@@ -27,6 +27,8 @@ import wx.lib.mixins.listctrl as listmix
 from core.gcmd        import RunCommand, GError
 from core.debug       import Debug
 from core.settings    import UserSettings
+from core.utils import _
+
 
 class VDigitCategoryDialog(wx.Dialog, listmix.ColumnSorterMixin):
     def __init__(self, parent, title,
@@ -40,7 +42,7 @@ class VDigitCategoryDialog(wx.Dialog, listmix.ColumnSorterMixin):
         @param cats  directory of lines (layer/categories) - used by vdigit
         @param style dialog style
         """
-        self.parent = parent       # mapdisplay.BufferedWindow class instance
+        self.parent = parent  # map window class instance
         self.digit = parent.digit
         
         # map name
@@ -582,7 +584,7 @@ class VDigitZBulkDialog(wx.Dialog):
         """
         wx.Dialog.__init__(self, parent = parent, id = wx.ID_ANY, title = title, style = style)
 
-        self.parent = parent # mapdisplay.BufferedWindow class instance
+        self.parent = parent  # map window class instance
 
         # panel  = wx.Panel(parent=self, id=wx.ID_ANY)
 
@@ -646,7 +648,7 @@ class VDigitDuplicatesDialog(wx.Dialog):
         wx.Dialog.__init__(self, parent = parent, id = wx.ID_ANY, title = title, style = style,
                            pos = pos)
         
-        self.parent = parent # BufferedWindow
+        self.parent = parent  # map window instance
         self.data = data
         self.winList = []
 

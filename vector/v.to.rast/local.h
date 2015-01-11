@@ -1,20 +1,18 @@
 #ifndef __LOCAL_H__
 #define __LOCAL_H__
 
-#include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/dbmi.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 
-
-#undef DEBUG
 
 /* 2 * PI */
 #define M_2PI 6.283185307179586232
 
-#define ISNULL(x)   G_is_c_null_value (x)
-#define ISDNULL(x)  G_is_d_null_value (x)
-#define SETNULL(x)  G_set_c_null_value (x, 1)
-#define SETDNULL(x) G_set_d_null_value (x, 1)
+#define ISNULL(x)   Rast_is_c_null_value (x)
+#define ISDNULL(x)  Rast_is_d_null_value (x)
+#define SETNULL(x)  Rast_set_c_null_value (x, 1)
+#define SETDNULL(x) Rast_set_d_null_value (x, 1)
 
 /* cell type */
 #define USE_CELL  1
@@ -29,30 +27,34 @@
 
 
 /* do_areas.c */
-int do_areas(struct Map_info *, struct line_pnts *, dbCatValArray *, int, int,
+int do_areas(struct Map_info *, struct line_pnts *, dbCatValArray *, int,
 	     int, double, int);
-int sort_areas(struct Map_info *, struct line_pnts *, int);
+int sort_areas(struct Map_info *, struct line_pnts *, int, struct cat_list *);
 
 /* do_lines.c */
 int do_lines(struct Map_info *, struct line_pnts *, dbCatValArray *, int, int,
-	     int, double, int, int, int *);
+	     struct cat_list *, int, double, int, int, int *, int);
+
+void plot_line_dense(double, double, double, double);
+void setup_plot(double, double, double, double, int (*dot) (int, int));
+
 
 /* raster.c */
-int begin_rasterization(int, int);
+int begin_rasterization(int, int, int);
 int output_raster(int);
 int set_cat(CELL);
 int set_dcat(DCELL);
 
 /* support.c */
-int update_hist(char *, char *, char *, long);
-int update_colors(char *);
-int update_dbcolors(char *, char *, int, char *, int, char *);
-int update_labels(char *, char *, int, char *, int, int, char *);
-int update_cats(char *);
-int update_fcolors(char *raster_name);
+int update_hist(const char *, const char *, long);
+int update_colors(const char *);
+int update_dbcolors(const char *, const char *, int, const char *, int, const char *);
+int update_labels(const char *, const char *, int, const char *, int, int, const char *);
+int update_cats(const char *);
+int update_fcolors(const char *);
 
 /* vect2rast.c */
-int vect_to_rast(char *, char *, int, char *, int, int, double, int, char *,
-		 char *, int);
+int vect_to_rast(const char *, const char *, const char *, const char *, int, int,
+		 double, int, const char *, const char *, int, char *, char *, int);
 
 #endif

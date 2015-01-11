@@ -48,7 +48,10 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, random");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("sampling"));
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("random"));
     module->description =
 	_("Creates a raster map layer and vector point map "
 	  "containing randomly located points.");
@@ -89,8 +92,7 @@ int main(int argc, char *argv[])
     flag.z_geometry->key = 'd';
     flag.z_geometry->description = _("Generate vector points as 3D points");
 
-    flag.notopol_flag = G_define_flag();
-    flag.notopol_flag->key = 'b';
+    flag.notopol_flag = G_define_standard_flag(G_FLG_V_TOPO);
     flag.notopol_flag->description = _("Do not build topology in points mode");
     flag.notopol_flag->guisection = _("Points");
 
@@ -106,7 +108,6 @@ int main(int argc, char *argv[])
     }
     else {
 	myState.docover = FALSE;
-	myState.cmapset = NULL;
 	myState.inrcover = NULL;
     }
     myState.outraster = parm.raster->answer;
@@ -114,26 +115,16 @@ int main(int argc, char *argv[])
     myState.z_geometry = flag.z_geometry->answer;
     myState.notopol = flag.notopol_flag->answer;
 
-    myState.mapset = G_find_cell(myState.inraster, "");
-    if (myState.mapset == NULL)
-	G_fatal_error(_("Raster map <%s> not found"), myState.inraster);
-
-    if (myState.docover == TRUE) {
-	myState.cmapset = G_find_cell(myState.inrcover, "");
-	if (myState.cmapset == NULL)
-	    G_fatal_error(_("Raster map <%s> not found"), myState.inrcover);
-    }
-
     /* If they only want info we ignore the rest */
     get_stats(&myState);
 
     if (flag.info->answer) {
-	G_message("Raster:      %s@%s\n"
-		  "Cover:       %s@%s\n"
+	G_message("Raster:      %s\n"
+		  "Cover:       %s\n"
 		  "Cell Count:  %d\n"
 		  "Null Cells:  %d\n\n",
-		  myState.inraster, myState.mapset, myState.inrcover,
-		  myState.cmapset, (int)myState.nCells, (int)myState.nNulls);
+		  myState.inraster, myState.inrcover,
+		  (int)myState.nCells, (int)myState.nNulls);
 
 	exit(EXIT_SUCCESS);
     }
@@ -141,16 +132,6 @@ int main(int argc, char *argv[])
     if (!(parm.raster->answer || parm.sites->answer))
 	G_fatal_error(_("Note: one (or both) of %s and %s must be specified"),
 		      parm.raster->key, parm.sites->key);
-
-    if (myState.outraster)
-	if (G_legal_filename(myState.outraster) < 0)
-	    G_fatal_error(_("<%s> is an illegal file name"),
-			  myState.outraster);
-
-    if (myState.outvector)
-	if (G_legal_filename(myState.outvector) < 0)
-	    G_fatal_error(_("<%s> is an illegal file name"),
-			  myState.outvector);
 
     /* look for n[%] */
     percent = has_percent(parm.npoints->answer);

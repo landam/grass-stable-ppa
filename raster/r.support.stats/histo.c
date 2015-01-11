@@ -17,6 +17,7 @@
 
 #include <stdlib.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 
 
 /* 
@@ -24,7 +25,7 @@
  *
  * RETURN: 0 on success / 1 on failure
  */
-int do_histogram(char *name, char *mapset)
+int do_histogram(const char *name)
 {
     CELL *cell;
     struct Cell_head cellhd;
@@ -33,35 +34,32 @@ int do_histogram(char *name, char *mapset)
     int row;
     int fd;
 
-    if (G_get_cellhd(name, mapset, &cellhd) < 0)
-	return 1;
+    Rast_get_cellhd(name, "", &cellhd);
 
-    G_set_window(&cellhd);
-    if ((fd = G_open_cell_old(name, mapset)) < 0)
-	return 1;
+    Rast_set_window(&cellhd);
+    fd = Rast_open_old(name, "");
 
-    nrows = G_window_rows();
-    ncols = G_window_cols();
-    cell = G_allocate_cell_buf();
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
+    cell = Rast_allocate_c_buf();
 
-    G_init_cell_stats(&statf);
+    Rast_init_cell_stats(&statf);
 
     /* Update statistics for each row */
     for (row = 0; row < nrows; row++) {
 	G_percent(row, nrows, 2);
 
-	if (G_get_map_row_nomask(fd, cell, row) < 0)
-	    break;
+	Rast_get_c_row_nomask(fd, cell, row);
 
-	G_update_cell_stats(cell, ncols, &statf);
+	Rast_update_cell_stats(cell, ncols, &statf);
     }
 
     /* Write histogram if it made it through the loop */
     if (row == nrows)
-	G_write_histogram_cs(name, &statf);
+	Rast_write_histogram_cs(name, &statf);
 
-    G_free_cell_stats(&statf);
-    G_close_cell(fd);
+    Rast_free_cell_stats(&statf);
+    Rast_close(fd);
     G_free(cell);
 
     if (row == nrows)

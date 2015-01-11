@@ -3,24 +3,36 @@ MODULE_TOPDIR = ../..
 PGM=ps.map
 PROLOG=$(ETC)/paint/prolog.ps
 
-LIBES     = $(VECTLIB) $(GPROJLIB) $(SYMBLIB) $(GISLIB) $(DATETIMELIB) $(IMAGERYLIB) $(GMATHLIB)
-DEPENDENCIES = $(VECTDEP) $(SYMBDEP) $(GISDEP) $(DATETIDEP) $(IMAGERYDEP) $(GMATHDEP) \
-               colortable.h group.h labels.h map_info.h ps_info.h vector.h \
-               comment.h header.h local_proto.h
+LIBES = $(GPROJLIB) $(SYMBLIB) $(IMAGERYLIB) $(VECTORLIB) $(DBMILIB) $(RASTERLIB) $(GISLIB) $(MATHLIB)
+DEPENDENCIES = $(GPROJDEP) $(SYMBDEP) $(IMAGERYDEP) $(VECTORDEP) $(DBMIDEP) $(RASTERDEP) $(GISDEP)
 
 EXTRA_INC = $(VECT_INC) $(PROJINC)
 EXTRA_CFLAGS = $(VECT_CFLAGS)
- 
+
 include $(MODULE_TOPDIR)/include/Make/Module.make
 
-default: cmd $(PROLOG) patt
+SRCPAT := $(wildcard patterns/*.eps)
+DSTPAT := $(patsubst patterns/%.eps,$(ETC)/paint/patterns/%.eps,$(SRCPAT))
+SRCDEC := $(wildcard decorations/*.eps)
+DSTDEC := $(patsubst decorations/%.eps,$(ETC)/paint/decorations/%.eps,$(SRCDEC))
 
-$(PROLOG): prolog.ps
-	$(MKDIR) $(ETC)/paint
-	$(INSTALL_DATA) prolog.ps $(PROLOG)
 
-patt:
-	$(MKDIR) $(ETC)/paint/patterns/
-	$(INSTALL_DATA) patterns/*.eps $(ETC)/paint/patterns/
-	$(MKDIR) $(ETC)/paint/decorations/
-	$(INSTALL_DATA) decorations/*.eps $(ETC)/paint/decorations/
+default: cmd $(PROLOG) $(DSTPAT) $(DSTDEC)
+
+$(PROLOG): prolog.ps | $(ETC)/paint
+	$(INSTALL_DATA) $< $@
+
+$(ETC)/paint/patterns/%.eps: patterns/%.eps | $(ETC)/paint/patterns
+	$(INSTALL_DATA) $< $@
+
+$(ETC)/paint/decorations/%.eps: decorations/%.eps | $(ETC)/paint/decorations
+	$(INSTALL_DATA) $< $@
+
+$(ETC)/paint:
+	$(MKDIR) $@
+
+$(ETC)/paint/patterns: | $(ETC)/paint
+	$(MKDIR) $@
+
+$(ETC)/paint/decorations: | $(ETC)/paint
+	$(MKDIR) $@

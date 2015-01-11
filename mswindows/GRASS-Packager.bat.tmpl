@@ -3,7 +3,7 @@ rem Self Contained GRASS Automated Packager
 rem -----------------------------------------------------------------------------------------------------------------------
 rem Edited by: Marco Pasetti
 rem Revised for OSGeo4W by: Colin Nielsen, Helmut Kudrnovsky, and Martin Landa
-rem Last Update: $Id: GRASS-Packager.bat.tmpl 57694 2013-09-15 12:04:29Z martinl $
+rem Last Update: $Id: GRASS-Packager.bat.tmpl 57639 2013-09-11 15:53:53Z martinl $
 rem -----------------------------------------------------------------------------------------------------------------------
 
 @echo off
@@ -54,6 +54,14 @@ xcopy %OSGEO4W_PKG_DIR%\bin\gdalplugins\* %PACKAGE_DIR%\extrabin\gdalplugins /S/
 del %PACKAGE_DIR%\extrabin\apt*
 del %PACKAGE_DIR%\extrabin\msvcp*
 del %PACKAGE_DIR%\extrabin\msvcr*
+
+@echo.
+@echo -----------------------------------------------------------------------------------------------------------------------
+@echo Copy 'Windows batchfiles for use with R' (GRASS-R-integration) from source to PACKAGE_DIR\extrabin
+@echo -----------------------------------------------------------------------------------------------------------------------
+@echo.
+
+copy %OSGEO4W_PKG_DIR%\usr\src\grass_trunk\mswindows\external\rbatch\* %PACKAGE_DIR%\extrabin
 
 @echo.
 @echo -----------------------------------------------------------------------------------------------------------------------

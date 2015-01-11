@@ -4,489 +4,489 @@
 #include <stdlib.h>
 #include <math.h>
 #include <grass/gis.h>
-/* #include <grass/site.h> */
+#include <grass/raster.h>
 #include <grass/bitmap.h>
 #include <grass/linkm.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 
 #include <grass/waterglobs.h>
 
 
+static void output_walker_as_vector(int tt_minutes, int ndigit, struct TimeStamp *timestamp);
+
+/* This function was added by Soeren 8. Mar 2011     */
+/* It replaces the site walker output implementation */
+/* Only the 3d coordinates of the walker are stored. */
+void output_walker_as_vector(int tt_minutes, int ndigit, struct TimeStamp *timestamp)
+{
+    char buf[GNAME_MAX + 10];
+    char *outwalk_time = NULL;
+    double x, y, z;
+    struct Map_info Out;
+    struct line_pnts *Points;
+    struct line_cats *Cats;
+    int i;
+
+    if (outwalk != NULL) {
+
+	/* In case of time series we extent the output name with the time value */
+	if (ts == 1) {
+	    G_snprintf(buf, sizeof(buf), "%s_%.*d", outwalk, ndigit, tt_minutes);
+	    outwalk_time = G_store(buf);
+	    Vect_open_new(&Out, outwalk_time, WITH_Z);
+	    G_message("Writing %i walker into vector file %s", nstack, outwalk_time);
+	}
+	else {
+	    Vect_open_new(&Out, outwalk, WITH_Z);
+	    G_message("Writing %i walker into vector file %s", nstack, outwalk);
+	}
+
+	Points = Vect_new_line_struct();
+	Cats = Vect_new_cats_struct();
+
+	for (i = 0; i < nstack; i++) {
+	    x = stack[i][0];
+	    y = stack[i][1];
+	    z = stack[i][2];
+
+	    Vect_reset_line(Points);
+	    Vect_reset_cats(Cats);
+			    
+	    Vect_cat_set(Cats, 1, i + 1);
+	    Vect_append_point(Points, x, y, z);
+	    Vect_write_line(&Out, GV_POINT, Points, Cats);
+	}
+	/* Close vector file */
+        Vect_close(&Out);
+                
+        Vect_destroy_line_struct(Points);
+        Vect_destroy_cats_struct(Cats);
+        if (ts == 1)
+            G_write_vector_timestamp(outwalk_time, "1", timestamp);
+        else
+            G_write_vector_timestamp(outwalk, "1", timestamp);
+    }
+    
+    return;
+}
+
+/* Soeren 8. Mar 2011 TODO: 
+ * This function needs to be refractured and splittet into smaller parts */
 int output_data(int tt, double ft)
 {
 
-    FCELL *cell6, *cell7, *cell8;
-    FCELL *cell14, *cell15, *cell16;
-    int fd6, fd7, fd8;
-    int fd14, fd15, fd16;
+    FCELL *depth_cell, *disch_cell, *err_cell;
+    FCELL *conc_cell, *flux_cell, *erdep_cell;
+    int depth_fd, disch_fd, err_fd;
+    int conc_fd, flux_fd, erdep_fd;
     int i, iarc, j;
     float gsmax = 0, dismax = 0., gmax = 0., ermax = -1.e+12, ermin = 1.e+12;
     struct Colors colors;
     struct History hist, hist1;	/* hist2, hist3, hist4, hist5 */
+    struct TimeStamp timestamp;
     char *depth0 = NULL, *disch0 = NULL, *err0 = NULL;
     char *conc0 = NULL, *flux0 = NULL;
-/*    char *erdep0 = NULL, *outwalk0 = NULL; */
     char *erdep0 = NULL;
-    char *mapst = NULL;
+    const char *mapst = NULL;
     char *type;
     char buf[GNAME_MAX + 10];
+    char timestamp_buf[15];
     int ndigit;
+    int timemin;
+    int tt_minutes;
     FCELL dat1, dat2;
     float a1, a2;
-/*    Site_head walkershead;
-    Site *sd;
-*/
 
-
+    timemin = (int)(timesec / 60. + 0.5);
     ndigit = 2;
-    /* more compact but harder to read:
-       ndigit = (int)floor(log10(timesec)) + 2 */
-    if (timesec >= 10)
+    /* more compact but harder to read: 
+	ndigit = (int)floor(log10(timesec)) + 2 */
+    if (timemin >= 100)
 	ndigit = 3;
-    if (timesec >= 100)
+    if (timemin >= 1000)
 	ndigit = 4;
-    if (timesec >= 1000)
+    if (timemin >= 10000)
 	ndigit = 5;
-    if (timesec >= 10000)
-	ndigit = 6;
 
-/*
-    if (outwalk != NULL) {
+    /* Convert to minutes */
+    tt_minutes = (int)(tt / 60. + 0.5);
+
+    /* Create timestamp */
+    sprintf(timestamp_buf, "%d minutes", tt_minutes);
+    G_scan_timestamp(&timestamp, timestamp_buf);
+
+    /* Write the output walkers */
+    output_walker_as_vector(tt_minutes, ndigit, &timestamp);
+
+    Rast_set_window(&cellhd);
+
+    if (my != Rast_window_rows())
+	G_fatal_error("OOPS: rows changed from %d to %d", mx,
+		      Rast_window_rows());
+    if (mx != Rast_window_cols())
+	G_fatal_error("OOPS: cols changed from %d to %d", my,
+		      Rast_window_cols());
+
+    if (depth) {
+	depth_cell = Rast_allocate_f_buf();
 	if (ts == 1) {
-	    sprintf(buf, "%s%.*d", outwalk, ndigit, tt);
-	    outwalk0 = G_store(buf);
-	    fdoutwalk = G_fopen_sites_new(outwalk0);
-	}
-	else
-	    fdoutwalk = G_fopen_sites_new(outwalk);
-
-	if (fdoutwalk == NULL)
-	    G_fatal_error("Cannot open %s", outwalk);
-	else {
-	    char buf[GNAME_MAX + 40];
-
-	    if (NULL == (sd = G_site_new_struct(-1, 2, 0, 1)))
-		G_fatal_error("memory allocation failed for site");
-
-	    if (ts == 1)
-		walkershead.name = outwalk0;
-	    else
-		walkershead.name = outwalk;
-
-	    sprintf(buf, "output walkers of %s [raster]", depth);
-	    walkershead.desc = G_store(buf);
-	    walkershead.time = NULL;
-	    walkershead.stime = NULL;
-	    walkershead.labels = NULL;
-	    walkershead.form = NULL;
-
-	    G_site_put_head(fdoutwalk, &walkershead);
-
-	    for (i = 0; i < nstack; i++) {
-		sd->east = (float)stack[i][1];
-		sd->north = (float)stack[i][2];
-		sd->fcat = (float)stack[i][3];
-		G_site_put(fdoutwalk, sd);
-	    }
-	}
-    }
-*/
-    if (depth != NULL) {
-	cell6 = G_allocate_f_raster_buf();
-	if (ts == 1) {
-	    sprintf(buf, "%s.%.*d", depth, ndigit, tt);
+	    G_snprintf(buf, sizeof(buf), "%s.%.*d", depth, ndigit, tt_minutes);
 	    depth0 = G_store(buf);
-	    fd6 = G_open_fp_cell_new(depth0);
+	    depth_fd = Rast_open_fp_new(depth0);
 	}
 	else
-	    fd6 = G_open_fp_cell_new(depth);
-	if (fd6 < 0)
-	    G_fatal_error(_("Cannot create raster map <%s>"), depth);
+	    depth_fd = Rast_open_fp_new(depth);
     }
 
-    if (disch != NULL) {
-	cell7 = G_allocate_f_raster_buf();
+    if (disch) {
+	disch_cell = Rast_allocate_f_buf();
 	if (ts == 1) {
-	    sprintf(buf, "%s.%.*d", disch, ndigit, tt);
+	    G_snprintf(buf, sizeof(buf),"%s.%.*d", disch, ndigit, tt_minutes);
 	    disch0 = G_store(buf);
-	    fd7 = G_open_fp_cell_new(disch0);
+	    disch_fd = Rast_open_fp_new(disch0);
 	}
 	else
-	    fd7 = G_open_fp_cell_new(disch);
-	if (fd7 < 0)
-	    G_fatal_error(_("Cannot create raster map <%s>"), disch);
+	    disch_fd = Rast_open_fp_new(disch);
     }
 
-    if (err != NULL) {
-	cell8 = G_allocate_f_raster_buf();
+    if (err) {
+	err_cell = Rast_allocate_f_buf();
 	if (ts == 1) {
-	    sprintf(buf, "%s.%.*d", err, ndigit, tt);
+	    G_snprintf(buf, sizeof(buf), "%s.%.*d", err, ndigit, tt_minutes);
 	    err0 = G_store(buf);
-	    fd8 = G_open_fp_cell_new(err0);
+	    err_fd = Rast_open_fp_new(err0);
 	}
 	else
-	    fd8 = G_open_fp_cell_new(err);
-
-	if (fd8 < 0)
-	    G_fatal_error(_("Cannot create raster map <%s>"), err);
+	    err_fd = Rast_open_fp_new(err);
     }
 
-
-    if (conc != NULL) {
-	cell14 = G_allocate_f_raster_buf();
+    if (conc) {
+	conc_cell = Rast_allocate_f_buf();
 	if (ts == 1) {
-	    sprintf(buf, "%s.%.*d", conc, ndigit, tt);
+	    G_snprintf(buf, sizeof(buf), "%s.%.*d", conc, ndigit, tt_minutes);
 	    conc0 = G_store(buf);
-	    fd14 = G_open_fp_cell_new(conc0);
+	    conc_fd = Rast_open_fp_new(conc0);
 	}
 	else
-	    fd14 = G_open_fp_cell_new(conc);
-
-	if (fd14 < 0)
-	    G_fatal_error(_("Cannot create raster map <%s>"), conc);
+	    conc_fd = Rast_open_fp_new(conc);
     }
 
-    if (flux != NULL) {
-	cell15 = G_allocate_f_raster_buf();
+    if (flux) {
+	flux_cell = Rast_allocate_f_buf();
 	if (ts == 1) {
-	    sprintf(buf, "%s.%.*d", flux, ndigit, tt);
+	    G_snprintf(buf, sizeof(buf), "%s.%.*d", flux, ndigit, tt_minutes);
 	    flux0 = G_store(buf);
-	    fd15 = G_open_fp_cell_new(flux0);
+	    flux_fd = Rast_open_fp_new(flux0);
 	}
 	else
-	    fd15 = G_open_fp_cell_new(flux);
-
-	if (fd15 < 0)
-	    G_fatal_error(_("Cannot create raster map <%s>"), flux);
+	    flux_fd = Rast_open_fp_new(flux);
     }
 
-    if (erdep != NULL) {
-	cell16 = G_allocate_f_raster_buf();
+    if (erdep) {
+	erdep_cell = Rast_allocate_f_buf();
 	if (ts == 1) {
-	    sprintf(buf, "%s.%.*d", erdep, ndigit, tt);
+	    G_snprintf(buf, sizeof(buf), "%s.%.*d", erdep, ndigit, tt_minutes);
 	    erdep0 = G_store(buf);
-	    fd16 = G_open_fp_cell_new(erdep0);
+	    erdep_fd = Rast_open_fp_new(erdep0);
 	}
 	else
-	    fd16 = G_open_fp_cell_new(erdep);
-
-	if (fd16 < 0)
-	    G_fatal_error(_("Cannot create raster map <%s>"), erdep);
+	    erdep_fd = Rast_open_fp_new(erdep);
     }
-
-
-    if (G_set_window(&cellhd) < 0)
-	exit(3);
-
-    if (my != G_window_rows())
-	G_fatal_error("OOPS: rows changed from %d to %d\n", mx,
-		      G_window_rows());
-    if (mx != G_window_cols())
-	G_fatal_error("OOPS: cols changed from %d to %d\n", my,
-		      G_window_cols());
 
     for (iarc = 0; iarc < my; iarc++) {
 	i = my - iarc - 1;
-	if (depth != NULL) {
+	if (depth) {
 	    for (j = 0; j < mx; j++) {
 		if (zz[i][j] == UNDEF || gama[i][j] == UNDEF)
-		    G_set_f_null_value(cell6 + j, 1);
+		    Rast_set_f_null_value(depth_cell + j, 1);
 		else {
 		    a1 = pow(gama[i][j], 3. / 5.);
-		    cell6[j] = (FCELL) a1;	/* add conv? */
+		    depth_cell[j] = (FCELL) a1;	/* add conv? */
 		    gmax = amax1(gmax, a1);
 		}
 	    }
-	    G_put_f_raster_row(fd6, cell6);
+	    Rast_put_f_row(depth_fd, depth_cell);
 	}
 
-	if (disch != NULL) {
+	if (disch) {
 	    for (j = 0; j < mx; j++) {
 		if (zz[i][j] == UNDEF || gama[i][j] == UNDEF ||
 		    cchez[i][j] == UNDEF)
-		    G_set_f_null_value(cell7 + j, 1);
+		    Rast_set_f_null_value(disch_cell + j, 1);
 		else {
 		    a2 = step * gama[i][j] * cchez[i][j];	/* cchez incl. sqrt(sinsl) */
-		    cell7[j] = (FCELL) a2;	/* add conv? */
+		    disch_cell[j] = (FCELL) a2;	/* add conv? */
 		    dismax = amax1(dismax, a2);
 		}
 	    }
-	    G_put_f_raster_row(fd7, cell7);
+	    Rast_put_f_row(disch_fd, disch_cell);
 	}
 
-	if (err != NULL) {
+	if (err) {
 	    for (j = 0; j < mx; j++) {
 		if (zz[i][j] == UNDEF || gammas[i][j] == UNDEF)
-		    G_set_f_null_value(cell8 + j, 1);
+		    Rast_set_f_null_value(err_cell + j, 1);
 		else {
-		    cell8[j] = (FCELL) gammas[i][j];
+		    err_cell[j] = (FCELL) gammas[i][j];
 		    gsmax = amax1(gsmax, gammas[i][j]);	/* add conv? */
 		}
 	    }
-	    G_put_f_raster_row(fd8, cell8);
+	    Rast_put_f_row(err_fd, err_cell);
 	}
 
-
-	if (conc != NULL) {
+	if (conc) {
 	    for (j = 0; j < mx; j++) {
 		if (zz[i][j] == UNDEF || gama[i][j] == UNDEF)
-		    G_set_f_null_value(cell14 + j, 1);
+		    Rast_set_f_null_value(conc_cell + j, 1);
 		else {
-		    cell14[j] = (FCELL) gama[i][j];
+		    conc_cell[j] = (FCELL) gama[i][j];
 		    /*      gsmax = amax1(gsmax, gama[i][j]); */
 		}
 	    }
-	    G_put_f_raster_row(fd14, cell14);
+	    Rast_put_f_row(conc_fd, conc_cell);
 	}
 
-
-	if (flux != NULL) {
+	if (flux) {
 	    for (j = 0; j < mx; j++) {
 		if (zz[i][j] == UNDEF || gama[i][j] == UNDEF ||
 		    slope[i][j] == UNDEF)
-		    G_set_f_null_value(cell15 + j, 1);
+		    Rast_set_f_null_value(flux_cell + j, 1);
 		else {
 		    a2 = gama[i][j] * slope[i][j];
-		    cell15[j] = (FCELL) a2;
+		    flux_cell[j] = (FCELL) a2;
 		    dismax = amax1(dismax, a2);
 		}
 	    }
-	    G_put_f_raster_row(fd15, cell15);
+	    Rast_put_f_row(flux_fd, flux_cell);
 	}
 
-
-	if (erdep != NULL) {
+	if (erdep) {
 	    for (j = 0; j < mx; j++) {
 		if (zz[i][j] == UNDEF || er[i][j] == UNDEF)
-		    G_set_f_null_value(cell16 + j, 1);
+		    Rast_set_f_null_value(erdep_cell + j, 1);
 		else {
-		    cell16[j] = (FCELL) er[i][j];
+		    erdep_cell[j] = (FCELL) er[i][j];
 		    ermax = amax1(ermax, er[i][j]);
 		    ermin = amin1(ermin, er[i][j]);
 		}
 	    }
-	    G_put_f_raster_row(fd16, cell16);
+	    Rast_put_f_row(erdep_fd, erdep_cell);
 	}
-
     }
 
-    if (depth != NULL)
-	G_close_cell(fd6);
-    if (disch != NULL)
-	G_close_cell(fd7);
-    if (err != NULL)
-	G_close_cell(fd8);
-    if (conc != NULL)
-	G_close_cell(fd14);
-    if (flux != NULL)
-	G_close_cell(fd15);
-    if (erdep != NULL)
-	G_close_cell(fd16);
+    if (depth)
+	Rast_close(depth_fd);
+    if (disch)
+	Rast_close(disch_fd);
+    if (err)
+	Rast_close(err_fd);
+    if (conc)
+	Rast_close(conc_fd);
+    if (flux)
+	Rast_close(flux_fd);
+    if (erdep)
+	Rast_close(erdep_fd);
 
-    if (depth != NULL) {
+    if (depth) {
 
-	G_init_colors(&colors);
+	Rast_init_colors(&colors);
 
 	dat1 = (FCELL) 0.;
 	dat2 = (FCELL) 0.001;
-	G_add_f_raster_color_rule(&dat1, 255, 255, 255, &dat2, 255, 255, 0,
+	Rast_add_f_color_rule(&dat1, 255, 255, 255, &dat2, 255, 255, 0,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) 0.05;
-	G_add_f_raster_color_rule(&dat1, 255, 255, 0, &dat2, 0, 255, 255,
+	Rast_add_f_color_rule(&dat1, 255, 255, 0, &dat2, 0, 255, 255,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) 0.1;
-	G_add_f_raster_color_rule(&dat1, 0, 255, 255, &dat2, 0, 127, 255,
+	Rast_add_f_color_rule(&dat1, 0, 255, 255, &dat2, 0, 127, 255,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) 0.5;
-	G_add_f_raster_color_rule(&dat1, 0, 127, 255, &dat2, 0, 0, 255,
+	Rast_add_f_color_rule(&dat1, 0, 127, 255, &dat2, 0, 0, 255,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) gmax;
-	G_add_f_raster_color_rule(&dat1, 0, 0, 255, &dat2, 0, 0, 0, &colors);
+	Rast_add_f_color_rule(&dat1, 0, 0, 255, &dat2, 0, 0, 0, &colors);
 
 
 	if (ts == 1) {
 	    if ((mapst = G_find_file("fcell", depth0, "")) == NULL)
 		G_fatal_error(_("FP raster map <%s> not found"), depth0);
-	    G_write_colors(depth0, mapst, &colors);
-	    G_quantize_fp_map_range(depth0, mapst, 0., (FCELL) gmax, 0,
+	    Rast_write_colors(depth0, mapst, &colors);
+	    Rast_quantize_fp_map_range(depth0, mapst, 0., (FCELL) gmax, 0,
 				    (CELL) gmax);
-	    G_free_colors(&colors);
+	    Rast_free_colors(&colors);
 	}
 	else {
 	    if ((mapst = G_find_file("fcell", depth, "")) == NULL)
 		G_fatal_error(_("FP raster map <%s> not found"), depth);
-	    G_write_colors(depth, mapst, &colors);
-	    G_quantize_fp_map_range(depth, mapst, 0., (FCELL) gmax, 0,
+	    Rast_write_colors(depth, mapst, &colors);
+	    Rast_quantize_fp_map_range(depth, mapst, 0., (FCELL) gmax, 0,
 				    (CELL) gmax);
-	    G_free_colors(&colors);
+	    Rast_free_colors(&colors);
 	}
-
     }
 
-    if (disch != NULL) {
+    if (disch) {
 
-	G_init_colors(&colors);
+	Rast_init_colors(&colors);
 
 	dat1 = (FCELL) 0.;
 	dat2 = (FCELL) 0.0005;
-	G_add_f_raster_color_rule(&dat1, 255, 255, 255, &dat2, 255, 255, 0,
+	Rast_add_f_color_rule(&dat1, 255, 255, 255, &dat2, 255, 255, 0,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) 0.005;
-	G_add_f_raster_color_rule(&dat1, 255, 255, 0, &dat2, 0, 255, 255,
+	Rast_add_f_color_rule(&dat1, 255, 255, 0, &dat2, 0, 255, 255,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) 0.05;
-	G_add_f_raster_color_rule(&dat1, 0, 255, 255, &dat2, 0, 127, 255,
+	Rast_add_f_color_rule(&dat1, 0, 255, 255, &dat2, 0, 127, 255,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) 0.1;
-	G_add_f_raster_color_rule(&dat1, 0, 127, 255, &dat2, 0, 0, 255,
+	Rast_add_f_color_rule(&dat1, 0, 127, 255, &dat2, 0, 0, 255,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) dismax;
-	G_add_f_raster_color_rule(&dat1, 0, 0, 255, &dat2, 0, 0, 0, &colors);
+	Rast_add_f_color_rule(&dat1, 0, 0, 255, &dat2, 0, 0, 0, &colors);
 
 	if (ts == 1) {
 	    if ((mapst = G_find_file("cell", disch0, "")) == NULL)
 		G_fatal_error(_("Raster map <%s> not found"), disch0);
-	    G_write_colors(disch0, mapst, &colors);
-	    G_quantize_fp_map_range(disch0, mapst, 0., (FCELL) dismax, 0,
+	    Rast_write_colors(disch0, mapst, &colors);
+	    Rast_quantize_fp_map_range(disch0, mapst, 0., (FCELL) dismax, 0,
 				    (CELL) dismax);
-	    G_free_colors(&colors);
+	    Rast_free_colors(&colors);
 	}
 	else {
 
 	    if ((mapst = G_find_file("cell", disch, "")) == NULL)
 		G_fatal_error(_("Raster map <%s> not found"), disch);
-	    G_write_colors(disch, mapst, &colors);
-	    G_quantize_fp_map_range(disch, mapst, 0., (FCELL) dismax, 0,
+	    Rast_write_colors(disch, mapst, &colors);
+	    Rast_quantize_fp_map_range(disch, mapst, 0., (FCELL) dismax, 0,
 				    (CELL) dismax);
-	    G_free_colors(&colors);
+	    Rast_free_colors(&colors);
 	}
     }
 
-    if (flux != NULL) {
+    if (flux) {
 
-	G_init_colors(&colors);
+	Rast_init_colors(&colors);
 
 	dat1 = (FCELL) 0.;
 	dat2 = (FCELL) 0.001;
-	G_add_f_raster_color_rule(&dat1, 255, 255, 255, &dat2, 255, 255, 0,
+	Rast_add_f_color_rule(&dat1, 255, 255, 255, &dat2, 255, 255, 0,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) 0.1;
-	G_add_f_raster_color_rule(&dat1, 255, 255, 0, &dat2, 255, 127, 0,
+	Rast_add_f_color_rule(&dat1, 255, 255, 0, &dat2, 255, 127, 0,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) 1.;
-	G_add_f_raster_color_rule(&dat1, 255, 127, 0, &dat2, 191, 127, 63,
+	Rast_add_f_color_rule(&dat1, 255, 127, 0, &dat2, 191, 127, 63,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) dismax;
-	G_add_f_raster_color_rule(&dat1, 191, 127, 63, &dat2, 0, 0, 0,
+	Rast_add_f_color_rule(&dat1, 191, 127, 63, &dat2, 0, 0, 0,
 				  &colors);
 
 	if (ts == 1) {
 	    if ((mapst = G_find_file("cell", flux0, "")) == NULL)
 		G_fatal_error(_("Raster map <%s> not found"), flux0);
-	    G_write_colors(flux0, mapst, &colors);
-	    G_quantize_fp_map_range(flux0, mapst, 0., (FCELL) dismax, 0,
+	    Rast_write_colors(flux0, mapst, &colors);
+	    Rast_quantize_fp_map_range(flux0, mapst, 0., (FCELL) dismax, 0,
 				    (CELL) dismax);
-	    G_free_colors(&colors);
+	    Rast_free_colors(&colors);
 	}
 	else {
 
 	    if ((mapst = G_find_file("cell", flux, "")) == NULL)
 		G_fatal_error(_("Raster map <%s> not found"), flux);
-	    G_write_colors(flux, mapst, &colors);
-	    G_quantize_fp_map_range(flux, mapst, 0., (FCELL) dismax, 0,
+	    Rast_write_colors(flux, mapst, &colors);
+	    Rast_quantize_fp_map_range(flux, mapst, 0., (FCELL) dismax, 0,
 				    (CELL) dismax);
-	    G_free_colors(&colors);
+	    Rast_free_colors(&colors);
 	}
     }
 
+    if (erdep) {
 
-    if (erdep != NULL) {
-
-	G_init_colors(&colors);
+	Rast_init_colors(&colors);
 
 	dat1 = (FCELL) ermax;
 	dat2 = (FCELL) 0.1;
-	G_add_f_raster_color_rule(&dat1, 0, 0, 0, &dat2, 0, 0, 255, &colors);
+	Rast_add_f_color_rule(&dat1, 0, 0, 0, &dat2, 0, 0, 255, &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) 0.01;
-	G_add_f_raster_color_rule(&dat1, 0, 0, 255, &dat2, 0, 191, 191,
+	Rast_add_f_color_rule(&dat1, 0, 0, 255, &dat2, 0, 191, 191,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) 0.0001;
-	G_add_f_raster_color_rule(&dat1, 0, 191, 191, &dat2, 170, 255, 255,
+	Rast_add_f_color_rule(&dat1, 0, 191, 191, &dat2, 170, 255, 255,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) 0.;
-	G_add_f_raster_color_rule(&dat1, 170, 255, 255, &dat2, 255, 255, 255,
+	Rast_add_f_color_rule(&dat1, 170, 255, 255, &dat2, 255, 255, 255,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) - 0.0001;
-	G_add_f_raster_color_rule(&dat1, 255, 255, 255, &dat2, 255, 255, 0,
+	Rast_add_f_color_rule(&dat1, 255, 255, 255, &dat2, 255, 255, 0,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) - 0.01;
-	G_add_f_raster_color_rule(&dat1, 255, 255, 0, &dat2, 255, 127, 0,
+	Rast_add_f_color_rule(&dat1, 255, 255, 0, &dat2, 255, 127, 0,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) - 0.1;
-	G_add_f_raster_color_rule(&dat1, 255, 127, 0, &dat2, 255, 0, 0,
+	Rast_add_f_color_rule(&dat1, 255, 127, 0, &dat2, 255, 0, 0,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) ermin;
-	G_add_f_raster_color_rule(&dat1, 255, 0, 0, &dat2, 255, 0, 255,
+	Rast_add_f_color_rule(&dat1, 255, 0, 0, &dat2, 255, 0, 255,
 				  &colors);
 
 	if (ts == 1) {
 	    if ((mapst = G_find_file("cell", erdep0, "")) == NULL)
 		G_fatal_error(_("Raster map <%s> not found"), erdep0);
-	    G_write_colors(erdep0, mapst, &colors);
-	    G_quantize_fp_map_range(erdep0, mapst, (FCELL) ermin,
+	    Rast_write_colors(erdep0, mapst, &colors);
+	    Rast_quantize_fp_map_range(erdep0, mapst, (FCELL) ermin,
 				    (FCELL) ermax, (CELL) ermin,
 				    (CELL) ermax);
-	    G_free_colors(&colors);
+	    Rast_free_colors(&colors);
 
 	    type = "raster";
-	    G_short_history(erdep0, type, &hist1);
-	    G_snprintf(hist1.edhist[0], RECORD_LEN,
-		       "The sediment flux file is %s", flux0);
-	    hist1.edlinecnt = 1;
-	    G_command_history(&hist1);
-	    G_write_history(erdep0, &hist1);
+	    Rast_short_history(erdep0, type, &hist1);
+	    Rast_append_format_history(
+		&hist1, "The sediment flux file is %s", flux0);
+	    Rast_command_history(&hist1);
+	    Rast_write_history(erdep0, &hist1);
 	}
 	else {
 
 	    if ((mapst = G_find_file("cell", erdep, "")) == NULL)
 		G_fatal_error(_("Raster map <%s> not found"), erdep);
-	    G_write_colors(erdep, mapst, &colors);
-	    G_quantize_fp_map_range(erdep, mapst, (FCELL) ermin,
+	    Rast_write_colors(erdep, mapst, &colors);
+	    Rast_quantize_fp_map_range(erdep, mapst, (FCELL) ermin,
 				    (FCELL) ermax, (CELL) ermin,
 				    (CELL) ermax);
-	    G_free_colors(&colors);
+	    Rast_free_colors(&colors);
 
 	    type = "raster";
-	    G_short_history(erdep, type, &hist1);
-	    G_snprintf(hist1.edhist[0], RECORD_LEN,
-		       "The sediment flux file is %s", flux);
-	    hist1.edlinecnt = 1;
-	    G_command_history(&hist1);
-	    G_write_history(erdep, &hist1);
+	    Rast_short_history(erdep, type, &hist1);
+	    Rast_append_format_history(
+		&hist1, "The sediment flux file is %s", flux);
+	    Rast_command_history(&hist1);
+	    Rast_write_history(erdep, &hist1);
 	}
     }
 
     /* history section */
-
-    if (depth != NULL) {
+    if (depth) {
 	type = "raster";
 	if (ts == 0) {
 	    mapst = G_find_file("cell", depth, "");
@@ -494,115 +494,123 @@ int output_data(int tt, double ft)
 		G_warning(_("Raster map <%s> not found"), depth);
 		return -1;
 	    }
-	    G_short_history(depth, type, &hist);
+	    Rast_short_history(depth, type, &hist);
 	}
 	else
-	    G_short_history(depth0, type, &hist);
+	    Rast_short_history(depth0, type, &hist);
 
-	/*    fprintf (stdout, "\n history initiated\n");
-	   fflush(stdout); */
+	Rast_append_format_history(
+	    &hist, "init.walk=%d, maxwalk=%d, remaining walkers=%d",
+	    nwalk, maxwa, nwalka);
+	Rast_append_format_history(
+	    &hist, "duration (sec.)=%d, time-serie iteration=%d",
+	    timesec, tt);
+	Rast_append_format_history(
+	    &hist, "written deltap=%f, mean vel.=%f",
+	    deltap, vmean);
+	Rast_append_format_history(
+	    &hist, "mean source (si)=%e, mean infil=%e",
+	    si0, infmean);
 
-	sprintf(hist.edhist[0],
-		"init.walk=%d, maxwalk=%d, remaining walkers=%d", nwalk,
-		maxwa, nwalka);
-	sprintf(hist.edhist[1], "duration (sec.)=%d, time-serie iteration=%d",
-		timesec, tt);
+	Rast_format_history(&hist, HIST_DATSRC_1, "input files: %s %s %s",
+			    elevin, dxin, dyin);
+	Rast_format_history(&hist, HIST_DATSRC_2, "input files: %s %s %s",
+			    rain, infil, manin);
 
-	sprintf(hist.edhist[2], "written walkers=%d, deltap=%f, mean vel.=%f",
-		lwwfin, deltap, vmean);
-
-	sprintf(hist.edhist[3], "mean source (si)=%e, mean infil=%e", si0,
-		infmean);
-
-	G_snprintf(hist.datsrc_1, RECORD_LEN,
-		   "input files: %s %s %s", elevin, dxin, dyin);
-	G_snprintf(hist.datsrc_2, RECORD_LEN,
-		   "input files: %s %s %s", rain, infil, manin);
-	hist.edlinecnt = 4;
-
-	G_command_history(&hist);
+	Rast_command_history(&hist);
 
 	if (ts == 1)
-	    G_write_history(depth0, &hist);
+	    Rast_write_history(depth0, &hist);
 	else
-	    G_write_history(depth, &hist);
+	    Rast_write_history(depth, &hist);
+
+	if (ts == 1)
+	    G_write_raster_timestamp(depth0, &timestamp);
+	else
+	    G_write_raster_timestamp(depth, &timestamp);
     }
 
-    if (disch != NULL) {
+    if (disch) {
 	type = "raster";
 	if (ts == 0) {
 	    mapst = G_find_file("cell", disch, "");
 	    if (mapst == NULL)
 		G_fatal_error(_("Raster map <%s> not found"), disch);
-	    G_short_history(disch, type, &hist);
+	    Rast_short_history(disch, type, &hist);
 	}
 	else
-	    G_short_history(disch0, type, &hist);
+	    Rast_short_history(disch0, type, &hist);
 
-	/*    fprintf (stdout, "\n history initiated\n");
-	   fflush(stdout); */
+	Rast_append_format_history(
+	    &hist,"init.walkers=%d, maxwalk=%d, rem. walkers=%d",
+	    nwalk, maxwa, nwalka);
+	Rast_append_format_history(
+	    &hist, "duration (sec.)=%d, time-serie iteration=%d",
+	    timesec, tt);
+	Rast_append_format_history(
+	    &hist, "written deltap=%f, mean vel.=%f",
+	    deltap, vmean);
+	Rast_append_format_history(
+	    &hist, "mean source (si)=%e, mean infil=%e",
+	    si0, infmean);
 
-	sprintf(hist.edhist[0],
-		"init.walkers=%d, maxwalk=%d, rem. walkers=%d", nwalk, maxwa,
-		nwalka);
-	sprintf(hist.edhist[1], "duration (sec.)=%d, time-serie iteration=%d",
-		timesec, tt);
+	Rast_format_history(&hist, HIST_DATSRC_1, "input files: %s %s %s",
+			    elevin, dxin, dyin);
+	Rast_format_history(&hist, HIST_DATSRC_2, "input files: %s %s %s",
+			    rain, infil, manin);
 
-	sprintf(hist.edhist[2], "written walkers=%d, deltap=%f, mean vel.=%f",
-		lwwfin, deltap, vmean);
-
-	sprintf(hist.edhist[3], "mean source (si)=%e, mean infil=%e", si0,
-		infmean);
-
-	sprintf(hist.datsrc_1, "input files: %s %s %s", elevin, dxin, dyin);
-	sprintf(hist.datsrc_2, "input files: %s %s %s", rain, infil, manin);
-	hist.edlinecnt = 4;
-
-	G_command_history(&hist);
+	Rast_command_history(&hist);
 
 	if (ts == 1)
-	    G_write_history(disch0, &hist);
+	    Rast_write_history(disch0, &hist);
 	else
-	    G_write_history(disch, &hist);
+	    Rast_write_history(disch, &hist);
+
+	if (ts == 1)
+	    G_write_raster_timestamp(disch0, &timestamp);
+	else
+	    G_write_raster_timestamp(disch, &timestamp);
     }
 
-    if (flux != NULL) {
+    if (flux) {
 	type = "raster";
 	if (ts == 0) {
 	    mapst = G_find_file("cell", flux, "");
 	    if (mapst == NULL)
 		G_fatal_error(_("Raster map <%s> not found"), flux);
-	    G_short_history(flux, type, &hist);
+	    Rast_short_history(flux, type, &hist);
 	}
 	else
-	    G_short_history(flux0, type, &hist);
+	    Rast_short_history(flux0, type, &hist);
 
-	/*    fprintf (stdout, "\n history initiated\n");
-	   fflush(stdout); */
+	Rast_append_format_history(
+	    &hist, "init.walk=%d, maxwalk=%d, remaining walkers=%d",
+	    nwalk, maxwa, nwalka);
+	Rast_append_format_history(
+	    &hist, "duration (sec.)=%d, time-serie iteration=%d",
+	    timesec, tt);
+	Rast_append_format_history(
+	    &hist, "written deltap=%f, mean vel.=%f",
+	    deltap, vmean);
+	Rast_append_format_history(
+	    &hist, "mean source (si)=%f", si0);
 
-	sprintf(hist.edhist[0],
-		"init.walk=%d, maxwalk=%d, remaining walkers=%d", nwalk,
-		maxwa, nwalka);
-	sprintf(hist.edhist[1], "duration (sec.)=%d, time-serie iteration=%d",
-		timesec, tt);
+	Rast_format_history(&hist, HIST_DATSRC_1, "input files: %s %s %s",
+			    wdepth, dxin, dyin);
+	Rast_format_history(&hist, HIST_DATSRC_2, "input files: %s %s %s %s",
+			    manin, detin, tranin, tauin);
 
-	sprintf(hist.edhist[2], "written walkers=%d, deltap=%f, mean vel.=%f",
-		lwwfin, deltap, vmean);
-
-	sprintf(hist.edhist[3], "mean source (si)=%f", si0);
-
-	sprintf(hist.datsrc_1, "input files: %s %s %s", wdepth, dxin, dyin);
-	sprintf(hist.datsrc_2, "input files: %s %s %s %s", manin, detin,
-		tranin, tauin);
-
-	hist.edlinecnt = 4;
-
-	G_command_history(&hist);
+	Rast_command_history(&hist);
 
 	if (ts == 1)
-	    G_write_history(flux0, &hist);
+	    Rast_write_history(flux0, &hist);
 	else
-	    G_write_history(flux, &hist);
+	    Rast_write_history(flux, &hist);
+
+	if (ts == 1)
+	    G_write_raster_timestamp(flux0, &timestamp);
+	else
+	    G_write_raster_timestamp(flux, &timestamp);
     }
 
     return 1;
@@ -612,8 +620,8 @@ int output_data(int tt, double ft)
 int output_et()
 {
 
-    FCELL *cell13, *cell17;
-    int fd13, fd17;
+    FCELL *tc_cell, *et_cell;
+    int tc_fd, et_fd;
     int i, iarc, j;
     float etmax = -1.e+12, etmin = 1.e+12;
     float trc;
@@ -625,138 +633,127 @@ int output_et()
 
     /*   float a1,a2; */
 
+    Rast_set_window(&cellhd);
 
-
-    if (et != NULL) {
-	cell17 = G_allocate_f_raster_buf();
+    if (et) {
+	et_cell = Rast_allocate_f_buf();
 	/* if (ts == 1) {
 	   sprintf(buf, "%s.%.*d", et, ndigit, tt);
 	   et0 = G_store(buf);
-	   fd17 = G_open_fp_cell_new(et0);
+	   et_fd = Rast_open_fp_new(et0);
 	   }
 	   else */
-	fd17 = G_open_fp_cell_new(et);
-
-	if (fd17 < 0)
-	    G_fatal_error(_("Cannot create raster map <%s>"), et);
+	et_fd = Rast_open_fp_new(et);
     }
 
-    if (tc != NULL) {
-	cell13 = G_allocate_f_raster_buf();
+    if (tc) {
+	tc_cell = Rast_allocate_f_buf();
 	/*   if (ts == 1) {
 	   sprintf(buf, "%s.%.*d", tc, ndigit, tt);
 	   tc0 = G_store(buf);
-	   fd13 = G_open_fp_cell_new(tc0);
+	   tc_fd = Rast_open_fp_new(tc0);
 	   }
 	   else */
-	fd13 = G_open_fp_cell_new(tc);
-
-	if (fd13 < 0)
-	    G_fatal_error(_("Cannot create raster map <%s>"), tc);
+	tc_fd = Rast_open_fp_new(tc);
     }
 
-
-    if (G_set_window(&cellhd) < 0)
-	G_fatal_error("G_set_window");
-
-    if (my != G_window_rows())
-	G_fatal_error("OOPS: rows changed from %d to %d\n", mx,
-		      G_window_rows());
-    if (mx != G_window_cols())
-	G_fatal_error("OOPS: cols changed from %d to %d\n", my,
-		      G_window_cols());
+    if (my != Rast_window_rows())
+	G_fatal_error("OOPS: rows changed from %d to %d", mx,
+		      Rast_window_rows());
+    if (mx != Rast_window_cols())
+	G_fatal_error("OOPS: cols changed from %d to %d", my,
+		      Rast_window_cols());
 
     for (iarc = 0; iarc < my; iarc++) {
 	i = my - iarc - 1;
-	if (et != NULL) {
+	if (et) {
 	    for (j = 0; j < mx; j++) {
 		if (zz[i][j] == UNDEF || er[i][j] == UNDEF)
-		    G_set_f_null_value(cell17 + j, 1);
+		    Rast_set_f_null_value(et_cell + j, 1);
 		else {
-		    cell17[j] = (FCELL) er[i][j];	/* add conv? */
+		    et_cell[j] = (FCELL) er[i][j];	/* add conv? */
 		    etmax = amax1(etmax, er[i][j]);
 		    etmin = amin1(etmin, er[i][j]);
 		}
 	    }
-	    G_put_f_raster_row(fd17, cell17);
+	    Rast_put_f_row(et_fd, et_cell);
 	}
 
-	if (tc != NULL) {
+	if (tc) {
 	    for (j = 0; j < mx; j++) {
 		if (zz[i][j] == UNDEF || sigma[i][j] == UNDEF ||
 		    si[i][j] == UNDEF)
-		    G_set_f_null_value(cell13 + j, 1);
+		    Rast_set_f_null_value(tc_cell + j, 1);
 		else {
 		    if (sigma[i][j] == 0.)
 			trc = 0.;
 		    else
 			trc = si[i][j] / sigma[i][j];
-		    cell13[j] = (FCELL) trc;
+		    tc_cell[j] = (FCELL) trc;
 		    /*  gsmax = amax1(gsmax, trc); */
 		}
 	    }
-	    G_put_f_raster_row(fd13, cell13);
+	    Rast_put_f_row(tc_fd, tc_cell);
 	}
     }
 
+    if (tc)
+	Rast_close(tc_fd);
 
-    if (tc != NULL)
-	G_close_cell(fd13);
+    if (et)
+	Rast_close(et_fd);
 
-    if (et != NULL)
-	G_close_cell(fd17);
+    if (et) {
 
-    if (et != NULL) {
-
-	G_init_colors(&colors);
+	Rast_init_colors(&colors);
 
 	dat1 = (FCELL) etmax;
 	dat2 = (FCELL) 0.1;
-	G_add_f_raster_color_rule(&dat1, 0, 0, 0, &dat2, 0, 0, 255, &colors);
+	Rast_add_f_color_rule(&dat1, 0, 0, 0, &dat2, 0, 0, 255, &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) 0.01;
-	G_add_f_raster_color_rule(&dat1, 0, 0, 255, &dat2, 0, 191, 191,
+	Rast_add_f_color_rule(&dat1, 0, 0, 255, &dat2, 0, 191, 191,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) 0.0001;
-	G_add_f_raster_color_rule(&dat1, 0, 191, 191, &dat2, 170, 255, 255,
+	Rast_add_f_color_rule(&dat1, 0, 191, 191, &dat2, 170, 255, 255,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) 0.;
-	G_add_f_raster_color_rule(&dat1, 170, 255, 255, &dat2, 255, 255, 255,
+	Rast_add_f_color_rule(&dat1, 170, 255, 255, &dat2, 255, 255, 255,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) - 0.0001;
-	G_add_f_raster_color_rule(&dat1, 255, 255, 255, &dat2, 255, 255, 0,
+	Rast_add_f_color_rule(&dat1, 255, 255, 255, &dat2, 255, 255, 0,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) - 0.01;
-	G_add_f_raster_color_rule(&dat1, 255, 255, 0, &dat2, 255, 127, 0,
+	Rast_add_f_color_rule(&dat1, 255, 255, 0, &dat2, 255, 127, 0,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) - 0.1;
-	G_add_f_raster_color_rule(&dat1, 255, 127, 0, &dat2, 255, 0, 0,
+	Rast_add_f_color_rule(&dat1, 255, 127, 0, &dat2, 255, 0, 0,
 				  &colors);
 	dat1 = dat2;
 	dat2 = (FCELL) etmin;
-	G_add_f_raster_color_rule(&dat1, 255, 0, 0, &dat2, 255, 0, 255,
+	Rast_add_f_color_rule(&dat1, 255, 0, 0, &dat2, 255, 0, 255,
 				  &colors);
 
 	/*    if (ts == 1) {
 	   if ((mapst = G_find_file("cell", et0, "")) == NULL)
-	   G_fatal_error (_("Raster map <%s> not found"), et0);
-	   G_write_colors(et0, mapst, &colors);
-	   G_quantize_fp_map_range(et0,mapst,(FCELL)etmin,(FCELL)etmax,(CELL)etmin,(CELL)etmax);
-	   G_free_colors(&colors);
+	    G_fatal_error(_("Raster map <%s> not found"), et0);
+	   Rast_write_colors(et0, mapst, &colors);
+	   Rast_quantize_fp_map_range(et0, mapst, (FCELL)etmin, (FCELL)etmax, (CELL)etmin, (CELL)etmax);
+	   Rast_free_colors(&colors);
 	   }
 	   else { */
 
 	if ((mapst = G_find_file("cell", et, "")) == NULL)
 	    G_fatal_error(_("Raster map <%s> not found"), et);
-	G_write_colors(et, mapst, &colors);
-	G_quantize_fp_map_range(et, mapst, (FCELL) etmin, (FCELL) etmax,
+	Rast_write_colors(et, mapst, &colors);
+	Rast_quantize_fp_map_range(et, mapst, (FCELL) etmin, (FCELL) etmax,
 				(CELL) etmin, (CELL) etmax);
-	G_free_colors(&colors);
+	Rast_free_colors(&colors);
 	/*  } */
     }
 

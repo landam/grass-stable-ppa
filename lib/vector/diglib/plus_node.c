@@ -16,7 +16,7 @@
 
 #include <stdlib.h>
 #include <math.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 
 static double dist_squared(double, double, double, double);
@@ -28,6 +28,9 @@ static double dist_squared(double, double, double, double);
  *
  * 'node' must of course already exist space will be alloced to add 'line' to array
  *
+ * Lines are sorted in increasing angle order and
+ * degenerated lines are set to -9 (ignored).
+ * 
  * \param[in] plus pointer to Plus_head structure
  * \param[in] nodeid node id
  * \param[in] lineid line id
@@ -40,12 +43,12 @@ static double dist_squared(double, double, double, double);
  */
 int
 dig_node_add_line(struct Plus_head *plus, int nodeid, int lineid,
-		  struct line_pnts *points, int type)
+		  const struct line_pnts *points, int type)
 {
     register int i, j, nlines;
     float angle;
     int ret;
-    P_NODE *node;
+    struct P_node *node;
 
     G_debug(3, "dig_node_add_line(): node = %d line = %d", nodeid, lineid);
 
@@ -57,32 +60,26 @@ dig_node_add_line(struct Plus_head *plus, int nodeid, int lineid,
     if (ret == -1)
 	return -1;
 
+    angle = -9.;
     if (type & GV_LINES) {
 	if (lineid < 0)
 	    angle = dig_calc_end_angle(points, 0);
 	else
 	    angle = dig_calc_begin_angle(points, 0);
     }
-    else {
-	angle = -9.;
-    }
     G_debug(3, "    angle = %f", angle);
 
-    /* make sure the new angle is less than the empty space at end */
-    node->angles[nlines] = 999.;
-
-    for (i = 0; i <= nlines; i++) {	/* alloced for 1 more */
-	if (angle < node->angles[i]) {
-	    /* make room for insertion */
-	    for (j = nlines - 1; j >= i; j--) {
-		node->angles[j + 1] = node->angles[j];
-		node->lines[j + 1] = node->lines[j];
-	    }
-	    node->angles[i] = angle;
-	    node->lines[i] = lineid;
+    i = nlines;
+    while (i > 0) {
+	if (angle >= node->angles[i - 1])
 	    break;
-	}
+	node->angles[i] = node->angles[i - 1];
+	node->lines[i] = node->lines[i - 1];
+
+	i--;
     }
+    node->angles[i] = angle;
+    node->lines[i] = lineid;
 
     node->n_lines++;
 
@@ -106,7 +103,7 @@ dig_node_add_line(struct Plus_head *plus, int nodeid, int lineid,
 int dig_add_node(struct Plus_head *plus, double x, double y, double z)
 {
     int nnum;
-    P_NODE *node;
+    struct P_node *node;
 
     /* First look if we have space in array of pointers to nodes
      *  and reallocate if necessary */
@@ -154,7 +151,7 @@ int dig_which_node(struct Plus_head *plus, double x, double y, double thresh)
     register int have_match;
     int winner;
     double least_dist, dist;
-    P_NODE *node;
+    struct P_node *node;
 
     first_time = 1;
     have_match = 0;
@@ -202,7 +199,7 @@ int dig_which_node(struct Plus_head *plus, double x, double y, double thresh)
 float dig_node_line_angle(struct Plus_head *plus, int nodeid, int lineid)
 {
     int i, nlines;
-    P_NODE *node;
+    struct P_node *node;
 
     G_debug(3, "dig_node_line_angle: node = %d line = %d", nodeid, lineid);
 

@@ -9,10 +9,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/colors.h>
+#include <grass/raster.h>
+#include <grass/vector.h>
 
 #include "vector.h"
-#include "ps_info.h"
 #include "local_proto.h"
 
 #define KEY(x) (strcmp(key,x)==0)
@@ -47,7 +48,6 @@ int read_vareas(char *name, char *mapset)
     sprintf(fullname, "%s in %s", name, mapset);
 
     Vect_set_open_level(2);
-    Vect_set_fatal_error(GV_FATAL_PRINT);
     if (2 > Vect_open_old(&Map, name, mapset)) {
 	error(fullname, "", "can't open vector map");
 	gobble_input();

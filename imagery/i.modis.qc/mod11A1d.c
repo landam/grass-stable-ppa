@@ -5,7 +5,7 @@
  * 11 -> class 3: Average LST error > 3K
  */  
 
-#include <grass/gis.h>
+#include <grass/raster.h>
 
 CELL mod11A1d(CELL pixel) 
 {

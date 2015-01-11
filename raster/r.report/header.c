@@ -1,8 +1,9 @@
 #include <string.h>
+#include <grass/raster.h>
 #include "global.h"
 
 static int page = 0;
-static char *date = NULL;
+static const char *date = NULL;
 static int max(int, int);
 
 static int pbuf(char *buf)
@@ -24,8 +25,6 @@ int header(int unit1, int unit2)
     int len1, len2;
     char *label;
     char *mask;
-    char *maskinfo();
-    char *print_label();
 
     nlines = page_length;
     if (date == NULL)
@@ -93,7 +92,7 @@ int header(int unit1, int unit2)
 	for (i = 0; i < nlayers; i++) {
 	    char *title;
 
-	    title = G_get_cats_title(&(layers[i].labels));
+	    title = Rast_get_cats_title(&(layers[i].labels));
 	    if (title)
 		G_strip(title);
 	    if (title == NULL || *title == 0)
@@ -164,7 +163,7 @@ int newline(void)
     return 0;
 }
 
-int lcr(char *left, char *center, char *right, char *buf, int n)
+int lcr(const char *left, const char *center, const char *right, char *buf, int n)
 {
     int ll, lc, lr;
 

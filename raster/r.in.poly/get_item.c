@@ -1,4 +1,5 @@
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 int get_item(FILE * fd, int *type, long *cat, double **x, double **y,
@@ -42,7 +43,7 @@ int get_item(FILE * fd, int *type, long *cat, double **x, double **y,
 
     /* read the feature's data */
     while (1) {
-	offset = ftell(fd);
+	offset = G_ftell(fd);
 
 	if (!G_getl2(buf, (sizeof buf) - 1, fd))
 	    break;
@@ -56,7 +57,7 @@ int get_item(FILE * fd, int *type, long *cat, double **x, double **y,
 	/* if we've found the next feature, rewind to the start of it and complete */
 	if (*buf == 'A' || *buf == 'a' ||
 	    *buf == 'L' || *buf == 'l' || *buf == 'P' || *buf == 'p') {
-	    fseek(fd, offset, 0);
+	    G_fseek(fd, offset, 0);
 	    break;
 	}
 
@@ -67,7 +68,7 @@ int get_item(FILE * fd, int *type, long *cat, double **x, double **y,
 	    /* probably change this as G_getl2() doesn't store the new line (?) */
 	    if (sscanf(buf + 1, "%ld%[^\n]", cat, lbl) == 2) {
 		G_strip(lbl);
-		G_set_cat((CELL) * cat, lbl, labels);
+		Rast_set_c_cat((CELL*) cat, (CELL *) cat, lbl, labels);
 	    }
 	    continue;
 	}

@@ -6,11 +6,12 @@
  */
 
 #include <grass/gis.h>
+#include <grass/colors.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 
-#include "ps_info.h"
 #include "clr.h"
 #include "local_proto.h"
 #include "vector.h"
@@ -21,7 +22,7 @@ int PS_vlines_plot(struct Map_info *P_map, int vec, int type)
     int i, k, np, line, cat, nlines, ret;
     double *xarray, *yarray, tol = 0.1, width;
     struct line_cats *Cats;
-    VARRAY *Varray = NULL;
+    struct varray *Varray = NULL;
 
     /* rgbcol */
     dbCatValArray cvarr_rgb;

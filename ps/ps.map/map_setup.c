@@ -5,8 +5,6 @@
 
 #include <grass/gis.h>
 #include <grass/glocale.h>
-#include "ps_info.h"
-#include "group.h"
 #include "local_proto.h"
 #include "distance.h"
 
@@ -32,9 +30,7 @@ int map_setup(void)
 		PS.map_pix_wide = 72.0 * PS.map_width;
 		PS.map_pix_high = 72.0 * PS.map_height;
 	    }
-
-	    /* else, kill the scale */
-	    else
+	    else    /* kill the scale */
 		PS.scaletext[0] = 0;
 	}
 
@@ -54,9 +50,7 @@ int map_setup(void)
 		PS.map_pix_wide = 72.0 * PS.map_width;
 		PS.map_pix_high = 72.0 * PS.map_height;
 	    }
-
-	    /* else, kill the scale */
-	    else
+	    else    /* kill the scale */
 		PS.scaletext[0] = 0;
 	}
 
@@ -85,7 +79,7 @@ int map_setup(void)
 		PS.map_pix_wide);
     }
 
-    G_message(_("Scale set to %s."), PS.scaletext);
+    G_message(_("Scale set to %s"), PS.scaletext);
 
     /* compute map edges */
     PS.map_left = 72.0 * PS.map_x_orig;

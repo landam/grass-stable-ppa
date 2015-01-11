@@ -12,20 +12,21 @@
  *
  *****************************************************************************/
 
-#define MAIN
-
-#include <grass/glocale.h>
-
 #include <grass/glocale.h>
 #include "frac.h"
 
+const char
+ *rast_out_name,		/* Name of the raster output file.      */
+ *mapset_out;
+
+int
+  fd_out,			/* File descriptor of output raster     */
+  Steps;			/* Number of intermediate images.       */
+
+double H;			/* Hausdorff-Besickovitch dimension.    */
+
 int main(int argc, char *argv[])
 {
-
-    /*----------------------------------------------------------------------*/
-    /*                     GET INPUT FROM USER                              */
-
-    /*----------------------------------------------------------------------*/
     struct GModule *module;
     struct Option *rast_out;	/* Structure for output raster     */
     struct Option *frac_dim;	/* Fractal dimension of surface.   */
@@ -34,15 +35,13 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);		/* Link with GRASS interface.      */
 
     module = G_define_module();
-    module->keywords = _("raster");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("surface"));
+    G_add_keyword(_("fractal"));
     module->description =
 	_("Creates a fractal surface of a given fractal dimension.");
 
-    rast_out = G_define_option();
-    rast_out->key = "output";
-    rast_out->description = _("Name for output raster map");
-    rast_out->type = TYPE_STRING;
-    rast_out->required = YES;
+    rast_out = G_define_standard_option(G_OPT_R_OUTPUT);
 
     frac_dim = G_define_option();
     frac_dim->key = "dimension";
@@ -66,7 +65,7 @@ int main(int argc, char *argv[])
     H = 3.0 - H;
     Steps = atoi(num_images->answer) + 1;
 
-    G_message(_("Steps=%d"), Steps);
+    G_debug(1, "Steps %d", Steps);
 
     mapset_out = G_mapset();	/* Set output to current mapset.  */
 
@@ -77,16 +76,9 @@ int main(int argc, char *argv[])
     /*--------------------------------------------------------------------*/
 
     if ((H <= 0) || (H >= 1)) {
-	G_fatal_error(_("Fractal dimension of [%.2lf] must be between 2 and 3."),
+	G_fatal_error(_("Fractal dimension of %.2lf must be between 2 and 3."),
 		      3.0 - H);
     }
-
-
-
-    /*----------------------------------------------------------------------*/
-    /*                    PROCESS RASTER FILES                              */
-
-    /*----------------------------------------------------------------------*/
 
     process();
 

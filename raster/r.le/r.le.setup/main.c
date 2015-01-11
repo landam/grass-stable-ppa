@@ -28,7 +28,6 @@
 
 #include <grass/config.h>
 #include <grass/gis.h>
-#include <grass/raster.h>
 #include <grass/display.h>
 #include <grass/glocale.h>
 #include "setup.h"
@@ -54,11 +53,8 @@ int main(int argc, char *argv[])
     /* Initialize the GIS calls */
     G_gisinit(argv[0]);
 
-    /* must run in a term window */
-    G_putenv("GRASS_UI_TERM", "1");
-
     module = G_define_module();
-    module->keywords = _("raster, landscape structure analysis, patch index");
+    G_add_keyword(_("raster"));
     module->description =
 	_("Interactive tool used to setup the sampling and analysis framework "
 	 "that will be used by the other r.le programs.");
@@ -95,7 +91,7 @@ int main(int argc, char *argv[])
     /* setup the current window for display & clear screen */
     D_setup(1);
 
-    Rw_l = (double)G_window_cols() / G_window_rows();
+    Rw_l = (double)Rast_window_cols() / Rast_window_rows();
     /*R_open_driver(); */
     /* R_font("romant"); */
     G_get_set_window(&window);

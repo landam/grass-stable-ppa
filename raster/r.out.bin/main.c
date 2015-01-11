@@ -70,8 +70,8 @@ static void make_gmt_header(
     struct FPRange range;
     DCELL z_min, z_max;
 
-    G_read_fp_range(name, "", &range);
-    G_get_fp_range_min_max(&range, &z_min, &z_max);
+    Rast_read_fp_range(name, "", &range);
+    Rast_get_fp_range_min_max(&range, &z_min, &z_max);
 
     header->nx = region->cols;
     header->ny = region->rows;
@@ -206,7 +206,7 @@ static void convert_row(
     int i;
 
     for (i = 0; i < ncols; i++) {
-	DCELL x = G_is_d_null_value(&raster[i])
+	DCELL x = Rast_is_d_null_value(&raster[i])
 	    ? null_val
 	    : raster[i];
 	convert_cell(ptr, x, is_fp, bytes, swap_flag);
@@ -276,8 +276,9 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, export");
-    module->description = _("Exports a GRASS raster map to a binary array.");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("export"));
+    module->description = _("Exports a GRASS raster to a binary array.");
 
     /* Define the different options */
 
@@ -374,14 +375,14 @@ int main(int argc, char *argv[])
     if (flag.int_out->answer && flag.float_out->answer)
 	G_fatal_error(_("-i and -f are mutually exclusive"));
 
-    fd = G_open_cell_old(name, "");
+    fd = Rast_open_old(name, "");
 
     if (flag.int_out->answer)
 	is_fp = 0;
     else if (flag.float_out->answer)
 	is_fp = 1;
     else
-	is_fp = G_get_raster_map_type(fd) != CELL_TYPE;
+	is_fp = Rast_get_map_type(fd) != CELL_TYPE;
 
     if (parm.bytes->answer)
 	bytes = atoi(parm.bytes->answer);
@@ -425,10 +426,10 @@ int main(int argc, char *argv[])
     if (flag.gmt_hd->answer)
 	write_gmt_header(&header, swap_flag, fp);
 
-    nrows = G_window_rows();
-    ncols = G_window_cols();
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
 
-    in_buf = G_allocate_d_raster_buf();
+    in_buf = Rast_allocate_d_buf();
     out_buf = G_malloc(ncols * bytes);
 
     if (is_fp) {
@@ -453,7 +454,7 @@ int main(int argc, char *argv[])
     for (row = 0; row < nrows; row++) {
 	G_percent(row, nrows, 2);
 
-	G_get_d_raster_row(fd, in_buf, row);
+	Rast_get_d_row(fd, in_buf, row);
 
 	convert_row(out_buf, in_buf, ncols, is_fp, bytes, swap_flag, null_val);
 
@@ -463,7 +464,7 @@ int main(int argc, char *argv[])
 
     G_percent(row, nrows, 2);	/* finish it off */
 
-    G_close_cell(fd);
+    Rast_close(fd);
     fclose(fp);
 
     return EXIT_SUCCESS;

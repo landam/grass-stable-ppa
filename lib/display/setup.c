@@ -1,102 +1,120 @@
-/* D_setup (clear)
- *
- * This is a high level D call.
- * It does a full setup for the current graphics frame.
- *
- *   1. Makes sure there is a current graphics frame
- *      (will create a full-screen one, if not
- *   2. Sets the region coordinates so that the graphics frame
- *      and the active program region agree
- *      (may change active program region to do this).
- *   3. Performs graphic frame/region coordinate conversion intialization
- *
- * Returns: 0 if ok. Exits with error message if failure.
- *
- * Note: Connection to driver must already be made.
- *
- * clear values:
- *   1: clear frame (visually and coordinates)
- *   0: do not clear frame
- */
+/*!
+  \file lib/display/setup.c
+
+  \brief Display Driver - setup
+
+  (C) 2006-2011 by the GRASS Development Team
+
+  This program is free software under the GNU General Public License
+  (>=v2). Read the file COPYING that comes with GRASS for details.
+
+  \author Glynn Clements <glynn gclements.plus.com> (original contributor)
+  \author Huidae Cho <grass4u gmail.com>
+*/
+
 #include <string.h>
 #include <grass/gis.h>
-#include <grass/display.h>
 #include <grass/raster.h>
-
-
-/*!
- * \brief initialize/create a frame
- *
- * This routine
- * performs a series of initialization steps for the current frame. It also
- * creates a full screen frame if there is no current frame. The <b>clear</b>
- * flag, if set to 1, tells this routine to clear any information associated with
- * the frame: graphics as well as region information.
- * This routine relieves the programmer of having to perform the following
- * idiomatic function call sequence
- *
- *  \param clear
- *  \return int
- */
-
+#include <grass/display.h>
 
 /*!
- * \brief graphics frame setup
- *
- * Performs a full setup
- * for the current graphics frame: 1) Makes sure there is a current graphics
- * frame (will create a full-screen one, if not); 2) Sets the region coordinates
- * so that the graphics frame and the active module region agree (may change
- * active module region to do this); and 3) performs graphic frame/region
- * coordinate conversion initialization.
- * If <b>clear</b> is true, the frame is cleared (same as running
- * <i>d.erase.</i>) Otherwise, it is not cleared.
- *
- *  \param clear
- *  \return int
- */
+  \brief Graphics frame setup
 
-int D_setup(int clear)
+  This is a high level D call. It does a full setup for the current
+  graphics frame.
+ 
+  Note: Connection to driver must already be made.
+  
+  Sets the source coordinate system to the current region, and
+  adjusts the destination coordinate system to preserve the aspect
+  ratio.
+  
+  Performs a full setup for the current graphics frame:
+  - Makes sure there is a current graphics frame (will create a full-screen
+  one, if not);
+  - Sets the region coordinates so that the graphics frame and the active
+  module region agree (may change active module region to do this); and  
+  - Performs graphic frame/region coordinate conversion initialization.
+ 
+  If <b>clear</b> is true, the frame is cleared (same as running
+  <i>d.erase</i>.) Otherwise, it is not cleared.
+
+  \param clear 1 to clear frame (visually and coordinates)
+*/
+void D_setup(int clear)
 {
     struct Cell_head region;
-    char name[128];
-    int t, b, l, r;
+    double dt, db, dl, dr;
 
-    if (D_get_cur_wind(name)) {
-	t = R_screen_top();
-	b = R_screen_bot();
-	l = R_screen_left();
-	r = R_screen_rite();
-	strcpy(name, "full_screen");
-	D_new_window(name, t, b, l, r);
-    }
+    D_get_window(&dt, &db, &dl, &dr);
 
-    if (D_set_cur_wind(name))
-	G_fatal_error("Current graphics frame not available");
-    if (D_get_screen_window(&t, &b, &l, &r))
-	G_fatal_error("Getting graphics coordinates");
-
-    /* clear the frame, if requested to do so */
-    if (clear) {
-	D_clear_window();
-	R_standard_color(D_translate_color(DEFAULT_BG_COLOR));
-	R_box_abs(l, t, r, b);
-    }
-
-    /* Set the map region associated with graphics frame */
     G_get_set_window(&region);
-    if (D_check_map_window(&region))
-	G_fatal_error("Setting graphics coordinates");
-    if (G_set_window(&region) < 0)
-	G_fatal_error("Invalid graphics coordinates");
+    Rast_set_window(&region);
 
-    /* Determine conversion factors */
-    if (D_do_conversions(&region, t, b, l, r))
-	G_fatal_error("Error calculating graphics-region conversions");
+    D_do_conversions(&region, dt, db, dl, dr);
 
-    /* set text clipping, for good measure */
-    R_set_window(t, b, l, r);
-    R_move_abs(0, 0);
-    D_move_abs(0, 0);
-    return 0;
+    if (clear)
+	D_erase(DEFAULT_BG_COLOR);
+}
+
+/*!
+  \brief Graphics frame setup
+ 
+  Sets the source coordinate system to match the
+  destination coordinate system, so that D_* functions use the same
+  coordinate system as R_* functions.
+ 
+  If <b>clear</b> is true, the frame is cleared (same as running
+  <i>d.erase</i>). Otherwise, it is not cleared.
+  
+  \param clear non-zero code to clear the frame
+*/
+void D_setup_unity(int clear)
+{
+    double dt, db, dl, dr;
+
+    D_get_window(&dt, &db, &dl, &dr);
+
+    D_set_src(dt, db, dl, dr);
+    D_set_dst(dt, db, dl, dr);
+
+    D_update_conversions();
+
+    if (clear)
+	D_erase(DEFAULT_BG_COLOR);
+}
+
+/*!
+  \brief Sets source coordinate system
+  
+  Sets the source coordinate system to its arguments, and if
+  the <b>fit</b> argument is non-zero, adjusts the destination coordinate
+  system to preserve the aspect ratio.
+  
+  If <b>clear</b> is true, the frame is cleared (same as running
+  <i>d.erase</i>). Otherwise, it is not cleared.
+  
+  \param clear non-zero code to clear the frame
+  \param fit non-zero code to adjust destination coordinate system
+  \param s_top
+  \param s_bottom
+  \param s_left
+  \param s_right
+*/
+void D_setup2(int clear, int fit, double st, double sb, double sl, double sr)
+{
+    double dt, db, dl, dr;
+
+    D_get_window(&dt, &db, &dl, &dr);
+
+    D_set_src(st, sb, sl, sr);
+    D_set_dst(dt, db, dl, dr);
+
+    if (fit)
+	D_fit_d_to_u();
+
+    D_update_conversions();
+
+    if (clear)
+	D_erase(DEFAULT_BG_COLOR);
 }

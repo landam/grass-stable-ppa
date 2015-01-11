@@ -1,16 +1,10 @@
 MODULE_TOPDIR = ../../..
 
-LIB_NAME = $(GRAPH_LIBNAME)
+include $(MODULE_TOPDIR)/include/Make/Vars.make
 
-LIB_OBJS = \
-	avl.o \
-	tavl.o \
-	graph.o \
-	heap.o \
-	tree.o \
-	helpers.o \
-	graph_v1.o \
-	graph_v2.o
+MOD_OBJS := $(filter-out %-template.o,$(AUTO_OBJS))
+
+LIB = GRAPH
 
 include $(MODULE_TOPDIR)/include/Make/Lib.make
 include $(MODULE_TOPDIR)/include/Make/Doxygen.make
@@ -24,12 +18,13 @@ headers: $(DGLINC)/avl.h $(DGLINC)/tavl.h $(DGLINC)/graph.h $(DGLINC)/heap.h \
 	 $(DGLINC)/tree.h $(DGLINC)/type.h $(DGLINC)/helpers.h $(DGLINC)/graph_v1.h $(DGLINC)/graph_v2.h \
 	 $(ARCH_INCDIR)/dgl.h
 
-$(DGLINC)/%.h: %.h
-	-test -d $(DGLINC) || $(MKDIR) $(DGLINC)
-	$(INSTALL_DATA) $^ $@
+$(DGLINC)/%.h: %.h | $(DGLINC)
+	$(INSTALL_DATA) $< $@
 
-$(ARCH_INCDIR)/dgl.h: dgl.h
-	$(INSTALL_DATA) $^ $@
+$(DGLINC):
+	$(MKDIR) $@
+
+.PHONY: headers
 
 #doxygen:
 DOXNAME=dg

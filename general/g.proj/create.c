@@ -10,18 +10,18 @@ void create_location(char *location)
 {
     int ret;
 
-    ret = G__make_location(location, &cellhd, projinfo, projunits, NULL);
+    ret = G_make_location(location, &cellhd, projinfo, projunits);
     if (ret == 0)
 	G_message(_("Location <%s> created"), location);
     else if (ret == -1)
 	G_fatal_error(_("Unable to create location <%s>: %s"),
-		    location, strerror(errno));
+                      location, strerror(errno));
     else if (ret == -2)
-	G_fatal_error(_("Unable to create projection files: %s"),
+        G_fatal_error(_("Unable to create projection files: %s"),
 		    strerror(errno));
     else
 	/* Shouldn't happen */
-	G_fatal_error(_("Unspecified error while creating new location"));
+      G_fatal_error(_("Unable to create location <%s>"), location);
 
     G_message(_("You can switch to the new location by\n`%s=%s`"),
 	      "g.mapset mapset=PERMANENT location", location);
@@ -41,17 +41,16 @@ void modify_projinfo()
     G_get_default_window(&old_cellhd);
     
     char path[GPATH_MAX];
-    int stat;
 	
     /* Write out the PROJ_INFO, and PROJ_UNITS if available. */
     if (projinfo != NULL) {
-	G__file_name(path, "", "PROJ_INFO", "PERMANENT");
-	G_write_key_value_file(path, projinfo, &stat);
+	G_file_name(path, "", "PROJ_INFO", "PERMANENT");
+	G_write_key_value_file(path, projinfo);
     }
     
     if (projunits != NULL) {
-	G__file_name(path, "", "PROJ_UNITS", "PERMANENT");
-	G_write_key_value_file(path, projunits, &stat);
+	G_file_name(path, "", "PROJ_UNITS", "PERMANENT");
+	G_write_key_value_file(path, projunits);
     }
     
     if ((old_cellhd.zone != cellhd.zone) ||

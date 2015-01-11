@@ -1,5 +1,4 @@
 /* makepp.c                                                             */
-#undef MAIN
 #include "ransurf.h"
 #include "local_proto.h"
 
@@ -25,7 +24,7 @@ double MakePP(int Row, int Col, int OutRows, int OutCols,
 	    G_debug(3, "(RRow - DRow):%d", RRow - DRow);
 	    G_debug(3, "(RCol - DCol):%d", RCol - DCol);
 	    G_debug(3, "(Effect):%.12lf", Effect);
-	    
+
 	    Value += Effect * Randoms[DRow][DCol];
 	}
     }

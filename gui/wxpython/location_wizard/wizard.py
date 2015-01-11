@@ -29,6 +29,7 @@ This program is free software under the GNU General Public License
 @author Michael Barton
 @author Jachym Cepicky
 @author Martin Landa <landa.martin gmail.com>
+@author Hamish Bowman (planetary ellipsoids)
 """
 import os
 import locale
@@ -40,8 +41,8 @@ import wx.lib.scrolledpanel as scrolled
 
 from core                    import globalvar
 from core                    import utils
+from core.utils import _
 from core.gcmd               import RunCommand, GError, GMessage, GWarning
-from gui_core.ghelp          import HelpFrame
 from gui_core.widgets        import GenericValidator
 from location_wizard.base    import BaseClass
 from location_wizard.dialogs import SelectTransformDialog
@@ -154,7 +155,7 @@ class DatabasePage(TitledPage):
         self.Bind(wiz.EVT_WIZARD_PAGE_CHANGING, self.OnPageChanging)
         self.tgisdbase.Bind(wx.EVT_TEXT,        self.OnChangeName)
         self.tlocation.Bind(wx.EVT_TEXT,        self.OnChangeName)
-        
+
     def _nameValidationFailed(self, ctrl):
         message = _("Name <%(name)s> is not a valid name for location. "
                     "Please use only ASCII characters excluding %(chars)s "
@@ -740,6 +741,7 @@ class ProjParamsPage(TitledPage):
             
             self.sizer.Add(item = paramSBSizer, pos = (1, 1),
                            flag = wx.EXPAND)
+            self.sizer.AddGrowableRow(1)
             paramSBSizer.Add(item = self.panel, proportion = 1, 
                              flag = wx.ALIGN_CENTER | wx.EXPAND)
             
@@ -799,7 +801,7 @@ class ProjParamsPage(TitledPage):
                                        wx.ALIGN_CENTER_VERTICAL |
                                        wx.LEFT, border = 5)           
                 row += 1
-        self.sizer.AddGrowableRow(1) 
+        
         self.panel.SetSize(self.panel.GetBestSize())
         self.panel.Layout()
         self.Layout()
@@ -901,7 +903,7 @@ class DatumPage(TitledPage):
                                  read = True,
                                  proj4 = '%s' % proj,
                                  datum = '%s' % self.datum, 
-                                 datumtrans = '-1',
+                                 datum_trans = '-1',
                                  flags = 't')
 #                wx.Messagebox('here')
                 if ret != '':
@@ -920,14 +922,14 @@ class DatumPage(TitledPage):
                         event.Veto()
                         return 'Datum transform is required.'
                     
-                    self.parent.datumtrans = dtrans
+                    self.parent.datum_trans = dtrans
                 
             self.GetNext().SetPrev(self)
             self.parent.ellipsepage.ellipse = self.ellipse
             self.parent.ellipsepage.ellipseparams = self.parent.ellipsoids[self.ellipse][1]
 
     def OnEnterPage(self,event):
-        self.parent.datumtrans = None
+        self.parent.datum_trans = None
         if event.GetDirection():
             if len(self.datum) == 0:
                 # disable 'next' button by default when entering from previous page
@@ -1005,6 +1007,12 @@ class EllipsePage(TitledPage):
         # search box
         self.searchb = wx.SearchCtrl(self, size = (200,-1),
                                      style = wx.TE_PROCESS_ENTER)
+        # radio buttons
+        self.radio1 = wx.RadioButton(parent = self, id = wx.ID_ANY,
+                        label = _("Earth based"),
+                        style  =  wx.RB_GROUP)
+        self.radio2 = wx.RadioButton(parent = self, id = wx.ID_ANY,
+                        label = _("Planetary bodies"))
 
         # create list control for ellipse list
         data = []
@@ -1017,6 +1025,7 @@ class EllipsePage(TitledPage):
         self.ellipselist.resizeLastColumn(30)                             
 
         # layout
+
         self.sizer.Add(item = self.MakeLabel(_("Ellipsoid code:")),
                        flag = wx.ALIGN_RIGHT |
                        wx.ALIGN_CENTER_VERTICAL |
@@ -1025,6 +1034,10 @@ class EllipsePage(TitledPage):
                        flag = wx.ALIGN_LEFT |
                        wx.ALIGN_CENTER_VERTICAL |
                        wx.ALL, border = 5, pos = (1, 2))
+        self.sizer.Add(item = self.radio1,
+                       flag = wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL | wx.LEFT, 
+                       border = 25, pos = (1, 3))
+
         self.sizer.Add(item = self.MakeLabel(_("Search in description:")),
                        flag = wx.ALIGN_RIGHT |
                        wx.ALIGN_CENTER_VERTICAL |
@@ -1033,6 +1046,9 @@ class EllipsePage(TitledPage):
                        flag = wx.ALIGN_LEFT |
                        wx.ALIGN_CENTER_VERTICAL |
                        wx.ALL, border = 5, pos = (2, 2))
+        self.sizer.Add(item = self.radio2,
+                       flag = wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL | wx.LEFT,
+                       border = 25, pos = (2, 3))
 
         self.sizer.Add(item = self.ellipselist,
                        flag = wx.EXPAND |
@@ -1046,6 +1062,10 @@ class EllipsePage(TitledPage):
         self.tellipse.Bind(wx.EVT_TEXT, self.OnText)
         self.tellipse.Bind(wx.EVT_TEXT_ENTER, self.OnText)
         self.searchb.Bind(wx.EVT_TEXT_ENTER, self.OnSearch)
+
+        self.radio1.Bind(wx.EVT_RADIOBUTTON, self.SetVal, id = self.radio1.GetId())
+        self.radio2.Bind(wx.EVT_RADIOBUTTON, self.SetVal, id = self.radio2.GetId())
+
         self.Bind(wiz.EVT_WIZARD_PAGE_CHANGED, self.OnEnterPage)
         self.Bind(wiz.EVT_WIZARD_PAGE_CHANGING, self.OnPageChanging)
 
@@ -1055,23 +1075,30 @@ class EllipsePage(TitledPage):
             wx.FindWindowById(wx.ID_FORWARD).Enable(False)
         else:
             wx.FindWindowById(wx.ID_FORWARD).Enable(True)
-
+        self.scope = 'earth'
         event.Skip()
 
     def OnPageChanging(self, event):
-        if event.GetDirection() and self.ellipse not in self.parent.ellipsoids:
+        if event.GetDirection() \
+          and self.ellipse not in self.parent.ellipsoids \
+          and self.ellipse not in self.parent.planetary_ellipsoids:
             event.Veto()
+
+        #print self.ellipse, self.ellipsedesc, self.ellipseparams
 
         self.proj4params = ''
         self.GetNext().SetPrev(self)
         self.parent.datumpage.datumparams = ''
         # self.GetNext().SetPrev(self) (???)
 
+    #FIXME: index number doesn't translate when you've given a valid name from the other list
     def OnText(self, event):
         """!Ellipspoid code changed"""
         self.ellipse = event.GetString()
         nextButton = wx.FindWindowById(wx.ID_FORWARD)
-        if len(self.ellipse) == 0 or self.ellipse not in self.parent.ellipsoids:
+        if len(self.ellipse) == 0 or \
+          (self.ellipse not in self.parent.ellipsoids and \
+           self.ellipse not in self.parent.planetary_ellipsoids):
             nextButton.Enable(False)
             self.ellipsedesc = ''
             self.ellipseparams = ''
@@ -1080,13 +1107,21 @@ class EllipsePage(TitledPage):
             self.ellipsedesc = self.parent.ellipsoids[self.ellipse][0]
             self.ellipseparams = self.parent.ellipsoids[self.ellipse][1]
             nextButton.Enable(True)
+        elif self.ellipse in self.parent.planetary_ellipsoids:
+            self.ellipsedesc = self.parent.planetary_ellipsoids[self.ellipse][0]
+            self.ellipseparams = self.parent.planetary_ellipsoids[self.ellipse][1]
+            nextButton.Enable(True)
+        #print self.ellipse, self.ellipsedesc, self.ellipseparams
 
     def OnSearch(self, event):
         """!Search ellipsoid by desc"""
         try:
             self.ellipse, self.ellipsedesc = \
                 self.ellipselist.Search(index=[0,1], pattern=event.GetString())
-            self.ellipseparams = self.parent.ellipsoids[self.ellipse][1]
+            if self.scope is 'earth':
+                self.ellipseparams = self.parent.ellipsoids[self.ellipse][1]
+            else:
+                self.ellipseparams = self.parent.planetary_ellipsoids[self.ellipse][1]
         except:
             self.ellipse = self.ellipsedesc = self.ellipseparams = ''
 
@@ -1101,6 +1136,22 @@ class EllipsePage(TitledPage):
         self.tellipse.SetValue(self.ellipse)
         
         event.Skip()
+
+    def SetVal(self, event):
+        """!Choose table to use"""
+        self.ellipselist.DeleteAllItems()
+        data = []
+        if event.GetId() == self.radio1.GetId():
+            self.scope = 'earth'
+            for key in self.parent.ellipsoids.keys():
+                data.append([key, self.parent.ellipsoids[key][0]])
+        elif event.GetId() == self.radio2.GetId():
+            self.scope = 'planetary'
+            for key in self.parent.planetary_ellipsoids.keys():
+                data.append([key, self.parent.planetary_ellipsoids[key][0]])
+
+        self.ellipselist.Populate(data = data, update = True)
+
 
 class GeoreferencedFilePage(TitledPage):
     """!Wizard page for selecting georeferenced file to use
@@ -1237,7 +1288,7 @@ class WKTPage(TitledPage):
 
     def OnBrowse(self, event):
         """!Choose file"""
-        dlg = wx.FileDialog(self,
+        dlg = wx.FileDialog(parent = self,
                             message = _("Select Well Known Text (WKT) .prj file"),
                             defaultDir = os.getcwd(),
                             wildcard = "PRJ files (*.prj)|*.prj|Files (*.*)|*.*",
@@ -1326,7 +1377,7 @@ class EPSGPage(TitledPage):
         self.Bind(wiz.EVT_WIZARD_PAGE_CHANGED, self.OnEnterPage)
 
     def OnEnterPage(self, event):
-        self.parent.datumtrans = None
+        self.parent.datum_trans = None
         if event.GetDirection():
             if not self.epsgcode:
                 # disable 'next' button by default
@@ -1349,7 +1400,7 @@ class EPSGPage(TitledPage):
                 ret = RunCommand('g.proj',
                                  read = True,
                                  epsg = self.epsgcode,
-                                 datumtrans = '-1',
+                                 datum_trans = '-1',
                                  flags = 't')
                 
                 if ret != '':
@@ -1368,7 +1419,7 @@ class EPSGPage(TitledPage):
                         event.Veto()
                         return 'Datum transform is required.'
                     
-                    self.parent.datumtrans = dtrans
+                    self.parent.datum_trans = dtrans
             self.GetNext().SetPrev(self)
 
     def OnText(self, event):
@@ -1408,7 +1459,6 @@ class EPSGPage(TitledPage):
                 self.epsgcode = None
                 self.epsgdesc = self.epsgparams = ''
                 self.tcode.SetValue('')
-                self.searchb.SetValue('')
 
         event.Skip()
         
@@ -1509,7 +1559,7 @@ class CustomPage(TitledPage):
             ret, out, err = RunCommand('g.proj',
                                        read = True, getErrorMsg = True,
                                        proj4 = self.customstring, 
-                                       datumtrans = '-1',
+                                       datum_trans = '-1',
                                        flags = 't')
             if ret != 0:
                 wx.MessageBox(parent = self,
@@ -1518,11 +1568,12 @@ class CustomPage(TitledPage):
                               style = wx.OK | wx.ICON_ERROR | wx.CENTRE)
                 event.Veto()
                 return
-        
+
             if out:
                 dtrans = ''
                 # open a dialog to select datum transform number
                 dlg = SelectTransformDialog(self.parent.parent, transforms = out)
+
                 if dlg.ShowModal() == wx.ID_OK:
                     dtrans = dlg.GetTransform()
                     if dtrans == '':
@@ -1533,14 +1584,14 @@ class CustomPage(TitledPage):
                     dlg.Destroy()
                     event.Veto()
                     return _('Datum transform is required.')
-            
-                self.parent.datumtrans = dtrans
+                
+                self.parent.datum_trans = dtrans
 
                 # prepare +nadgrids or +towgs84 terms for Summary page. first convert them:
                 ret, projlabel, err = RunCommand('g.proj',
                                                  flags = 'jft',
                                                  proj4 = self.customstring,
-                                                 datumtrans = dtrans,
+                                                 datum_trans = dtrans,
                                                  getErrorMsg = True,
                                                  read = True)
                 # splitting on space alone would break for grid files with space in pathname
@@ -1652,10 +1703,10 @@ class SummaryPage(TitledPage):
         proj4string = self.parent.CreateProj4String()
         epsgcode = self.parent.epsgpage.epsgcode
         datum = self.parent.datumpage.datum
-        dtrans = self.parent.datumtrans
-        
+        dtrans = self.parent.datum_trans
         global coordsys
 
+        #print coordsys,proj4string
         if coordsys in ('proj', 'epsg', 'wkt', 'file'):
             extra_opts = {}
             extra_opts['location'] = 'location'
@@ -1666,7 +1717,7 @@ class SummaryPage(TitledPage):
                 addl_opts = {}
                 if len(datum) > 0:
                     extra_opts['datum'] = '%s' % datum
-                    extra_opts['datumtrans'] = dtrans
+                    extra_opts['datum_trans'] = dtrans
 
                 ret, projlabel, err = RunCommand('g.proj',
                                                  flags = 'jf',
@@ -1676,7 +1727,7 @@ class SummaryPage(TitledPage):
                 ret, projlabel, err = RunCommand('g.proj',
                                                  flags = 'jft',
                                                  epsg = epsgcode,
-                                                 datumtrans = dtrans,
+                                                 datum_trans = dtrans,
                                                  **extra_opts)
             elif coordsys == 'file':
                 ret, projlabel, err = RunCommand('g.proj',
@@ -1703,6 +1754,7 @@ class SummaryPage(TitledPage):
         projdesc = self.parent.projpage.projdesc
         ellipsedesc = self.parent.ellipsepage.ellipsedesc
         datumdesc = self.parent.datumpage.datumdesc
+        #print projdesc,ellipsedesc,datumdesc
         self.ldatabase.SetLabel(database)
         self.llocation.SetLabel(location)
         self.llocTitle.SetLabel(self.parent.startpage.locTitle)
@@ -1711,7 +1763,6 @@ class SummaryPage(TitledPage):
         if coordsys == 'epsg':
             label = 'EPSG code %s (%s)' % (self.parent.epsgpage.epsgcode,
                                            self.parent.epsgpage.epsgdesc)
-
         elif coordsys == 'file':
             label = 'matches file %s' % self.parent.filepage.georeffile
 
@@ -1732,7 +1783,6 @@ class SummaryPage(TitledPage):
             self.lproj4string.SetLabel(('%s' % combo_str.replace(' +', os.linesep + '+')))
 
         self.lprojection.SetLabel(label)
-
         
     def OnFinish(self, event):
         dlg = wx.MessageDialog(parent = self.wizard,
@@ -1771,7 +1821,7 @@ class LocationWizard(wx.Object):
         #
         # datum transform number and list of datum transforms
         #
-        self.datumtrans = None
+        self.datum_trans = None
         self.proj4string = ''
 
         # file from which new location is created
@@ -1905,10 +1955,10 @@ class LocationWizard(wx.Object):
         transformlist = list()
 
     def __readData(self):
-        """!Get georeferencing information from tables in $GISBASE/etc"""
+        """!Get georeferencing information from tables in $GISBASE/etc/proj"""
 
         # read projection and parameters
-        f = open(os.path.join(globalvar.ETCDIR, "proj-parms.table"), "r")
+        f = open(os.path.join(globalvar.ETCDIR, "proj", "parms.table"), "r")
         self.projections = {}
         self.projdesc = {}
         for line in f.readlines():
@@ -1930,7 +1980,7 @@ class LocationWizard(wx.Object):
         f.close()
 
         # read datum definitions
-        f = open(os.path.join(globalvar.ETCDIR, "datum.table"), "r")
+        f = open(os.path.join(globalvar.ETCDIR, "proj", "datum.table"), "r")
         self.datums = {}
         paramslist = []
         for line in f.readlines():
@@ -1947,8 +1997,8 @@ class LocationWizard(wx.Object):
             self.datums[datum] = (ellipsoid, datumdesc.replace('_', ' '), paramlist)
         f.close()
 
-        # read ellipsiod definitions
-        f = open(os.path.join(globalvar.ETCDIR, "ellipse.table"), "r")
+        # read Earth-based ellipsiod definitions
+        f = open(os.path.join(globalvar.ETCDIR, "proj", "ellipse.table"), "r")
         self.ellipsoids = {}
         for line in f.readlines():
             line = line.expandtabs(1)
@@ -1962,9 +2012,25 @@ class LocationWizard(wx.Object):
             paramslist = params.split()
             self.ellipsoids[ellipse] = (desc, paramslist)
         f.close()
-        
+
+        # read Planetary ellipsiod definitions
+        f = open(os.path.join(globalvar.ETCDIR, "proj", "ellipse.table.solar.system"), "r")
+        self.planetary_ellipsoids = {}
+        for line in f.readlines():
+            line = line.expandtabs(1)
+            line = line.strip()
+            if line == '' or line[0] == "#":
+                continue
+            ellipse, rest = line.split(" ", 1)
+            rest = rest.strip('" ')
+            desc, params = rest.split('"', 1)
+            desc = desc.strip('" ')
+            paramslist = params.split()
+            self.planetary_ellipsoids[ellipse] = (desc, paramslist)
+        f.close()
+
         # read projection parameter description and parsing table
-        f = open(os.path.join(globalvar.ETCDIR, "proj-desc.table"), "r")
+        f = open(os.path.join(globalvar.ETCDIR, "proj", "desc.table"), "r")
         self.paramdesc = {}
         for line in f.readlines():
             line = line.strip()
@@ -2029,12 +2095,12 @@ class LocationWizard(wx.Object):
                                       location = self.startpage.location,
                                       proj4 = self.CreateProj4String(),
                                       datum = self.datumpage.datum,
-                                      datumtrans = self.datumtrans,
+                                      datum_trans = self.datum_trans,
                                       desc = self.startpage.locTitle)
             elif coordsys == 'custom':
                 addl_opts = {}
-                if self.datumtrans is not None:
-                    addl_opts['datumtrans'] = self.datumtrans
+                if self.datum_trans is not None:
+                    addl_opts['datum_trans'] = self.datum_trans
 
                 grass.create_location(dbase = self.startpage.grassdatabase,
                                       location = self.startpage.location,
@@ -2049,7 +2115,7 @@ class LocationWizard(wx.Object):
                                       location = self.startpage.location,
                                       epsg = self.epsgpage.epsgcode,
                                       datum = self.datumpage.datum,
-                                      datumtrans = self.datumtrans,
+                                      datum_trans = self.datum_trans,
                                       desc = self.startpage.locTitle)
             elif coordsys == "file":
                 if not self.filepage.georeffile or \
@@ -2118,11 +2184,9 @@ class LocationWizard(wx.Object):
 
     def OnHelp(self, event):
         """'Help' button clicked"""
-        # help text in lib/init/helptext.html
-        import webbrowser
-        filePath = os.path.join(os.getenv('GISBASE'), "docs", "html", "helptext.html")
-        webbrowser.open(filePath)
 
+        # help text in lib/init/helptext.html
+        RunCommand('g.manual', entry = 'helptext')
 
 class WizardWithHelpButton(wiz.Wizard):
     def __init__(self, parent, id, title, bitmap):

@@ -8,14 +8,13 @@
 #include <grass/glocale.h>
 #include <grass/symbol.h>
 #include "clr.h"
-#include "ps_info.h"
 #include "local_proto.h"
 
 int do_plt(int after_masking)
 {
     FILE *fp;
     char buf[1024], symb[1024], sname[100];
-    char name[1024], prev_name[50];
+    char name[1024] /*, prev_name[50] */;
     double e1, n1, e2, n2, llx, lly, urx, ury;
     int color_R, color_G, color_B;
     int fcolor_R, fcolor_G, fcolor_B;
@@ -27,8 +26,6 @@ int do_plt(int after_masking)
     PSCOLOR pcolor, pfcolor;
     SYMBOL *Symb;
     static int snum = 0;
-
-    prev_name[0] = 0;
 
     if (PS.plfile == NULL)
 	return 1;
@@ -57,10 +54,34 @@ int do_plt(int after_masking)
 		set_color(&pcolor, color_R, color_G, color_B);
 		set_ps_color(&pcolor);
 		set_line_width(width);
-		start_line(e1, n1);
-		sec_draw = 0;
-		G_plot_line(e1, n1, e2, n2);
+
+		if (G_projection() == PROJECTION_LL) {
+		/* use the same method as the vlines instruction,
+		for completely out of region lines just move, don't put
+		the pen down. but the thing this method has going for it
+		is that for lat/lon (AFAIU) it draws the line twice,
+		so that at least one of them will go the desired way
+		around the sphere, and the other will be discarded.
+		(I think). But it means your self-defined lines need to
+		keep at least one little toe in the map box. --HB Feb2012 */
+		    start_line(e1, n1);
+		    sec_draw = 0;
+		    G_plot_line(e1, n1, e2, n2);
+		}
+		else {
+		    G_plot_where_xy(e1, n1, &x_int, &y_int);
+		    llx = (double)x_int / 10.;
+		    lly = (double)y_int / 10.;
+
+		    G_plot_where_xy(e2, n2, &x_int, &y_int);
+		    urx = (double)x_int / 10.;
+		    ury = (double)y_int / 10.;
+
+		    fprintf(PS.fp, " %.1f %.1f NM %.1f %.1f LN",
+			    llx, lly, urx, ury);
+		}
 		fprintf(PS.fp, " stroke\n");
+
 	    }
 	    break;
 
@@ -104,10 +125,11 @@ int do_plt(int after_masking)
 	    break;
 
 	case 'P':
-	    i = sscanf(buf, "P %d %lf %lf %d %d %d %d %d %d %lf %lf %s",
+	    i = sscanf(buf, "P %d %lf %lf %d %d %d %d %d %d %lf %lf %s %lf",
 		       &masked, &e1, &n1, &color_R, &color_G, &color_B,
-		       &fcolor_R, &fcolor_G, &fcolor_B, &size, &rotate, symb);
-	    if (i == 12) {
+		       &fcolor_R, &fcolor_G, &fcolor_B, &size, &rotate, symb,
+		       &width);
+	    if (i == 13) {
 		if (masked && after_masking)
 		    continue;
 		if (!masked && !after_masking)
@@ -137,8 +159,8 @@ int do_plt(int after_masking)
 		else
 		    set_color(&pfcolor, fcolor_R, fcolor_G, fcolor_B);
 
-
-		width = 0.05 * size;	/* TODO: Something better */
+		if (width < 0) /* default: autoscale relative to size */
+		    width = 0.05 * size;
 
 		/* Read symbol */
 		sprintf(sname, "POINTSYMBOL%d", snum);

@@ -23,11 +23,10 @@ import os
 import sys
 import copy
 import types
-import locale
 
 from core       import globalvar
 from core.gcmd  import GException, GError
-from core.utils import GetSettingsPath, PathJoin
+from core.utils import GetSettingsPath, PathJoin, rgb2str, _
 
 class Settings:
     """!Generic class where to store settings"""
@@ -54,8 +53,6 @@ class Settings:
     def _generateLocale(self):
         """!Generate locales
         """
-        import os
-        
         try:
             self.locs = os.listdir(os.path.join(os.environ['GISBASE'], 'locale'))
             self.locs.append('en') # GRASS doesn't ship EN po files
@@ -67,7 +64,7 @@ class Settings:
             self.locs = ['system']
         
         return 'system'
-    
+        
     def _defaultSettings(self):
         """!Define default settings
         """
@@ -75,6 +72,8 @@ class Settings:
             projFile = PathJoin(os.environ["GRASS_PROJSHARE"], 'epsg')
         except KeyError:
             projFile = ''
+        
+        id_loc = self._generateLocale()
         
         self.defaultSettings = {
             #
@@ -142,15 +141,18 @@ class Settings:
                     'value' : 200
                     },
                 'iconTheme' : {
-                    'type' : 'grass2'
-                    }, # grass2, grass, silk
+                    'type' : 'grass'
+                    },
+                'commandNotebook' : {
+                    'selection' : 0
+                    },
                 },
             #
             # language
             #
             'language': {
                 'locale': {
-                    'lc_all' : self._generateLocale(),
+                    'lc_all' : id_loc
                 }
             },
             #
@@ -162,7 +164,7 @@ class Settings:
                     'encoding': 'ISO-8859-1',
                     },
                 'driver': {
-                    'type': 'default'
+                    'type': 'cairo'
                     },
                 'alignExtent' : {
                     'enabled' : True
@@ -212,7 +214,8 @@ class Settings:
             'atm' : {
                 'highlight' : {
                     'color' : (255, 255, 0, 255),
-                    'width' : 2
+                    'width' : 2,
+                    'auto'  : True,
                     },
                 'leftDbClick' : {
                     'selection' : 1 # draw selected
@@ -240,15 +243,48 @@ class Settings:
                 'verbosity' : {
                     'selection' : 'grassenv'
                     },
-                # d.rast
-                'rasterOverlay' : {
-                    'enabled' : True
+                'addNewLayer' : {
+                    'enabled' : True,
                     },
-                'rasterColorTable' : {
-                    'enabled'   : False,
-                    'selection' : 'rainbow',
+                'interactiveInput' : {
+                    'enabled' : True,
                     },
-                # d.vect
+                },
+            #
+            # d.rast
+            #
+            'rasterLayer': {
+                'opaque': {
+                    'enabled' : False
+                    },
+                'colorTable': {
+                    'enabled' : False,
+                    'selection' : 'rainbow'
+                    },
+                },
+            #
+            # d.vect
+            #
+            'vectorLayer': {
+                'featureColor': {
+                    'color' : (0, 0, 0),
+                    'transparent' : {
+                        'enabled': False
+                        }
+                    },
+                'areaFillColor': {
+                    'color' : (200, 200, 200),
+                    'transparent' : {
+                        'enabled': False
+                        }
+                    },
+                'line': {
+                    'width' : 0,
+                    },
+                'point': {
+                    'symbol': 'basic/x',
+                    'size' : 5,
+                    },
                 'showType': {
                     'point' : {
                         'enabled' : True
@@ -257,7 +293,7 @@ class Settings:
                         'enabled' : True
                         },
                     'centroid' : {
-                        'enabled' : True
+                        'enabled' : False
                         },
                     'boundary' : {
                         'enabled' : True
@@ -268,12 +304,6 @@ class Settings:
                     'face' : {
                         'enabled' : True
                         },
-                    },
-                'addNewLayer' : {
-                    'enabled' : True,
-                    },
-                'interactiveInput' : {
-                    'enabled' : True,
                     },
                 },
             #
@@ -427,12 +457,20 @@ class Settings:
                 'breakLines' : {
                     'enabled' : False,
                     },
+                # close boundary (snap to the first node)
+                'closeBoundary' : {
+                    'enabled' : False,
+                    }
                 },
+             # 
+             # plots for profiles, histograms, and scatterplots
+             #
             'profile': {
                 'raster' : {
-                    'pcolor' : (0, 0, 255, 255), # profile line color
-                    'pwidth' : 1, # profile line width
-                    'pstyle' : 'solid', # profile line pen style
+                    'pcolor'        : (0, 0, 255, 255), # line color
+                    'pwidth'        : 1, # line width
+                    'pstyle'        : 'solid', # line pen style
+                    'datatype'      : 'cell', # raster type
                     },
                 'font' : {
                     'titleSize' : 12,
@@ -464,6 +502,79 @@ class Settings:
                     },
                 'legend' : {
                     'enabled' : True
+                    },
+                },
+             'histogram': {
+                'raster' : {
+                    'pcolor'        : (0, 0, 255, 255), # line color
+                    'pwidth'        : 1, # line width
+                    'pstyle'        : 'solid', # line pen style
+                    'datatype'      : 'cell', # raster type
+                    },
+                'font' : {
+                    'titleSize'     : 12,
+                    'axisSize'      : 11,
+                    'legendSize'    : 10,
+                    },
+                'grid' : {
+                    'color'         : (200, 200, 200, 255),
+                    'enabled'       : True,
+                    },
+                'x-axis' : {
+                    'type'          : 'auto', # axis format
+                    'min'           : 0, # axis min for custom axis range
+                    'max'           : 0, # axis max for custom axis range
+                    'log'           : False,
+                    },
+                'y-axis' : {
+                    'type'          : 'auto', # axis format
+                    'min'           : 0, # axis min for custom axis range
+                    'max'           : 0, # axis max for custom axis range
+                    'log'           : False,
+                    },
+                'legend' : {
+                    'enabled'       : True
+                    },
+                },
+             'scatter': {
+                'raster' : {
+                    'pcolor' : (0, 0, 255, 255),
+                    'pfill' : 'solid',
+                    'psize' : 1,
+                    'ptype' : 'dot',
+                    # FIXME: this is only a quick fix
+                    # using also names used in a base class for compatibility
+                    # probably used only for initialization
+                    # base should be rewritten to not require this
+                    'pwidth' : 1,  # required by wxplot/base, maybe useless here
+                    'pstyle' : 'dot', # line pen style
+                    'plegend' : _('Data point'),
+                    0 : {'datatype' : 'CELL'},
+                    1 : {'datatype' : 'CELL'},
+                    },
+                'font' : {
+                    'titleSize'     : 12,
+                    'axisSize'      : 11,
+                    'legendSize'    : 10,
+                    },
+                'grid' : {
+                    'color'         : (200, 200, 200, 255),
+                    'enabled'       : True,
+                    },
+                'x-axis' : {
+                    'type'          : 'auto', # axis format
+                    'min'           : 0, # axis min for custom axis range
+                    'max'           : 0, # axis max for custom axis range
+                    'log'           : False,
+                    },
+                'y-axis' : {
+                    'type'          : 'auto', # axis format
+                    'min'           : 0, # axis min for custom axis range
+                    'max'           : 0, # axis max for custom axis range
+                    'log'           : False,
+                    },
+                'legend' : {
+                    'enabled'       : True
                     },
                 },
             'gcpman' : {
@@ -549,6 +660,8 @@ class Settings:
                         'color' : (0, 0, 255, 255), # blue
                         'flat' : False,
                         'height' : 0,
+                        'rgbcolumn': None,
+                        'sizecolumn': None,
                         },
                     'points' : {
                         'show' : False,
@@ -557,6 +670,8 @@ class Settings:
                         'marker' : 2,
                         'color' : (0, 0, 255, 255), # blue
                         'height' : 0,
+                        'rgbcolumn': None,
+                        'sizecolumn': None,
                         }
                     },
                 'volume' : {
@@ -568,6 +683,7 @@ class Settings:
                         'mode'       : 0, # isosurfaces
                         'shading'    : 1, # gouraud
                         'resolution' : 3, # polygon resolution
+                        'box'        : False # draw wire box
                         },
                     'shine': {
                         'map' : False,
@@ -673,6 +789,34 @@ class Settings:
                         'height' : 40,
                         },
                     },
+                'comment' : {
+                    'color' : (255, 233, 208, 255), # light yellow
+                    'size' : {
+                        'width' : 200,
+                        'height' : 100,
+                        },
+                    },
+                },
+            'mapswipe' : {
+                'cursor': {
+                    'color': (0, 0, 0, 255),
+                    'size': 12,
+                    'width': 1,
+                    'type': {
+                        'selection': 0,
+                        }
+                    },
+                },
+            'animation': {
+                'bgcolor': {
+                    'color': (255, 255, 255, 255),
+                    },
+                'temporal': {
+                    'format': '%Y-%m-%d %H:%M:%S',
+                    'nodata': {
+                        'enable': False
+                        },
+                    },
                 },
             }
 
@@ -705,25 +849,28 @@ class Settings:
         self.internalSettings['cmd']['verbosity']['choices'] = ('grassenv',
                                                                 'verbose',
                                                                 'quiet')
-        
-        self.internalSettings['appearance']['iconTheme']['choices'] = ('grass',
-                                                                       'grass2',
-                                                                       'silk')
+                                                                
+        self.internalSettings['appearance']['iconTheme']['choices'] = ('grass',)
         self.internalSettings['appearance']['menustyle']['choices'] = \
                    (_("Classic (labels only)"),
                     _("Combined (labels and module names)"),
-                    _("Professional (module names only)"))
+                    _("Expert (module names only)"))
         self.internalSettings['appearance']['gSelectPopupHeight']['min'] = 50
         # there is also maxHeight given to TreeCtrlComboPopup.GetAdjustedSize
         self.internalSettings['appearance']['gSelectPopupHeight']['max'] = 1000
-        
-        self.internalSettings['display']['driver']['choices'] = ['default']
+        self.internalSettings['appearance']['commandNotebook']['choices'] = \
+            (_("Basic top"),
+             _("Basic left"),
+             _("Fancy green"),
+             _("List left"))
+
+        self.internalSettings['display']['driver']['choices'] = ['cairo', 'png']
         self.internalSettings['display']['statusbarMode']['choices'] = None # set during MapFrame init
         self.internalSettings['display']['mouseWheelZoom']['choices'] = (_('Zoom and recenter'),
                                                                          _('Zoom to mouse cursor'),
                                                                          _('Nothing'))
         self.internalSettings['display']['scrollDirection']['choices'] = (_('Scroll forward to zoom in'),
-                                                                          _('Scroll back to zoom in'))
+                                                                         _('Scroll back to zoom in'))
 
         self.internalSettings['nviz']['view'] = {}
         self.internalSettings['nviz']['view']['twist'] = {}
@@ -765,7 +912,12 @@ class Settings:
                                                                        _("histogram"))
         self.internalSettings['vdigit']['bgmap'] = {}
         self.internalSettings['vdigit']['bgmap']['value'] = ''
-        
+
+        self.internalSettings['mapswipe']['cursor']['type'] = {}
+        self.internalSettings['mapswipe']['cursor']['type']['choices'] = (_("cross"),
+                                                                          _("box"),
+                                                                          _("circle"))
+
     def ReadSettingsFile(self, settings = None):
         """!Reads settings file (mapset, location, gisdbase)"""
         if settings is None:
@@ -791,10 +943,7 @@ class Settings:
             settings = self.userSettings
         
         if not os.path.exists(filename):
-            # try alternative path
-            filename = os.path.join(os.path.expanduser("~"), '.grasswx6')
-            if not os.path.exists(filename):
-                return
+            return
         
         try:
             fd = open(filename, "r")
@@ -826,8 +975,8 @@ class Settings:
             print >> sys.stderr, _("Error: Reading settings from file <%(file)s> failed.\n"
                                    "\t\tDetails: %(detail)s\n"
                                    "\t\tLine: '%(line)s'\n") % { 'file' : filename,
-                                                                 'detail' : e,
-                                                                 'line' : line }
+                                                               'detail' : e,
+                                                               'line' : line }
             fd.close()
         
         fd.close()
@@ -881,8 +1030,8 @@ class Settings:
             raise GException(_('Writing settings to file <%(file)s> failed.'
                                '\n\nDetails: %(detail)s') % { 'file' : self.filePath,
                                                               'detail' : e })
-        
         file.close()
+        return self.filePath
         
     def _parseValue(self, value, read = False):
         """!Parse value to be store in settings file"""
@@ -979,7 +1128,7 @@ class Settings:
         except KeyError:
             raise GException("%s '%s:%s:%s'" % (_("Unable to set "), group, key, subkey))
         
-    def Append(self, dict, group, key, subkey, value):
+    def Append(self, dict, group, key, subkey, value, overwrite = True):
         """!Set value of key/subkey
 
         Create group/key/subkey if not exists
@@ -989,25 +1138,39 @@ class Settings:
         @param key key
         @param subkey subkey (value or list)
         @param value value
+        @param overwrite True to overwrite existing value
         """
+
+        hasValue = True
         if group not in dict:
             dict[group] = {}
-
+            hasValue = False
+        
         if key not in dict[group]:
             dict[group][key] = {}
-
+            hasValue = False
+        
         if type(subkey) == types.ListType:
             # TODO: len(subkey) > 2
             if subkey[0] not in dict[group][key]:
                 dict[group][key][subkey[0]] = {}
+                hasValue = False
+            if subkey[1] not in dict[group][key][subkey[0]]:
+                hasValue = False
+            
             try:
-                dict[group][key][subkey[0]][subkey[1]] = value
+                if overwrite or (not overwrite and not hasValue):
+                    dict[group][key][subkey[0]][subkey[1]] = value
             except TypeError:
                 print >> sys.stderr, _("Unable to parse settings '%s'") % value + \
                     ' (' + group + ':' + key + ':' + subkey[0] + ':' + subkey[1] + ')'
         else:
+            if subkey not in dict[group][key]:
+                hasValue = False
+            
             try:
-                dict[group][key][subkey] = value
+                if overwrite or (not overwrite and not hasValue):
+                    dict[group][key][subkey] = value
             except TypeError:
                 print >> sys.stderr, _("Unable to parse settings '%s'") % value + \
                     ' (' + group + ':' + key + ':' + subkey + ')'
@@ -1019,7 +1182,7 @@ class Settings:
     def Reset(self, key = None):
         """!Reset to default settings
 
-        @key key in settings dict (None for all keys)
+        @param key key in settings dict (None for all keys)
         """
         if not key:
             self.userSettings = copy.deepcopy(self.defaultSettings)
@@ -1027,3 +1190,27 @@ class Settings:
             self.userSettings[key] = copy.deepcopy(self.defaultSettings[key])
         
 UserSettings = Settings()
+
+def GetDisplayVectSettings():
+    settings = list()
+    if not UserSettings.Get(group = 'vectorLayer', key = 'featureColor', subkey = ['transparent', 'enabled']):
+        featureColor = UserSettings.Get(group = 'vectorLayer', key = 'featureColor', subkey = 'color')
+        settings.append('color=%s' % rgb2str.get(featureColor, ':'.join(map(str,featureColor))))
+    else:
+        settings.append('color=none')
+    if not UserSettings.Get(group = 'vectorLayer', key = 'areaFillColor', subkey = ['transparent', 'enabled']):
+        fillColor = UserSettings.Get(group = 'vectorLayer', key = 'areaFillColor', subkey = 'color')
+        settings.append('fcolor=%s' % rgb2str.get(fillColor, ':'.join(map(str,fillColor))))
+    else:
+        settings.append('fcolor=none')
+    
+    settings.append('width=%s' % UserSettings.Get(group = 'vectorLayer', key = 'line', subkey = 'width'))
+    settings.append('icon=%s' % UserSettings.Get(group = 'vectorLayer', key = 'point', subkey = 'symbol'))
+    settings.append('size=%s' % UserSettings.Get(group = 'vectorLayer', key = 'point', subkey = 'size'))
+    types = []
+    for ftype in ['point', 'line', 'boundary', 'centroid', 'area', 'face']:
+        if UserSettings.Get(group = 'vectorLayer', key = 'showType', subkey = [ftype, 'enabled']):
+            types.append(ftype)
+    settings.append('type=%s' % ','.join(types))
+
+    return settings

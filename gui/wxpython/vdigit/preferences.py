@@ -24,14 +24,18 @@ from core.debug       import Debug
 from gui_core.gselect import ColumnSelect
 from core.units       import Units
 from core.settings    import UserSettings
+from core.utils import _
+
 
 class VDigitSettingsDialog(wx.Dialog):
-    def __init__(self, parent, title, style = wx.DEFAULT_DIALOG_STYLE):
+    def __init__(self, parent, giface, title = _("Digitization settings"),
+                 style = wx.DEFAULT_DIALOG_STYLE):
         """!Standard settings dialog for digitization purposes
         """
         wx.Dialog.__init__(self, parent = parent, id = wx.ID_ANY, title = title, style = style)
-        
-        self.parent = parent # mapdisplay.MapFrame class instance
+
+        self._giface = giface
+        self.parent = parent                     # MapFrame
         self.digit = self.parent.MapWindow.digit
         
         # notebook
@@ -232,13 +236,26 @@ class VDigitSettingsDialog(wx.Dialog):
         #
         # digitize lines box
         #
-        box   = wx.StaticBox (parent = panel, id = wx.ID_ANY, label = " %s " % _("Digitize line features"))
+        box   = wx.StaticBox (parent = panel, id = wx.ID_ANY, label = " %s " % _("Digitize lines/boundaries"))
         sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
 
         self.intersect = wx.CheckBox(parent = panel, label = _("Break lines at intersection"))
         self.intersect.SetValue(UserSettings.Get(group = 'vdigit', key = 'breakLines', subkey = 'enabled'))
         
         sizer.Add(item = self.intersect, proportion = 0, flag = wx.ALL | wx.EXPAND, border = 1)
+
+        border.Add(item = sizer, proportion = 0, flag = wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border = 5)
+
+        #
+        # digitize areas box
+        #
+        box   = wx.StaticBox (parent = panel, id = wx.ID_ANY, label = " %s " % _("Digitize areas"))
+        sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
+
+        self.closeBoundary = wx.CheckBox(parent = panel, label = _("Close boundary (snap to the start node)"))
+        self.closeBoundary.SetValue(UserSettings.Get(group = 'vdigit', key = 'closeBoundary', subkey = 'enabled'))
+        
+        sizer.Add(item = self.closeBoundary, proportion = 0, flag = wx.ALL | wx.EXPAND, border = 1)
 
         border.Add(item = sizer, proportion = 0, flag = wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border = 5)
 
@@ -412,7 +429,6 @@ class VDigitSettingsDialog(wx.Dialog):
                               label = " %s " % _("Geometry attributes"))
         sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         gridSizer = wx.GridBagSizer(hgap = 3, vgap = 3)
-        gridSizer.AddGrowableCol(0)
         self.geomAttrb = { 'length' : { 'label' : _('length') },
                            'area' : { 'label' : _('area') },
                            'perimeter' : { 'label' : _('perimeter') } }
@@ -425,7 +441,10 @@ class VDigitSettingsDialog(wx.Dialog):
         layer = UserSettings.Get(group = 'vdigit', key = "layer", subkey = 'value')
         mapLayer = self.parent.toolbars['vdigit'].GetLayer()
         tree = self.parent.tree
-        item = tree.FindItemByData('maplayer', mapLayer)
+        if tree:
+            item = tree.FindItemByData('maplayer', mapLayer)
+        else:
+            item = None
         row = 0
         for attrb in ['length', 'area', 'perimeter']:
             # checkbox
@@ -448,17 +467,17 @@ class VDigitSettingsDialog(wx.Dialog):
             
             # default values
             check.SetValue(False)
-            if item and tree.GetPyData(item)[0]['vdigit'] and \
-                    'geomAttr' in tree.GetPyData(item)[0]['vdigit'] and \
-                    attrb in tree.GetPyData(item)[0]['vdigit']['geomAttr']:
+            if item and tree.GetLayerInfo(item, key = 'vdigit') and \
+                    'geomAttr' in tree.GetLayerInfo(item, key = 'vdigit') and \
+                    attrb in tree.GetLayerInfo(item, key = 'vdigit')['geomAttr']:
                 check.SetValue(True)
-                column.SetStringSelection(tree.GetPyData(item)[0]['vdigit']['geomAttr'][attrb]['column'])
+                column.SetStringSelection(tree.GetLayerInfo(item, key = 'vdigit')['geomAttr'][attrb]['column'])
                 if attrb == 'area':
                     type = 'area'
                 else:
                     type = 'length'
                 unitsIdx = Units.GetUnitsIndex(type, 
-                                                tree.GetPyData(item)[0]['vdigit']['geomAttr'][attrb]['units'])
+                                                tree.GetLayerInfo(item, key = 'vdigit')['geomAttr'][attrb]['units'])
                 win_units.SetSelection(unitsIdx)
 
             if not vectorName:
@@ -488,6 +507,7 @@ class VDigitSettingsDialog(wx.Dialog):
                                            label = note),
                       pos = (3, 0), span = (1, 3))
                       
+        gridSizer.AddGrowableCol(0)
         sizer.Add(item = gridSizer, proportion = 1,
                   flag = wx.ALL | wx.EXPAND, border = 1)
         border.Add(item = sizer, proportion = 0,
@@ -650,8 +670,8 @@ class VDigitSettingsDialog(wx.Dialog):
         UserSettings.ReadSettingsFile(settings = fileSettings)
         fileSettings['vdigit'] = UserSettings.Get(group = 'vdigit')
         
-        file = UserSettings.SaveToFile(fileSettings)
-        self.parent.GetLayerManager().goutput.WriteLog(_('Vector digitizer settings saved to file <%s>.') % file)
+        sfile = UserSettings.SaveToFile(fileSettings)
+        self._giface.WriteLog(_('Vector digitizer settings saved to file <%s>.') % sfile)
         
         self.Destroy()
 
@@ -673,8 +693,13 @@ class VDigitSettingsDialog(wx.Dialog):
         
     def UpdateSettings(self):
         """!Update digitizer settings
+
+        @todo Needs refactoring 
         """
-        self.parent.GetLayerManager().WorkspaceChanged() # geometry attributes
+        # TODO: it seems that it needs to be replaced by signal
+        # but if it makes sense generally for wxGUI it can be added to giface 
+        if self.parent.GetLayerManager():
+            self.parent.GetLayerManager().WorkspaceChanged() # geometry attributes
         # symbology
         for key, (enabled, color) in self.symbology.iteritems():
             if enabled:
@@ -716,14 +741,17 @@ class VDigitSettingsDialog(wx.Dialog):
 
         # geometry attributes (workspace)
         mapLayer = self.parent.toolbars['vdigit'].GetLayer()
-        tree = self.parent.tree
-        item = tree.FindItemByData('maplayer', mapLayer)
+        tree = self._giface.GetLayerTree()
+        if tree:
+            item = tree.FindItemByData('maplayer', mapLayer)
+        else:
+            item = None
         for key, val in self.geomAttrb.iteritems():
             checked = self.FindWindowById(val['check']).IsChecked()
             column  = self.FindWindowById(val['column']).GetValue()
             unitsIdx = self.FindWindowById(val['units']).GetSelection()
-            if item and not tree.GetPyData(item)[0]['vdigit']: 
-                tree.GetPyData(item)[0]['vdigit'] = { 'geomAttr' : dict() }
+            if item and not tree.GetLayerInfo(item, key = 'vdigit'): 
+                tree.SetLayerInfo(item, key = 'vdigit', value = { 'geomAttr' : dict() })
             
             if checked: # enable
                 if key == 'area':
@@ -731,12 +759,12 @@ class VDigitSettingsDialog(wx.Dialog):
                 else:
                     type = 'length'
                 unitsKey = Units.GetUnitsKey(type, unitsIdx)
-                tree.GetPyData(item)[0]['vdigit']['geomAttr'][key] = { 'column' : column,
+                tree.GetLayerInfo(item, key = 'vdigit')['geomAttr'][key] = { 'column' : column,
                                                                        'units' : unitsKey }
             else:
-                if item and tree.GetPyData(item)[0]['vdigit'] and \
-                        key in tree.GetPyData(item)[0]['vdigit']['geomAttr']:
-                    del tree.GetPyData(item)[0]['vdigit']['geomAttr'][key]
+                if item and tree.GetLayerInfo(item, key = 'vdigit') and \
+                        key in tree.GetLayerInfo(item, key = 'vdigit')['geomAttr']:
+                    del tree.GetLayerInfo(item, key = 'vdigit')['geomAttr'][key]
         
         # query tool
         if self.queryLength.GetValue():
@@ -776,6 +804,10 @@ class VDigitSettingsDialog(wx.Dialog):
         # break lines
         UserSettings.Set(group = 'vdigit', key = "breakLines", subkey = 'enabled',
                          value = self.intersect.IsChecked())
+
+        # close boundary
+        UserSettings.Set(group = 'vdigit', key = "closeBoundary", subkey = 'enabled',
+                         value = self.closeBoundary.IsChecked())
         
         self.digit.UpdateSettings()
         

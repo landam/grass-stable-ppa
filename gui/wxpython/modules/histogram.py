@@ -25,7 +25,7 @@ from core                 import globalvar
 from core.render          import Map
 from gui_core.forms       import GUI
 from mapdisp.gprint       import PrintOptions
-from core.utils           import GetLayerNameFromCmd
+from core.utils           import GetLayerNameFromCmd, _
 from gui_core.dialogs     import GetImageHandlers, ImageSizeDialog
 from gui_core.preferences import DefaultFontDialog
 from core.debug           import Debug
@@ -40,7 +40,7 @@ class BufferedWindow(wx.Window):
     can also save the drawing to file by calling the
     SaveToFile(self,file_name,file_type) method.
     """
-    def __init__(self, parent, id =  wx.ID_ANY,
+    def __init__(self, parent, id = wx.ID_ANY,
                  style = wx.NO_FULL_REPAINT_ON_RESIZE,
                  Map = None, **kwargs):
         
@@ -74,7 +74,8 @@ class BufferedWindow(wx.Window):
         self.imagedict = {} # images and their PseudoDC ID's for painting and dragging
         
         self.pdc = wx.PseudoDC()
-        self._buffer = '' # will store an off screen empty bitmap for saving to file
+        # will store an off screen empty bitmap for saving to file
+        self._buffer = wx.EmptyBitmap(max(1, self.Map.width), max(1, self.Map.height))
         
         # make sure that extents are updated at init
         self.Map.region = self.Map.GetRegion()
@@ -183,7 +184,7 @@ class BufferedWindow(wx.Window):
         self.Map.Render(force=True, windres = True)
         img = self.GetImage()
         self.Draw(self.pdc, img, drawid = 99)
-        dc = wx.BufferedDC(None, ibuffer)
+        dc = wx.BufferedPaintDC(self, ibuffer)
         dc.Clear()
         # probably does nothing, removed from wxPython 2.9
         # self.PrepareDC(dc)
@@ -264,13 +265,14 @@ class HistogramFrame(wx.Frame):
     """!Main frame for hisgram display window. Uses d.histogram
     rendered onto canvas
     """
-    def __init__(self, parent = None, id = wx.ID_ANY,
+    def __init__(self, parent, giface, id=wx.ID_ANY,
                  title = _("GRASS GIS Histogramming Tool (d.histogram)"),
                  size = wx.Size(500, 350),
                  style = wx.DEFAULT_FRAME_STYLE, **kwargs):
         wx.Frame.__init__(self, parent, id, title, size = size, style = style, **kwargs)
         self.SetIcon(wx.Icon(os.path.join(globalvar.ETCICONDIR, 'grass.ico'), wx.BITMAP_TYPE_ICO))
-        
+
+        self._giface = giface
         self.Map   = Map()         # instance of render.Map to be associated with display
         self.layer = None          # reference to layer with histogram
         
@@ -285,12 +287,13 @@ class HistogramFrame(wx.Frame):
         self.SetToolBar(self.toolbar)
 
         # find selected map
+        # might by moved outside this class
+        # setting to None but honestly we do not handle no map case
+        # TODO: when self.mapname is None content of map window is showed
         self.mapname = None
-        if parent.GetName() == "MapWindow" and not parent.IsStandalone():
-            tree = parent.GetLayerManager().GetLayerTree()
-
-            if tree.layer_selected and tree.GetPyData(tree.layer_selected)[0]['type'] == 'raster':
-                self.mapname = tree.GetPyData(tree.layer_selected)[0]['maplayer'].name
+        layers = self._giface.GetLayerList().GetSelectedLayers(checkedOnly=False)
+        if len(layers) > 0:
+            self.mapname = layers[0].maplayer.name
 
         # Add statusbar
         self.statusbar = self.CreateStatusBar(number = 1, style = 0)
@@ -312,12 +315,13 @@ class HistogramFrame(wx.Frame):
         self.printopt = PrintOptions(self, self.HistWindow)
         
         # Add layer to the map
-        self.layer = self.Map.AddLayer(type = "command", name = 'histogram', command = [['d.histogram']],
-                                       l_active = False, l_hidden = False, l_opacity = 1, l_render = False)
+        self.layer = self.Map.AddLayer(ltype = "command", name = 'histogram', command = [['d.histogram']],
+                                       active = False, hidden = False, opacity = 1, render = False)
         if self.mapname:
             self.SetHistLayer(self.mapname, None)
         else:
             self.OnErase(None)
+            wx.CallAfter(self.OnOptions, None)
 
     def InitDisplay(self):
         """!Initialize histogram display, set dimensions and region
@@ -472,7 +476,7 @@ class HistogramFrame(wx.Frame):
             pass
         self.Map.Clean()
         self.Destroy()
-
+        
 class HistogramToolbar(BaseToolbar):
     """!Histogram toolbar (see histogram.py)
     """

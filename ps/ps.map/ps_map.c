@@ -7,9 +7,7 @@
 
 #include <stdio.h>
 #include <unistd.h>
-#include "ps_info.h"
 #include "vector.h"
-#include "group.h"
 #include "border.h"
 #include "colortable.h"
 #include "local_proto.h"
@@ -23,7 +21,7 @@ extern int ps_copies;
 int ps_map(void)
 {
     long current_offset;
-    char *date;
+    const char *date;
     int urx, ury;
 
     /* get date */
@@ -136,8 +134,8 @@ int ps_map(void)
 	do_scalebar();
 
     /* put border around map */
-    if (PS.do_border && brd.R >= 0.) {	/* if color wasn't "none" */
-	fprintf(PS.fp, "%.3f %.3f %.3f C\n", brd.R, brd.G, brd.B);
+    if (PS.do_border && brd.r >= 0.) {	/* if color wasn't "none" */
+	fprintf(PS.fp, "%.3f %.3f %.3f C\n", brd.r, brd.g, brd.b);
 	fprintf(PS.fp, "%.8f W\n", brd.width);
 	box_draw(PS.map_top - 0.5, PS.map_bot + 0.5,
 		 PS.map_left + 0.5, PS.map_right - 0.5);
@@ -160,9 +158,9 @@ int ps_map(void)
 	do_psfiles();
 
     /* write the bounding box */
-    current_offset = ftell(PS.fp);
+    current_offset = G_ftell(PS.fp);
     write_bounding_box();
-    fseek(PS.fp, current_offset, SEEK_SET);
+    G_fseek(PS.fp, current_offset, SEEK_SET);
 
     fprintf(PS.fp, "showpage\n");
     fprintf(PS.fp, "%%%%Trailer\n");

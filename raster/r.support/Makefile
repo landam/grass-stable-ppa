@@ -1,14 +1,12 @@
 MODULE_TOPDIR = ../..
 
-SUBDIRS = \
-	modcats \
-	modcolr \
-	modhist	\
-	modhead	\
-	front
+PGM = r.support
 
-include $(MODULE_TOPDIR)/include/Make/Dir.make
+LIBES = $(RASTERLIB) $(GISLIB)
+DEPENDENCIES = $(RASTERDEP) $(GISDEP)
 
-default: parsubdirs
+include $(MODULE_TOPDIR)/include/Make/Module.make
 
-clean: cleansubdirs
+default: cmd
+
+

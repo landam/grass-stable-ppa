@@ -1,13 +1,11 @@
 MODULE_TOPDIR = ..
 
 SUBDIRS = \
-	r.average \
 	r.basins.fill \
-	r.bilinear \
 	r.bitpattern \
 	r.buffer \
 	r.carve \
-	r.cats \
+	r.category \
 	r.circle \
 	r.clump \
 	r.coin \
@@ -23,47 +21,52 @@ SUBDIRS = \
 	r.distance \
 	r.drain \
 	r.external \
+	r.external.out \
 	r.fill.dir \
 	r.flow \
-	r.grow2 \
 	r.grow.distance \
 	r.gwflow \
-	r.horizon \
 	r.his \
+	r.horizon \
 	r.in.arc \
 	r.in.ascii \
 	r.in.bin \
-	r.info \
+	r.in.gdal \
 	r.in.gridatb \
+	r.in.lidar \
 	r.in.mat \
+	r.in.png \
 	r.in.poly \
 	r.in.xyz \
+	r.info \
 	r.kappa \
+	r.latlong \
 	r.lake \
-	r.le \
+	r.li \
 	r.los \
 	r.mapcalc \
-	r.median \
 	r.mfilter \
-	r.mfilter.fp \
 	r.mode \
 	r.neighbors \
 	r.null \
 	r.out.arc \
 	r.out.ascii \
 	r.out.bin \
+	r.out.gdal \
 	r.out.gridatb \
 	r.out.mat \
 	r.out.mpeg \
+	r.out.png \
 	r.out.pov \
 	r.out.ppm \
 	r.out.ppm3 \
+	r.out.tiff \
 	r.out.vrml \
 	r.out.vtk \
 	r.param.scale \
 	r.patch \
 	r.profile \
-	r.proj.seg \
+	r.proj \
 	r.quant \
 	r.quantile \
 	r.random \
@@ -73,30 +76,53 @@ SUBDIRS = \
 	r.recode \
 	r.region \
 	r.regression.line \
+	r.regression.multi \
 	r.report \
-	r.resample \
+	r.resamp.bspline \
+	r.resamp.filter \
 	r.resamp.interp \
 	r.resamp.rst \
 	r.resamp.stats \
+	r.resample \
 	r.rescale \
 	r.rescale.eq \
+	r.ros \
 	r.series \
+	r.series.accumulate \
+	r.series.interp \
+	r.shaded.relief \
 	r.slope.aspect \
+	r.solute.transport \
+	r.spread \
+	r.spreadpath \
 	r.statistics \
+	r.stats.zonal \
+	r.stats.quantile \
 	r.stats \
-	r.sum \
-	r.sun2 \
+	r.stream.channel \
+	r.stream.distance \
+	r.stream.extract \
+	r.stream.order \
+	r.stream.segment \
+	r.stream.slope \
+	r.stream.snap \
+	r.stream.stats \
+	r.sun \
+	r.sunhours \
 	r.sunmask \
 	r.support \
 	r.support.stats \
 	r.surf.area \
 	r.surf.contour \
+	r.surf.fractal \
+	r.surf.gauss \
 	r.surf.idw \
 	r.surf.idw2 \
 	r.surf.random \
-	r.surf.gauss \
+	r.terraflow \
 	r.texture \
 	r.thin \
+	r.tile \
 	r.timestamp \
 	r.to.rast3 \
 	r.to.rast3elev \
@@ -104,72 +130,32 @@ SUBDIRS = \
 	r.topidx \
 	r.topmodel \
 	r.transect \
-	r.univar2 \
+	r.univar \
+	r.uslek \
+	r.usler \
+	r.viewshed \
 	r.volume \
 	r.walk \
 	r.water.outlet \
 	r.watershed \
 	r.what \
 	r.what.color \
-	simwe \
-	wildfire
+	simwe
 
-GDALBASED = r.in.gdal r.out.gdal
-
-FFTWBASED = r.surf.fractal
-
-PNGBASED = r.out.png
-
-CXXBASED = r.terraflow
-
-TIFFBASED = r.out.tiff
-
-XMONBASED = r.digit
-
-
-include $(MODULE_TOPDIR)/include/Make/Platform.make
-
-ifndef MINGW
-    SUBDIRS += r.li
-endif
-
-#compile if GDAL present:
-ifneq ($(USE_GDAL),)
-    SUBDIRS += $(GDALBASED)
-endif
-
-#compile if FFTW present:
-ifneq ($(strip $(FFTWLIB)),)
-    SUBDIRS += $(FFTWBASED)
-endif
-
-#compile if PNG present:
-ifneq ($(strip $(PNGLIB)),)
-    SUBDIRS += $(PNGBASED)
-endif
-
-#compile if C++ compiler present:
-ifneq ($(strip $(CXX)),)
-    SUBDIRS += $(CXXBASED)
-endif
-
-#compile if TIFF present:
-ifneq ($(strip $(TIFFLIB)),)
-    SUBDIRS += $(TIFFBASED)
-endif
-
-#compile if interactive Xmons are present:
-ifneq ($(USE_X11),)
-    SUBDIRS += $(XMONBASED)
-endif
-
+#	r.le \
 
 PGM = rasterintro
 
 include $(MODULE_TOPDIR)/include/Make/Dir.make
 
-default: htmldir
+default:
+	$(MAKE) -C r.mapcalc
+	$(MAKE) htmldir 
 
-htmldir: parsubdirs 
+htmldir: parsubdirs
 
-clean: cleansubdirs
+$(HTMLDIR)/r.in.png:
+	# no-op - override Html.make rule for .png image files
+
+$(HTMLDIR)/r.out.png:
+	# no-op - override Html.make rule for .png image files

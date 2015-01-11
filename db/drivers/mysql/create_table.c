@@ -20,7 +20,7 @@ int db__driver_create_table(dbTable * table)
 {
     int col, ncols;
     dbColumn *column;
-    char *colname;
+    const char *colname;
     int sqltype;
     char buf[500];
     dbString sql;
@@ -28,8 +28,6 @@ int db__driver_create_table(dbTable * table)
     /* dbConnection conn_par; */
 
     G_debug(3, "db__driver_create_table()");
-
-    init_error();
 
     db_init_string(&sql);
 
@@ -106,11 +104,11 @@ int db__driver_create_table(dbTable * table)
     G_debug(3, " SQL: %s", db_get_string(&sql));
 
     if (mysql_query(connection, db_get_string(&sql)) != 0) {
-	append_error("Cannot create table:\n");
-	append_error(db_get_string(&sql));
-	append_error("\n");
-	append_error(mysql_error(connection));
-	report_error();
+	db_d_append_error("%s\n%s\%s",
+			  _("Unable to create table:"),
+			  db_get_string(&sql),
+			  mysql_error(connection));
+	db_d_report_error();
 	db_free_string(&sql);
 	return DB_FAILED;
     }

@@ -1,6 +1,5 @@
 #include <grass/gis.h>
 #include <grass/display.h>
-#include <grass/raster.h>
 #include "local_proto.h"
 
 
@@ -18,7 +17,7 @@ int measurements(int color1, int color2, int s_flag, int m_flag, int k_flag)
     int cur_screen_x, cur_screen_y;
     int screen_x, screen_y;
     struct Cell_head window;
-    int t, b, l, r;
+    double t, b, l, r;
 
     nalloc = 128;
     x = (double *)G_calloc(nalloc, sizeof(double));
@@ -36,7 +35,7 @@ int measurements(int color1, int color2, int s_flag, int m_flag, int k_flag)
     G_begin_distance_calculations();
 
     G_get_window(&window);
-    D_get_screen_window(&t, &b, &l, &r);
+    D_get_dst(&t, &b, &l, &r);
     D_do_conversions(&window, t, b, l, r);
 
     for (;;) {
@@ -75,7 +74,7 @@ int measurements(int color1, int color2, int s_flag, int m_flag, int k_flag)
 	length = 0.0;
 
 	do {
-	    R_standard_color(color1);
+	    D_use_color(color1);
 	    R_get_location_with_line(cur_screen_x, cur_screen_y, &screen_x,
 				     &screen_y, &button);
 	    uy = D_d_to_u_row((double)screen_y);
@@ -95,7 +94,8 @@ int measurements(int color1, int color2, int s_flag, int m_flag, int k_flag)
 		cur_uy = uy;
 	    }
 	} while (button != 3);
-	R_stabilize();
+
+	R_flush();
 
 	if (!s_flag)
 	    G_clear_screen();

@@ -24,7 +24,8 @@
 #include <math.h>
 
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
+#include <grass/glocale.h>
 
 #include "globals.h"
 
@@ -208,8 +209,7 @@ void ReadVertices(double *px, double *py, double *pz, int num_points)
     int vnum = 0;
     int i;
 
-    G_message("Reading 3D vertices:");
-
+    G_important_message(_("Reading 3D vertices..."));
     for (i = 0; i < num_points; i++) {
 	v = MakeNullVertex();
 	v->v[X] = px[i];
@@ -228,8 +228,6 @@ Outputs the 3D triangles to a GRASS 3d vector map.
 void writeVertices(struct Map_info *Map)
 {
     /* Pointers to vertices, edges, faces. */
-    tVertex v;
-    tEdge e;
     tFace f;
     double *px, *py, *pz;
     double fx, fy, fz;
@@ -333,9 +331,8 @@ void writeVertices(struct Map_info *Map)
 
 int DoubleTriangle(void)
 {
-    tVertex v0, v1, v2, v3, t;
+    tVertex v0, v1, v2, v3;
     tFace f0, f1 = NULL;
-    tEdge e0, e1, e2, s;
     long int vol;
 
     /* Find 3 noncollinear points. */
@@ -391,14 +388,12 @@ vertices are those in the list marked as onhull.
 void ConstructHull(void)
 {
     tVertex v, vnext;
-    long int vol;
     bool changed;		/* T if addition changes hull; not used. */
     int i;
     int numVertices;
 
 
-    G_message("Constructing 3D hull:");
-
+    G_important_message(_("Constructing 3D hull..."));
 
     v = vertices;
     i = 0;

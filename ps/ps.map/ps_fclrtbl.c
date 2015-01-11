@@ -4,9 +4,9 @@
  */
 
 #include <string.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
-#include "ps_info.h"
 #include "colortable.h"
 #include "local_proto.h"
 
@@ -21,13 +21,12 @@
 
 int PS_fcolortable(void)
 {
-    char buf[512], *ch, units[GNAME_MAX];
+    char buf[512], *ch, *units;
     int i, k;
     int R, G, B;
     DCELL dmin, dmax, val;
-    double t, l, r;		/* legend top, left, right */
-    double x1, x2, y, dy, fontsize, xu, yu;
-    double col_width;
+    double t, l;		/* legend top, left, right */
+    double x1, x2, y, dy, xu, yu;
     double width;		/* width of legend in map units */
     double height;		/* width of legend in map units */
     double cwidth;		/* width of one color line */
@@ -40,19 +39,20 @@ int PS_fcolortable(void)
     double ex, cur_d, cur_ex;
     int do_color;
     double grey_color_val, margin;
-    int max_label_length = 0, label_posn, label_xref, label_yref;
+    unsigned int max_label_length = 0;
+    int label_posn, label_xref, label_yref;
 
     /* let user know what's happenning */
     G_message(_("Creating color table for <%s in %s>..."),
 	      ct.name, ct.mapset);
 
     /* Get color range */
-    if (G_read_fp_range(ct.name, ct.mapset, &range) == -1) {
+    if (Rast_read_fp_range(ct.name, ct.mapset, &range) == -1) {
 	G_warning(_("Range information not available (run r.support)"));
 	return 1;
     }
 
-    G_get_fp_range_min_max(&range, &dmin, &dmax);
+    Rast_get_fp_range_min_max(&range, &dmin, &dmax);
 
     /* override if range command is set */
     if (ct.range_override) {
@@ -65,14 +65,15 @@ int PS_fcolortable(void)
 	return 1;
     }
 
-    if (G_read_colors(ct.name, ct.mapset, &colors) == -1)
+    if (Rast_read_colors(ct.name, ct.mapset, &colors) == -1)
 	G_warning(_("Unable to read colors for colorbar"));
 
     do_color = (PS.grey == 0 && PS.level == 2);
 
-    /* set font */
-    fontsize = (double)ct.fontsize;
-    fprintf(PS.fp, "(%s) FN %.1f SF\n", ct.font, fontsize);
+    /* set font name, size, and color */
+    set_font_name(ct.font);
+    set_font_size(ct.fontsize);
+    set_ps_color(&ct.color);
 
     /* set colortable location,  */
     /* if height and width are not given, calculate defaults */
@@ -81,7 +82,7 @@ int PS_fcolortable(void)
     if (ct.height <= 0)
 	ct.height = 10 * ct.fontsize / 72.0;
 
-    dy = 1.5 * fontsize;
+    dy = 1.5 * ct.fontsize;
 
     G_debug(3, "pwidth = %f pheight = %f", PS.page_width, PS.page_height);
     G_debug(3, "ct.width = %f ct.height = %f", ct.width, ct.height);
@@ -112,8 +113,7 @@ int PS_fcolortable(void)
 
     G_debug(3, "corrected ct.x = %f ct.y = %f", ct.x, ct.y);
 
-    r = l + 72.0 * ct.width;
-    col_width = ct.width / (double)ct.cols;
+    /* r = l + 72.0 * ct.width; */ /* unused */
 
     /* Calc number of colors to print */
     width = 72.0 * ct.width;
@@ -121,7 +121,7 @@ int PS_fcolortable(void)
     cwidth = 0.1;
     ncols = (int)height / cwidth;
     step = (dmax - dmin) / (ncols - 1);
-    lwidth = 0.02 * width;
+    lwidth = ct.lwidth;
 
     /* Print color band */
     y = t;
@@ -132,7 +132,7 @@ int PS_fcolortable(void)
     for (i = 0; i < ncols; i++) {
 	/*      val = dmin + i * step;   flip */
 	val = dmax - i * step;
-	G_get_d_raster_color(&val, &R, &G, &B, &colors);
+	Rast_get_d_color(&val, &R, &G, &B, &colors);
 
 	if (do_color)
 	    fprintf(PS.fp, "%.3f %.3f %.3f C\n", (double)R / 255.,
@@ -201,8 +201,11 @@ int PS_fcolortable(void)
     x1 = l + width + 0.1;
     if (ct.tickbar)		/* switch to draw tic all the way through bar */
 	x2 = x1 - width;
-    else
+    else {
 	x2 = x1 + 0.37 * width;
+	if (width > 36)
+	    x2 = x1 + 0.37 * 36;
+    }    
 
     /* do nice label: we need so many decimal places to hold all step decimal digits */
     if (step > 100) {		/* nice steps do not have > 2 digits, important separate, otherwise */
@@ -234,11 +237,11 @@ int PS_fcolortable(void)
 	*ch = '\0';
 
 	if (ct.tickbar)		/* switch to draw tic all the way through bar */
-	    fprintf(PS.fp, "(%s) %f %f MS\n", buf, x1 + 0.2 * fontsize,
-		    y - 0.35 * fontsize);
+	    fprintf(PS.fp, "(%s) %f %f MS\n", buf, x1 + 0.2 * ct.fontsize,
+		    y - 0.35 * ct.fontsize);
 	else
-	    fprintf(PS.fp, "(%s) %f %f MS\n", buf, x2 + 0.2 * fontsize,
-		    y - 0.35 * fontsize);
+	    fprintf(PS.fp, "(%s) %f %f MS\n", buf, x2 + 0.2 * ct.fontsize,
+		    y - 0.35 * ct.fontsize);
 
 	if(strlen(buf) > max_label_length)
 	    max_label_length = strlen(buf);
@@ -248,11 +251,12 @@ int PS_fcolortable(void)
 
 
     /* print units label, if present */
-    if (G_read_raster_units(ct.name, ct.mapset, units) != 0)
-        units[0] = '\0';
+    units = Rast_read_units(ct.name, ct.mapset);
+    if (!units)
+        units = "";
 
     if(strlen(units)) {
-	margin = 0.2 * fontsize;
+	margin = 0.2 * ct.fontsize;
 	if (margin < 2)
 	    margin = 2;
 	fprintf(PS.fp, "/mg %.1f def\n", margin);
@@ -280,16 +284,16 @@ int PS_fcolortable(void)
 	case 2:
 	    /* directly above the tick numbers */
 	    if (ct.tickbar)
-		xu = x1 + 0.2 * fontsize;
+		xu = x1 + 0.2 * ct.fontsize;
 	    else
-		xu = x2 + 0.2 * fontsize;
+		xu = x2 + 0.2 * ct.fontsize;
 	    yu = t + 0.05*72;
 	    label_xref = LEFT;
 	    label_yref = LOWER;
 	    break;
 	case 3:
 	    /* to the right of the tick numbers */
-	    xu = 0.15*72 + max_label_length*fontsize*0.5;
+	    xu = 0.15*72 + max_label_length * ct.fontsize * 0.5;
 	    if (ct.tickbar)
 		xu += x1;
 	    else
@@ -301,9 +305,9 @@ int PS_fcolortable(void)
 	case 4:
 	    /* directly below the tick numbers */
 	    if (ct.tickbar)
-		xu = x1 + 0.2 * fontsize;
+		xu = x1 + 0.2 * ct.fontsize;
 	    else
-		xu = x2 + 0.2 * fontsize;
+		xu = x2 + 0.2 * ct.fontsize;
 	    yu = t - height - 0.05*72;
 	    label_xref = LEFT;
 	    label_yref = UPPER;
@@ -317,12 +321,12 @@ int PS_fcolortable(void)
 	    break;
 	}
 
-	text_box_path( xu, yu, label_xref, label_yref, units, fontsize, 0);
+	text_box_path( xu, yu, label_xref, label_yref, units, 0);
 	fprintf(PS.fp, "TIB\n");
 	set_rgb_color(BLACK);
     }
 
-    G_free_colors(&colors);
+    Rast_free_colors(&colors);
 
     return 0;
 }

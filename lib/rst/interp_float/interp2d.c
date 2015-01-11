@@ -26,7 +26,9 @@
 #include <stdio.h>
 #include <math.h>
 #include <unistd.h>
+
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include <grass/bitmap.h>
 
@@ -44,7 +46,7 @@ int IL_grid_calc_2d(struct interp_params *params, struct quaddata *data,	/* give
 		    double *c1min, double *c1max, double *c2min, double *c2max,	/* min and max interp. curv. val. */
 		    double *ertot,	/* total interplating func. error */
 		    double *b,	/* solutions of linear equations */
-		    int offset1,	/* offset for temp file writing */
+		    off_t offset1,	/* offset for temp file writing */
 		    double dnorm)
 
 /*
@@ -79,7 +81,7 @@ int IL_grid_calc_2d(struct interp_params *params, struct quaddata *data,	/* give
     double zz;
     int bmask = 1;
     static int first_time_z = 1;
-    int offset, offset2;
+    off_t offset, offset2;
     double fstar2 = params->fi * params->fi / 4.;
     double tfsta2, tfstad;
     double ns_res, ew_res;
@@ -230,16 +232,16 @@ int IL_grid_calc_2d(struct interp_params *params, struct quaddata *data,	/* give
 
 	    }
 	    else {
-		G_set_d_null_value(params->az + l, 1);
+		Rast_set_d_null_value(params->az + l, 1);
 		/*          fprintf (stderr, "zz=%f, az[l]=%f, c=%d\n", zz, params->az[l], l); */
 
 		if (cond1) {
-		    G_set_d_null_value(params->adx + l, 1);
-		    G_set_d_null_value(params->ady + l, 1);
+		    Rast_set_d_null_value(params->adx + l, 1);
+		    Rast_set_d_null_value(params->ady + l, 1);
 		    if (cond2) {
-			G_set_d_null_value(params->adxx + l, 1);
-			G_set_d_null_value(params->adyy + l, 1);
-			G_set_d_null_value(params->adxy + l, 1);
+			Rast_set_d_null_value(params->adxx + l, 1);
+			Rast_set_d_null_value(params->adyy + l, 1);
+			Rast_set_d_null_value(params->adxy + l, 1);
 		    }
 		}
 	    }

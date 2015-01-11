@@ -8,7 +8,7 @@
  *
  * PURPOSE:      Converts a raster map into a vector map layer
  *
- * COPYRIGHT:    (C) 2007 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2007, 2011 by the GRASS Development Team
  *
  *               This program is free software under the GNU General Public
  *               License (>=v2). Read the file COPYING that comes with GRASS
@@ -16,14 +16,13 @@
  *
  *****************************************************************************/
 
-#define MAIN
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/dbmi.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 #include "global.h"
 
@@ -36,33 +35,58 @@
  * 2007/2: attributes for lines supported
  */
 
+int data_type;
+int data_size;
+struct Map_info Map;
+int input_fd;			/* input raster map descriptor */
+struct line_cats *Cats;
+struct Cell_head cell_head;
+
+int direction;
+int first_read, last_read;
+int input_fd;
+int row_length, row_count, n_rows;
+int total_areas;
+
+int smooth_flag;		/* this is 0 for no smoothing, 1 for smoothing of lines */
+int value_flag;			/* use raster values as categories */
+struct Categories RastCats;
+int has_cats;			/* Category labels available */
+struct field_info *Fi;
+dbDriver *driver;
+dbString sql, label;
+
 int main(int argc, char *argv[])
 {
     struct GModule *module;
-    struct Option *in_opt, *out_opt, *feature_opt;
-    struct Flag *smooth_flg, *value_flg, *z_flg, *quiet, *no_topol;
-    char *mapset;
-    int feature;
+    struct Option *in_opt, *out_opt, *feature_opt, *column_name;
+    struct Flag *smooth_flg, *value_flg, *z_flg, *no_topol, *notab_flg;
+    int feature, notab_flag;
 
 
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, conversion, vectorization");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("conversion"));
+    G_add_keyword(_("geometry"));
+    G_add_keyword(_("vectorization"));
     module->description = _("Converts a raster map into a vector map.");
 
     in_opt = G_define_standard_option(G_OPT_R_INPUT);
 
     out_opt = G_define_standard_option(G_OPT_V_OUTPUT);
-
-    feature_opt = G_define_option();
-    feature_opt->key = "feature";
-    feature_opt->type = TYPE_STRING;
+    
+    feature_opt = G_define_standard_option(G_OPT_V_TYPE);
     feature_opt->required = YES;
     feature_opt->multiple = NO;
     feature_opt->options = "point,line,area";
-    feature_opt->answer = "line";
-    feature_opt->description = _("Feature type");
+    feature_opt->answer = NULL;
+
+    column_name = G_define_standard_option(G_OPT_DB_COLUMN);
+    column_name->label = _("Name of attribute column to store value");
+    column_name->description = _("Name must be SQL compliant");
+    column_name->answer = "value";
 
     smooth_flg = G_define_flag();
     smooth_flg->key = 's';
@@ -76,53 +100,48 @@ int main(int argc, char *argv[])
 
     z_flg = G_define_flag();
     z_flg->key = 'z';
-    z_flg->description =
-	_("Write raster values as z coordinate. Table is not created. "
-	  "Currently supported only for points.");
+    z_flg->label = _("Write raster values as z coordinate");
+    z_flg->description = _("Table is not created. "
+			   "Currently supported only for points.");
     z_flg->guisection = _("Attributes");
 
     no_topol = G_define_flag();
     no_topol->key = 'b';
-    no_topol->description =
-	_("Do not build vector topology (use with care for massive point export)");
+    no_topol->label = _("Do not build vector topology");
+    no_topol->description = _("Recommended for massive point conversion");
 
-    /* please, remove before GRASS 7 released */
-    quiet = G_define_flag();
-    quiet->key = 'q';
-    quiet->description = _("Quiet - Do not show progress");
+    notab_flg = G_define_standard_flag(G_FLG_V_TABLE);
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    /* please, remove before GRASS 7 released */
-    if (quiet->answer) {
-	putenv("GRASS_VERBOSE=0");
-	G_warning(_("The '-q' flag is superseded and will be removed "
-		    "in future. Please use '--quiet' instead."));
-    }
-
-
     feature = Vect_option_to_types(feature_opt);
     smooth_flag = (smooth_flg->answer) ? SMOOTH : NO_SMOOTH;
     value_flag = value_flg->answer;
+    notab_flag = notab_flg->answer;
 
     if (z_flg->answer && (feature != GV_POINT))
 	G_fatal_error(_("z flag is supported only for points"));
 
     /* Open files */
-    if ((mapset = G_find_cell(in_opt->answer, "")) == NULL)
-	G_fatal_error(_("Raster map <%s> not found"), in_opt->answer);
+    input_fd = Rast_open_old(in_opt->answer, "");
 
-    if ((input_fd = G_open_cell_old(in_opt->answer, mapset)) < 0)
-	G_fatal_error(_("Unable to open raster map <%s>"), in_opt->answer);
-
-    data_type = G_get_raster_map_type(input_fd);
-    data_size = G_raster_size(data_type);
+    data_type = Rast_get_map_type(input_fd);
+    data_size = Rast_cell_size(data_type);
     G_get_window(&cell_head);
 
     if (value_flag && data_type != CELL_TYPE) {
-	G_warning(_("Raster is not CELL, '-v' flag ignored, raster values will be written to the table."));
+	if (!notab_flag)
+	    G_warning(_("Raster is not CELL, '-v' flag ignored, raster values will be written to the table."));
+	else if (z_flg->answer)
+	    G_warning(_("Raster is not CELL, '-v' flag ignored, raster values will be z coordinate."));
+	else
+	    G_warning(_("Raster is not CELL, '-v' flag ignored, raster values will be lost."));
 	value_flag = 0;
+    }
+
+    if (!value_flag && notab_flag) {
+	G_warning(_("Categories will be unique sequence, raster values will be lost."));
     }
 
     if (z_flg->answer)
@@ -136,7 +155,7 @@ int main(int argc, char *argv[])
 
     /* Open category labels */
     if (data_type == CELL_TYPE) {
-	if (0 == G_read_cats(in_opt->answer, mapset, &RastCats))
+	if (0 == Rast_read_cats(in_opt->answer, "", &RastCats))
 	    has_cats = 1;
     }
     else
@@ -147,14 +166,17 @@ int main(int argc, char *argv[])
 
     /* Create table */
     if ((feature & (GV_AREA | GV_POINT | GV_LINE)) &&
-	(!value_flag || (value_flag && has_cats)) && !(z_flg->answer)) {
+	(!value_flag || (value_flag && has_cats)) && !(z_flg->answer)
+	&& !notab_flag) {
 	char buf[1000];
 
 	Fi = Vect_default_field_info(&Map, 1, NULL, GV_1TABLE);
-	Vect_map_add_dblink(&Map, 1, NULL, Fi->table, "cat", Fi->database,
+	Vect_map_add_dblink(&Map, 1, NULL, Fi->table, GV_KEY_COLUMN, Fi->database,
 			    Fi->driver);
 
-	driver = db_start_driver_open_database(Fi->driver, Vect_subst_var(Fi->database, &Map));
+	driver =
+	    db_start_driver_open_database(Fi->driver,
+					  Vect_subst_var(Fi->database, &Map));
 	if (driver == NULL)
 	    G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 			  Fi->database, Fi->driver);
@@ -165,10 +187,15 @@ int main(int argc, char *argv[])
 	db_append_string(&sql, buf);
 
 	if (!value_flag) {	/* add value to the table */
-	    if (data_type == CELL_TYPE)
-		db_append_string(&sql, ", value integer");
-	    else
-		db_append_string(&sql, ", value double precision");
+	    if (data_type == CELL_TYPE) {
+		db_append_string(&sql, ", ");
+		db_append_string(&sql, column_name->answer);
+		db_append_string(&sql, " integer");
+	    } else {
+		db_append_string(&sql, ",");
+		db_append_string(&sql, column_name->answer);
+		db_append_string(&sql, " double precision");
+	    }
 	}
 
 	if (has_cats) {
@@ -195,7 +222,7 @@ int main(int argc, char *argv[])
 	    G_fatal_error(_("Unable to create table: %s"),
 			  db_get_string(&sql));
 
-	if (db_create_index2(driver, Fi->table, "cat") != DB_OK)
+	if (db_create_index2(driver, Fi->table, GV_KEY_COLUMN) != DB_OK)
 	    G_warning(_("Unable to create index"));
 
 	if (db_grant_on_table
@@ -232,7 +259,7 @@ int main(int argc, char *argv[])
 	extract_points(z_flg->answer);
     }
 
-    G_close_cell(input_fd);
+    Rast_close(input_fd);
 
     if (!no_topol->answer)
 	Vect_build(&Map);
@@ -247,7 +274,8 @@ int main(int argc, char *argv[])
 	if (fidx >= 0) {
 	    ncats = Vect_cidx_get_num_cats_by_index(&Map, fidx);
 	    lastcat = -1;
-
+            
+            G_important_message(_("Updating attributes..."));
 	    for (c = 0; c < ncats; c++) {
 		Vect_cidx_get_cat_by_index(&Map, fidx, c, &cat, &tp, &id);
 
@@ -280,7 +308,7 @@ int main(int argc, char *argv[])
     }
 
     if (has_cats)
-	G_free_cats(&RastCats);
+	Rast_free_cats(&RastCats);
 
     if (driver != NULL) {
 	db_commit_transaction(driver);

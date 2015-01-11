@@ -36,7 +36,12 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("imagery, classification, supervised, MLC");
+    G_add_keyword(_("imagery"));
+    G_add_keyword(_("classification"));
+    G_add_keyword(_("supervised classification"));
+    G_add_keyword(_("Maximum Likelihood Classification"));
+    G_add_keyword("MLC");
+    G_add_keyword(_("signatures"));
     module->description =
 	_("Generates statistics for i.maxlik from raster map.");
 

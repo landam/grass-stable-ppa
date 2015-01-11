@@ -1,12 +1,29 @@
+/*!
+  \file lib/db/dbmi_base/table.c
+  
+  \brief DBMI Library (base) - table management
+  
+  (C) 1999-2009, 2011 by the GRASS Development Team
+  
+  This program is free software under the GNU General Public License
+  (>=v2). Read the file COPYING that comes with GRASS for details.
+  
+  \author Joel Jones (CERL/UIUC), Radim Blazek
+  \author Doxygenized by Martin Landa <landa.martin gmail.com> (2011)
+*/
+
 #include <stdlib.h>
+#include <string.h>
 #include <grass/gis.h>
 #include <grass/dbmi.h>
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
+  \brief Allocate a table with a specific number of columns
+  
+  \param ncols number of columns which should be allocated
+  
+  \return allocated dbTable
+  \return NULL in case of an error
  */
 dbTable *db_alloc_table(int ncols)
 {
@@ -32,11 +49,10 @@ dbTable *db_alloc_table(int ncols)
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
+   \brief Initialize the table to zero
+   
+   \param table pointer to dbTable
+*/
 void db_init_table(dbTable * table)
 {
     db_zero((void *)table, sizeof(dbTable));
@@ -45,11 +61,10 @@ void db_init_table(dbTable * table)
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
+  \brief Free the table
+  
+  \param table pointer to dbTable
+*/
 void db_free_table(dbTable * table)
 {
     int i;
@@ -64,32 +79,37 @@ void db_free_table(dbTable * table)
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
+   \brief Set the name of the table
+
+   \param table pointer to dbTable
+   \param name The name of the table
+
+   \return DB_OK on success
+*/
 int db_set_table_name(dbTable * table, const char *name)
 {
     return db_set_string(&table->tableName, name);
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
+  \brief Get the name of the table
+
+  \param table pointer to dbTable
+
+  \return name of the table
+*/
 const char *db_get_table_name(dbTable * table)
 {
     return db_get_string(&table->tableName);
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
+  \brief Set the description of the table
+  
+  \param table pointer to dbTable
+  \param name description of the table
+  
+  \return DB_OK
  */
 int db_set_table_description(dbTable * table, const char *description)
 {
@@ -97,33 +117,29 @@ int db_set_table_description(dbTable * table, const char *description)
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
+  \brief Get the description of the table
+
+  \param table pointer to dbTable
+  
+  \return description of the table
+*/
 const char *db_get_table_description(dbTable * table)
 {
     return db_get_string(&table->description);
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
+  \brief Return the number of columns of the table
+  
+  \param table pointer to dbTable
+  
+  \return number of columns
+*/
 int db_get_table_number_of_columns(dbTable * table)
 {
     return table->numColumns;
 }
 
-/*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
 static void set_all_column_privs(dbTable * table, void (*set_column_priv) ())
 {
     int col, ncols;
@@ -136,12 +152,6 @@ static void set_all_column_privs(dbTable * table, void (*set_column_priv) ())
     }
 }
 
-/*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
 static int get_all_column_privs(dbTable * table, int (*get_column_priv) ())
 {
     int priv, col, ncols;
@@ -158,87 +168,83 @@ static int get_all_column_privs(dbTable * table, int (*get_column_priv) ())
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
+  \brief Grant selection privileges for all columns
+  
+  \param table pointer to dbTable
+*/
 void db_set_table_select_priv_granted(dbTable * table)
 {
     set_all_column_privs(table, db_set_column_select_priv_granted);
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
+  \brief Set selection privileges not granted for all columns
+  
+  \param table pointer to dbTable
+*/
 void db_set_table_select_priv_not_granted(dbTable * table)
 {
     set_all_column_privs(table, db_set_column_select_priv_not_granted);
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
+  \brief Get table select privileges
+
+  \param table pointer to dbTable
+ 
+  \return privilages
+*/
 int db_get_table_select_priv(dbTable * table)
 {
     return get_all_column_privs(table, db_get_column_select_priv);
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
+  \brief Grant update privileges for all columns
+
+  \param table pointer to dbTable
+*/
 void db_set_table_update_priv_granted(dbTable * table)
 {
     set_all_column_privs(table, db_set_column_update_priv_granted);
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
+  \brief Set update privileges not granted for all columns
+  
+  \param table pointer to dbTable
+*/
 void db_set_table_update_priv_not_granted(dbTable * table)
 {
     set_all_column_privs(table, db_set_column_update_priv_not_granted);
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
+  \brief Get table update privileges
+
+  \param table pointer to dbTable
+
+  \return privilages
+*/
 int db_get_table_update_priv(dbTable * table)
 {
     return get_all_column_privs(table, db_get_column_update_priv);
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
+  \brief Grant insert privileges for table
+  
+  \param table pointer to dbTable
+*/
 void db_set_table_insert_priv_granted(dbTable * table)
 {
     table->priv_insert = DB_GRANTED;
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
+   \brief Set insert privileges not granted for table
+   
+   \param table pointer to dbTable
  */
 void db_set_table_insert_priv_not_granted(dbTable * table)
 {
@@ -246,21 +252,21 @@ void db_set_table_insert_priv_not_granted(dbTable * table)
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
+  \brief Get table insert privileges
+
+  \param table pointer to dbTable
+
+  \return prilileges
+*/
 int db_get_table_insert_priv(dbTable * table)
 {
     return table->priv_insert;
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
+  \brief Grant delete privileges for table
+  
+  \param table pointer to dbTable
  */
 void db_set_table_delete_priv_granted(dbTable * table)
 {
@@ -268,32 +274,153 @@ void db_set_table_delete_priv_granted(dbTable * table)
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
+  \brief Set delete privileges not granted for table
+  
+  \param table pointer to dbTable
+*/
 void db_set_table_delete_priv_not_granted(dbTable * table)
 {
     table->priv_delete = DB_NOT_GRANTED;
 }
 
 /*!
-   \fn 
-   \brief 
-   \return 
-   \param 
- */
+  \brief Get table delete privileges
+
+  \param table pointer to dbTable
+
+  \return privileges
+*/
 int db_get_table_delete_priv(dbTable * table)
 {
     return table->priv_delete;
 }
 
 /*!
+  \brief Returns column structure for given table and column number
+
+  \param table pointer to dbTable
+  \param idx     column index (starting with '0')
+
+  \return pointer to dbColumn
+  \return NULL if not found
+*/
+dbColumn *db_get_table_column(dbTable * table, int idx)
+{
+    if (idx < 0 || idx >= table->numColumns)
+	return ((dbColumn *) NULL);
+    return &table->columns[idx];
+}
+
+/*!
+  \brief Returns column structure for given table and column name
+
+  \param table pointer to dbTable
+  \param name the name of the column
+
+  \return pointer to dbColumn
+  \return NULL if not found
+*/
+dbColumn *db_get_table_column_by_name(dbTable * table, const char* name)
+{
+    dbColumn *c = NULL;
+    int i, columns = table->numColumns;
+
+    for(i = 0; i < columns; i++ ) {
+        c = db_get_table_column(table, i);
+
+        if(c == NULL)
+            return c;
+
+        if(strcmp(name, db_get_string(&c->columnName)) == 0)
+            break;
+
+        c = NULL;
+    }
+
+    return c;
+}
+
+/*!
+  \brief Set a specific column for given table and column number
+  
+  \param table Pointer to dbTable
+  \param idx Column index (starting with '0').  The index must be in range.
+  \param column Pointer to a dbColumn to insert.
+  A copy of the column stored, so the original column can be deleted.
+  
+  \return DB_OK on success
+  \return DB_FAILURE on error
+*/
+int db_set_table_column(dbTable * table, int idx, dbColumn *column)
+{
+    if (idx < 0 || idx >= table->numColumns)
+	return DB_FAILED;
+    db_copy_column(&table->columns[idx], column);
+    return DB_OK;
+}
+
+/*!
+  \brief Append a specific column to given table
+  
+  \param table Pointer to dbTable
+  \param column Pointer to a dbColumn to append.
+  A copy of the column is stored, so the original column can be deleted.
+  
+  \return DB_OK on success
+  \return DB_FAILURE on error
+*/
+int db_append_table_column(dbTable * table, dbColumn *column)
+{
+    table->columns = (dbColumn*)db_realloc((void*)table->columns, sizeof(dbColumn)*(table->numColumns + 1));
+    if(table->columns == NULL)
+        return DB_FAILED;
+    db_copy_column(&table->columns[table->numColumns], column);
+    table->numColumns++;
+    return DB_OK;
+}
+
+/*!
+  \brief Make a new exact copy of an existing table
+  
+  New memory is allocated for the clone, the columns-content will be copied too.
+  
+  \param src Pointer to dbTable
+  
+  \return A new alloacted clone of the given table on success 
+  \return NULL on error
+*/
+dbTable *db_clone_table(dbTable *src)
+{
+    int i, n = db_get_table_number_of_columns(src);
+    dbTable *new = db_alloc_table(n);
+    if(new == NULL)
+        return (new = NULL);
+
+    db_copy_string(&new->description, &src->description);
+    db_copy_string(&new->tableName, &src->tableName);
+
+    /* Deep copy the columns */
+    for(i = 0; i < n; i++)
+    {
+        db_copy_column(&new->columns[i], &src->columns[i]);
+    }
+
+    new->numColumns = n;
+    new->priv_delete = src->priv_delete;
+    new->priv_insert = src->priv_insert;
+
+    return new;
+}
+
+/*!
    \brief Create SQL CREATE sring from table definition
-   \return 
-   \param 
- */
+ 
+   \param table pointer to dbTable
+   \param sql dbString to store the SQL CREATE string
+
+   \return DB_OK on success
+   \return DB_FAILED on error
+*/
 int db_table_to_sql(dbTable * table, dbString * sql)
 {
     int col, ncols;

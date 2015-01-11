@@ -30,7 +30,7 @@
 #% required: no
 #%end
 #%option
-#% key: conf
+#% key: config
 #% type: string
 #% gisprompt: new,file,file
 #% description: Name of configuration file where inserted areas will be stored
@@ -71,7 +71,7 @@ f_path="$GISBASE/etc/r.li.setup"
 if test "$GISBASE" = ""; then
    echo "You must be in GRASS GIS to run this program." 1>&2
    exit 1
-fi
+ fi
 
 if [ "$1" != "@ARGS_PARSED@" ] ; then
    exec g.parser "$0" "$@"

@@ -24,7 +24,6 @@
 #include <errno.h>
 #include <grass/gis.h>
 #include <grass/display.h>
-#include <grass/raster.h>
 #include <grass/glocale.h>
 
 static char **fonts;
@@ -43,7 +42,8 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("display, setup");
+    G_add_keyword(_("display"));
+    G_add_keyword(_("settings"));
     module->description =
 	_("Selects the font in which text will be displayed "
 	  "on the user's graphics monitor.");
@@ -55,13 +55,12 @@ int main(int argc, char **argv)
     opt1->answer = "romans";
     opt1->description = _("Choose new current font");
 
-    opt2 = G_define_option();
+    opt2 = G_define_standard_option(G_OPT_F_INPUT);
     opt2->key = "path";
-    opt2->type = TYPE_STRING;
     opt2->required = NO;
     opt2->description =
 	_("Path to Freetype-compatible font including file name");
-    opt2->gisprompt = "old_file,file,font";
+    opt2->gisprompt = "old,font,file";
 
     opt3 = G_define_option();
     opt3->key = "charset";
@@ -82,18 +81,19 @@ int main(int argc, char **argv)
 	exit(EXIT_FAILURE);
 
     /* load the font */
-    if (R_open_driver() != 0)
-	G_fatal_error(_("No graphics device selected"));
+    if (D_open_driver() != 0)
+	G_fatal_error(_("No graphics device selected. "
+			"Use d.mon to select graphics device."));
 
     if (flag1->answer) {	/* List font names */
 	print_font_list(stdout, 0);
-	R_close_driver();
+	D_close_driver();
 	exit(EXIT_SUCCESS);
     }
 
     if (flag2->answer) {	/* List fonts verbosely */
 	print_font_list(stdout, 1);
-	R_close_driver();
+	D_close_driver();
 	exit(EXIT_SUCCESS);
     }
 
@@ -108,7 +108,7 @@ int main(int argc, char **argv)
 	if (!S_ISREG(info.st_mode))
 	    G_fatal_error(_("Font path %s is not a file"), opt2->answer);
 	else
-	    R_font(opt2->answer);
+	    D_font(opt2->answer);
     }
     else if (opt1->answer) {	/* Font name from fontcap */
 	int i = 0;
@@ -117,7 +117,7 @@ int main(int argc, char **argv)
 	read_freetype_fonts(0);
 	while (i < num_fonts) {
 	    if (strcmp(opt1->answer, fonts[i]) == 0) {
-		R_font(opt1->answer);
+		D_font(opt1->answer);
 		break;
 	    }
 	    i++;
@@ -128,11 +128,10 @@ int main(int argc, char **argv)
     }
 
     if (opt3->answer)		/* Set character encoding */
-	R_charset(opt3->answer);
+	D_encoding(opt3->answer);
 
     /* add this command to the list */
-    D_add_to_list(G_recreate_command());
-    R_close_driver();
+    D_close_driver();
 
     exit(EXIT_SUCCESS);
 }
@@ -144,9 +143,9 @@ static void read_freetype_fonts(int verbose)
     int i;
 
     if (verbose)
-	R_font_info(&list, &count);
+	D_font_info(&list, &count);
     else
-	R_font_list(&list, &count);
+	D_font_list(&list, &count);
 
     if (max_fonts < num_fonts + count) {
 	max_fonts = num_fonts + count;

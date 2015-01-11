@@ -57,9 +57,15 @@ static void alloc_buffers(void)
     trans = G_realloc(trans, nalloc * sizeof(int));
 }
 
-void PNG_begin_scaled_raster(int mask, int s[2][2], int d[2][2])
+void PNG_begin_raster(int mask, int s[2][2], double fd[2][2])
 {
+    int d[2][2];
     int i;
+
+    d[0][0] = (int) floor(fd[0][0] + 0.5);
+    d[0][1] = (int) floor(fd[0][1] + 0.5);
+    d[1][0] = (int) floor(fd[1][0] + 0.5);
+    d[1][1] = (int) floor(fd[1][1] + 0.5);
 
     ncols = d[0][1] - d[0][0];
 
@@ -73,17 +79,17 @@ void PNG_begin_scaled_raster(int mask, int s[2][2], int d[2][2])
 	trans[i] = scale_rev_x(d[0][0] + i);
 }
 
-int PNG_scaled_raster(int n, int row,
-		      const unsigned char *red, const unsigned char *grn,
-		      const unsigned char *blu, const unsigned char *nul)
+int PNG_raster(int n, int row,
+	       const unsigned char *red, const unsigned char *grn,
+	       const unsigned char *blu, const unsigned char *nul)
 {
     int d_y0 = scale_fwd_y(row + 0);
     int d_y1 = scale_fwd_y(row + 1);
     int d_rows = d_y1 - d_y0;
-    int x0 = max(clip_left - dst[0][0], 0);
-    int x1 = min(clip_rite - dst[0][0], ncols);
-    int y0 = max(clip_top - d_y0, 0);
-    int y1 = min(clip_bot - d_y0, d_rows);
+    int x0 = max(png.clip_left - dst[0][0], 0);
+    int x1 = min(png.clip_rite - dst[0][0], ncols);
+    int y0 = max(png.clip_top - d_y0, 0);
+    int y1 = min(png.clip_bot - d_y0, d_rows);
     int x, y;
 
     if (y1 <= y0)
@@ -97,16 +103,16 @@ int PNG_scaled_raster(int n, int row,
 	if (masked && nul && nul[j])
 	    continue;
 
-	c = get_color(red[j], grn[j], blu[j], 0);
+	c = png_get_color(red[j], grn[j], blu[j], 0);
 
 	for (y = y0; y < y1; y++) {
 	    int yy = d_y0 + y;
 
-	    grid[yy * width + xx] = c;
+	    png.grid[yy * png.width + xx] = c;
 	}
     }
 
-    modified = 1;
+    png.modified = 1;
 
     return next_row(row, d_y1);
 }

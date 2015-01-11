@@ -1,35 +1,50 @@
+/*!
+  \file db/drivers/fetch.c
+  
+  \brief Low level OGR SQL driver
+ 
+  (C) 2004-2009 by the GRASS Development Team
+  This program is free software under the GNU General Public License
+  (>=v2). Read the file COPYING that comes with GRASS for details.
+  
+  \author Radim Blazek
+  \author Some updates by Martin Landa <landa.martin gmail.com>
+*/
 
-/*****************************************************************************
-*
-* MODULE:       OGR driver 
-*   	    	
-* AUTHOR(S):    Radim Blazek
-*
-* PURPOSE:      DB driver for OGR sources     
-*
-* COPYRIGHT:    (C) 2004 by the GRASS Development Team
-*
-*               This program is free software under the GNU General Public
-*   	    	License (>=v2). Read the file COPYING that comes with GRASS
-*   	    	for details.
-*
-*****************************************************************************/
 #include <stdlib.h>
 #include <string.h>
+
 #include <grass/gis.h>
 #include <grass/dbmi.h>
-#include "ogr_api.h"
-#include "globals.h"
-#include "proto.h"
 #include <grass/glocale.h>
 
+#include <ogr_api.h>
+
+#include "globals.h"
+#include "proto.h"
+
+/*!
+  \brief Fetch record
+
+  \param cn pointer to dbCursor
+  \param position position indicator (DB_NEXT, DB_FIRST, DB_LAST, etc)
+  \param[out] more 0 for no record fetched otherwise 1
+
+  \return DB_OK on success
+  \return DB_FAILED on error
+*/
 int db__driver_fetch(dbCursor * cn, int position, int *more)
 {
-    cursor *c;
+    int i, col;
+    int ogrType, sqlType;
+
     dbToken token;
     dbTable *table;
-    int i, col;
-
+    dbColumn *column;
+    dbValue *value;
+    
+    cursor *c;
+    
     G_debug(3, "db_driver_fetch()");
 
     /* get cursor token */
@@ -37,8 +52,8 @@ int db__driver_fetch(dbCursor * cn, int position, int *more)
 
     /* get the cursor by its token */
     if (!(c = (cursor *) db_find_token(token))) {
-	append_error("Cursor not found");
-	report_error();
+	db_d_append_error(_("Cursor not found"));
+	db_d_report_error();
 	return DB_FAILED;
     }
 
@@ -53,8 +68,8 @@ int db__driver_fetch(dbCursor * cn, int position, int *more)
     case DB_CURRENT:
 	break;
     case DB_PREVIOUS:
-	append_error("DB_PREVIOUS not supported");
-	report_error();
+	db_d_append_error(_("DB_PREVIOUS not supported"));
+	db_d_report_error();
 	return DB_FAILED;
 	break;
     case DB_FIRST:
@@ -64,8 +79,8 @@ int db__driver_fetch(dbCursor * cn, int position, int *more)
 	c->hFeature = OGR_L_GetNextFeature(c->hLayer);
 	break;
     case DB_LAST:
-	append_error("DB_LAST not supported");
-	report_error();
+	db_d_append_error(_("DB_LAST not supported"));
+	db_d_report_error();
 	return DB_FAILED;
 	break;
     };
@@ -80,12 +95,25 @@ int db__driver_fetch(dbCursor * cn, int position, int *more)
     /* get the data out of the descriptor into the table */
     table = db_get_cursor_table(cn);
 
-    col = -1;
-    for (i = 0; i < c->ncols; i++) {
-	int ogrType, sqlType;
-	dbColumn *column;
-	dbValue *value;
+    /* check fid column */
+    if (strlen(OGR_L_GetFIDColumn(c->hLayer)) > 0) {
+	column = db_get_table_column(table, 0);
+	ogrType = db_get_column_host_type(column);
+	sqlType = db_get_column_sqltype(column);
 
+	value = db_get_column_value(column);
+	value->i = OGR_F_GetFID(c->hFeature);
+	G_debug(3, "fidcol '%s': ogrType %d, sqlType %d: val = %d",
+		db_get_column_name(column), ogrType, sqlType, value->i);
+
+	col = 0;
+    }
+    else {
+	col = -1;
+    }
+    
+    /* loop attributes */
+    for (i = 0; i < c->ncols; i++) {
 	if (!(c->cols[i])) {
 	    continue;
 	}			/* unknown type */
@@ -137,6 +165,14 @@ int db__driver_fetch(dbCursor * cn, int position, int *more)
     return DB_OK;
 }
 
+/*
+  \brief Get number of rows (i.e. features) in open cursor
+
+  \param cn pointer to dbCursor
+
+  \return number of rows
+  \return DB_FAILED on error
+*/
 int db__driver_get_num_rows(dbCursor * cn)
 {
     cursor *c;
@@ -149,8 +185,8 @@ int db__driver_get_num_rows(dbCursor * cn)
 
     /* get the cursor by its token */
     if (!(c = (cursor *) db_find_token(token))) {
-	append_error("Cursor not found");
-	report_error();
+	db_d_append_error(_("Cursor not found"));
+	db_d_report_error();
 	return DB_FAILED;
     }
 

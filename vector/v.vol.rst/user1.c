@@ -1,7 +1,7 @@
 /*
  ****************************************************************************
  *
- * MODULE:       v.vol.rst: program for 3D (volume) interpolation and geometry
+ * MODULE:       s/v.vol.rst: program for 3D(volume) interpolation and geometry
  *               analysis from scattered point data using regularized spline
  *               with tension
  *
@@ -11,9 +11,9 @@
  *               GRASS 4.2, GRASS 5.0 version and modifications:
  *               H. Mitasova,  I. Kosinovsky, D. Gerdes, J. Hofierka
  *
- * PURPOSE:      v.vol.rst interpolates the values to 3-dimensional grid from
+ * PURPOSE:      s/v.vol.rst interpolates the values to 3-dimensional grid from
  *               point data (climatic stations, drill holes etc.) given in a
- *               3D vector point input. Output grid3 file is elev. 
+ *               sites file named input. Output grid3 file is elev. 
  *               Regularized spline with tension is used for the
  *               interpolation.
  *
@@ -21,18 +21,20 @@
  *               I. Kosinovsky, D. Gerdes, J. Hofierka
  *
  *               This program is free software under the GNU General Public
- *               License (>=v2). Read the file COPYING that comes with GRASS
- *               for details.
+ *              License (>=v2). Read the file COPYING that comes with GRASS
+ *              for details.
  *
  *****************************************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <math.h>
 #include <grass/gis.h>
-#include <grass/G3d.h>
+#include <grass/raster.h>
+#include <grass/raster3d.h>
 #include <grass/dbmi.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/bitmap.h>
 #include <grass/glocale.h>
 #include "oct.h"
@@ -70,7 +72,7 @@ int INPUT(struct Map_info *In, char *column, char *scol, char *wheresql)
     double deltx, delty, deltz;
     int first_time = 1;
     CELL *cellmask;
-    char *mapsetm;
+    const char *mapsetm;
     char buf[500];
     int cat, intval;
     struct field_info *Fi;
@@ -357,19 +359,19 @@ int INPUT(struct Map_info *In, char *column, char *scol, char *wheresql)
 
   /** create a bitmap mask from given raster map **/
     if (maskmap != NULL) {
-	mapsetm = G_find_cell2(maskmap, "");
+	mapsetm = G_find_raster2(maskmap, "");
 	if (!mapsetm) {
 	    sprintf(buf, "mask raster map [%s] not found\n", maskmap);
 	    clean_fatal_error(buf);
 	}
 	bitmask = BM_create(nsizc, nsizr);
-	cellmask = G_allocate_cell_buf();
-	cfmask = G_open_cell_old(maskmap, mapsetm);
+	cellmask = Rast_allocate_c_buf();
+	cfmask = Rast_open_old(maskmap, mapsetm);
 	for (i = 0; i < nsizr; i++) {
 	    irev = nsizr - i - 1;
-	    G_get_map_row(cfmask, cellmask, i);
+	    Rast_get_c_row(cfmask, cellmask, i);
 	    for (j = 0; j < nsizc; j++) {
-		if ((cellmask[j] == 0) || G_is_c_null_value(&cellmask[j]))
+		if ((cellmask[j] == 0) || Rast_is_c_null_value(&cellmask[j]))
 		    BM_set(bitmask, j, irev, 0);
 		else
 		    BM_set(bitmask, j, irev, 1);
@@ -398,16 +400,15 @@ int OUTGR()
     float value;
 
     if ((cellinp != NULL) && (cellout != NULL)) {
-	cell = G_allocate_f_raster_buf();
+	cell = Rast_allocate_f_buf();
 
 	for (i = 0; i < nsizr; i++) {
 	    /* seek to the right row */
-	    if (fseek
-		(Tmp_fd_cell, (long)((nsizr - 1 - i) * nsizc * sizeof(FCELL)),
-		 0) == -1)
-		G_fatal_error("cannot fseek to the right spot");
+	    G_fseek
+		(Tmp_fd_cell, ((off_t)(nsizr - 1 - i) * nsizc * sizeof(FCELL)),
+		 0);
 	    fread(cell, sizeof(FCELL), nsizc, Tmp_fd_cell);
-	    G_put_f_raster_row(fdcout, cell);
+	    Rast_put_f_row(fdcout, cell);
 	}
     }
 
@@ -422,15 +423,14 @@ int OUTGR()
   /*** Write elevation results ***/
     if (outz != NULL) {
 
-	cf1 = G3d_openCellNew(outz, FCELL_TYPE,
-			      G3D_USE_CACHE_DEFAULT, &current_region);
+	cf1 = Rast3d_open_new_opt_tile_size(outz, RASTER3D_USE_CACHE_DEFAULT, &current_region, FCELL_TYPE, 32); 
 	if (cf1 == NULL) {
 	    sprintf(buff, "Can't open %s for writing ", outz);
 	    clean_fatal_error(buff);
 	}
 
 	/* seek to the beginning */
-	fseek(Tmp_fd_z, 0L, 0);
+	G_fseek(Tmp_fd_z, 0L, 0);
 
 	/* Read data in from temp file */
 	read_val =
@@ -449,8 +449,8 @@ int OUTGR()
 			bmask = 1;
 		    value = data[cnt];
 		    if (!bmask)
-			G3d_setNullValue(&value, 1, FCELL_TYPE);
-		    if (G3d_putFloat(cf1, x, y, iarc, value) == 0) {
+			Rast3d_set_null_value(&value, 1, FCELL_TYPE);
+		    if (Rast3d_put_float(cf1, x, y, iarc, value) == 0) {
 			sprintf(buff,
 				"Error writing cell (%d,%d,%d) with value %f",
 				x, y, iarc, value);
@@ -464,25 +464,23 @@ int OUTGR()
 	}
 
 	/* Close the file */
-	if (G3d_closeCell(cf1) == 0) {
+	if (Rast3d_close(cf1) == 0) {
 	    sprintf(buff, "Error closing output file %s ", outz);
 	    clean_fatal_error(buff);
-	} else
-            G_message(_("3D raster map <%s> created"), outz);
+	}
     }
 
   /*** Write out the gradient results ***/
     if (gradient != NULL) {
 
-	cf2 = G3d_openCellNew(gradient, FCELL_TYPE,
-			      G3D_USE_CACHE_DEFAULT, &current_region);
+	cf2 = Rast3d_open_new_opt_tile_size(gradient, RASTER3D_USE_CACHE_DEFAULT, &current_region, FCELL_TYPE, 32); 
 	if (cf2 == NULL) {
 	    sprintf(buff, "Can't open %s for writing ", gradient);
 	    clean_fatal_error(buff);
 	}
 
 	/* seek to the beginning */
-	fseek(Tmp_fd_dx, 0L, 0);
+	G_fseek(Tmp_fd_dx, 0L, 0);
 
 	/* Read data in from temp file */
 	read_val =
@@ -501,8 +499,8 @@ int OUTGR()
 			bmask = 1;
 		    value = data[cnt];
 		    if (!bmask)
-			G3d_setNullValue(&value, 1, FCELL_TYPE);
-		    if (G3d_putFloat(cf2, x, y, iarc, value) == 0) {
+			Rast3d_set_null_value(&value, 1, FCELL_TYPE);
+		    if (Rast3d_put_float(cf2, x, y, iarc, value) == 0) {
 			sprintf(buff,
 				"Error writing cell (%d,%d,%d) with value %f",
 				x, y, iarc, value);
@@ -516,25 +514,23 @@ int OUTGR()
 	}
 
 	/* Close the file */
-	if (G3d_closeCell(cf2) == 0) {
+	if (Rast3d_close(cf2) == 0) {
 	    sprintf(buff, "Error closing output file %s ", gradient);
 	    clean_fatal_error(buff);
-	} else
-            G_message(_("3D raster map <%s> created"), gradient);
+	}
     }
 
   /*** Write out aspect1 results ***/
     if (aspect1 != NULL) {
 
-	cf3 = G3d_openCellNew(aspect1, FCELL_TYPE,
-			      G3D_USE_CACHE_DEFAULT, &current_region);
+	cf3 = Rast3d_open_new_opt_tile_size(aspect1, RASTER3D_USE_CACHE_DEFAULT, &current_region, FCELL_TYPE, 32); 
 	if (cf3 == NULL) {
 	    sprintf(buff, "Can't open %s for writing ", aspect1);
 	    clean_fatal_error(buff);
 	}
 
 	/* seek to the beginning */
-	fseek(Tmp_fd_dy, 0L, 0);
+	G_fseek(Tmp_fd_dy, 0L, 0);
 
 	/* Read data in from temp file */
 	read_val =
@@ -553,8 +549,8 @@ int OUTGR()
 			bmask = 1;
 		    value = data[cnt];
 		    if (!bmask)
-			G3d_setNullValue(&value, 1, FCELL_TYPE);
-		    if (G3d_putFloat(cf3, x, y, iarc, value) == 0) {
+			Rast3d_set_null_value(&value, 1, FCELL_TYPE);
+		    if (Rast3d_put_float(cf3, x, y, iarc, value) == 0) {
 			sprintf(buff,
 				"Error writing cell (%d,%d,%d) with value %f",
 				x, y, iarc, value);
@@ -568,25 +564,23 @@ int OUTGR()
 	}
 
 	/* Close the file */
-	if (G3d_closeCell(cf3) == 0) {
+	if (Rast3d_close(cf3) == 0) {
 	    sprintf(buff, "Error closing output file %s ", aspect1);
 	    clean_fatal_error(buff);
-	} else
-            G_message(_("3D raster map <%s> created"), aspect1);
+	}
     }
 
   /*** Write out aspect2 results ***/
     if (aspect2 != NULL) {
 
-	cf4 = G3d_openCellNew(aspect2, FCELL_TYPE,
-			      G3D_USE_CACHE_DEFAULT, &current_region);
+	cf4 = Rast3d_open_new_opt_tile_size(aspect2, RASTER3D_USE_CACHE_DEFAULT, &current_region, FCELL_TYPE, 32); 
 	if (cf4 == NULL) {
 	    sprintf(buff, "Can't open %s for writing ", aspect2);
 	    clean_fatal_error(buff);
 	}
 
 	/* seek to the beginning */
-	fseek(Tmp_fd_dz, 0L, 0);
+	G_fseek(Tmp_fd_dz, 0L, 0);
 
 	/* Read data in from temp file */
 	read_val =
@@ -605,8 +599,8 @@ int OUTGR()
 			bmask = 1;
 		    value = data[cnt];
 		    if (!bmask)
-			G3d_setNullValue(&value, 1, FCELL_TYPE);
-		    if (G3d_putFloat(cf4, x, y, iarc, value) == 0) {
+			Rast3d_set_null_value(&value, 1, FCELL_TYPE);
+		    if (Rast3d_put_float(cf4, x, y, iarc, value) == 0) {
 			sprintf(buff,
 				"Error writing cell (%d,%d,%d) with value %f",
 				x, y, iarc, value);
@@ -620,25 +614,23 @@ int OUTGR()
 	}
 
 	/* Close the file */
-	if (G3d_closeCell(cf4) == 0) {
+	if (Rast3d_close(cf4) == 0) {
 	    sprintf(buff, "Error closing output file %s ", aspect2);
 	    clean_fatal_error(buff);
-	} else
-            G_message(_("3D raster map <%s> created"), aspect2);
+	}
     }
 
   /*** Write out ncurv results ***/
     if (ncurv != NULL) {
 
-	cf5 = G3d_openCellNew(ncurv, FCELL_TYPE,
-			      G3D_USE_CACHE_DEFAULT, &current_region);
+	cf5 = Rast3d_open_new_opt_tile_size(ncurv, RASTER3D_USE_CACHE_DEFAULT, &current_region, FCELL_TYPE, 32); 
 	if (cf5 == NULL) {
 	    sprintf(buff, "Can't open %s for writing ", ncurv);
 	    clean_fatal_error(buff);
 	}
 
 	/* seek to the beginning */
-	fseek(Tmp_fd_xx, 0L, 0);
+	G_fseek(Tmp_fd_xx, 0L, 0);
 
 	/* Read data in from temp file */
 	read_val =
@@ -657,8 +649,8 @@ int OUTGR()
 			bmask = 1;
 		    value = data[cnt];
 		    if (!bmask)
-			G3d_setNullValue(&value, 1, FCELL_TYPE);
-		    if (G3d_putFloat(cf5, x, y, iarc, value) == 0) {
+			Rast3d_set_null_value(&value, 1, FCELL_TYPE);
+		    if (Rast3d_put_float(cf5, x, y, iarc, value) == 0) {
 			sprintf(buff,
 				"Error writing cell (%d,%d,%d) with value %f",
 				x, y, iarc, value);
@@ -672,25 +664,23 @@ int OUTGR()
 	}
 
 	/* Close the file */
-	if (G3d_closeCell(cf5) == 0) {
+	if (Rast3d_close(cf5) == 0) {
 	    sprintf(buff, "Error closing output file %s ", ncurv);
 	    clean_fatal_error(buff);
-	} else
-            G_message(_("3D raster map <%s> created"), ncurv);
+	}
     }
 
   /*** Write out gcurv results ***/
     if (gcurv != NULL) {
 
-	cf6 = G3d_openCellNew(gcurv, FCELL_TYPE,
-			      G3D_USE_CACHE_DEFAULT, &current_region);
+	cf6 = Rast3d_open_new_opt_tile_size(gcurv, RASTER3D_USE_CACHE_DEFAULT, &current_region, FCELL_TYPE, 32); 
 	if (cf6 == NULL) {
 	    sprintf(buff, "Can't open %s for writing ", gcurv);
 	    clean_fatal_error(buff);
 	}
 
 	/* seek to the beginning */
-	fseek(Tmp_fd_yy, 0L, 0);
+	G_fseek(Tmp_fd_yy, 0L, 0);
 
 	/* Read data in from temp file */
 	read_val =
@@ -709,8 +699,8 @@ int OUTGR()
 			bmask = 1;
 		    value = data[cnt];
 		    if (!bmask)
-			G3d_setNullValue(&value, 1, FCELL_TYPE);
-		    if (G3d_putFloat(cf6, x, y, iarc, value) == 0) {
+			Rast3d_set_null_value(&value, 1, FCELL_TYPE);
+		    if (Rast3d_put_float(cf6, x, y, iarc, value) == 0) {
 			sprintf(buff,
 				"Error writing cell (%d,%d,%d) with value %f",
 				x, y, iarc, value);
@@ -724,25 +714,23 @@ int OUTGR()
 	}
 
 	/* Close the file */
-	if (G3d_closeCell(cf6) == 0) {
+	if (Rast3d_close(cf6) == 0) {
 	    sprintf(buff, "Error closing output file %s ", gcurv);
 	    clean_fatal_error(buff);
-	} else
-            G_message(_("3D raster map <%s> created"), gcurv);
+	}
     }
 
   /*** Write mcurv results ***/
     if (mcurv != NULL) {
 
-	cf7 = G3d_openCellNew(mcurv, FCELL_TYPE,
-			      G3D_USE_CACHE_DEFAULT, &current_region);
+	cf7 = Rast3d_open_new_opt_tile_size(mcurv, RASTER3D_USE_CACHE_DEFAULT, &current_region, FCELL_TYPE, 32); 
 	if (cf7 == NULL) {
 	    sprintf(buff, "Can't open %s for writing ", mcurv);
 	    clean_fatal_error(buff);
 	}
 
 	/* seek to the beginning */
-	fseek(Tmp_fd_xy, 0L, 0);
+	G_fseek(Tmp_fd_xy, 0L, 0);
 
 	/* Read data in from temp file */
 	read_val =
@@ -761,8 +749,8 @@ int OUTGR()
 			bmask = 1;
 		    value = data[cnt];
 		    if (!bmask)
-			G3d_setNullValue(&value, 1, FCELL_TYPE);
-		    if (G3d_putFloat(cf7, x, y, iarc, value) == 0) {
+			Rast3d_set_null_value(&value, 1, FCELL_TYPE);
+		    if (Rast3d_put_float(cf7, x, y, iarc, value) == 0) {
 			sprintf(buff,
 				"Error writing cell (%d,%d,%d) with value %f",
 				x, y, iarc, value);
@@ -776,11 +764,10 @@ int OUTGR()
 	}
 
 	/* Close the file */
-	if (G3d_closeCell(cf7) == 0) {
+	if (Rast3d_close(cf7) == 0) {
 	    sprintf(buff, "Error closing output file %s ", mcurv);
 	    clean_fatal_error(buff);
-	} else
-            G_message(_("3D raster map <%s> created"), mcurv);
+	}
     }
 
     G_free(data);

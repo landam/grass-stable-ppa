@@ -5,18 +5,17 @@ CELL def_basin(int row, int col, CELL basin_num,
 {
     int r, rr, c, cc, ct, new_r[9], new_c[9];
     CELL downdir, direction, asp_value, value, new_elev;
-    SHORT oldupdir, riteflag, leftflag, thisdir;
+    int oldupdir, riteflag, leftflag, thisdir;
 
     for (;;) {
 	bas[SEG_INDEX(bas_seg, row, col)] = basin_num;
-	asp_value = asp[SEG_INDEX(asp_seg, row, col)];
 	FLAG_SET(swale, row, col);
-	if (asp_value < 0)
-	    asp_value = -asp_value;
 	ct = 0;
 	for (r = row - 1, rr = 0; rr < 3; r++, rr++) {
 	    for (c = col - 1, cc = 0; cc < 3; c++, cc++) {
 		if (r >= 0 && c >= 0 && r < nrows && c < ncols) {
+		    if (r == row && c == col)
+			continue;
 		    value = asp[SEG_INDEX(asp_seg, r, c)];
 		    if (value < 0)
 			value = -value;
@@ -47,11 +46,13 @@ CELL def_basin(int row, int col, CELL basin_num,
 	for (r = row - 1, rr = 0; rr < 3; r++, rr++) {
 	    for (c = col - 1, cc = 0; cc < 3; c++, cc++) {
 		if (r >= 0 && c >= 0 && r < nrows && c < ncols) {
+		    if (r == row && c == col)
+			continue;
 		    direction = asp[SEG_INDEX(asp_seg, r, c)];
 		    if (direction == drain[rr][cc]) {
 			thisdir = updrain[rr][cc];
 			switch (haf_basin_side
-				(oldupdir, (SHORT) downdir, thisdir)) {
+				(oldupdir, downdir, thisdir)) {
 			case LEFT:
 			    overland_cells(r, c, basin_num, basin_num - 1,
 					   &new_elev);
@@ -80,6 +81,10 @@ CELL def_basin(int row, int col, CELL basin_num,
 		stream_length += window.ew_res;
 	}
 	else {			/* sides == 4 */
+
+	    asp_value = asp[SEG_INDEX(asp_seg, row, col)];
+	    if (asp_value < 0)
+		asp_value = -asp_value;
 
 	    if (asp_value == 2 || asp_value == 6) {
 		if (new_r[1] != row)

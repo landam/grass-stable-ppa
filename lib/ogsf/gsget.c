@@ -1,5 +1,5 @@
 /*!
-   \file gsd_get.c
+   \file gsget.c
 
    \brief OGSF library - get map attribute (lower level functions)
 
@@ -16,7 +16,7 @@
    \author Doxygenized by Martin Landa <landa.martin gmail.com> (May 2008)
  */
 
-#include <grass/gstypes.h>
+#include <grass/ogsf.h>
 
 /*!
    \brief Get map attributes

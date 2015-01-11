@@ -1,52 +1,38 @@
 MODULE_TOPDIR = ../../..
 
-EXTRA_LIBS=$(GISLIB) $(RTREELIB) $(MATHLIB)
+include $(MODULE_TOPDIR)/include/Make/Vars.make
 
-LIB_NAME = $(DIG2_LIBNAME)
+MOD_OBJS := $(filter-out test.o port_test.o,$(AUTO_OBJS))
 
-LIB_OBJS = \
-    allocation.o  \
-    angle.o  \
-    box.o  \
-    cindex.o  \
-    cindex_rw.o  \
-    file.o \
-    frmt.o \
-    head.o \
-    inside.o \
-    linecros.o \
-    line_dist.o \
-    list.o \
-    plus.o \
-    plus_area.o  \
-    plus_line.o \
-    plus_node.o \
-    plus_struct.o \
-    poly.o \
-    port_init.o \
-    portable.o \
-    prune.o \
-    spindex.o  \
-    spindex_rw.o  \
-    struct_alloc.o \
-    type.o \
-    update.o
-
+LIB = DIG2
 
 include $(MODULE_TOPDIR)/include/Make/Lib.make
 
 EXTRA_INC = $(VECT_INC)
 EXTRA_CFLAGS = $(VECT_CFLAGS)
+LIBES = $(GISLIB) $(RTREELIB) $(MATHLIB)
 
-TEST = $(OBJDIR)/test
+#compile if LFS (Large File Support) present:
+ifneq ($(USE_LARGEFILES),)
+	TESTFILE = test64.ok
+else
+	TESTFILE = test32.ok
+endif
 
 default: lib
-	$(MAKE) $(TEST)
+	@echo "==============TEST============="
+ifeq ($(strip $(CROSS_COMPILING)),)
+	$(MAKE) test
+endif
+
+test: $(OBJDIR)/test.tmp $(TESTFILE)
+	cmp $(OBJDIR)/test.tmp $(TESTFILE)
+
+$(OBJDIR)/test.tmp: $(OBJDIR)/test$(EXE)
+	cd $(OBJDIR) && $(call run_grass,./test)
 
 #  Test portable read/write functions
-$(OBJDIR)/test: test.c $(DEPENDENCIES) $(ARCH_LIB_OBJS)
-	echo "==============TEST============="
-	$(CC) $(LDFLAGS) $(COMPILE_FLAGS) $(VECT_CFLAGS) $(INC) $(VECT_INC) -o $@ test.c $(DIG2LIB) $(RTREELIB) \
-				$(GISLIB) $(DATETIMELIB) $(MATHLIB) $(XDRLIB) 
-	cd $(OBJDIR); $(LD_LIBRARY_PATH_VAR)="$($(LD_LIBRARY_PATH_VAR)):$(GISBASE)/lib" ./test; diff ./test.tmp ../test.ok
+$(OBJDIR)/test$(EXE):  $(OBJDIR)/test.o $(DIG2DEP)
+	$(call linker)
 
+$(OBJDIR)/test$(EXE): LIBES = $(DIG2LIB)

@@ -31,7 +31,7 @@
 #% required: no
 #%end
 #%option
-#% key: conf
+#% key: config
 #% type: string
 #% gisprompt: new_file,file,output
 #% key_desc: filename
@@ -78,8 +78,7 @@ f_path="$GISBASE/etc/r.li.setup"
 if test "$GISBASE" = ""; then
    echo "You must be in GRASS GIS to run this program." 1>&2
    exit 1
-fi
-
+ fi
 if [ "$1" != "@ARGS_PARSED@" ] ; then
    exec g.parser "$0" "$@"
 fi
@@ -163,10 +162,6 @@ r.digit output="tmp_rli_mask.$$" --quiet < "$RDIG_INSTR"
 # show the selected area
 d.rast -o map="tmp_rli_mask.$$" --quiet
 
-input_vector=tmp_rli_mask.$$
-CAT=$$
-export input_vector CAT
-
 name="$TMP.val"
 export name
 
@@ -177,7 +172,7 @@ ok=`cat "$name" | cut -f1 -d ' '`
 r_name=`cat "$name" | cut -f2 -d' '`
 
 
-if [ -n "$ok" ] ; then
+if [ "$ok" -eq 1 ] ; then
     mask_name="rli_samp_${STYLE}_${r_name}"
     # r.mask + 'g.region zoom= align=' + 'r.mapcalc cropmap=map' would be cleaner?
     r.to.vect input="tmp_rli_mask.$$" output="tmp_rli_mask_v$$" feature=area --quiet

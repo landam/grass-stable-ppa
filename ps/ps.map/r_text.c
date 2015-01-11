@@ -6,9 +6,10 @@
  */
 
 #include <string.h>
+#include <grass/colors.h>
+#include <grass/raster.h>
 #include "clr.h"
 #include "labels.h"
-#include "ps_info.h"
 #include "local_proto.h"
 
 #define EQ(x,y) (strcmp(x,y)==0)
@@ -74,7 +75,7 @@ int read_text(char *east, char *north, char *text)
     rotate = 0.0;
     xref = CENTER;
     yref = CENTER;
-    G_strcpy(fontname, "Helvetica");
+    strcpy(fontname, "Helvetica");
 
     while (*text == ' ' || *text == '\t')
 	text++;
@@ -160,7 +161,7 @@ int read_text(char *east, char *north, char *text)
 		width = 1.;
 		error(key, data, "illegal width request");
 	    }
-	    if (t1 && t1[0] == 'i')
+	    if (t1[0] == 'i')
 		width = width / 72.0;
 	    continue;
 	}
@@ -172,7 +173,7 @@ int read_text(char *east, char *north, char *text)
 		hwidth = 0.;
 		error(key, data, "illegal width request");
 	    }
-	    if (t1 && t1[0] == 'i')
+	    if (t1[0] == 'i')
 		hwidth = hwidth / 72.0;
 	    continue;
 	}

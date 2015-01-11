@@ -150,8 +150,7 @@ int main(int argc, char **argv)
 
     GNO_BEGIN			/* short  long        default     variable        help */
 	GNO_OPTION("g", "graph", NULL, &pszFilein, "Graph file to view")
-    GNO_END if (GNO_PARSE(argc, argv) < 0)
-    {
+	GNO_END if (GNO_PARSE(argc, argv) < 0) {
 	return 1;
     }
     /*

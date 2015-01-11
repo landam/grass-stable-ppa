@@ -29,7 +29,7 @@
 #include <time.h>
 #include <math.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 #include "../lib/lrs.h"
@@ -99,8 +99,8 @@ int main(int argc, char **argv)
     struct Option *start_mp_opt, *start_off_opt, *end_mp_opt, *end_off_opt;
     struct Option *driver_opt, *database_opt, *table_opt, *thresh_opt;
     struct GModule *module;
-    char *mapset, buf[2000];
-    const char *drv, *db;
+    const char *mapset;
+    char buf[2000];
     struct Map_info In, Out, PMap, EMap;
     struct line_cats *LCats, *PCats;
     struct line_pnts *LPoints, *L2Points, *PPoints;
@@ -118,8 +118,10 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, LRS, networking");
-    module->description = _("Creates Linear Reference System");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("Linear Reference System"));
+    G_add_keyword(_("networking"));
+    module->description = _("Creates a linear reference system.");
 
     in_lines_opt = G_define_standard_option(G_OPT_V_INPUT);
     in_lines_opt->key = "in_lines";
@@ -203,16 +205,15 @@ int main(int argc, char **argv)
     driver_opt->type = TYPE_STRING;
     driver_opt->required = NO;
     driver_opt->description = _("Driver name for reference system table");
-    if ((drv = db_get_default_driver_name()))
-	driver_opt->answer = drv;
+    driver_opt->options = db_list_drivers();
+    driver_opt->answer = db_get_default_driver_name();
 
     database_opt = G_define_option();
     database_opt->key = "rsdatabase";
     database_opt->type = TYPE_STRING;
     database_opt->required = NO;
     database_opt->description = _("Database name for reference system table");
-    if ((db = db_get_default_database_name()))
-	database_opt->answer = db;
+    database_opt->answer = db_get_default_database_name();
 
     table_opt = G_define_option();
     table_opt->key = "rstable";
@@ -861,6 +862,11 @@ int main(int argc, char **argv)
     Vect_close(&PMap);
 
     G_message(_("Building topology for output (out_lines) map..."));
+
+    Vect_copy_head_data(&In, &Out);
+    Vect_hist_copy(&In, &Out);
+    Vect_hist_command(&Out);
+
     Vect_build(&Out);
     Vect_close(&Out);
 

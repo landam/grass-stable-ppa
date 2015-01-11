@@ -34,13 +34,14 @@
 #include <fcntl.h>
 #include <grass/config.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include <grass/rowio.h>
 
 #define PAD 2
 #define MAX_ROW 7
 
-								   /*extern int errno; *//* included #include <errno.h> instead 1/2000 */
+		       /*extern int errno; *//* included #include <errno.h> instead 1/2000 */
 extern char *error_prefix;
 static int n_rows, n_cols;
 static int work_file;
@@ -57,13 +58,13 @@ CELL *get_a_row(int row)
 {
     if (row < 0 || row >= n_rows)
 	return (NULL);
-    return ((CELL *) rowio_get(&row_io, row));
+    return ((CELL *) Rowio_get(&row_io, row));
 }
 
 int put_a_row(int row, CELL * buf)
 {
     /* rowio.h defines this withe 2nd argument as char * */
-    rowio_put(&row_io, (char *)buf, row);
+    Rowio_put(&row_io, (char *)buf, row);
 
     return 0;
 }
@@ -83,26 +84,24 @@ static int write_row(int file, const void *buf, int row, int buf_len)
 
 int open_file(char *name)
 {
-    char *mapset;
     int cell_file, buf_len;
-    int i, row, col;
-    char cell[100];
+    int i, row;
     CELL *buf;
 
     /* open raster map */
-    strcpy(cell, name);
-    if ((mapset = G_find_cell2(cell, "")) == NULL) {
-	unlink(work_file_name);
-	G_fatal_error(_("Raster map <%s> not found"), name);
-    }
-    if ((cell_file = G_open_cell_old(cell, mapset)) < 0) {
-	unlink(work_file_name);
-	G_fatal_error(_("Unable to open raster map <%s>"), cell);
+    cell_file = Rast_open_old(name, "");
+    
+    if (Rast_get_map_type(cell_file) != CELL_TYPE) {
+	Rast_close(cell_file);
+	G_fatal_error(_("Input raster must be of type CELL."));
     }
 
-    n_rows = G_window_rows();
-    n_cols = G_window_cols();
-    G_message(_("File %s -- %d rows X %d columns"), name, n_rows, n_cols);
+    n_rows = Rast_window_rows();
+    n_cols = Rast_window_cols();
+    /* GTC First is the file name, second and third - number of rows and cols */
+    G_message(_("File %s -- %s X %s"), name, 
+        _n("%d row", "%d rows", n_rows), 
+        _n("%d column", "%d columns", n_cols));
     n_cols += (PAD << 1);
 
     /* copy raster map into our read/write file */
@@ -115,9 +114,9 @@ int open_file(char *name)
 	G_fatal_error(_("%s: Unable to create temporary file <%s> -- errno = %d"),
 		      error_prefix, work_file_name, errno);
     }
-    buf = (CELL *) G_malloc(buf_len = n_cols * sizeof(CELL));
-    for (col = 0; col < n_cols; col++)
-	buf[col] = 0;
+    buf_len = n_cols * sizeof(CELL);
+    buf = (CELL *) G_malloc(buf_len);
+    Rast_set_c_null_value(buf, n_cols);
     for (i = 0; i < PAD; i++) {
 	if (write(work_file, buf, buf_len) != buf_len) {
 	    unlink(work_file_name);
@@ -126,11 +125,7 @@ int open_file(char *name)
 	}
     }
     for (row = 0; row < n_rows; row++) {
-	if (G_get_map_row(cell_file, buf + PAD, row) < 0) {
-	    unlink(work_file_name);
-	    G_fatal_error(_("%s: Error reading from raster map <%s> in mapset <%s>"),
-			  error_prefix, cell, mapset);
-	}
+	Rast_get_c_row(cell_file, buf + PAD, row);
 	if (write(work_file, buf, buf_len) != buf_len) {
 	    unlink(work_file_name);
 	    G_fatal_error(_("%s: Error writing temporary file"),
@@ -138,8 +133,7 @@ int open_file(char *name)
 	}
     }
 
-    for (col = 0; col < n_cols; col++)
-	buf[col] = 0;
+    Rast_set_c_null_value(buf, n_cols);
 
     for (i = 0; i < PAD; i++) {
 	if (write(work_file, buf, buf_len) != buf_len) {
@@ -150,8 +144,8 @@ int open_file(char *name)
     }
     n_rows += (PAD << 1);
     G_free(buf);
-    G_close_cell(cell_file);
-    rowio_setup(&row_io, work_file, MAX_ROW, n_cols * sizeof(CELL), read_row,
+    Rast_close(cell_file);
+    Rowio_setup(&row_io, work_file, MAX_ROW, n_cols * sizeof(CELL), read_row,
 		write_row);
 
     return 0;
@@ -160,32 +154,31 @@ int open_file(char *name)
 int close_file(char *name)
 {
     int cell_file, row, k;
-    int row_count, col_count, col;
+    int row_count, col_count;
     CELL *buf;
 
-    if ((cell_file = G_open_cell_new(name)) < 0) {
-	unlink(work_file_name);
-	G_fatal_error(_("Unable to create raster map <%s>"), name);
-    }
+    cell_file = Rast_open_c_new(name);
 
     row_count = n_rows - (PAD << 1);
     col_count = n_cols - (PAD << 1);
-    G_message(_("Output file %d rows X %d columns"), row_count, col_count);
-    G_message(_("Window %d rows X %d columns"), G_window_rows(),
-	      G_window_cols());
+    /* GTC %s will be replaced with number of rows and columns */
+    G_message(_("Output file %s X %s"), 
+        _n("%d row", "%d rows", row_count), 
+        _n("%d column", "%d columns", col_count));
+    
+    /* GTC %s will be replaced with number of rows and columns */
+    G_message(_("Window %s X %s"), 
+        _n("%d row", "%d rows", Rast_window_rows()), 
+        _n("%d column", "%d columns", Rast_window_cols()));
 
     for (row = 0, k = PAD; row < row_count; row++, k++) {
 	buf = get_a_row(k);
-	for (col = 0; col < n_cols; col++) {
-	    if (buf[col] == 0)
-		G_set_null_value(&buf[col], 1, CELL_TYPE);
-	}
-	G_put_raster_row(cell_file, buf + PAD, CELL_TYPE);
+	Rast_put_row(cell_file, buf + PAD, CELL_TYPE);
     }
-    G_close_cell(cell_file);
-    rowio_flush(&row_io);
-    close(rowio_fileno(&row_io));
-    rowio_release(&row_io);
+    Rast_close(cell_file);
+    Rowio_flush(&row_io);
+    close(Rowio_fileno(&row_io));
+    Rowio_release(&row_io);
     unlink(work_file_name);
 
     return 0;

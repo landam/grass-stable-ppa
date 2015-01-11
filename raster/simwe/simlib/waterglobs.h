@@ -5,15 +5,7 @@
 #define MAXW    7000000
 #define UNDEF	-9999
 
-/*
-extern FILE *fdelevin, *fddxin, *fddyin, *fdrain, *fdinfil, *fdtraps,
-    *fdmanin, *fddepth, *fddisch, *fderr, *fdoutwalk, *fdwalkers;
-*/
-extern FILE *fdelevin, *fddxin, *fddyin, *fdrain, *fdinfil, *fdtraps,
-    *fdmanin, *fddepth, *fddisch, *fderr;
-extern FILE *fdwdepth, *fddetin, *fdtranin, *fdtauin, *fdtc, *fdet, *fdconc,
-    *fdflux, *fderdep;
-extern FILE *fdsfile, *fw;
+#include <grass/raster.h>
 
 extern char *elevin;
 extern char *dxin;
@@ -22,11 +14,11 @@ extern char *rain;
 extern char *infil;
 extern char *traps;
 extern char *manin;
-/* extern char *sfile; */
+/* extern char *observation; */
 extern char *depth;
 extern char *disch;
 extern char *err;
-/* extern char *outwalk; */
+extern char *outwalk;
 extern char *mapset;
 extern char *mscale;
 extern char *tserie;
@@ -48,10 +40,10 @@ extern char *infilval;
 struct options
 {
     struct Option *elevin, *dxin, *dyin, *rain, *infil, *traps, *manin,
-	*sfile, *depth, *disch, *err, *outwalk, *nwalk, *niter, *outiter,
+	*observation, *depth, *disch, *err, *outwalk, *nwalk, *niter, *outiter,
 	*density, *diffc, *hmax, *halpha, *hbeta, *wdepth, *detin, *tranin,
 	*tauin, *tc, *et, *conc, *flux, *erdep, *rainval, *maninval,
-	*infilval;
+	*infilval, *logfile;
 };
 
 extern struct options parm;
@@ -73,18 +65,18 @@ extern struct seed seed;
 
 extern struct Cell_head cellhd;
 
-struct Point
+struct _points
 {
-    double north, east;
-    double z1;
+    double *x; /* x coor for each point */
+    double *y; /* y coor for each point*/
+    int *cats; /* Category for each point */
+    int npoints; /* Number of observation points */
+    int npoints_alloc; /* Number of allocated points */
+    FILE *output; /* Output file descriptor */
+    int is_open; /* Set to 1 if open, 0 if closed */
 };
 
-/*
-extern struct Point *points;
-extern int npoints;
-extern int npoints_alloc;
-*/
-
+extern struct _points points;
 extern int input_data(void);
 extern int seeds(long int, long int);
 extern int seedg(long int, long int);
@@ -99,6 +91,7 @@ extern double amax1(double, double);
 extern double amin1(double, double);
 extern int min(int, int);
 extern int max(int, int);
+extern void create_observation_points();
 
 extern double xmin, ymin, xmax, ymax;
 extern double mayy, miyy, maxx, mixx;
@@ -118,12 +111,10 @@ extern double **gama, **gammas, **si, **inf, **sigma;
 extern float **dc, **tau, **er, **ct, **trap;
 extern float **dif;
 
-/* extern double vavg[MAXW][2], stack[MAXW][3], w[MAXW][3]; */
-extern double vavg[MAXW][2], w[MAXW][3];
+extern double vavg[MAXW][2], stack[MAXW][3], w[MAXW][3]; 
 extern int iflag[MAXW];
 
 extern double hbeta;
-/* extern int ldemo; */
 extern double hhmax, sisum, vmean;
 extern double infsum, infmean;
 extern int maxw, maxwa, nwalk;
@@ -131,10 +122,9 @@ extern double rwalk, bresx, bresy, xrand, yrand;
 extern double stepx, stepy, xp0, yp0;
 extern double chmean, si0, deltap, deldif, cch, hhc, halpha;
 extern double eps;
-/* extern int maxwab, nstack; */
-extern int maxwab;
+extern int maxwab, nstack; 
 extern int iterout, mx2o, my2o;
-extern int miter, nwalka, lwwfin;
+extern int miter, nwalka;
 extern double timec;
 extern int ts, timesec;
 

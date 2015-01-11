@@ -1,5 +1,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <grass/config.h>
 #include "access.h"
 
 int get_perms(char *path, int *perms, int *group, int *other)

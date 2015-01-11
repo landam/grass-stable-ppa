@@ -26,13 +26,13 @@
 #include <grass/gis.h>
 #include <grass/dbmi.h>
 #include <grass/site.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 
 int main(int argc, char *argv[])
 {
     int i, cat, *clen, len;
-    char *sname, *mapset;
+    const char *sname, *mapset;
     char buf[1024];
     int count, withz;
     int dims, dbls, strs;
@@ -54,7 +54,9 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, import, sites");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("import"));
+    G_add_keyword(_("sites"));
     module->description =
 	_("Converts a GRASS site_lists file into a vector map.");
 
@@ -121,7 +123,7 @@ int main(int argc, char *argv[])
     Vect_hist_command(&Map);
 
     fi = Vect_default_field_info(&Map, 1, NULL, GV_1TABLE);
-    Vect_map_add_dblink(&Map, 1, NULL, fi->table, "cat", fi->database,
+    Vect_map_add_dblink(&Map, 1, NULL, fi->table, GV_KEY_COLUMN, fi->database,
 			fi->driver);
 
     /* Create new table */
@@ -170,9 +172,9 @@ int main(int argc, char *argv[])
 	G_fatal_error(_("Unable to create table: %s"), db_get_string(&sql));
     }
 
-    if (db_create_index2(driver, fi->table, "cat") != DB_OK)
+    if (db_create_index2(driver, fi->table, GV_KEY_COLUMN) != DB_OK)
 	G_warning(_("Unable to create index for table <%s>, key <%s>"),
-		  fi->table, "cat");
+		  fi->table, GV_KEY_COLUMN);
 
     if (db_grant_on_table
 	(driver, fi->table, DB_PRIV_SELECT, DB_GROUP | DB_PUBLIC) != DB_OK)

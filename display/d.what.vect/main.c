@@ -24,26 +24,28 @@
  *
  */
 
-#define MAIN
 #include <stdlib.h>
 #include <string.h>
 #include <grass/glocale.h>
 #include <grass/gis.h>
 #include <grass/display.h>
-#include <grass/Vect.h>
-#include <grass/raster.h>
+#include <grass/vector.h>
 #include "what.h"
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
+
+char **vect;
+int nvects;
+struct Map_info *Map;
 
 /* Vector map grabbing taken from d.zoom */
 
 int main(int argc, char **argv)
 {
-    struct Flag *once, *terse, *txt, *topo_flag, *flash, *edit_flag;
+    struct Flag *once, *terse, *txt, *topo_flag, *edit_flag;
     struct Option *opt1;
     struct GModule *module;
-    char *mapset, *openvect();
+    char *mapset;
     char *str;
     int i, j, level, width = 0, mwidth = 0;
 
@@ -51,23 +53,15 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("display, vector");
+    G_add_keyword(_("display"));
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("position"));
+    G_add_keyword(_("querying"));
     module->description =
 	_("Allows the user to interactively query a vector map layer "
 	  "at user-selected locations within the current geographic region.");
 
-    /* Conditionalize R_open_driver() so "help" works, open quiet as well */
-    R__open_quiet();
-    if (R_open_driver() == 0) {
-	if (D_get_dig_list(&vect, &nvects) < 0)
-	    vect = NULL;
-	else {
-	    vect = (char **)G_realloc(vect, (nvects + 1) * sizeof(char *));
-	    vect[nvects] = NULL;
-	}
-
-	R_close_driver();
-    }
+    vect = NULL;
 
     once = G_define_flag();
     once->key = '1';
@@ -78,9 +72,7 @@ int main(int argc, char **argv)
     opt1->type = TYPE_STRING;
     opt1->multiple = YES;
     opt1->key_desc = "name";
-    if (vect)
-	opt1->answers = vect;
-    opt1->required = NO;
+    opt1->required = YES;
     opt1->gisprompt = "old,vector,vector";
     opt1->description = _("Name of existing vector map");
 
@@ -97,18 +89,11 @@ int main(int argc, char **argv)
     topo_flag->key = 'd';
     topo_flag->description = _("Print topological information (debugging)");
 
-    flash = G_define_flag();
-    flash->key = 'f';
-    flash->description = _("Enable flashing (slower)");
-
     edit_flag = G_define_flag();
     edit_flag->key = 'e';
     edit_flag->description = _("Open form in edit mode");
 
-    if (!vect)
-	opt1->required = YES;
-
-    if ((argc > 1 || !vect) && G_parser(argc, argv))
+    if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
     if (opt1->answers && opt1->answers[0])
@@ -152,7 +137,7 @@ int main(int argc, char **argv)
 			      vect[i]);
 
 	    G_message(_("Building spatial index..."));
-	    Vect_build_spatial_index(&Map[i]);
+	    Vect_build_spatial_index(&Map[i], stderr);
 	}
     }
 
@@ -160,14 +145,13 @@ int main(int argc, char **argv)
 	G_fatal_error(_("No graphics device selected"));
     D_setup(0);
 
-    what(once->answer, txt->answer, terse->answer, flash->answer,
+    what(once->answer, txt->answer, terse->answer,
 	 width, mwidth, topo_flag->answer, edit_flag->answer);
 
     for (i = 0; i < nvects; i++)
 	Vect_close(&Map[i]);
 
     R_close_driver();
-    R_pad_freelist(vect, nvects);
 
     G_message(_("Done."));
     exit(EXIT_SUCCESS);

@@ -24,13 +24,14 @@ import wx.lib.colourselect as csel
 
 from core                 import globalvar
 from core.settings        import UserSettings
+from core.utils import _
 from gui_core.preferences import PreferencesBaseDialog
 
 class NvizPreferencesDialog(PreferencesBaseDialog):
     """!Nviz preferences dialog"""
-    def __init__(self, parent, title = _("3D view settings"),
+    def __init__(self, parent, giface, title = _("3D view default settings"),
                  settings = UserSettings):
-        PreferencesBaseDialog.__init__(self, parent = parent, title = title,
+        PreferencesBaseDialog.__init__(self, parent = parent, title = title, giface = giface,
                                        settings = settings)
         self.SetIcon(wx.Icon(os.path.join(globalvar.ETCICONDIR, 'grass_nviz.ico'), wx.BITMAP_TYPE_ICO))
 
@@ -171,7 +172,6 @@ class NvizPreferencesDialog(PreferencesBaseDialog):
                            label = " %s " % (_("Image Appearance")))
         boxSizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         gridSizer = wx.GridBagSizer(vgap = 3, hgap = 3)
-        gridSizer.AddGrowableCol(0)
         
         # background color
         gridSizer.Add(item = wx.StaticText(parent = panel, id = wx.ID_ANY,
@@ -186,6 +186,7 @@ class NvizPreferencesDialog(PreferencesBaseDialog):
         self.winId['nviz:view:background:color'] = color.GetId()
         gridSizer.Add(item = color, pos = (0, 1))
         
+        gridSizer.AddGrowableCol(0)
         boxSizer.Add(item = gridSizer, proportion = 1,
                   flag = wx.ALL | wx.EXPAND, border = 5)
         pageSizer.Add(item = boxSizer, proportion = 0,
@@ -208,7 +209,6 @@ class NvizPreferencesDialog(PreferencesBaseDialog):
                            label = " %s " % (_("Fly-through mode")))
         boxSizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         gridSizer = wx.GridBagSizer(vgap = 3, hgap = 3)
-        gridSizer.AddGrowableCol(0)
         
         # move exag
         gridSizer.Add(item = wx.StaticText(parent = panel, id = wx.ID_ANY,
@@ -234,6 +234,7 @@ class NvizPreferencesDialog(PreferencesBaseDialog):
         self.winId['nviz:fly:exag:turn'] = turnExag.GetId()
         gridSizer.Add(item = turnExag, pos = (1, 1))
         
+        gridSizer.AddGrowableCol(0)
         boxSizer.Add(item = gridSizer, proportion = 1,
                   flag = wx.ALL | wx.EXPAND, border = 5)
         pageSizer.Add(item = boxSizer, proportion = 0,
@@ -624,7 +625,8 @@ class NvizPreferencesDialog(PreferencesBaseDialog):
         fileSettings['nviz'] = UserSettings.Get(group = 'nviz')
         
         UserSettings.SaveToFile(fileSettings)
-        self.parent.goutput.WriteLog(
+        self.parent._gconsole.WriteLog(
                 _('3D view settings saved to file <%s>.') % UserSettings.filePath)
         
         self.Destroy()
+        

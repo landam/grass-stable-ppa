@@ -1,47 +1,54 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 #include <unistd.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
+#include <grass/spawn.h>
 #include "options.h"
 #include "dhist.h"
 
-static char *mk_command(const char *fmt, int nargs, ...)
+static void run_stats(const char *mapname, int quiet, const char *tempfile)
 {
-    /* asprintf() would solve this problem better */
-    size_t len = strlen(fmt) + 1;
-    char *cmd;
-    va_list ap;
+    char buf[32];
+    const char *argv[12];
+    int argc = 0;
 
-    va_start(ap, nargs);
+    argv[argc++] = "r.stats";
 
-    while (nargs--) {
-	cmd = va_arg(ap, char *);
+    argv[argc++] = "-r";
+    if (cat_ranges)
+	argv[argc++] = "-C";
+    if (quiet)
+	argv[argc++] = "-q";
+    argv[argc++] = type == COUNT
+	? "-c"
+	: "-a";
 
-	len += strlen(cmd);
+    argv[argc++] = mapname;
+
+    if (!cat_ranges) {
+	sprintf(buf, "nsteps=%d", nsteps);
+	argv[argc++] = buf;
     }
 
-    va_end(ap);
+    argv[argc++] = SF_REDIRECT_FILE;
+    argv[argc++] = SF_STDOUT;
+    argv[argc++] = SF_MODE_OUT;
+    argv[argc++] = tempfile;
 
-    cmd = G_malloc(len);
+    argv[argc++] = NULL;
 
-    va_start(ap, nargs);
-    vsprintf(cmd, fmt, ap);
-
-    va_end(ap);
-
-    return cmd;
+    if (G_vspawn_ex(argv[0], argv) != 0)
+	G_fatal_error("error running r.stats");
 }
 
-int get_stats(char *mapname, char *mapset, struct stat_list *dist_stats,	/* linked list of stats */
+int get_stats(const char *mapname, struct stat_list *dist_stats,	/* linked list of stats */
 	      int quiet)
 {
     char buf[1024];		/* input buffer for reading stats */
     int done = 0;
     char *tempfile;		/* temp file name */
-    char *fullname;
-    char *cmd;
     FILE *fd;			/* temp file pointer */
 
     long int cat;		/* a category value */
@@ -51,34 +58,21 @@ int get_stats(char *mapname, char *mapset, struct stat_list *dist_stats,	/* link
 
     /* write stats to a temp file */
     tempfile = G_tempfile();
-    fullname = G_fully_qualified_name(mapname, mapset);
-    is_fp = G_raster_map_is_fp(mapname, mapset);
+    is_fp = Rast_map_is_fp(mapname, "");
     if (is_fp) {
 	if (cat_ranges) {
-	    if (G_read_raster_cats(mapname, mapset, &cats) < 0)
+	    if (Rast_read_cats(mapname, "", &cats) < 0)
 		G_fatal_error("Can't read category file");
-	    if (G_number_of_raster_cats(&cats) <= 0) {
+	    if (Rast_number_of_cats(&cats) <= 0) {
 		G_warning("There are no labeled cats, using nsteps argument");
 		cat_ranges = 0;
 	    }
 	}
-	if (G_read_fp_range(map_name, mapset, &fp_range) <= 0)
+	if (Rast_read_fp_range(map_name, "", &fp_range) <= 0)
 	    G_fatal_error("Can't read frange file");
     }
-    if (cat_ranges) {
-	cmd = mk_command("r.stats -Cr%s%s \"%s\" > \"%s\"\n", 4,
-			 type == COUNT ? "c" : "a", quiet ? "q" : "",
-			 fullname, tempfile);
-    }
-    else {
-	sprintf(buf, "%d", nsteps);
-	cmd = mk_command("r.stats -r%s%s \"%s\" nsteps=%s > \"%s\"\n", 5,
-			 type == COUNT ? "c" : "a", quiet ? "q" : "",
-			 fullname, buf, tempfile);
-    }
 
-    if (system(cmd))
-	G_fatal_error("%s: ERROR running r.stats", G_program_name());
+    run_stats(mapname, quiet, tempfile);
 
     /* open temp file and read the stats into a linked list */
     fd = fopen(tempfile, "r");

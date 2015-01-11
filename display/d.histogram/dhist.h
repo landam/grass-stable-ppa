@@ -26,18 +26,8 @@ struct units
     long int every;		/* tic_mark number interval */
 };
 
-#ifdef MAIN
-
-struct stat_list dist_stats;
-struct Categories cats;
-struct FPRange fp_range;
-int is_fp;
-
-#else
 extern struct Categories cats;
 extern struct FPRange fp_range;
-
-#endif
 
 /* bar.c */
 int bar(struct stat_list *, struct Colors *);
@@ -51,7 +41,7 @@ int draw_slice_filled(struct Colors *, DCELL, int, double, double, double,
 int draw_slice(struct Colors *, int, DCELL, DCELL, int, double, double,
 	       double, double, double);
 /* get_stats.c */
-int get_stats(char *, char *, struct stat_list *, int);
+int get_stats(const char *, struct stat_list *, int);
 
 /* pie.c */
 int pie(struct stat_list *, struct Colors *);

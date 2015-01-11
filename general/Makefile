@@ -3,13 +3,15 @@ MODULE_TOPDIR = ..
 
 SUBDIRS = \
 	g.access \
-	g.ask \
+	g.cairocomp \
+	g.copy \
 	g.dirseps \
 	g.filename \
 	g.findetc \
 	g.findfile \
 	g.gisenv \
 	g.gui \
+	g.list \
 	g.mapset \
 	g.mapsets \
 	g.message \
@@ -17,17 +19,19 @@ SUBDIRS = \
 	g.mlist \
 	g.mremove \
 	g.parser \
-	g.proj \
 	g.pnmcomp \
+	g.ppmtopng \
+	g.proj \
 	g.region \
-	g.setproj \
+	g.remove \
+	g.rename \
 	g.tempfile \
-	g.transform \
 	g.version \
 	manage
+
+#	g.setproj \
 
 include $(MODULE_TOPDIR)/include/Make/Dir.make
 
 default: parsubdirs
 
-clean: cleansubdirs

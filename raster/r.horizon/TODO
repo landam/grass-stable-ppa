@@ -1,4 +1,6 @@
-Probably the sun position calculation shouldbe replaced
+TODO
+
+Probably the sun position calculation should be replaced
 with 
 
  G_calc_solar_position()

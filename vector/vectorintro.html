@@ -1,18 +1,5 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
-<head>
- <title>Vector data processing in GRASS GIS</title>
- <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
- <meta name="Author" content="Markus Neteler/GRASS Development Team">
- <link rel="stylesheet" href="grassdocs.css" type="text/css">
-</head>
-<body bgcolor="white">
-
-<img src="grass_logo.png" alt="_\|/_ GRASS logo"><hr align=center size=6 noshade>
-
-<!-- meta page description: Vector data processing -->
-<h2>Vector data processing in GRASS GIS</h2>
-
+<!-- meta page description: Vector data processing in GRASS GIS -->
+<!-- meta page index: vector -->
 <h3>Vector maps in general</h3>
 
 A "vector map" is a data layer consisting of a number of sparse features
@@ -71,10 +58,10 @@ components in a single vector map are related. For example in a
 non-topological GIS if two areas shared a common border that border
 would be digitized two times and also stored in duplicate. In a
 topological GIS this border exists once and is shared between two
-areas.  Topological represenation of vector data helps to produce and
+areas.  Topological representation of vector data helps to produce and
 maintain vector maps with clean geometry as well as enables certain
 analyses that can not be conducted with non-topological or spaghetti
-data. In GRASS topological data are refered to as level 2 data and
+data. In GRASS, topological data are refered to as level 2 data and
 spaghetti data is referred to as level 1.
 <p>
 Sometimes topology is not necessary and the additional memory and
@@ -94,44 +81,44 @@ approximation and topographic analysis from a point or isoline file.
 <li> line: a directed sequence of connected vertices with two endpoints called nodes; </li>
 <li> boundary: the border line to describe an area; </li>
 <li> centroid: a point within a closed ring of boundaries; </li>
-<li> area: the topological composition of a closed ring of boundaries and optionally a centroid; </li>
+<li> area: the topological composition of a closed ring of boundaries and a centroid; </li>
 <li> face: a 3D area; </li>
 <li> kernel: a 3D centroid in a volume (not yet implemented); </li>
 <li> volume: a 3D corpus, the topological composition of faces and kernel (not yet implemented). </li>
 </ul>
 <p>
-Note that all lines and boundaries can be polylines (with vertices in between).
+Lines and boundaries can be composed of multiple vertices.
 <p>
 Area topology also holds information about isles. These isles are located
 within that area, not touching the boundaries of the outer area. Isles
-consist of one or more areas and are used internally to maintain correct
-topology for areas.
+are holes inside the area, can consist of one or more areas and are used 
+internally to maintain correct topology for areas.
 
 <p>
 The <a href="v.type.html">v.type</a> module can be used to convert
-between vector types if possible. The <a href="v.build.html">v.build</a>
-module is used to generate topology. It optionally allows the user to extract
-erroneous vector objects into a separate map. Topological errors
-can be corrected either manually within <a href="v.digit.html">v.digit</a>
-or, to some extent, automatically in <a href="v.clean.html">v.clean</a>.
+between vector types if
+possible. The <a href="v.build.html">v.build</a> module is used to
+generate topology. It optionally allows the user to extract erroneous
+vector objects into a separate map. Topological errors can be
+corrected either manually
+within <a href="wxGUI.vdigit.html">wxGUI vector digitizer</a> or,
+to some extent, automatically in <a href="v.clean.html">v.clean</a>.
 A dedicated vector editing module is <a href="v.edit.html">v.edit</a>
-which supports global and local editing operations. Additionally,
-new advanced topological operations are available in the
-<a href="wxGUI.Vector_Digitizer.html">wxGUI vector digitizer</a>.
+which supports global and local editing operations.
 
 Adjacent polygons can be found by <a href="v.to.db.html">v.to.db</a>
 (see 'sides' option).
 <p>
 Many operations including extraction, queries, overlay, and export will
 only act on features which have been assigned a category number. Typically
-a centroid will hold the attribute data for the area between it and its
-boundaries. Boundaries are not typically given a category ID as it would be
+a centroid will hold the attribute data for the area with which the centroid is 
+associated. Boundaries are not typically given a category ID as it would be
 ambiguous as to which area either side of it the attribute data would belong
 to. An exception might be when the boundary between two crop-fields is the
 center-line of a road, and the category information is an index to the road
 name. For everyday use boundaries and centroids can be treated as internal
-data types and the user can work directly and more simply with the "area"
-meta-feature type.
+data types and the user can work directly and more simply with the "area" 
+type.
 
 
 <h3>Vector object categories and attribute management</h3>
@@ -191,7 +178,7 @@ appear in that layer. In this fashion some vector objects may appear
 in some layers but not in others. Taking the example of the fields 
 and paths, only some boundaries, but not all, might have a category 
 value in layer 2. With <em>option=report</em>, 
-<a href="v.category.html">v.category</a> lists available categories 
+<a href="v.category.html">v.category</a> lists available categories
 in each layer.
 <br>
 Optionally, each layer can (but does not have 
@@ -219,12 +206,12 @@ When creating vector maps from scratch, in general an attribute table must be cr
 the table must be populated with one row per category (using <a href="v.to.db.html">v.to.db</a>).
 However, this can be performed in a single step using <a href="v.db.addtable.html">v.db.addtable</a>
 along with the definition of table column types. Column adding and dropping
-can be done with <a HREF="v.db.addcol.html">v.db.addcol</a> and
-<a HREF="v.db.dropcol.html">v.db.dropcol</a>. A table column can be renamed with
-<a HREF="v.db.renamecol.html">v.db.renamecol</a>. To drop a table from a map, use
-<a HREF="v.db.droptable.html">v.db.droptable</a>. Values in a table can be updated
-with <a HREF="v.db.update.html">v.db.update</a>. Tables can be joined with with
-<a HREF="v.db.join.html">v.db.join</a>.
+can be done with <a href="v.db.addcolumn.html">v.db.addcolumn</a> and
+<a href="v.db.dropcolumn.html">v.db.dropcolumn</a>. A table column can be renamed with
+<a href="v.db.renamecolumn.html">v.db.renamecolumn</a>. To drop a table from a map, use
+<a href="v.db.droptable.html">v.db.droptable</a>. Values in a table can be updated
+with <a href="v.db.update.html">v.db.update</a>. Tables can be joined with with
+<a href="v.db.join.html">v.db.join</a>.
 
 
 <h3>Editing vector attributes</h3>
@@ -237,7 +224,7 @@ To bulk process attributes, it is recommended to use SQL
 <h3>Geometry operations</h3>
 
 The module <a href="v.in.region.html">v.in.region</a> saves the
-current region boundary into a vector area.
+current region extents as a vector area.
 
 Split vector lines can be changes to polylines by
 <a href="v.build.polylines.html">v.build.polylines</a>. Long lines can be
@@ -259,6 +246,8 @@ types (see list above).
 
 Projected vector maps can be reprojected with <a href="v.proj.html">v.proj</a>.
 Unprojected maps can be geocoded with <a href="v.transform.html">v.transform</a>.
+Based on the control points, <a href="v.rectify.html">v.rectify</a> rectifies a 
+vector map by computing a coordinate transformation for each vector object.
 
 Triangulation and point-to-polygon conversions can be done with <a
 href="v.delaunay.html">v.delaunay</a>, <a href="v.hull.html">v.hull</a>,
@@ -291,7 +280,9 @@ into database tables.
 
 With <a href="v.to.points.html">v.to.points</a>,
 <a href="v.to.rast.html">v.to.rast</a> and <a href="v.to.rast3.html">v.to.rast3</a>
-conversions are performed.
+conversions are performed. Note that a raster mask ("MASK") will not be
+respected since it is only applied when <em>reading</em> an existing
+GRASS raster map.
 
 <h3>Vector queries</h3>
 
@@ -313,11 +304,20 @@ are implemented:
 <li> Network preparation and maintenance: <a href="v.net.html">v.net</a></li>
 <li> Shortest path: <a href="d.path.html">d.path</a> and 
      <a href="v.net.path.html">v.net.path</a></li>
+<li> Shortest path between all pairs of nodes <a href="v.net.allpairs.html">v.net.allpairs</a>
 <li> Allocation of sources (create subnetworks, e.g. police station zones):
      <a href="v.net.alloc.html">v.net.alloc</a></li>
 <li> Iso-distances (from centers): <a href="v.net.iso.html">v.net.iso</a></li>
-<li> Minimum Steiner trees (star-like connections, e.g. broadband cable 
+<li> Computes bridges and articulation points: <a href="v.net.bridge.html">v.net.bridge</a></li>
+<li> Computes degree, centrality, betweeness, closeness and eigenvector centrality measures: <a href="v.net.centrality.html">v.net.centrality</a></li>
+<li> Computes strongly and weakly connected components: <a href="v.net.components.html">v.net.components</a></li>
+<li> Computes vertex connectivity between two sets of nodes: <a href="v.net.connectivity.html">v.net.connectivity</a></li>
+<li> Computes shortest distance via the network between the given sets of features: <a href="v.net.distance.html">v.net.distance</a></li>
+<li> Computes the maximum flow between two sets of nodes: <a href="v.net.flow.html">v.net.flow</a></li>
+<li> Computes minimum spanning tree:<a href="v.net.spanningtree.html">v.net.spanningtree</a></li>
+<li> Minimum Steiner trees (star-like connections, e.g. broadband cable
      connections): <a href="v.net.steiner.html">v.net.steiner</a></li>
+<li> Finds shortest path using timetables: <a href="v.net.timetable.html">v.net.timetable</a></li>
 <li> Traveling salesman (round trip): <a href="v.net.salesman.html">v.net.salesman</a></li>
 </ul>
 
@@ -351,9 +351,10 @@ approximation (also called interpolation):
 
 <h3>Lidar data processing</h3>
 
-Lidar point clouds (first and last return) are imported from text files  with <a
-href="v.in.ascii.html">v.in.ascii</a> (use the -b flag to not build
-topology). Outlier detection is done with 
+Lidar point clouds (first and last return) are imported from text files 
+with <a href="v.in.ascii.html">v.in.ascii</a> or from LAS files with
+<a href="v.in.lidar.html"> v.in.lidar</a>. Both modules recognize the 
+-b flag to not build topology. Outlier detection is done with 
 <a href="v.outlier.html">v.outlier</a> on both first and last return data.
 Then, with <a href="v.lidar.edgedetection.html">v.lidar.edgedetection</a>,
 edges are detected from last return data. The building are generated by
@@ -367,15 +368,10 @@ from outlier detection).
 <h3>See also</h3>
 
 <ul>
-<li><a href="databaseintro.html">Introduction to GRASS database management</a></li>
-<li><a href="rasterintro.html">Introduction to GRASS raster map processing</a></li>
-<li><a href="raster3dintro.html">Introduction to GRASS 3D raster map (voxel) processing</a></li>
+  <li><a href="rasterintro.html">Introduction into raster data processing</a></li>
+  <li><a href="raster3dintro.html">Introduction into 3D raster data (voxel) processing</a></li>
+  <li><a href="vectorintro.html">Introduction into vector data processing</a></li>
+  <li><a href="imageryintro.html">Introduction into image processing</a></li>
+  <li><a href="databaseintro.html">Database management</a></li>
+  <li><a href="projectionintro.html">Projections and spatial transformations</a></li>
 </ul>
-
-<hr>
-<br>
-<a href="index.html">Main index</a> - <a href="vector.html">vector index</a> - <a href="full_index.html">full index</a>
-<P>&copy; 2008-2012 <a href="http://grass.osgeo.org">GRASS Development Team</a></P>
-
-</body>
-</html>

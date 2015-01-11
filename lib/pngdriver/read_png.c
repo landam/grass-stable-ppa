@@ -6,6 +6,28 @@
 #include <grass/gis.h>
 #include "pngdriver.h"
 
+static void read_data(png_structp png_ptr, png_bytep data, png_size_t length)
+{
+  png_size_t check;
+  FILE *fp;
+
+  if (png_ptr == NULL )
+    return;
+
+  fp = (FILE *) png_get_io_ptr(png_ptr);
+
+  if ( fp == NULL )
+    return;
+
+  /* fread() returns 0 on error, so it is OK to store this in a png_size_t
+   * instead of an int, which is what fread() actually returns.
+   */
+  check = fread(data, 1, length, fp);
+
+  if (check != length)
+    G_fatal_error("PNG: Read Error");
+}
+
 void read_png(void)
 {
     static jmp_buf jbuf;
@@ -30,11 +52,11 @@ void read_png(void)
     if (setjmp(png_jmpbuf(png_ptr)))
 	G_fatal_error("error reading PNG file");
 
-    input = fopen(file_name, "rb");
+    input = fopen(png.file_name, "rb");
     if (!input)
-	G_fatal_error("PNG: couldn't open output file %s", file_name);
+	G_fatal_error("PNG: couldn't open output file %s", png.file_name);
 
-    png_init_io(png_ptr, input);
+    png_set_read_fn(png_ptr, input, read_data);
 
     png_read_info(png_ptr, info_ptr);
 
@@ -44,12 +66,12 @@ void read_png(void)
     if (depth != 8)
 	G_fatal_error("PNG: input file is not 8-bit");
 
-    if (i_width != width || i_height != height)
+    if (i_width != png.width || i_height != png.height)
 	G_fatal_error
 	    ("PNG: input file has incorrect dimensions: expected: %dx%d got: %lux%lu",
-	     width, height, (unsigned long) i_width, (unsigned long) i_height);
+	     png.width, png.height, (unsigned long) i_width, (unsigned long) i_height);
 
-    if (true_color) {
+    if (png.true_color) {
 	if (color_type != PNG_COLOR_TYPE_RGB_ALPHA)
 	    G_fatal_error("PNG: input file is not RGBA");
     }
@@ -58,7 +80,7 @@ void read_png(void)
 	    G_fatal_error("PNG: input file is not indexed color");
     }
 
-    if (!true_color && has_alpha) {
+    if (!png.true_color && png.has_alpha) {
 	png_bytep trans;
 	int num_trans;
 
@@ -68,7 +90,7 @@ void read_png(void)
 	    G_fatal_error("PNG: input file has invalid palette");
     }
 
-    if (true_color)
+    if (png.true_color)
 	png_set_invert_alpha(png_ptr);
     else {
 	png_colorp png_pal;
@@ -81,31 +103,31 @@ void read_png(void)
 	    num_palette = 256;
 
 	for (i = 0; i < num_palette; i++) {
-	    png_palette[i][0] = png_pal[i].red;
-	    png_palette[i][1] = png_pal[i].green;
-	    png_palette[i][2] = png_pal[i].blue;
+	    png.palette[i][0] = png_pal[i].red;
+	    png.palette[i][1] = png_pal[i].green;
+	    png.palette[i][2] = png_pal[i].blue;
 	}
     }
 
-    line = G_malloc(width * 4);
+    line = G_malloc(png.width * 4);
 
-    for (y = 0, p = grid; y < height; y++) {
+    for (y = 0, p = png.grid; y < png.height; y++) {
 	png_bytep q = line;
 
 	png_read_row(png_ptr, q, NULL);
 
-	if (true_color)
-	    for (x = 0; x < width; x++, p++) {
+	if (png.true_color)
+	    for (x = 0; x < png.width; x++, p++) {
 		int r = *q++;
 		int g = *q++;
 		int b = *q++;
 		int a = *q++;
-		unsigned int c = get_color(r, g, b, a);
+		unsigned int c = png_get_color(r, g, b, a);
 
 		*p = c;
 	    }
 	else
-	    for (x = 0; x < width; x++, p++, q++)
+	    for (x = 0; x < png.width; x++, p++, q++)
 		*p = (png_byte) * q;
     }
 

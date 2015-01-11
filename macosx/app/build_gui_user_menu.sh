@@ -12,18 +12,13 @@
 # may be my limited knowledge of sh scripting and there could be a way.
 
 GRASS_MMVER=`cut -d . -f 1-2 "$GISBASE/etc/VERSIONNUMBER"`
-BINDIR="$HOME/Library/GRASS/$GRASS_MMVER/Modules/bin"
-SCRIPTDIR="$HOME/Library/GRASS/$GRASS_MMVER/Modules/scripts"
-BINDIRG="/Library/GRASS/$GRASS_MMVER/Modules/bin"
-SCRIPTDIRG="/Library/GRASS/$GRASS_MMVER/Modules/scripts"
-MENUDIR="$HOME/Library/GRASS/$GRASS_MMVER/Modules/etc"
+BINDIR="$GISBASE_USER/Modules/bin"
+SCRIPTDIR="$GISBASE_USER/Modules/scripts"
+BINDIRG="$GISBASE_SYSTEM/Modules/bin"
+SCRIPTDIRG="$GISBASE_SYSTEM/Modules/scripts"
+MENUDIR="$GISBASE_USER/Modules/etc"
 
 echo "Rebuilding Addon menu..."
-
-# clean up old .menu files
-if [ -d "$MENUDIR/gm/addons" ] ; then
-  rm -f "$MENUDIR/gm/addons/"*".menu"
-fi
 
 # just to make sure (startup should have created it)
 mkdir -p "$MENUDIR"

@@ -4,7 +4,7 @@
 @brief wxGUI Graphical Modeler - menu data
 
 Classes:
- - menudata::ModelerData
+ - menudata::ModelerMenuData
 
 (C) 2010-2011 by the GRASS Development Team
 
@@ -16,13 +16,13 @@ This program is free software under the GNU General Public License
 
 import os
 
-from core                 import globalvar
-from core.menudata        import MenuData
+from core import globalvar
+from core.menutree  import MenuTreeModelBuilder
 
-class ModelerData(MenuData):
+class ModelerMenuData(MenuTreeModelBuilder):
     def __init__(self, filename = None):
         if not filename:
-            gisbase = os.getenv('GISBASE')
-	    filename = os.path.join(globalvar.ETCWXDIR, 'xml', 'menudata_modeler.xml')
+            filename = os.path.join(globalvar.ETCWXDIR, 'xml', 'menudata_modeler.xml')
         
-        MenuData.__init__(self, filename)
+        MenuTreeModelBuilder.__init__(self, filename)
+

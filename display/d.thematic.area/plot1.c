@@ -1,18 +1,15 @@
 /* plot1() - Level One vector reading */
 
 #include <string.h>
-#include <math.h>
-
 #include <grass/gis.h>
-#include <grass/Vect.h>
-#include <grass/display.h>
 #include <grass/raster.h>
+#include <grass/vector.h>
+#include <grass/display.h>
+#include "plot.h"
+#include "local_proto.h"
 #include <grass/symbol.h>
 #include <grass/glocale.h>
 #include <grass/dbmi.h>
-
-#include "plot.h"
-#include "local_proto.h"
 
 #define RENDER_POLYLINE 0
 #define RENDER_POLYGON  1
@@ -37,94 +34,6 @@ struct rgb_color palette[16] = {
     {0, 255, 255},		/* 15: cyan */
     {0, 139, 139}		/* 16: dark cyan */
 };
-
-/*local functions */
-static void local_plot_poly(double *xf, double *yf, int n, int type);
-
-/*global render switch */
-int render;
-
-/* *************************************************************** */
-/* function to plot polygons and polylines       ***************** */
-/* the parameter type switches render mode       ***************** */
-/* *************************************************************** */
-static void local_plot_poly(double *xf, double *yf, int n, int type)
-{
-    static int *xi, *yi;
-    static int nalloc;
-    int i;
-
-    if (nalloc < n) {
-	nalloc = n;
-	xi = G_realloc(xi, nalloc * sizeof(int));
-	yi = G_realloc(yi, nalloc * sizeof(int));
-    }
-
-    for (i = 0; i < n; i++) {
-	xi[i] = (int)floor(0.5 + D_u_to_d_col(xf[i]));
-	yi[i] = (int)floor(0.5 + D_u_to_d_row(yf[i]));
-    }
-
-    if (type == RENDER_POLYGON)
-	R_polygon_abs(xi, yi, n);
-    else
-	R_polyline_abs(xi, yi, n);
-}
-
-/* *************************************************************** */
-/* function to use different render methods for polylines ******** */
-/* *************************************************************** */
-void plot_polyline(double *xf, double *yf, int n)
-{
-    int i;
-
-    switch (render) {
-    case RENDER_DP:
-	D_polyline(xf, yf, n);
-	break;
-    case RENDER_DPC:
-	D_polyline_clip(xf, yf, n);
-	break;
-    case RENDER_DPL:
-	D_polyline_cull(xf, yf, n);
-	break;
-    case RENDER_RPA:
-	local_plot_poly(xf, yf, n, RENDER_POLYLINE);
-	break;
-    case RENDER_GPP:
-    default:
-	for (i = 1; i < n; i++)
-	    G_plot_line(xf[i - 1], yf[i - 1], xf[i], yf[i]);
-	break;
-    }
-}
-
-/* *************************************************************** */
-/* function to use different render methods for polygons  ******** */
-/* *************************************************************** */
-void plot_polygon(double *xf, double *yf, int n)
-{
-    switch (render) {
-    case RENDER_GPP:
-	G_plot_polygon(xf, yf, n);
-	break;
-    case RENDER_DP:
-	D_polygon(xf, yf, n);
-	break;
-    case RENDER_DPC:
-	D_polygon_clip(xf, yf, n);
-	break;
-    case RENDER_DPL:
-	D_polygon_cull(xf, yf, n);
-	break;
-    case RENDER_RPA:
-	local_plot_poly(xf, yf, n, RENDER_POLYGON);
-	break;
-    default:
-	G_plot_polygon(xf, yf, n);
-	break;
-    }
-}
 
 /* *************************************************************** */
 /* *************************************************************** */
@@ -272,7 +181,7 @@ int plot1(struct Map_info *Map, int type, int area, struct cat_list *Clist,
     /* Is it necessary to reset line/label color in each loop ? */
 
     if (color && !table_colors_flag && !cats_color_flag)
-	R_RGB_color(color->r, color->g, color->b);
+	D_RGB_color(color->r, color->g, color->b);
 
     if (Vect_level(Map) >= 2)
 	nlines = Vect_get_num_lines(Map);
@@ -464,7 +373,8 @@ int plot1(struct Map_info *Map, int type, int area, struct cat_list *Clist,
 	    if (!(color || fcolor || custom_rgb))
 		continue;
 
-	    G_plot_where_xy(x[0], y[0], &x0, &y0);
+	    x0 = D_u_to_d_col(x[0]);
+	    y0 = D_u_to_d_row(y[0]);
 
 	    /* skip if the point is outside of the display window */
 	    /*      xy<0 tests make it go ever-so-slightly faster */
@@ -488,20 +398,20 @@ int plot1(struct Map_info *Map, int type, int area, struct cat_list *Clist,
 	}
 	else if (color || custom_rgb) {
 	    if (!table_colors_flag && !cats_color_flag)
-		R_RGB_color(color->r, color->g, color->b);
+		D_RGB_color(color->r, color->g, color->b);
 	    else {
 		if (custom_rgb)
-		    R_RGB_color((unsigned char)red, (unsigned char)grn,
+		    D_RGB_color((unsigned char)red, (unsigned char)grn,
 				(unsigned char)blu);
 		else
-		    R_RGB_color(color->r, color->g, color->b);
+		    D_RGB_color(color->r, color->g, color->b);
 	    }
 
 	    /* Plot the lines */
 	    if (Points->n_points == 1)	/* line with one coor */
-		D_polydots_clip(x, y, Points->n_points);
+		D_polydots_abs(x, y, Points->n_points);
 	    else		/*use different user defined render methods */
-		plot_polyline(x, y, Points->n_points);
+		D_polyline_abs(x, y, Points->n_points);
 	}
     }
 

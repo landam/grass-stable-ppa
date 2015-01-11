@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 int main(int argc, char *argv[])
@@ -43,15 +44,12 @@ int main(int argc, char *argv[])
     float val_f;		/* for misc use */
     double val_d;		/* for misc use */
 
-    char *infile, *outfile, *mapset, *maptitle, *basename;
+    char *infile, *outfile, *maptitle, *basename;
     struct Cell_head region;
     void *raster, *ptr;
     RASTER_MAP_TYPE map_type;
 
     struct Option *inputfile, *outputfile;
-
-    /* please, remove before GRASS 7 released */
-    struct Flag *verbose;
     struct GModule *module;
 
     int fd;
@@ -61,53 +59,31 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, export");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("export"));
     module->description = _("Exports a GRASS raster to a binary MAT-File.");
 
     /* Define the different options */
 
     inputfile = G_define_standard_option(G_OPT_R_INPUT);
 
-    outputfile = G_define_option();
-    outputfile->key = "output";
-    outputfile->type = TYPE_STRING;
+    outputfile = G_define_standard_option(G_OPT_F_OUTPUT);
     outputfile->required = YES;
-    outputfile->gisprompt = "new_file,file,output";
-    outputfile->description = _("Name for the output binary MAT-File");
-
-    /* please, remove before GRASS 7 released */
-    verbose = G_define_flag();
-    verbose->key = 'v';
-    verbose->description = _("Verbose mode");
+    outputfile->gisprompt = "new,bin,file";
+    outputfile->description = _("Name for output binary MAT file");
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-
-    /* please, remove before GRASS 7 released */
-    if (verbose->answer) {
-	putenv("GRASS_VERBOSE=3");
-	G_warning(_("The '-v' flag is superseded and will be removed "
-		    "in future. Please use '--verbose' instead."));
-    }
-
     infile = inputfile->answer;
-
     basename = G_store(outputfile->answer);
     G_basename(basename, "mat");
     outfile = G_malloc(strlen(basename) + 5);
     sprintf(outfile, "%s.mat", basename);
 
-    mapset = G_find_cell(infile, "");
-    if (mapset == NULL) {
-	G_fatal_error(_("Raster map <%s> not found"), infile);
-    }
+    fd = Rast_open_old(infile, "");
 
-    fd = G_open_cell_old(infile, mapset);
-    if (fd < 0)
-	G_fatal_error(_("Unable to open raster map <%s>"), infile);
-
-    map_type = G_get_raster_map_type(fd);
+    map_type = Rast_get_map_type(fd);
 
     /* open bin file for writing */
     fp1 = fopen(outfile, "wb");
@@ -160,7 +136,7 @@ int main(int argc, char *argv[])
 
 
     /********** Write title (if there is one) **********/
-    maptitle = G_get_cell_title(infile, mapset);
+    maptitle = Rast_get_cell_title(infile, "");
     if (strlen(maptitle) >= 1) {
 
 	/** write text element (map title) **/
@@ -315,12 +291,12 @@ int main(int argc, char *argv[])
 
     /* data array, by increasing column */
     raster =
-	G_calloc((G_window_rows() + 1) * (G_window_cols() + 1),
-		 G_raster_size(map_type));
+	G_calloc((Rast_window_rows() + 1) * (Rast_window_cols() + 1),
+		 Rast_cell_size(map_type));
 
     G_debug(1, "mem alloc is %d bytes\n",	/* I think _cols()+1 is unneeded? */
-	    G_raster_size(map_type) * (G_window_rows() +
-				       1) * (G_window_cols() + 1));
+	    Rast_cell_size(map_type) * (Rast_window_rows() +
+				       1) * (Rast_window_cols() + 1));
 
     G_verbose_message(_("Reading in map ... "));
 
@@ -328,9 +304,8 @@ int main(int argc, char *argv[])
     for (row = 0, ptr = raster; row < mrows; row++,
 	 ptr =
 	 G_incr_void_ptr(ptr,
-			 (G_window_cols() + 1) * G_raster_size(map_type))) {
-	if (G_get_raster_row(fd, ptr, row, map_type) < 0)
-	    G_fatal_error("reading map");
+			 (Rast_window_cols() + 1) * Rast_cell_size(map_type))) {
+	Rast_get_row(fd, ptr, row, map_type);
 	G_percent(row, mrows, 2);
     }
     G_percent(row, mrows, 2);	/* finish it off */
@@ -339,7 +314,7 @@ int main(int argc, char *argv[])
     G_verbose_message(_("Writing out map..."));
 
     /* then write it to disk */
-    /* NoGood: fwrite(raster, G_raster_size(map_type), mrows*ncols, fp1); */
+    /* NoGood: fwrite(raster, Rast_cell_size(map_type), mrows*ncols, fp1); */
     for (col = 0; col < ncols; col++) {
 	for (row = 0; row < mrows; row++) {
 
@@ -348,9 +323,9 @@ int main(int argc, char *argv[])
 		G_incr_void_ptr(ptr,
 				(col +
 				 row * (ncols +
-					1)) * G_raster_size(map_type));
+					1)) * Rast_cell_size(map_type));
 
-	    if (!G_is_null_value(ptr, map_type)) {
+	    if (!Rast_is_null_value(ptr, map_type)) {
 		if (map_type == CELL_TYPE) {
 		    val_i = *((CELL *) ptr);
 		    fwrite(&val_i, sizeof(int), 1, fp1);
@@ -393,7 +368,7 @@ int main(int argc, char *argv[])
 
 
     /* done! */
-    filesize = ftell(fp1);
+    filesize = G_ftell(fp1);
     fclose(fp1);
 
     G_verbose_message(_("%ld bytes written to '%s'"), filesize, outfile);

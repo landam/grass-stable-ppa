@@ -1,5 +1,5 @@
 """
-MODULE:    v_krige_wxGUI
+MODULE:    vkrige
 
 AUTHOR(S): Anne Ghisla <a.ghisla AT gmail.com>
 
@@ -21,9 +21,7 @@ import os, sys
 from tempfile import gettempdir
 import time
 import thread
-## i18N
-import gettext
-gettext.install('grasswxpy', os.path.join(os.getenv("GISBASE"), 'locale'), unicode = True)
+from core.utils import _
 
 ### dependencies to be checked once, as they are quite time-consuming. cfr. grass.parser.
 # GRASS binding
@@ -33,23 +31,26 @@ except ImportError:
     sys.exit(_("No GRASS-python library found."))
 ### wxGUI imports
 
-GUIModulesPath = os.path.join(os.getenv("GISBASE"), "etc", "wxpython", "gui_core")
-sys.path.append(GUIModulesPath)
+GUIModulesPath = os.path.join(os.getenv("GISBASE"), "etc", "gui", "wxpython")
+if GUIModulesPath not in sys.path:
+    sys.path.append(GUIModulesPath)
 
-import globalvar
-import gselect
-import goutput
-import forms
-from settings import UserSettings
+from core import globalvar
+from gui_core import gselect
+from core import gconsole
+from gui_core import goutput
+from core.settings import UserSettings
+from gui_core.widgets import GNotebook
+from core.giface import Notification
 #import help
 
 import wx
-import wx.lib.flatnotebook as FN
 #import wx.lib.plot as plot # for plotting the variogram.
+import rpy2.robjects as robjects
+import rpy2.rinterface as rinterface
 
 # global variables
 maxint = 1e6 # instead of sys.maxint, not working with SpinCtrl on 64bit [reported by Bob Moskovitz]
-
 
 #@TODO move away functions not regarding the GUI
 
@@ -83,30 +84,32 @@ class KrigingPanel(wx.Panel):
         flexSizer.Add(item = wx.StaticText(self, id = wx.ID_ANY, label = _("Numeric column:")),
                       flag = wx.ALIGN_CENTER_VERTICAL)
         self.InputDataColumn = gselect.ColumnSelect(self, id = wx.ID_ANY)
-        self.InputDataColumn.SetSelection(0)
         flexSizer.Add(item = self.InputDataColumn)
         
-        self.InputDataMap.GetChildren()[0].Bind(wx.EVT_TEXT, self.OnInputDataChanged)
+        self.InputDataMap.GetChildren()[0].Bind(wx.EVT_TEXT, self.OnInputMapChanged)
+        self.InputDataColumn.GetChildren()[0].Bind(wx.EVT_TEXT, self.OnInputColumnChanged)
         
         InputBoxSizer.Add(item = flexSizer)
         
         #    2. Kriging. In book pages one for each R package. Includes variogram fit.
         KrigingSizer = wx.StaticBoxSizer(wx.StaticBox(self, id = wx.ID_ANY, label = _("Kriging")), wx.HORIZONTAL)
 
-        self.RPackagesBook = FN.FlatNotebook(parent = self, id = wx.ID_ANY,
-                                        style = FN.FNB_BOTTOM |
-                                        FN.FNB_NO_NAV_BUTTONS |
-                                        FN.FNB_FANCY_TABS | FN.FNB_NO_X_BUTTON)
+        self.RPackagesBook = GNotebook(parent = self, style = globalvar.FNPageDStyle)
         
         for Rpackage in ["gstat"]: # , "geoR"]: #@TODO: enable it if/when it'll be implemented.
             self.CreatePage(package = Rpackage, Rinstance = Rinstance, controller = controller)
         
-        ## Command output. From forms.py module, cmdPanel class
-        self.goutput = goutput.GMConsole(parent = self, margin = False,
-                                         notebook = self.RPackagesBook)
+        ## Command output. From menuform module, cmdPanel class
+        self._gconsole = gconsole.GConsole(guiparent = self)
+        self.goutput = goutput.GConsoleWindow(parent = self, gconsole = self._gconsole, margin = False)
         self.goutputId = self.RPackagesBook.GetPageCount()
-        self.outpage = self.RPackagesBook.AddPage(self.goutput, text = _("Command output"))
-        
+        self.outpage = self.RPackagesBook.AddPage(page = self.goutput, text = _("Command output"), name = 'output')
+        self._gconsole.Bind(gconsole.EVT_CMD_RUN,
+                            lambda event:
+                                self._switchPageHandler(event=event, notification=Notification.MAKE_VISIBLE))
+        self._gconsole.Bind(gconsole.EVT_CMD_DONE,
+                            lambda event:
+                                self._switchPageHandler(event=event, notification=Notification.RAISE_WINDOW))
         self.RPackagesBook.SetSelection(0)
         KrigingSizer.Add(self.RPackagesBook, proportion = 1, flag = wx.EXPAND)
         
@@ -114,7 +117,6 @@ class KrigingPanel(wx.Panel):
         OutputSizer = wx.StaticBoxSizer(wx.StaticBox(self, id = wx.ID_ANY, label = _("Output")), wx.HORIZONTAL)
         
         OutputParameters = wx.GridBagSizer(hgap = 5, vgap = 5)
-        OutputParameters.AddGrowableCol(1)
         OutputParameters.Add(item = wx.StaticText(self, id = wx.ID_ANY, label = _("Name for the output raster map:")),
                              flag = wx.ALIGN_CENTER_VERTICAL,
                              pos = (0, 0))
@@ -141,6 +143,7 @@ class KrigingPanel(wx.Panel):
         OutputParameters.Add(item = self.OverwriteCheckBox,
                              pos = (2, 0), span = (1, 2))
         
+        OutputParameters.AddGrowableCol(1)
         OutputSizer.Add(OutputParameters, proportion = 0, flag = wx.EXPAND | wx.ALL, border = self.border)
         
         #    4. Run Button and Quit Button
@@ -171,7 +174,7 @@ class KrigingPanel(wx.Panel):
         
     def CreatePage(self, package, Rinstance, controller):
         """ Creates the three notebook pages, one for each R package """
-        for package in ["gstat"]: 
+        for package in ["gstat"]: #@TODO add here other packages when they will be implemented
             classobj = eval("RBook"+package+"Panel")
             setattr(self, "RBook"+package+"Panel", (classobj(self,
                                                              id = wx.ID_ANY,
@@ -189,32 +192,26 @@ class KrigingPanel(wx.Panel):
         event.Skip()
 
     def OnHelpButton(self, event):
-        # file = os.path.join(os.getenv("GISBASE"), "docs", "html", "v.krige.html")
-        # file = os.path.join(os.path.curdir, "description.html")
-        # @TODO fix HelpWindow
-        # helpFrame = help.HelpWindow(parent=self, id=wx.ID_ANY,
-        #                            title=_("GRASS - Help page for v.krige"),
-        #                            size=(640, 480),
-        #                            file=file)
-        # helpFrame.Show(True)
-
         grass.run_command('g.manual', entry = 'v.krige')
-        
         event.Skip()
 
-    def OnInputDataChanged(self, event):
-        """ Refreshes list of columns and fills output map name TextCtrl """
+    def OnInputMapChanged(self, event):
+        """ Refreshes list of columns."""
         MapName = event.GetString()
         self.InputDataColumn.InsertColumns(vector = MapName,
-                                   layer = 1, excludeKey = True,
+                                   layer = 1, excludeKey = False,
                                    type = ['integer', 'double precision'])
-        self.InputDataColumn.SetSelection(0)
-        self.RunButton.Enable(self.InputDataColumn.GetSelection() is not -1)
-        self.RBookgstatPanel.PlotButton.Enable(self.InputDataColumn.GetSelection() is not -1)
+
+    def OnInputColumnChanged(self, event):
+        """Fills output map name TextCtrl """
+        MapName = self.InputDataMap.GetValue()
+        enable = bool(self.InputDataColumn.GetValue())
+        self.RunButton.Enable(enable)
+        self.RBookgstatPanel.PlotButton.Enable(enable)
         
-        if self.InputDataColumn.GetSelection() is not -1:
+        if enable:
             self.OutputMapName.SetValue(MapName.split("@")[0]+"_kriging")
-            self.OutputVarianceMapName.SetValue(MapName.split("@")[0]+"_kriging_var")
+            self.OutputVarianceMapName.SetValue(MapName.split("@")[0]+"_kriging.var")
         else:
             self.OutputMapName.SetValue('')
             self.OutputVarianceMapName.SetValue('')
@@ -228,7 +225,7 @@ class KrigingPanel(wx.Panel):
         SelectedPanel = self.RPackagesBook.GetCurrentPage()
         
         if self.RPackagesBook.GetPageText(self.RPackagesBook.GetSelection()) == 'Command output':
-            self.goutput.WriteError("No parameters for running. Please select \"gstat\" tab, check parameters and re-run.")
+            self._gconsole.WriteError("No parameters for running. Please select \"gstat\" tab, check parameters and re-run.")
             return False # no break invoked by above function
         
         # mount command string as it would have been written on CLI
@@ -254,10 +251,26 @@ class KrigingPanel(wx.Panel):
         # give it to the output console
         #@FIXME: it runs the command as a NEW instance. Reimports data, recalculates variogram fit..
         #otherwise I can use Controller() and mimic RunCmd behaviour.
-        self.goutput.RunCmd(command, switchPage = True)
+        self._gconsole.RunCmd(command)
     
     def OnVarianceCBChecked(self, event):
         self.OutputVarianceMapName.Enable(event.IsChecked())
+
+    def _switchPageHandler(self, event, notification):
+        self._switchPage(notification=notification)
+        event.Skip()
+
+    def _switchPage(self, notification):
+        """!Manages @c 'output' notebook page according to event notification."""
+        if notification == Notification.HIGHLIGHT:
+            self.RPackagesBook.HighlightPageByName('output')
+        if notification == Notification.MAKE_VISIBLE:
+            self.RPackagesBook.SetSelectionByName('output')
+        if notification == Notification.RAISE_WINDOW:
+            self.RPackagesBook.SetSelectionByName('output')
+            self.SetFocus()
+            self.Raise()
+
 
 class KrigingModule(wx.Frame):
     """ Kriging module for GRASS GIS. Depends on R and its packages gstat and geoR. """
@@ -394,7 +407,7 @@ class RBookgstatPanel(RBookPanel):
             self.SetSizerAndFit(self.Sizer)
             self.VariogramCheckBox.Bind(wx.EVT_CHECKBOX, self.HideOptions)
             self.VariogramCheckBox.SetValue(state = True) # check it by default
-
+        
         ModelFactor = robjects.r.vgm().rx('long')
         ModelList = robjects.r.levels(ModelFactor[0])
         #@FIXME: no other way to let the Python pick it up..
@@ -442,14 +455,12 @@ class RBookgstatPanel(RBookPanel):
         column = self.parent.InputDataColumn.GetValue()
         
         # import data or pick them up
-        if globals()["InputData"] is None:
-            globals()["InputData"] = controller.ImportMap(map = map,
+        if self.controller.InputData is None:
+            self.controller.InputData = self.controller.ImportMap(map = map,
                                                           column = column)
         # fit the variogram or pick it up
-        Formula = controller.ComposeFormula(column = column,
-                                            isblock = self.KrigingRadioBox.GetStringSelection() == "Block kriging",
-                                            inputdata = globals()['InputData'])
-        #if globals()["Variogram"] is None:
+        #~ Formula = self.controller.ComposeFormula(column = column,
+                                            #~ isblock = self.KrigingRadioBox.GetStringSelection() == "Block kriging")
         if hasattr(self, 'VariogramCheckBox') and self.VariogramCheckBox.IsChecked():
             self.model = ''
             for each in ("Sill","Nugget","Range"):
@@ -462,21 +473,28 @@ class RBookgstatPanel(RBookPanel):
             for each in ("Sill","Nugget","Range"):
                 if getattr(self, each+'ChextBox').IsChecked(): #@FIXME will be removed when chextboxes will be frozen
                     setattr(self, each.lower(), getattr(self, each+"Ctrl").GetValue())
-            
-        globals()["Variogram"] = controller.FitVariogram(Formula,
-                                                         InputData,
+                    
+        isblock = self.KrigingRadioBox.GetStringSelection() == "Block kriging"
+        if isblock is not '':
+            self.predictor = 'x+y'
+        else:
+            self.predictor = '1'
+        
+        self.controller.Variogram = self.controller.FitVariogram(robjects.Formula(str(column) + "~" + self.predictor),
+                                                         self.controller.InputData,
                                                          model = self.model,
                                                          sill = self.sill,
                                                          nugget = self.nugget,
                                                          range = self.range)
-        
+
         # use R plot function, in a separate window.
         thread.start_new_thread(self.plot, ())
         
     def plot(self):
         #robjects.r.X11()
         #robjects.r.png("variogram.png")
-        textplot = robjects.r.plot(Variogram['datavariogram'], Variogram['variogrammodel'])
+        textplot = robjects.r.plot(self.controller.Variogram['datavariogram'], 
+                                   self.controller.Variogram['variogrammodel'])
         print textplot
         self.refresh()
         #robjects.r['dev.off']()
@@ -484,7 +502,7 @@ class RBookgstatPanel(RBookPanel):
     def refresh(self):
         while True:
             rinterface.process_revents()
-            time.sleep(0.1)
+            time.sleep(0.2)
         
 class RBookgeoRPanel(RBookPanel):
     """ Subclass of RBookPanel, with specific geoR options and kriging functions. """

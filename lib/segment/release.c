@@ -1,6 +1,6 @@
 
 /**
- * \file release.c
+ * \file lib/segment/release.c
  *
  * \brief Segment release routines.
  *
@@ -9,11 +9,12 @@
  *
  * \author GRASS GIS Development Team
  *
- * \date 2005-2006
+ * \date 2005-2009
  */
 
 #include <stdlib.h>
-#include <grass/segment.h>
+#include <grass/gis.h>
+#include "local_proto.h"
 
 
 /**
@@ -27,9 +28,9 @@
  * <b>Note:</b> Does not close the file. Does not flush the data which 
  * may be pending from previous <i>segment_put()</i> calls.
  *
- * \param[in,out] seg
+ * \param[in,out] SEG segment
  * \return 1 if successful
- * \return -1 if segment is not available (not open)
+ * \return -1 if SEGMENT is not available (not open)
  */
 
 int segment_release(SEGMENT * SEG)
@@ -40,8 +41,12 @@ int segment_release(SEGMENT * SEG)
 	return -1;
 
     for (i = 0; i < SEG->nseg; i++)
-	free(SEG->scb[i].buf);
-    free(SEG->scb);
+	G_free(SEG->scb[i].buf);
+    G_free(SEG->scb);
+
+    G_free(SEG->freeslot);
+    G_free(SEG->agequeue);
+    G_free(SEG->load_idx);
 
     SEG->open = 0;
 

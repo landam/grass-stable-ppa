@@ -19,7 +19,7 @@ fi
 
 export PACKAGE=${1:-1}
 # package name for osgeo4w
-# eg. 64-dev -> grass64-dev, empty for release
+# eg. 70-dev -> grass70-dev, empty for release
 export PACKAGE_NAME=$2
 # OSGeo4W directory postfix, separate OSGeo4W installations are used
 # for building GRASS 6.x and 7.x
@@ -104,7 +104,7 @@ cp -uv $OSGEO4W_ROOT_MSYS/lib/zlib.lib mswindows/osgeo4w/lib/libz.a
 
 if ! [ -f mswindows/osgeo4w/configure-stamp ]; then
 
-	if [ -e include/Make/Grass.make ] ; then
+	if [ -e include/Make/Platform.make ] ; then
 	    log make distclean
 	    make distclean
 	fi
@@ -123,22 +123,23 @@ if ! [ -f mswindows/osgeo4w/configure-stamp ]; then
 		--disable-x --without-x \
 		--with-cxx \
 		--enable-shared \
+		--enable-largefile \
 		--with-opengl=windows \
 		--with-fftw \
 		--with-freetype \
 		--with-proj-share=$OSGEO4W_ROOT_MSYS/share/proj \
 		--with-gdal=$PWD/mswindows/osgeo4w/gdal-config \
 		--with-geos=$PWD/mswindows/osgeo4w/geos-config \
-		--with-tcltk \
+	        --with-liblas=$PWD/mswindows/osgeo4w/liblas-config \
 		--with-sqlite \
-		--with-postgres \
 		--with-curses \
 		--with-regex \
 		--with-nls \
 		--with-freetype-includes=$OSGEO4W_ROOT_MSYS/include/freetype2 \
 		--with-odbc \
 	        --with-cairo \
-		--with-cairo-includes=$OSGEO4W_ROOT_MSYS/include/cairo
+		--with-cairo-includes=$OSGEO4W_ROOT_MSYS/include/cairo \
+                --with-postgres
 
 	touch mswindows/osgeo4w/configure-stamp
 fi
@@ -155,7 +156,7 @@ mv $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/include/grass/config.h \
 cp mswindows/osgeo4w/config.h.switch $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/include/grass/config.h
 cp mswindows/osgeo4w/config.h.vc $OSGEO4W_ROOT_MSYS/apps/grass/grass-$VERSION/include/grass
 mkdir -p $OSGEO4W_ROOT_MSYS/etc/preremove $OSGEO4W_ROOT_MSYS/etc/postinstall
-sed -e "s#@VERSION@#$VERSION#g" -e "s#@osgeo4w@#$OSGEO4W_ROOT#g" \
+sed -e "s#@VERSION@#$VERSION#g" -e "s#@OSGEO4W_ROOT@#$OSGEO4W_ROOT#g" -e "s#@POSTFIX@#$MAJOR$MINOR#g" \
     mswindows/osgeo4w/grass.bat.tmpl >$OSGEO4W_ROOT_MSYS/bin/${GRASS_EXECUTABLE}.bat
 sed -e "s#@VERSION@#$VERSION#g" -e "s#@OSGEO4W_ROOT_MSYS@#$OSGEO4W_ROOT_MSYS#g" -e "s#@POSTFIX@#$MAJOR$MINOR#g" \
     mswindows/osgeo4w/grass.tmpl >$OSGEO4W_ROOT_MSYS/bin/${GRASS_EXECUTABLE}
@@ -182,9 +183,9 @@ if [ -n "$PACKAGE" ]; then
     SRC=$PWD
     cd $OSGEO4W_ROOT_MSYS 
 
-    sed -e "s#@VERSION@#$VERSION#g" \
+    sed -e "s#@VERSION@#$VERSION#g" -e "s#@POSTFIX@#$MAJOR$MINOR#g" \
 	$SRC/mswindows/osgeo4w/grass.bat.tmpl >$OSGEO4W_ROOT_MSYS/bin/${GRASS_EXECUTABLE}.bat.tmpl
-    sed -e "s#@VERSION@#$VERSION#g" \
+    sed -e "s#@VERSION@#$VERSION#g" -e "s#@OSGEO4W_ROOT_MSYS@#@OSGEO4W_ROOT@#g" -e "s#@POSTFIX@#$MAJOR$MINOR#g" \
 	$SRC/mswindows/osgeo4w/grass.tmpl >$OSGEO4W_ROOT_MSYS/bin/${GRASS_EXECUTABLE}.tmpl
     
     # bat files - unix2dos

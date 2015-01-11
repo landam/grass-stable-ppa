@@ -8,7 +8,7 @@
 # PURPOSE:  	This configure runs all the tests to determine what components
 #   	    	are installed on the current system. It also defines certain
 #   	    	configuration variables for compilation and installation.
-# COPYRIGHT:    (C) 2000-2012 by the GRASS Development Team
+# COPYRIGHT:    (C) 2000-2009, 2011-2012 by the GRASS Development Team
 #
 #               This program is free software under the GNU General
 #   	    	Public License (>=v2). Read the file COPYING that
@@ -103,7 +103,7 @@ AC_SUBST(ARCH)
 
 # Use absolute path for aux directory so that install-sh works
 
-AC_CONFIG_AUX_DIR($SRCDIR)
+AC_CONFIG_AUX_DIR("$SRCDIR")
 
 # Set GISBASE and GRASS_BIN
 
@@ -235,7 +235,7 @@ AC_ARG_ENABLE(w11,
 
 # With options
 
-LOC_ARG_WITH(cxx, C++, no)
+LOC_ARG_WITH(cxx, C++)
 #LOC_ARG_WITH(g77, GNU Fortran 77, no)
 
 AC_ARG_WITH(macosx-archs,
@@ -248,7 +248,6 @@ AC_ARG_WITH(macosx-sdk,
                           compile with a system SDK on MacOSX. (default: no)],, with_macosx_sdk="no")
 LOC_ARG_WITH(tiff, TIFF)
 LOC_ARG_WITH(png, PNG)
-LOC_ARG_WITH(tcltk, Tcl/Tk)
 LOC_ARG_WITH(postgres, PostgreSQL, no)
 LOC_ARG_WITH(mysql, MySQL, no)
 LOC_ARG_WITH(sqlite, SQLite, no)
@@ -258,33 +257,38 @@ LOC_ARG_WITH(odbc, ODBC, no)
 LOC_ARG_WITH(fftw, FFTW)
 LOC_ARG_WITH(blas, BLAS, no)
 LOC_ARG_WITH(lapack, LAPACK, no)
-LOC_ARG_WITH(motif, Motif, no)
-LOC_ARG_WITH(cairo, Cairo, no)
-LOC_ARG_WITH(freetype, FreeType, no)
-LOC_ARG_WITH(glw, GLw, no)
+LOC_ARG_WITH(cairo, Cairo)
+LOC_ARG_WITH(freetype, FreeType)
 LOC_ARG_WITH(nls, NLS, no)
 LOC_ARG_WITH(readline, Readline, no)
 LOC_ARG_WITH(opendwg, openDWG, no)
-LOC_ARG_WITH(curses, Curses, yes)
 LOC_ARG_WITH(regex, regex)
+LOC_ARG_WITH(pthread, POSIX threads, no)
+LOC_ARG_WITH(openmp, OpenMP, no)
+LOC_ARG_WITH(opencl, OpenCL, no)
 
 AC_ARG_WITH(gdal,
 [  --with-gdal[=path/gdal-config]
                           enable GDAL/OGR support (gdal-config with path,
                           e.g. '--with-gdal=/usr/local/bin/gdal-config')])
 
-AC_ARG_WITH(python,
-[  --with-python[=path/python-config]
-                          enable support for wxGUI Python extensions
-                          (python-config with path, e.g.
-                          '--with-python=/usr/bin/python2.5-config',
-                          default: no)],, with_python="no")
+AC_ARG_WITH(liblas,
+[  --with-liblas[=path/liblas-config]
+                          enable libLAS support (liblas-config with path,
+                          e.g. '--with-liblas=/usr/local/bin/liblas-config',
+                          default: no)],, with_liblas="no")
 
 AC_ARG_WITH(wxwidgets,
 [  --with-wxwidgets[=path/wx-config]
                           enable wxWidgets support (wx-config with path,
                           e.g. '--with-wxwidgets=/usr/local/bin/wx-config',
                           default: no)],, with_wxwidgets="no")
+
+AC_ARG_WITH(netcdf,
+[  --with-netcdf[=path/nc-config]
+                          enable NetCDF support (nc-config with path,
+                          e.g. '--with-nc=/usr/local/bin/nc-config',
+                          default: no)],, with_netcdf="no")
 
 # With includes and libs options
 
@@ -312,9 +316,6 @@ LOC_ARG_WITH_LIB(tiff, TIFF)
 LOC_ARG_WITH_INC(png, PNG)
 LOC_ARG_WITH_LIB(png, PNG)
 
-LOC_ARG_WITH_INC(tcltk, Tcl/Tk)
-LOC_ARG_WITH_LIB(tcltk, Tcl/Tk)
-
 LOC_ARG_WITH_INC(postgres, PostgreSQL)
 LOC_ARG_WITH_LIB(postgres, PostgreSQL)
 
@@ -329,6 +330,7 @@ LOC_ARG_WITH_LIB(ffmpeg, FFMPEG)
 
 LOC_ARG_WITH_INC(opengl, OpenGL)
 LOC_ARG_WITH_LIB(opengl, OpenGL)
+LOC_ARG_WITH_FRAMEWORK(opengl, OpenGL)
 
 LOC_ARG_WITH_INC(odbc, ODBC)
 LOC_ARG_WITH_LIB(odbc, ODBC)
@@ -346,14 +348,8 @@ LOC_ARG_WITH_INC(cairo, cairo)
 LOC_ARG_WITH_LIB(cairo, cairo)
 LOC_ARG_WITH_LDFLAGS(cairo, cairo)
 
-LOC_ARG_WITH_INC(motif, Motif)
-LOC_ARG_WITH_LIB(motif, Motif)
-
 LOC_ARG_WITH_INC(freetype, FreeType)
 LOC_ARG_WITH_LIB(freetype, FreeType)
-
-LOC_ARG_WITH_INC(glw, GLw)
-LOC_ARG_WITH_LIB(glw, GLw)
 
 LOC_ARG_WITH_INC(proj, External PROJ.4)
 LOC_ARG_WITH_LIB(proj, External PROJ.4)
@@ -364,6 +360,16 @@ LOC_ARG_WITH_LIB(opendwg, openDWG)
 
 LOC_ARG_WITH_INC(regex, regex)
 LOC_ARG_WITH_LIB(regex, regex)
+
+LOC_ARG_WITH_INC(pthread, POSIX threads)
+LOC_ARG_WITH_LIB(pthread, POSIX threads)
+
+LOC_ARG_WITH_INC(openmp, OpenMP)
+LOC_ARG_WITH_LIB(openmp, OpenMP)
+
+LOC_ARG_WITH_INC(opencl, OpenCL)
+LOC_ARG_WITH_LIB(opencl, OpenCL)
+#LOC_ARG_WITH_FRAMEWORK(opencl, OpenCL)
 
 # Put this early on so CPPFLAGS and LDFLAGS have any additional dirs
 
@@ -506,49 +512,6 @@ AC_SUBST(XLIB)
 AC_SUBST(XTLIB)
 AC_SUBST(USE_X11)
 
-# Enable Curses option
-
-LOC_CHECK_USE(curses,Curses,USE_CURSES)
-
-if test -n "$USE_CURSES"; then
-
-LOC_CHECK_INCLUDES(curses.h,curses,)
-
-AC_MSG_CHECKING(curses.h WINDOW structure component)
-CURSES_MAXY=NONE
-AC_TRY_COMPILE([
-#include <curses.h>
-  ],[WINDOW w; w.maxy = 0;],
-  CURSES_MAXY=maxy)
-AC_TRY_COMPILE([
-#include <curses.h>
-  ],[WINDOW w; w._maxy = 0;],
-  CURSES_MAXY=_maxy)
-AC_DEFINE_UNQUOTED(CURSES_MAXY,$CURSES_MAXY)
-AC_SUBST(CURSES_MAXY)
-AC_MSG_RESULT($CURSES_MAXY)
-
-AC_CHECK_LIB(ncurses, initscr, CURSESLIB=-lncurses, [
-AC_CHECK_LIB(curses, initscr, CURSESLIB=-lcurses, [
-    AC_MSG_ERROR([*** Unable to locate curses library.])
-    CURSESLIB=
-])])
-AC_SUBST(CURSESLIB)
-AC_SUBST(USE_CURSES)
-
-AC_CHECK_LIB(ncurses, keypad, [AC_DEFINE(HAVE_KEYPAD)], [
-AC_CHECK_LIB(curses, keypad, [AC_DEFINE(HAVE_KEYPAD)], [
-])])
-
-fi # $USE_CURSES
-
-AC_CHECK_LIB(compat, gtty, COMPATLIB=-lcompat, [
-AC_CHECK_LIB(bsd-compat, gtty, COMPATLIB=-lbsd-compat, [
-AC_CHECK_LIB(bsd, gtty, COMPATLIB=-lbsd, [
-    COMPATLIB=
-])])])
-AC_SUBST(COMPATLIB)
-
 # Note that some systems (FreeBSD for example) need an extra library for
 # cuserid
 ac_save_libs="$LIBS"
@@ -557,17 +520,6 @@ AC_SEARCH_LIBS(cuserid,[compat])
 DBMIEXTRALIB="$LIBS"
 LIBS="$ac_save_libs"
 AC_SUBST(DBMIEXTRALIB)
-
-# Note: -lxdr -liberty -lws2_32 is for MinGW
-
-AC_CHECK_FUNC(xdrmem_create, XDRLIB=, [
-AC_CHECK_LIB(sun, xdrmem_create, XDRLIB=-lsun, [
-AC_CHECK_LIB(nsl, xdrmem_create, XDRLIB=-lnsl, [
-AC_CHECK_LIB(rpclib, xdrmem_create, XDRLIB=-lrpclib, [
-AC_CHECK_LIB(xdr, xdrmem_create, XDRLIB="-lxdr -liberty -lws2_32" , 
-   [ AC_MSG_ERROR([*** Unable to locate XDR functions.]) ], -liberty -lws2_32 )
-])])])])
-AC_SUBST(XDRLIB)
 
 AC_CHECK_FUNCS(asprintf)
 AC_SUBST(HAVE_ASPRINTF)
@@ -822,12 +774,113 @@ AC_SUBST(GDAL_CFLAGS)
 AC_SUBST(USE_GDAL)
 AC_SUBST(USE_OGR)
 
+# libLAS option
+
+AC_MSG_CHECKING(whether to use libLAS)
+
+LIBLAS_LIBS=
+LIBLAS_CFLAGS=
+USE_LIBLAS=
+
+if test "`basename xx/$with_liblas`" = "liblas-config" ; then
+  LIBLAS_CONFIG="$with_liblas"
+fi
+
+if test "$with_liblas" = "no" ; then
+  AC_MSG_RESULT(no)
+else
+  AC_MSG_RESULT(yes)
+  AC_PATH_PROG(LIBLAS_CONFIG, liblas-config, no)
+
+  if test "$LIBLAS_CONFIG" = "no" ; then
+    AC_MSG_ERROR([*** couldn't find liblas-config])
+  fi
+
+  if test "$LIBLAS_CONFIG" != "" ; then
+    LIBLAS_LIBS=`"$LIBLAS_CONFIG" --libs`
+    LIBLAS_CFLAGS=`"$LIBLAS_CONFIG" --cflags`
+    LIBLAS_INC=`"$LIBLAS_CONFIG" --includes`
+    USE_LIBLAS=1
+  fi
+
+  LIBLAS=
+  ac_save_libs="$LIBS"
+  ac_save_cflags="$CFLAGS"
+  ac_save_cppflags="$CPPFLAGS"
+  LIBS="$LIBS $LIBLAS_LIBS"
+  CFLAGS="$CFLAGS $LIBLAS_CFLAGS"
+  CPPFLAGS="$CPPFLAGS $LIBLAS_INC"
+  AC_TRY_LINK([#include <liblas/capi/liblas.h>],[LASReader_Create("foo");],,[
+  AC_TRY_LINK([#include <liblas/capi/liblas.h>],[LASReader_Create("foo");],LAS_LIBS="$LAS_LIBS",[
+  AC_MSG_ERROR([*** Unable to locate libLAS library.])
+  ])
+  ])
+  LIBS=${ac_save_libs}
+  CFLAGS=${ac_save_cflags}
+  CPPFLAGS=${ac_save_cppflags}
+
+  AC_DEFINE(HAVE_LIBLAS)
+fi
+
+AC_SUBST(LIBLAS_LIBS)
+AC_SUBST(LIBLAS_CFLAGS)
+AC_SUBST(LIBLAS_INC)
+AC_SUBST(USE_LIBLAS)
+
+# NetCDF option
+
+AC_MSG_CHECKING(whether to use NetCDF)
+
+NETCDF_LIBS=
+NETCDF_CFLAGS=
+USE_NETCDF=
+
+if test "`basename xx/$with_netcdf`" = "nc-config" ; then
+  NETCDF_CONFIG="$with_netcdf"
+fi
+
+if test "$with_netcdf" = "no" ; then
+  AC_MSG_RESULT(no)
+else
+  AC_MSG_RESULT(yes)
+  AC_PATH_PROG(NETCDF_CONFIG, nc-config, no)
+
+  if test "$NETCDF_CONFIG" = "no" ; then
+    AC_MSG_ERROR([*** couldn't find nc-config])
+  fi
+
+  if test "$NETCDF_CONFIG" != "" ; then
+    NETCDF_LIBS=`"$NETCDF_CONFIG" --libs`
+    NETCDF_CFLAGS=`"$NETCDF_CONFIG" --cflags`
+    USE_NETCDF=1
+  fi
+
+  NETCDF=
+  ac_save_libs="$LIBS"
+  ac_save_cflags="$CFLAGS"
+  LIBS="$LIBS $NETCDF_LIBS"
+  CFLAGS="$CFLAGS $NETCDF_CFLAGS"
+  AC_TRY_LINK([#include <netcdf.h>],[nc_create("foo", NC_CLOBBER, NULL);],,[
+  AC_TRY_LINK([#include <netcdf.h>],[nc_create("foo", NC_CLOBBER, NULL);],NETCDF_LIBS="$NETCDF_LIBS",[
+  AC_MSG_ERROR([*** Unable to locate NetCDF library.])
+  ])
+  ])
+  LIBS=${ac_save_libs}
+  CFLAGS=${ac_save_cflags}
+
+  AC_DEFINE(HAVE_NETCDF)
+fi
+
+AC_SUBST(NETCDF_LIBS)
+AC_SUBST(NETCDF_CFLAGS)
+AC_SUBST(USE_NETCDF)
+
 # GEOS option
 
 AC_MSG_CHECKING(whether to use GEOS)
 
 GEOS_LIBS=
-GGEOS_CFLAGS=
+GEOS_CFLAGS=
 USE_GEOS=
 
 # FIXME: "quote" $with_geos ?
@@ -858,7 +911,6 @@ else
 #  else
   LOC_CHECK_LIBS(geos_c,initGEOS,GEOS,$GEOS_LIBS,GEOS_LIBS)
 #  fi
-  
   AC_DEFINE(HAVE_GEOS)
 fi
 
@@ -1006,6 +1058,8 @@ if test -n "$USE_MYSQL"; then
   fi
 
   if test "$MYSQLD_CONFIG" != "" ; then
+    AC_LANG_SAVE
+    AC_LANG_CPLUSPLUS
     ac_save_libs="$LIBS"
     MYSQLDLIB=`"$MYSQLD_CONFIG" --libmysqld-libs`
 
@@ -1013,6 +1067,8 @@ if test -n "$USE_MYSQL"; then
     AC_CHECK_FUNC(mysql_server_init,,[MYSQLDLIB="";
                   AC_MSG_WARN([libmysqld not found])] )
     LIBS=$ac_save_libs
+    AC_LANG_C
+    AC_LANG_RESTORE
   fi
 
 fi # $USE_MYSQL
@@ -1164,11 +1220,8 @@ LOC_CHECK_LIBS(GLU,gluBeginCurve,GLU,$OPENGL_LIB_PATH,OPENGLULIB,$OPENGLLIB $X_L
 OPENGLLIB="$OPENGL_LIB_PATH $OPENGLLIB"
 OPENGLULIB="$OPENGL_LIB_PATH $OPENGLULIB"
 
-ac_save_ldflags="$LDFLAGS"
-LDFLAGS="$LDFLAGS $OPENGLLIB"
-AC_CHECK_FUNC(glXCreatePbuffer, [AC_DEFINE(HAVE_PBUFFERS)])
-AC_CHECK_FUNC(glXCreateGLXPixmap, [AC_DEFINE(HAVE_PIXMAPS)])
-LDFLAGS="${ac_save_ldflags}"
+LOC_CHECK_FUNC(glXCreatePbuffer,,,,,$OPENGLLIB,[AC_DEFINE(HAVE_PBUFFERS)])
+LOC_CHECK_FUNC(glXCreateGLXPixmap,,,,,$OPENGLLIB,[AC_DEFINE(HAVE_PIXMAPS)])
 
 AC_DEFINE(OPENGL_X11)
 
@@ -1176,27 +1229,15 @@ fi # $OPENGL_X11
 
 if test "$OPENGL_AQUA" = 1 ; then
 
-with_opengl_includes=/System/Library/Frameworks/OpenGL.framework/Headers
-with_opengl_libs="-framework OpenGL -framework AGL -framework ApplicationServices"
+LOC_CHECK_FRAMEWORK_PATH(opengl,OpenGL,OPENGLPATH)
 
-# With OpenGL includes directory
+LOC_CHECK_INCLUDES(OpenGL/gl.h OpenGL/glu.h,OpenGL,$OPENGLPATH)
 
-LOC_CHECK_INC_PATH(opengl,OpenGL,OPENGLINC)
+LOC_CHECK_FUNC(glBegin,OpenGL library,OPENGLLIB,-framework OpenGL -framework AGL -framework ApplicationServices,$OPENGLPATH)
+LOC_CHECK_FUNC(gluBeginCurve,GLU library,OPENGLLIB,,$OPENGLPATH,$OPENGLLIB)
 
-LOC_CHECK_INCLUDES(OpenGL/gl.h OpenGL/glu.h,OpenGL,$OPENGLINC)
-
-# With OpenGL library directory
-
-ac_save_ldflags="$LDFLAGS"
-LDFLAGS="$with_opengl_libs $LDFLAGS"
-AC_CHECK_FUNC(glBegin,[
-AC_CHECK_FUNC(gluBeginCurve,[
-OPENGLLIB="$with_opengl_libs"
-USE_OPENGL=1
-OPENGL_AQUA=1
-],[AC_MSG_ERROR([*** Unable to locate GLU library.])])
-],[AC_MSG_ERROR([*** Unable to locate OpenGL library.])])
-LDFLAGS="${ac_save_ldflags}"
+OPENGLINC="$OPENGLPATH"
+OPENGLLIBPATH="$OPENGLPATH"
 
 AC_DEFINE(OPENGL_AQUA)
 
@@ -1239,114 +1280,6 @@ AC_SUBST(OPENGLLIB)
 AC_SUBST(OPENGLULIB)
 
 # Done checking OpenGL
-
-# Enable TCLTK option
-
-LOC_CHECK_USE(tcltk,Tcl/Tk,USE_TCLTK)
-
-TCLINCDIR=
-TCLTKLIBPATH=
-TCLTKLIBS=
-
-if test -n "$USE_TCLTK"; then
-
-# With Tcl/Tk includes directory
-
-LOC_CHECK_INC_PATH(tcltk,Tcl/Tk,TCLINCDIR)
-
-LOC_CHECK_INCLUDES(tcl.h,Tcl,$TCLINCDIR)
-
-LOC_CHECK_INCLUDES(tk.h,Tk,$TCLINCDIR $X_CFLAGS)
-
-# Tcl/Tk version checks
-LOC_CHECK_VERSION_STRING(tcl.h,TCL_VERSION,Tcl,tcl_ver,$TCLINCDIR,UNKNOWN)
-
-LOC_CHECK_VERSION_STRING(tk.h,TK_VERSION,Tk,tk_ver,$TCLINCDIR $X_CFLAGS,UNKNOWN)
-
-if test "$tcl_ver" = "$tk_ver" ; then
-    tcltk_ver="$tcl_ver"
-else
-    AC_MSG_ERROR([*** Tcl/Tk version mismatch.])
-fi
-
-TCL_VERSION="$tcl_ver"
-
-# FreeBSD and CygWin don't have a "dot" between major/minor version number
-tcltk_ver2=`echo "$tcltk_ver" | sed 's/\.//g'`
-
-# With Tcl/Tk library directory
-
-LOC_CHECK_LIB_PATH(tcltk,Tcl/Tk,TCLTKLIBPATH)
-
-TCLLIB=
-TKLIB=
-MACOSX_ARCHS_TCLTK=
-
-# Can't test tcl/tk libs on 64bit OSX Aqua for now
-# assume that if OpenGL Aqua, then user specifies TclTk Aqua
-if test "$OPENGL_AQUA" = 1 ; then
-    save_CFLAGS="$CFLAGS"
-    CFLAGS="`echo \"$CFLAGS\" | sed -E 's/-arch +x86_64//g' | sed -E 's/-arch +ppc64//g'`"
-    save_LDFLAGS="$LDFLAGS"
-    LDFLAGS="`echo \"$LDFLAGS\" | sed -E 's/-arch +x86_64//g' | sed -E 's/-arch +ppc64//g'`"
-fi
-
-LOC_CHECK_LIBS(tcl,           Tcl_Init,Tcl,$TCLTKLIBPATH,TCLLIB,,$MATHLIB,[
-LOC_CHECK_LIBS(tcl$tcltk_ver, Tcl_Init,Tcl,$TCLTKLIBPATH,TCLLIB,,$MATHLIB,[
-LOC_CHECK_LIBS(tcl$tcltk_ver2,Tcl_Init,Tcl,$TCLTKLIBPATH,TCLLIB,,$MATHLIB,[
-],$DLLIB)
-],$DLLIB)
-],$DLLIB)
-
-LOC_CHECK_LIBS(tk,           Tk_MainWindow,Tk,$TCLTKLIBPATH,TKLIB,$TCLLIB,$MATHLIB,[
-LOC_CHECK_LIBS(tk$tcltk_ver, Tk_MainWindow,Tk,$TCLTKLIBPATH,TKLIB,$TCLLIB,$MATHLIB,[
-LOC_CHECK_LIBS(tk$tcltk_ver2,Tk_MainWindow,Tk,$TCLTKLIBPATH,TKLIB,$TCLLIB,$MATHLIB,[
-],$X_LIBS $X_PRE_LIBS -lX11 $X_EXTRA_LIBS)
-],$X_LIBS $X_PRE_LIBS -lX11 $X_EXTRA_LIBS)
-],$X_LIBS $X_PRE_LIBS -lX11 $X_EXTRA_LIBS)
-
-# restore CFLAGS/LDLFAGS from Aqua 64bit strip
-# only Tcl/Tk-based makefiles will strip 64bit out during compile
-if test "$OPENGL_AQUA" = 1 ; then
-   CFLAGS="$save_CFLAGS"
-   LDFLAGS="$save_LDFLAGS"
-fi
-
-TCLTKLIBS="$TKLIB $TCLLIB"
-
-# check for available OSX archs in TclTk
-if test -n "$MACOSX_ARCHS" ; then
-  save_LDFLAGS="$LDFLAGS"
-  LDFLAGS=
-  save_CFLAGS="$CFLAGS"
-  CFLAGS=
-  tlib=`echo "$TCLLIB" | sed -e 's/-l//' -e 's/^  *//' -e 's/  *$//'`
-  for a in i386 ppc x86_64 ppc64
-  do
-    # add only if in MACOSX_ARCHS
-    AC_CHECK_LIB($tlib, Tcl_Init, [
-      if test -n "`echo "$MACOSX_ARCHS" | grep $a`" ; then
-        MACOSX_ARCHS_TCLTK="$MACOSX_ARCHS_TCLTK -arch $a"
-      fi
-      ],, -arch $a $MACOSX_SDK $TCLTKLIBPATH)
-  done
-  LDFLAGS="$save_LDFLAGS"
-  CFLAGS="$save_CFLAGS"
-fi
-
-AC_DEFINE(HAVE_TCLTK)
-
-fi # $USE_TCLTK
-
-TKINCDIR=$TCLINCDIR
-
-AC_SUBST(TCLINCDIR)
-AC_SUBST(TKINCDIR)
-AC_SUBST(TCLTKLIBPATH)
-AC_SUBST(TCLTKLIBS)
-AC_SUBST(TCL_VERSION)
-AC_SUBST(MACOSX_ARCHS_TCLTK)
-# Done checking Tcl/Tk
 
 # Enable ODBC option
 
@@ -1574,34 +1507,6 @@ AC_SUBST(LAPACKINC)
 
 # Done checking LAPACK
 
-# Enable Motif option
-
-LOC_CHECK_USE(motif,Motif,USE_MOTIF)
-
-XMINC=
-XMLIB=
-
-if test -n "$USE_MOTIF"; then
-
-# With Motif includes directory
-
-LOC_CHECK_INC_PATH(motif,Motif,XMINC)
-
-LOC_CHECK_INCLUDES(Xm/Xm.h,Motif,$XMINC $X_CFLAGS)
-
-# With Motif library directory
-
-LOC_CHECK_LIB_PATH(motif,Motif,XMLIB)
-
-LOC_CHECK_LIBS(Xm,XmStringCreate,Motif,$XMLIB,XMLIB,$X_LIBS -lXm -lXt $X_PRE_LIBS -lX11 $X_EXTRA_LIBS,,)
-
-fi # $USE_MOTIF
-
-AC_SUBST(XMINC)
-AC_SUBST(XMLIB)
-
-# Done checking Motif
-
 # Enable Cairo display driver option
 
 LOC_CHECK_USE(cairo,Cairo,USE_CAIRO)
@@ -1612,9 +1517,9 @@ CAIROLIB=
 if test -n "$USE_CAIRO"; then
 
 cairo="cairo"
-pkgs="cairo-ft cairo-fc"
+pkgs="cairo-ft cairo-fc cairo-pdf cairo-ps cairo-svg fontconfig"
 if test -n "$USE_X11"; then
-	pkgs="$pkgs cairo-xlib-xrender"
+	pkgs="$pkgs cairo-xlib cairo-xlib-xrender"
 fi
 for pkg in $pkgs ; do
     if pkg-config --exists $pkg ; then
@@ -1639,7 +1544,7 @@ LOC_CHECK_LDFLAGS(cairo,cairo,CAIROLIB)
 
 LOC_CHECK_FUNC(cairo_create,,,,,$CAIROLIB,[:])
 LOC_CHECK_FUNC(cairo_xlib_surface_create_with_xrender_format,,,,,$CAIROLIB,
-[CAIRO_HAS_XRENDER=1],[CAIRO_HAS_XRENDER=0])
+[CAIRO_HAS_XRENDER=1],[CAIRO_HAS_XRENDER=])
 AC_SUBST(CAIRO_HAS_XRENDER)
 LOC_CHECK_FUNC(cairo_xlib_surface_get_xrender_format,,,,,$CAIROLIB,
 [CAIRO_HAS_XRENDER_SURFACE=1],[CAIRO_HAS_XRENDER_SURFACE=])
@@ -1654,51 +1559,6 @@ AC_SUBST(CAIROLIB)
 AC_SUBST(USE_CAIRO)
 
 # Done checking Cairo
-
-# Enable GLw option
-
-LOC_CHECK_USE(glw,GLw,USE_GLW)
-
-OPENGLWINC=
-OPENGLWM=
-
-if test -n "$USE_GLW"; then
-
-# With GLw includes directory
-
-LOC_CHECK_INC_PATH(glw,GLw,OPENGLWINC)
-
-LOC_CHECK_INCLUDES(GL/GLwMDrawA.h,GLwM,$OPENGLWINC $XMINC $X_CFLAGS $OPENGLINC,[
-LOC_CHECK_INCLUDES(X11/GLw/GLwMDrawA.h,GLwM,,)
-])
-
-# With GLw library directory
-
-LOC_CHECK_LIB_PATH(glw,GLw,OPENGLWM)
-
-LOC_CHECK_LIBS(GLw,     GLwCreateMDrawingArea, GLwM,$OPENGLWM $XMLIB $OPENGL_LIB_PATH,OPENGLWM,$X_LIBS $OPENGLLIB -lXm -lXt $X_PRE_LIBS -lX11 $X_EXTRA_LIBS $MATHLIB,,[
-LOC_CHECK_LIBS(GLw,     GLwCreateM1DrawingArea,GLwM,$OPENGLWM $XMLIB $OPENGL_LIB_PATH,OPENGLWM,$X_LIBS $OPENGLLIB -lXm -lXt $X_PRE_LIBS -lX11 $X_EXTRA_LIBS $MATHLIB,,[
-LOC_CHECK_LIBS(GLw,     GLwCreateM2DrawingArea,GLwM,$OPENGLWM $XMLIB $OPENGL_LIB_PATH,OPENGLWM,$X_LIBS $OPENGLLIB -lXm -lXt $X_PRE_LIBS -lX11 $X_EXTRA_LIBS $MATHLIB,,[
-LOC_CHECK_LIBS(GLwM,    GLwCreateMDrawingArea, GLwM,$OPENGLWM $XMLIB $OPENGL_LIB_PATH,OPENGLWM,$X_LIBS $OPENGLLIB -lXm -lXt $X_PRE_LIBS -lX11 $X_EXTRA_LIBS $MATHLIB,,[
-LOC_CHECK_LIBS(GLwM,    GLwCreateM1DrawingArea,GLwM,$OPENGLWM $XMLIB $OPENGL_LIB_PATH,OPENGLWM,$X_LIBS $OPENGLLIB -lXm -lXt $X_PRE_LIBS -lX11 $X_EXTRA_LIBS $MATHLIB,,[
-LOC_CHECK_LIBS(GLwM,    GLwCreateM2DrawingArea,GLwM,$OPENGLWM $XMLIB $OPENGL_LIB_PATH,OPENGLWM,$X_LIBS $OPENGLLIB -lXm -lXt $X_PRE_LIBS -lX11 $X_EXTRA_LIBS $MATHLIB,,[
-LOC_CHECK_LIBS(MesaGLw, GLwCreateMDrawingArea, GLwM,$OPENGLWM $XMLIB $OPENGL_LIB_PATH,OPENGLWM,$X_LIBS $OPENGLLIB -lXm -lXt $X_PRE_LIBS -lX11 $X_EXTRA_LIBS $MATHLIB,,[
-LOC_CHECK_LIBS(MesaGLwM,GLwCreateMDrawingArea, GLwM,$OPENGLWM $XMLIB $OPENGL_LIB_PATH,OPENGLWM,$X_LIBS $OPENGLLIB -lXm -lXt $X_PRE_LIBS -lX11 $X_EXTRA_LIBS $MATHLIB,,[
-], $OPENGLULIB)
-], $OPENGLULIB)
-])
-])
-])
-])
-])
-])
-
-fi # $USE_OPENGL && $USE_MOTIF
-
-AC_SUBST(OPENGLWINC)
-AC_SUBST(OPENGLWM)
-
-# Done checking GLw
 
 # Enable FreeType option
 
@@ -1802,88 +1662,158 @@ AC_SUBST(USE_OPENDWG)
 
 # Done checking OPENDWG
 
-# Enable LFS (from cdr-tools)
+# Enable pthread option
+
+LOC_CHECK_USE(pthread,POSIX threads,USE_PTHREAD)
+
+PTHREADINCPATH=
+PTHREADLIBPATH=
+PTHREADLIB=
+
+if test -n "$USE_PTHREAD"; then
+
+# With pthread includes directory
+
+LOC_CHECK_INC_PATH(pthread,POSIX threads,PTHREADINCPATH)
+
+LOC_CHECK_INCLUDES(pthread.h,POSIX threads,$PTHREADINCPATH)
+
+# With pthread library directory
+
+LOC_CHECK_LIB_PATH(pthread,POSIX threads,PTHREADLIBPATH)
+
+LOC_CHECK_FUNC(pthread_create,POSIX threads functions,PTHREADLIB,,,,,[
+LOC_CHECK_LIBS(pthread,pthread_create,POSIX threads,$PTHREADLIBPATH,PTHREADLIB,,,)
+])
+
+fi # $USE_PTHREAD
+
+AC_SUBST(PTHREADINCPATH)
+AC_SUBST(PTHREADLIBPATH)
+AC_SUBST(PTHREADLIB)
+AC_SUBST(USE_PTHREAD)
+
+# Done checking pthread
+
+# Enable OpenMP option
+
+LOC_CHECK_USE(openmp,OpenMP,USE_OPENMP)
+
+OMPINCPATH=
+OMPLIBPATH=
+OMPLIB=
+OMPCFLAGS=
+
+if test -n "$USE_OPENMP"; then
+
+# With OpenMP includes directory
+
+LOC_CHECK_INC_PATH(openmp,OpenMP,OMPINCPATH)
+
+LOC_CHECK_INCLUDES(omp.h,OpenMP,$OMPINCPATH)
+
+# With OpenMP library directory
+# GCC et al.: -lgomp
+# Solaris cc: -lmtsk
+# AIX xlc: -lxlsmp
+# SGI IRIX 6.5 MIPSpro C/C++: -lmp
+
+LOC_CHECK_LIB_PATH(openmp,OpenMP,OMPLIBPATH)
+
+LOC_CHECK_FUNC(GOMP_parallel_start,OpenMP functions,OMPLIB,,,,,[
+LOC_CHECK_LIBS(gomp,GOMP_parallel_start,OpenMP,$OMPLIBPATH,OMPLIB,,,)
+])
+
+# compiler dependent
+#if test ${CC} = "gcc" ; then
+if test x$GCC = xyes ; then
+	# GNU C compiler (>= 4.2.1)
+	OMPCFLAGS=-fopenmp
+elif test ${CC} = "icc" ; then
+	# Intel compiler
+	OMPCFLAGS=-openmp
+elif test ${CC} = "opencc" ; then
+	# AMD's x86 Open64 compiler
+	OMPCFLAGS=-mp
+elif test ${CC} = "pgcc" ; then
+	# Portland Group's compiler
+	OMPCFLAGS=-mp
+# ... anybody else?
+fi
+
+# try to build a test program with "$CC $OMPCLFAGS" to confirm it works
+#...how?
+#echo "int main() {return 0;}" > test.c 
+#$CC $OMPCLFAGS test.c -o test
+
+fi # $USE_OPENMP
+
+AC_SUBST(OMPINCPATH)
+AC_SUBST(OMPLIBPATH)
+AC_SUBST(OMPLIB)
+AC_SUBST(OMPCFLAGS)
+AC_SUBST(USE_OPENMP)
+
+# Done checking OpenMP
+
+# Enable OpenCL option
+
+LOC_CHECK_USE(opencl,OpenCL,USE_OPENCL)
+
+OCLINCPATH=
+OCLLIBPATH=
+OCLLIB=
+
+if test -n "$USE_OPENCL"; then
+
+# With OpenCL includes directory
+
+LOC_CHECK_INC_PATH(opencl,OpenCL,OCLINCPATH)
+
+if test -n "$MACOSX_APP" ; then
+    LOC_CHECK_INCLUDES(OpenCL/opencl.h,OpenCL,$OCLINCPATH)
+
+    # With OpenCL library directory
+    ### FIXME: ###
+    #LOC_CHECK_FRAMEWORK_PATH(opencl,OpenCL,OPENCLPATH)
+    # last term in following would become ',$OPENCLPATH)' if above is uncommented
+    LOC_CHECK_FUNC(clGetPlatformInfo,OpenCL library,OCLLIB,-framework OpenCL,)
+else
+    LOC_CHECK_INCLUDES(CL/cl.h,OpenCL,$OCLINCPATH)
+
+    # With OpenCL library directory
+    LOC_CHECK_LIB_PATH(opencl,OpenCL,OCLLIBPATH)
+    LOC_CHECK_LIBS(OpenCL,clGetPlatformInfo,OpenCL,$OCLLIBPATH,OCLLIB,,,)
+    # expanded symbol check: yes? no?
+    #LOC_CHECK_FUNC(clGetPlatformInfo,OpenCL functions,OCLLIB,,,,,[
+    #LOC_CHECK_LIBS(OpenCL,clGetPlatformInfo,OpenCL,$OCLLIBPATH,OCLLIB,,,)
+    #])
+fi
+
+fi # $USE_OPENCL
+
+AC_SUBST(OCLINCPATH)
+AC_SUBST(OCLLIBPATH)
+AC_SUBST(OCLLIB)
+AC_SUBST(USE_OPENCL)
+
+# Done checking OpenCL
+
+# Enable LFS (from cdr-tools, tar, and autoconf 2.68)
 dnl Check for large file support
 dnl Do this last to make sure that no large file definition
 dnl in confdefs.h will modify our results
 AC_SYS_LARGEFILE
+ac_save_cflags=${CFLAGS}
+CFLAGS="$LFS_CFLAGS ${ac_save_cflags}"
 dnl Warning do not run this test. it interferes with the test
 dnl AC_CHECK_FUNCS(fseeko ftello) from above.
 dnl The test AC_HAVE_LARGEFILES will check whether ftello/fseeko
 dnl are available in Large File mode
-dnl AC_FUNC_FSEEKO
+AC_FUNC_FSEEKO
 AC_HAVE_LARGEFILES
-
-USE_LARGEFILES=
-if test $ac_cv_largefiles = yes; then
-	USE_LARGEFILES=1
-fi
-AC_SUBST(USE_LARGEFILES)
+CFLAGS=${ac_save_cflags}
 # Done large file support
-
-# Python check
-
-AC_MSG_CHECKING(whether to use Python)
-
-PYTHONINC=
-PYTHONCFLAGS=
-PYTHONLDFLAGS=
-USE_PYTHON=
-MACOSX_ARCHS_PYTHON=
-
-if test "$with_python" = "no" ; then
-  AC_MSG_RESULT(no)
-else
-  AC_MSG_RESULT(yes)
-  USE_PYTHON="1"
-  if test "$with_python" != "yes" ; then
-    PY_CONFIG="$with_python"
-  fi
-
-  AC_PATH_PROG(PY_CONFIG, python-config, no)
-
-  if test "$PY_CONFIG" != "no" ; then
-    # With Python includes directory 
-
-    PYTHONINC=`"$PY_CONFIG" --includes`
-    LOC_CHECK_INCLUDES(Python.h,Python,$PYTHONINC)
-
-    PYTHONCFLAGS=`"$PY_CONFIG" --cflags`
-
-    # With Python library directory
-
-    PYTHONLDFLAGS=`"$PY_CONFIG" --ldflags`
-
-    # shouldn't have arch flags in C/LD flags on OSX
-    for a in i386 ppc x86_64 ppc64
-    do
-      PYTHONCFLAGS=`echo "$PYTHONCFLAGS" | sed "s/-arch  *$a//g"`
-      PYTHONLDFLAGS=`echo "$PYTHONLDFLAGS" | sed "s/-arch  *$a//g"`
-    done
-  fi
-
-  # check for available OSX archs in Python, assume framework
-  if test -n "$MACOSX_ARCHS" ; then
-    pylib=`"$PY_CONFIG" --prefix`/Python
-    pylibinfo=`file "$pylib"`
-    for a in i386 ppc x86_64 ppc64
-    do
-      # add only if in MACOSX_ARCHS
-      if test -n "`echo \"$pylibinfo\" | grep \"library $a\"`" ; then
-        if test -n "`echo "$MACOSX_ARCHS" | grep $a`" ; then
-          MACOSX_ARCHS_PYTHON="$MACOSX_ARCHS_PYTHON -arch $a"
-        fi
-      fi
-    done
-  fi
-
-fi # Done checking Python
-
-AC_SUBST(PYTHONINC)
-AC_SUBST(PYTHONCFLAGS)
-AC_SUBST(PYTHONLDFLAGS)
-AC_SUBST(USE_PYTHON)
-AC_SUBST(MACOSX_ARCHS_PYTHON)
 
 # Enable wxWidgets support (for wxGUI)
 
@@ -1957,7 +1887,7 @@ else
   if test -n "$MACOSX_ARCHS" ; then
     wxver=`"$WX_CONFIG" --version`
     wxlib=`"$WX_CONFIG" --prefix`/lib/lib`"$WX_CONFIG" --basename`-`echo "$wxver" | cut -d . -f1,2`.dylib
-    wxlibinfo=`file -L "$wxlib"`
+    wxlibinfo=`file "$wxlib"`
     for a in i386 ppc x86_64 ppc64
     do
       # add only if in MACOSX_ARCHS
@@ -1988,37 +1918,28 @@ AC_SUBST(STRIPFLAG)
 GRASS_HOME="${DSTDIR}"
 AC_SUBST(GRASS_HOME)
 
-AC_OUTPUT(include/Make/Grass.make include/Make/Platform.make include/Make/Doxyfile_arch_html include/Make/Doxyfile_arch_latex include/version.h include/winname.h grass.pc)
+AC_OUTPUT(include/Make/Platform.make include/Make/Doxyfile_arch_html include/Make/Doxyfile_arch_latex include/version.h grass.pc)
 
 LOC_MSG([Copying config.status to config.status.${ARCH}])
 cp -f config.status config.status.${ARCH}
 
 # Display configuration status
 
-USE_TOGL=
-if test -n "${USE_TCLTK}" -a -n "${USE_OPENGL}" ; then
-    USE_TOGL="1"
-fi
-
 LOC_MSG()
 LOC_MSG([GRASS is now configured for:  ${host}])
 LOC_MSG()
-LOC_MSG([  Source directory:            ${SRCDIR}])
-LOC_MSG([  Build directory:             ${DSTDIR}])
-LOC_MSG([  Installation directory:      ${INSTDIR}])
-LOC_MSG([  Startup script in directory: ${bindir}])
-LOC_MSG([  C compiler:                  ${CC} ${CFLAGS}])
-LOC_MSG([  C++ compiler:                ${CXX} ${CXXFLAGS}])
-#LOC_MSG([  FORTRAN compiler:            ${F77} ${FFLAGS}])
-LOC_MSG([  Building shared libraries:   ${shared_ok}])
-LOC_MSG([  64bit support:               ${do64bit}])
-LOC_MSG([  OpenGL platform:             ${OPENGL_TYPE}])
+LOC_MSG([  Source directory:           ${SRCDIR}])
+LOC_MSG([  Build directory:            ${DSTDIR}])
+LOC_MSG([  Installation directory:     ${INSTDIR}])
+LOC_MSG([  Startup script in directory:${bindir}])
+LOC_MSG([  C compiler:                 ${CC} ${CFLAGS}])
+LOC_MSG([  C++ compiler:               ${CXX} ${CXXFLAGS}])
+LOC_MSG([  Building shared libraries:  ${shared_ok}])
+LOC_MSG([  OpenGL platform:            ${OPENGL_TYPE}])
 LOC_MSG()
 LOC_MSG_USE(MacOSX application,MACOSX_APP)
 LOC_MSG([  MacOSX architectures:       ${MACOSX_ARCHS}])
 LOC_MSG([  MacOSX SDK:                 ${MACOSX_SDK}])
-LOC_MSG()
-LOC_MSG_USE(Tcl/Tk NVIZ,USE_TOGL)
 LOC_MSG()
 LOC_MSG_USE(BLAS support,USE_BLAS)
 LOC_MSG_USE(C++ support,USE_CXX)
@@ -2029,22 +1950,24 @@ LOC_MSG_USE(FFTW support,USE_FFTW)
 LOC_MSG_USE(FreeType support,USE_FREETYPE)
 LOC_MSG_USE(GDAL support,USE_GDAL)
 LOC_MSG_USE(GEOS support,USE_GEOS)
-LOC_MSG_USE(GLw support,USE_GLW)
 LOC_MSG_USE(LAPACK support,USE_LAPACK)
 LOC_MSG_USE(Large File support (LFS), USE_LARGEFILES)
-LOC_MSG_USE(Motif support,USE_MOTIF)
+LOC_MSG_USE(libLAS support,USE_LIBLAS)
 LOC_MSG_USE(MySQL support,USE_MYSQL)
+LOC_MSG_USE(NetCDF support,USE_NETCDF)
 LOC_MSG_USE(NLS support,USE_NLS)
 LOC_MSG_USE(ODBC support,USE_ODBC)
 LOC_MSG_USE(OGR support,USE_OGR)
+LOC_MSG_USE(OpenCL support,USE_OPENCL)
 LOC_MSG_USE(OpenGL support,USE_OPENGL)
+LOC_MSG_USE(OpenMP support,USE_OPENMP)
 LOC_MSG_USE(PNG support,USE_PNG)
+LOC_MSG_USE(POSIX thread support,USE_PTHREAD)
 LOC_MSG_USE(PostgreSQL support,USE_POSTGRES)
-LOC_MSG_USE(Python support,USE_PYTHON)
 LOC_MSG_USE(Readline support,USE_READLINE)
+LOC_MSG_USE(Regex support,USE_REGEX)
 LOC_MSG_USE(SQLite support,USE_SQLITE)
-LOC_MSG_USE(Tcl/Tk support,USE_TCLTK)
-LOC_MSG_USE(wxWidgets support,USE_WXWIDGETS)
 LOC_MSG_USE(TIFF support,USE_TIFF)
+LOC_MSG_USE(wxWidgets support,USE_WXWIDGETS)
 LOC_MSG_USE(X11 support,USE_X11)
 LOC_MSG()

@@ -6,7 +6,7 @@
 Classes:
  - mcalc_builder::MapCalcFrame
 
-(C) 2008, 2011 by the GRASS Development Team
+(C) 2008, 2011-2013 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -20,25 +20,31 @@ import os
 import sys
 import re
 
-if __name__ == "__main__":
-    sys.path.append(os.path.join(os.getenv('GISBASE'), 'etc', 'wxpython'))
-from core import globalvar
 import wx
-
 import grass.script as grass
 
-from core.gcmd        import GError, RunCommand
-from gui_core.gselect import Select
-from core.settings    import UserSettings
+if __name__ == "__main__":
+    gui_wx_path = os.path.join(os.getenv('GISBASE'), 'etc', 'gui', 'wxpython')
+    if gui_wx_path not in sys.path:
+        sys.path.append(gui_wx_path)
 
+from core             import globalvar
+from core.gcmd        import GError, RunCommand
+from core.giface      import StandaloneGrassInterface
+from core.utils import _
+from gui_core.gselect import Select
+from gui_core.forms   import GUI
+from core.settings    import UserSettings
 
 class MapCalcFrame(wx.Frame):
     """!Mapcalc Frame class. Calculator-style window to create and run
     r(3).mapcalc statements.
     """
-    def __init__(self, parent, cmd, id = wx.ID_ANY,
+    def __init__(self, parent, giface, cmd, id = wx.ID_ANY,
                  style = wx.DEFAULT_FRAME_STYLE | wx.RESIZE_BORDER, **kwargs):
         self.parent = parent
+        self._giface = giface
+
         if self.parent:
             self.log = self.parent.GetLogWindow()
         else:
@@ -59,7 +65,7 @@ class MapCalcFrame(wx.Frame):
         
         self.panel = wx.Panel(parent = self, id = wx.ID_ANY)
         self.CreateStatusBar()
-        
+
         #
         # variables
         #
@@ -120,6 +126,8 @@ class MapCalcFrame(wx.Frame):
         
         self.operatorBox = wx.StaticBox(parent = self.panel, id = wx.ID_ANY,
                                         label=" %s " % _('Operators'))
+        self.outputBox = wx.StaticBox(parent = self.panel, id = wx.ID_ANY,
+                                      label=" %s " % _('Output'))
         self.operandBox = wx.StaticBox(parent = self.panel, id = wx.ID_ANY,
                                        label=" %s " % _('Operands'))
         self.expressBox = wx.StaticBox(parent = self.panel, id = wx.ID_ANY,
@@ -223,6 +231,10 @@ class MapCalcFrame(wx.Frame):
                                     style = wx.CB_DROPDOWN |
                                     wx.CB_READONLY | wx.TE_PROCESS_ENTER)
         
+        self.overwrite = wx.CheckBox(parent = self.panel, id = wx.ID_ANY,
+                                     label=_("Allow output files to overwrite existing files"))
+        self.overwrite.SetValue(UserSettings.Get(group='cmd', key='overwrite', subkey='enabled'))
+        
         self.addbox = wx.CheckBox(parent=self.panel,
                                   label=_('Add created raster map into layer tree'), style = wx.NO_BORDER)
         self.addbox.SetValue(UserSettings.Get(group='cmd', key='addNewLayer', subkey='enabled'))
@@ -253,15 +265,16 @@ class MapCalcFrame(wx.Frame):
         self.SetMinSize(self.GetBestSize())
     
     def _return_funct(self,event):
-	i = event.GetString()
-	self._addSomething(self.funct_dict[i])
+        i = event.GetString()
+        self._addSomething(self.funct_dict[i])
     
     def _layout(self):
         sizer = wx.BoxSizer(wx.VERTICAL)
         
         controlSizer = wx.BoxSizer(wx.HORIZONTAL)
         operatorSizer = wx.StaticBoxSizer(self.operatorBox, wx.HORIZONTAL)
-
+        outOpeSizer = wx.BoxSizer(wx.VERTICAL)
+        
         buttonSizer1 = wx.GridBagSizer(5, 1)
         buttonSizer1.Add(item = self.btn['add'], pos = (0,0))
         buttonSizer1.Add(item = self.btn['minus'], pos = (0,1))
@@ -290,19 +303,22 @@ class MapCalcFrame(wx.Frame):
         buttonSizer2.Add(item = self.btn['compl'], pos = (5,1))
         buttonSizer2.Add(item = self.btn['not'], pos = (4,1))
 
+        outputSizer = wx.StaticBoxSizer(self.outputBox, wx.VERTICAL)
+        outputSizer.Add(item = self.newmaplabel,
+                        flag = wx.ALIGN_CENTER | wx.BOTTOM | wx.TOP, border = 5)
+        outputSizer.Add(item = self.newmaptxt,
+                        flag = wx.EXPAND)
+        
         operandSizer = wx.StaticBoxSizer(self.operandBox, wx.HORIZONTAL)
+        
         buttonSizer3 = wx.GridBagSizer(7, 1)
-        buttonSizer3.Add(item = self.newmaplabel, pos = (0,0),
-                         span = (1, 2), flag = wx.ALIGN_CENTER)
-        buttonSizer3.Add(item = self.newmaptxt, pos = (1,0),
-                         span = (1, 2))
-        buttonSizer3.Add(item = self.functlabel, pos = (2,0),
+        buttonSizer3.Add(item = self.functlabel, pos = (0,0),
                          span = (1,2), flag = wx.ALIGN_CENTER)
-        buttonSizer3.Add(item = self.function, pos = (3,0),
+        buttonSizer3.Add(item = self.function, pos = (1,0),
                          span = (1,2))                         
-        buttonSizer3.Add(item = self.mapsellabel, pos = (4,0),
+        buttonSizer3.Add(item = self.mapsellabel, pos = (2,0),
                          span = (1,2), flag = wx.ALIGN_CENTER)
-        buttonSizer3.Add(item = self.mapselect, pos = (5,0),
+        buttonSizer3.Add(item = self.mapselect, pos = (3,0),
                          span = (1,2))
         threebutton = wx.GridBagSizer(1, 2)
         threebutton.Add(item = self.btn['parenl'], pos = (0,0),
@@ -311,11 +327,10 @@ class MapCalcFrame(wx.Frame):
                          span = (1,1), flag = wx.ALIGN_CENTER)
         threebutton.Add(item = self.btn_clear, pos = (0,2),
                          span = (1,1), flag = wx.ALIGN_RIGHT)
-        buttonSizer3.Add(item = threebutton, pos = (6,0),
-	                 span = (1,1), flag = wx.ALIGN_CENTER)
+        buttonSizer3.Add(item = threebutton, pos = (4,0),
+                         span = (1,1), flag = wx.ALIGN_CENTER)
 
         buttonSizer4 = wx.BoxSizer(wx.HORIZONTAL)
-        buttonSizer4.AddSpacer(10)
         buttonSizer4.Add(item = self.btn_load,
                          flag = wx.ALL, border = 5)
         buttonSizer4.Add(item = self.btn_save,
@@ -338,7 +353,11 @@ class MapCalcFrame(wx.Frame):
         
         controlSizer.Add(item = operatorSizer, proportion = 1,
                          flag = wx.RIGHT | wx.EXPAND, border = 5)
-        controlSizer.Add(item = operandSizer, proportion = 0,
+        outOpeSizer.Add(item = outputSizer, proportion = 0,
+                         flag = wx.EXPAND)
+        outOpeSizer.Add(item = operandSizer, proportion = 1,
+                         flag = wx.EXPAND | wx.TOP, border = 5)
+        controlSizer.Add(item = outOpeSizer, proportion = 0,
                          flag = wx.EXPAND)
 
         expressSizer = wx.StaticBoxSizer(self.expressBox, wx.HORIZONTAL)
@@ -353,6 +372,10 @@ class MapCalcFrame(wx.Frame):
                   border = 5)
         sizer.Add(item = buttonSizer4, proportion = 0,
                   flag = wx.ALIGN_RIGHT | wx.ALL, border = 3)
+        
+        sizer.Add(item = self.overwrite, proportion = 0,
+                  flag = wx.LEFT | wx.RIGHT,
+                  border = 5)
         if self.addbox.IsShown():
             sizer.Add(item = self.addbox, proportion = 0,
                       flag = wx.LEFT | wx.RIGHT,
@@ -423,14 +446,13 @@ class MapCalcFrame(wx.Frame):
         cmd = 'r.mapcalc'
         if self.rast3d:
             cmd = 'r3.mapcalc'
-        self.SetStatusText("%s '%s = %s'" % (cmd, self.newmaptxt.GetValue(),
-                                             expr))
+        self.SetStatusText("{cmd} '{new} = {expr}'".format(cmd=cmd, expr=expr,
+                                                           new=self.newmaptxt.GetValue()))
         event.Skip()
         
     def _addSomething(self, what):
         """!Inserts operators, map names, and functions into text area
         """
-        self.text_mcalc.SetFocus()
         mcalcstr  = self.text_mcalc.GetValue()
         position  = self.text_mcalc.GetInsertionPoint()
         
@@ -447,7 +469,7 @@ class MapCalcFrame(wx.Frame):
         newmcalcstr += what + ' ' + mcalcstr[position:]
         
         self.text_mcalc.SetValue(newmcalcstr)
-        if len(what) > 1:
+        if len(what) > 0:
             match = re.search(pattern="\(.*\)", string=what)
             if match:
                 position_offset += match.start() + 1
@@ -456,6 +478,7 @@ class MapCalcFrame(wx.Frame):
 
         self.text_mcalc.SetInsertionPoint(position + position_offset)
         self.text_mcalc.Update()
+        self.text_mcalc.SetFocus()
         
     def OnMCalcRun(self,event):
         """!Builds and runs r.mapcalc statement
@@ -478,34 +501,33 @@ class MapCalcFrame(wx.Frame):
             return
         
         if self.log:
-            cmd = [self.cmd, str('%s = %s' % (name, expr))]
+            cmd = [self.cmd, str('expression=%s = %s' % (name, expr))]
+            if self.overwrite.IsChecked():
+                cmd.append('--overwrite')
             self.log.RunCmd(cmd, onDone = self.OnDone)
             self.parent.Raise()
         else:
+            if self.overwrite.IsChecked():
+                overwrite = True
+            else:
+                overwrite = False
             RunCommand(self.cmd,
-                       **{name: expr})
-
+                       expression = "%s=%s" % (name, expr),
+                       overwrite = overwrite)
+        
     def OnDone(self, cmd, returncode):
-        """!Add create map to the layer tree"""
-        if not self.addbox.IsChecked():
+        """!Add create map to the layer tree
+
+        Sends the mapCreated signal from the grass interface.
+        """
+        if returncode != 0:
             return
         name = self.newmaptxt.GetValue().strip(' "') + '@' + grass.gisenv()['MAPSET']
-        ltype = 'raster'
-        lcmd = 'd.rast'
+        ltype = 'rast'
         if self.rast3d:
-            ltype = '3d-raster'
-            lcmd = 'd.rast3d.py'
-        mapTree = self.parent.GetLayerTree()
-        if not mapTree.GetMap().GetListOfLayers(l_name = name):
-            mapTree.AddLayer(ltype = ltype,
-                             lname = name,
-                             lcmd = [lcmd, 'map=%s' % name],
-                             multiple = False)
-        
-        display = self.parent.GetLayerTree().GetMapDisplay()
-        if display and display.IsAutoRendered():
-            display.GetWindow().UpdateMap(render = True)
-        
+            ltype = 'rast3d'
+        self._giface.mapCreated.emit(name=name, ltype=ltype, add=self.addbox.IsChecked())
+
     def OnSaveExpression(self, event):
         """!Saves expression to file
         """
@@ -575,12 +597,10 @@ class MapCalcFrame(wx.Frame):
     def OnClose(self,event):
         """!Close window"""
         self.Destroy()
-        
+
 if __name__ == "__main__":
-    import gettext
-    gettext.install('grasswxpy', os.path.join(os.getenv("GISBASE"), 'locale'), unicode = True)
     
     app = wx.App(0)
-    frame = MapCalcFrame(parent = None, cmd = 'r.mapcalc')
+    frame = MapCalcFrame(parent = None, cmd = 'r.mapcalc', giface = StandaloneGrassInterface())
     frame.Show()
     app.MainLoop()

@@ -3,8 +3,9 @@
 
 # include <stdio.h>
 # include <stdlib.h>
+# include <string.h>
 # include <grass/gis.h>
-# include <grass/Vect.h>
+# include <grass/vector.h>
 # include <grass/glocale.h>
 # include <grass/vedit.h>
 
@@ -42,6 +43,7 @@ enum mode
     MODE_ZBULK,
     /* change feature type (point<->centroid, line<->boundary) */
     MODE_CHTYPE,
+    MODE_AREA_DEL,              /* delete area */
 };
 
 struct GParams

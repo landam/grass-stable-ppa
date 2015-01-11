@@ -1,5 +1,6 @@
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/raster.h>
+#include <grass/vector.h>
 #include "local.h"
 
 
@@ -17,6 +18,7 @@ static CELL cat;
 static DCELL dcat;
 static int cur_x, cur_y;
 static int format;
+static int dense;
 static CELL *cell;
 static DCELL *dcell;
 static char **null_flags;
@@ -31,10 +33,12 @@ static int move(int, int);
 static int (*dot) (int, int);
 
 
-int begin_rasterization(int nrows, int f)
+int begin_rasterization(int nrows, int f, int do_dense)
 {
     int i, size;
     int pages;
+
+    dense = (do_dense != 0);
 
     /* otherwise get complaints about window changes */
     G_suppress_warnings(1);
@@ -126,7 +130,10 @@ static int configure_plot(void)
     G_set_window(&page);
 
     /* configure the plot routines */
-    G_setup_plot(-0.5, page.rows - 0.5, -0.5, page.cols - 0.5, move, cont);
+    if (dense)
+	setup_plot(0, page.rows, 0, page.cols, dot);
+    else
+	G_setup_plot(-0.5, page.rows - 0.5, -0.5, page.cols - 0.5, move, cont);
 
     return 0;
 }
@@ -143,17 +150,15 @@ int output_raster(int fd)
 	    cell = raster.cell[i];
 
 	    /* insert the NULL values */
-	    G_insert_c_null_values(cell, null_flags[i], page.cols);
-	    if (G_put_c_raster_row(fd, cell) < 0)
-		return -1;
+	    Rast_insert_c_null_values(cell, null_flags[i], page.cols);
+	    Rast_put_c_row(fd, cell);
 	    break;
 	case USE_DCELL:
 	    dcell = raster.dcell[i];
 
 	    /* insert the NULL values */
-	    G_insert_d_null_values(dcell, null_flags[i], page.cols);
-	    if (G_put_d_raster_row(fd, dcell) < 0)
-		return -1;
+	    Rast_insert_d_null_values(dcell, null_flags[i], page.cols);
+	    Rast_put_d_row(fd, dcell);
 	    break;
 	}
     }

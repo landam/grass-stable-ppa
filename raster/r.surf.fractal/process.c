@@ -13,6 +13,7 @@
 
 /***************************************************************************/
 
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "frac.h"
 /* gmath.h must go last, as it can interfere with ANSI headers */
@@ -38,8 +39,8 @@ int process(void)
 
     /*------------------------------------------------------------------*/
 
-    nrows = G_window_rows();	/* Find out the number of rows and */
-    ncols = G_window_cols();	/* columns of the raster view.     */
+    nrows = Rast_window_rows();	/* Find out the number of rows and */
+    ncols = Rast_window_cols();	/* columns of the raster view.     */
 
     nn = G_math_max_pow2(MAX(nrows, ncols));	/* Find smallest power of 2 that   */
     /* largest side of raster will fit. */

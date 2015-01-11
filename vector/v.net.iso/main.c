@@ -19,7 +19,7 @@
 #include <string.h>
 #include <time.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 
@@ -43,7 +43,7 @@ typedef struct
 
 int main(int argc, char **argv)
 {
-    int i, j, ret, centre, line, centre1, centre2;
+    int i, ret, centre, line, centre1, centre2;
     int nlines, nnodes, type, ltype, afield, nfield, geo, cat;
     int node, node1, node2;
     double cost, e1cost, e2cost, n1cost, n2cost, s1cost, s2cost, l, l1;
@@ -52,7 +52,6 @@ int main(int argc, char **argv)
 	*term_opt, *cost_opt;
     struct Flag *geo_f;
     struct GModule *module;
-    char *mapset;
     struct Map_info Map, Out;
     struct cat_list *catlist;
     CENTER *Centers = NULL;
@@ -70,7 +69,9 @@ int main(int argc, char **argv)
 
     module = G_define_module();
     module->label = _("Splits net by cost isolines.");
-    module->keywords = _("vector, network, isolines");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("network"));
+    G_add_keyword(_("isolines"));
     module->description =
 	_("Splits net to bands between cost isolines (direction from centre). "
 	 "Centre node must be opened (costs >= 0). "
@@ -82,7 +83,7 @@ int main(int argc, char **argv)
     type_opt = G_define_standard_option(G_OPT_V_TYPE);
     type_opt->options = "line,boundary";
     type_opt->answer = "line,boundary";
-    type_opt->description = _("Arc type");
+    type_opt->label = _("Arc type");
 
     afield_opt = G_define_standard_option(G_OPT_V_FIELD);
     afield_opt->key = "alayer";
@@ -93,16 +94,16 @@ int main(int argc, char **argv)
     nfield_opt->answer = "2";
     nfield_opt->label = _("Node layer");
 
-    afcol = G_define_standard_option(G_OPT_COLUMN);
+    afcol = G_define_standard_option(G_OPT_DB_COLUMN);
     afcol->key = "afcolumn";
     afcol->description =
 	_("Arc forward/both direction(s) cost column (number)");
 
-    abcol = G_define_standard_option(G_OPT_COLUMN);
+    abcol = G_define_standard_option(G_OPT_DB_COLUMN);
     abcol->key = "abcolumn";
     abcol->description = _("Arc backward direction cost column (number)");
 
-    ncol = G_define_standard_option(G_OPT_COLUMN);
+    ncol = G_define_standard_option(G_OPT_DB_COLUMN);
     ncol->key = "ncolumn";
     ncol->description = _("Node cost column (number)");
 
@@ -140,7 +141,7 @@ int main(int argc, char **argv)
     catlist = Vect_new_cat_list();
     Vect_str_to_cat_list(term_opt->answer, catlist);
 
-    Vect_check_input_output_name(map->answer, output->answer, GV_FATAL_EXIT);
+    Vect_check_input_output_name(map->answer, output->answer, G_FATAL_EXIT);
 
     /* Iso costs */
     aiso = 1;
@@ -175,48 +176,47 @@ int main(int argc, char **argv)
     else
 	geo = 0;
 
-    mapset = G_find_vector2(map->answer, NULL);
-
-    if (mapset == NULL)
-	G_fatal_error(_("Vector map <%s> not found"), map->answer);
-
     Vect_set_open_level(2);
-    Vect_open_old(&Map, map->answer, mapset);
+    Vect_open_old(&Map, map->answer, "");
 
     /* Build graph */
     Vect_net_build_graph(&Map, type, afield, nfield, afcol->answer,
 			 abcol->answer, ncol->answer, geo, 0);
 
     nnodes = Vect_get_num_nodes(&Map);
+    nlines = Vect_get_num_lines(&Map);
 
     /* Create list of centres based on list of categories */
-    for (node = 1; node <= nnodes; node++) {
-	nlines = Vect_get_node_n_lines(&Map, node);
-	for (j = 0; j < nlines; j++) {
-	    line = abs(Vect_get_node_line(&Map, node, j));
-	    ltype = Vect_read_line(&Map, NULL, Cats, line);
-	    if (!(ltype & GV_POINT))
-		continue;
-	    if (!(Vect_cat_get(Cats, nfield, &cat)))
-		continue;
-	    if (Vect_cat_in_cat_list(cat, catlist)) {
-		Vect_net_get_node_cost(&Map, node, &n1cost);
-		if (n1cost == -1) {	/* closed */
-		    G_warning(_("Centre at closed node (costs = -1) ignored"));
+    for (i = 1; i <= nlines; i++) {
+	ltype = Vect_get_line_type(&Map, i);
+	if (!(ltype & GV_POINT))
+	    continue;
+
+	Vect_read_line(&Map, Points, Cats, i);
+	node = Vect_find_node(&Map, Points->x[0], Points->y[0], Points->z[0], 0, 0);
+	if (!node) {
+	    G_warning(_("Point is not connected to the network"));
+	    continue;
+	}
+	if (!(Vect_cat_get(Cats, nfield, &cat)))
+	    continue;
+	if (Vect_cat_in_cat_list(cat, catlist)) {
+	    Vect_net_get_node_cost(&Map, node, &n1cost);
+	    if (n1cost == -1) {	/* closed */
+		G_warning(_("Centre at closed node (costs = -1) ignored"));
+	    }
+	    else {
+		if (acentres == ncentres) {
+		    acentres += 1;
+		    Centers =
+			(CENTER *) G_realloc(Centers,
+					     acentres * sizeof(CENTER));
 		}
-		else {
-		    if (acentres == ncentres) {
-			acentres += 1;
-			Centers =
-			    (CENTER *) G_realloc(Centers,
-						 acentres * sizeof(CENTER));
-		    }
-		    Centers[ncentres].cat = cat;
-		    Centers[ncentres].node = node;
-		    G_debug(2, "centre = %d node = %d cat = %d", ncentres,
-			    node, cat);
-		    ncentres++;
-		}
+		Centers[ncentres].cat = cat;
+		Centers[ncentres].node = node;
+		G_debug(2, "centre = %d node = %d cat = %d", ncentres,
+			node, cat);
+		ncentres++;
 	    }
 	}
     }

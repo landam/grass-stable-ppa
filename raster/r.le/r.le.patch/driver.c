@@ -72,7 +72,7 @@ void patch_fore()
        map remains open on finput while all the programs
        run, so it is globally available */
 
-    if (0 > (finput = G_open_cell_old(choice->fn, G_mapset()))) {
+    if (0 > (finput = Rast_open_old(choice->fn, G_mapset()))) {
 	fprintf(stderr, "\n");
 	fprintf(stderr,
 		"   ******* *************************************************\n");
@@ -90,7 +90,7 @@ void patch_fore()
        double (DCELL_TYPE) and make globally available */
 
     else
-	data_type = G_raster_map_type(choice->fn, G_mapset());
+	data_type = Rast_map_type(choice->fn, G_mapset());
 
 
     /* if using a moving window, get the parameters,
@@ -122,7 +122,7 @@ void patch_fore()
     /* when everything is done, close the raster map
        and print a completion message */
 
-    G_close_cell(finput);
+    Rast_close(finput);
     fputs("\nR.LE.PATCH IS DONE;  ", stderr);
     if (choice->wrum != 'm')
 	fputs("OUTPUT FILES IN SUBDIRECTORY \"r.le.out\"\n", stderr);
@@ -547,309 +547,309 @@ void mv_driver()
        maps. All maps currently are double,
        rather than floating point or int */
     if (choice->att[1]) {
-	if (G_find_cell("a1", G_mapset()) != NULL) {
+	if (G_find_raster("a1", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=a1,a1bak");
 	    system(cmdbuf);
 	}
-	a1 = G_open_raster_new("a1", DCELL_TYPE);
+	a1 = Rast_open_new("a1", DCELL_TYPE);
     }
     if (choice->att[2]) {
-	if (G_find_cell("a2", G_mapset()) != NULL) {
+	if (G_find_raster("a2", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=a2,a2bak");
 	    system(cmdbuf);
 	}
-	a2 = G_open_raster_new("a2", DCELL_TYPE);
+	a2 = Rast_open_new("a2", DCELL_TYPE);
     }
     if (choice->att[3]) {
-	if (G_find_cell("a3", G_mapset()) != NULL) {
+	if (G_find_raster("a3", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=a3,a3bak");
 	    system(cmdbuf);
 	}
-	a3 = G_open_raster_new("a3", DCELL_TYPE);
+	a3 = Rast_open_new("a3", DCELL_TYPE);
     }
     if (choice->att[4]) {
-	if (G_find_cell("a4", G_mapset()) != NULL) {
+	if (G_find_raster("a4", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=a4,a4bak");
 	    system(cmdbuf);
 	}
-	a4 = G_open_raster_new("a4", DCELL_TYPE);
+	a4 = Rast_open_new("a4", DCELL_TYPE);
     }
     if (choice->att[5]) {
-	if (G_find_cell("a5", G_mapset()) != NULL) {
+	if (G_find_raster("a5", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=a5,a5bak");
 	    system(cmdbuf);
 	}
-	a5 = G_open_raster_new("a5", DCELL_TYPE);
+	a5 = Rast_open_new("a5", DCELL_TYPE);
     }
     if (choice->att[6]) {
-	if (G_find_cell("a6", G_mapset()) != NULL) {
+	if (G_find_raster("a6", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=a6,a6bak");
 	    system(cmdbuf);
 	}
-	a6 = G_open_raster_new("a6", DCELL_TYPE);
+	a6 = Rast_open_new("a6", DCELL_TYPE);
     }
     if (choice->att[7]) {
-	if (G_find_cell("a7", G_mapset()) != NULL) {
+	if (G_find_raster("a7", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=a7,a7bak");
 	    system(cmdbuf);
 	}
-	a7 = G_open_raster_new("a7", DCELL_TYPE);
+	a7 = Rast_open_new("a7", DCELL_TYPE);
     }
 
     if (choice->att[8]) {
-	if (G_find_cell("a8", G_mapset()) != NULL) {
+	if (G_find_raster("a8", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=a8,a8bak");
 	    system(cmdbuf);
 	}
-	a8 = G_open_raster_new("a8", DCELL_TYPE);
+	a8 = Rast_open_new("a8", DCELL_TYPE);
     }
 
     if (choice->size[1]) {
-	if (G_find_cell("s1", G_mapset()) != NULL) {
+	if (G_find_raster("s1", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=s1,s1bak");
 	    system(cmdbuf);
 	}
-	s1 = G_open_raster_new("s1", DCELL_TYPE);
+	s1 = Rast_open_new("s1", DCELL_TYPE);
     }
     if (choice->size[2]) {
-	if (G_find_cell("s2", G_mapset()) != NULL) {
+	if (G_find_raster("s2", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=s2,s2bak");
 	    system(cmdbuf);
 	}
-	s2 = G_open_raster_new("s2", DCELL_TYPE);
+	s2 = Rast_open_new("s2", DCELL_TYPE);
     }
     if (choice->size[3]) {
-	if (G_find_cell("s3", G_mapset()) != NULL) {
+	if (G_find_raster("s3", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=s3,s3bak");
 	    system(cmdbuf);
 	}
-	s3 = G_open_raster_new("s3", DCELL_TYPE);
+	s3 = Rast_open_new("s3", DCELL_TYPE);
     }
     if (choice->size[4]) {
-	if (G_find_cell("s4", G_mapset()) != NULL) {
+	if (G_find_raster("s4", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=s4,s4bak");
 	    system(cmdbuf);
 	}
-	s4 = G_open_raster_new("s4", DCELL_TYPE);
+	s4 = Rast_open_new("s4", DCELL_TYPE);
     }
     if (choice->size[5]) {
-	if (G_find_cell("s5", G_mapset()) != NULL) {
+	if (G_find_raster("s5", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=s5,s5bak");
 	    system(cmdbuf);
 	}
-	s5 = G_open_raster_new("s5", DCELL_TYPE);
+	s5 = Rast_open_new("s5", DCELL_TYPE);
     }
     if (choice->size[6]) {
-	if (G_find_cell("s6", G_mapset()) != NULL) {
+	if (G_find_raster("s6", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=s6,s6bak");
 	    system(cmdbuf);
 	}
-	s6 = G_open_raster_new("s6", DCELL_TYPE);
+	s6 = Rast_open_new("s6", DCELL_TYPE);
     }
 
     if (choice->size[7]) {
-	if (G_find_cell("s7", G_mapset()) != NULL) {
+	if (G_find_raster("s7", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=s7,s7bak");
 	    system(cmdbuf);
 	}
-	s7 = G_open_raster_new("s7", DCELL_TYPE);
+	s7 = Rast_open_new("s7", DCELL_TYPE);
     }
 
     if (choice->size[8]) {
-	if (G_find_cell("s8", G_mapset()) != NULL) {
+	if (G_find_raster("s8", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=s8,s8bak");
 	    system(cmdbuf);
 	}
-	s8 = G_open_raster_new("s8", DCELL_TYPE);
+	s8 = Rast_open_new("s8", DCELL_TYPE);
     }
 
     if (choice->core[1]) {
-	if (G_find_cell("c1", G_mapset()) != NULL) {
+	if (G_find_raster("c1", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=c1,c1bak");
 	    system(cmdbuf);
 	}
-	c1 = G_open_raster_new("c1", DCELL_TYPE);
+	c1 = Rast_open_new("c1", DCELL_TYPE);
     }
     if (choice->core[2]) {
-	if (G_find_cell("c2", G_mapset()) != NULL) {
+	if (G_find_raster("c2", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=c2,c2bak");
 	    system(cmdbuf);
 	}
-	c2 = G_open_raster_new("c2", DCELL_TYPE);
+	c2 = Rast_open_new("c2", DCELL_TYPE);
     }
     if (choice->core[3]) {
-	if (G_find_cell("c3", G_mapset()) != NULL) {
+	if (G_find_raster("c3", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=c3,c3bak");
 	    system(cmdbuf);
 	}
-	c3 = G_open_raster_new("c3", DCELL_TYPE);
+	c3 = Rast_open_new("c3", DCELL_TYPE);
     }
     if (choice->core[4]) {
-	if (G_find_cell("c4", G_mapset()) != NULL) {
+	if (G_find_raster("c4", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=c4,c4bak");
 	    system(cmdbuf);
 	}
-	c4 = G_open_raster_new("c4", DCELL_TYPE);
+	c4 = Rast_open_new("c4", DCELL_TYPE);
     }
     if (choice->core[5]) {
-	if (G_find_cell("c5", G_mapset()) != NULL) {
+	if (G_find_raster("c5", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=c5,c5bak");
 	    system(cmdbuf);
 	}
-	c5 = G_open_raster_new("c5", DCELL_TYPE);
+	c5 = Rast_open_new("c5", DCELL_TYPE);
     }
     if (choice->core[6]) {
-	if (G_find_cell("c6", G_mapset()) != NULL) {
+	if (G_find_raster("c6", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=c6,c6bak");
 	    system(cmdbuf);
 	}
-	c6 = G_open_raster_new("c6", DCELL_TYPE);
+	c6 = Rast_open_new("c6", DCELL_TYPE);
     }
     if (choice->core[7]) {
-	if (G_find_cell("c7", G_mapset()) != NULL) {
+	if (G_find_raster("c7", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=c7,c7bak");
 	    system(cmdbuf);
 	}
-	c7 = G_open_raster_new("c7", DCELL_TYPE);
+	c7 = Rast_open_new("c7", DCELL_TYPE);
     }
     if (choice->core[8]) {
-	if (G_find_cell("c8", G_mapset()) != NULL) {
+	if (G_find_raster("c8", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=c8,c8bak");
 	    system(cmdbuf);
 	}
-	c8 = G_open_raster_new("c8", DCELL_TYPE);
+	c8 = Rast_open_new("c8", DCELL_TYPE);
     }
     if (choice->core[9]) {
-	if (G_find_cell("c9", G_mapset()) != NULL) {
+	if (G_find_raster("c9", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=c9,c9bak");
 	    system(cmdbuf);
 	}
-	c9 = G_open_raster_new("c9", DCELL_TYPE);
+	c9 = Rast_open_new("c9", DCELL_TYPE);
     }
     if (choice->core[10]) {
-	if (G_find_cell("c10", G_mapset()) != NULL) {
+	if (G_find_raster("c10", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=c10,c10bak");
 	    system(cmdbuf);
 	}
-	c10 = G_open_raster_new("c10", DCELL_TYPE);
+	c10 = Rast_open_new("c10", DCELL_TYPE);
     }
 
     if (choice->shape[1]) {
-	if (G_find_cell("h1", G_mapset()) != NULL) {
+	if (G_find_raster("h1", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=h1,h1bak");
 	    system(cmdbuf);
 	}
-	h1 = G_open_raster_new("h1", DCELL_TYPE);
+	h1 = Rast_open_new("h1", DCELL_TYPE);
     }
     if (choice->shape[2]) {
-	if (G_find_cell("h2", G_mapset()) != NULL) {
+	if (G_find_raster("h2", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=h2,h2bak");
 	    system(cmdbuf);
 	}
-	h2 = G_open_raster_new("h2", DCELL_TYPE);
+	h2 = Rast_open_new("h2", DCELL_TYPE);
     }
     if (choice->shape[3]) {
-	if (G_find_cell("h3", G_mapset()) != NULL) {
+	if (G_find_raster("h3", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=h3,h3bak");
 	    system(cmdbuf);
 	}
-	h3 = G_open_raster_new("h3", DCELL_TYPE);
+	h3 = Rast_open_new("h3", DCELL_TYPE);
     }
     if (choice->shape[4]) {
-	if (G_find_cell("h4", G_mapset()) != NULL) {
+	if (G_find_raster("h4", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=h4,h4bak");
 	    system(cmdbuf);
 	}
-	h4 = G_open_raster_new("h4", DCELL_TYPE);
+	h4 = Rast_open_new("h4", DCELL_TYPE);
     }
     if (choice->shape[5]) {
-	if (G_find_cell("h5", G_mapset()) != NULL) {
+	if (G_find_raster("h5", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=h5,h5bak");
 	    system(cmdbuf);
 	}
-	h5 = G_open_raster_new("h5", DCELL_TYPE);
+	h5 = Rast_open_new("h5", DCELL_TYPE);
     }
     if (choice->shape[6]) {
-	if (G_find_cell("h6", G_mapset()) != NULL) {
+	if (G_find_raster("h6", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=h6,h6bak");
 	    system(cmdbuf);
 	}
-	h6 = G_open_raster_new("h6", DCELL_TYPE);
+	h6 = Rast_open_new("h6", DCELL_TYPE);
     }
 
     if (choice->boundary[1]) {
-	if (G_find_cell("n1", G_mapset()) != NULL) {
+	if (G_find_raster("n1", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=n1,n1bak");
 	    system(cmdbuf);
 	}
-	n1 = G_open_raster_new("n1", DCELL_TYPE);
+	n1 = Rast_open_new("n1", DCELL_TYPE);
     }
 
     if (choice->boundary[2]) {
-	if (G_find_cell("n2", G_mapset()) != NULL) {
+	if (G_find_raster("n2", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=n2,n2bak");
 	    system(cmdbuf);
 	}
-	n2 = G_open_raster_new("n2", DCELL_TYPE);
+	n2 = Rast_open_new("n2", DCELL_TYPE);
     }
 
     if (choice->boundary[3]) {
-	if (G_find_cell("n3", G_mapset()) != NULL) {
+	if (G_find_raster("n3", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=n3,n3bak");
 	    system(cmdbuf);
 	}
-	n3 = G_open_raster_new("n3", DCELL_TYPE);
+	n3 = Rast_open_new("n3", DCELL_TYPE);
     }
 
     if (choice->boundary[4]) {
-	if (G_find_cell("n4", G_mapset()) != NULL) {
+	if (G_find_raster("n4", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=n4,n4bak");
 	    system(cmdbuf);
 	}
-	n4 = G_open_raster_new("n4", DCELL_TYPE);
+	n4 = Rast_open_new("n4", DCELL_TYPE);
     }
 
     if (choice->perim[1]) {
-	if (G_find_cell("p1", G_mapset()) != NULL) {
+	if (G_find_raster("p1", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=p1,p1bak");
 	    system(cmdbuf);
 	}
-	p1 = G_open_raster_new("p1", DCELL_TYPE);
+	p1 = Rast_open_new("p1", DCELL_TYPE);
     }
     if (choice->perim[2]) {
-	if (G_find_cell("p2", G_mapset()) != NULL) {
+	if (G_find_raster("p2", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=p2,p2bak");
 	    system(cmdbuf);
 	}
-	p2 = G_open_raster_new("p2", DCELL_TYPE);
+	p2 = Rast_open_new("p2", DCELL_TYPE);
     }
     if (choice->perim[3]) {
-	if (G_find_cell("p3", G_mapset()) != NULL) {
+	if (G_find_raster("p3", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=p3,p3bak");
 	    system(cmdbuf);
 	}
-	p3 = G_open_raster_new("p3", DCELL_TYPE);
+	p3 = Rast_open_new("p3", DCELL_TYPE);
     }
     if (choice->perim[4]) {
-	if (G_find_cell("p4", G_mapset()) != NULL) {
+	if (G_find_raster("p4", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=p4,p4bak");
 	    system(cmdbuf);
 	}
-	p4 = G_open_raster_new("p4", DCELL_TYPE);
+	p4 = Rast_open_new("p4", DCELL_TYPE);
     }
     if (choice->perim[5]) {
-	if (G_find_cell("p5", G_mapset()) != NULL) {
+	if (G_find_raster("p5", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=p5,p5bak");
 	    system(cmdbuf);
 	}
-	p5 = G_open_raster_new("p5", DCELL_TYPE);
+	p5 = Rast_open_new("p5", DCELL_TYPE);
     }
     if (choice->perim[6]) {
-	if (G_find_cell("p6", G_mapset()) != NULL) {
+	if (G_find_raster("p6", G_mapset()) != NULL) {
 	    sprintf(cmdbuf, "%s %s", "g.rename -o", "rast=p6,p6bak");
 	    system(cmdbuf);
 	}
-	p6 = G_open_raster_new("p6", DCELL_TYPE);
+	p6 = Rast_open_new("p6", DCELL_TYPE);
     }
 
     /* get the moving window parameters */
@@ -915,7 +915,7 @@ void mv_driver()
     fprintf(stderr,
 	    "   warning may be printed or appear in a window; ignore this warning.\n");
     fprintf(stderr, "If a MASK is present there will be no warning.\n");
-    fmask = G_open_cell_old("MASK", G_mapset());
+    fmask = Rast_open_old("MASK", G_mapset());
     fprintf(stderr, "\n");
 
     /* allocate memory for the buffer that
@@ -933,7 +933,7 @@ void mv_driver()
        a row of the MASK, if there is a MASK */
 
     if (fmask > 0)
-	row_buf = G_allocate_raster_buf(CELL_TYPE);
+	row_buf = Rast_allocate_buf(CELL_TYPE);
 
     /* main loop for clipping & measuring
        using the moving-window */
@@ -955,8 +955,8 @@ void mv_driver()
 	   process */
 
 	if (fmask > 0) {
-	    G_zero_raster_buf(row_buf, CELL_TYPE);
-	    G_get_raster_row_nomask(fmask, row_buf, y0 + i + u_l / 2,
+	    Rast_zero_buf(row_buf, CELL_TYPE);
+	    Rast_get_row_nomask(fmask, row_buf, y0 + i + u_l / 2,
 				    CELL_TYPE);
 
 	    /* for each cell whose value is "1"
@@ -1006,937 +1006,937 @@ void mv_driver()
 	   maps; the map location is adjusted to the center
 	   of the moving window */
 
-	tmp_buf = G_allocate_raster_buf(DCELL_TYPE);
-	nulltmp = G_allocate_null_buf();
+	tmp_buf = Rast_allocate_buf(DCELL_TYPE);
+	nulltmp = Rast_allocate_null_buf();
 
 	if (choice->att[1]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(a1, tmp_buf);
+		    Rast_put_d_row(a1, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 0) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 0);
 		}
-		G_put_d_raster_row(a1, tmp_buf);
+		Rast_put_d_row(a1, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(a1, tmp_buf2);
+		    Rast_put_d_row(a1, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 
 	if (choice->att[2]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(a2, tmp_buf);
+		    Rast_put_d_row(a2, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 1) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 1);
 		}
-		G_put_d_raster_row(a2, tmp_buf);
+		Rast_put_d_row(a2, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(a2, tmp_buf2);
+		    Rast_put_d_row(a2, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->att[3]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(a3, tmp_buf);
+		    Rast_put_d_row(a3, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 2) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 2);
 		}
-		G_put_d_raster_row(a3, tmp_buf);
+		Rast_put_d_row(a3, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(a3, tmp_buf2);
+		    Rast_put_d_row(a3, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->att[4]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(a4, tmp_buf);
+		    Rast_put_d_row(a4, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 3) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 3);
 		}
-		G_put_d_raster_row(a4, tmp_buf);
+		Rast_put_d_row(a4, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(a4, tmp_buf2);
+		    Rast_put_d_row(a4, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->att[5]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(a5, tmp_buf);
+		    Rast_put_d_row(a5, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 4) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 4);
 		}
-		G_put_d_raster_row(a5, tmp_buf);
+		Rast_put_d_row(a5, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(a5, tmp_buf2);
+		    Rast_put_d_row(a5, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->att[6]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(a6, tmp_buf);
+		    Rast_put_d_row(a6, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 5) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 5);
 		}
-		G_put_d_raster_row(a6, tmp_buf);
+		Rast_put_d_row(a6, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(a6, tmp_buf2);
+		    Rast_put_d_row(a6, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->att[7]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(a7, tmp_buf);
+		    Rast_put_d_row(a7, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 6) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 6);
 		}
-		G_put_d_raster_row(a7, tmp_buf);
+		Rast_put_d_row(a7, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(a7, tmp_buf2);
+		    Rast_put_d_row(a7, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->size[1]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(s1, tmp_buf);
+		    Rast_put_d_row(s1, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 7) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 7);
 		}
-		G_put_d_raster_row(s1, tmp_buf);
+		Rast_put_d_row(s1, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(s1, tmp_buf2);
+		    Rast_put_d_row(s1, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->size[2]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(s2, tmp_buf);
+		    Rast_put_d_row(s2, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 8) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 8);
 		}
-		G_put_d_raster_row(s2, tmp_buf);
+		Rast_put_d_row(s2, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(s2, tmp_buf2);
+		    Rast_put_d_row(s2, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->size[3]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(s3, tmp_buf);
+		    Rast_put_d_row(s3, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 9) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 9);
 		}
-		G_put_d_raster_row(s3, tmp_buf);
+		Rast_put_d_row(s3, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(s3, tmp_buf2);
+		    Rast_put_d_row(s3, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->size[4]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(s4, tmp_buf);
+		    Rast_put_d_row(s4, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 10) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 10);
 		}
-		G_put_d_raster_row(s4, tmp_buf);
+		Rast_put_d_row(s4, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(s4, tmp_buf2);
+		    Rast_put_d_row(s4, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->size[5]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(s5, tmp_buf);
+		    Rast_put_d_row(s5, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 11) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 11);
 		}
-		G_put_d_raster_row(s5, tmp_buf);
+		Rast_put_d_row(s5, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(s5, tmp_buf2);
+		    Rast_put_d_row(s5, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->size[6]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(s6, tmp_buf);
+		    Rast_put_d_row(s6, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 12) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 12);
 		}
-		G_put_d_raster_row(s6, tmp_buf);
+		Rast_put_d_row(s6, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(s6, tmp_buf2);
+		    Rast_put_d_row(s6, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->core[1]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(c1, tmp_buf);
+		    Rast_put_d_row(c1, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 13) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 13);
 		}
-		G_put_d_raster_row(c1, tmp_buf);
+		Rast_put_d_row(c1, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(c1, tmp_buf2);
+		    Rast_put_d_row(c1, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->core[2]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(c2, tmp_buf);
+		    Rast_put_d_row(c2, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 14) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 14);
 		}
-		G_put_d_raster_row(c2, tmp_buf);
+		Rast_put_d_row(c2, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(c2, tmp_buf2);
+		    Rast_put_d_row(c2, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->core[3]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(c3, tmp_buf);
+		    Rast_put_d_row(c3, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 15) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 15);
 		}
-		G_put_d_raster_row(c3, tmp_buf);
+		Rast_put_d_row(c3, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(c3, tmp_buf2);
+		    Rast_put_d_row(c3, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->core[4]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(c4, tmp_buf);
+		    Rast_put_d_row(c4, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 16) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 16);
 		}
-		G_put_d_raster_row(c4, tmp_buf);
+		Rast_put_d_row(c4, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(c4, tmp_buf2);
+		    Rast_put_d_row(c4, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->core[5]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(c5, tmp_buf);
+		    Rast_put_d_row(c5, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 17) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 17);
 		}
-		G_put_d_raster_row(c5, tmp_buf);
+		Rast_put_d_row(c5, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(c5, tmp_buf2);
+		    Rast_put_d_row(c5, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->core[6]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(c6, tmp_buf);
+		    Rast_put_d_row(c6, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 18) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 18);
 		}
-		G_put_d_raster_row(c6, tmp_buf);
+		Rast_put_d_row(c6, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(c6, tmp_buf2);
+		    Rast_put_d_row(c6, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->core[7]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(c7, tmp_buf);
+		    Rast_put_d_row(c7, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 19) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 19);
 		}
-		G_put_d_raster_row(c7, tmp_buf);
+		Rast_put_d_row(c7, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(c7, tmp_buf2);
+		    Rast_put_d_row(c7, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->core[8]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(c8, tmp_buf);
+		    Rast_put_d_row(c8, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 20) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 20);
 		}
-		G_put_d_raster_row(c8, tmp_buf);
+		Rast_put_d_row(c8, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(c8, tmp_buf2);
+		    Rast_put_d_row(c8, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->core[9]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(c9, tmp_buf);
+		    Rast_put_d_row(c9, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 21) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 21);
 		}
-		G_put_d_raster_row(c9, tmp_buf);
+		Rast_put_d_row(c9, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(c9, tmp_buf2);
+		    Rast_put_d_row(c9, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->core[10]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(c10, tmp_buf);
+		    Rast_put_d_row(c10, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 22) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 22);
 		}
-		G_put_d_raster_row(c10, tmp_buf);
+		Rast_put_d_row(c10, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(c10, tmp_buf2);
+		    Rast_put_d_row(c10, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->shape[1]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(h1, tmp_buf);
+		    Rast_put_d_row(h1, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 23) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 23);
 		}
-		G_put_d_raster_row(h1, tmp_buf);
+		Rast_put_d_row(h1, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(h1, tmp_buf2);
+		    Rast_put_d_row(h1, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->shape[2]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(h2, tmp_buf);
+		    Rast_put_d_row(h2, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 24) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 24);
 		}
-		G_put_d_raster_row(h2, tmp_buf);
+		Rast_put_d_row(h2, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(h2, tmp_buf2);
+		    Rast_put_d_row(h2, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->shape[3]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(h3, tmp_buf);
+		    Rast_put_d_row(h3, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 25) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 25);
 		}
-		G_put_d_raster_row(h3, tmp_buf);
+		Rast_put_d_row(h3, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(h3, tmp_buf2);
+		    Rast_put_d_row(h3, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->shape[4]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(h4, tmp_buf);
+		    Rast_put_d_row(h4, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 26) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 26);
 		}
-		G_put_d_raster_row(h4, tmp_buf);
+		Rast_put_d_row(h4, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(h4, tmp_buf2);
+		    Rast_put_d_row(h4, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->shape[5]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(h5, tmp_buf);
+		    Rast_put_d_row(h5, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 27) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 27);
 		}
-		G_put_d_raster_row(h5, tmp_buf);
+		Rast_put_d_row(h5, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(h5, tmp_buf2);
+		    Rast_put_d_row(h5, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->shape[6]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(h6, tmp_buf);
+		    Rast_put_d_row(h6, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 28) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 28);
 		}
-		G_put_d_raster_row(h6, tmp_buf);
+		Rast_put_d_row(h6, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(h6, tmp_buf2);
+		    Rast_put_d_row(h6, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->boundary[1]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(n1, tmp_buf);
+		    Rast_put_d_row(n1, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 29) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 29);
 		}
-		G_put_d_raster_row(n1, tmp_buf);
+		Rast_put_d_row(n1, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(n1, tmp_buf2);
+		    Rast_put_d_row(n1, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->perim[1]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(p1, tmp_buf);
+		    Rast_put_d_row(p1, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 30) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 30);
 		}
-		G_put_d_raster_row(p1, tmp_buf);
+		Rast_put_d_row(p1, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(p1, tmp_buf2);
+		    Rast_put_d_row(p1, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->perim[2]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(p2, tmp_buf);
+		    Rast_put_d_row(p2, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 31) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 31);
 		}
-		G_put_d_raster_row(p2, tmp_buf);
+		Rast_put_d_row(p2, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(p2, tmp_buf2);
+		    Rast_put_d_row(p2, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->perim[3]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(p3, tmp_buf);
+		    Rast_put_d_row(p3, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 32) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 32);
 		}
-		G_put_d_raster_row(p3, tmp_buf);
+		Rast_put_d_row(p3, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(p3, tmp_buf2);
+		    Rast_put_d_row(p3, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->perim[4]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(p4, tmp_buf);
+		    Rast_put_d_row(p4, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 33) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 33);
 		}
-		G_put_d_raster_row(p4, tmp_buf);
+		Rast_put_d_row(p4, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(p4, tmp_buf2);
+		    Rast_put_d_row(p4, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->perim[5]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(p5, tmp_buf);
+		    Rast_put_d_row(p5, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 34) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 34);
 		}
-		G_put_d_raster_row(p5, tmp_buf);
+		Rast_put_d_row(p5, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(p5, tmp_buf2);
+		    Rast_put_d_row(p5, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 	if (choice->perim[6]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(p6, tmp_buf);
+		    Rast_put_d_row(p6, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 35) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 35);
 		}
-		G_put_d_raster_row(p6, tmp_buf);
+		Rast_put_d_row(p6, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(p6, tmp_buf2);
+		    Rast_put_d_row(p6, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 
 	if (choice->att[8]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(a8, tmp_buf);
+		    Rast_put_d_row(a8, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 36) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 36);
 		}
-		G_put_d_raster_row(a8, tmp_buf);
+		Rast_put_d_row(a8, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(a8, tmp_buf2);
+		    Rast_put_d_row(a8, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 
 	if (choice->size[7]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(s7, tmp_buf);
+		    Rast_put_d_row(s7, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 37) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 37);
 		}
-		G_put_d_raster_row(s7, tmp_buf);
+		Rast_put_d_row(s7, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(s7, tmp_buf2);
+		    Rast_put_d_row(s7, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 
 	if (choice->size[8]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(s8, tmp_buf);
+		    Rast_put_d_row(s8, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 38) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 38);
 		}
-		G_put_d_raster_row(s8, tmp_buf);
+		Rast_put_d_row(s8, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(s8, tmp_buf2);
+		    Rast_put_d_row(s8, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 
 	if (choice->boundary[2]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(n2, tmp_buf);
+		    Rast_put_d_row(n2, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 39) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 39);
 		}
-		G_put_d_raster_row(n2, tmp_buf);
+		Rast_put_d_row(n2, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(n2, tmp_buf2);
+		    Rast_put_d_row(n2, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 
 	if (choice->boundary[3]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(n3, tmp_buf);
+		    Rast_put_d_row(n3, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 40) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 40);
 		}
-		G_put_d_raster_row(n3, tmp_buf);
+		Rast_put_d_row(n3, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(n3, tmp_buf2);
+		    Rast_put_d_row(n3, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
 
 	if (choice->boundary[4]) {
-	    G_zero_raster_buf(tmp_buf, DCELL_TYPE);
-	    G_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
+	    Rast_zero_buf(tmp_buf, DCELL_TYPE);
+	    Rast_set_null_value(tmp_buf, x0 + nc + u_w, DCELL_TYPE);
 	    if (i == 0) {
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(n4, tmp_buf);
+		    Rast_put_d_row(n4, tmp_buf);
 	    }
 	    if (i < nr) {
 		for (m = 0; m < nc; m++) {
 		    if (*(*(buff + m) + 41) > -BIG)
 			*(tmp_buf + (x0 + m + u_w / 2)) = *(*(buff + m) + 41);
 		}
-		G_put_d_raster_row(n4, tmp_buf);
+		Rast_put_d_row(n4, tmp_buf);
 	    }
 	    if (i == nr - 1) {
-		tmp_buf2 = G_allocate_raster_buf(DCELL_TYPE);
-		G_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
+		tmp_buf2 = Rast_allocate_buf(DCELL_TYPE);
+		Rast_set_null_value(tmp_buf2, x0 + nc + u_w, DCELL_TYPE);
 		for (b = 0; b < u_l / 2; b++)
-		    G_put_d_raster_row(n4, tmp_buf2);
+		    Rast_put_d_row(n4, tmp_buf2);
 		G_free(tmp_buf2);
 	    }
 	}
@@ -1964,259 +1964,259 @@ void mv_driver()
 
 
     if (choice->att[1]) {
-	G_close_cell(a1);
+	Rast_close(a1);
 	set_colors("a1");
 	sprintf(cmdbuf, "%s %s", "r.compress", "a1");
 	system(cmdbuf);
     }
     if (choice->att[2]) {
-	G_close_cell(a2);
+	Rast_close(a2);
 	set_colors("a2");
 	sprintf(cmdbuf, "%s %s", "r.compress", "a2");
 	system(cmdbuf);
     }
     if (choice->att[3]) {
-	G_close_cell(a3);
+	Rast_close(a3);
 	set_colors("a3");
 	sprintf(cmdbuf, "%s %s", "r.compress", "a3");
 	system(cmdbuf);
     }
     if (choice->att[4]) {
-	G_close_cell(a4);
+	Rast_close(a4);
 	set_colors("a4");
 	sprintf(cmdbuf, "%s %s", "r.compress", "a4");
 	system(cmdbuf);
     }
     if (choice->att[5]) {
-	G_close_cell(a5);
+	Rast_close(a5);
 	set_colors("a5");
 	sprintf(cmdbuf, "%s %s", "r.compress", "a5");
 	system(cmdbuf);
     }
     if (choice->att[6]) {
-	G_close_cell(a6);
+	Rast_close(a6);
 	set_colors("a6");
 	sprintf(cmdbuf, "%s %s", "r.compress", "a6");
 	system(cmdbuf);
     }
     if (choice->att[7]) {
-	G_close_cell(a7);
+	Rast_close(a7);
 	set_colors("a7");
 	sprintf(cmdbuf, "%s %s", "r.compress", "a7");
 	system(cmdbuf);
     }
     if (choice->att[8]) {
-	G_close_cell(a8);
+	Rast_close(a8);
 	set_colors("a8");
 	sprintf(cmdbuf, "%s %s", "r.compress", "a8");
 	system(cmdbuf);
     }
     if (choice->size[1]) {
-	G_close_cell(s1);
+	Rast_close(s1);
 	set_colors("s1");
 	sprintf(cmdbuf, "%s %s", "r.compress", "s1");
 	system(cmdbuf);
     }
     if (choice->size[2]) {
-	G_close_cell(s2);
+	Rast_close(s2);
 	set_colors("s2");
 	sprintf(cmdbuf, "%s %s", "r.compress", "s2");
 	system(cmdbuf);
     }
     if (choice->size[3]) {
-	G_close_cell(s3);
+	Rast_close(s3);
 	set_colors("s3");
 	sprintf(cmdbuf, "%s %s", "r.compress", "s3");
 	system(cmdbuf);
     }
     if (choice->size[4]) {
-	G_close_cell(s4);
+	Rast_close(s4);
 	set_colors("s4");
 	sprintf(cmdbuf, "%s %s", "r.compress", "s4");
 	system(cmdbuf);
     }
     if (choice->size[5]) {
-	G_close_cell(s5);
+	Rast_close(s5);
 	set_colors("s5");
 	sprintf(cmdbuf, "%s %s", "r.compress", "s5");
 	system(cmdbuf);
     }
     if (choice->size[6]) {
-	G_close_cell(s6);
+	Rast_close(s6);
 	set_colors("s6");
 	sprintf(cmdbuf, "%s %s", "r.compress", "s6");
 	system(cmdbuf);
     }
     if (choice->size[7]) {
-	G_close_cell(s7);
+	Rast_close(s7);
 	set_colors("s7");
 	sprintf(cmdbuf, "%s %s", "r.compress", "s7");
 	system(cmdbuf);
     }
     if (choice->size[8]) {
-	G_close_cell(s8);
+	Rast_close(s8);
 	set_colors("s8");
 	sprintf(cmdbuf, "%s %s", "r.compress", "s8");
 	system(cmdbuf);
     }
     if (choice->core[1]) {
-	G_close_cell(c1);
+	Rast_close(c1);
 	set_colors("c1");
 	sprintf(cmdbuf, "%s %s", "r.compress", "c1");
 	system(cmdbuf);
     }
     if (choice->core[2]) {
-	G_close_cell(c2);
+	Rast_close(c2);
 	set_colors("c2");
 	sprintf(cmdbuf, "%s %s", "r.compress", "c2");
 	system(cmdbuf);
     }
     if (choice->core[3]) {
-	G_close_cell(c3);
+	Rast_close(c3);
 	set_colors("c3");
 	sprintf(cmdbuf, "%s %s", "r.compress", "c3");
 	system(cmdbuf);
     }
     if (choice->core[4]) {
-	G_close_cell(c4);
+	Rast_close(c4);
 	set_colors("c4");
 	sprintf(cmdbuf, "%s %s", "r.compress", "c4");
 	system(cmdbuf);
     }
     if (choice->core[5]) {
-	G_close_cell(c5);
+	Rast_close(c5);
 	set_colors("c5");
 	sprintf(cmdbuf, "%s %s", "r.compress", "c5");
 	system(cmdbuf);
     }
     if (choice->core[6]) {
-	G_close_cell(c6);
+	Rast_close(c6);
 	set_colors("c6");
 	sprintf(cmdbuf, "%s %s", "r.compress", "c6");
 	system(cmdbuf);
     }
     if (choice->core[7]) {
-	G_close_cell(c7);
+	Rast_close(c7);
 	set_colors("c7");
 	sprintf(cmdbuf, "%s %s", "r.compress", "c7");
 	system(cmdbuf);
     }
     if (choice->core[8]) {
-	G_close_cell(c8);
+	Rast_close(c8);
 	set_colors("c8");
 	sprintf(cmdbuf, "%s %s", "r.compress", "c8");
 	system(cmdbuf);
     }
     if (choice->core[9]) {
-	G_close_cell(c9);
+	Rast_close(c9);
 	set_colors("c9");
 	sprintf(cmdbuf, "%s %s", "r.compress", "c9");
 	system(cmdbuf);
     }
     if (choice->core[10]) {
-	G_close_cell(c10);
+	Rast_close(c10);
 	set_colors("c10");
 	sprintf(cmdbuf, "%s %s", "r.compress", "c10");
 	system(cmdbuf);
     }
     if (choice->shape[1]) {
-	G_close_cell(h1);
+	Rast_close(h1);
 	set_colors("h1");
 	sprintf(cmdbuf, "%s %s", "r.compress", "h1");
 	system(cmdbuf);
     }
     if (choice->shape[2]) {
-	G_close_cell(h2);
+	Rast_close(h2);
 	set_colors("h2");
 	sprintf(cmdbuf, "%s %s", "r.compress", "h2");
 	system(cmdbuf);
     }
     if (choice->shape[3]) {
-	G_close_cell(h3);
+	Rast_close(h3);
 	set_colors("h3");
 	sprintf(cmdbuf, "%s %s", "r.compress", "h3");
 	system(cmdbuf);
     }
     if (choice->shape[4]) {
-	G_close_cell(h4);
+	Rast_close(h4);
 	set_colors("h4");
 	sprintf(cmdbuf, "%s %s", "r.compress", "h4");
 	system(cmdbuf);
     }
     if (choice->shape[5]) {
-	G_close_cell(h5);
+	Rast_close(h5);
 	set_colors("h5");
 	sprintf(cmdbuf, "%s %s", "r.compress", "h5");
 	system(cmdbuf);
     }
     if (choice->shape[6]) {
-	G_close_cell(h6);
+	Rast_close(h6);
 	set_colors("h6");
 	sprintf(cmdbuf, "%s %s", "r.compress", "h6");
 	system(cmdbuf);
     }
     if (choice->boundary[1]) {
-	G_close_cell(n1);
+	Rast_close(n1);
 	set_colors("n1");
 	sprintf(cmdbuf, "%s %s", "r.compress", "n1");
 	system(cmdbuf);
     }
     if (choice->boundary[2]) {
-	G_close_cell(n2);
+	Rast_close(n2);
 	set_colors("n2");
 	sprintf(cmdbuf, "%s %s", "r.compress", "n2");
 	system(cmdbuf);
     }
     if (choice->boundary[3]) {
-	G_close_cell(n3);
+	Rast_close(n3);
 	set_colors("n3");
 	sprintf(cmdbuf, "%s %s", "r.compress", "n3");
 	system(cmdbuf);
     }
     if (choice->boundary[4]) {
-	G_close_cell(n4);
+	Rast_close(n4);
 	set_colors("n4");
 	sprintf(cmdbuf, "%s %s", "r.compress", "n4");
 	system(cmdbuf);
     }
     if (choice->perim[1]) {
-	G_close_cell(p1);
+	Rast_close(p1);
 	set_colors("p1");
 	sprintf(cmdbuf, "%s %s", "r.compress", "p1");
 	system(cmdbuf);
     }
     if (choice->perim[2]) {
-	G_close_cell(p2);
+	Rast_close(p2);
 	set_colors("p2");
 	sprintf(cmdbuf, "%s %s", "r.compress", "p2");
 	system(cmdbuf);
     }
     if (choice->perim[3]) {
-	G_close_cell(p3);
+	Rast_close(p3);
 	set_colors("p3");
 	sprintf(cmdbuf, "%s %s", "r.compress", "p3");
 	system(cmdbuf);
     }
     if (choice->perim[4]) {
-	G_close_cell(p4);
+	Rast_close(p4);
 	set_colors("p4");
 	sprintf(cmdbuf, "%s %s", "r.compress", "p4");
 	system(cmdbuf);
     }
     if (choice->perim[5]) {
-	G_close_cell(p5);
+	Rast_close(p5);
 	set_colors("p5");
 	sprintf(cmdbuf, "%s %s", "r.compress", "p5");
 	system(cmdbuf);
     }
     if (choice->perim[6]) {
-	G_close_cell(p6);
+	Rast_close(p6);
 	set_colors("p6");
 	sprintf(cmdbuf, "%s %s", "r.compress", "p6");
 	system(cmdbuf);
     }
 
-    G_close_cell(fmask);
+    Rast_close(fmask);
 
     return;
 }
@@ -2234,9 +2234,9 @@ void set_colors(char *name)
     struct Colors colors;
     struct FPRange fprange;
 
-    G_read_fp_range(name, G_mapset(), &fprange);
-    G_make_gyr_fp_colors(&colors, fprange.min, fprange.max);
-    G_write_colors(name, G_mapset(), &colors);
+    Rast_read_fp_range(name, G_mapset(), &fprange);
+    Rast_make_gyr_fp_colors(&colors, fprange.min, fprange.max);
+    Rast_write_colors(name, G_mapset(), &colors);
     return;
 
 }
@@ -2302,7 +2302,7 @@ void meter(int n, int i, int div)
 	d = div;
 
     if (k > 2000) {
-	if (fseek(stdout, 0L, 0))
+	if (G_fseek(stdout, 0L, 0))
 	    G_fatal_error("Can't reset the \"stdout\", exit.\n");
 	k = 0;
     }
@@ -2644,35 +2644,35 @@ void unit_driver()
 	    }
 
 	    if (i == 0)
-		G_strcpy(istr, "1");
+		strcpy(istr, "1");
 	    else if (i == 1)
-		G_strcpy(istr, "2");
+		strcpy(istr, "2");
 	    else if (i == 2)
-		G_strcpy(istr, "3");
+		strcpy(istr, "3");
 	    else if (i == 3)
-		G_strcpy(istr, "4");
+		strcpy(istr, "4");
 	    else if (i == 4)
-		G_strcpy(istr, "5");
+		strcpy(istr, "5");
 	    else if (i == 5)
-		G_strcpy(istr, "6");
+		strcpy(istr, "6");
 	    else if (i == 6)
-		G_strcpy(istr, "7");
+		strcpy(istr, "7");
 	    else if (i == 7)
-		G_strcpy(istr, "8");
+		strcpy(istr, "8");
 	    else if (i == 8)
-		G_strcpy(istr, "9");
+		strcpy(istr, "9");
 	    else if (i == 9)
-		G_strcpy(istr, "10");
+		strcpy(istr, "10");
 	    else if (i == 10)
-		G_strcpy(istr, "11");
+		strcpy(istr, "11");
 	    else if (i == 11)
-		G_strcpy(istr, "12");
+		strcpy(istr, "12");
 	    else if (i == 12)
-		G_strcpy(istr, "13");
+		strcpy(istr, "13");
 	    else if (i == 13)
-		G_strcpy(istr, "14");
+		strcpy(istr, "14");
 	    else if (i == 14)
-		G_strcpy(istr, "15");
+		strcpy(istr, "15");
 	    else if (i > 14) {
 		fprintf(stderr, "\n");
 		fprintf(stderr,
@@ -2700,20 +2700,20 @@ void unit_driver()
 	/* if a map of the sampling units
 	   was requested */
 	if (choice->units) {
-	    G_strcpy(unitname, "units_");
-	    G_strcat(unitname, istr);
-	    fd = G_open_raster_new(unitname, CELL_TYPE);
-	    unit_buf = G_allocate_raster_buf(CELL_TYPE);
+	    strcpy(unitname, "units_");
+	    strcat(unitname, istr);
+	    fd = Rast_open_new(unitname, CELL_TYPE);
+	    unit_buf = Rast_allocate_buf(CELL_TYPE);
 	    for (k = 1; k < wind.rows + 1; k++) {
-		G_zero_raster_buf(unit_buf, CELL_TYPE);
-		G_set_null_value(unit_buf, wind.cols + 1, CELL_TYPE);
+		Rast_zero_buf(unit_buf, CELL_TYPE);
+		Rast_set_null_value(unit_buf, wind.cols + 1, CELL_TYPE);
 		for (m = 1; m < wind.cols + 1; m++) {
 		    if (*(*(units + k) + m))
 			*(unit_buf + m - 1) = *(*(units + k) + m);
 		}
-		G_put_raster_row(fd, unit_buf, CELL_TYPE);
+		Rast_put_row(fd, unit_buf, CELL_TYPE);
 	    }
-	    G_close_cell(fd);
+	    Rast_close(fd);
 	    G_free(unit_buf);
 	}
     }
@@ -2807,8 +2807,8 @@ void whole_reg_driver()
     REGLIST *ptrfirst, *ptrthis, *ptrnew;
     CELL *row_buf;
 
-    nrows = G_window_rows();
-    ncols = G_window_cols();
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
 
     n_scale = 1;
 
@@ -2817,11 +2817,11 @@ void whole_reg_driver()
     }
     else {
 	regcnt = 0;
-	fr = G_open_cell_old(choice->reg, G_mapset());
-	row_buf = G_allocate_raster_buf(CELL_TYPE);
+	fr = Rast_open_old(choice->reg, G_mapset());
+	row_buf = Rast_allocate_buf(CELL_TYPE);
 	for (i = 0; i < nrows; i++) {
-	    G_zero_raster_buf(row_buf, CELL_TYPE);
-	    G_get_raster_row(fr, row_buf, i, CELL_TYPE);
+	    Rast_zero_buf(row_buf, CELL_TYPE);
+	    Rast_get_row(fr, row_buf, i, CELL_TYPE);
 	    for (j = 0; j < ncols; j++) {
 		if (*(row_buf + j) > 0) {
 		    if (regcnt == 0)
@@ -2872,7 +2872,7 @@ void whole_reg_driver()
 			  0.0);
 	    ptrthis = ptrthis->next;
 	}
-	G_close_cell(fr);
+	Rast_close(fr);
 	G_free(row_buf);
 	G_free(ptrnew);
     }

@@ -36,9 +36,6 @@ char **mapset;
 
 int main(int argc, char **argv)
 {
-    struct Cell_head window;
-    char temp[128];
-    int t, b, l, r;
     int i, j;
     int width, mwidth;
     struct Flag *once, *terse, *colrow;
@@ -49,34 +46,23 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("display, raster");
+    G_add_keyword(_("display"));
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("position"));
+    G_add_keyword(_("querying"));
     module->description =
 	_("Allows the user to interactively query the category contents "
 	  "of multiple raster map layers at user specified locations "
 	  "within the current geographic region.");
 
 
-    /* Don't fail initially if driver open fails, and don't let call kill
-     * us -- set quiet mode
-     */
-    R__open_quiet();
-    if (R_open_driver() == 0) {
-	if (D_get_cell_list(&rast, &nrasts) < 0)
-	    rast = NULL;
-	else {
-	    rast = (char **)G_realloc(rast, (nrasts + 1) * sizeof(char *));
-	    rast[nrasts] = NULL;
-	}
-	R_close_driver();
-    }
+    rast = NULL;
 
     opt1 = G_define_option();
     opt1->key = "map";
     opt1->type = TYPE_STRING;
-    opt1->required = NO;
+    opt1->required = YES;
     opt1->multiple = YES;
-    if (rast)
-	opt1->answers = rast;
     opt1->gisprompt = "old,cell,raster";
     opt1->description = _("Name of existing raster map(s)");
     opt1->key_desc = "name";
@@ -102,41 +88,18 @@ int main(int argc, char **argv)
     colrow->description =
 	_("Print out col/row for the entire map in grid resolution of the region");
 
-    if (!rast)
-	opt1->required = YES;
-
-    if ((argc > 1 || !rast) && G_parser(argc, argv))
+    if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
 
     if (opt1->answers && opt1->answers[0])
 	rast = opt1->answers;
 
-    if (R_open_driver() != 0)
+    if (D_open_driver() != 0)
 	G_fatal_error(_("No graphics device selected"));
 
-    if (D_get_cur_wind(temp))
-	G_fatal_error(_("No current graphics window"));
+    D_setup(0);
 
-    if (D_set_cur_wind(temp))
-	G_fatal_error(_("Current graphics window not available"));
-
-    /* Read in the map window associated with window */
-    G_get_window(&window);
-
-    if (D_check_map_window(&window))
-	G_fatal_error(_("Setting graphics window"));
-
-    if (G_set_window(&window) == -1)
-	G_fatal_error(_("Can't set current graphics window"));
-
-    /* Determine conversion factors */
-    if (D_get_screen_window(&t, &b, &l, &r))
-	G_fatal_error(_("Getting graphics window coordinates"));
-    if (D_do_conversions(&window, t, b, l, r))
-	G_fatal_error(_("Error in calculating conversions"));
-
-    width = mwidth = 0;
     if (rast) {
 	for (i = 0; rast[i]; i++) ;
 	nrasts = i;
@@ -147,6 +110,7 @@ int main(int argc, char **argv)
 	cats =
 	    (struct Categories *)G_malloc(nrasts * sizeof(struct Categories));
 
+	width = mwidth = 0;
 	for (i = 0; i < nrasts; i++) {
 	    name[i] = (char *)G_malloc(GNAME_MAX);
 	    mapset[i] = (char *)G_malloc(GMAPSET_MAX);
@@ -162,7 +126,7 @@ int main(int argc, char **argv)
 	    if (j > mwidth)
 		mwidth = j;
 
-	    if (G_read_cats(name[i], mapset[i], &cats[i]) < 0)
+	    if (Rast_read_cats(name[i], mapset[i], &cats[i]) < 0)
 		cats[i].ncats = -1;
 	}
     }
@@ -170,6 +134,6 @@ int main(int argc, char **argv)
     what(once->answer, terse->answer, colrow->answer, fs->answer, width,
 	 mwidth);
 
-    R_close_driver();
+    D_close_driver();
     exit(EXIT_SUCCESS);
 }

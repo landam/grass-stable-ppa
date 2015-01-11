@@ -4,6 +4,7 @@
 #include <math.h>
 #include <unistd.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 #include "local_proto.h"
@@ -99,7 +100,7 @@ int pval(void *rast, int i)
 {
     void *ptr = (void *)((CELL *) rast + i);
 
-    if (G_is_c_null_value(ptr))
+    if (Rast_is_c_null_value(ptr))
 	return 0;
     else
 	return (int)((CELL *) rast)[i];
@@ -108,35 +109,30 @@ int pval(void *rast, int i)
 void filter_holes(Gfile * out)
 {
     int row, col, nrows, ncols;
-    char *mapset;
-    
+
     void *arast, *brast, *crast;
     int i, pixel[9], cold, warm, shadow, nulo, lim;
 
     Gfile tmp;
 
-    nrows = G_window_rows();
-    ncols = G_window_cols();
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
 
     if (nrows < 3 || ncols < 3)
 	return;
 
     /* Open to read */
-    mapset = G_find_cell2(out->name, "");
-    if (mapset == NULL)
-	G_fatal_error(_("Raster map <%s> not found"), out->name);
-    
-    if ((out->fd = G_open_cell_old(out->name, "")) < 0)
+    if ((out->fd = Rast_open_old(out->name, "")) < 0)
 	G_fatal_error(_("Unable to open raster map <%s>"), out->name);
     
-    arast = G_allocate_raster_buf(CELL_TYPE);
-    brast = G_allocate_raster_buf(CELL_TYPE);
-    crast = G_allocate_raster_buf(CELL_TYPE);
+    arast = Rast_allocate_buf(CELL_TYPE);
+    brast = Rast_allocate_buf(CELL_TYPE);
+    crast = Rast_allocate_buf(CELL_TYPE);
 
     /* Open to write */
     sprintf(tmp.name, "_%d.BBB", getpid());
-    tmp.rast = G_allocate_raster_buf(CELL_TYPE);
-    if ((tmp.fd = G_open_raster_new(tmp.name, CELL_TYPE)) < 0)
+    tmp.rast = Rast_allocate_buf(CELL_TYPE);
+    if ((tmp.fd = Rast_open_new(tmp.name, CELL_TYPE)) < 0)
 	G_fatal_error(_("Unable to create raster map <%s>"), tmp.name);
 
     G_important_message(_("Filling small holes in clouds..."));
@@ -147,21 +143,14 @@ void filter_holes(Gfile * out)
      */
 
     for (row = 0; row < nrows; row++) {
+      	G_percent(row, nrows, 2);
 	/* Read row values */
-	G_percent(row, nrows, 2);
-	
 	if (row != 0) {
-	    if (G_get_c_raster_row(out->fd, arast, row - 1) < 0)
-		G_fatal_error(_("Unable to read raster map <%s> row %d"),
-			      out->name, row - 1);
+	    Rast_get_c_row(out->fd, arast, row - 1);
 	}
-	if (G_get_c_raster_row(out->fd, brast, row) < 0)
-	    G_fatal_error(_("Unable to read raster map <%s> row %d"),
-			  out->name, row);
+	Rast_get_c_row(out->fd, brast, row);
 	if (row != (nrows - 1)) {
-	    if (G_get_c_raster_row(out->fd, crast, row + 1) < 0)
-		G_fatal_error(_("Unable to read raster map <%s> row %d"),
-			      out->name, row + 1);
+	    Rast_get_c_row(out->fd, crast, row + 1);
 	}
 	/* Analysis of all pixels */
 	for (col = 0; col < ncols; col++) {
@@ -284,22 +273,20 @@ void filter_holes(Gfile * out)
 		((CELL *) tmp.rast)[col] = pixel[0];
 	    }
 	    else {
-		G_set_c_null_value((CELL *) tmp.rast + col, 1);
+		Rast_set_c_null_value((CELL *) tmp.rast + col, 1);
 	    }
 	}
-	if (G_put_raster_row(tmp.fd, tmp.rast, CELL_TYPE) < 0)
-	    G_fatal_error(_("Failed writing raster map <%s> row %d"),
-			  tmp.name, row);
+	Rast_put_row(tmp.fd, tmp.rast, CELL_TYPE);
     }
     G_percent(1, 1, 1);
     
     G_free(arast);
     G_free(brast);
     G_free(crast);
-    G_close_cell(out->fd);
+    Rast_close(out->fd);
 
     G_free(tmp.rast);
-    G_close_cell(tmp.fd);
+    Rast_close(tmp.fd);
 
     G_remove("cats", out->name);
     G_remove("cell", out->name);

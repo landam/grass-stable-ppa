@@ -21,6 +21,7 @@
 
 #include <stdlib.h>
 #include "distance.h"
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 
@@ -35,13 +36,11 @@ int read_input_map(char *input, char *mapset, int ZEROFLAG)
     register CELL *cell;
     register MAPTYPE *ptr;
 
-    map = (MAPTYPE *) G_malloc(window.rows * window.cols * sizeof(MAPTYPE));
+    map = (MAPTYPE *) G_malloc((size_t) window.rows * window.cols * sizeof(MAPTYPE));
 
-    fd = G_open_cell_old(input, mapset);
-    if (fd < 0)
-	G_fatal_error(_("Unable to open raster map <%s>"), input);
+    fd = Rast_open_old(input, mapset);
 
-    cell = G_allocate_cell_buf();
+    cell = Rast_allocate_c_buf();
 
     ptr = map;
 
@@ -59,9 +58,7 @@ int read_input_map(char *input, char *mapset, int ZEROFLAG)
 	hit = 0;
 	G_percent(row, window.rows, 2);
 
-	if (G_get_c_raster_row(fd, cell, row) < 0)
-	    G_fatal_error(_("Unable to read raster map <%s> row %d"),
-			  G_fully_qualified_name(input, mapset), row);
+	Rast_get_c_row(fd, cell, row);
 
 	for (col = 0; col < window.cols; col++) {
 	    if (ZEROFLAG) {
@@ -81,7 +78,7 @@ int read_input_map(char *input, char *mapset, int ZEROFLAG)
 	    }
 	    else {		/* use NULL */
 
-		if ((*ptr++ = !G_is_c_null_value(cell++))) {
+		if ((*ptr++ = !Rast_is_c_null_value(cell++))) {
 		    if (minrow < 0)
 			minrow = row;
 		    maxrow = row;
@@ -99,7 +96,7 @@ int read_input_map(char *input, char *mapset, int ZEROFLAG)
 	cell -= window.cols;
     }
     G_percent(row, window.rows, 2);
-    G_close_cell(fd);
+    Rast_close(fd);
     G_free(cell);
 
     return 0;

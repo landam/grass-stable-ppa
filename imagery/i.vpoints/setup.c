@@ -1,6 +1,5 @@
 #include <string.h>
 #include <grass/gis.h>
-#include <grass/raster.h>
 #include <grass/display.h>
 #include "globals.h"
 
@@ -28,7 +27,7 @@
 int dsp_setup(int blank, struct Cell_head *cellhead)
 {
     char name[128];
-    int t, b, l, r;
+    double t, b, l, r;
 
     if (D_get_cur_wind(name)) {
 	t = R_screen_top();
@@ -42,8 +41,7 @@ int dsp_setup(int blank, struct Cell_head *cellhead)
     if (D_set_cur_wind(name))
 	G_fatal_error("Current graphics frame not available");
 
-    if (D_get_screen_window(&t, &b, &l, &r))
-	G_fatal_error("Getting graphics coordinates");
+    D_get_screen_window(&t, &b, &l, &r);
 
     /* clear the window, if requested to do so */
     if (blank) {
@@ -54,17 +52,15 @@ int dsp_setup(int blank, struct Cell_head *cellhead)
 	}
     }
 
-    if (D_check_map_window(cellhead))
-	G_fatal_error("Setting graphics coordinates");
+    D_check_map_window(cellhead);
 
-    if (G_set_window(cellhead) < 0)
+    if (Rast_set_window(cellhead) < 0)
 	G_fatal_error("Invalid graphics window coordinates");
 
     /* Determine conversion factors */
-    if (D_do_conversions(cellhead, t, b, l, r))
-	G_fatal_error("Error calculating graphics window conversions");
+    D_do_conversions(cellhead, t, b, l, r);
 
-    D_set_clip_window(t, b, l, r);
+    D_set_clip(t, b, l, r);
 
     /* set text clipping, for good measure */
     R_set_window(t, b, l, r);

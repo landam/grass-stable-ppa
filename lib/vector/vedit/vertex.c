@@ -27,7 +27,7 @@
   \param move_first move only first vertex found in the bounding box
   \param snap snapping mode (see vedit.h)
   
-  \return number of moved verteces
+  \return number of moved vertices
   \return -1 on error
 */
 int Vedit_move_vertex(struct Map_info *Map, struct Map_info **BgMap,
@@ -188,7 +188,7 @@ int Vedit_move_vertex(struct Map_info *Map, struct Map_info **BgMap,
   \param coord points location
   \param thresh find line in given threshold
   
-  \return number of add verteces
+  \return number of add vertices
   \return -1 on error
 */
 int Vedit_add_vertex(struct Map_info *Map, struct ilist *List,
@@ -220,10 +220,13 @@ int Vedit_add_vertex(struct Map_info *Map, struct ilist *List,
 	if (!(type & GV_LINES))
 	    continue;
 
+	G_debug(3, "Vedit_add_vertex(): line = %d, thresh = %f",
+		line, thresh);
+
 	x = Points->x;
 	y = Points->y;
 	z = Points->z;
-	rewrite = 0;
+	rewrite = FALSE;
 	for (j = 0; j < coord->n_points; j++) {
 	    east = coord->x[j];
 	    north = coord->y[j];
@@ -240,10 +243,9 @@ int Vedit_add_vertex(struct Map_info *Map, struct ilist *List,
 				     z[seg - 1], WITHOUT_Z) > 0) {
 		/* add new vertex */
 		Vect_line_insert_point(Points, seg, px, py, 0.0);
-		G_debug(3,
-			"Vedit_add_vertex(): line=%d; x=%f, y=%f, index=%d",
+		G_debug(3, "Vedit_add_vertex(): line=%d; x=%f, y=%f, index=%d",
 			line, px, py, seg);
-		rewrite = 1;
+		rewrite = TRUE;
 		nvertices_added++;
 	    }
 	}			/* for each point */

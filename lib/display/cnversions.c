@@ -1,3 +1,4 @@
+#include <math.h>
 #include <grass/gis.h>
 #include <grass/display.h>
 
@@ -23,119 +24,91 @@
  *  conversion coefficients are alos provided.
  */
 
-struct rectangle
-{
-    double west;
-    double east;
-    double south;
-    double north;
-};
-
 struct vector
 {
     double x, y;
 };
 
+struct rect
+{
+    double west;
+    double east;
+    double south;
+    double north;
+    struct vector size;
+};
+
 /* Bounding rectangles */
-static struct rectangle U;	/* UTM coordinates, meters, (0,0) towards SW */
-static struct rectangle A;	/* Map array coordinates, integers, (0,0) towards NW */
-static struct rectangle D;	/* Display coordinates, pixels, (0,0) towards NW */
+static struct rect D;	/* Display coordinates, pixels, (0,0) towards NW */
+static struct rect A;	/* Map array coordinates, integers, (0,0) towards NW */
+static struct rect U;	/* UTM coordinates, meters, (0,0) towards SW */
 
 /* Conversion factors */
-static struct vector U_to_D_conv;	/* UTM to Display   */
 static struct vector D_to_A_conv;	/* Display to Array */
+static struct vector A_to_U_conv;	/* Array to UTM     */
+static struct vector U_to_D_conv;	/* UTM to Display   */
 
 /* others */
 static int is_lat_lon;
-static struct vector resolution;
 
-/*!
- * \brief initialize conversions
- *
- * The relationship between the
- * earth <b>region</b> and the <b>top, bottom, left</b>, and <b>right</b>
- * screen coordinates is established, which then allows conversions between all
- * three coordinate systems to be performed.
- * Note this routine is called by <i>D_setup.</i>
- *
- *  \param region
- *  \param top
- *  \param bottom
- *  \param left
- *  \param right
- *  \return int
- */
 
-int D_do_conversions(const struct Cell_head *window, int t, int b, int l,
-		     int r)
+static void calc_size(struct rect *rect)
 {
-    struct vector ARRAY_SIZE;
-    struct rectangle WIND;
-    struct vector D_size, U_size;
+    rect->size.x = rect->east  - rect->west;
+    rect->size.y = rect->south - rect->north;
+}
 
-    WIND.north = (double)t;
-    WIND.south = (double)b;
-    WIND.west = (double)l;
-    WIND.east = (double)r;
+static void calc_conv(struct vector *conv, 
+		      const struct vector *src, const struct vector *dst)
+{
+    conv->x = dst->x / src->x;
+    conv->y = dst->y / src->y;
+}
 
-    is_lat_lon = (window->proj == PROJECTION_LL);
+static void fit_aspect(struct rect *rect, const struct rect *ref)
+{
+    struct vector conv;
+    double scale, size, delta;
 
-    resolution.y = window->ns_res;
-    resolution.x = window->ew_res;
+    calc_conv(&conv, &rect->size, &ref->size);
 
-    /* Key all coordinate limits off UTM window limits  */
-    U.west = window->west;
-    U.east = window->east;
-    U.south = window->south;
-    U.north = window->north;
-
-    U_size.y = U.north - U.south;
-    U_size.x = U.east - U.west;
-
-    D_size.x = WIND.east - WIND.west;
-    D_size.y = WIND.south - WIND.north;
-
-    U_to_D_conv.x = D_size.x / U_size.x;
-    U_to_D_conv.y = D_size.y / U_size.y;
-
-    if (U_to_D_conv.x > U_to_D_conv.y) {
-	U_to_D_conv.x = U_to_D_conv.y;
-	D.west =
-	    (double)(int)((WIND.west + WIND.east -
-			   U_size.x * U_to_D_conv.x) / 2);
-	D.east =
-	    (double)(int)((WIND.west + WIND.east +
-			   U_size.x * U_to_D_conv.x) / 2);
-	D.north = WIND.north;
-	D.south = WIND.south;
+    if (fabs(conv.y) > fabs(conv.x)) {
+	scale = fabs(conv.y) / fabs(conv.x);
+	size = rect->size.x / scale;
+	delta = rect->size.x - size;
+	rect->west += delta/2;
+	rect->east -= delta/2;
+	rect->size.x = size;
     }
     else {
-	U_to_D_conv.y = U_to_D_conv.x;
-	D.west = WIND.west;
-	D.east = WIND.east;
-	D.north =
-	    (double)(int)((WIND.north + WIND.south -
-			   U_size.y * U_to_D_conv.y) / 2);
-	D.south =
-	    (double)(int)((WIND.north + WIND.south +
-			   U_size.y * U_to_D_conv.y) / 2);
+	scale = fabs(conv.x) / fabs(conv.y);
+	size = rect->size.y / scale;
+	delta = rect->size.y - size;
+	rect->north += delta/2;
+	rect->south -= delta/2;
+	rect->size.y = size;
     }
+}
 
-    D_size.x = D.east - D.west;
-    D_size.y = D.south - D.north;
+void D_update_conversions(void)
+{
+    calc_conv(&D_to_A_conv, &D.size, &A.size);
+    calc_conv(&A_to_U_conv, &A.size, &U.size);
+    calc_conv(&U_to_D_conv, &U.size, &D.size);
+}
 
-    ARRAY_SIZE.x = window->cols;
-    ARRAY_SIZE.y = window->rows;
+void D_fit_d_to_u(void)
+{
+    fit_aspect(&D, &U);
+}
 
-    A.west = 0.0;
-    A.north = 0.0;
-    A.east = (double)ARRAY_SIZE.x;
-    A.south = (double)ARRAY_SIZE.y;
+void D_fit_u_to_d(void)
+{
+    fit_aspect(&U, &D);
+}
 
-    D_to_A_conv.x = (double)ARRAY_SIZE.x / D_size.x;
-    D_to_A_conv.y = (double)ARRAY_SIZE.y / D_size.y;
-
-#ifdef DEBUG
+void D_show_conversions(void)
+{
     fprintf(stderr,
 	    " D_w %10.1f  D_e %10.1f  D_s %10.1f  D_n %10.1f\n",
 	    D.west, D.east, D.south, D.north);
@@ -145,92 +118,165 @@ int D_do_conversions(const struct Cell_head *window, int t, int b, int l,
     fprintf(stderr,
 	    " U_w %10.1f  U_e %10.1f  U_s %10.1f  U_n %10.1f\n",
 	    U.west, U.east, U.south, U.north);
+
     fprintf(stderr,
-	    " ARRAY_ROWS %d  resolution_ns %10.2f\n", ARRAY_SIZE.y,
-	    window->ns_res);
-    fprintf(stderr, " ARRAY_COLS %d  resolution_ew %10.2f\n", ARRAY_SIZE.x,
-	    window->ew_res);
+	    " D_x %10.1f  D_y %10.1f\n" "\n", D.size.x, D.size.y);
+    fprintf(stderr,
+	    " A_x %10.1f  A_y %10.1f\n" "\n", A.size.x, A.size.y);
+    fprintf(stderr,
+	    " U_x %10.1f  U_y %10.1f\n" "\n", U.size.x, U.size.y);
+
     fprintf(stderr, " D_to_A_conv.x %10.1f D_to_A_conv.y %10.1f \n",
 	    D_to_A_conv.x, D_to_A_conv.y);
-    fprintf(stderr, " BOT %10.1f  TOP %10.1f  LFT %10.1f  RHT %10.1f\n",
-	    WIND.south, WIND.north, WIND.west, WIND.east);
+    fprintf(stderr, " A_to_U_conv.x %10.1f A_to_U_conv.y %10.1f \n",
+	    A_to_U_conv.x, A_to_U_conv.y);
+    fprintf(stderr, " U_to_D_conv.x %10.1f U_to_D_conv.y %10.1f \n",
+	    U_to_D_conv.x, U_to_D_conv.y);
+}
+
+/*!
+ * \brief initialize conversions
+ *
+ * The relationship between the earth <b>region</b> and the <b>top, bottom,
+ * left</b>, and <b>right</b> screen coordinates is established, which then
+ * allows conversions between all three coordinate systems to be performed.
+ * Note this routine is called by <i>D_setup</i>.
+ *
+ *  \param window region
+ *  \param t top
+ *  \param b bottom
+ *  \param l left
+ *  \param r right
+ *  \return none
+ */
+void D_do_conversions(const struct Cell_head *window,
+		      double t, double b, double l, double r)
+{
+    D_set_region(window);
+    D_set_dst(t, b, l, r);
+    D_fit_d_to_u();
+    D_update_conversions();
+#ifdef DEBUG
+    D_show_conversions();
 #endif /* DEBUG */
-
-    return (0);
 }
 
-int D_is_lat_lon(void)
+
+int D_is_lat_lon(void)			{    return (is_lat_lon);		}
+
+double D_get_d_to_a_xconv(void)		{    return (D_to_A_conv.x);		}
+double D_get_d_to_a_yconv(void)		{    return (D_to_A_conv.y);		}
+double D_get_d_to_u_xconv(void)		{    return (1/U_to_D_conv.x);		}
+double D_get_d_to_u_yconv(void)		{    return (1/U_to_D_conv.y);		}
+double D_get_a_to_u_xconv(void)		{    return (A_to_U_conv.x);		}
+double D_get_a_to_u_yconv(void)		{    return (A_to_U_conv.y);		}
+double D_get_a_to_d_xconv(void)		{    return (1/D_to_A_conv.x);		}
+double D_get_a_to_d_yconv(void)		{    return (1/D_to_A_conv.y);		}
+double D_get_u_to_d_xconv(void)		{    return (U_to_D_conv.x);		}
+double D_get_u_to_d_yconv(void)		{    return (U_to_D_conv.y);		}
+double D_get_u_to_a_xconv(void)		{    return (1/A_to_U_conv.x);		}
+double D_get_u_to_a_yconv(void)		{    return (1/A_to_U_conv.y);		}
+
+double D_get_ns_resolution(void)	{    return D_get_a_to_u_yconv();	}
+double D_get_ew_resolution(void)	{    return D_get_a_to_u_xconv();	}
+
+double D_get_u_west(void)		{    return (U.west);			}
+double D_get_u_east(void)		{    return (U.east);			}
+double D_get_u_north(void)		{    return (U.north);			}
+double D_get_u_south(void)		{    return (U.south);			}
+
+double D_get_a_west(void)		{    return (A.west);			}
+double D_get_a_east(void)		{    return (A.east);			}
+double D_get_a_north(void)		{    return (A.north);			}
+double D_get_a_south(void)		{    return (A.south);			}
+
+double D_get_d_west(void)		{    return (D.west);			}
+double D_get_d_east(void)		{    return (D.east);			}
+double D_get_d_north(void)		{    return (D.north);			}
+double D_get_d_south(void)		{    return (D.south);			}
+
+void D_set_region(const struct Cell_head *window)
 {
-    return (is_lat_lon);
+    D_set_src(window->north, window->south, window->west, window->east);
+    D_set_grid(0, window->rows, 0, window->cols);
+    is_lat_lon = (window->proj == PROJECTION_LL);
 }
 
-double D_get_ns_resolution(void)
+void D_set_src(double t, double b, double l, double r)
 {
-    return (resolution.y);
-}
-double D_get_ew_resolution(void)
-{
-    return (resolution.x);
-}
-
-double D_get_u_to_d_xconv(void)
-{
-    return (U_to_D_conv.x);
-}
-double D_get_u_to_d_yconv(void)
-{
-    return (U_to_D_conv.y);
+    U.north = t;
+    U.south = b;
+    U.west  = l;
+    U.east  = r;
+    calc_size(&U);
 }
 
-double D_get_u_west(void)
+/*!
+ * \brief returns frame bounds in source coordinate system
+ *
+ * D_get_src() returns the frame bounds in the source coordinate system
+ * (used by D_* functions)
+ *
+ *  \param t top
+ *  \param b bottom
+ *  \param l left
+ *  \param r right
+ *  \return void
+ */
+void D_get_src(double *t, double *b, double *l, double *r)
 {
-    return (U.west);
-}
-double D_get_u_east(void)
-{
-    return (U.east);
-}
-double D_get_u_north(void)
-{
-    return (U.north);
-}
-double D_get_u_south(void)
-{
-    return (U.south);
-}
-
-double D_get_a_west(void)
-{
-    return (A.west);
-}
-double D_get_a_east(void)
-{
-    return (A.east);
-}
-double D_get_a_north(void)
-{
-    return (A.north);
-}
-double D_get_a_south(void)
-{
-    return (A.south);
+    *t = U.north;
+    *b = U.south;
+    *l = U.west;
+    *r = U.east;
 }
 
-double D_get_d_west(void)
+void D_set_grid(int t, int b, int l, int r)
 {
-    return (D.west);
+    A.north = t;
+    A.south = b;
+    A.west  = l;
+    A.east  = r;
+    calc_size(&A);
 }
-double D_get_d_east(void)
+
+void D_get_grid(int *t, int *b, int *l, int *r)
 {
-    return (D.east);
+    *t = A.north;
+    *b = A.south;
+    *l = A.west;
+    *r = A.east;
 }
-double D_get_d_north(void)
+
+void D_set_dst(double t, double b, double l, double r)
 {
-    return (D.north);
+    D.north = t;
+    D.south = b;
+    D.west  = l;
+    D.east  = r;
+    calc_size(&D);
 }
-double D_get_d_south(void)
+
+/*!
+ * \brief returns frame bounds in destination coordinate system
+ *
+ * D_get_dst() returns the frame bounds in the destination coordinate system
+ * (used by R_* commands).
+ * The various D_setup() commands all set the destination coordinate
+ * system to the current frame reported by R_get_window().
+ *
+ *  \param t top
+ *  \param b bottom
+ *  \param l left
+ *  \param r right
+ *  \return none
+ */
+void D_get_dst(double *t, double *b, double *l, double *r)
 {
-    return (D.south);
+    *t = D.north;
+    *b = D.south;
+    *l = D.west;
+    *r = D.east;
 }
 
 void D_get_u(double x[2][2])
@@ -249,43 +295,108 @@ void D_get_a(int x[2][2])
     x[1][1] = (int)A.south;
 }
 
-void D_get_d(int x[2][2])
+void D_get_d(double x[2][2])
 {
-    x[0][0] = (int)D.west;
-    x[0][1] = (int)D.east;
-    x[1][0] = (int)D.north;
-    x[1][1] = (int)D.south;
+    x[0][0] = D.west;
+    x[0][1] = D.east;
+    x[1][0] = D.north;
+    x[1][1] = D.south;
 }
 
 /*!
- * \brief earth to array (north)
+ * \brief screen to array (y)
  *
  * Returns a <i>row</i> value in the array coordinate system when provided the
- * corresponding <b>north</b> value in the earth coordinate system.
+ * corresponding <b>y</b> value in the screen coordinate system.
  *
- *  \param north
+ *  \param D_row y
  *  \return double
  */
 
-double D_u_to_a_row(double U_row)
+double D_d_to_a_row(double D_row)
 {
-    return (U.north - U_row) / resolution.y;
+    return A.north + (D_row - D.north) * D_to_A_conv.y;
 }
 
 
 /*!
- * \brief earth to array (east
+ * \brief screen to array (x)
  *
  * Returns a <i>column</i> value in the array coordinate system when provided the
- * corresponding <b>east</b> value in the earth coordinate system.
+ * corresponding <b>x</b> value in the screen coordinate system.
  *
- *  \param east
+ *  \param D_col x
  *  \return double
  */
 
-double D_u_to_a_col(double U_col)
+double D_d_to_a_col(double D_col)
 {
-    return (U_col - U.west) / resolution.x;
+    return A.west + (D_col - D.west) * D_to_A_conv.x;
+}
+
+
+/*!
+ * \brief screen to earth (y)
+ *
+ * Returns a <i>north</i> value in the earth coordinate system when provided the
+ * corresponding <b>y</b> value in the screen coordinate system.
+ *
+ *  \param D_row y
+ *  \return double
+ */
+
+double D_d_to_u_row(double D_row)
+{
+    return U.north + (D_row - D.north) / U_to_D_conv.y;
+}
+
+
+/*!
+ * \brief screen to earth (x)
+ *
+ * Returns an <i>east</i> value in the earth coordinate system when provided the
+ * corresponding <b>x</b> value in the screen coordinate system.
+ *
+ *  \param D_col x
+ *  \return double
+ */
+
+double D_d_to_u_col(double D_col)
+{
+    return U.west + (D_col - D.west) / U_to_D_conv.x;
+}
+
+
+/*!
+ * \brief array to earth (row)
+ *
+ * Returns a <i>y</i> value in the earth coordinate system when provided the
+ * corresponding <b>row</b> value in the array coordinate system.
+ *
+ *  \param A_row row
+ *  \return double
+ */
+
+double D_a_to_u_row(double A_row)
+{
+    return U.north + (A_row - A.north) * A_to_U_conv.y;
+}
+
+
+/*!
+ * \brief array to earth (column)
+ *
+ * Returns an <i>x</i> value in the earth coordinate system when
+ * provided the corresponding <b>column</b> value in the array coordinate
+ * system.
+ *
+ *  \param A_col column
+ *  \return double
+ */
+
+double D_a_to_u_col(double A_col)
+{
+    return U.west + (A_col - A.west) * A_to_U_conv.x;
 }
 
 
@@ -295,7 +406,7 @@ double D_u_to_a_col(double U_col)
  * Returns a <i>y</i> value in the screen coordinate system when provided the
  * corresponding <b>row</b> value in the array coordinate system.
  *
- *  \param row
+ *  \param A_row row
  *  \return double
  */
 
@@ -312,7 +423,7 @@ double D_a_to_d_row(double A_row)
  * provided the corresponding <b>column</b> value in the array coordinate
  * system.
  *
- *  \param column
+ *  \param A_col column
  *  \return double
  */
 
@@ -328,13 +439,13 @@ double D_a_to_d_col(double A_col)
  * Returns a <i>y</i> value in the screen coordinate system when provided the
  * corresponding <b>north</b> value in the earth coordinate system.
  *
- *  \param north
+ *  \param U_row north
  *  \return double
  */
 
 double D_u_to_d_row(double U_row)
 {
-    return D.north + (U.north - U_row) * U_to_D_conv.y;
+    return D.north + (U_row - U.north) * U_to_D_conv.y;
 }
 
 
@@ -344,7 +455,7 @@ double D_u_to_d_row(double U_row)
  * Returns an <i>x</i> value in the screen coordinate system when provided the
  * corresponding <b>east</b> value in the earth coordinate system.
  *
- *  \param east
+ *  \param U_col east
  *  \return double
  */
 
@@ -355,64 +466,32 @@ double D_u_to_d_col(double U_col)
 
 
 /*!
- * \brief screen to earth (y)
- *
- * Returns a <i>north</i> value in the earth coordinate system when provided the
- * corresponding <b>y</b> value in the screen coordinate system.
- *
- *  \param y
- *  \return double
- */
-
-double D_d_to_u_row(double D_row)
-{
-    return U.north - (D_row - D.north) / U_to_D_conv.y;
-}
-
-
-/*!
- * \brief screen to earth (x)
- *
- * Returns an <i>east</i> value in the earth coordinate system when provided the
- * corresponding <b>x</b> value in the screen coordinate system.
- *
- *  \param x
- *  \return double
- */
-
-double D_d_to_u_col(double D_col)
-{
-    return U.west + (D_col - D.west) / U_to_D_conv.x;
-}
-
-
-/*!
- * \brief screen to array (y)
+ * \brief earth to array (north)
  *
  * Returns a <i>row</i> value in the array coordinate system when provided the
- * corresponding <b>y</b> value in the screen coordinate system.
+ * corresponding <b>north</b> value in the earth coordinate system.
  *
- *  \param y
+ *  \param U_row north
  *  \return double
  */
 
-double D_d_to_a_row(double D_row)
+double D_u_to_a_row(double U_row)
 {
-    return A.north + (D_row - D.north) * D_to_A_conv.y;
+    return A.north + (U_row - U.north) / A_to_U_conv.y;
 }
 
 
 /*!
- * \brief screen to array (x)
+ * \brief earth to array (east
  *
  * Returns a <i>column</i> value in the array coordinate system when provided the
- * corresponding <b>x</b> value in the screen coordinate system.
+ * corresponding <b>east</b> value in the earth coordinate system.
  *
- *  \param x
+ *  \param U_col east
  *  \return double
  */
 
-double D_d_to_a_col(double D_col)
+double D_u_to_a_col(double U_col)
 {
-    return A.west + (D_col - D.west) * D_to_A_conv.x;
+    return A.west + (U_col - U.west) / A_to_U_conv.x;
 }

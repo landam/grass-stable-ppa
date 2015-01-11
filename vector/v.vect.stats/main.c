@@ -24,7 +24,7 @@
 #include <grass/glocale.h>
 #include <grass/stats.h>
 #include <grass/dbmi.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 
 struct menu
 {
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
     char *p;
     int i, j, k;
     int method, half, use_catno;
-    char *mapset;
+    const char *mapset;
     struct GModule *module;
     struct Option *point_opt,	/* point vector */
      *area_opt,			/* area vector */
@@ -107,8 +107,8 @@ int main(int argc, char *argv[])
     dbDriver *Pdriver, *Adriver;
     char buf[2000];
     int update_ok, update_err;
-    struct ilist *List;
-    BOUND_BOX box;
+    struct boxlist *List;
+    struct bound_box box;
     dbCatValArray cvarr;
     dbColumn *column;
     struct pvalcat
@@ -125,8 +125,12 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, database, attribute table");
-    module->description = _("Count points in areas, calculate statistics.");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("attribute table"));
+    G_add_keyword(_("database"));
+    G_add_keyword(_("univariate statistics"));
+    G_add_keyword(_("zonal statistics"));
+    module->description = _("Count points in areas, calculate statistics from point attributes.");
 
     point_opt = G_define_standard_option(G_OPT_V_INPUT);
     point_opt->key = "points";
@@ -169,7 +173,7 @@ int main(int argc, char *argv[])
     method_opt->options = p;
     method_opt->description = _("Method for aggregate statistics");
 
-    point_column_opt = G_define_standard_option(G_OPT_COLUMN);
+    point_column_opt = G_define_standard_option(G_OPT_DB_COLUMN);
     point_column_opt->key = "pcolumn";
     point_column_opt->required = NO;
     point_column_opt->multiple = NO;
@@ -196,9 +200,6 @@ int main(int argc, char *argv[])
 	_("Column to hold statistics, must be of type double, will be created if not existing");
 
     fs_opt = G_define_standard_option(G_OPT_F_SEP);
-    fs_opt->answer = "|";
-    fs_opt->key_desc = "character|space|tab";
-    fs_opt->description = _("Output field separator");
 
     print_flag = G_define_flag();
     print_flag->key = 'p';
@@ -416,7 +417,7 @@ int main(int argc, char *argv[])
     Points = Vect_new_line_struct();
     ACats = Vect_new_cats_struct();
     PCats = Vect_new_cats_struct();
-    List = Vect_new_list();
+    List = Vect_new_boxlist(0);
 
     /* Allocate space ( may be more than needed (duplicate cats and elements without cats) ) */
     if ((nareas = Vect_get_num_areas(&AIn)) <= 0)
@@ -477,10 +478,6 @@ int main(int argc, char *argv[])
     pvalcats =
 	(struct pvalcat *)G_calloc(npvalcatsalloc, sizeof(struct pvalcat));
 
-    /* remove for GRASS 7 */
-    G_verbose_message(_("creating spatial index"));
-    Vect_build_spatial_index(&PIn);
-
     G_message(_("Selecting points for each area..."));
     count = 0;
     for (area = 1; area <= nareas; area++) {
@@ -505,7 +502,7 @@ int main(int argc, char *argv[])
 	/* For each point in box check if it is in the area */
 	for (i = 0; i < List->n_values; i++) {
 
-	    pline = List->value[i];
+	    pline = List->id[i];
 	    G_debug(4, "%d: point %d", i, pline);
 
 	    ptype = Vect_read_line(&PIn, Points, PCats, pline);
@@ -513,7 +510,7 @@ int main(int argc, char *argv[])
 		continue;
 
 	    /* point in area */
-	    if (Vect_point_in_area(&AIn, area, Points->x[0], Points->y[0])) {
+	    if (Vect_point_in_area(Points->x[0], Points->y[0], &AIn, area, &box)) {
 		AREA_CAT *area_info, search_ai;
 
 		int tmp_cat;

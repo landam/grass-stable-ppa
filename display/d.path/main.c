@@ -23,7 +23,7 @@
 #include <grass/raster.h>
 #include <grass/display.h>
 #include <grass/colors.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 #include "proto.h"
@@ -35,19 +35,19 @@ int main(int argc, char **argv)
     struct Option *color_opt, *hcolor_opt, *bgcolor_opt, *coor_opt;
     struct Flag *geo_f, *bold_f;
     struct GModule *module;
-    char *mapset;
     struct Map_info Map;
     int type, afield, nfield, geo;
     struct color_rgb color, hcolor, bgcolor;
     int r, g, b;
-    int use_mouse;
     double x1, y1, x2, y2;
 
     /* Initialize the GIS calls */
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("display, networking");
+    G_add_keyword(_("display"));
+    G_add_keyword(_("network"));
+    G_add_keyword(_("shortest path"));
     module->description =
 	_("Finds shortest path for selected starting and ending node.");
 
@@ -62,7 +62,7 @@ int main(int argc, char **argv)
     coor_opt->key = "coor";
     coor_opt->key_desc = "x1,y1,x2,y2";
     coor_opt->type = TYPE_STRING;
-    coor_opt->required = NO;
+    coor_opt->required = YES;
     coor_opt->description = _("Starting and ending coordinates");
 
     afield_opt = G_define_standard_option(G_OPT_V_FIELD);
@@ -98,7 +98,7 @@ int main(int argc, char **argv)
     color_opt->type = TYPE_STRING;
     color_opt->answer = DEFAULT_FG_COLOR;
     color_opt->description = _("Original line color");
-    color_opt->gisprompt = GISPROMPT_COLOR;
+    color_opt->gisprompt = "old_color,color,color";
     color_opt->guisection = _("Rendering");
 
     hcolor_opt = G_define_option();
@@ -106,7 +106,7 @@ int main(int argc, char **argv)
     hcolor_opt->type = TYPE_STRING;
     hcolor_opt->answer = "red";
     hcolor_opt->description = _("Highlight color");
-    hcolor_opt->gisprompt = GISPROMPT_COLOR;
+    hcolor_opt->gisprompt = "old_color,color,color";
     hcolor_opt->guisection = _("Rendering");
 
     bgcolor_opt = G_define_option();
@@ -114,7 +114,7 @@ int main(int argc, char **argv)
     bgcolor_opt->type = TYPE_STRING;
     bgcolor_opt->answer = DEFAULT_BG_COLOR;
     bgcolor_opt->description = _("Background color");
-    bgcolor_opt->gisprompt = GISPROMPT_COLOR;
+    bgcolor_opt->gisprompt = "old_color,color,color";
     bgcolor_opt->guisection = _("Rendering");
 
     geo_f = G_define_flag();
@@ -137,27 +137,23 @@ int main(int argc, char **argv)
     nfield = atoi(nfield_opt->answer);
 
 
-    use_mouse = TRUE;
-    if (coor_opt->answer) {
-	if (coor_opt->answers[0] == NULL)
-	    G_fatal_error(_("No coordinates given"));
+    if (coor_opt->answers[0] == NULL)
+	G_fatal_error(_("No coordinates given"));
 
-	if (!G_scan_easting(coor_opt->answers[0], &x1, G_projection()))
-	    G_fatal_error(_("%s - illegal x value"), coor_opt->answers[0]);
-	if (!G_scan_northing(coor_opt->answers[1], &y1, G_projection()))
-	    G_fatal_error(_("%s - illegal y value"), coor_opt->answers[1]);
-	if (!G_scan_easting(coor_opt->answers[2], &x2, G_projection()))
-	    G_fatal_error(_("%s - illegal x value"), coor_opt->answers[2]);
-	if (!G_scan_northing(coor_opt->answers[3], &y2, G_projection()))
-	    G_fatal_error(_("%s - illegal y value"), coor_opt->answers[3]);
-
-	use_mouse = FALSE;
-    }
+    if (!G_scan_easting(coor_opt->answers[0], &x1, G_projection()))
+	G_fatal_error(_("%s - illegal x value"), coor_opt->answers[0]);
+    if (!G_scan_northing(coor_opt->answers[1], &y1, G_projection()))
+	G_fatal_error(_("%s - illegal y value"), coor_opt->answers[1]);
+    if (!G_scan_easting(coor_opt->answers[2], &x2, G_projection()))
+	G_fatal_error(_("%s - illegal x value"), coor_opt->answers[2]);
+    if (!G_scan_northing(coor_opt->answers[3], &y2, G_projection()))
+	G_fatal_error(_("%s - illegal y value"), coor_opt->answers[3]);
 
 
-    if (R_open_driver() != 0)
-	G_fatal_error(_("No graphics device selected"));
-
+    if (D_open_driver() != 0)
+      	G_fatal_error(_("No graphics device selected. "
+			"Use d.mon to select graphics device."));
+    
     color = G_standard_color_rgb(BLACK);
     if (G_str_to_color(color_opt->answer, &r, &g, &b)) {
 	color.r = r;
@@ -187,29 +183,17 @@ int main(int argc, char **argv)
     else
 	geo = 0;
 
-    mapset = G_find_vector2(map->answer, NULL);
-
-    if (mapset == NULL)
-	G_fatal_error(_("Vector map <%s> not found"), map->answer);
-
     Vect_set_open_level(2);
-    Vect_open_old(&Map, map->answer, mapset);
+    Vect_open_old(&Map, map->answer, "");
 
     D_setup(0);
-
-    G_setup_plot(D_get_d_north(), D_get_d_south(),
-		 D_get_d_west(), D_get_d_east(), D_move_abs, D_cont_abs);
 
     Vect_net_build_graph(&Map, type, afield, nfield, afcol->answer,
 			 abcol->answer, ncol->answer, geo, 0);
 
-    if (use_mouse)
-	path(&Map, &color, &hcolor, &bgcolor, bold_f->answer);
-    else
-	coor_path(&Map, &hcolor, bold_f->answer, x1, y1, x2, y2);
+    coor_path(&Map, &hcolor, bold_f->answer, x1, y1, x2, y2);
 
-
-    R_close_driver();
+    D_close_driver();
 
     Vect_close(&Map);
 

@@ -5,18 +5,10 @@
  *
  * AUTHOR(S):    James Darrell McCauley darrell@mccauley-usa.com
  * 	         http://mccauley-usa.com/
+ *               OGR support by Martin Landa <landa.martin gmail.com>
  *
  * PURPOSE:      Randomly generate a 2D/3D GRASS vector points map.
  *
- * COPYRIGHT:    (C) 2003-2007, 2010 by the GRASS Development Team
- *
- *               This program is free software under the
- *               GNU General Public License (>=v2).
- *               Read the file COPYING that comes with GRASS
- *               for details.
- *
-**************************************************************/
-/*
  * Modification History:
  *
  * s.rand v 0.5B <25 Jun 1995> Copyright (c) 1993-1995. James Darrell McCauley
@@ -28,15 +20,23 @@
  * <25 Feb 1995> - cleaned 'gcc -Wall' warnings (jdm)
  * <25 Jun 1995> - new site API (jdm)
  * <13 Sep 2000> - released under GPL
- */
+ *
+ * COPYRIGHT:    (C) 2003-2010 by the GRASS Development Team
+ *
+ *               This program is free software under the GNU General
+ *               Public License (>=v2).  Read the file COPYING that
+ *               comes with GRASS for details.
+ *
+**************************************************************/
 
 #include <stdlib.h>
 #include <math.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <string.h>
+
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 
@@ -56,9 +56,10 @@ double drand48()
 
 int main(int argc, char *argv[])
 {
-    char *output, buf[2000];
+    char *output, buf[DB_SQL_MAX];
     double (*rng) ();
     double max, zmin, zmax;
+    int seed;
     int i, n, b, type, usefloat;
     struct Map_info Out;
     struct line_pnts *Points;
@@ -67,7 +68,7 @@ int main(int argc, char *argv[])
     struct GModule *module;
     struct
     {
-	struct Option *output, *nsites, *zmin, *zmax, *zcol;
+	struct Option *output, *nsites, *zmin, *zmax, *zcol, *ztype, *seed;
     } parm;
     struct
     {
@@ -81,8 +82,11 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, statistics");
-    module->description = _("Randomly generate a 2D/3D vector points map.");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("sampling"));
+    G_add_keyword(_("statistics"));
+    G_add_keyword(_("random"));
+    module->description = _("Generates randomly 2D/3D vector points map.");
 
     parm.output = G_define_standard_option(G_OPT_V_OUTPUT);
 
@@ -109,18 +113,29 @@ int main(int argc, char *argv[])
 	_("Maximum z height (needs -z flag or column name)");
     parm.zmax->answer = "0.0";
     parm.zmax->guisection = _("3D output");
-    
-    parm.zcol = G_define_option();
-    parm.zcol->key = "column";
-    parm.zcol->type = TYPE_STRING;
-    parm.zcol->multiple = NO;
-    parm.zcol->required = NO;
-    parm.zcol->label =
-	_("Column name and type (i.e. INTEGER, DOUBLE PRECISION) for z values");
+
+    parm.seed = G_define_option();
+    parm.seed->key = "seed";
+    parm.seed->type = TYPE_INTEGER;
+    parm.seed->required = NO;
+    parm.seed->description =
+	_("The seed to initialize the random generator. If not set the process id is used.");
+
+    parm.zcol = G_define_standard_option(G_OPT_DB_COLUMN);
+    parm.zcol->label = _("Name of column for z values");
     parm.zcol->description =
-	_("If type is not given then DOUBLE PRECISION is used. "
-	  "Writes Z data to column instead of 3D vector.");
+	_("Writes z values to column");
     parm.zcol->guisection = _("3D output");
+
+    parm.ztype = G_define_option();
+    parm.ztype->key = "column_type";
+    parm.ztype->type = TYPE_STRING;
+    parm.ztype->required = NO;
+    parm.ztype->multiple = NO;
+    parm.ztype->description = _("Type of column for z values");
+    parm.ztype->options = "integer,double precision";
+    parm.ztype->answer = "double precision";
+    parm.ztype->guisection = _("3D output");
 
     flag.z = G_define_flag();
     flag.z->key = 'z';
@@ -131,65 +146,51 @@ int main(int argc, char *argv[])
     flag.drand48->key = 'd';
     flag.drand48->description = _("Use drand48() function instead of rand()");
 
-    flag.notopo = G_define_flag();
-    flag.notopo->key = 'b';
-    flag.notopo->description = _("Do not build topology");
+    flag.notopo = G_define_standard_flag(G_FLG_V_TOPO);
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    if (flag.z->answer && parm.zcol->answer) {
-	G_fatal_error(_("v.random can't create 3D vector and attribute table at same time"));
-    }
-
     output = parm.output->answer;
     n = atoi(parm.nsites->answer);
-    b = (flag.drand48->answer == '\0') ? 0 : 1;
+    b = flag.drand48->answer ? TRUE : FALSE;
+    
+    if(parm.seed->answer)
+        seed = atoi(parm.seed->answer);
 
     if (n <= 0) {
 	G_fatal_error(_("Number of points must be > 0 (%d given)"), n);
     }
 
-    if (flag.z->answer)
-	Vect_open_new(&Out, output, WITH_Z);
-    else
-	Vect_open_new(&Out, output, WITHOUT_Z);
+    /* create new vector map */
+    if (-1 == Vect_open_new(&Out, output, flag.z->answer ? WITH_Z : WITHOUT_Z))
+        G_fatal_error(_("Unable to create vector map <%s>"), output);
+    Vect_set_error_handler_io(NULL, &Out);
 
     /* Do we need to write random values into attribute table? */
     if (parm.zcol->answer) {
-	char **token = G_tokenize(parm.zcol->answer, " ");
-	
 	Fi = Vect_default_field_info(&Out, 1, NULL, GV_1TABLE);
 	driver =
 	    db_start_driver_open_database(Fi->driver,
 					  Vect_subst_var(Fi->database, &Out));
 	if (driver == NULL) {
-	    Vect_delete(parm.output->answer);
 	    G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 			  Vect_subst_var(Fi->database, &Out), Fi->driver);
 	}
+        db_set_error_handler_driver(driver);
+        
 	db_begin_transaction(driver);
 
 	db_init_string(&sql);
-	if (G_number_of_tokens(token) > 1) {
-	    sprintf(buf, "create table %s (cat integer, %s)", Fi->table,
-		    parm.zcol->answer);
-	}
-	else {
-	    G_verbose_message(_("Using 'double precision' for column <%s>"), parm.zcol->answer);
-	    sprintf(buf, "create table %s (cat integer, %s double precision)", Fi->table,
-		    parm.zcol->answer);
-	}
+	sprintf(buf, "create table %s (%s integer, %s %s)", Fi->table, GV_KEY_COLUMN,
+		parm.zcol->answer, parm.ztype->answer);
 	db_set_string(&sql, buf);
-	Vect_map_add_dblink(&Out, 1, NULL, Fi->table, "cat", Fi->database,
+	Vect_map_add_dblink(&Out, 1, NULL, Fi->table, GV_KEY_COLUMN, Fi->database,
 			    Fi->driver);
 
 	/* Create table */
 	G_debug(3, db_get_string(&sql));
 	if (db_execute_immediate(driver, &sql) != DB_OK) {
-	    db_close_database(driver);
-	    db_shutdown_driver(driver);
-	    Vect_delete(parm.output->answer);
 	    G_fatal_error(_("Unable to create table: %s"),
 			  db_get_string(&sql));
 	}
@@ -198,9 +199,6 @@ int main(int argc, char *argv[])
 	if (db_grant_on_table
 	    (driver, Fi->table, DB_PRIV_SELECT,
 	     DB_GROUP | DB_PUBLIC) != DB_OK) {
-	    db_close_database(driver);
-	    db_shutdown_driver(driver);
-	    Vect_delete(parm.output->answer);
 	    G_fatal_error(_("Unable to grant privileges on table <%s>"),
 			  Fi->table);
 	}
@@ -208,16 +206,10 @@ int main(int argc, char *argv[])
 	/* OK. Let's check what type of column user has created */
 	db_set_string(&sql, Fi->table);
 	if (db_describe_table(driver, &sql, &table) != DB_OK) {
-	    db_close_database(driver);
-	    db_shutdown_driver(driver);
-	    Vect_delete(parm.output->answer);
 	    G_fatal_error(_("Unable to describe table <%s>"), Fi->table);
 	}
 
 	if (db_get_table_number_of_columns(table) != 2) {
-	    db_close_database(driver);
-	    db_shutdown_driver(driver);
-	    Vect_delete(parm.output->answer);
 	    G_fatal_error(_("Table should contain only two columns"));
 	}
 
@@ -228,13 +220,9 @@ int main(int argc, char *argv[])
 	if (type == DB_SQL_TYPE_REAL || type == DB_SQL_TYPE_DOUBLE_PRECISION)
 	    usefloat = 1;
 	if (usefloat < 0) {
-	    db_close_database(driver);
-	    db_shutdown_driver(driver);
-	    Vect_delete(parm.output->answer);
 	    G_fatal_error(_("You have created unsupported column type. This module supports only INTEGER"
 			   " and DOUBLE PRECISION column types."));
 	}
-	G_free_tokens(token);
     }
 
     Vect_hist_command(&Out);
@@ -242,13 +230,20 @@ int main(int argc, char *argv[])
     if (b) {
 	rng = drand48;
 	max = 1.0;
-	srand48((long)getpid());
+	/* Init the random seed */
+	if(parm.seed->answer)
+	    srand48((long)seed);
+	else
+	    srand48((long)getpid());
     }
-    else {			/* default is rand() */
-
+    else {  	/* default is rand() */
 	rng = myrand;
 	max = RAND_MAX;
-	srand(getpid());
+	/* Init the random seed */
+	if(parm.seed->answer)
+	    srand(seed);
+	else
+	    srand(getpid());
     }
 
     G_get_window(&window);
@@ -272,17 +267,14 @@ int main(int argc, char *argv[])
 
 	x = rng() / max * (window.west - window.east) + window.east;
 	y = rng() / max * (window.north - window.south) + window.south;
-
-	if (flag.z->answer) {
-	    z = rng() / max * (zmax - zmin) + zmin;
+	z = rng() / max * (zmax - zmin) + zmin;
+        
+	if (flag.z->answer)
 	    Vect_append_point(Points, x, y, z);
-	}
 	else
 	    Vect_append_point(Points, x, y, 0.0);
 
 	if (parm.zcol->answer) {
-	    z = rng() / max * (zmax - zmin) + zmin;
-
 	    sprintf(buf, "insert into %s values ( %d, ", Fi->table, i + 1);
 	    db_set_string(&sql, buf);
 	    /* Round random value if column is integer type */
@@ -294,9 +286,6 @@ int main(int argc, char *argv[])
 
 	    G_debug(3, db_get_string(&sql));
 	    if (db_execute_immediate(driver, &sql) != DB_OK) {
-		db_close_database(driver);
-		db_shutdown_driver(driver);
-		Vect_delete(parm.output->answer);
 		G_fatal_error(_("Cannot insert new row: %s"),
 			      db_get_string(&sql));
 	    }
@@ -305,7 +294,8 @@ int main(int argc, char *argv[])
 	Vect_cat_set(Cats, 1, i + 1);
 	Vect_write_line(&Out, GV_POINT, Points, Cats);
     }
-
+    G_percent(1, 1, 1);
+    
     if (parm.zcol->answer) {
 	db_commit_transaction(driver);
 	db_close_database_shutdown_driver(driver);

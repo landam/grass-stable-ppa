@@ -1,4 +1,3 @@
-
 /****************************************************************************
 *
 * MODULE:       Symbol library 
@@ -14,6 +13,7 @@
 *   	    	for details.
 *
 *****************************************************************************/
+
 #include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
@@ -232,12 +232,13 @@ SYMBOL *err(FILE * fp, SYMBOL * s, char *msg)
  *  S_read() searches first in mapsets (standard GRASS search) and
  *   then in GISBASE/etc/symbol/ 
  */
-SYMBOL *S_read(char *sname)
+SYMBOL *S_read(const char *sname)
 {
     int i, j, k, l;
     FILE *fp;
     char group[500], name[500], buf[2001];
-    char *ms, *c;
+    const char *ms;
+    char *c;
     double x, y, x2, y2, rad, ang1, ang2;
     int r, g, b;
     double fr, fg, fb;

@@ -1,11 +1,13 @@
 #include <stdlib.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "local_proto.h"
 
 
-void rdwr_gridatb()
+void rdwr_gridatb(void)
 {
+    char buf[1024];
     FILE *fp;
     int fd, i, j, retval;
     float idx;
@@ -41,7 +43,7 @@ void rdwr_gridatb()
 	}
     }
 
-    fd = G_open_raster_new(oname, FCELL_TYPE);
+    fd = Rast_open_new(oname, FCELL_TYPE);
 
     cell = (FCELL *) G_malloc(sizeof(FCELL) * cellhd.cols);
 
@@ -52,21 +54,21 @@ void rdwr_gridatb()
 	    idx = 9999.0;
 	    fscanf(fp, "%f", &idx);
 	    if (idx >= 9999.0) {
-		G_set_f_null_value(&(cell[j]), 1);
+		Rast_set_f_null_value(&(cell[j]), 1);
 	    }
 	    else {
 		cell[j] = idx;
 	    }
 	}
-	G_put_f_raster_row(fd, cell);
+	Rast_put_f_row(fd, cell);
     }
     G_percent(i, cellhd.rows, 2);
     if(fp)
 	fclose(fp);
-    G_close_cell(fd);
+    Rast_close(fd);
 
-    G_put_cell_title(oname, buf);
-    G_put_cellhd(oname, &cellhd);
+    Rast_put_cell_title(oname, buf);
+    Rast_put_cellhd(oname, &cellhd);
 
     return;
 }

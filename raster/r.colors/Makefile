@@ -1,18 +1,24 @@
 MODULE_TOPDIR = ../..
 
-PGM = r.colors
+LIBES = $(RASTER3DLIB) $(RASTERLIB) $(GISLIB)
+DEPENDENCIES = $(RASTER3DDEP) $(GISDEP) $(RASTERDEP)
 
-LIBES = $(GISLIB)
-DEPENDENCIES = $(GISDEP)
+PROGRAMS = r.colors r3.colors
 
-include $(MODULE_TOPDIR)/include/Make/Module.make
+r_colors_OBJS = raster_main.o edit_colors.o rules.o stats.o
+r3_colors_OBJS = raster3d_main.o edit_colors.o rules.o stats.o
 
-default: cmd
+include $(MODULE_TOPDIR)/include/Make/Multi.make
 
-# Insert thumbnail previews
-#  Try overriding the default rule with:
-#r.colors.tmp.html: $(HTMLSRC)
-#	$(call htmldesc,$<,$@)
-#	sed 's!^<DD><b>\([a-z0-9.]*\)</b>:!<DD><img width="80" height="12" \
-#		src="Colortable_\1_i.png"><b>\1</b>:!' $@ > $@.tmp
-#	mv -f $@.tmp $@
+default: multi thumbnails
+
+thumbnails: $(BIN)/r.mapcalc$(EXE) $(HTMLDIR)/colortables
+	-$(call run_grass, $(GRASS_HOME)/tools/thumbnails.py)
+
+$(HTMLDIR)/colortables: $(HTMLDIR)
+	$(MKDIR) $@
+
+$(BIN)/r.mapcalc$(EXE):
+	$(MAKE) -C ../r.mapcalc
+
+.PHONY: thumbnails

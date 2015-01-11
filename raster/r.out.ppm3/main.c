@@ -18,6 +18,7 @@
 #include <stdlib.h>
 
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 #define DEF_RED 255
@@ -42,9 +43,7 @@ int main(int argc, char **argv)
     struct band B[3];
     struct GModule *module;
     struct Option *ppm_file;
-
-    /* please, remove before GRASS 7 released */
-    struct Flag *bequiet, *comment;
+    struct Flag *comment;
     struct Cell_head w;
     FILE *fp;
     unsigned char *dummy;
@@ -54,10 +53,9 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, export");
-    module->description =
-	_("Converts 3 GRASS raster layers (R,G,B) to a PPM image file "
-	  "at the pixel resolution of the CURRENTLY DEFINED REGION.");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("export"));
+    module->description = _("Converts 3 GRASS raster layers (R,G,B) to a PPM image file.");
 
     for (i = 0; i < 3; i++) {
 	char buff[80];
@@ -84,11 +82,6 @@ int main(int argc, char **argv)
     ppm_file->description =
 	_("Name for new PPM file. (use out=- for stdout)");
 
-    /* please, remove before GRASS 7 released */
-    bequiet = G_define_flag();
-    bequiet->key = 'q';
-    bequiet->description = _("Run quietly");
-
     comment = G_define_flag();
     comment->key = 'c';
     comment->description = _("Add comments to describe the region");
@@ -96,42 +89,28 @@ int main(int argc, char **argv)
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    /* please, remove before GRASS 7 released */
-    if (bequiet->answer) {
-	putenv("GRASS_VERBOSE=0");
-	G_warning(_("The '-q' flag is superseded and will be removed "
-		    "in future. Please use '--quiet' instead."));
-    }
-
-
     G_get_window(&w);
 
-    G_message(_("rows = %d, cols = %d"), w.rows, w.cols);
+    G_message("%s, %s", _n("row = %d", "rows = %d", w.rows), 
+        _n("col = %d", "cols = %d", w.cols));
 
     /* open raster map for reading */
     for (i = 0; i < 3; i++) {
 	/* Get name of layer */
 	char *name = B[i].opt->answer;
-	char *mapset;
-
-	/* Get mapset of layer */
-	mapset = G_find_cell2(name, "");
-	if (!mapset)
-	    G_fatal_error(_("Raster map <%s> not found"), name);
 
 	/* Open raster map */
-	if ((B[i].file = G_open_cell_old(name, mapset)) == -1)
-	    G_fatal_error(_("Unable to open raster map <%s>"), name);
+	B[i].file = Rast_open_old(name, "");
 
 	/* Get map type (CELL/FCELL/DCELL) */
-	B[i].type = G_get_raster_map_type(B[i].file);
+	B[i].type = Rast_get_map_type(B[i].file);
 
 	/* Get color table */
-	if (G_read_colors(name, mapset, &B[i].colors) == -1)
+	if (Rast_read_colors(name, "", &B[i].colors) == -1)
 	    G_fatal_error(_("Color file for <%s> not available"), name);
 
 	/* Allocate input buffer */
-	B[i].array = G_allocate_raster_buf(B[i].type);
+	B[i].array = Rast_allocate_buf(B[i].type);
 
 	/* Allocate output buffers */
 	B[i].buf = (unsigned char *)G_malloc(w.cols);
@@ -179,10 +158,9 @@ int main(int argc, char **argv)
 	G_percent(row, w.rows, 5);
 
 	for (i = 0; i < 3; i++) {
-	    if (G_get_raster_row(B[i].file, B[i].array, row, B[i].type) < 0)
-		G_fatal_error("G_get_raster_row failed");
+	    Rast_get_row(B[i].file, B[i].array, row, B[i].type);
 
-	    G_lookup_raster_colors(B[i].array,
+	    Rast_lookup_colors(B[i].array,
 				   (i == 0) ? B[i].buf : dummy,
 				   (i == 1) ? B[i].buf : dummy,
 				   (i == 2) ? B[i].buf : dummy,
@@ -207,11 +185,11 @@ int main(int argc, char **argv)
     fclose(fp);
 
     for (i = 0; i < 3; i++) {
-	G_free_colors(&B[i].colors);
+	Rast_free_colors(&B[i].colors);
 	G_free(B[i].array);
 	G_free(B[i].buf);
 	G_free(B[i].mask);
-	G_close_cell(B[i].file);
+	Rast_close(B[i].file);
     }
 
     exit(EXIT_SUCCESS);

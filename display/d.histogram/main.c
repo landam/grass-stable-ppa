@@ -34,25 +34,38 @@
 #include <stdlib.h>
 #include <string.h>
 #include <grass/gis.h>
-#include <grass/display.h>
 #include <grass/raster.h>
+#include <grass/display.h>
 #include <grass/glocale.h>
-#define MAIN
+
 #include "options.h"
 #include "dhist.h"
+
+struct stat_list dist_stats;
+struct Categories cats;
+struct FPRange fp_range;
+int is_fp;
+
+char *map_name;
+int color;
+float size;
+int style;
+int type;
+int is_fp;
+int nodata;
+int nsteps;
+int cat_ranges;
 
 int main(int argc, char **argv)
 {
     int text_height;
     int text_width;
-    char *mapset;
     struct Categories cats;
     struct Range range;
     struct Colors pcolors;
-    int bgcolor;
-    char title[512];
-    int tt, tb, tl, tr;
-    int t, b, l, r;
+    char title[GNAME_MAX];
+    double tt, tb, tl, tr;
+    double t, b, l, r;
     int quiet;
     struct GModule *module;
     struct Option *opt1;
@@ -68,7 +81,9 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("display, histogram, statistics");
+    G_add_keyword(_("display"));
+    G_add_keyword(_("histogram"));
+    G_add_keyword(_("statistics"));
     module->description =
 	_("Displays a histogram in the form of a pie or bar chart "
 	  "for a user-specified raster map.");
@@ -130,7 +145,6 @@ int main(int argc, char **argv)
     map_name = opt1->answer;
 
     color = D_parse_color(opt2->answer, FALSE);
-    bgcolor = D_parse_color(bg_opt->answer, TRUE);
 
     type = COUNT;
 #ifdef CAN_DO_AREAS
@@ -156,50 +170,43 @@ int main(int argc, char **argv)
     nodata = flag1->answer;
     quiet = flag2->answer ? YES : NO;
 
-    /* Make sure map is available */
-    mapset = G_find_cell2(map_name, "");
-    if (mapset == NULL)
-	G_fatal_error(_("Raster map <%s> not found"), map_name);
-
-    if (G_read_colors(map_name, mapset, &pcolors) == -1)
+    if (Rast_read_colors(map_name, "", &pcolors) == -1)
 	G_fatal_error(_("Color file for <%s> not available"), map_name);
 
-    if (G_read_cats(map_name, mapset, &cats) == -1)
+    if (Rast_read_cats(map_name, "", &cats) == -1)
 	G_fatal_error(_("Category file for <%s> not available"), map_name);
 
-    if (G_read_range(map_name, mapset, &range) == -1)
+    if (Rast_read_range(map_name, "", &range) == -1)
 	G_fatal_error(_("Range information for <%s> not available"),
 		      map_name);
 
     /* get the distribution statistics */
 
-    get_stats(map_name, mapset, &dist_stats, quiet);
+    get_stats(map_name, &dist_stats, quiet);
 
     /* set up the graphics driver and initialize its color-table */
 
-    if (R_open_driver() != 0)
-	G_fatal_error(_("No graphics device selected"));
-
-    D_setup(0);			/* 0 = don't clear frame */
-    D_get_screen_window(&t, &b, &l, &r);
+    if (D_open_driver() != 0)
+	G_fatal_error(_("No graphics device selected. "
+			"Use d.mon to select graphics device."));
+    
+    D_setup_unity(0);			/* 0 = don't clear frame */
+    D_get_src(&t, &b, &l, &r);
 
     /* clear the frame, if requested to do so */
-    if (strcmp(bg_opt->answer, "none")) {
-	/*          D_clear_window(); *//* clears d.save history: but also any font setting! */
-	D_raster_use_color(bgcolor);
-	R_box_abs(l, t, r, b);
-    }
+    if (strcmp(bg_opt->answer, "none") != 0)
+	D_erase(bg_opt->answer);
 
     /* draw a title for */
-    sprintf(title, "%s in mapset %s", map_name, mapset);
+    sprintf(title, "%s", map_name);
     text_height = (b - t) * 0.05;
     text_width = (r - l) * 0.05 * 0.50;
-    R_text_size(text_width, text_height);
-    R_get_text_box(title, &tt, &tb, &tl, &tr);
-    R_move_abs((int)(l + (r - l) / 2 - (tr - tl) / 2),
-	       (int)(t + (b - t) * 0.07));
-    D_raster_use_color(color);
-    R_text(title);
+    D_text_size(text_width, text_height);
+    D_get_text_box(title, &tt, &tb, &tl, &tr);
+    D_pos_abs(l + (r - l) / 2 - (tr - tl) / 2,
+	      t + (b - t) * 0.07);
+    D_use_color(color);
+    D_text(title);
 
     /* plot the distributrion statistics */
     if (style == PIE)
@@ -207,9 +214,8 @@ int main(int argc, char **argv)
     else
 	bar(&dist_stats, &pcolors);
 
-    R_flush();
-    D_add_to_list(G_recreate_command());
-    R_close_driver();
+    D_save_command(G_recreate_command());
+    D_close_driver();
 
     exit(EXIT_SUCCESS);
 }

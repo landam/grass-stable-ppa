@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "enforce.h"
 
@@ -27,23 +28,17 @@
 /*
  * update_rast_history - Update a history file.  Some of the digit file 
  * information is placed in the history file.
- * returns  0  -  successful creation of history file
- *         -1  -  error
  */
-int update_rast_history(struct parms *parm)
+void update_rast_history(struct parms *parm)
 {
     struct History hist;
 
     /* write command line to history */
-    G_short_history(parm->outrast->answer, "raster", &hist);
-    sprintf(hist.edhist[0], "%s version %.2f", G_program_name(), APP_VERSION);
-    sprintf(hist.edhist[1], "stream width: %.2f", parm->swidth * 2);
-    G_snprintf(hist.datsrc_1, RECORD_LEN, "raster elevation map: %s",
-		parm->inrast->answer);
-    G_snprintf(hist.datsrc_2, RECORD_LEN, "vector stream map: %s",
-		parm->invect->answer);
-    hist.edlinecnt = 2;
-    G_command_history(&hist);
-
-    return G_write_history(parm->outrast->answer, &hist);
+    Rast_short_history(parm->outrast->answer, "raster", &hist);
+    Rast_append_format_history(&hist, "%s version %.2f", G_program_name(), APP_VERSION);
+    Rast_append_format_history(&hist, "stream width: %.2f", parm->swidth * 2);
+    Rast_format_history(&hist, HIST_DATSRC_1, "raster elevation file: %s", parm->inrast->answer);
+    Rast_format_history(&hist, HIST_DATSRC_2, "vector stream file: %s", parm->invect->answer);
+    Rast_command_history(&hist);
+    Rast_write_history(parm->outrast->answer, &hist);
 }

@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
-<title>GRASS-SQLite driver</title>
+<title>GRASS GIS manual: GRASS-SQLite driver</title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
 <link rel="stylesheet" href="grassdocs.css" type="text/css">
 </head>
@@ -12,6 +12,13 @@
 
 <!-- meta page description: SQLite driver -->
 <h1>SQLite driver in GRASS</h1>
+
+<h2>KEYWORDS</h2>
+database, attribute table, driver
+
+<h2>DESCRIPTION</h2>
+
+The SQLite driver is the default DBMI backend.
 
 <h2>Creating a SQLite database</h2>
 
@@ -28,7 +35,7 @@ is created:
 
 <div class="code"><pre>
 # example for storing DB in mapset directory (keep single quotes):
-db.connect driver=sqlite database='$GISDBASE/$LOCATION_NAME/$MAPSET/sqlite.db'
+db.connect driver=sqlite database='$GISDBASE/$LOCATION_NAME/$MAPSET/sqlite/sqlite.db'
 db.connect -p
 </pre></div>
 
@@ -50,9 +57,10 @@ To open a DB file stored within the current mapset,
 the following way is suggested (corresponds to above database connection):
 
 <div class="code"><pre>
+# fetch GRASS variables as shell environment variables:
 eval `g.gisenv`
 # use double quotes:
-sqlitebrowser "$GISDBASE/$LOCATION_NAME/$MAPSET"/sqlite.db
+sqlitebrowser "$GISDBASE/$LOCATION_NAME/$MAPSET"/sqlite/sqlite.db
 </pre></div>
 
 <!-- doesnt work yet, why?:
@@ -88,11 +96,9 @@ echo "
 </em>
 
 <p>
-<i>Last changed: $Date: 2012-09-07 10:20:29 +0200 (Fri, 07 Sep 2012) $</i>
+<i>Last changed: $Date: 2013-05-27 15:48:46 +0200 (Mon, 27 May 2013) $</i>
 <hr>
-<br>
-<a href="index.html">Main index</a> -
-<a href="database.html">database index</a> -
-<a href="full_index.html">full index</a>
+<p><a href="index.html">Main index</a> - <a href="database.html">Database index</a> - <a href="topics.html">Topics index</a> - <a href="keywords.html">Keywords Index</a> - <a href="full_index.html">Full index</a></p>
+<p>&copy; 2003-2013 <a href="http://grass.osgeo.org">GRASS Development Team</a>, GRASS GIS 7.0.svn Reference Manual</p>
 </body>
 </html>

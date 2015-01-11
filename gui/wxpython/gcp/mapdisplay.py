@@ -23,48 +23,51 @@ from core import globalvar
 import wx
 import wx.aui
 
-from core.render       import EVT_UPDATE_PRGBAR
 from mapdisp.toolbars  import MapToolbar
 from gcp.toolbars      import GCPDisplayToolbar, GCPManToolbar
 from mapdisp.gprint    import PrintOptions
 from core.gcmd         import GMessage
+from core.utils import _
 from gui_core.dialogs  import GetImageHandlers, ImageSizeDialog
-from gui_core.mapdisp  import MapFrameBase
+from gui_core.mapdisp  import SingleMapFrame
 from core.settings     import UserSettings
-from mapdisp.mapwindow import BufferedWindow
+from mapwin.buffered import BufferedMapWindow
+from mapwin.base import MapWindowProperties
 
 import mapdisp.statusbar as sb
+import gcp.statusbar as sbgcp
 
 # for standalone app
 cmdfilename = None
 
-class MapFrame(MapFrameBase):
+class MapFrame(SingleMapFrame):
     """!Main frame for map display window. Drawing takes place in
     child double buffered drawing window.
     """
-    def __init__(self, parent=None, title=_("GRASS GIS Manage Ground Control Points"),
-                 toolbars=["gcpdisp"], tree=None, notebook=None, lmgr=None,
-                 page=None, Map=None, auimgr=None, name = 'GCPMapWindow', **kwargs):
+    def __init__(self, parent, giface,
+                 title=_("GRASS GIS Manage Ground Control Points"),
+                 toolbars=["gcpdisp"], Map=None, auimgr=None,
+                 name='GCPMapWindow', **kwargs):
         """!Main map display window with toolbars, statusbar and
         DrawWindow
 
+        @param giface GRASS interface instance
+        @param title window title
         @param toolbars array of activated toolbars, e.g. ['map', 'digit']
-        @param tree reference to layer tree
-        @param notebook control book ID in Layer Manager
-        @param lmgr Layer Manager
-        @param page notebook page with layer tree
         @param Map instance of render.Map
         @param auimgs AUI manager
         @param kwargs wx.Frame attribures
         """
         
-        MapFrameBase.__init__(self, parent = parent, title = title, toolbars = toolbars,
+        SingleMapFrame.__init__(self, parent = parent, giface = giface, title = title,
                               Map = Map, auimgr = auimgr, name = name, **kwargs)
-        
-        self._layerManager = lmgr   # Layer Manager object
-        self.tree       = tree      # Layer Manager layer tree object
-        self.page       = page      # Notebook page holding the layer tree
-        self.layerbook  = notebook  # Layer Manager layer tree notebook
+
+        self._giface = giface
+        # properties are shared in other objects, so defining here
+        self.mapWindowProperties = MapWindowProperties()
+        self.mapWindowProperties.setValuesFromUserSettings()
+        self.mapWindowProperties.alignExtent = True
+
         #
         # Add toolbars
         #
@@ -91,8 +94,8 @@ class MapFrame(MapFrameBase):
                                sb.SbDisplayGeometry,
                                sb.SbMapScale,
                                sb.SbProjection,
-                               sb.SbGoToGCP,
-                               sb.SbRMSError]
+                               sbgcp.SbGoToGCP,
+                               sbgcp.SbRMSError]
                             
         
         # create statusbar and its manager
@@ -106,37 +109,46 @@ class MapFrame(MapFrameBase):
         self.statusbarManager.AddStatusbarItem(sb.SbRender(self, statusbar = statusbar, position = 3))
         
         self.statusbarManager.SetMode(8) # goto GCP
-        self.statusbarManager.Update()
-        
 
         #
         # Init map display (buffered DC & set default cursor)
         #
         self.grwiz.SwitchEnv('source')
-        self.SrcMapWindow = BufferedWindow(self, id=wx.ID_ANY,
-                                          Map=self.SrcMap, tree=self.tree, lmgr=self._layerManager)
+        self.SrcMapWindow = BufferedMapWindow(parent=self, giface=self._giface, id=wx.ID_ANY,
+                                              properties=self.mapWindowProperties,
+                                              Map=self.SrcMap)
 
         self.grwiz.SwitchEnv('target')
-        self.TgtMapWindow = BufferedWindow(self, id=wx.ID_ANY,
-                                          Map=self.TgtMap, tree=self.tree, lmgr=self._layerManager)
+        self.TgtMapWindow = BufferedMapWindow(parent=self, giface=self._giface, id=wx.ID_ANY,
+                                              properties=self.mapWindowProperties,
+                                              Map=self.TgtMap)
         self.MapWindow = self.SrcMapWindow
         self.Map = self.SrcMap
-        self.SrcMapWindow.SetCursor(self.cursors["cross"])
-        self.TgtMapWindow.SetCursor(self.cursors["cross"])
+        self._setUpMapWindow(self.SrcMapWindow)
+        self._setUpMapWindow(self.TgtMapWindow)
+        self.SrcMapWindow.SetNamedCursor('cross')
+        self.TgtMapWindow.SetNamedCursor('cross')
+        # used to switch current map (combo box in toolbar)
+        self.SrcMapWindow.mouseEntered.connect(
+            lambda:
+            self._setActiveMapWindow(self.SrcMapWindow))
+        self.TgtMapWindow.mouseEntered.connect(
+            lambda:
+            self._setActiveMapWindow(self.TgtMapWindow))
 
         #
         # initialize region values
         #
-        self._initMap(map = self.SrcMap) 
-        self._initMap(map = self.TgtMap) 
+        self._initMap(Map = self.SrcMap) 
+        self._initMap(Map = self.TgtMap) 
+        
+        self.GetMapToolbar().SelectDefault()
 
         #
         # Bind various events
         #
-        self.Bind(wx.EVT_ACTIVATE, self.OnFocus)
-        self.Bind(EVT_UPDATE_PRGBAR, self.OnUpdateProgress)
-        self.Bind(wx.EVT_SIZE,     self.OnDispResize)
         self.activemap.Bind(wx.EVT_CHOICE, self.OnUpdateActive)
+        self.Bind(wx.EVT_SIZE, self.OnSize)
         
         #
         # Update fancy gui style
@@ -203,6 +215,20 @@ class MapFrame(MapFrameBase):
 
         self.decorationDialog = None # decoration/overlays
 
+        # doing nice things in statusbar when other things are ready
+        self.statusbarManager.Update()
+
+    def _setUpMapWindow(self, mapWindow):
+        # TODO: almost the smae implementation as for MapFrameBase (only names differ)
+        # enable or disable zoom history tool
+        mapWindow.zoomHistoryAvailable.connect(
+            lambda:
+            self.GetMapToolbar().Enable('zoomback', enable=True))
+        mapWindow.zoomHistoryUnavailable.connect(
+            lambda:
+            self.GetMapToolbar().Enable('zoomback', enable=False))
+        mapWindow.mouseMoving.connect(self.CoordinatesChanged)
+
     def AddToolbar(self, name):
         """!Add defined toolbar to the window
         
@@ -215,7 +241,7 @@ class MapFrame(MapFrameBase):
         """
         # default toolbar
         if name == "map":
-            self.toolbars['map'] = MapToolbar(self, self.Map)
+            self.toolbars['map'] = MapToolbar(self, self._toolSwitcher)
 
             self._mgr.AddPane(self.toolbars['map'],
                               wx.aui.AuiPaneInfo().
@@ -228,7 +254,7 @@ class MapFrame(MapFrameBase):
 
         # GCP display
         elif name == "gcpdisp":
-            self.toolbars['gcpdisp'] = GCPDisplayToolbar(self)
+            self.toolbars['gcpdisp'] = GCPDisplayToolbar(self, self._toolSwitcher)
 
             self._mgr.AddPane(self.toolbars['gcpdisp'],
                               wx.aui.AuiPaneInfo().
@@ -257,7 +283,7 @@ class MapFrame(MapFrameBase):
         """
         Update progress bar info
         """
-        self.GetProgressBar().SetValue(event.value)
+        self.GetProgressBar().UpdateProgress(event.layer, event.map)
         
         event.Skip()
         
@@ -266,19 +292,13 @@ class MapFrame(MapFrameBase):
         Change choicebook page to match display.
         Or set display for georectifying
         """
-        if self._layerManager and \
-                self._layerManager.gcpmanagement:
-            # in GCP Management, set focus to current MapWindow for mouse actions
-            self.OnPointer(event)
-            self.MapWindow.SetFocus()
-        else:
-            # change bookcontrol page to page associated with display
-            # GCP Manager: use bookcontrol?
-            if self.page:
-                pgnum = self.layerbook.GetPageIndex(self.page)
-                if pgnum > -1:
-                    self.layerbook.SetSelection(pgnum)
-        
+        # was in if layer manager but considering the state it was executed
+        # always, moreover, there is no layer manager dependent code
+
+        # in GCP Management, set focus to current MapWindow for mouse actions
+        self.OnPointer(event)
+        self.MapWindow.SetFocus()
+
         event.Skip()
 
     def OnDraw(self, event):
@@ -291,7 +311,7 @@ class MapFrame(MapFrameBase):
         """
         # FIXME: remove qlayer code or use RemoveQueryLayer() now in mapdisp.frame
         # delete tmp map layers (queries)
-        qlayer = self.Map.GetListOfLayers(l_name=globalvar.QUERYLAYER)
+        qlayer = self.Map.GetListOfLayers(name=globalvar.QUERYLAYER)
         for layer in qlayer:
             self.Map.DeleteLayer(layer)
 
@@ -304,101 +324,27 @@ class MapFrame(MapFrameBase):
 
     def OnPointer(self, event):
         """!Pointer button clicked
-        """
-        self.toolbars['gcpdisp'].OnTool(event)
-        self.toolbars['gcpdisp'].action['desc'] = ''
-
-        # change the cursor
-        self.SrcMapWindow.SetCursor(self.cursors["cross"])
-        self.SrcMapWindow.mouse['use'] = "pointer"
-        self.SrcMapWindow.mouse['box'] = "point"
-        self.TgtMapWindow.SetCursor(self.cursors["cross"])
-        self.TgtMapWindow.mouse['use'] = "pointer"
-        self.TgtMapWindow.mouse['box'] = "point"
+        """        
+        self.SrcMapWindow.SetModePointer()
+        self.TgtMapWindow.SetModePointer()
+        # change the default cursor
+        self.SrcMapWindow.SetNamedCursor('cross')
+        self.TgtMapWindow.SetNamedCursor('cross')
 
     def OnZoomIn(self, event):
-        """
-        Zoom in the map.
-        Set mouse cursor, zoombox attributes, and zoom direction
-        """
-        self.toolbars['gcpdisp'].OnTool(event)
-        self.toolbars['gcpdisp'].action['desc'] = ''
-        
-        self.MapWindow.mouse['use'] = "zoom"
-        self.MapWindow.mouse['box'] = "box"
-        self.MapWindow.zoomtype = 1
-        self.MapWindow.pen = wx.Pen(colour='Red', width=2, style=wx.SHORT_DASH)
-        
-        # change the cursor
-        self.MapWindow.SetCursor(self.cursors["cross"])
-
-        if self.MapWindow == self.SrcMapWindow:
-            win = self.TgtMapWindow
-        elif self.MapWindow == self.TgtMapWindow:
-            win = self.SrcMapWindow
-
-        win.mouse['use'] = "zoom"
-        win.mouse['box'] = "box"
-        win.zoomtype = 1
-        win.pen = wx.Pen(colour='Red', width=2, style=wx.SHORT_DASH)
-        
-        # change the cursor
-        win.SetCursor(self.cursors["cross"])
+        """Zoom in the map."""
+        self.SrcMapWindow.SetModeZoomIn()
+        self.TgtMapWindow.SetModeZoomIn()
 
     def OnZoomOut(self, event):
-        """
-        Zoom out the map.
-        Set mouse cursor, zoombox attributes, and zoom direction
-        """
-        self.toolbars['gcpdisp'].OnTool(event)
-        self.toolbars['gcpdisp'].action['desc'] = ''
-        
-        self.MapWindow.mouse['use'] = "zoom"
-        self.MapWindow.mouse['box'] = "box"
-        self.MapWindow.zoomtype = -1
-        self.MapWindow.pen = wx.Pen(colour='Red', width=2, style=wx.SHORT_DASH)
-        
-        # change the cursor
-        self.MapWindow.SetCursor(self.cursors["cross"])
-
-        if self.MapWindow == self.SrcMapWindow:
-            win = self.TgtMapWindow
-        elif self.MapWindow == self.TgtMapWindow:
-            win = self.SrcMapWindow
-
-        win.mouse['use'] = "zoom"
-        win.mouse['box'] = "box"
-        win.zoomtype = -1
-        win.pen = wx.Pen(colour='Red', width=2, style=wx.SHORT_DASH)
-        
-        # change the cursor
-        win.SetCursor(self.cursors["cross"])
+        """Zoom out the map."""
+        self.SrcMapWindow.SetModeZoomOut()
+        self.TgtMapWindow.SetModeZoomOut()
 
     def OnPan(self, event):
-        """
-        Panning, set mouse to drag
-        """
-        self.toolbars['gcpdisp'].OnTool(event)
-        self.toolbars['gcpdisp'].action['desc'] = ''
-        
-        self.MapWindow.mouse['use'] = "pan"
-        self.MapWindow.mouse['box'] = "pan"
-        self.MapWindow.zoomtype = 0
-        
-        # change the cursor
-        self.MapWindow.SetCursor(self.cursors["hand"])
-
-        if self.MapWindow == self.SrcMapWindow:
-            win = self.TgtMapWindow
-        elif self.MapWindow == self.TgtMapWindow:
-            win = self.SrcMapWindow
-
-        win.mouse['use'] = "pan"
-        win.mouse['box'] = "pan"
-        win.zoomtype = 0
-        
-        # change the cursor
-        win.SetCursor(self.cursors["hand"])
+        """Panning, set mouse to drag"""
+        self.SrcMapWindow.SetModePan()
+        self.TgtMapWindow.SetModePan()
 
     def OnErase(self, event):
         """
@@ -413,25 +359,6 @@ class MapFrame(MapFrameBase):
 
         win.EraseMap()
 
-    def OnZoomRegion(self, event):
-        """
-        Zoom to region
-        """
-        self.Map.getRegion()
-        self.Map.getResolution()
-        self.UpdateMap()
-        # event.Skip()
-
-    def OnAlignRegion(self, event):
-        """
-        Align region
-        """
-        if not self.Map.alignRegion:
-            self.Map.alignRegion = True
-        else:
-            self.Map.alignRegion = False
-        # event.Skip()
-    
     def SaveToFile(self, event):
         """!Save map to image
         """
@@ -498,52 +425,6 @@ class MapFrame(MapFrameBase):
         # will be called before PopupMenu returns.
         self.PopupMenu(printmenu)
         printmenu.Destroy()
-    
-    def FormatDist(self, dist):
-        """!Format length numbers and units in a nice way,
-        as a function of length. From code by Hamish Bowman
-        Grass Development Team 2006"""
-
-        mapunits = self.Map.projinfo['units']
-        if mapunits == 'metres': mapunits = 'meters'
-        outunits = mapunits
-        dist = float(dist)
-        divisor = 1.0
-
-        # figure out which units to use
-        if mapunits == 'meters':
-            if dist > 2500.0:
-                outunits = 'km'
-                divisor = 1000.0
-            else: outunits = 'm'
-        elif mapunits == 'feet':
-            # nano-bug: we match any "feet", but US Survey feet is really
-            #  5279.9894 per statute mile, or 10.6' per 1000 miles. As >1000
-            #  miles the tick markers are rounded to the nearest 10th of a
-            #  mile (528'), the difference in foot flavours is ignored.
-            if dist > 5280.0:
-                outunits = 'miles'
-                divisor = 5280.0
-            else:
-                outunits = 'ft'
-        elif 'degree' in mapunits:
-            if dist < 1:
-                outunits = 'min'
-                divisor = (1/60.0)
-            else:
-                outunits = 'deg'
-
-        # format numbers in a nice way
-        if (dist/divisor) >= 2500.0:
-            outdist = round(dist/divisor)
-        elif (dist/divisor) >= 1000.0:
-            outdist = round(dist/divisor,1)
-        elif (dist/divisor) > 0.0:
-            outdist = round(dist/divisor,int(math.ceil(3-math.log10(dist/divisor))))
-        else:
-            outdist = float(dist/divisor)
-
-        return (outdist, outunits)
 
     def OnZoomToRaster(self, event):
         """!
@@ -555,7 +436,7 @@ class MapFrame(MapFrameBase):
         """!Set display geometry to match extents in
         saved region file
         """
-        self.MapWindow.ZoomToSaved()
+        self.MapWindow.SetRegion(zoomOnly=True)
         
     def OnDisplayToWind(self, event):
         """!Set computational region (WIND file) to match display
@@ -603,19 +484,16 @@ class MapFrame(MapFrameBase):
         
     def IsStandalone(self):
         """!Check if Map display is standalone"""
-        if self._layerManager:
-            return False
-        
+        # we do not know and we do not care, so always False
         return True
     
     def GetLayerManager(self):
         """!Get reference to Layer Manager
 
-        @return window reference
-        @return None (if standalone)
+        @return always None
         """
-        return self._layerManager
-    
+        return None
+
     def GetSrcWindow(self):
         return self.SrcMapWindow
         
@@ -628,3 +506,11 @@ class MapFrame(MapFrameBase):
     def GetMapToolbar(self):
         """!Returns toolbar with zooming tools"""
         return self.toolbars['gcpdisp']
+
+    def _setActiveMapWindow(self, mapWindow):
+        if not self.MapWindow == mapWindow:
+            self.MapWindow = mapWindow
+            self.Map = mapWindow.Map
+            self.UpdateActive(mapWindow)
+            # needed for wingrass
+            self.SetFocus()

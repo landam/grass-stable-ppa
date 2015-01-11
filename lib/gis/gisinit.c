@@ -1,64 +1,60 @@
-
-/**
- * \file gisinit.c
- * 
- * \brief GIS Library - Handles program initialization.
- *
- * (C) 2001-2008 by the GRASS Development Team
- *
- * This program is free software under the GNU General Public License
- * (>=v2). Read the file COPYING that comes with GRASS for details.
- *
- * \author GRASS GIS Development Team
- *
- * \date 2000-2008
- */
+/*!
+  \file lib/gis/gisinit.c
+  
+  \brief GIS Library - Handles program initialization.
+  
+  (C) 2001-2008, 2011 by the GRASS Development Team
+  
+  This program is free software under the GNU General Public License
+  (>=v2). Read the file COPYING that comes with GRASS for details.
+  
+  \author GRASS GIS Development Team
+*/
 
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <locale.h>
 
 #include <grass/gis.h>
-#include "G.h"
 #include <grass/glocale.h>
+
+#include "G.h"
 
 struct G__ G__;
 
 static int initialized = 0; /** Is set when engine is initialized */
 static int gisinit(void);
 
-
-/**
- * \brief Initialize GRASS GIS engine.
- *
- * Initializes GIS engine and ensures a valid mapset is available.
- *
- * \param[in] pgm Program (module) name
- * \return always returns 0 on success
- * \return exit() is called on error
- */
-
-int G__gisinit(const char *version, const char *pgm)
+/*!
+  \brief Initialize GIS Library and ensures a valid mapset is available.
+  
+  \param version
+  \param pgm program (module) name
+  
+  \return always returns 0 on success
+  \return G_fatal_error() is called on error
+*/
+void G__gisinit(const char *version, const char *pgm)
 {
-    char *mapset;
+    const char *mapset;
 
     if (initialized)
-	return 0;
+	return;
 
     G_set_program_name(pgm);
 
     if (strcmp(version, GIS_H_VERSION) != 0)
-	G_fatal_error(_("Module built against version %s but "
-			"trying to use version %s. "
-			"You need to rebuild GRASS GIS or untangle multiple installations."),
-                        version, GIS_H_VERSION);
+	G_fatal_error(_("Incompatible library version for module. "
+			"You need to rebuild GRASS or untangle multiple installations."));
 
     /* Make sure location and mapset are set */
     G_location_path();
-    switch (G__mapset_permissions(mapset = G_mapset())) {
+    mapset = G_mapset();
+    switch (G__mapset_permissions(mapset)) {
     case 1:
 	break;
     case 0:
@@ -70,46 +66,34 @@ int G__gisinit(const char *version, const char *pgm)
     }
 
     gisinit();
-
-    return 0;
 }
 
 
-/**
- * \brief Initialize GRASS GIS engine.
- *
- * Initializes GIS engine, but does not check for a valid mapset.
- *
- * \return always returns 0 on success
- */
-
-int G__no_gisinit(const char *version)
+/*!
+  \brief Initialize GIS Library
+  
+  Initializes GIS engine, but does not check for a valid mapset.
+*/
+void G__no_gisinit(const char *version)
 {
     if (initialized)
-	return 0;
+	return;
 
     if (strcmp(version, GIS_H_VERSION) != 0)
-	G_fatal_error(_("Module built against version %s but "
-			"trying to use version %s. "
-			"You need to rebuild GRASS GIS or untangle multiple installations."),
-                        version, GIS_H_VERSION);
-    gisinit();
+	G_fatal_error(_("Incompatible library version for module. "
+			"You need to rebuild GRASS or untangle multiple installations."));
 
-    return 0;
+    gisinit();
 }
 
 
-/**
- * \brief Checks to see if GIS engine is initialized.
- *
- * \return 1 on success
- * \return exit() is called on error
- */
-
-int G__check_gisinit(void)
+/*!
+  \brief Checks to see if GIS engine is initialized.
+*/
+void G__check_gisinit(void)
 {
     if (initialized)
-	return 1;
+	return;
     G_warning(_("System not initialized. Programmer forgot to call G_gisinit()."));
     G_sleep(3);
     exit(EXIT_FAILURE);
@@ -118,34 +102,39 @@ int G__check_gisinit(void)
 
 static int gisinit(void)
 {
+#ifdef __MINGW32__
+    _fmode = O_BINARY;
+#endif
     /* Mark window as not set */
     G__.window_set = 0;
 
-    /* no histograms */
-    G__.want_histogram = 0;
-
-    /* Set compressed data buffer size to zero */
-    G__.compressed_buf_size = 0;
-    G__.work_buf_size = 0;
-    G__.null_buf_size = 0;
-    G__.mask_buf_size = 0;
-    G__.temp_buf_size = 0;
-    /* mask buf we always want to keep allocated */
-    G__reallocate_mask_buf();
-
-    /* set the write type for floating maps */
-    G__.fp_type = FCELL_TYPE;
-    G__.fp_nbytes = XDR_FLOAT_NBYTES;
-
-    /* Set masking flag unknown */
-    G__.auto_mask = -1;
-
-    /* set architecture dependent bit patterns for embeded null vals */
-    G__init_null_patterns();
+    /* byte order */
+    G__.little_endian = G_is_little_endian();
 
     initialized = 1;
 
     setlocale(LC_NUMERIC, "C");
 
     return 0;
+}
+
+/*!
+  \brief Initialize environment
+*/
+void G_init_all(void)
+{
+    G__check_gisinit();
+    G_init_env();
+    G_init_logging();
+    G__init_window();
+    G_init_locale();
+    G_init_debug();
+    G_verbose();
+    G_init_tempfile();
+    G_get_list_of_mapsets();
+    G__home();
+    G__machine_name();
+    G_whoami();
+    G_read_datum_table();
+    G_read_ellipsoid_table(0);
 }

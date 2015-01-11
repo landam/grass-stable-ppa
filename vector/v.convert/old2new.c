@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 #include "conv.h"
 #include "local_proto.h"
@@ -10,7 +10,7 @@
 int old2new(char *in, char *out, int endian)
 {
     int i, j, nlines, ncats, sline, att;
-    char *mapset;
+    const char *mapset;
     FILE *Digin, *Attin;
     struct Line *lines;		/* array of points and lines */
     struct Categ *cats;		/* array of categories */
@@ -32,7 +32,6 @@ int old2new(char *in, char *out, int endian)
     }
 
     /* open new output file */
-    Vect_set_fatal_error(GV_FATAL_PRINT);
     if (Vect_open_new(&Mapout, out, WITHOUT_Z) < 0) {
 	fclose(Digin);
 	exit(EXIT_FAILURE);

@@ -19,27 +19,37 @@
 #include <string.h>
 #include <locale.h>
 #include <grass/glocale.h>
+#include <grass/gis.h>
 
-
-#if defined(HAVE_LIBINTL_H) && defined(USE_NLS)
-static char *locale_dir(void)
+void G_init_locale(void)
 {
-    static char localedir[4096];
+    static int initialized;
     const char *gisbase;
 
-    if (*localedir)
-	return localedir;
+    if (G_is_initialized(&initialized))
+	return;
+
+    setlocale(LC_CTYPE, "");
+
+#if defined(HAVE_LIBINTL_H) && defined(USE_NLS)
+#ifdef LC_MESSAGES
+    setlocale(LC_MESSAGES, "");
+#endif
 
     gisbase = getenv("GISBASE");
-    if (!gisbase || !*gisbase)
-	return "";
+    if (gisbase && *gisbase) {
+	char localedir[GPATH_MAX];
 
-    strcpy(localedir, gisbase);
-    strcat(localedir, "/locale");
+	strcpy(localedir, gisbase);
+	strcat(localedir, "/locale");
 
-    return localedir;
-}
+	bindtextdomain("grasslibs", localedir);
+	bindtextdomain("grassmods", localedir);
+    }
 #endif
+
+    G_initialize_done(&initialized);
+}
 
 
 /**
@@ -53,22 +63,31 @@ static char *locale_dir(void)
 char *G_gettext(const char *package, const char *msgid)
 {
 #if defined(HAVE_LIBINTL_H) && defined(USE_NLS)
-    static char now_bound[4096];
-    static int initialized;
-
-    if (!initialized) {
-	setlocale(LC_CTYPE, "");
-	setlocale(LC_MESSAGES, "");
-	initialized = 1;
-    }
-
-    if (strcmp(now_bound, package) != 0) {
-	strcpy(now_bound, package);
-	bindtextdomain(package, locale_dir());
-    }
+    G_init_locale();
 
     return dgettext(package, msgid);
 #else
     return (char *)msgid;
+#endif
+}
+
+/**
+ * \brief Gets localized text with correct plural forms.
+ *
+ * \param[in] package
+ * \param[in] msgids A singular version of string
+ * \param[in] msgidp A plural version of string
+ * \param[in] n The number
+ * \retval char * Pointer to string
+ */
+
+char *G_ngettext(const char *package, const char *msgids, const char *msgidp, unsigned long int n)
+{
+#if defined(HAVE_LIBINTL_H) && defined(USE_NLS)
+    G_init_locale();
+
+    return dngettext(package, msgids, msgidp, n);
+#else
+    return n == 1 ? (char *)msgids : (char *)msgidp;
 #endif
 }

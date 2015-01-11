@@ -18,14 +18,29 @@
 #include <stdio.h>
 #include <string.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
+#include <grass/spawn.h>
 
-int write_hist(char *, char *, char *, int, int);
+static void write_hist(char *, char *, char *, int, int);
+
+static const char *new_argv[22];
+static int new_argc;
+
+static void do_opt(const struct Option *opt)
+{
+    char *buf;
+    if (!opt->answer)
+	return;
+    buf = G_malloc(strlen(opt->key) + 1 + strlen(opt->answer) + 1);
+    sprintf(buf, "%s=%s", opt->key, opt->answer);
+    new_argv[new_argc++] = buf;
+}
 
 int main(int argc, char *argv[])
 {
+    char command[GPATH_MAX];
     int err, ret;
-    char command[512];
     struct Option *opt1;
     struct Option *opt2;
     struct Option *opt3;
@@ -43,146 +58,150 @@ int main(int argc, char *argv[])
     struct Option *opt15;
     struct Option *opt16;
     struct Option *opt17;
-    struct Flag *flag_mfd;
+    struct Flag *flag_sfd;
     struct Flag *flag_flow;
     struct Flag *flag_seg;
     struct Flag *flag_abs;
+    struct Flag *flag_flat;
     struct GModule *module;
 
     G_gisinit(argv[0]);
 
     /* Set description */
     module = G_define_module();
-    module->keywords = _("raster, hydrology");
-    module->description = _("Watershed basin analysis program.");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("hydrology"));
+    G_add_keyword(_("watershed"));
+    module->description = _("Calculates hydrological parameters and RUSLE factors.");
 
     opt1 = G_define_standard_option(G_OPT_R_ELEV);
-    opt1->description =
-	_("Input map: elevation on which entire analysis is based");
-    opt1->guisection = _("Input_options");
+    opt1->guisection = _("Inputs");
 
     opt2 = G_define_standard_option(G_OPT_R_INPUT);
     opt2->key = "depression";
-    opt2->description = _("Input map: locations of real depressions");
+    opt2->label = _("Name of input depressions raster map");
+    opt2->description = _("All non-NULL and non-zero cells are considered as real depressions");
     opt2->required = NO;
-    opt2->guisection = _("Input_options");
+    opt2->guisection = _("Inputs");
 
     opt3 = G_define_standard_option(G_OPT_R_INPUT);
     opt3->key = "flow";
-    opt3->description = _("Input map: amount of overland flow per cell");
+    opt3->description = _("Name of input raster representing amount of overland flow per cell");
     opt3->required = NO;
-    opt3->guisection = _("Input_options");
+    opt3->guisection = _("Inputs");
 
-    opt4 = G_define_option();
-    opt4->key = "disturbed.land";
-    opt4->description =
-	_("Input map or value: percent of disturbed land, for USLE");
+    opt4 = G_define_standard_option(G_OPT_R_INPUT);
+    opt4->key = "disturbed_land";
+    opt4->label = _("Name of input raster map percent of disturbed land");
+    opt4->description = _("For USLE");
     opt4->required = NO;
-    opt4->type = TYPE_STRING;
-    opt4->gisprompt = "old,cell,raster";
-    opt4->guisection = _("Input_options");
+    opt4->guisection = _("Inputs");
 
     opt5 = G_define_standard_option(G_OPT_R_INPUT);
     opt5->key = "blocking";
     opt5->label =
 	_("Name of input raster map blocking overland surface flow");
     opt5->description =
-	_("Input map: terrain blocking overland surface flow, for USLE");
+	_("For USLE. All non-NULL and non-zero cells are considered as blocking terrain.");
     opt5->required = NO;
-    opt5->guisection = _("Input_options");
-
-    opt8 = G_define_standard_option(G_OPT_R_OUTPUT);
-    opt8->key = "accumulation";
-    opt8->label = _("Name for output accumulation raster map");
-    opt8->description =
-	_("Output map: number of cells that drain through each cell");
-    opt8->required = NO;
-    opt8->guisection = _("Output_options");
-
-    opt9 = G_define_standard_option(G_OPT_R_OUTPUT);
-    opt9->key = "drainage";
-    opt9->description = _("Output map: drainage direction");
-    opt9->required = NO;
-    opt9->guisection = _("Output_options");
-
-    opt10 = G_define_standard_option(G_OPT_R_OUTPUT);
-    opt10->key = "basin";
-    opt10->description =
-	_("Output map: basins raster map");
-    opt10->required = NO;
-    opt10->guisection = _("Output_options");
-
-    opt11 = G_define_standard_option(G_OPT_R_OUTPUT);
-    opt11->key = "stream";
-    opt11->description = _("Output map: stream segments");
-    opt11->required = NO;
-    opt11->guisection = _("Output_options");
-
-    opt12 = G_define_standard_option(G_OPT_R_OUTPUT);
-    opt12->key = "half.basin";
-    opt12->description =
-	_("Output map: half basins raster map");
-    opt12->required = NO;
-    opt12->guisection = _("Output_options");
-
-    opt13 = G_define_standard_option(G_OPT_R_OUTPUT);
-    opt13->key = "visual";
-    opt13->description =
-	_("Output map: useful for visual display of results");
-    opt13->required = NO;
-    opt13->guisection = _("Output_options");
-
-    opt14 = G_define_standard_option(G_OPT_R_OUTPUT);
-    opt14->key = "length.slope";
-    opt14->label = _("Name for output slope length raster map");
-    opt14->description =
-	_("Output map: slope length and steepness (LS) factor for USLE");
-    opt14->required = NO;
-    opt14->guisection = _("Output_options");
-
-    opt15 = G_define_standard_option(G_OPT_R_OUTPUT);
-    opt15->key = "slope.steepness";
-    opt15->label = _("Name for output slope steepness raster map");
-    opt15->description = _("Output map: Slope steepness (S) factor for USLE");
-    opt15->required = NO;
-    opt15->guisection = _("Output_options");
+    opt5->guisection = _("Inputs");
 
     opt6 = G_define_option();
     opt6->key = "threshold";
     opt6->description =
-	_("Input value: minimum size of exterior watershed basin");
+	_("Minimum size of exterior watershed basin");
     opt6->required = NO;
     opt6->type = TYPE_INTEGER;
-    opt6->guisection = _("Input_options");
+    opt6->guisection = _("Inputs");
 
     opt7 = G_define_option();
-    opt7->key = "max.slope.length";
-    opt7->description =
-	_("Input value: maximum length of surface flow, for USLE");
+    opt7->key = "max_slope_length";
+    opt7->label =
+	_("Maximum length of surface flow in map units");
+    opt7->description = _("For USLE");
     opt7->required = NO;
     opt7->type = TYPE_DOUBLE;
-    opt7->guisection = _("Input_options");
+    opt7->guisection = _("Inputs");
 
-    opt16 = G_define_option();
-    opt16->key = "convergence";
-    opt16->type = TYPE_INTEGER;
-    opt16->required = NO;
-    opt16->answer = "5";
-    opt16->label = _("Convergence factor for MFD (1-10)");
-    opt16->description =
+    opt8 = G_define_standard_option(G_OPT_R_OUTPUT);
+    opt8->key = "accumulation";
+    opt8->label =
+	_("Name for output accumulation raster map");
+    opt8->description =
+    _("Number of cells that drain through each cell");
+    opt8->required = NO;
+    opt8->guisection = _("Outputs");
+
+    opt17 = G_define_standard_option(G_OPT_R_OUTPUT);
+    opt17->key = "tci";
+    opt17->label =
+	_("Topographic index ln(a / tan(b))");
+    opt17->required = NO;
+    opt17->guisection = _("Outputs");
+
+    opt9 = G_define_standard_option(G_OPT_R_OUTPUT);
+    opt9->key = "drainage";
+    opt9->description = _("Name for output drainage direction raster map");
+    opt9->required = NO;
+    opt9->guisection = _("Outputs");
+
+    opt10 = G_define_standard_option(G_OPT_R_OUTPUT);
+    opt10->key = "basin";
+    opt10->description =
+	_("Name for basins raster map");
+    opt10->description = _("Unique label for each watershed basin");
+    opt10->required = NO;
+    opt10->guisection = _("Outputs");
+
+    opt11 = G_define_standard_option(G_OPT_R_OUTPUT);
+    opt11->key = "stream";
+    opt11->description = _("Name for output stream segments raster map");
+    opt11->required = NO;
+    opt11->guisection = _("Outputs");
+
+    opt12 = G_define_standard_option(G_OPT_R_OUTPUT);
+    opt12->key = "half_basin";
+    opt12->label = _("Name for output half basins raster map");
+    opt12->description =
+	_("Each half-basin is given a unique value");
+    opt12->required = NO;
+    opt12->guisection = _("Outputs");
+
+    opt13 = G_define_standard_option(G_OPT_R_OUTPUT);
+    opt13->key = "length_slope";
+    opt13->label = _("Name for output slope length raster map");
+    opt13->description =
+	_("Slope length and steepness (LS) factor for USLE");
+    opt13->required = NO;
+    opt13->guisection = _("Outputs");
+
+    opt14 = G_define_standard_option(G_OPT_R_OUTPUT);
+    opt14->key = "slope_steepness";
+    opt14->label = _("Name for output slope steepness raster map");
+    opt14->description = _("Slope steepness (S) factor for USLE");
+    opt14->required = NO;
+    opt14->guisection = _("Outputs");
+
+    opt15 = G_define_option();
+    opt15->key = "convergence";
+    opt15->type = TYPE_INTEGER;
+    opt15->required = NO;
+    opt15->answer = "5";
+    opt15->label = _("Convergence factor for MFD (1-10)");
+    opt15->description =
 	_("1 = most diverging flow, 10 = most converging flow. Recommended: 5");
 
-    opt17 = G_define_option();
-    opt17->key = "memory";
-    opt17->type = TYPE_INTEGER;
-    opt17->required = NO;
-    opt17->answer = "300";	/* 300MB default value, please keep in sync with r.terraflow */
-    opt17->description = _("Maximum memory to be used with -m flag (in MB)");
+    opt16 = G_define_option();
+    opt16->key = "memory";
+    opt16->type = TYPE_INTEGER;
+    opt16->required = NO;
+    opt16->answer = "300";	/* 300MB default value, please keep r.terraflow in sync */
+    opt16->description = _("Maximum memory to be used with -m flag (in MB)");
 
-    flag_mfd = G_define_flag();
-    flag_mfd->key = 'f';
-    flag_mfd->label = _("Enable MFD flow (default is SFD (D8))");
-    flag_mfd->description =
+    flag_sfd = G_define_flag();
+    flag_sfd->key = 's';
+    flag_sfd->label = _("SFD (D8) flow (default is MFD)");
+    flag_sfd->description =
 	_("SFD: single flow direction, MFD: multiple flow direction");
 
     flag_flow = G_define_flag();
@@ -204,6 +223,13 @@ int main(int argc, char *argv[])
     flag_abs->description =
 	_("See manual for a detailed description of flow accumulation output");
 
+    flag_flat = G_define_flag();
+    flag_flat->key = 'b';
+    flag_flat->label =
+	_("Beautify flat areas");
+    flag_flat->description =
+	_("Flow direction in flat areas is modified to look prettier");
+
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
@@ -216,10 +242,15 @@ int main(int argc, char *argv[])
 	&& (opt10->answer == NULL)
 	&& (opt11->answer == NULL)
 	&& (opt12->answer == NULL)
-	&& (opt13->answer == NULL)
 	&& (opt14->answer == NULL)
 	&& (opt15->answer == NULL)) {
 	G_fatal_error(_("Sorry, you must choose an output map."));
+    }
+
+    /* basin threshold */
+    if (opt6->answer) {
+	if (atoi(opt6->answer) <= 0)
+	    G_fatal_error(_("The basin threshold must be a positive number."));
     }
 
     err = 0;
@@ -227,16 +258,16 @@ int main(int argc, char *argv[])
     err += (opt10->answer != NULL && opt6->answer == NULL);
     /* stream and basin threshold */
     err += (opt11->answer != NULL && opt6->answer == NULL);
-    /* half.basin and basin threshold */
+    /* half_basin and basin threshold */
     err += (opt12->answer != NULL && opt6->answer == NULL);
     /* LS factor and basin threshold */
-    err += (opt14->answer != NULL && opt6->answer == NULL);
+    err += (opt13->answer != NULL && opt6->answer == NULL);
     /* S factor and basin threshold */
-    err += (opt15->answer != NULL && opt6->answer == NULL);
+    err += (opt14->answer != NULL && opt6->answer == NULL);
 
     if (err) {
 	G_message(_("Sorry, if any of the following options are set:\n"
-		    "    basin, stream, half.basin, length.slope, or slope.steepness\n"
+		    "    basin, stream, half_basin, length_slope, or slope_steepness\n"
 		    "    you MUST provide a value for the basin "
 		    "threshold parameter."));
 	G_usage();
@@ -244,150 +275,49 @@ int main(int argc, char *argv[])
     }
 
     /* Build command line */
-#ifdef __MINGW32__
-    sprintf(command, "\"\"%s/etc/", G_gisbase());
-#else
-    sprintf(command, "%s/etc/", G_gisbase());
-#endif
+    sprintf(command, "%s/etc/r.watershed/%s",
+	    G_gisbase(),
+	    flag_seg->answer ? "seg" : "ram");
+    new_argv[new_argc++] = command;
 
-    if (flag_seg->answer)
-	strcat(command, "r.watershed.seg");
-    else
-	strcat(command, "r.watershed.ram");
-
-#ifdef __MINGW32__
-    strcat(command, "\"");
-#endif
-
-    if (!flag_mfd->answer) {
-	strcat(command, " -s");
-    }
+    if (flag_sfd->answer)
+	new_argv[new_argc++] = "-s";
 
     if (flag_flow->answer)
-	strcat(command, " -4");
+	new_argv[new_argc++] = "-4";
 
     if (flag_abs->answer)
-	strcat(command, " -a");
+	new_argv[new_argc++] = "-a";
 
-    if (opt1->answer) {
-	strcat(command, " el=");
-	strcat(command, "\"");
-	strcat(command, opt1->answer);
-	strcat(command, "\"");
-    }
+    if (flag_flat->answer && !flag_seg->answer)
+	new_argv[new_argc++] = "-b";
 
-    if (opt2->answer) {
-	strcat(command, " de=");
-	strcat(command, "\"");
-	strcat(command, opt2->answer);
-	strcat(command, "\"");
-    }
+    if (flag_flat->answer && flag_seg->answer)
+	G_message(_("Beautify flat areas is not yet supported for disk swap mode"));
 
-    if (opt3->answer) {
-	strcat(command, " ov=");
-	strcat(command, "\"");
-	strcat(command, opt3->answer);
-	strcat(command, "\"");
-    }
-
-    if (opt4->answer) {
-	strcat(command, " r=");
-	strcat(command, "\"");
-	strcat(command, opt4->answer);
-	strcat(command, "\"");
-    }
-
-    if (opt5->answer) {
-	strcat(command, " ob=");
-	strcat(command, "\"");
-	strcat(command, opt5->answer);
-	strcat(command, "\"");
-    }
-
-    if (opt6->answer) {
-	strcat(command, " t=");
-	strcat(command, opt6->answer);
-    }
-
-    if (opt7->answer) {
-	strcat(command, " ms=");
-	strcat(command, opt7->answer);
-    }
-
-    if (opt8->answer) {
-	strcat(command, " ac=");
-	strcat(command, "\"");
-	strcat(command, opt8->answer);
-	strcat(command, "\"");
-    }
-
-    if (opt9->answer) {
-	strcat(command, " dr=");
-	strcat(command, "\"");
-	strcat(command, opt9->answer);
-	strcat(command, "\"");
-    }
-
-    if (opt10->answer) {
-	strcat(command, " ba=");
-	strcat(command, "\"");
-	strcat(command, opt10->answer);
-	strcat(command, "\"");
-    }
-
-    if (opt11->answer) {
-	strcat(command, " se=");
-	strcat(command, "\"");
-	strcat(command, opt11->answer);
-	strcat(command, "\"");
-    }
-
-    if (opt12->answer) {
-	strcat(command, " ha=");
-	strcat(command, "\"");
-	strcat(command, opt12->answer);
-	strcat(command, "\"");
-    }
-
-    if (opt13->answer) {
-	strcat(command, " di=");
-	strcat(command, "\"");
-	strcat(command, opt13->answer);
-	strcat(command, "\"");
-    }
-
-    if (opt14->answer) {
-	strcat(command, " LS=");
-	strcat(command, "\"");
-	strcat(command, opt14->answer);
-	strcat(command, "\"");
-    }
-
-    if (opt15->answer) {
-	strcat(command, " S=");
-	strcat(command, "\"");
-	strcat(command, opt15->answer);
-	strcat(command, "\"");
-    }
-
-    if (flag_mfd->answer && opt16->answer) {
-	strcat(command, " conv=");
-	strcat(command, opt16->answer);
-    }
-
-    if (flag_seg->answer && opt17->answer) {
-	strcat(command, " mb=");
-	strcat(command, opt17->answer);
-    }
-
-#ifdef __MINGW32__
-    strcat(command, "\"");
-#endif
+    do_opt(opt1);
+    do_opt(opt2);
+    do_opt(opt3);
+    do_opt(opt4);
+    do_opt(opt5);
+    do_opt(opt6);
+    do_opt(opt7);
+    do_opt(opt8);
+    do_opt(opt17);
+    do_opt(opt9);
+    do_opt(opt10);
+    do_opt(opt11);
+    do_opt(opt12);
+    do_opt(opt13);
+    do_opt(opt14);
+    do_opt(opt15);
+    if (flag_seg->answer)
+	do_opt(opt16);
+    new_argv[new_argc++] = NULL;
 
     G_debug(1, "Mode: %s", flag_seg->answer ? "Segmented" : "All in RAM");
-    G_debug(1, "Running: %s", command);
 
-    ret = system(command);
+    ret = G_vspawn_ex(new_argv[0], new_argv);
 
     if (ret != EXIT_SUCCESS)
 	G_warning(_("Subprocess failed with exit code %d"), ret);
@@ -396,55 +326,53 @@ int main(int argc, char *argv[])
     if (opt8->answer)
 	write_hist(opt8->answer,
 		   "Watershed accumulation: overland flow that traverses each cell",
-		   opt1->answer, flag_seg->answer, flag_mfd->answer);
+		   opt1->answer, flag_seg->answer, flag_sfd->answer);
+    if (opt17->answer)
+	write_hist(opt17->answer,
+		   "Watershed accumulation: topographic index ln(a / tan b)",
+		   opt1->answer, flag_seg->answer, flag_sfd->answer);
     if (opt9->answer)
 	write_hist(opt9->answer,
-		   "Watershed drainage direction (divided by 45deg)",
-		   opt1->answer, flag_seg->answer, flag_mfd->answer);
+		   "Watershed drainage direction (CCW from East divided by 45deg)",
+		   opt1->answer, flag_seg->answer, flag_sfd->answer);
     if (opt10->answer)
 	write_hist(opt10->answer,
 		   "Watershed basins", opt1->answer, flag_seg->answer, 
-		   flag_mfd->answer);
+		   flag_sfd->answer);
     if (opt11->answer)
 	write_hist(opt11->answer,
 		   "Watershed stream segments", opt1->answer,
-		   flag_seg->answer, flag_mfd->answer);
+		   flag_seg->answer, flag_sfd->answer);
     if (opt12->answer)
 	write_hist(opt12->answer,
 		   "Watershed half-basins", opt1->answer, flag_seg->answer, 
-		   flag_mfd->answer);
+		   flag_sfd->answer);
     if (opt13->answer)
 	write_hist(opt13->answer,
-		   "Watershed visualization map (filtered accumulation map)",
-		   opt1->answer, flag_seg->answer, flag_mfd->answer);
+		   "Watershed slope length and steepness (LS) factor",
+		   opt1->answer, flag_seg->answer, flag_sfd->answer);
     if (opt14->answer)
 	write_hist(opt14->answer,
-		   "Watershed slope length and steepness (LS) factor",
-		   opt1->answer, flag_seg->answer, flag_mfd->answer);
-    if (opt15->answer)
-	write_hist(opt15->answer,
 		   "Watershed slope steepness (S) factor",
-		   opt1->answer, flag_seg->answer, flag_mfd->answer);
+		   opt1->answer, flag_seg->answer, flag_sfd->answer);
 
     exit(ret);
 }
 
 /* record map history info */
-int write_hist(char *map_name, char *title, char *source_name, int mode, int mfd)
+static void write_hist(char *map_name, char *title, char *source_name, int mode, int sfd)
 {
     struct History history;
 
-    G_put_cell_title(map_name, title);
+    Rast_put_cell_title(map_name, title);
 
-    G_short_history(map_name, "raster", &history);
-    strncpy(history.datsrc_1, source_name, RECORD_LEN);
-    history.datsrc_1[RECORD_LEN - 1] = '\0';	/* strncpy() doesn't null terminate if maxfill */
-    sprintf(history.edhist[0],
-	    "Processing mode: %s", mfd ? "MFD" : "SFD (D8)");
-    sprintf(history.edhist[1],
-	    "Memory mode: %s", mode ? "Segmented" : "All in RAM");
-    history.edlinecnt = 2;
-    G_command_history(&history);
+    Rast_short_history(map_name, "raster", &history);
+    Rast_set_history(&history, HIST_DATSRC_1, source_name);
+    Rast_append_format_history(
+	&history, "Processing mode: %s", sfd ? "SFD (D8)" : "MFD");
+    Rast_append_format_history(
+	&history, "Memory mode: %s", mode ? "Segmented" : "All in RAM");
+    Rast_command_history(&history);
 
-    return G_write_history(map_name, &history);
+    Rast_write_history(map_name, &history);
 }

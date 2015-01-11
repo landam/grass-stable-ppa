@@ -26,7 +26,7 @@ DOXYFILE_ENCODING      = UTF-8
 # identify the project. Note that if you do not use Doxywizard you need
 # to put quotes around the project name if it contains spaces.
 
-PROJECT_NAME           = "GRASS Programmer's Manual"
+PROJECT_NAME           = "GRASS GIS 7 Programmer's Manual"
 
 # The PROJECT_NUMBER tag can be used to enter a project or revision number.
 # This could be handy for archiving the generated documentation or
@@ -193,7 +193,7 @@ TAB_SIZE               = 8
 # will result in a user-defined paragraph with heading "Side Effects:".
 # You can put \n's in the value part of an alias to insert newlines.
 
-ALIASES                =
+ALIASES += gmod{1}="<a href='http://grass.osgeo.org/grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@/manuals/\1.html'><tt>\1</tt></a>"
 
 # This tag can be used to specify a number of word-keyword mappings (TCL only).
 # A mapping has the form "name=value". For example adding
@@ -705,14 +705,14 @@ EXCLUDE                = bin.@ARCH@ \
                          gui/wxpython/scripts \
                          gui/wxpython/tools \
                          imagery \
-                         include \
+                         include/defs \
                          lib/btree/test \
                          lib/db/dbmi_base/test \
                          lib/db/sqlp/test \
                          lib/gmath/test \
                          lib/gpde/test \
                          lib/linkm/test \
-                         lib/g3d/test \
+                         lib/raster3d/test \
                          lib/python/ctypes \
                          lib/vector/dglib/examples \
                          lib/vector/rtree/docs \
@@ -727,6 +727,7 @@ EXCLUDE                = bin.@ARCH@ \
                          rpm \
                          scripts \
                          sites \
+                         temporal \
                          testsuite \
                          tools \
                          vector \
@@ -744,7 +745,18 @@ EXCLUDE_SYMLINKS       = NO
 # against the file with absolute path, so to exclude all test directories
 # for example use the pattern */test/*
 
-EXCLUDE_PATTERNS       =
+EXCLUDE_PATTERNS       = */test/* \
+                         */tests/* \
+                         */unit_test/* \
+                         */unit_tests/* \
+                         */unit_test* \
+                         */unit_tests* \
+                         */test_suite/* \
+                         */testsuite/* \
+                         */test_* \
+                         */test.* \
+                         */*local_proto.h \
+                         */g.gui.*.py
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the

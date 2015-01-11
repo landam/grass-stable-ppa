@@ -14,32 +14,41 @@ This program is free software under the GNU General Public License
 @author Anna Kratochvilova <kratochanna gmail.com>
 """
 
-import os
 import sys
 
 import wx
 
 from core              import globalvar
+from core.utils import _
 from gui_core.toolbars import BaseToolbar, BaseIcons
 from icons.icon        import MetaIcon
 
 class PsMapToolbar(BaseToolbar):
-    def __init__(self, parent):
+    def __init__(self, parent, toolSwitcher):
         """!Toolbar Cartographic Composer (psmap.py)
         
         @param parent parent window
         """
-        BaseToolbar.__init__(self, parent)
+        BaseToolbar.__init__(self, parent, toolSwitcher)
         
         self.InitToolbar(self._toolbarData())
+        self._default = self.pointer
         
+        for tool in (self.pointer, self.pan, self.zoomin, self.zoomout,
+                     self.drawGraphics, self.addMap):
+            self.toolSwitcher.AddToolToGroup(group='mouseUse', toolbar=self, tool=tool)
+
+        # custom button for graphics mode selection
+        # TODO: could this be somehow generalized?
+        self.arrowButton = self.CreateSelectionButton()
+        self.arrowButtonId = self.InsertControl(18, self.arrowButton)
+        self.arrowButton.Bind(wx.EVT_BUTTON, self.OnDrawGraphicsMenu)
+
+        self.drawGraphicsAction = None
+        self.OnAddPoint(event = None)
+
         self.Realize()
-        
-        self.action = { 'id' : self.pointer }
-        self.defaultAction = { 'id' : self.pointer,
-                               'bind' : self.parent.OnPointer }
-        self.OnTool(None)
-        
+
         from psmap.frame import havePILImage
         if not havePILImage:
             self.EnableTool(self.preview, False)
@@ -83,14 +92,16 @@ class PsMapToolbar(BaseToolbar):
                                     label = _('Image')),
             'addNorthArrow': MetaIcon(img = 'north-arrow-add',
                                       label = _('North Arrow')),
-            'drawGraphics': MetaIcon(img = 'edit',
-                                     label = _('Add simple graphics')),
             'pointAdd'    : MetaIcon(img = 'point-add',
                                      label = _('Point')),
             'lineAdd'     : MetaIcon(img = 'line-add',
                                      label = _('Line')),
             'rectangleAdd': MetaIcon(img = 'rectangle-add',
                                      label = _('Rectangle')),
+            'overlaysAdd': MetaIcon(img = 'layer-more',
+                                    label = _("Add overlays")),
+            'labelsAdd': MetaIcon(img = 'layer-label-add',
+                                    label = _("Add labels"))
             }
         self.icons = icons
         
@@ -119,12 +130,14 @@ class PsMapToolbar(BaseToolbar):
                                       self.parent.OnAddRaster),
                                      ('addVector', BaseIcons['addVect'],
                                       self.parent.OnAddVect),
-                                     ("dec", BaseIcons["overlay"],
-                                      self.OnDecoration),
-                                     ("drawGraphics", icons["drawGraphics"],
-                                      self.OnDrawGraphics, wx.ITEM_CHECK),
+                                     ('overlaysAdd', icons['overlaysAdd'],
+                                      self.OnAddOverlays), 
                                      ("delete", icons["deleteObj"],
                                       self.parent.OnDelete),
+                                     ("dec", BaseIcons["overlay"],
+                                      self.OnDecoration),
+                                     ("drawGraphics", icons['pointAdd'],
+                                      self.OnDrawGraphics, wx.ITEM_CHECK),
                                      (None, ),
                                      ("preview", icons["preview"],
                                       self.parent.OnPreview),
@@ -149,14 +162,59 @@ class PsMapToolbar(BaseToolbar):
                       (self.icons["addImage"],      self.parent.OnAddImage),
                       (self.icons["addNorthArrow"], self.parent.OnAddNorthArrow)))
 
+    def OnAddOverlays(self, event):
+        self._onMenu(((self.icons['labelsAdd'], self.parent.OnAddLabels), ))
+
     def OnDrawGraphics(self, event):
+        """!Graphics tool activated."""
+        # we need the previous id
+        if self.drawGraphicsAction == 'pointAdd':
+            self.parent.OnAddPoint(event)
+        elif self.drawGraphicsAction == 'lineAdd':
+            self.parent.OnAddLine(event)
+        elif self.drawGraphicsAction == 'rectangleAdd':
+            self.parent.OnAddRectangle(event)
+
+    def OnDrawGraphicsMenu(self, event):
         """!Simple geometry features (point, line, rectangle) overlay menu
         """
-        # we need the previous id
-        self.actionOld = self.action['id']
-        self.OnTool(event)
-        self.action['id'] = self.actionOld
-        self._onMenu(((self.icons["pointAdd"],      self.parent.OnAddPoint),
-                      (self.icons["lineAdd"],       self.parent.OnAddLine),
-                      (self.icons["rectangleAdd"],  self.parent.OnAddRectangle),
+        self._onMenu(((self.icons["pointAdd"],      self.OnAddPoint),
+                      (self.icons["lineAdd"],       self.OnAddLine),
+                      (self.icons["rectangleAdd"],  self.OnAddRectangle),
                     ))
+
+    def OnAddPoint(self, event):
+        """!Point mode selected.
+
+        Graphics drawing tool is activated. Tooltip changed.
+        """
+        self.SetToolNormalBitmap(self.drawGraphics, self.icons["pointAdd"].GetBitmap())
+        self.SetToolShortHelp(self.drawGraphics, _("Add simple graphics: points"))
+        self.drawGraphicsAction = 'pointAdd'
+        if event:
+            self.ToggleTool(self.drawGraphics, True)
+            self.parent.OnAddPoint(event)
+
+    def OnAddLine(self, event):
+        """!Line mode selected.
+
+        Graphics drawing tool is activated. Tooltip changed.
+        """
+        self.SetToolNormalBitmap(self.drawGraphics, self.icons["lineAdd"].GetBitmap())
+        self.SetToolShortHelp(self.drawGraphics, _("Add simple graphics: lines"))
+        self.ToggleTool(self.drawGraphics, True)
+        if event:
+            self.drawGraphicsAction = 'lineAdd'
+            self.parent.OnAddLine(event)
+
+    def OnAddRectangle(self, event):
+        """!Rectangle mode selected.
+
+        Graphics drawing tool is activated. Tooltip changed.
+        """
+        self.SetToolNormalBitmap(self.drawGraphics, self.icons["rectangleAdd"].GetBitmap())
+        self.SetToolShortHelp(self.drawGraphics, _("Add simple graphics: rectangles"))
+        self.ToggleTool(self.drawGraphics, True)
+        if event:
+            self.drawGraphicsAction = 'rectangleAdd'
+            self.parent.OnAddRectangle(event)

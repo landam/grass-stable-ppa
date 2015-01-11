@@ -4,15 +4,10 @@ PGM = r.li.pielou
 
 EXTRA_CLEAN_DIRS=doxygenhtml
 
-LIB_NAME      = grass_rli
+LIBES = $(RLILIB) $(RASTERLIB) $(GISLIB)
 
-RLI_LIB = -l$(LIB_NAME)
-
-LIBES = $(GISLIB) $(RLI_LIB)
-
-DEPENDENCIES = $(GISDEP) $(LIB_NAME )
+DEPENDENCIES = $(RLIDEP) $(RASTERDEP) $(GISDEP)
 
 include $(MODULE_TOPDIR)/include/Make/Module.make
 
 default: cmd
-

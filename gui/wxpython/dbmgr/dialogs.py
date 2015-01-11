@@ -6,26 +6,29 @@
 List of classes:
  - dialogs::DisplayAttributesDialog
  - dialogs::ModifyTableRecord
+ - dialogs::AddColumnDialog
 
-(C) 2007-2011 by the GRASS Development Team
+(C) 2007-2013 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
 
 @author Martin Landa <landa.martin gmail.com>
+@author Refactoring by Stepan Turek <stepan.turek seznam.cz> (GSoC 2012, mentor: Martin Landa)
 """
 
 import os
 import types
 
 from core import globalvar
+from core.utils import _
 import wx
 import wx.lib.scrolledpanel as scrolled
 
 from core.gcmd        import RunCommand, GError
 from core.debug       import Debug
 from core.settings    import UserSettings
-from dbmgr.vinfo      import VectorDBInfo
+from dbmgr.vinfo      import VectorDBInfo, GetUnicodeValue
 from gui_core.widgets import IntegerValidator, FloatValidator
 
 class DisplayAttributesDialog(wx.Dialog):
@@ -171,10 +174,6 @@ class DisplayAttributesDialog(wx.Dialog):
             Debug.msg(2, "DisplayAttributesDialog(): Nothing found!")
             ### self.mapDBInfo = None
         
-    def __SelectAttributes(self, layer):
-        """!Select attributes"""
-        pass
-
     def OnSQLStatement(self, event):
         """!Update SQL statement"""
         pass
@@ -185,7 +184,7 @@ class DisplayAttributesDialog(wx.Dialog):
         @return True on attributes found
         @return False attributes not found
         """
-        return bool(self.notebook.GetPageCount())
+        return bool(self.mapDBInfo and self.notebook.GetPageCount() > 0)
     
     def GetSQLString(self, updateValues = False):
         """!Create SQL statement string based on self.sqlStatement
@@ -270,7 +269,7 @@ class DisplayAttributesDialog(wx.Dialog):
                     sqlString = sqlString[:-1] # remove last comma
                     sqlString += ")"
                 else:
-                    sqlString += " WHERE cat=%s" % cat
+                    sqlString += " WHERE %s=%s" % (key, cat)
                 sqlCommands.append(sqlString)
             # for each category
         # for each layer END
@@ -316,6 +315,7 @@ class DisplayAttributesDialog(wx.Dialog):
 
     def OnSubmit(self, event):
         """!Submit records"""
+        layer = 1
         close = True
         enc = UserSettings.Get(group = 'atm', key = 'encoding', subkey = 'value')
         if not enc and 'GRASS_DB_ENCODING' in os.environ:
@@ -328,10 +328,17 @@ class DisplayAttributesDialog(wx.Dialog):
             if enc:
                 sql = sql.encode(enc)
             
+            driver, database = self.mapDBInfo.GetDbSettings(layer)
+            Debug.msg(1, "SQL: %s" % sql)
             RunCommand('db.execute',
                        parent = self,
                        quiet = True,
-                       stdin = sql)
+                       input = '-',
+                       stdin = sql,
+                       driver = driver,
+                       database = database)
+            
+            layer += 1
         
         if close and self.closeDialog.IsChecked():
             self.OnClose(event)
@@ -687,15 +694,108 @@ class ModifyTableRecord(wx.Dialog):
         
         If columns is given (list), return only values of given columns.
         """
-        valueList = []
+        valueList = list()
         for labelId, ctypeId, valueId in self.widgets:
-            column = self.FindWindowById(labelId).GetLabel().replace(':', '')
+            column = self.FindWindowById(labelId).GetLabel()
             if columns is None or column in columns:
-                value = str(self.FindWindowById(valueId).GetValue())
+                value = GetUnicodeValue(self.FindWindowById(valueId).GetValue())
                 valueList.append(value)
         
         # add key value
         if self.usebox:
-            valueList.insert(self.keyId, str(self.cat))
-                             
+            valueList.insert(self.keyId, GetUnicodeValue(str(self.cat)))
+        
         return valueList
+
+class AddColumnDialog(wx.Dialog):
+    def __init__(self, parent, title, id = wx.ID_ANY,
+                 style = wx.DEFAULT_DIALOG_STYLE  | wx.RESIZE_BORDER):
+        """!Dialog for adding column into table
+        """
+        wx.Dialog.__init__(self, parent, id, title, style = style)
+        
+        self.CenterOnParent()
+
+        self.data = {} 
+        self.data['addColName'] = wx.TextCtrl(parent = self, id = wx.ID_ANY, value = '',
+                                              size = (150, -1), style = wx.TE_PROCESS_ENTER)
+
+           
+        self.data['addColType'] = wx.Choice (parent = self, id = wx.ID_ANY,
+                                             choices = ["integer",
+                                                        "double",
+                                                        "varchar",
+                                                        "date"]) # FIXME
+        self.data['addColType'].SetSelection(0)
+        self.data['addColType'].Bind(wx.EVT_CHOICE, self.OnTableChangeType)
+            
+        self.data['addColLength'] = wx.SpinCtrl(parent = self, id = wx.ID_ANY, size = (65, -1),
+                                                initial = 250,
+                                                min = 1, max = 1e6)
+        self.data['addColLength'].Enable(False)
+
+
+        # buttons
+        self.btnCancel = wx.Button(self, wx.ID_CANCEL)
+        self.btnOk = wx.Button(self, wx.ID_OK)
+        self.btnOk.SetDefault()
+
+        self._layout()
+
+    def _layout(self):
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        addSizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        addSizer.Add(item =  wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Column")),
+                     flag = wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT,
+                     border = 5)
+        addSizer.Add(item = self.data['addColName'], proportion = 1,
+                     flag = wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT,
+                     border = 5)
+
+        addSizer.Add(item = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Type")), 
+                     flag = wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT,
+                     border = 5)
+        addSizer.Add(item = self.data['addColType'],
+                     flag = wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT,
+                     border = 5)
+
+        addSizer.Add(item = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Length")),
+                     flag = wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT,
+                     border = 5)
+        addSizer.Add(item = self.data['addColLength'],
+                     flag = wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.RIGHT,
+                     border = 5)
+
+        sizer.Add(item = addSizer, proportion = 0,
+                  flag = wx.ALIGN_RIGHT | wx.ALL, border = 5)
+
+        btnSizer = wx.StdDialogButtonSizer()
+        btnSizer.AddButton(self.btnCancel)
+        btnSizer.AddButton(self.btnOk)
+        btnSizer.Realize()
+
+        sizer.Add(item = btnSizer, proportion = 0,
+                  flag = wx.ALIGN_RIGHT | wx.ALL, border = 5)
+
+        self.SetSizer(sizer)
+
+        self.Fit()
+
+    def GetData(self):
+        """!Get inserted data from dialog's widgets"""
+        values = {}
+        values['name'] = self.data['addColName'].GetValue()
+        values['ctype'] = self.data['addColType'].GetStringSelection()
+        values['length'] = int(self.data['addColLength'].GetValue())
+
+        return values
+  
+    def OnTableChangeType(self, event):
+        """!Data type for new column changed. Enable or disable
+        data length widget"""
+        if event.GetString() == "varchar":
+            self.data['addColLength'].Enable(True)
+        else:
+            self.data['addColLength'].Enable(False)     

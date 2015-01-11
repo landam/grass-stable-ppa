@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <grass/gstypes.h>
+#include <grass/ogsf.h>
 #include <grass/glocale.h>
 
 #include "gsget.h"
@@ -711,9 +711,10 @@ typbuff *gs_get_att_typbuff(geosurf * gs, int desc, int to_write)
    \param desc attribute id (descriptor)
    \param type buffer type (based on raster map type)
 
-   \return 1 on success, -1 on failure
+   \return -1 on error
+   \return amount of allocated memory
  */
-int gs_malloc_att_buff(geosurf * gs, int desc, int type)
+size_t gs_malloc_att_buff(geosurf * gs, int desc, int type)
 {
     int hdata, dims[2], ndims;
 
@@ -730,7 +731,7 @@ int gs_malloc_att_buff(geosurf * gs, int desc, int type)
 	}
     }
 
-    return (-1);
+    return 0;
 }
 
 /*!

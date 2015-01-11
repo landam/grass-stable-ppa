@@ -1,5 +1,5 @@
 /*!
-  \file geos.c
+  \file lib/vector/Vlib/geos.c
   
   \brief Vector library - GEOS support
   
@@ -13,9 +13,8 @@
   \author Martin Landa <landa.martin gmail.com>
  */
 
-#include <grass/config.h>
-#include <grass/gis.h>
-#include <grass/Vect.h>
+#include <stdlib.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 
 #ifdef HAVE_GEOS
@@ -45,7 +44,7 @@ static GEOSCoordSequence *read_polygon_points(struct Map_info *, int, int*);
  */
 GEOSGeometry *Vect_read_line_geos(struct Map_info *Map, int line, int *type)
 {
-    P_LINE *Line;
+    struct P_line *Line;
     
     G_debug(3, "Vect_read_line_geos(): line = %d", line);
     
@@ -120,6 +119,7 @@ GEOSGeometry *Vect_read_area_geos(struct Map_info * Map, int area)
    You should free allocated memory by GEOSGeom_destroy().
 
    \param Map pointer to Map_info structure
+   \param points pointer to line_pnts structure
    \param type feature type (see supported types)
 
    \return pointer to GEOSGeometry instance
@@ -245,7 +245,7 @@ GEOSGeometry *Vect__read_line_geos(struct Map_info *Map, long offset, int *type)
 GEOSCoordSequence *V2_read_line_geos(struct Map_info *Map, int line)
 {
     int ftype;
-    P_LINE *Line;
+    struct P_line *Line;
     
     G_debug(3, "V2_read_line_geos(): line = %d", line);
     
@@ -314,7 +314,7 @@ GEOSCoordSequence *V1_read_line_geos(struct Map_info *Map, long offset, int *typ
  
     /* skip categories */
     if (do_cats) {
-	if (Map->head.Version_Minor == 1) {	/* coor format 5.1 */
+	if (Map->head.coor_version.minor == 1) {	/* coor format 5.1 */
 	    if (0 >= dig__fread_port_I(&n_cats, 1, &(Map->dig_fp)))
 		return NULL;
 	}
@@ -325,7 +325,7 @@ GEOSCoordSequence *V1_read_line_geos(struct Map_info *Map, long offset, int *typ
 	}
 	G_debug(3, "    n_cats = %d", n_cats);
 
-	if (Map->head.Version_Minor == 1) {	/* coor format 5.1 */
+	if (Map->head.coor_version.minor == 1) {	/* coor format 5.1 */
 	    size = (2 * PORT_INT) * n_cats;
 	}
 	else {		                /* coor format 5.0 */
@@ -372,7 +372,7 @@ GEOSCoordSequence *V1_read_line_geos(struct Map_info *Map, long offset, int *typ
 	    GEOSCoordSeq_setZ(pseq, i, z[i]);
     }
     
-    G_debug(3, "    off = %ld", dig_ftell(&(Map->dig_fp)));
+    G_debug(3, "    off = %ld", (long) dig_ftell(&(Map->dig_fp)));
     
     G_free((void *) x);
     G_free((void *) y);
@@ -399,7 +399,7 @@ GEOSCoordSequence *V1_read_line_geos(struct Map_info *Map, long offset, int *typ
 GEOSCoordSequence *Vect_get_area_points_geos(struct Map_info *Map, int area)
 {
     struct Plus_head *Plus;
-    P_AREA *Area;
+    struct P_area *Area;
     
     G_debug(3, "Vect_get_area_points_geos(): area = %d", area);
     
@@ -430,7 +430,7 @@ GEOSCoordSequence *Vect_get_area_points_geos(struct Map_info *Map, int area)
 GEOSCoordSequence *Vect_get_isle_points_geos(struct Map_info *Map, int isle)
 {
     struct Plus_head *Plus;
-    P_ISLE *Isle;
+    struct P_isle *Isle;
     
     G_debug(3, "Vect_get_isle_points_geos(): isle = %d", isle);
 

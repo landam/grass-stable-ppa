@@ -43,7 +43,8 @@
 #endif
 
 #include <grass/gis.h>
-#include <grass/gstypes.h>
+#include <grass/raster.h>
+#include <grass/ogsf.h>
 #include <grass/glocale.h>
 
 #include "gsget.h"
@@ -629,7 +630,9 @@ void GS_set_Narrow(int *pt, int id, float *pos2)
 }
 
 /*!
-   \brief ADD
+   \brief Draw place marker
+
+   Used to display query point for raster queries.
 
    \param id surface id
    \param pt point, X, Y value in true world coordinates
@@ -639,10 +642,11 @@ void GS_draw_X(int id, float *pt)
     geosurf *gs;
     Point3 pos;
     float siz;
+    gvstyle style;
 
     if ((gs = gs_get_surf(id))) {
 	GS_get_longdim(&siz);
-	siz /= 200.;
+	style.size = siz / 200.;
 	pos[X] = pt[X] - gs->ox;
 	pos[Y] = pt[Y] - gs->oy;
 	_viewcell_tri_interp(gs, pos);
@@ -657,8 +661,9 @@ void GS_draw_X(int id, float *pt)
 	    pos[Z] = gs->att[ATT_TOPO].constant;
 	    gs = NULL;		/* tells gpd_obj to use given Z val */
 	}
-
-	gpd_obj(gs, Gd.bgcol, siz, ST_GYRO, pos);
+	style.color = Gd.bgcol;
+	style.symbol = ST_GYRO;
+	gpd_obj(gs, &style, pos);
 	gsd_flush();
 
 	gsd_popmatrix();
@@ -708,8 +713,7 @@ void GS_draw_line_onsurf(int id, float x1, float y1, float x2, float y2)
 
    \param id surface id
    \param x1,y1,x2,y2 line nodes
-   \param lasp ?
-   \paran n ?
+
    \return number of points used
  */
 int GS_draw_nline_onsurf(int id, float x1, float y1, float x2, float y2,
@@ -1635,7 +1639,7 @@ int GS_load_att_map(int id, const char *filename, int att)
     begin = hdata = 1;
 
     /* Get MAPSET to ensure names are fully qualified */
-    mapset = G_find_cell2(filename, "");
+    mapset = G_find_raster2(filename, "");
     if (mapset == NULL) {
 	/* Check for valid filename */
 	G_warning("Raster map <%s> not found", filename);
@@ -1643,7 +1647,7 @@ int GS_load_att_map(int id, const char *filename, int att)
     }
     
     /* Check to see if map is in Region */
-    G_get_cellhd(filename, mapset, &rast_head);
+    Rast_get_cellhd(filename, mapset, &rast_head);
     if (rast_head.north <= wind.south ||
 	rast_head.south >= wind.north ||
 	rast_head.east <= wind.west || rast_head.west >= wind.east) {
@@ -1725,13 +1729,13 @@ int GS_load_att_map(int id, const char *filename, int att)
 	    atty = ATTY_INT;
 	}
 
-	if (0 > gs_malloc_att_buff(gs, att, ATTY_NULL)) {
+	if (0 == gs_malloc_att_buff(gs, att, ATTY_NULL)) {
 	    G_fatal_error(_("GS_load_att_map(): Out of memory. Unable to load map"));
 	}
 
 	switch (atty) {
 	case ATTY_MASK:
-	    if (0 > gs_malloc_att_buff(gs, att, ATTY_MASK)) {
+	    if (0 == gs_malloc_att_buff(gs, att, ATTY_MASK)) {
 		G_fatal_error(_("GS_load_att_map(): Out of memory. Unable to load map"));
 	    }
 
@@ -1739,7 +1743,7 @@ int GS_load_att_map(int id, const char *filename, int att)
 	    
 	    break;
 	case ATTY_CHAR:
-	    if (0 > gs_malloc_att_buff(gs, att, ATTY_CHAR)) {
+	    if (0 == gs_malloc_att_buff(gs, att, ATTY_CHAR)) {
 		G_fatal_error(_("GS_load_att_map(): Out of memory. Unable to load map"));
 	    }
 
@@ -1748,7 +1752,7 @@ int GS_load_att_map(int id, const char *filename, int att)
 
 	    break;
 	case ATTY_SHORT:
-	    if (0 > gs_malloc_att_buff(gs, att, ATTY_SHORT)) {
+	    if (0 == gs_malloc_att_buff(gs, att, ATTY_SHORT)) {
 		G_fatal_error(_("GS_load_att_map(): Out of memory. Unable to load map"));
 	    }
 
@@ -1756,7 +1760,7 @@ int GS_load_att_map(int id, const char *filename, int att)
 				      tbuff->nm, &has_null);
 	    break;
 	case ATTY_FLOAT:
-	    if (0 > gs_malloc_att_buff(gs, att, ATTY_FLOAT)) {
+	    if (0 == gs_malloc_att_buff(gs, att, ATTY_FLOAT)) {
 		G_fatal_error(_("GS_load_att_map(): Out of memory. Unable to load map"));
 	    }
 
@@ -1766,7 +1770,7 @@ int GS_load_att_map(int id, const char *filename, int att)
 	    break;
 	case ATTY_INT:
 	default:
-	    if (0 > gs_malloc_att_buff(gs, att, ATTY_INT)) {
+	    if (0 == gs_malloc_att_buff(gs, att, ATTY_INT)) {
 		G_fatal_error(_("GS_load_att_map(): Out of memory. Unable to load map"));
 	    }
 
@@ -1814,7 +1818,7 @@ int GS_load_att_map(int id, const char *filename, int att)
 	}
 	else if (ATTY_FLOAT == atty) {
 	    if (!reuse) {
-		if (0 > gs_malloc_att_buff(gs, att, ATTY_INT)) {
+		if (0 == gs_malloc_att_buff(gs, att, ATTY_INT)) {
 		    G_fatal_error(_("GS_load_att_map(): Out of memory. Unable to load map"));
 		}
 
@@ -2380,16 +2384,14 @@ void GS_get_zrange_nz(float *min, float *max)
 }
 
 /*!
-   \brief Set trans ?
+   \brief Set translation (surface position)
 
    \param id surface id
-   \param xtrans,ytrans,ztrans real trans coordinates
+   \param xtrans,ytrans,ztrans translation values
  */
 void GS_set_trans(int id, float xtrans, float ytrans, float ztrans)
 {
     geosurf *gs;
-
-    G_debug(3, "GS_set_trans");
 
     gs = gs_get_surf(id);
 
@@ -2399,20 +2401,21 @@ void GS_set_trans(int id, float xtrans, float ytrans, float ztrans)
 	gs->z_trans = ztrans;
     }
 
+    G_debug(3, "GS_set_trans(): id=%d, x=%f, y=%f, z=%f",
+	    id, xtrans, ytrans, ztrans);
+
     return;
 }
 
 /*!
-   \brief Get trans ?
+   \brief Get translation values (surface position)
 
    \param id surface id
-   \param[out] xtrans,ytrans,ztrans real trans coordinates
+   \param[out] xtrans,ytrans,ztrans trans values
  */
 void GS_get_trans(int id, float *xtrans, float *ytrans, float *ztrans)
 {
     geosurf *gs;
-
-    G_debug(3, "GS_get_trans");
 
     gs = gs_get_surf(id);
 
@@ -2421,6 +2424,9 @@ void GS_get_trans(int id, float *xtrans, float *ytrans, float *ztrans)
 	*ytrans = gs->y_trans;
 	*ztrans = gs->z_trans;
     }
+
+    G_debug(3, "GS_get_trans: id=%d, x=%f, y=%f, z=%f",
+	    id, *xtrans, *ytrans, *ztrans);
 
     return;
 }
@@ -2870,7 +2876,7 @@ int GS_get_twist(void)
 
    10ths of degrees off twelve o'clock
 
-   \params t tenths of degrees clockwise from 12:00.
+   \param t tenths of degrees clockwise from 12:00.
  */
 void GS_set_twist(int t)
 {

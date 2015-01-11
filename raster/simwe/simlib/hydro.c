@@ -19,21 +19,22 @@
 #include <stdlib.h>
 #include <math.h>
 #include <grass/gis.h>
-/* #include <grass/site.h> */
 #include <grass/bitmap.h>
 #include <grass/linkm.h>
 #include <grass/glocale.h>
 
 #include <grass/waterglobs.h>
 
+/*
+ * Soeren 8. Mar 2011 TODO:
+ * Put all these global variables into several meaningful structures and 
+ * document use and purpose.
+ * 
+ */
+
 struct options parm;
 struct flags flag;
-
-FILE *fdelevin, *fddxin, *fddyin, *fdrain, *fdinfil, *fdtraps,
-    *fdmanin, *fddepth, *fddisch, *fderr;
-FILE *fdwdepth, *fddetin, *fdtranin, *fdtauin, *fdtc, *fdet, *fdconc,
-    *fdflux, *fderdep;
-FILE *fdsfile, *fw;
+struct _points points;
 
 char *elevin;
 char *dxin;
@@ -42,11 +43,11 @@ char *rain;
 char *infil;
 char *traps;
 char *manin;
-/* char *sfile; */
+/* char *observation; */
 char *depth;
 char *disch;
 char *err;
-/* char *outwalk; */
+char *outwalk; 
 char *mapset;
 char *mscale;
 char *tserie;
@@ -69,12 +70,6 @@ struct seed seed;
 
 struct Cell_head cellhd;
 
-/*
-struct Point *points;
-int npoints;
-int npoints_alloc;
-*/
-
 double xmin, ymin, xmax, ymax;
 double mayy, miyy, maxx, mixx;
 int mx, my;
@@ -93,12 +88,12 @@ double **gama, **gammas, **si, **inf, **sigma;
 float **dc, **tau, **er, **ct, **trap;
 float **dif;
 
-/* double vavg[MAXW][2], stack[MAXW][3], w[MAXW][3]; */
-double vavg[MAXW][2], w[MAXW][3];
+/* suspected BUG below: fist array subscripts go from 1 to MAXW
+ * correct: from 0 to MAXW - 1, e.g for (lw = 0; lw < MAXW; lw++) */
+double vavg[MAXW][2], stack[MAXW][3], w[MAXW][3]; 
 int iflag[MAXW];
 
 double hbeta;
-/* int ldemo; */
 double hhmax, sisum, vmean;
 double infsum, infmean;
 int maxw, maxwa, nwalk;
@@ -106,10 +101,9 @@ double rwalk, bresx, bresy, xrand, yrand;
 double stepx, stepy, xp0, yp0;
 double chmean, si0, deltap, deldif, cch, hhc, halpha;
 double eps;
-/* int maxwab, nstack; */
-int maxwab;
+int maxwab, nstack;
 int iterout, mx2o, my2o;
-int miter, nwalka, lwwfin;
+int miter, nwalka;
 double timec;
 int ts, timesec;
 
@@ -128,8 +122,7 @@ void main_loop(void)
 {
 
     int i, ii, l, k;
-/*    int icoub, lwout, nmult; */
-    int icoub, nmult;
+    int icoub, nmult; 
     int iw, iblock, lw;
     int itime, iter1;
     int nfiterh, nfiterw;
@@ -149,13 +142,16 @@ void main_loop(void)
     nblock = 1;
     icoub = 0;
     icfl = 0;
-/*    nstack = 0; */
+    nstack = 0; 
 
     if (maxwa > (MAXW - mx * my)) {
 	mitfac = maxwa / (MAXW - mx * my);
 	nblock = mitfac + 1;
 	maxwa = maxwa / nblock;
     }
+    
+    /* Create the observation points */
+    create_observation_points();
 
     G_debug(2, " maxwa, nblock %d %d", maxwa, nblock);
 
@@ -168,7 +164,6 @@ void main_loop(void)
 	sarea = bresx * bresy;
 	G_debug(2, " barea,sarea,rwalk,sisum: %f %f %f %f", barea, sarea,
 		rwalk, sisum);
-	lwwfin = 0;
 	/* write hh.walkers0 */
 
 	for (k = 0; k < my; k++) {
@@ -205,40 +200,30 @@ void main_loop(void)
 		    /*G_debug(2, " gen,gen2,wei,wei2,mgen3,nmult: %f %f %f %f %d %d",gen,gen2,wei,wei2,mgen3,nmult);
 		     */
 		    for (iw = 1; iw <= mgen + 1; iw++) {	/* assign walkers */
-			++lw;
 
-			if (lw > MAXW)
+			if (lw >= MAXW)  /* max valid value is MAXW - 1, not MAXW */
 			    G_fatal_error(_("nwalk (%d) > maxw (%d)!"), lw, MAXW);
 
-			w[lw][1] = x + stepx * (ulec() - 0.5);
-			w[lw][2] = y + stepy * (ulec() - 0.5);
-			w[lw][3] = wei;
+			w[lw][0] = x + stepx * (ulec() - 0.5);
+			w[lw][1] = y + stepy * (ulec() - 0.5);
+			w[lw][2] = wei;
 
-			walkwe += w[lw][3];
-			vavg[lw][1] = v1[k][l];
-			vavg[lw][2] = v2[k][l];
-			if (w[lw][1] >= xmin && w[lw][2] >= ymin &&
-			    w[lw][1] <= xmax && w[lw][2] <= ymax) {
+			walkwe += w[lw][2];
+			vavg[lw][0] = v1[k][l];
+			vavg[lw][1] = v2[k][l];
+			if (w[lw][0] >= xmin && w[lw][1] >= ymin &&
+			    w[lw][0] <= xmax && w[lw][1] <= ymax) {
 			    iflag[lw] = 0;
 			}
 			else {
 			    iflag[lw] = 1;
 			}
-
-/*
-			lwout = lw / ldemo;
-			lwout *= ldemo;
-
-			if (lwout == lw) {
-			    ++lwwfin;
-			}
-*/
+			lw++;
 		    }
 		}		/*DEFined area */
 	    }
 	}
 	nwalk = lw;
-	G_debug(2, " number of written walkers: %d", lwwfin);
 	G_debug(2, " nwalk, maxw %d %d", nwalk, MAXW);
 	G_debug(2, " walkwe (walk weight),frac %f %f", walkwe, frac);
 
@@ -283,12 +268,13 @@ void main_loop(void)
 		addac = factor * .5;
 	    }
 	    nwalka = 0;
+	    nstack = 0;
 
-	    for (lw = 1; lw <= nwalk; lw++) {
-		if (w[lw][3] > EPS) {	/* check the walker weight */
+	    for (lw = 0; lw < nwalk; lw++) {
+		if (w[lw][2] > EPS) {	/* check the walker weight */
 		    ++nwalka;
-		    l = (int)((w[lw][1] + stxm) / stepx) - mx - 1;
-		    k = (int)((w[lw][2] + stym) / stepy) - my - 1;
+		    l = (int)((w[lw][0] + stxm) / stepx) - mx - 1;
+		    k = (int)((w[lw][1] + stym) / stepy) - my - 1;
 
 		    if (l > mx - 1 || k > my - 1 || k < 0 || l < 0) {
 
@@ -302,36 +288,31 @@ void main_loop(void)
 		    }
 
 		    if (zz[k][l] != UNDEF) {
-
 			if (infil != NULL) {	/* infiltration part */
-
 			    if (inf[k][l] - si[k][l] > 0.) {
 
-				decr = pow(addac * w[lw][3], 3. / 5.);	/* decreasing factor in m */
+				decr = pow(addac * w[lw][2], 3. / 5.);	/* decreasing factor in m */
 				if (inf[k][l] > decr) {
 				    inf[k][l] -= decr;	/* decrease infilt. in cell and eliminate the walker */
-				    w[lw][3] = 0.;
+				    w[lw][2] = 0.;
 				}
 				else {
-				    w[lw][3] -= pow(inf[k][l], 5. / 3.) / addac;	/* use just proportional part of the walker weight */
+				    w[lw][2] -= pow(inf[k][l], 5. / 3.) / addac;	/* use just proportional part of the walker weight */
 				    inf[k][l] = 0.;
 
 				}
-
 			    }
-
 			}
 
-
-			gama[k][l] += (addac * w[lw][3]);	/* add walker weigh to water depth or conc. */
+			gama[k][l] += (addac * w[lw][2]);	/* add walker weigh to water depth or conc. */
 
 			d1 = gama[k][l] * conn;
 			hhc = pow(d1, 3. / 5.);
 
 			if (hhc > hhmax && wdepth == NULL) {	/* increased diffusion if w.depth > hhmax */
 			    dif[k][l] = (halpha + 1) * deldif;
-			    velx = vavg[lw][1];
-			    vely = vavg[lw][2];
+			    velx = vavg[lw][0];
+			    vely = vavg[lw][1];
 			}
 			else {
 			    dif[k][l] = deldif;
@@ -348,127 +329,108 @@ void main_loop(void)
 				velx = -0.1 * v1[k][l];	/* move it slightly back */
 				vely = -0.1 * v2[k][l];
 			    }
-
 			}
-
 
 			gaux = gasdev();
 			gauy = gasdev();
 
-			w[lw][1] += (velx + dif[k][l] * gaux);	/* move the walker */
-			w[lw][2] += (vely + dif[k][l] * gauy);
+			w[lw][0] += (velx + dif[k][l] * gaux);	/* move the walker */
+			w[lw][1] += (vely + dif[k][l] * gauy);
 
 			if (hhc > hhmax && wdepth == NULL) {
-			    vavg[lw][1] = hbeta * (vavg[lw][1] + v1[k][l]);
-			    vavg[lw][2] = hbeta * (vavg[lw][2] + v2[k][l]);
+			    vavg[lw][0] = hbeta * (vavg[lw][0] + v1[k][l]);
+			    vavg[lw][1] = hbeta * (vavg[lw][1] + v2[k][l]);
 			}
 
-			if (w[lw][1] <= xmin || w[lw][2] <= ymin || w[lw][1]
-			    >= xmax || w[lw][2] >= ymax) {
-			    w[lw][3] = 1e-10;	/* eliminate walker if it is out of area */
+			if (w[lw][0] <= xmin || w[lw][1] <= ymin || w[lw][0]
+			    >= xmax || w[lw][1] >= ymax) {
+			    w[lw][2] = 1e-10;	/* eliminate walker if it is out of area */
 			}
 			else {
 			    if (wdepth != NULL) {
-				l = (int)((w[lw][1] + stxm) / stepx) - mx - 1;
-				k = (int)((w[lw][2] + stym) / stepy) - my - 1;
-				w[lw][3] *= sigma[k][l];
+				l = (int)((w[lw][0] + stxm) / stepx) - mx - 1;
+				k = (int)((w[lw][1] + stym) / stepy) - my - 1;
+				w[lw][2] *= sigma[k][l];
 			    }
 
 			}	/* else */
 		    }		/*DEFined area */
 		    else {
-			w[lw][3] = 1e-10;	/* eliminate walker if it is out of area */
+			w[lw][2] = 1e-10;	/* eliminate walker if it is out of area */
 		    }
 		}
+            } /* lw loop */
+            
+            /* Changes made by Soeren 8. Mar 2011 to replace the site walker output implementation */
+            /* Save all walkers located within the computational region and with valid 
+               z coordinates */
+            if ((i == miter || i == iter1)) {	
+                nstack = 0;
+                
+                for (lw = 0; lw < nwalk; lw++) {
+                    /* Compute the  elevation raster map index */
+                    l = (int)((w[lw][0] + stxm) / stepx) - mx - 1;
+                    k = (int)((w[lw][1] + stym) / stepy) - my - 1;
+                    
+		    /* Check for correct elevation raster map index */
+		    if(l < 0 || l >= mx || k < 0 || k >= my)
+			 continue;
 
-/* output walkers commented out */
-		/*        write the walkers which reach the box */
-/*
-		if (w[lw][1] >= xmin && w[lw][2] >= ymin && w[lw][1]
-		    <= xmax && w[lw][2] <= ymax && iflag[lw] == 0) {
+                    if (w[lw][2] > EPS && zz[k][l] != UNDEF) {
 
-		    lwout = lw / ldemo;
-		    lwout *= ldemo;
-		    if (lwout == lw && (i == miter || i == iter1)) {	
-			stack[nstack][1] = mixx / conv + w[lw][1] / conv;
-			stack[nstack][2] = miyy / conv + w[lw][2] / conv;
-			stack[nstack][3] = w[lw][3];
+                        /* Save the 3d position of the walker */
+                        stack[nstack][0] = mixx / conv + w[lw][0] / conv;
+                        stack[nstack][1] = miyy / conv + w[lw][1] / conv;
+                        stack[nstack][2] = zz[k][l];
 
-			nstack++;
-*/
-			/*                  iflag[lw] = 1; */
-/*
-		    }
-		}
-*/
+                        nstack++;
+                    }
+                } /* lw loop */
+            } 
 
-		/* walker is leaving the box */
+	    if (i == iter1 && ts == 1) {
+            /* call output for iteration output */
+                if (erdep != NULL)
+                    erod(gama);	/* divergence of gama field */
 
-		/*              if (w[lw][1] <= mixx && w[lw][2] <= bymi && w[lw][1] 
-		   >= bxma && w[lw][2] >= byma && iflag[lw] == 1) {
-		   iflag[lw] = 0;
-		   } */
-
-		/* every iterout iteration write out the selected ldemo walkers */
-		/* and water depth and time */
-
-
-	    }			/* lw loop */
-
-	    if (i == iter1) {
-
-		/* call output for iteration output */
-
-		if (ts == 1) {
-		    if (erdep != NULL)
-			erod(gama);	/* divergence of gama field */
-
-		    conn = (double)nblock / (double)iblock;
-		    itime = (int)(i * deltap * timec);
-		    ii = output_data(itime, conn);
-/*		    nstack = 0; */
-		    if (ii != 1)
-			G_fatal_error(_("Unable to write raster maps"));
-		}
-
+                conn = (double)nblock / (double)iblock;
+                itime = (int)(i * deltap * timec);
+                ii = output_data(itime, conn);
+                if (ii != 1)
+                    G_fatal_error(_("Unable to write raster maps"));
 	    }
-
-/* ascii data site file output for gamma  - hydrograph or sediment*/
-/* cchez incl. sqrt(sinsl) */
-/* sediment */
-/*defined area */
-/*
-	    if (sfile != NULL) {	
-
-		for (p = 0; p < npoints; p++) {
-
-		    l = (int)((points[p].east - mixx + stxm) / stepx) - mx -
-			1;
-		    k = (int)((points[p].north - miyy + stym) / stepy) - my -
-			1;
-
+            
+            /* Write the water depth each time step at an observation point */
+            if(points.is_open)
+            {
+                double value = 0.0;
+                int p;
+                fprintf(points.output, "%.6d ", i);
+                /* Write for each point */
+                for(p = 0; p < points.npoints; p++)
+                {
+                    l = (int)((points.x[p] - mixx + stxm) / stepx) - mx - 1;
+		    k = (int)((points.y[p] - miyy + stym) / stepy) - my - 1;
+                    
 		    if (zz[k][l] != UNDEF) {
 
-			if (wdepth == NULL) {
-			    points[p].z1 = step * gama[k][l] * cchez[k][l];	
-			}
+			if (wdepth == NULL) 
+			    value = step * gama[k][l] * cchez[k][l];
 			else
-			    points[p].z1 = gama[k][l] * slope[k][l];	
+			    value = gama[k][l] * slope[k][l];	
 
-			G_debug(2, " k,l,z1 %d %d %f", k, l, points[p].z1);
-
-			fprintf(fw, "%f %f %f\n", points[p].east / conv,
-				points[p].north / conv, points[p].z1);
-		    }		
-
-		}
-
-	    }
-*/
-
+			fprintf(points.output, "%2.4f ", value);
+		    } else {
+                        /* Point is invalid, so a negative value is written */
+			fprintf(points.output, "%2.4f ", -1.0);
+                    }		
+                }
+                fprintf(points.output, "\n");
+            }
 	}			/* miter */
 
       L_800:
+      /* Soeren 8. Mar 2011: Why is this commented out?*/
 	/*        if (iwrib != nblock) {
 	   icount = icoub / iwrib;
 
@@ -495,5 +457,19 @@ void main_loop(void)
 	    erod(gama);
     }
     /*                       ........ end of iblock loop */
+
+    /* Write final maps here because we know the last time stamp here */
+    if (ts == 0) {
+        conn = (double)nblock / (double)iblock;
+        itime = (int)(i * deltap * timec);
+        ii = output_data(itime, conn);
+        if (ii != 1)
+	    G_fatal_error(_("Cannot write raster maps"));
+    }
+    /* Close the observation logfile */
+    if(points.is_open)
+        fclose(points.output);
+    
+    points.is_open = 0;
 
 }

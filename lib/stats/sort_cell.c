@@ -1,18 +1,25 @@
 #include <stdlib.h>
+
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/stats.h>
 
 static int ascending(const void *aa, const void *bb)
 {
     const DCELL *a = aa, *b = bb;
 
-    if (G_is_d_null_value((DCELL *) a) && G_is_d_null_value((DCELL *) b))
+    if (*a < *b)
+	return -1;
+    return (*a > *b);
+
+
+    if (Rast_is_d_null_value((DCELL *) a) && Rast_is_d_null_value((DCELL *) b))
 	return 0;
 
-    if (G_is_d_null_value((DCELL *) a))
+    if (Rast_is_d_null_value((DCELL *) a))
 	return 1;
 
-    if (G_is_d_null_value((DCELL *) b))
+    if (Rast_is_d_null_value((DCELL *) b))
 	return -1;
 
     return (*a < *b) ? -1 : (*a > *b) ? 1 : 0;
@@ -20,26 +27,40 @@ static int ascending(const void *aa, const void *bb)
 
 int sort_cell(DCELL * array, int n)
 {
-    int i;
+    int i, j;
 
-    qsort(array, n, sizeof(DCELL), ascending);
+    j = 0;
+    for (i = 0; i < n; i++) {
+	if (!Rast_is_d_null_value(&array[i])) {
+	    array[j] = array[i];
+	    j++;
+	}
+    }
+    n = j;
 
-    for (i = 0; i < n; i++)
-	if (G_is_d_null_value(&array[i]))
-	    break;
+    if (n > 0)
+	qsort(array, n, sizeof(DCELL), ascending);
 
-    return i;
+    return n;
 }
 
 int sort_cell_w(DCELL(*array)[2], int n)
 {
-    int i;
+    int i, j;
 
-    qsort(array, n, 2 * sizeof(DCELL), ascending);
+    j = 0;
+    for (i = 0; i < n; i++) {
+	if (!Rast_is_d_null_value(&array[i][0]) &&
+	    !Rast_is_d_null_value(&array[i][1])) {
+	    array[j][0] = array[i][0];
+	    array[j][1] = array[i][1];
+	    j++;
+	}
+    }
+    n = j;
 
-    for (i = 0; i < n; i++)
-	if (G_is_d_null_value(&array[i][0]))
-	    break;
+    if (n > 0)
+	qsort(array, n, 2 * sizeof(DCELL), ascending);
 
-    return i;
+    return n;
 }

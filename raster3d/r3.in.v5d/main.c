@@ -23,6 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <grass/config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,7 +31,7 @@
 #include "binio.h"
 #include "v5d.h"
 #include <grass/gis.h>
-#include <grass/G3d.h>
+#include <grass/raster3d.h>
 #include <grass/glocale.h>
 
 #define MAX(a,b) (a > b ? a : b)
@@ -46,7 +47,7 @@ static void fatalError(char *errorMsg)
 	/* should unopen map here! */
     }
 
-    G3d_fatalError(errorMsg);
+    Rast3d_fatal_error(errorMsg);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -99,7 +100,7 @@ getParams(char **input, char **output, int *convertNull, double *nullValue)
 
 /*---------------------------------------------------------------------------*/
 
-void convert(char *openFile, G3D_Region * region, int convertNull,
+void convert(char *openFile, RASTER3D_Region * region, int convertNull,
 	     double nullValue)
 {
     v5dstruct v5d;
@@ -156,8 +157,8 @@ void convert(char *openFile, G3D_Region * region, int convertNull,
 		    for (x = 0; x < region->cols; x++) {
 			value = data1[cnt++];
 			if (convertNull && (value == MISSING))
-			    G3d_setNullValue(&value, 1, FCELL_TYPE);
-			G3d_putFloat(map, x, y, z, value);
+			    Rast3d_set_null_value(&value, 1, FCELL_TYPE);
+			Rast3d_put_float(map, x, y, z, value);
 		    }
 		}
 	    }
@@ -178,43 +179,43 @@ int main(int argc, char *argv[])
     char *input, *output;
     int convertNull;
     double nullValue;
-    int useTypeDefault, type, useLzwDefault, doLzw, useRleDefault, doRle;
+    int useTypeDefault, type, useCompressionDefault, doCompression;
     int usePrecisionDefault, precision, useDimensionDefault, tileX, tileY,
 	tileZ;
-    G3D_Region region;
+    RASTER3D_Region region;
     struct GModule *module;
 
     map = NULL;
 
     G_gisinit(argv[0]);
     module = G_define_module();
-    module->keywords = _("raster3d, voxel, import");
+    G_add_keyword(_("raster3d"));
+    G_add_keyword(_("voxel"));
     module->description =
-	_("Imports 3-dimensional Vis5D files (i.e. the V5D file with 1 variable and 1 time step).");
+	_("Import 3-dimensional Vis5D files.");
 
     setParams();
-    G3d_setStandard3dInputParams();
+    Rast3d_set_standard3d_input_params();
 
     if (G_parser(argc, argv))
 	exit(1);
 
     getParams(&input, &output, &convertNull, &nullValue);
-    if (!G3d_getStandard3dParams(&useTypeDefault, &type,
-				 &useLzwDefault, &doLzw,
-				 &useRleDefault, &doRle,
+    if (!Rast3d_get_standard3d_params(&useTypeDefault, &type,
+				 &useCompressionDefault, &doCompression,
 				 &usePrecisionDefault, &precision,
 				 &useDimensionDefault, &tileX, &tileY,
 				 &tileZ))
 	fatalError("main: error getting standard parameters");
 
-    G3d_getWindow(&region);
-    map = G3d_openCellNew(output, FCELL_TYPE, G3D_USE_CACHE_XY, &region);
+    Rast3d_get_window(&region);
+    map = Rast3d_open_cell_new(output, FCELL_TYPE, RASTER3D_USE_CACHE_XY, &region);
     if (map == NULL)
 	fatalError(_("Unable to open 3D raster map"));
 
     convert(input, &region, convertNull, nullValue);
 
-    if (!G3d_closeCell(map))
+    if (!Rast3d_close(map))
 	fatalError(_("Unable to close 3D raster map"));
     map = NULL;
 

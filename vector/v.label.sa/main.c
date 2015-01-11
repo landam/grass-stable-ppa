@@ -20,23 +20,6 @@
 #define DEFAULT_CHARSET "UTF-8"
 
 /**
- * This function defines the parameters and calls the command-line parser
- * @param argc Count of command line arguments
- * @param argv The command line arguments.
- * @param p The parameters structure.
- * @return On error this function will exit.
- */
-static void parse_args(int argc, char *argv[], struct params *p);
-
-/**
- * This function hides overlapping labels so that only the label with the
- * largest weight will be shown.
- * @param labels The labels array
- * @param n_labels The size of the labels array
- */
-static void hide_overlapping_lables(label_t * labels, int n_labels);
-
-/**
  * The main function controls the program flow.
  */
 int main(int argc, char *argv[])
@@ -50,13 +33,131 @@ int main(int argc, char *argv[])
     srand((unsigned int)time(NULL));
 
     G_gisinit(argv[0]);
+
     module = G_define_module();
-    module->keywords = _("vector, paint labels");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("paint labels"));
     module->description =
 	_("Create optimally placed labels for vector map(s)");
 
     /* parse options and flags */
-    parse_args(argc, argv, &p);
+    p.map = G_define_standard_option(G_OPT_V_MAP);
+
+    p.type = G_define_standard_option(G_OPT_V_TYPE);
+    p.type->options = "point,line,area";
+    p.type->answer = "point,line,area";
+
+    p.layer = G_define_standard_option(G_OPT_V_FIELD);
+
+    p.column = G_define_option();
+    p.column->key = "column";
+    p.column->type = TYPE_STRING;
+    p.column->required = YES;
+    p.column->description =
+	_("Name of attribute column to be used for labels");
+
+    p.labels = G_define_option();
+    p.labels->key = "labels";
+    p.labels->description = _("Name for new paint-label file");
+    p.labels->type = TYPE_STRING;
+    p.labels->required = YES;
+    p.labels->key_desc = "name";
+
+    p.font = G_define_option();
+    p.font->key = "font";
+    p.font->type = TYPE_STRING;
+    p.font->required = YES;
+    p.font->description =
+	_("Name of TrueType font (as listed in the fontcap)");
+    p.font->guisection = _("Font");
+    p.font->gisprompt = "font";
+
+    p.size = G_define_option();
+    p.size->key = "size";
+    p.size->description = _("Label size (in map-units)");
+    p.size->type = TYPE_DOUBLE;
+    p.size->answer = "100";
+    p.size->guisection = _("Font");
+
+    p.isize = G_define_option();
+    p.isize->key = "isize";
+    p.isize->description = _("Icon size of point features (in map-units)");
+    p.isize->type = TYPE_DOUBLE;
+    p.isize->answer = "10";
+
+    p.charset = G_define_option();
+    p.charset->key = "charset";
+    p.charset->type = TYPE_STRING;
+    p.charset->required = NO;
+    p.charset->answer = DEFAULT_CHARSET;
+    p.charset->description =
+	"Character encoding (default: " DEFAULT_CHARSET ")";
+
+    p.color = G_define_option();
+    p.color->key = "color";
+    p.color->description = _("Text color");
+    p.color->type = TYPE_STRING;
+    p.color->answer = "black";
+    p.color->options = "aqua,black,blue,brown,cyan,gray,green,grey,indigo,"
+	"magenta,orange,purple,red,violet,white,yellow";
+    p.color->guisection = _("Colors");
+
+    p.hlcolor = G_define_option();
+    p.hlcolor->key = "hcolor";
+    p.hlcolor->description = _("Highlight color for text");
+    p.hlcolor->type = TYPE_STRING;
+    p.hlcolor->answer = "none";
+    p.hlcolor->options =
+	"none,aqua,black,blue,brown,cyan,gray,green,grey,indigo,"
+	"magenta,orange,purple,red,violet,white,yellow";
+    p.hlcolor->guisection = _("Colors");
+
+    p.hlwidth = G_define_option();
+    p.hlwidth->key = "hwidth";
+    p.hlwidth->description = _("Width of highlight coloring");
+    p.hlwidth->type = TYPE_DOUBLE;
+    p.hlwidth->answer = "0";
+    p.hlwidth->guisection = _("Colors");
+
+    p.bgcolor = G_define_option();
+    p.bgcolor->key = "background";
+    p.bgcolor->description = _("Background color");
+    p.bgcolor->type = TYPE_STRING;
+    p.bgcolor->answer = "none";
+    p.bgcolor->options =
+	"none,aqua,black,blue,brown,cyan,gray,green,grey,indigo,"
+	"magenta,orange,purple,red,violet,white,yellow";
+    p.bgcolor->guisection = _("Colors");
+
+    p.opaque = G_define_option();
+    p.opaque->key = "opaque";
+    p.opaque->description =
+	_("Opaque to vector (only relevant if background color is selected)");
+    p.opaque->type = TYPE_STRING;
+    p.opaque->answer = "yes";
+    p.opaque->options = "yes,no";
+    p.opaque->key_desc = "yes|no";
+    p.opaque->guisection = _("Colors");
+
+    p.bocolor = G_define_option();
+    p.bocolor->key = "border";
+    p.bocolor->description = _("Border color");
+    p.bocolor->type = TYPE_STRING;
+    p.bocolor->answer = "none";
+    p.bocolor->options =
+	"none,aqua,black,blue,brown,cyan,gray,green,grey,indigo,"
+	"magenta,orange,purple,red,violet,white,yellow";
+    p.bocolor->guisection = _("Colors");
+
+    p.bowidth = G_define_option();
+    p.bowidth->key = "width";
+    p.bowidth->description = _("Border width (only for ps.map output)");
+    p.bowidth->type = TYPE_DOUBLE;
+    p.bowidth->answer = "0";
+    p.bowidth->guisection = _("Colors");
+
+    if (G_parser(argc, argv))
+	exit(EXIT_FAILURE);
 
     /* initialize labels (get text from database, and get features) */
     labels = labels_init(&p, &n_labels);
@@ -67,16 +168,11 @@ int main(int argc, char *argv[])
     label_candidate_overlap(labels, n_labels);
     /*   3. position selection */
     simulate_annealing(labels, n_labels, &p);
-    /*   4. If overlap= option is given then go through final positioning
-     *   and remove remove overlaping labels */
-    if (p.overlap->answer[0] != '\0') {
-	hide_overlapping_lables(labels, n_labels);
-    }
     /* write lables to file */
     fprintf(stderr, "Writing labels to file: ...");
     labelf = G_fopen_new("paint/labels", p.labels->answer);
     for (i = 0; i < n_labels; i++) {
-	if ((labels[i].n_candidates > 0) && (!labels[i].hide)) {
+	if (labels[i].n_candidates > 0) {
 	    print_label(labelf, &labels[i], &p);
 	}
 	G_percent(i, (n_labels - 1), 1);
@@ -84,133 +180,6 @@ int main(int argc, char *argv[])
     fclose(labelf);
 
     return EXIT_SUCCESS;
-}
-
-static void parse_args(int argc, char *argv[], struct params *p)
-{
-    p->map = G_define_standard_option(G_OPT_V_MAP);
-
-    p->type = G_define_standard_option(G_OPT_V_TYPE);
-    p->type->options = "point,line,area";
-    p->type->answer = "point,line,area";
-
-    p->layer = G_define_standard_option(G_OPT_V_FIELD);
-
-    p->column = G_define_standard_option(G_OPT_COLUMN);
-    p->column->type = TYPE_STRING;
-    p->column->required = YES;
-    p->column->description =
-	_("Name of attribute column to be used for labels");
-
-    p->labels = G_define_option();
-    p->labels->key = "labels";
-    p->labels->description = _("Name for new paint-label file");
-    p->labels->type = TYPE_STRING;
-    p->labels->required = YES;
-    p->labels->key_desc = "name";
-
-    p->font = G_define_option();
-    p->font->key = "font";
-    p->font->type = TYPE_STRING;
-    p->font->required = YES;
-    p->font->description =
-	_("Name of TrueType font (as listed in the fontcap)");
-    p->font->guisection = _("Font");
-    p->font->gisprompt = _("Font");
-
-    p->size = G_define_option();
-    p->size->key = "size";
-    p->size->description = _("Label size (in map-units)");
-    p->size->type = TYPE_DOUBLE;
-    p->size->answer = "100";
-    p->size->guisection = _("Font");
-
-    p->isize = G_define_option();
-    p->isize->key = "isize";
-    p->isize->description = _("Icon size of point features (in map-units)");
-    p->isize->type = TYPE_DOUBLE;
-    p->isize->answer = "10";
-
-    p->charset = G_define_option();
-    p->charset->key = "charset";
-    p->charset->type = TYPE_STRING;
-    p->charset->required = NO;
-    p->charset->answer = DEFAULT_CHARSET;
-    p->charset->description =
-	"Character encoding (default: " DEFAULT_CHARSET ")";
-
-    p->color = G_define_option();
-    p->color->key = "color";
-    p->color->description = _("Text color");
-    p->color->type = TYPE_STRING;
-    p->color->answer = "black";
-    p->color->options = "aqua,black,blue,brown,cyan,gray,green,grey,indigo,"
-	"magenta,orange,purple,red,violet,white,yellow";
-    p->color->guisection = _("Colors");
-
-    p->hlcolor = G_define_option();
-    p->hlcolor->key = "hcolor";
-    p->hlcolor->description = _("Highlight color for text");
-    p->hlcolor->type = TYPE_STRING;
-    p->hlcolor->answer = "none";
-    p->hlcolor->options =
-	"none,aqua,black,blue,brown,cyan,gray,green,grey,indigo,"
-	"magenta,orange,purple,red,violet,white,yellow";
-    p->hlcolor->guisection = _("Colors");
-
-    p->hlwidth = G_define_option();
-    p->hlwidth->key = "hwidth";
-    p->hlwidth->description = _("Width of highlight coloring");
-    p->hlwidth->type = TYPE_DOUBLE;
-    p->hlwidth->answer = "0";
-    p->hlwidth->guisection = _("Colors");
-
-    p->bgcolor = G_define_option();
-    p->bgcolor->key = "background";
-    p->bgcolor->description = _("Background color");
-    p->bgcolor->type = TYPE_STRING;
-    p->bgcolor->answer = "none";
-    p->bgcolor->options =
-	"none,aqua,black,blue,brown,cyan,gray,green,grey,indigo,"
-	"magenta,orange,purple,red,violet,white,yellow";
-    p->bgcolor->guisection = _("Colors");
-
-    p->opaque = G_define_option();
-    p->opaque->key = "opaque";
-    p->opaque->description =
-	_("Opaque to vector (only relevant if background color is selected)");
-    p->opaque->type = TYPE_STRING;
-    p->opaque->answer = "yes";
-    p->opaque->options = "yes,no";
-    p->opaque->key_desc = "yes|no";
-    p->opaque->guisection = _("Colors");
-
-    p->bocolor = G_define_option();
-    p->bocolor->key = "border";
-    p->bocolor->description = _("Border color");
-    p->bocolor->type = TYPE_STRING;
-    p->bocolor->answer = "none";
-    p->bocolor->options =
-	"none,aqua,black,blue,brown,cyan,gray,green,grey,indigo,"
-	"magenta,orange,purple,red,violet,white,yellow";
-    p->bocolor->guisection = _("Colors");
-
-    p->bowidth = G_define_option();
-    p->bowidth->key = "width";
-    p->bowidth->description = _("Border width (only for ps.map output)");
-    p->bowidth->type = TYPE_DOUBLE;
-    p->bowidth->answer = "0";
-    p->bowidth->guisection = _("Colors");
-
-    p->overlap = G_define_standard_option(G_OPT_COLUMN);
-    p->overlap->key = "overlap";
-    p->overlap->description = _("Numeric column to give precedence in case of"
-				" overlapping labels. The label with a smaller"
-				" weight is hidden.");
-    p->overlap->answer = "";
-
-    if (G_parser(argc, argv))
-	exit(EXIT_FAILURE);
 }
 
 void print_label(FILE * labelf, label_t * label, struct params *p)
@@ -226,7 +195,7 @@ void print_label(FILE * labelf, label_t * label, struct params *p)
     fprintf(labelf, "north: %lf\n", label->candidates[cc].point.y);
     fprintf(labelf, "xoffset: %lf\n", 0.0);	/*  * (size)); */
     fprintf(labelf, "yoffset: %lf\n", 0.0);	/*  * (size)); */
-    fprintf(labelf, "ref: %s\n", "none none");
+    fprintf(labelf, "ref: %s\n", "bottom left");
 
     fprintf(labelf, "font: %s\n", p->font->answer);
     fprintf(labelf, "color: %s\n", p->color->answer);
@@ -244,35 +213,4 @@ void print_label(FILE * labelf, label_t * label, struct params *p)
     fprintf(labelf, "text:%s\n\n", label->text);
 
     return;
-}
-
-void hide_overlapping_lables(label_t * labels, int n_labels)
-{
-    int i;
-
-    fprintf(stderr, "Culling overlapping labels: ...");
-    for (i = 0; i < n_labels; i++) {
-	int j;
-	int cc = labels[i].current_candidate;
-
-	/* do not bother with already hidden labels */
-	if (labels[i].hide) {
-	    G_percent(i, (n_labels - 1), 1);
-	    continue;
-	}
-	for (j = 0; j < labels[i].candidates[cc].n_intersections; j++) {
-	    label_intersection_t *isect =
-		&labels[i].candidates[cc].intersections[j];
-	    if (isect->candidate == isect->label->current_candidate) {
-		/* hide the one with a lower weight */
-		if (labels[i].weight >= isect->label->weight) {
-		    isect->label->hide = 1;
-		}
-		else {
-		    labels[i].hide = 1;
-		}
-	    }
-	}
-	G_percent(i, (n_labels - 1), 1);
-    }
 }

@@ -1,25 +1,44 @@
 /****************************************************************************
  * 
- *  MODULE:	iostream
+ *  MODULE:     iostream
  *
+
  *  COPYRIGHT (C) 2007 Laura Toma
  *   
+ * 
+
+ *  Iostream is a library that implements streams, external memory
+ *  sorting on streams, and an external memory priority queue on
+ *  streams. These are the fundamental components used in external
+ *  memory algorithms.  
+
+ * Credits: The library was developed by Laura Toma.  The kernel of
+ * class STREAM is based on the similar class existent in the GPL TPIE
+ * project developed at Duke University. The sorting and priority
+ * queue have been developed by Laura Toma based on communications
+ * with Rajiv Wickremesinghe. The library was developed as part of
+ * porting Terraflow to GRASS in 2001.  PEARL upgrades in 2003 by
+ * Rajiv Wickremesinghe as part of the Terracost project.
+
+ * 
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
  *  (at your option) any later version.
  *
+
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *****************************************************************************/
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  General Public License for more details.  *
+ *  **************************************************************************/
+
 
 
 #ifndef _AMI_STREAM_H
 #define _AMI_STREAM_H
 
+#include <grass/config.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -32,15 +51,23 @@
 
 #include <cstring>
 #include <iostream>
-using namespace std;
+using std::cout;
+using std::cerr;
+using std::endl;
+using std::ostream;
+using std::ofstream;
+using std::istream;
 
-#include <grass/config.h>
+extern "C" {
+#include <grass/gis.h>
+}
 
 #define MAX_STREAMS_OPEN 200
 
 #include "mm.h" // Get the memory manager.
 
 #define DEBUG_DELETE if(0)
+#define DEBUG_STREAM_LEN if(0)
 #define DEBUG_ASSERT if(0)
 
 // The name of the environment variable which keeps the name of the
@@ -82,7 +109,7 @@ enum AMI_stream_type {
     AMI_WRITE_STREAM,		// Open for writing.  Create if non-existent
     AMI_APPEND_STREAM,		// Open for writing at end.  Create if needed.
     AMI_READ_WRITE_STREAM,	// Open to read and write.
-    AMI_APPEND_WRITE_STREAM     // Open for writing at end (write only mode).
+    AMI_APPEND_WRITE_STREAM 	// Open for writing at end (write only mode).
 };
 
 
@@ -363,36 +390,44 @@ off_t AMI_STREAM<T>::stream_len(void) {
   fflush(fp);
 
 #ifdef __MINGW32__
-  //stat() fails on MS Windows if the file is open, so try ftell() instead.
+  //stat() fails on MS Windows if the file is open, so try G_ftell() instead.
   //FIXME: not 64bit safe, but WinGrass isn't either right now.
-  //try something with #ifdef HAVE_LARGEFILES ? (see fseeko() elsewhere in this file)
-  long posn_save, st_size;
+  off_t posn_save, st_size;
 
-  posn_save = ftell(fp);
+  posn_save = G_ftell(fp);
   if(posn_save == -1) {
      perror("ERROR: AMI_STREAM::stream_len(): ftell(fp) failed ");
      perror(path);
      exit(1);
   }
 
-  fseek(fp, 0, SEEK_END);
-  st_size = ftell(fp);
+  G_fseek(fp, 0, SEEK_END);
+  st_size = G_ftell(fp);
   if(st_size == -1) {
      perror("ERROR: AMI_STREAM::stream_len(): ftell[SEEK_END] failed ");
      perror(path);
      exit(1);
   }
 
-  fseek(fp, posn_save, SEEK_SET);
-  return (st_size / sizeof(T));
+  G_fseek(fp, posn_save, SEEK_SET);
 
+  //debug stream_len:
+  DEBUG_STREAM_LEN fprintf(stderr, "%s: length = %lld   sizeof(T)=%d\n",
+	  path, st_size, sizeof(T));
+
+  return (st_size / sizeof(T));
 #else
   struct stat buf;
   if (stat(path, &buf) == -1) {
-    perror("ERROR: AMI_STREAM::stream_len(): fstat failed ");
+    perror("AMI_STREAM::stream_len(): fstat failed ");
     DEBUG_ASSERT assert(0);
     exit(1);
   }
+
+  //debug stream_len:
+  DEBUG_STREAM_LEN fprintf(stderr, "%s: length = %lld   sizeof(T)=%lud\n",
+	  path, (long long int)buf.st_size, sizeof(T));
+
   return (buf.st_size / sizeof(T));
 #endif
 };
@@ -444,15 +479,7 @@ AMI_err AMI_STREAM<T>::seek(off_t offset) {
     seek_offset = offset * sizeof(T);
   }
 
-#ifdef HAVE_LARGEFILES
-  if (fseeko(fp, seek_offset, SEEK_SET) == -1) {
-#else
-  if (fseek(fp, seek_offset, SEEK_SET) == -1) {
-#endif     
-    cerr << "ERROR: AMI_STREAM::seek offset=" << seek_offset << " failed.\n";
-    DEBUG_ASSERT assert(0);
-    exit(1);
-  }
+  G_fseek(fp, seek_offset, SEEK_SET);
   
   return AMI_ERROR_NO_ERROR;
 }
@@ -518,7 +545,7 @@ AMI_err AMI_STREAM<T>::read_item(T **elt)  {
   assert(fp);
 
   //if we go past substream range
-  if ((logical_eos >= 0) && ftell(fp) >= sizeof(T) * logical_eos) {
+  if ((logical_eos >= 0) && G_ftell(fp) >= sizeof(T) * logical_eos) {
     return AMI_ERROR_END_OF_STREAM;
   
   } else {
@@ -548,7 +575,7 @@ AMI_err AMI_STREAM<T>::read_array(T *data, off_t len, off_t *lenp) {
   assert(fp);
   
   //if we go past substream range
-  if ((logical_eos >= 0) && ftell(fp) >= sizeof(T) * logical_eos) {
+  if ((logical_eos >= 0) && G_ftell(fp) >= sizeof(T) * logical_eos) {
 	eof_reached = 1;
     return AMI_ERROR_END_OF_STREAM;
     
@@ -580,7 +607,7 @@ AMI_err AMI_STREAM<T>::write_item(const T &elt) {
 
   assert(fp);
   //if we go past substream range
-  if ((logical_eos >= 0) && ftell(fp) >= sizeof(T) * logical_eos) {
+  if ((logical_eos >= 0) && G_ftell(fp) >= sizeof(T) * logical_eos) {
     return AMI_ERROR_END_OF_STREAM;
   
   } else {
@@ -606,7 +633,7 @@ AMI_err AMI_STREAM<T>::write_array(const T *data, off_t len) {
 
   assert(fp);
   //if we go past substream range
-  if ((logical_eos >= 0) && ftell(fp) >= sizeof(T) * logical_eos) {
+  if ((logical_eos >= 0) && G_ftell(fp) >= sizeof(T) * logical_eos) {
     return AMI_ERROR_END_OF_STREAM;
     
   } else {

@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #define GLOBAL
 #include "global.h"
@@ -45,7 +46,6 @@ DCELL **cell;
 int *cellfd;
 FILE *report;
 int sample_rows, sample_cols;
-int verbose;
 time_t start_time;
 
 static int interrupted = 0;
@@ -69,15 +69,12 @@ int main(int argc, char *argv[])
 	    *convergence, *min_size, *report_file;
     } parm;
 
-    struct
-    {
-	struct Flag *q;
-    } flag;
-
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("imagery, classification, signatures");
+    G_add_keyword(_("imagery"));
+    G_add_keyword(_("classification"));
+    G_add_keyword(_("signatures"));
     module->label =
 	_("Generates spectral signatures for land cover "
 	  "types in an image using a clustering algorithm.");
@@ -90,7 +87,7 @@ int main(int argc, char *argv[])
     parm.subgroup_name = G_define_standard_option(G_OPT_I_SUBGROUP);
     
     parm.out_sig = G_define_option();
-    parm.out_sig->key = "sigfile";
+    parm.out_sig->key = "signaturefile";
     parm.out_sig->type = TYPE_STRING;
     parm.out_sig->key_desc = "name";
     parm.out_sig->required = YES;
@@ -110,6 +107,7 @@ int main(int argc, char *argv[])
     parm.seed_sig->required = NO;
     parm.seed_sig->type = TYPE_STRING;
     parm.seed_sig->key_desc = "name";
+    parm.seed_sig->gisprompt = "old,sig,sigfile";
     parm.seed_sig->description = _("Name of file containing initial signatures");
 
     parm.sample_interval = G_define_option();
@@ -158,18 +156,14 @@ int main(int argc, char *argv[])
     parm.report_file->key = "reportfile";
     parm.report_file->required = NO;
     parm.report_file->description = _("Name for output file containing final report");
-
-    flag.q = G_define_flag();
-    flag.q->key = 'q';
-    flag.q->description = _("Quiet");
-
+    
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
 
     G_get_window(&window);
-    nrows = G_window_rows();
-    ncols = G_window_cols();
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
 
     I_cluster_clear(&C);
 
@@ -224,9 +218,7 @@ int main(int argc, char *argv[])
 	G_fatal_error(_("Illegal value of min_size (%s)"),
 		      parm.min_size->answer);
     }
-
-    verbose = !flag.q->answer;
-
+    
     if ((reportfile = parm.report_file->answer) == NULL)
 	report = fopen(G_DEV_NULL, "w");
     else
@@ -261,7 +253,7 @@ int main(int argc, char *argv[])
 	    window.ew_res);
     fprintf(report, _("  Rows:  %12d  Cols: %12d  Cells: %d\n"), nrows, ncols,
 	    nrows * ncols);
-    fprintf(report, _("Mask: %s\n"), G_mask_info());
+    fprintf(report, _("Mask: %s\n"), Rast_mask_info());
     fprintf(report, "\n");
     fprintf(report, _("Cluster parameters\n"));
     fprintf(report, _(" Number of initial classes:    %d"), maxclass);
@@ -287,9 +279,7 @@ int main(int argc, char *argv[])
     for (row = sample_rows - 1; row < nrows; row += sample_rows) {
 	G_percent(row, nrows, 2);
 	for (n = 0; n < ref.nfiles; n++)
-	    if (G_get_d_raster_row(cellfd[n], cell[n], row) < 0)
-		G_fatal_error(_("Unable to read raster map row %d"),
-			      row);
+	    Rast_get_d_row(cellfd[n], cell[n], row);
 	for (col = sample_cols - 1; col < ncols; col += sample_cols) {
 	    count++;
 	    for (n = 0; n < ref.nfiles; n++)
@@ -313,7 +303,7 @@ int main(int argc, char *argv[])
 
     for (n = 0; n < ref.nfiles; n++) {
 	G_free(cell[n]);
-	G_close_cell(cellfd[n]);
+	Rast_close(cellfd[n]);
     }
     G_free(x);
 

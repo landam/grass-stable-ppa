@@ -4,9 +4,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/display.h>
-#include <grass/raster.h>
 #include <grass/colors.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
@@ -39,7 +38,7 @@ int dareatheme(struct Map_info *Map, struct cat_list *Clist,
 
     for (area = 1; area <= num; area++) {
 	int i;
-	BOUND_BOX box;
+	struct bound_box box;
 
 	G_debug(3, "area = %d", area);
 
@@ -154,22 +153,22 @@ int dareatheme(struct Map_info *Map, struct cat_list *Clist,
 
 
 	/* plot polygon in class color */
-	R_RGB_color(colors[i].r, colors[i].g, colors[i].b);
-	plot_polygon(Points->x, Points->y, Points->n_points);
+	D_RGB_color(colors[i].r, colors[i].g, colors[i].b);
+	D_polygon_abs(Points->x, Points->y, Points->n_points);
 
 	/* XXX rewrite boundary */
 	if (bcolor) {
 	    int i;
 
 	    Vect_get_area_points(Map, area, Points);
-	    R_RGB_color(bcolor->r, bcolor->g, bcolor->b);
+	    D_RGB_color(bcolor->r, bcolor->g, bcolor->b);
 	    /*use different user defined render methods */
-	    plot_polyline(Points->x, Points->y, Points->n_points);
+	    D_polyline_abs(Points->x, Points->y, Points->n_points);
 	    for (i = 0; i < n_isles; i++) {
 		isle = Vect_get_area_isle(Map, area, i);
 		Vect_get_isle_points(Map, isle, Points);
 		/*use different user defined render methods */
-		plot_polyline(Points->x, Points->y, Points->n_points);
+		D_polyline_abs(Points->x, Points->y, Points->n_points);
 	    }
 	}
     }				/* end for loop over areas */

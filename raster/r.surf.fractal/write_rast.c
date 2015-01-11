@@ -14,6 +14,7 @@
 
 /***************************************************************************/
 
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "frac.h"
 
@@ -39,10 +40,10 @@ int write_rast(double *data[2],	/* Array holding complex data.          */
 
     /* of the input raster.                 */
 
-    nrows = G_window_rows();	/* Find out the number of rows and      */
-    ncols = G_window_cols();	/* columns of the raster view.          */
+    nrows = Rast_window_rows();	/* Find out the number of rows and      */
+    ncols = Rast_window_cols();	/* columns of the raster view.          */
 
-    row_out = G_allocate_d_raster_buf();
+    row_out = Rast_allocate_d_buf();
 
     /*------------------------------------------------------------------*/
     /*         Open new file and set the output file descriptor.        */
@@ -52,12 +53,9 @@ int write_rast(double *data[2],	/* Array holding complex data.          */
     if (Steps != step)
 	sprintf(file_name, "%s.%d", rast_out_name, step);
     else
-	G_strcpy(file_name, rast_out_name);
+	strcpy(file_name, rast_out_name);
 
-    if ((fd_out = G_open_raster_new(file_name, DCELL_TYPE)) < 0) {
-	G_fatal_error(_("Unable to create raster map <%s>"),
-		      file_name);
-    }
+    fd_out = Rast_open_new(file_name, DCELL_TYPE);
 
     /*------------------------------------------------------------------*/
     /*  Extract real component of transform and save as a GRASS raster. */
@@ -68,13 +66,13 @@ int write_rast(double *data[2],	/* Array holding complex data.          */
 	for (col = 0; col < ncols; col++)
 	    *(row_out + col) = (DCELL) (*(data[0] + row * nn + col) * 100000);
 
-	G_put_raster_row(fd_out, (DCELL *) row_out, DCELL_TYPE);
+	Rast_put_row(fd_out, (DCELL *) row_out, DCELL_TYPE);
     }
 
-    G_close_cell(fd_out);
-    G_short_history(file_name, "raster", &history);
-    G_command_history(&history);
-    G_write_history(file_name, &history);
+    Rast_close(fd_out);
+    Rast_short_history(file_name, "raster", &history);
+    Rast_command_history(&history);
+    Rast_write_history(file_name, &history);
 
     return 0;
 }

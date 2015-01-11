@@ -32,8 +32,9 @@
 
 #include <math.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/segment.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/bitmap.h>
 
 #ifndef hypot
@@ -80,22 +81,6 @@ typedef struct
 layer;
 
 /******************************* GLOBALS ********************************/
-#ifdef MAIN
-
-/* heap memory */
-struct Cell_head region;	/* resolution and boundaries            */
-struct Map_info fl;		/* output vector file header            */
-struct BM *bitbar;		/* space-efficient barrier matrix       */
-int lgfd;			/* output length file descriptor        */
-char string[1024];		/* space for strings                    */
-layer el, as, ds;		/* elevation, aspect, density           */
-double *ew_dist;		/* east-west distances for rows         */
-double *epsilon[2];		/* quantization errors for rows         */
-
-/* command-line parameters */
-params parm;
-
-#else
 
 extern struct Cell_head region;
 extern struct Map_info fl;
@@ -108,4 +93,3 @@ extern double *epsilon[2];
 
 extern params parm;
 
-#endif

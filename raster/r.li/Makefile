@@ -16,19 +16,16 @@ SUBDIRS1 = \
 	r.li.pielou \
 	r.li.renyi \
 	r.li.richness \
-	r.li.setup \
 	r.li.shannon \
 	r.li.shape \
 	r.li.simpson
+#	r.li.setup \
 
 SUBDIRS = r.li.daemon $(SUBDIRS1)
 
 include $(MODULE_TOPDIR)/include/Make/Dir.make
 
-default: parsubdirs
-	$(INSTALL_DATA) description.html $(GISBASE)/docs/html/r.li.html
-
-clean: cleansubdirs
+default: parsubdirs htmldir
 
 $(SUBDIRS1): r.li.daemon
 

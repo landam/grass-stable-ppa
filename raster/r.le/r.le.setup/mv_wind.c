@@ -20,7 +20,6 @@
  *                                                         *
  ************************************************************/
 
-#include <grass/raster.h>
 #include <grass/display.h>
 #include "setup.h"
 #include <grass/config.h>
@@ -103,7 +102,7 @@ void mov_wind(int t, int b, int l, int r, char *n1, char *n2, char *n3,
 	fprintf(stderr,
 		"    If a MASK is present there will be no warning.\n");
 
-	fmask = G_open_cell_old("MASK", G_mapset());
+	fmask = Rast_open_old("MASK", G_mapset());
 	fprintf(stderr, "\n");
 
 
@@ -338,7 +337,7 @@ void mov_wind(int t, int b, int l, int r, char *n1, char *n2, char *n3,
 	    t = t0;
 	}
 
-	G_close_cell(fmask);
+	Rast_close(fmask);
     }
 
     /* if neither, then exit */

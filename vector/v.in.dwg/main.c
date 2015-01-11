@@ -28,8 +28,6 @@
 #define AD_VM_PC
 #define OD_GENERIC_READ
 
-#define MAIN
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,11 +36,30 @@
 #include <unistd.h>
 #include <grass/gis.h>
 #include <grass/dbmi.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 #include "ad2.h"
 #include "io/odio.h"
 #include "global.h"
+
+int cat;
+int n_elements;		/* number of processed elements (only low level elements) */
+int n_skipped;		/* number of skipped low level elements (different layer name) */
+struct Map_info Map;
+dbDriver *driver;
+dbString sql;
+dbString str;
+struct line_pnts *Points;
+struct line_cats *Cats;
+PAD_LAY Layer;
+char *Txt;
+char *Block;
+struct field_info *Fi;
+AD_DB_HANDLE dwghandle;
+TRANS *Trans;		/* transformation */
+int atrans;		/* number of allocated levels */
+struct Option *layers_opt;
+struct Flag *invert_flag;
 
 int main(int argc, char *argv[])
 {
@@ -62,7 +79,8 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, import");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("import"));
     module->description = _("Converts DWG/DXF to GRASS vector map");
 
     in_opt = G_define_standard_option(G_OPT_F_INPUT);
@@ -184,7 +202,7 @@ int main(int argc, char *argv[])
 
     /* Add DB link */
     Fi = Vect_default_field_info(&Map, 1, NULL, GV_1TABLE);
-    Vect_map_add_dblink(&Map, 1, NULL, Fi->table, "cat", Fi->database,
+    Vect_map_add_dblink(&Map, 1, NULL, Fi->table, GV_KEY_COLUMN, Fi->database,
 			Fi->driver);
 
     driver =
@@ -219,9 +237,9 @@ int main(int argc, char *argv[])
 	G_fatal_error(_("Unable to create table: '%s'"), db_get_string(&sql));
     }
 
-    if (db_create_index2(driver, Fi->table, "cat") != DB_OK)
+    if (db_create_index2(driver, Fi->table, GV_KEY_COLUMN) != DB_OK)
 	G_warning(_("Unable to create index for table <%s>, key <%s>"),
-		  Fi->table, "cat");
+		  Fi->table, GV_KEY_COLUMN);
 
     if (db_grant_on_table
 	(driver, Fi->table, DB_PRIV_SELECT, DB_GROUP | DB_PUBLIC) != DB_OK)

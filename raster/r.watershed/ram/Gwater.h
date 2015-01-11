@@ -8,6 +8,7 @@
 /* last modified 03/26/91                       */
 #include <math.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include "ramseg.h"
 #include "flag.h"
 
@@ -17,7 +18,6 @@
 
 #define AR_SIZE			16
 #define AR_INCR			16
-#define SHORT			int
 #define NOMASK			1
 #define MIN_SLOPE		.00001
 #define MIN_GRADIENT_DEGREES	1
@@ -34,8 +34,13 @@
 
 #define POINT       struct points
 POINT {
-    SHORT r, c; /* , downr, downc */
-    int nxt;
+    int r, c; /* , downr, downc */
+    /* int nxt; */
+};
+
+#define OC_STACK struct overland_cells_stack
+OC_STACK {
+    int row, col;
 };
 
 extern struct Cell_head window;
@@ -43,34 +48,38 @@ extern struct Cell_head window;
 extern int mfd, c_fac, abs_acc, ele_scale;
 extern int *heap_index, heap_size;
 extern int first_astar, first_cum, nxt_avail_pt, total_cells, do_points;
-extern SHORT nrows, ncols;
+extern int nrows, ncols;
 extern double half_res, diag, max_length, dep_slope;
 extern int bas_thres, tot_parts;
-extern FLAG *worked, *in_list, *s_b, *swale;
+extern CELL n_basins;
+extern OC_STACK *ocs;
+extern int ocs_alloced;
+extern FLAG *worked, *in_list, *s_b, *swale, *flat_done;
 extern RAMSEG dis_seg, alt_seg, wat_seg, asp_seg, bas_seg, haf_seg;
 extern RAMSEG r_h_seg, dep_seg;
 extern RAMSEG slp_seg, s_l_seg, s_g_seg, l_s_seg;
 extern int *astar_pts;
 extern CELL *dis, *alt, *asp, *bas, *haf, *r_h, *dep;
-extern DCELL *wat;
+extern DCELL *wat, *tci;
 extern int ril_fd;
 extern double *s_l, *s_g, *l_s;
 extern CELL one, zero;
 extern double ril_value, d_one, d_zero;
-extern SHORT sides;
-extern SHORT drain[3][3];
-extern SHORT updrain[3][3];
-extern SHORT nextdr[8];
-extern SHORT nextdc[8];
+extern int sides;
+extern int drain[3][3];
+extern int updrain[3][3];
+extern int nextdr[8];
+extern int nextdc[8];
 extern char ele_name[GNAME_MAX], pit_name[GNAME_MAX];
 extern char run_name[GNAME_MAX], ob_name[GNAME_MAX];
 extern char ril_name[GNAME_MAX], dep_name[GNAME_MAX];
 extern const char *this_mapset;
 extern char seg_name[GNAME_MAX], bas_name[GNAME_MAX], haf_name[GNAME_MAX], thr_name[8];
 extern char ls_name[GNAME_MAX], st_name[GNAME_MAX], sl_name[GNAME_MAX], sg_name[GNAME_MAX];
-extern char wat_name[GNAME_MAX], asp_name[GNAME_MAX], arm_name[GNAME_MAX], dis_name[GNAME_MAX];
-extern char ele_flag, pit_flag, run_flag, dis_flag, ob_flag;
-extern char wat_flag, asp_flag, arm_flag, ril_flag, dep_flag;
+extern char wat_name[GNAME_MAX], asp_name[GNAME_MAX], tci_name[GNAME_MAX];
+extern char arm_name[GNAME_MAX], dis_name[GNAME_MAX];
+extern char ele_flag, pit_flag, run_flag, dis_flag, ob_flag, flat_flag;
+extern char wat_flag, asp_flag, arm_flag, ril_flag, dep_flag, tci_flag;
 extern char bas_flag, seg_flag, haf_flag, er_flag;
 extern char st_flag, sb_flag, sg_flag, sl_flag, ls_flag;
 extern FILE *fp;
@@ -86,11 +95,12 @@ CELL def_basin(int, int, CELL, double, CELL);
 
 /* do_astar.c */
 int do_astar(void);
-int add_pt(SHORT, SHORT, CELL, CELL);
+int add_pt(int, int, CELL);
 int drop_pt(void);
-int sift_up(int, CELL);
-double get_slope(SHORT, SHORT, SHORT, SHORT, CELL, CELL);
-int replace(SHORT, SHORT, SHORT, SHORT);
+double get_slope(int, int, int, int, CELL, CELL);
+
+/* do_flatarea.c */
+int do_flatarea(int, CELL, CELL *, CELL *);
 
 /* do_cum.c */
 int do_cum(void);
@@ -101,7 +111,7 @@ double mfd_pow(double, int);
 int find_pourpts(void);
 
 /* haf_side.c */
-int haf_basin_side(SHORT, SHORT, SHORT);
+int haf_basin_side(int, int, int);
 
 /* init_vars.c */
 int init_vars(int, char *[]);
@@ -121,7 +131,7 @@ int sg_factor(void);
 int len_slp_equ(double, double, double, int, int);
 
 /* slope_len.c */
-int slope_length(SHORT, SHORT, SHORT, SHORT);
+int slope_length(int, int, int, int);
 
 /* split_str.c */
 CELL split_stream(int, int, int[], int[], int, CELL, double, CELL);

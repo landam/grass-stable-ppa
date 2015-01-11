@@ -27,7 +27,7 @@
  *        Next byte(s): category number. The number of bytes is determined
  *                      by the number of bytes in a cell 
  *
- * The normal G_open_cell(), and G_put_raster_row() do the compression
+ * The normal G_open_cell(), and Rast_put_row() do the compression
  * This program must only check that the file is not a reclass file and
  * is not already compressed.
  *
@@ -40,6 +40,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 static off_t newsize, oldsize;
@@ -55,13 +56,11 @@ int main(int argc, char *argv[])
     struct Option *map;
     struct Flag *uncompress;
 
-    /* please, remove before GRASS 7 released */
-    struct Flag *q_flag;
-
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, map management");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("map management"));
     module->description = _("Compresses and decompresses raster maps.");
 
     map = G_define_option();
@@ -76,20 +75,8 @@ int main(int argc, char *argv[])
     uncompress->key = 'u';
     uncompress->description = _("Uncompress the map");
 
-    /* please, remove before GRASS 7 released */
-    q_flag = G_define_flag();
-    q_flag->key = 'q';
-    q_flag->description = _("Run quietly");
-
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
-
-    /* please, remove before GRASS 7 released */
-    if (q_flag->answer) {
-	G_putenv("GRASS_VERBOSE", "0");
-	G_warning(_("The '-q' flag is superseded and will be removed "
-		    "in future. Please use '--quiet' instead."));
-    }
 
     stat = 0;
     for (n = 0; (name = map->answers[n]); n++)
@@ -113,11 +100,11 @@ static int process(char *name, int uncompress)
     RASTER_MAP_TYPE map_type;
     char rname[GNAME_MAX], rmapset[GMAPSET_MAX];
 
-    if (G_find_cell(name, G_mapset()) == NULL) {
+    if (G_find_raster(name, G_mapset()) == NULL) {
 	G_warning(_("[%s] not found"), name);
 	return 1;
     }
-    if (G_is_reclass(name, G_mapset(), rname, rmapset) > 0) {
+    if (Rast_is_reclass(name, G_mapset(), rname, rmapset) > 0) {
 	G_warning(uncompress
 		  ?
 		  _("[%s] is a reclass file of map <%s> in mapset <%s> - can't uncompress")
@@ -131,16 +118,16 @@ static int process(char *name, int uncompress)
 	return 1;
     }
 
-    map_type = G_raster_map_type(name, G_mapset());
+    map_type = Rast_map_type(name, G_mapset());
 
     G_suppress_warnings(1);
-    colr_ok = G_read_colors(name, G_mapset(), &colr) > 0;
-    hist_ok = G_read_history(name, G_mapset(), &hist) >= 0;
-    cats_ok = G_read_cats(name, G_mapset(), &cats) >= 0;
+    colr_ok = Rast_read_colors(name, G_mapset(), &colr) > 0;
+    hist_ok = Rast_read_history(name, G_mapset(), &hist) >= 0;
+    cats_ok = Rast_read_cats(name, G_mapset(), &cats) >= 0;
 
     if (map_type != CELL_TYPE) {
-	G_quant_init(&quant);
-	quant_ok = G_read_quant(name, G_mapset(), &quant);
+	Rast_quant_init(&quant);
+	quant_ok = Rast_read_quant(name, G_mapset(), &quant);
 	G_suppress_warnings(0);
     }
 
@@ -148,18 +135,18 @@ static int process(char *name, int uncompress)
 	return 1;
 
     if (colr_ok) {
-	G_write_colors(name, G_mapset(), &colr);
-	G_free_colors(&colr);
+	Rast_write_colors(name, G_mapset(), &colr);
+	Rast_free_colors(&colr);
     }
     if (hist_ok)
-	G_write_history(name, &hist);
+	Rast_write_history(name, &hist);
     if (cats_ok) {
-	cats.num = G_number_of_cats(name, G_mapset());
-	G_write_cats(name, &cats);
-	G_free_cats(&cats);
+	cats.num = Rast_get_max_c_cat(name, G_mapset());
+	Rast_write_cats(name, &cats);
+	Rast_free_cats(&cats);
     }
     if (map_type != CELL_TYPE && quant_ok)
-	G_write_quant(name, G_mapset(), &quant);
+	Rast_write_quant(name, G_mapset(), &quant);
 
     diff = newsize - oldsize;
     if (diff < 0)
@@ -189,11 +176,7 @@ static int doit(char *name, int uncompress, RASTER_MAP_TYPE map_type)
     int new, old, nrows, row;
     void *rast;
 
-    if (G_get_cellhd(name, G_mapset(), &cellhd) < 0) {
-	G_warning("Problem reading cell header for [%s]", name);
-	return 1;
-    }
-
+    Rast_get_cellhd(name, G_mapset(), &cellhd);
 
     /* check if already compressed/decompressed */
     if (uncompress && cellhd.compressed == 0) {
@@ -207,50 +190,44 @@ static int doit(char *name, int uncompress, RASTER_MAP_TYPE map_type)
 
     G_message(_("\n%sCOMPRESS [%s]"), uncompress ? "UN" : "", name);
 
-    G_set_window(&cellhd);
+    Rast_set_window(&cellhd);
 
-    old = G_open_cell_old(name, G_mapset());
-    if (old < 0)
-	return 1;
+    old = Rast_open_old(name, G_mapset());
 
     if (uncompress) {
 	if (map_type == CELL_TYPE) {
-	    G_set_cell_format(cellhd.format);
-	    new = G_open_cell_new_uncompressed(name);
+	    Rast_set_cell_format(cellhd.format);
+	    new = Rast_open_c_new_uncompressed(name);
 	}
 	else {
-	    G_set_fp_type(map_type);
-	    new = G_open_fp_cell_new_uncompressed(name);
+	    Rast_set_fp_type(map_type);
+	    new = Rast_open_fp_new_uncompressed(name);
 	}
     }
     else
-	new = G_open_raster_new(name, map_type);
+	new = Rast_open_new(name, map_type);
 
-    if (new < 0)
-	return 1;
-    nrows = G_window_rows();
-    rast = G_allocate_raster_buf(map_type);
+    nrows = Rast_window_rows();
+    rast = Rast_allocate_buf(map_type);
 
     oldsize = lseek(old, (off_t) 0, SEEK_END);
 
     /* the null file is written automatically */
     for (row = 0; row < nrows; row++) {
 	G_percent(row, nrows, 2);
-	if (G_get_raster_row_nomask(old, rast, row, map_type) < 0)
-	    break;
-	if (G_put_raster_row(new, rast, map_type) < 0)
-	    break;
+	Rast_get_row_nomask(old, rast, row, map_type);
+	Rast_put_row(new, rast, map_type);
     }
     G_free(rast);
-    G_close_cell(old);
+    Rast_close(old);
     if (row < nrows) {
-	G_unopen_cell(new);
+	Rast_unopen(new);
 	return 1;
     }
-    G_close_cell(new);
+    Rast_close(new);
     newsize = 0;
-    old = G_open_cell_old(name, G_mapset());
+    old = Rast_open_old(name, G_mapset());
     newsize = lseek(old, (off_t) 0, SEEK_END);
-    G_close_cell(old);
+    Rast_close(old);
     return 0;
 }

@@ -1,5 +1,5 @@
 #include "globals.h"
-#include <grass/raster.h>
+#include <grass/display.h>
 #include <grass/glocale.h>
 #include "local_proto.h"
 

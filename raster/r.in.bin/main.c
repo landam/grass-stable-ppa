@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 #include "gmt_grd.h"
@@ -171,7 +172,7 @@ static void convert_row(
 	DCELL x;
 	convert_cell(&x, ptr, is_fp, is_signed, bytes, swap_flag);
 	if (x == null_val)
-	    G_set_d_null_value(&raster[i], 1);
+	    Rast_set_d_null_value(&raster[i], 1);
 	else
 	    raster[i] = x;
 	ptr += bytes;
@@ -231,9 +232,10 @@ int main(int argc, char *argv[])
 
     /* Set description */
     module = G_define_module();
-    module->keywords = _("raster, import");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("import"));
     module->description =
-	_("Import a binary raster file into a GRASS raster map.");
+	_("Import a binary raster file into a GRASS raster map layer.");
 
     flag.float_in = G_define_flag();
     flag.float_in->key = 'f';
@@ -260,12 +262,10 @@ int main(int argc, char *argv[])
     flag.gmt_hd->description = _("Get region info from GMT style header");
     flag.gmt_hd->guisection = _("Bounds");
 
-    parm.input = G_define_option();
-    parm.input->key = "input";
-    parm.input->type = TYPE_STRING;
+    parm.input = G_define_standard_option(G_OPT_F_INPUT);
     parm.input->required = YES;
     parm.input->description = _("Binary raster file to be imported");
-    parm.input->gisprompt = "old_file,file,input";
+    parm.input->gisprompt = "old,bin,file";
 
     parm.output = G_define_standard_option(G_OPT_R_OUTPUT);
 
@@ -469,15 +469,15 @@ int main(int argc, char *argv[])
     grass_nrows = nrows = cellhd.rows;
     grass_ncols = ncols = cellhd.cols;
 
-    G_set_window(&cellhd);
+    Rast_set_window(&cellhd);
 
-    if (grass_nrows != G_window_rows())
+    if (grass_nrows != Rast_window_rows())
 	G_fatal_error("rows changed from %d to %d",
-		      grass_nrows, G_window_rows());
+		      grass_nrows, Rast_window_rows());
 
-    if (grass_ncols != G_window_cols())
+    if (grass_ncols != Rast_window_cols())
 	G_fatal_error("cols changed from %d to %d",
-		      grass_ncols, G_window_cols());
+		      grass_ncols, Rast_window_cols());
 
     expected = (off_t) ncols * nrows * bytes;
     if (flag.gmt_hd->answer)
@@ -490,7 +490,7 @@ int main(int argc, char *argv[])
     }
 
     in_buf = G_malloc(ncols * bytes);
-    out_buf = G_allocate_d_raster_buf();
+    out_buf = Rast_allocate_d_buf();
 
     map_type = is_fp
 	? (bytes > 4
@@ -499,9 +499,9 @@ int main(int argc, char *argv[])
 	: CELL_TYPE;
 
     in_buf = G_malloc(ncols * bytes);
-    out_buf = G_allocate_d_raster_buf();
+    out_buf = Rast_allocate_d_buf();
 
-    fd = G_open_raster_new(output, map_type);
+    fd = Rast_open_new(output, map_type);
 
     for (row = 0; row < grass_nrows; row++) {
 	G_percent(row, nrows, 2);
@@ -512,22 +512,22 @@ int main(int argc, char *argv[])
 	convert_row(out_buf, in_buf, ncols, is_fp, is_signed,
 		    bytes, swap_flag, null_val);
 
-	G_put_d_raster_row(fd, out_buf);
+	Rast_put_d_row(fd, out_buf);
     }
 
     G_percent(row, nrows, 2);	/* finish it off */
 
-    G_close_cell(fd);
+    Rast_close(fd);
     fclose(fp);
 
     G_debug(1, "Creating support files for %s", output);
 
     if (title)
-	G_put_cell_title(output, title);
+	Rast_put_cell_title(output, title);
 
-    G_short_history(output, "raster", &history);
-    G_command_history(&history);
-    G_write_history(output, &history);
+    Rast_short_history(output, "raster", &history);
+    Rast_command_history(&history);
+    Rast_write_history(output, &history);
 
     return EXIT_SUCCESS;
 }

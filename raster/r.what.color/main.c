@@ -1,7 +1,7 @@
 
 /****************************************************************************
  *
- * MODULE:       r.what.color
+ * MODULE:       r.what
  * AUTHOR(S):    Michael Shapiro, CERL (original contributor)
  *               Markus Neteler <neteler itc.it>,Brad Douglas <rez touchofmadness.com>,
  *               Huidae Cho <grass4u gmail.com>, Glynn Clements <glynn gclements.plus.com>,
@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 static const char *fmt;
@@ -37,7 +38,7 @@ static int do_value(const char *buf, RASTER_MAP_TYPE type,
 	    fprintf(stdout, "*: *\n");
 	    return 0;
 	}
-	if (!G_get_c_raster_color(&ival, &red, &grn, &blu, colors)) {
+	if (!Rast_get_c_color(&ival, &red, &grn, &blu, colors)) {
 	    fprintf(stdout, "%d: *\n", ival);
 	    return 0;
 	}
@@ -52,7 +53,7 @@ static int do_value(const char *buf, RASTER_MAP_TYPE type,
 	    fprintf(stdout, "*: *\n");
 	    return 0;
 	}
-	if (!G_get_d_raster_color(&fval, &red, &grn, &blu, colors)) {
+	if (!Rast_get_d_color(&fval, &red, &grn, &blu, colors)) {
 	    fprintf(stdout, "%.15g: *\n", fval);
 	    return 0;
 	}
@@ -78,14 +79,15 @@ int main(int argc, char **argv)
 	struct Flag *i;
     } flag;
     const char *name;
-    const char *mapset;
     struct Colors colors;
     RASTER_MAP_TYPE type;
 
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, querying");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("querying"));
+    G_add_keyword(_("color table"));
     module->description = _("Queries colors for a raster map layer.");
 
     opt.input = G_define_option();
@@ -121,16 +123,12 @@ int main(int argc, char **argv)
 	G_fatal_error(_("Either \"-i\" or \"value=\" must be given"));
 
     name = opt.input->answer;
-    mapset = G_find_cell2(name, "");
 
-    if (!mapset)
-	G_fatal_error("Raster map <%s> not found", name);
-
-    type = G_raster_map_type(name, mapset);
+    type = Rast_map_type(name, "");
     if (type < 0)
 	G_fatal_error("Unable to determine type of input map %s", name);
 
-    if (G_read_colors(name, mapset, &colors) < 0)
+    if (Rast_read_colors(name, "", &colors) < 0)
 	G_fatal_error("Unable to read colors for input map %s", name);
 
     fmt = opt.format->answer;

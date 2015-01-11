@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/gmath.h>
 #include <grass/glocale.h>
 
@@ -23,22 +24,15 @@ int randsurf(char *out,		/* Name of raster maps to be opened.    */
     G_math_rand(-1 * getpid());
 
 	/****** OPEN CELL FILES AND GET CELL DETAILS ******/
-    if (int_map) {
-	if ((fd_out = G_open_raster_new(out, CELL_TYPE)) < 0)
-	    G_fatal_error(_("Unable to create raster map <%s>"), out);
-    }
-    else {
-	if ((fd_out = G_open_raster_new(out, DCELL_TYPE)) < 0)
-	    G_fatal_error(_("Unable to create raster map <%s>"), out);
-    }
+    fd_out = Rast_open_new(out, int_map ? CELL_TYPE : DCELL_TYPE);
 
-    nrows = G_window_rows();
-    ncols = G_window_cols();
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
 
     if (int_map)
-	row_out_C = G_allocate_c_raster_buf();
+	row_out_C = Rast_allocate_c_buf();
     else
-	row_out_D = G_allocate_d_raster_buf();
+	row_out_D = Rast_allocate_d_buf();
 
 	/****** PASS THROUGH EACH CELL ASSIGNING RANDOM VALUE ******/
     for (row_count = 0; row_count < nrows; row_count++) {
@@ -56,13 +50,13 @@ int randsurf(char *out,		/* Name of raster maps to be opened.    */
 
 	/* Write contents row by row */
 	if (int_map)
-	    G_put_c_raster_row(fd_out, (CELL *) row_out_C);
+	    Rast_put_c_row(fd_out, (CELL *) row_out_C);
 	else
-	    G_put_d_raster_row(fd_out, (DCELL *) row_out_D);
+	    Rast_put_d_row(fd_out, (DCELL *) row_out_D);
     }
     G_percent(1, 1, 1);
     
-    G_close_cell(fd_out);
+    Rast_close(fd_out);
 
     return 0;
 }

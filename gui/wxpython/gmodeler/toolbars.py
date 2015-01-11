@@ -20,6 +20,7 @@ import sys
 import wx
 
 from core              import globalvar
+from core.utils import _
 from gui_core.toolbars import BaseToolbar, BaseIcons
 
 from icons.icon        import MetaIcon
@@ -55,7 +56,9 @@ class ModelerToolbar(BaseToolbar):
             'relation'   : MetaIcon(img = 'relation-create',
                                     label = _('Manually define relation between data and commands')),
             'loop'       : MetaIcon(img = 'loop-add',
-                                    label = _('Add loop/series')),
+                                    label = _('Add loop/series to model')),
+            'comment'    : MetaIcon(img = 'label-add',
+                                    label = _('Add comment to model')),
             'run'        : MetaIcon(img = 'execute',
                                     label = _('Run model')),
             'validate'   : MetaIcon(img = 'check',
@@ -89,6 +92,8 @@ class ModelerToolbar(BaseToolbar):
                                       self.parent.OnDefineRelation),
                                      ('loop', icons['loop'],
                                       self.parent.OnDefineLoop),
+                                     ('comment', icons['comment'],
+                                      self.parent.OnAddComment),
                                      (None, ),
                                      ('redraw', icons['redraw'],
                                       self.parent.OnCanvasRefresh),

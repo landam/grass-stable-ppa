@@ -1,7 +1,7 @@
 /*!
- * \file error.c
+ * \file lib/gis/error.c
  * 
- * \brief GIS Library: Error messages functions
+ * \brief GIS Library - Error messages functions
  *
  * (C) 1999-2011 by the GRASS Development Team
  *
@@ -17,10 +17,10 @@
 #include <unistd.h>
 #include <time.h>
 #include <stdarg.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <grass/glocale.h>
 #include <grass/gis.h>
-
 /*!
  * \def MSG
  *
@@ -43,25 +43,28 @@
 
 /* static int (*error)() = 0; */
 static int (*ext_error) (const char *, int);	/* Roger Bivand 17 June 2000 */
-static int no_warn = 0;
-static int no_sleep = 1;
-static int message_id = 1;
+static int no_warn  = FALSE;
+static int no_sleep = TRUE;
+
+static int grass_info_format;
+static char *logfile;
+static char *prefix_std[3];
+static struct Counter message_id;
 
 static int print_word(FILE *, char **, int *, const int);
 static void print_sentence(FILE *, const int, const char *);
-static int print_error(const char *, const int);
-static int mail_msg(const char *, int);
+static void print_error(const char *, const int);
+static void mail_msg(const char *, int);
 static int write_error(const char *, int, time_t, const char *);
-static int log_error(const char *, int);
+static void log_error(const char *, int);
 
-static int vfprint_error(int type, const char *template, va_list ap)
+static void vfprint_error(int type, const char *template, va_list ap)
 {
     char buffer[2000];		/* G_asprintf does not work */
 
     vsprintf(buffer, template, ap);
 
-    /* . */
-    return print_error(buffer, type);
+    print_error(buffer, type);
 }
 
 /*!
@@ -80,8 +83,6 @@ void G_message(const char *msg, ...)
 	vfprint_error(MSG, msg, ap);
 	va_end(ap);
     }
-
-    return;
 }
 
 /*!
@@ -101,8 +102,6 @@ void G_verbose_message(const char *msg, ...)
 	vfprint_error(MSG, msg, ap);
 	va_end(ap);
     }
-
-    return;
 }
 
 /*!
@@ -125,8 +124,6 @@ void G_important_message(const char *msg, ...)
 	vfprint_error(MSG, msg, ap);
 	va_end(ap);
     }
-
-    return;
 }
 
 /*!
@@ -147,7 +144,7 @@ void G_important_message(const char *msg, ...)
  * \return Terminates with an exit status of EXIT_FAILURE if no external
  * routine is specified by G_set_error_routine()
  */
-int G_fatal_error(const char *msg, ...)
+void G_fatal_error(const char *msg, ...)
 {
     static int busy;
     va_list ap;
@@ -156,9 +153,20 @@ int G_fatal_error(const char *msg, ...)
 	exit(EXIT_FAILURE);
     busy = 1;
 
-    va_start(ap, msg);
-    vfprint_error(ERR, msg, ap);
-    va_end(ap);
+    if (G_verbose() > -1) {
+        va_start(ap, msg);
+        vfprint_error(ERR, msg, ap);
+        va_end(ap);
+    }
+
+    G__call_error_handlers();
+
+    /* Raise SIGSEGV, useful for debugging only.
+     * Type "export GRASS_SIGSEGV_ON_ERROR=1"
+     * to enable this feature using bash.
+     */
+    if (getenv("GRASS_SIGSEGV_ON_ERROR"))
+        raise(SIGSEGV);
 
     exit(EXIT_FAILURE);
 }
@@ -173,20 +181,18 @@ int G_fatal_error(const char *msg, ...)
  *
  * \param msg string (cannot be NULL)
  *
- * \return 0
+ * \return
  */
-int G_warning(const char *msg, ...)
+void G_warning(const char *msg, ...)
 {
     va_list ap;
 
-    if (no_warn)
-	return 0;
+    if (no_warn || G_verbose() < 0)
+	return;
 
     va_start(ap, msg);
     vfprint_error(WARN, msg, ap);
     va_end(ap);
-
-    return 0;
 }
 
 /*!
@@ -208,9 +214,13 @@ int G_suppress_warnings(int flag)
 /*!
  * \brief Turn on/off no_sleep flag
  * 
- * \param flag if non-zero/zero value is given G_sleep() will be activated/deactivated
+ * If <em>flag</em> is 0, then no pause will occur after printing an
+ * error or warning message. Otherwise the pause will occur.
+ * 
+ * \param flag if non-zero/zero value is given G_sleep() will be
+ * activated/deactivated
  *
- * \return previous flag
+ * \return previous no_sleep value
  */
 int G_sleep_on_error(int flag)
 {
@@ -228,12 +238,11 @@ int G_sleep_on_error(int flag)
  * \param error_routine routine will be called like this: error_routine(msg,
  * fatal)
  *
- * \return 0
+ * \return
  */
-int G_set_error_routine(int (*error_routine) (const char *, int))
+void G_set_error_routine(int (*error_routine) (const char *, int))
 {
     ext_error = error_routine;	/* Roger Bivand 17 June 2000 */
-    return 0;
 }
 
 /*!
@@ -244,49 +253,48 @@ int G_set_error_routine(int (*error_routine) (const char *, int))
  *
  * \return 0
  */
-int G_unset_error_routine(void)
+void G_unset_error_routine(void)
 {
     ext_error = 0;		/* Roger Bivand 17 June 2000 */
-
-    return 0;
 }
 
 /* Print info to stderr and optionally to log file and optionally send mail */
-static int print_error(const char *msg, const int type)
+static void print_error(const char *msg, const int type)
 {
-    static char *prefix_std[3];
     int fatal, format;
-
-    if (!prefix_std[0]) {	/* First time: set prefixes  */
-	prefix_std[0] = "";
-	prefix_std[1] = _("WARNING: ");
-	prefix_std[2] = _("ERROR: ");
-    }
 
     if (type == ERR)
 	fatal = TRUE;
     else			/* WARN */
 	fatal = FALSE;
 
-    if ((type == WARN || type == ERR) && ext_error) {	/* Function defined by application */
+    if ((type == MSG || type == WARN || type == ERR) && ext_error) {	/* Function defined by application */
 	ext_error(msg, fatal);
     }
     else {
-	char *w;
-	int len, lead;
-
+	G_init_logging();
 	format = G_info_format();
 
+	if (type == WARN || type == ERR)
+	    log_error(msg, fatal);
+
+	if (format == G_INFO_FORMAT_SILENT)
+	    return;
+
 	if (format != G_INFO_FORMAT_GUI) {
-	    if (type == WARN || type == ERR) {
-		log_error(msg, fatal);
+	    if (format != G_INFO_FORMAT_PLAIN) {
+		char *w;
+		int len, lead;
+		
+		fprintf(stderr, "%s", prefix_std[type]);
+		len = lead = strlen(prefix_std[type]);
+		w = (char *)msg;
+		
+		while (print_word(stderr, &w, &len, lead)) ;
 	    }
-
-	    fprintf(stderr, "%s", prefix_std[type]);
-	    len = lead = strlen(prefix_std[type]);
-	    w = (char *)msg;
-
-	    while (print_word(stderr, &w, &len, lead)) ;
+	    else {
+                fprintf(stderr, "%s%s\n", prefix_std[type], msg);
+	    }
 
 	    if ((type != MSG) && isatty(fileno(stderr))
 		&& (G_info_format() == G_INFO_FORMAT_STANDARD)) {	/* Bell */
@@ -303,15 +311,13 @@ static int print_error(const char *msg, const int type)
 	    print_sentence(stderr, type, msg);
 	}
     }
-
-    return 0;
 }
 
-static int log_error(const char *msg, int fatal)
+static void log_error(const char *msg, int fatal)
 {
     char cwd[GPATH_MAX];
     time_t clock;
-    char *gisbase;
+    const char *gisbase;
 
     /* get time */
     clock = time(NULL);
@@ -322,26 +328,50 @@ static int log_error(const char *msg, int fatal)
     /* write the error log file */
     if ((gisbase = G_gisbase()))
 	write_error(msg, fatal, clock, cwd);
+}
 
-    return 0;
+void G_init_logging(void)
+{
+    static int initialized;
+    char *fstr;
+
+    if (G_is_initialized(&initialized))
+	return;
+
+    G_init_counter(&message_id, 1);
+
+    prefix_std[0] = "";
+    prefix_std[1] = _("WARNING: ");
+    prefix_std[2] = _("ERROR: ");
+
+    logfile = getenv("GIS_ERROR_LOG");
+    if (!logfile) {
+	char buf[GPATH_MAX];
+	sprintf(buf, "%s/GIS_ERROR_LOG", G__home());
+	logfile = G_store(buf);
+    }
+
+    fstr = getenv("GRASS_MESSAGE_FORMAT");
+
+    if (fstr && G_strcasecmp(fstr, "gui") == 0)
+	grass_info_format = G_INFO_FORMAT_GUI;
+    else if (fstr && G_strcasecmp(fstr, "silent") == 0)
+	grass_info_format = G_INFO_FORMAT_SILENT;
+    else if (fstr && G_strcasecmp(fstr, "plain") == 0)
+	grass_info_format = G_INFO_FORMAT_PLAIN;
+    else
+	grass_info_format = G_INFO_FORMAT_STANDARD;
+
+    G_initialize_done(&initialized);
 }
 
 /* Write a message to the log file */
 static int write_error(const char *msg, int fatal,
 		       time_t clock, const char *cwd)
 {
-    static char *logfile;
     FILE *log;
 
-    if (!logfile) {
-	logfile = getenv("GIS_ERROR_LOG");
-	if (!logfile) {
-	    char buf[GPATH_MAX];
-
-	    sprintf(buf, "%s/GIS_ERROR_LOG", G__home());
-	    logfile = G_store(buf);
-	}
-    }
+    G_init_logging();
 
     log = fopen(logfile, "r");
     if (!log)
@@ -367,23 +397,15 @@ static int write_error(const char *msg, int fatal,
 }
 
 /* Mail a message */
-static int mail_msg(const char *msg, int fatal)
+static void mail_msg(const char *msg, int fatal)
 {
-    FILE *mail;
-    char command[64];
-    char *user;
+    struct Popen mail;
+    FILE *fp = G_open_mail(&mail);
 
-    user = G_whoami();
-    if (user == 0 || *user == 0)
-	return 1;
+    if (fp)
+	fprintf(fp, "GIS %s: %s\n", fatal ? "ERROR" : "WARNING", msg);
 
-    sprintf(command, "mail '%s'", G_whoami());
-    if ((mail = popen(command, "w"))) {
-	fprintf(mail, "GIS %s: %s\n", fatal ? "ERROR" : "WARNING", msg);
-	G_pclose(mail);
-    }
-
-    return 0;
+    G_close_mail(&mail);
 }
 
 /* Print one word, new line if necessary */
@@ -444,16 +466,17 @@ static void print_sentence(FILE * fd, const int type, const char *msg)
 {
     char prefix[100];
     const char *start;
+    int id = G_counter_next(&message_id);
 
     switch (type) {
     case MSG:
-	sprintf(prefix, "GRASS_INFO_MESSAGE(%d,%d): ", getpid(), message_id);
+	sprintf(prefix, "GRASS_INFO_MESSAGE(%d,%d): ", getpid(), id);
 	break;
     case WARN:
-	sprintf(prefix, "GRASS_INFO_WARNING(%d,%d): ", getpid(), message_id);
+	sprintf(prefix, "GRASS_INFO_WARNING(%d,%d): ", getpid(), id);
 	break;
     case ERR:
-	sprintf(prefix, "GRASS_INFO_ERROR(%d,%d): ", getpid(), message_id);
+	sprintf(prefix, "GRASS_INFO_ERROR(%d,%d): ", getpid(), id);
 	break;
     }
 
@@ -478,8 +501,7 @@ static void print_sentence(FILE * fd, const int type, const char *msg)
 	fprintf(fd, "\n");
 	start = next;
     }
-    fprintf(stderr, "GRASS_INFO_END(%d,%d)\n", getpid(), message_id);
-    message_id++;
+    fprintf(stderr, "GRASS_INFO_END(%d,%d)\n", getpid(), id);
 }
 
 /*!
@@ -491,21 +513,7 @@ static void print_sentence(FILE * fd, const int type, const char *msg)
  */
 int G_info_format(void)
 {
-    static int grass_info_format = -1;
-    char *fstr;
-
-    if (grass_info_format < 0) {
-	fstr = getenv("GRASS_MESSAGE_FORMAT");
-
-	if (fstr && G_strcasecmp(fstr, "gui") == 0)
-	    grass_info_format = G_INFO_FORMAT_GUI;
-	else if (fstr && G_strcasecmp(fstr, "silent") == 0)
-	    grass_info_format = G_INFO_FORMAT_SILENT;
-	else if (fstr && G_strcasecmp(fstr, "plain") == 0)
-	    grass_info_format = G_INFO_FORMAT_PLAIN;
-	else
-	    grass_info_format = G_INFO_FORMAT_STANDARD;
-    }
+    G_init_logging();
 
     return grass_info_format;
 }

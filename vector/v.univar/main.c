@@ -5,7 +5,7 @@
  * 
  * AUTHOR(S):    Radim Blazek
  *               Hamish Bowman, University of Otago, New Zealand (r.univar2)
- *               Martin Landa (extended stats)
+ *               Martin Landa (extended stats & OGR support)
  *               
  * PURPOSE:      Univariate Statistics for attribute
  *               
@@ -29,6 +29,7 @@
  *   than weight the means or other statistics, I think. There may be
  *   reasons to weigh sometimes, but most often I see ratios or rates of
  *   two variables, rather than of a single variable and length or area."
+ *   MM 04 2013: Done
  * 
  * - use geodesic distances for the geometry option (distance to closest
  *   other feature)
@@ -42,7 +43,7 @@
 #include <string.h>
 #include <math.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 
@@ -51,11 +52,9 @@ static void select_from_database(void);
 static void summary(void);
 
 struct Option *field_opt, *where_opt, *col_opt;
-struct Flag *shell_flag, *extended, *geometry;
-char *mapset;
+struct Flag *shell_flag, *ext_flag, *weight_flag, *geometry;
 struct Map_info Map;
 struct line_cats *Cats;
-struct line_pnts *Points;
 struct field_info *Fi;
 dbDriver *Driver;
 dbCatValArray Cvarr;
@@ -90,10 +89,12 @@ int main(int argc, char *argv[])
 	*percentile;
 
     module = G_define_module();
-    module->keywords = _("vector, statistics");
-    module->description =
-	_("Calculates univariate statistics for attribute. Variance and standard "
-	 "deviation is calculated only for points if specified.");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("statistics"));
+    module->label =
+	_("Calculates univariate statistics for attribute.");
+    module->description = _("Variance and standard "
+			    "deviation is calculated only for points if specified.");
 
     map_opt = G_define_standard_option(G_OPT_V_MAP);
 
@@ -103,16 +104,10 @@ int main(int argc, char *argv[])
     type_opt->options = "point,line,boundary,centroid,area";
     type_opt->answer = "point,line,area";
 
-    col_opt = G_define_option();
-    col_opt->key = "column";
-    col_opt->type = TYPE_STRING;
+    col_opt = G_define_standard_option(G_OPT_DB_COLUMN);
     col_opt->required = NO;
-    col_opt->multiple = NO;
-    col_opt->description = _("Column name");
 
-    where_opt = G_define_standard_option(G_OPT_WHERE);
-
-    field_opt = G_define_standard_option(G_OPT_V_FIELD);
+    where_opt = G_define_standard_option(G_OPT_DB_WHERE);
 
     percentile = G_define_option();
     percentile->key = "percentile";
@@ -127,9 +122,13 @@ int main(int argc, char *argv[])
     shell_flag->key = 'g';
     shell_flag->description = _("Print the stats in shell script style");
 
-    extended = G_define_flag();
-    extended->key = 'e';
-    extended->description = _("Calculate extended statistics");
+    ext_flag = G_define_flag();
+    ext_flag->key = 'e';
+    ext_flag->description = _("Calculate extended statistics");
+
+    weight_flag = G_define_flag();
+    weight_flag->key = 'w';
+    weight_flag->description = _("Weigh by line length or area size");
 
     geometry = G_define_flag();
     geometry->key = 'd';
@@ -140,28 +139,38 @@ int main(int argc, char *argv[])
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    if (geometry->answer)
-	G_fatal_error(_("The '-%c' flag is currently broken, please use v.distance instead."),
-	              geometry->key);
-
-    /* Only require col_opt answer if -d flag is not set */
+    /* Only require col_opt answer if -g flag is not set */
     if (!col_opt->answer && !geometry->answer) {
 	G_fatal_error(_("Required parameter <%s> not set:\n\t(%s)"), col_opt->key, col_opt->description);
     }
 
     otype = Vect_option_to_types(type_opt);
-    ofield = atoi(field_opt->answer);
     perc = atoi(percentile->answer);
 
-    Points = Vect_new_line_struct();
     Cats = Vect_new_cats_struct();
 
     /* open input vector */
-    if ((mapset = G_find_vector2(map_opt->answer, "")) == NULL)
-	G_fatal_error(_("Vector map <%s> not found"), map_opt->answer);
-
     Vect_set_open_level(2);
-    Vect_open_old(&Map, map_opt->answer, mapset);
+    Vect_open_old2(&Map, map_opt->answer, "", field_opt->answer);
+    ofield = Vect_get_field_number(&Map, field_opt->answer);
+    
+    if ((otype & GV_POINT) && Vect_get_num_primitives(&Map, GV_POINT) == 0) {
+	otype &= ~(GV_POINT);
+	if (otype & GV_POINT)
+	    G_fatal_error("Bye");
+    }
+    if ((otype & GV_CENTROID) && Vect_get_num_primitives(&Map, GV_CENTROID) == 0) {
+	otype &= ~(GV_CENTROID);
+    }
+    if ((otype & GV_LINE) && Vect_get_num_primitives(&Map, GV_LINE) == 0) {
+	otype &= ~(GV_LINE);
+    }
+    if ((otype & GV_BOUNDARY) && Vect_get_num_primitives(&Map, GV_BOUNDARY) == 0) {
+	otype &= ~(GV_BOUNDARY);
+    }
+    if ((otype & GV_AREA) && Vect_get_num_areas(&Map) == 0) {
+	otype &= ~(GV_AREA);
+    }
 
     /* Check if types are compatible */
     if ((otype & GV_POINTS) && ((otype & GV_LINES) || (otype & GV_AREA)))
@@ -169,14 +178,20 @@ int main(int argc, char *argv[])
     if ((otype & GV_LINES) && (otype & GV_AREA))
 	compatible = 0;
     if (!compatible && geometry->answer)
-	compatible = 1; /* distances is compatible with all kinds of geometries */
+	compatible = 1; /* distances is compatible with GV_POINTS and GV_LINES */
+
+    if (!compatible && !weight_flag->answer)
+	compatible = 1; /* attributes are always compatible without weight */
+
+    if (geometry->answer && (otype & GV_AREA))
+	G_fatal_error(_("Geometry distances are not supported for areas. Use '%s' instead."), "v.distance");
 
     if (!compatible) {
 	G_warning(_("Incompatible vector type(s) specified, only number of features, minimum, maximum and range "
 		   "can be calculated"));
     }
 
-    if (extended->answer && (!(otype & GV_POINTS) || geometry->answer)) {
+    if (ext_flag->answer && (!(otype & GV_POINTS) || geometry->answer)) {
 	G_warning(_("Extended statistics is currently supported only for points/centroids"));
     }
 
@@ -227,9 +242,8 @@ static void select_from_geometry(void)
 
     count = 0;
 
-    nlines = Vect_get_num_primitives(&Map, otype);
-    /* this does not make sense:
-     * Start calculating the statistics based on distance to all other primitives.
+    nlines = Vect_get_num_lines(&Map);
+    /* Start calculating the statistics based on distance to all other primitives.
        Use the centroid of areas and the first point of lines */
     for (i = 1; i <= nlines; i++) {
 
@@ -250,9 +264,6 @@ static void select_from_geometry(void)
 	    if (!ok)
 	        continue;
 	}
-	/* starting from i + 1 is wrong because with
-	 * 1--2----3
-	 * the nearest feature of 2 would be 3 */
 	for (j = i + 1; j < nlines; j++) {
 	    /* get distance to this object */
 	    double val = 0.0;
@@ -261,8 +272,6 @@ static void select_from_geometry(void)
 
 	    if (!(type & otype))
 		continue;
-		
-	    /* where opt is missing here */
 
 	    /* now calculate the min distance between each point in line i with line j */
 	    for (k = 0; k < iPoints->n_points; k++) {
@@ -273,6 +282,21 @@ static void select_from_geometry(void)
 		if((k == 0) || (dmin < val)) {
 		    val = dmin;
 		}
+	    }
+	    if (val > 0 && iPoints->n_points > 1) {
+		for (k = 0; k < jPoints->n_points; k++) {
+		    double dmin = 0.0;
+
+		    Vect_line_distance(iPoints, jPoints->x[k], jPoints->y[k], jPoints->z[k], 1,
+					   NULL, NULL, NULL, &dmin, NULL, NULL);
+		    if(dmin < val) {
+			val = dmin;
+		    }
+		}
+	    }
+	    if (val > 0 && iPoints->n_points > 1 && jPoints->n_points > 1) {
+		if (Vect_line_check_intersection(iPoints, jPoints, Vect_is_3d(&Map)))
+		    val = 0;
 	    }
 	    if (val == 0) {
 		nzero++;
@@ -297,7 +321,6 @@ static void select_from_geometry(void)
 	    count++;
 	    G_debug(3, "i=%d j=%d sum = %f val=%f", i, j, sum, val);
 	}
-	/* areas are missing in case of otype & GV_AREAS */
     }
 }
 
@@ -335,7 +358,9 @@ static void select_from_database(void)
     Points = Vect_new_line_struct();
 
     /* Lines */
-    nlines = Vect_get_num_lines(&Map);
+    nlines = 0;
+    if ((otype & GV_POINTS) || (otype & GV_LINES))
+	nlines = Vect_get_num_lines(&Map);
 
     for (line = 1; line <= nlines; line++) {
 	int i, type;
@@ -395,10 +420,12 @@ static void select_from_database(void)
 			sumqt += val * val * val * val;
 			sum_abs += fabs(val);
 		    }
-		    else {	/* GV_LINES */
-			double l;
+		    else if (type & GV_LINES) {	/* GV_LINES */
+			double l = 1.;
 
-			l = Vect_line_length(Points);
+			if (weight_flag->answer)
+			    l = Vect_line_length(Points);
+
 			sum += l * val;
 			sumsq += l * val * val;
 			sumcb += l * val * val * val;
@@ -468,9 +495,11 @@ static void select_from_database(void)
 		    }
 
 		    if (compatible) {
-			double a;
+			double a = 1.;
 
-			a = Vect_get_area_area(&Map, area);
+			if (weight_flag->answer)
+			    a = Vect_get_area_area(&Map, area);
+
 			sum += a * val;
 			sumsq += a * val * val;
 			sumcb += a * val * val * val;
@@ -490,14 +519,16 @@ static void select_from_database(void)
 static void summary(void)
 {
     if (compatible) {
-	if (((otype & GV_LINES) || (otype & GV_AREA)) && !geometry->answer) {
+	if (!geometry->answer && weight_flag->answer) {
 	    mean = sum / total_size;
 	    mean_abs = sum_abs / total_size;
+
 	    /* Roger Bivand says it is wrong see GRASS devel list 7/2004 */
 	    /*
-	       pop_variance = (sumsq - sum*sum/total_size)/total_size;
-	       pop_stdev = sqrt(pop_variance);
-	     */
+	    pop_variance = (sumsq - sum * sum / total_size) / total_size;
+	    pop_stdev = sqrt(pop_variance);
+	    pop_coeff_variation = pop_stdev / (sqrt(sum * sum) / count);
+	    */
 	}
 	else {
 	    double n = count;
@@ -538,14 +569,14 @@ static void summary(void)
 	    fprintf(stdout, "max=%g\n", max);
 	    fprintf(stdout, "range=%g\n", max - min);
 	    fprintf(stdout, "sum=%g\n", sum);
-	    if (compatible && (otype & GV_POINTS)) {
+	    if (compatible) {
 		fprintf(stdout, "mean=%g\n", mean);
 		fprintf(stdout, "mean_abs=%g\n", mean_abs);
-		fprintf(stdout, "population_stddev=%g\n", pop_stdev);
-		fprintf(stdout, "population_variance=%g\n", pop_variance);
-		fprintf(stdout, "population_coeff_variation=%g\n",
-			pop_coeff_variation);
-		if (otype & GV_POINTS) {
+		if (geometry->answer || !weight_flag->answer) {
+		    fprintf(stdout, "population_stddev=%g\n", pop_stdev);
+		    fprintf(stdout, "population_variance=%g\n", pop_variance);
+		    fprintf(stdout, "population_coeff_variation=%g\n",
+			    pop_coeff_variation);
 		    fprintf(stdout, "sample_stddev=%g\n", sample_stdev);
 		    fprintf(stdout, "sample_variance=%g\n", sample_variance);
 		    fprintf(stdout, "kurtosis=%g\n", kurtosis);
@@ -555,7 +586,7 @@ static void summary(void)
 	}
     }
     else {
-	if(geometry->answer) {
+	if (geometry->answer) {
 	    fprintf(stdout, "number of primitives: %d\n", nlines);
 	    fprintf(stdout, "number of non zero distances: %d\n", count);
 	    fprintf(stdout, "number of zero distances: %d\n", nzero);
@@ -571,15 +602,15 @@ static void summary(void)
 	    fprintf(stdout, "maximum: %g\n", max);
 	    fprintf(stdout, "range: %g\n", max - min);
 	    fprintf(stdout, "sum: %g\n", sum);
-	    if (compatible && (otype & GV_POINTS)) {
+	    if (compatible) {
 		fprintf(stdout, "mean: %g\n", mean);
 		fprintf(stdout, "mean of absolute values: %g\n", mean_abs);
-		fprintf(stdout, "population standard deviation: %g\n",
-			pop_stdev);
-		fprintf(stdout, "population variance: %g\n", pop_variance);
-		fprintf(stdout, "population coefficient of variation: %g\n",
-			pop_coeff_variation);
-		if (otype & GV_POINTS) {
+		if (geometry->answer || !weight_flag->answer) {
+		    fprintf(stdout, "population standard deviation: %g\n",
+			    pop_stdev);
+		    fprintf(stdout, "population variance: %g\n", pop_variance);
+		    fprintf(stdout, "population coefficient of variation: %g\n",
+			    pop_coeff_variation);
 		    fprintf(stdout, "sample standard deviation: %g\n",
 			    sample_stdev);
 		    fprintf(stdout, "sample variance: %g\n", sample_variance);
@@ -592,7 +623,9 @@ static void summary(void)
 
     /* TODO: mode, skewness, kurtosis */
     /* Not possible to calculate for point distance, since we don't collect the population */
-    if (extended->answer && compatible && (otype & GV_POINTS) && !geometry->answer && count > 0) {
+    if (ext_flag->answer && compatible && 
+        ((otype & GV_POINTS) || !weight_flag->answer) && 
+	!geometry->answer && count > 0) {
 	double quartile_25 = 0.0, quartile_75 = 0.0, quartile_perc = 0.0;
 	double median = 0.0;
 	int qpos_25, qpos_75, qpos_perc;

@@ -28,7 +28,7 @@ typedef struct
 typedef struct
 {
     int token;			/*type of file */
-    void *g3mapin, *g3mapout;	/* G3D_Map */
+    void *g3mapin, *g3mapout;	/* RASTER3D_Map */
     FILE *datainfp, *dataoutfp;
     FILE *dspfinfp, *dspfoutfp;
     int xdim, ydim, zdim;
@@ -98,10 +98,4 @@ int print_head_info(file_info *);
 /* struct_copy.c */
 int struct_copy(char *, char *, int);
 
-#ifdef MAIN
-#define GLOBAL
-#else
-#define GLOBAL extern
-#endif
-
-#include "cell_table.h"
+extern CELL_ENTRY cell_table[];

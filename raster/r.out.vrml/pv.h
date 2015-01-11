@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 
 /*  VRML VERSION - only 1.0 currently supported
    #define VRML2
@@ -26,10 +27,8 @@ extern void vrml_begin(FILE *);
 extern void vrml_end(FILE *);
 
 /* put_grid.c */
-extern void vrml_put_grid(FILE *,
-			  struct Cell_head *,
-			  int, int,
-			  struct Colors *, int, int, int, int);
+extern void vrml_put_grid(FILE *, struct Cell_head *,
+			  int, int, struct Colors *, int, int, int, int);
 
 /* put_view.c */
 extern void vrml_put_view(FILE *, struct G_3dview *);

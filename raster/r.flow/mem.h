@@ -8,11 +8,7 @@
 #define SEGCOLS ((int) (region.cols/3) + 1)
 #define SEGROWS ((int)(MB/region.cols/3) <= 1 ? 1 : (int)(MB/region.cols/3))
 
-#ifdef MAIN
-CELL v;				/* address for segment retrieval macros */
-#else
 extern CELL v;
-#endif
 
 
 /*
@@ -56,7 +52,7 @@ void put_row_seg( /* l, row */ );
 	(segment_get(as.seg, &v, \
 			row + as.row_offset, col + as.col_offset) < 1 ? \
 	  (sprintf(string,"r.flow: cannot read segment file for %s",as.name), \
-	   G_fatal_error(string)) : \
+	   G_fatal_error(string), 0) :					\
 	  v) : \
 	(parm.mem ? \
 	   aspect_fly(el.buf[row - 1] + col, \
@@ -68,7 +64,7 @@ void put_row_seg( /* l, row */ );
     (parm.seg ? \
 	(segment_get(l.seg, &v, row + l.row_offset, col + l.col_offset) < 1 ? \
 	  (sprintf(string,"r.flow: cannot read segment file for %s",l.name),\
-	   G_fatal_error(string)) : \
+	   G_fatal_error(string), 0) : \
 	 v) : \
 	l.buf[row][col])
 
@@ -77,6 +73,6 @@ void put_row_seg( /* l, row */ );
 	(v = w, \
 	 segment_put(l.seg, &v, row + l.row_offset, col + l.col_offset) < 1 ? \
 	  (sprintf(string,"r.flow: cannot write segment file for %s",l.name), \
-	   G_fatal_error(string)) : \
+	   G_fatal_error(string), 0) : \
 	 0) : \
 	(l.buf[row][col] = w))

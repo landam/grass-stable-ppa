@@ -70,11 +70,11 @@
 #include <unistd.h>
 #endif
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/linkm.h>
 #include <grass/bitmap.h>
-/*#include <grass/site.h> */
 #include <grass/glocale.h>
+#include <grass/gmath.h>
 
 /********************************/
 /* Specific stuff               */
@@ -99,7 +99,7 @@ char msg[1024];
 /****************************************/
 int main(int argc, char *argv[])
 {
-    int i, j, l, ii;
+    int ii;
     int ret_val;
     double x_orig, y_orig;
     static int rand1 = 12345;
@@ -108,103 +108,110 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, sediment flow, erosion, deposition");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("hydrology"));
+    G_add_keyword(_("sediment flow"));
+    G_add_keyword(_("erosion"));
+    G_add_keyword(_("deposition"));
     module->description =
 	_("Sediment transport and erosion/deposition simulation "
 	  "using path sampling method (SIMWE).");
 
-    parm.elevin = G_define_standard_option(G_OPT_R_INPUT);
-    parm.elevin->key = "elevin";
-    parm.elevin->description = _("Name of the elevation raster map [m]");
-    parm.elevin->guisection = _("Input");
-
+    parm.elevin = G_define_standard_option(G_OPT_R_ELEV);
+    
     parm.wdepth = G_define_standard_option(G_OPT_R_INPUT);
     parm.wdepth->key = "wdepth";
-    parm.wdepth->description = _("Name of the water depth raster map [m]");
-    parm.wdepth->guisection = _("Input");
+    parm.wdepth->description = _("Name of water depth raster map [m]");
 
     parm.dxin = G_define_standard_option(G_OPT_R_INPUT);
-    parm.dxin->key = "dxin";
-    parm.dxin->description = _("Name of the x-derivatives raster map [m/m]");
-    parm.dxin->guisection = _("Input");
+    parm.dxin->key = "dx";
+    parm.dxin->description = _("Name of x-derivatives raster map [m/m]");
 
     parm.dyin = G_define_standard_option(G_OPT_R_INPUT);
-    parm.dyin->key = "dyin";
-    parm.dyin->description = _("Name of the y-derivatives raster map [m/m]");
-    parm.dyin->guisection = _("Input");
-
+    parm.dyin->key = "dy";
+    parm.dyin->description = _("Name of y-derivatives raster map [m/m]");
+    
     parm.detin = G_define_standard_option(G_OPT_R_INPUT);
-    parm.detin->key = "detin";
+    parm.detin->key = "det";
     parm.detin->description =
-	_("Name of the detachment capacity coefficient raster map [s/m]");
-    parm.detin->guisection = _("Input");
+	_("Name of detachment capacity coefficient raster map [s/m]");
 
     parm.tranin = G_define_standard_option(G_OPT_R_INPUT);
-    parm.tranin->key = "tranin";
+    parm.tranin->key = "tran";
     parm.tranin->description =
-	_("Name of the transport capacity coefficient raster map [s]");
-    parm.tranin->guisection = _("Input");
-
+	_("Name of transport capacity coefficient raster map [s]");
+    
     parm.tauin = G_define_standard_option(G_OPT_R_INPUT);
-    parm.tauin->key = "tauin";
+    parm.tauin->key = "tau";
     parm.tauin->description =
-	_("Name of the critical shear stress raster map [Pa]");
-    parm.tauin->guisection = _("Input");
+	_("Name of critical shear stress raster map [Pa]");
 
     parm.manin = G_define_standard_option(G_OPT_R_INPUT);
-    parm.manin->key = "manin";
+    parm.manin->key = "man";
     parm.manin->required = NO;
-    parm.manin->description = _("Name of the Manning's n raster map");
+    parm.manin->description = _("Name of mannings n raster map");
     parm.manin->guisection = _("Input");
 
     parm.maninval = G_define_option();
-    parm.maninval->key = "maninval";
+    parm.maninval->key = "man_value";
     parm.maninval->type = TYPE_DOUBLE;
     parm.maninval->answer = MANINVAL;
     parm.maninval->required = NO;
-    parm.maninval->description = _("Manning's n unique value");
+    parm.maninval->description = _("Name of mannings n value");
     parm.maninval->guisection = _("Input");
 
-    /* needs to be updated to GRASS 6 vector format !! 
-    parm.sfile = G_define_standard_option(G_OPT_V_INPUT);
-    parm.sfile->key = "vector";
-    parm.sfile->required = NO;
-    parm.sfile->description =
+    parm.outwalk = G_define_standard_option(G_OPT_V_OUTPUT);
+    parm.outwalk->key = "outwalk";
+    parm.outwalk->required = NO;
+    parm.outwalk->description =
+	_("Base name of the output walkers vector points map");
+    parm.outwalk->guisection = _("Output options");
+    
+    parm.observation = G_define_standard_option(G_OPT_V_INPUT);
+    parm.observation->key = "observation";
+    parm.observation->required = NO;
+    parm.observation->description =
 	_("Name of the sampling locations vector points map");
-    parm.sfile->guisection = _("Input");
-*/
+    parm.observation->guisection = _("Input options");
+
+    parm.logfile = G_define_standard_option(G_OPT_F_OUTPUT);
+    parm.logfile->key = "logfile";
+    parm.logfile->required = NO;
+    parm.logfile->description =
+	_("Name of the sampling points output text file. For each observation vector point the time series of sediment transport is stored.");
+    parm.logfile->guisection = _("Output");
 
     parm.tc = G_define_standard_option(G_OPT_R_OUTPUT);
     parm.tc->key = "tc";
     parm.tc->required = NO;
-    parm.tc->description = _("Output transport capacity raster map [kg/ms]");
+    parm.tc->description = _("Name for output transport capacity raster map [kg/ms]");
     parm.tc->guisection = _("Output");
 
     parm.et = G_define_standard_option(G_OPT_R_OUTPUT);
     parm.et->key = "et";
     parm.et->required = NO;
     parm.et->description =
-	_("Output transp.limited erosion-deposition raster map [kg/m2s]");
+	_("Name for output transp.limited erosion-deposition raster map [kg/m2s]");
     parm.et->guisection = _("Output");
 
     parm.conc = G_define_standard_option(G_OPT_R_OUTPUT);
     parm.conc->key = "conc";
     parm.conc->required = NO;
     parm.conc->description =
-	_("Output sediment concentration raster map [particle/m3]");
+	_("Name for output sediment concentration raster map [particle/m3]");
     parm.conc->guisection = _("Output");
 
     parm.flux = G_define_standard_option(G_OPT_R_OUTPUT);
     parm.flux->key = "flux";
     parm.flux->required = NO;
-    parm.flux->description = _("Output sediment flux raster map [kg/ms]");
+    parm.flux->description = _("Name for output sediment flux raster map [kg/ms]");
     parm.flux->guisection = _("Output");
 
     parm.erdep = G_define_standard_option(G_OPT_R_OUTPUT);
     parm.erdep->key = "erdep";
     parm.erdep->required = NO;
     parm.erdep->description =
-	_("Output erosion-deposition raster map [kg/m2s]");
+	_("Name for output erosion-deposition raster map [kg/m2s]");
     parm.erdep->guisection = _("Output");
 
     parm.nwalk = G_define_option();
@@ -252,8 +259,7 @@ int main(int argc, char *argv[])
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    if (G_get_set_window(&cellhd) == -1)
-	exit(EXIT_FAILURE);
+    G_get_set_window(&cellhd);
 
     conv = G_database_units_to_meters_factor();
 
@@ -304,7 +310,6 @@ int main(int argc, char *argv[])
     wdepth = parm.wdepth->answer;
     dxin = parm.dxin->answer;
     dyin = parm.dyin->answer;
-    /*  maskmap = parm.maskmap->answer; */
     detin = parm.detin->answer;
     tranin = parm.tranin->answer;
     tauin = parm.tauin->answer;
@@ -314,7 +319,7 @@ int main(int argc, char *argv[])
     conc = parm.conc->answer;
     flux = parm.flux->answer;
     erdep = parm.erdep->answer;
-/*    sfile = parm.sfile->answer; */
+    outwalk = parm.outwalk->answer; 
 
     /*      sscanf(parm.nwalk->answer, "%d", &maxwa); */
     sscanf(parm.niter->answer, "%d", &timesec);
@@ -346,9 +351,6 @@ int main(int argc, char *argv[])
 	G_message(_("Using metric conversion factor %f, step=%f"), conv,
 		  step);
 
-    /*
-     * G_set_embedded_null_value_mode(1);
-     */
 
     if ((tc == NULL) && (et == NULL) && (conc == NULL) && (flux == NULL) &&
 	(erdep == NULL))
@@ -359,50 +361,15 @@ int main(int argc, char *argv[])
 
     /* mandatory for si,sigma */
 
-    si = (double **)G_malloc(sizeof(double *) * (my));
-    for (l = 0; l < my; l++) {
-	si[l] = (double *)G_malloc(sizeof(double) * (mx));
-    }
-    for (j = 0; j < my; j++) {
-	for (i = 0; i < mx; i++)
-	    si[j][i] = 0.;
-    }
-
-    sigma = (double **)G_malloc(sizeof(double *) * (my));
-    for (l = 0; l < my; l++) {
-	sigma[l] = (double *)G_malloc(sizeof(double) * (mx));
-    }
-    for (j = 0; j < my; j++) {
-	for (i = 0; i < mx; i++)
-	    sigma[j][i] = 0.;
-    }
+    si = G_alloc_matrix(my, mx);
+    sigma = G_alloc_matrix(my, mx);
 
     /* memory allocation for output grids */
 
-    dif = (float **)G_malloc(sizeof(float *) * (my));
-    for (l = 0; l < my; l++) {
-	dif[l] = (float *)G_malloc(sizeof(float) * (mx));
-    }
-    for (j = 0; j < my; j++) {
-	for (i = 0; i < mx; i++)
-	    dif[j][i] = 0.;
-    }
+    dif = G_alloc_fmatrix(my, mx);
+    if (erdep != NULL || et != NULL)
+	er = G_alloc_fmatrix(my, mx);
 
-    if (erdep != NULL || et != NULL) {
-	er = (float **)G_malloc(sizeof(float *) * (my));
-	for (l = 0; l < my; l++) {
-	    er[l] = (float *)G_malloc(sizeof(float) * (mx));
-	}
-	for (j = 0; j < my; j++) {
-	    for (i = 0; i < mx; i++)
-		er[j][i] = 0.;
-	}
-    }
-
-    /*  if (maskmap != NULL)
-       bitmask = BM_create (cols, rows);
-       IL_create_bitmask (&params, bitmask);
-     */
     seeds(rand1, rand2);
     grad_check();
 
@@ -417,13 +384,6 @@ int main(int argc, char *argv[])
 	    G_fatal_error(_("Cannot write raster maps"));
     }
 
-/*
-    if (fdwalkers != NULL)
-	fclose(fdwalkers);
-
-    if (sfile != NULL)
-	G_sites_close(fw);
-*/
     /* Exit with Success */
     exit(EXIT_SUCCESS);
 }

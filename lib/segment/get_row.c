@@ -1,6 +1,6 @@
 
 /**
- * \file get_row.c
+ * \file lib/segment/get_row.c
  *
  * \brief Segment row retrieval routines.
  *
@@ -9,14 +9,15 @@
  *
  * \author GRASS GIS Development Team
  *
- * \date 2005-2006
+ * \date 2005-2009
  */
 
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
-#include <grass/segment.h>
+#include <grass/gis.h>
+#include "local_proto.h"
 
 
 /**
@@ -39,21 +40,20 @@
  * \return -1 if unable to seek or read segment file
  */
 
-int segment_get_row(const SEGMENT * SEG, void *buf, int row)
+int segment_get_row(const SEGMENT * SEG, void *buf, off_t row)
 {
     int size;
-    int ncols;
+    off_t ncols, col;
     int scols;
-    int n, index, col;
+    int n, index;
 
     ncols = SEG->ncols - SEG->spill;
     scols = SEG->scols;
     size = scols * SEG->len;
 
     for (col = 0; col < ncols; col += scols) {
-	segment_address(SEG, row, col, &n, &index);
-	if (segment_seek(SEG, n, index) < 0)
-	    return -1;
+	SEG->segment_address(SEG, row, col, &n, &index);
+	SEG->segment_seek(SEG, n, index);
 
 	if (read(SEG->fd, buf, size) != size) {
 	    G_warning("segment_get_row: %s", strerror(errno));
@@ -68,9 +68,8 @@ int segment_get_row(const SEGMENT * SEG, void *buf, int row)
 	buf = ((char *)buf) + size;
     }
     if ((size = SEG->spill * SEG->len)) {
-	segment_address(SEG, row, col, &n, &index);
-	if (segment_seek(SEG, n, index) < 0)
-	    return -1;
+	SEG->segment_address(SEG, row, col, &n, &index);
+	SEG->segment_seek(SEG, n, index);
 
 	if (read(SEG->fd, buf, size) != size) {
 	    G_warning("segment_get_row: %s", strerror(errno));

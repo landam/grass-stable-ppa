@@ -26,7 +26,8 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, import");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("import"));
     module->description =
 	_("Creates raster maps from ASCII polygon/line/point data files.");
 
@@ -38,7 +39,7 @@ int main(int argc, char *argv[])
 
     title = G_define_option();
     title->key = "title";
-    title->key_desc = "\"phrase\"";
+    title->key_desc = "phrase";
     title->type = TYPE_STRING;
     title->required = NO;
     title->description = _("Title for resultant raster map");

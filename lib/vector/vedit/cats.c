@@ -22,7 +22,7 @@
   \param List list of selected primitives
   \param layer layer number
   \param del action (non-zero for delete otherwise add)
-  \param cats_list list of category numbers
+  \param Clist list of category numbers
   
   \return number of modified primitives
   \return -1 on error
@@ -68,7 +68,7 @@ int Vedit_modify_cats(struct Map_info *Map, struct ilist *List,
 		    }
 		}
 		else {		/* delete old category */
-		    if (Vect_field_cat_del(Cats, layer, cat) == 1) {
+		    if (Vect_field_cat_del(Cats, layer, cat) > 0) {
 			rewrite = 1;
 		    }
 		}

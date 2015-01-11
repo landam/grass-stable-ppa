@@ -38,7 +38,7 @@ void interface(int argc, char **argv)
 
     /* cell of local window if selected.    */
     struct GModule *module;	/* GRASS module description */
-    char buf[128];
+    char buf[24];
 
     G_gisinit(argv[0]);		/* GRASS function which MUST be called  */
     /* first to check for valid database    */
@@ -51,7 +51,8 @@ void interface(int argc, char **argv)
     /*--------------------------------------------------------------------------*/
 
     module = G_define_module();
-    module->keywords = _("raster, geomorphology");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("geomorphology"));
     module->label = _("Extracts terrain parameters from a DEM.");
     module->description = _("Uses a multi-scale approach"
 			    " by taking fitting quadratic parameters to any size window (via least squares).");
@@ -87,12 +88,12 @@ void interface(int argc, char **argv)
     tol2_val->required = NO;
     tol2_val->answer = "0.0001";
 
-    sprintf(buf, _("Size of processing window (odd number only, max: %i)"),
-	    MAX_WSIZE);
+    sprintf(buf, "3-%i", MAX_WSIZE);
     win_size->key = "size";
-    win_size->description = G_store(buf);
+    win_size->description = _("Size of processing window (odd number only)");
     win_size->type = TYPE_INTEGER;
     win_size->required = NO;
+    win_size->options = G_store(buf);
     win_size->answer = "3";
 
     parameter->key = "param";
@@ -164,27 +165,8 @@ void interface(int argc, char **argv)
 	mparam = ELEV;
     }
 
-    /*--------------------------------------------------------------------------*/
-    /*                      CHECK INPUT RASTER FILE EXISTS                      */
-
-    /*--------------------------------------------------------------------------*/
-    if ((mapset_in = G_find_cell2(rast_in_name, "")) == NULL)
-	G_fatal_error(_("Raster map <%s> not found"), rast_in_name);
-
-    /*--------------------------------------------------------------------------*/
-    /*                  CHECK OUTPUT RASTER FILE DOES NOT EXIST                 */
-
-    /*--------------------------------------------------------------------------*/
-
-    mapset_out = G_mapset();	/* Set output to current mapset.        */
-
     /* make sure input and output names are valid */
-    G_check_input_output_name(rast_in_name, rast_out_name, GR_FATAL_EXIT);
-
-    /*--------------------------------------------------------------------------*/
-    /*                 CHECK WINDOW SIZE IS NOT EVEN OR TOO LARGE               */
-
-    /*--------------------------------------------------------------------------*/
+    G_check_input_output_name(rast_in_name, rast_out_name, G_FATAL_EXIT);
 
     if ((wsize / 2 != (wsize - 1) / 2) || (wsize > MAX_WSIZE))
 	G_fatal_error(_("Inappropriate window size (too big or even)"));

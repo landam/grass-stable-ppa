@@ -7,18 +7,22 @@
  *               points outside current region) by Paul Kelly
  *               further: Radim Blazek <radim.blazek gmail.com>,  Huidae Cho <grass4u gmail.com>,
  *               Glynn Clements <glynn gclements.plus.com>, Markus Neteler <neteler itc.it>
- * PURPOSE:      
- * COPYRIGHT:    (C) 2003-2006 by the GRASS Development Team
+ *               OGR support by Martin Landa <landa.martin gmail.com>
+ * PURPOSE:      Surface interpolation from vector point data by Inverse
+ *               Distance Squared Weighting
+ * COPYRIGHT:    (C) 2003-2010 by the GRASS Development Team
  *
- *               This program is free software under the GNU General Public
- *               License (>=v2). Read the file COPYING that comes with GRASS
- *               for details.
+ *               This program is free software under the GNU General
+ *               Public License (>=v2). Read the file COPYING that
+ *               comes with GRASS for details.
  *
  *****************************************************************************/
 #include <stdlib.h>
 #include <math.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
+#include "proto.h"
 
 int search_points = 12;
 
@@ -42,12 +46,6 @@ struct Point ***points;
 struct Point *noidxpoints = NULL;
 struct list_Point *list;
 static struct Cell_head window;
-static struct Flag *noindex;
-void calculate_distances(int, int, double, double, int *);
-void calculate_distances_noindex(double, double);
-
-/* read_sites.c */
-void read_sites(char *, int, char *);
 
 int main(int argc, char *argv[])
 {
@@ -63,12 +61,16 @@ int main(int argc, char *argv[])
     double north, east;
     double dist;
     double sum1, sum2, interp_value;
-    int n, field;
+    int n;
     double p;
     struct
     {
 	struct Option *input, *npoints, *power, *output, *dfield, *col;
     } parm;
+    struct
+    {
+        struct Flag *noindex;
+    } flag;
     struct cell_list
     {
 	int row, column;
@@ -81,29 +83,26 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, interpolation");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("surface"));
+    G_add_keyword(_("interpolation"));
+    G_add_keyword(_("IDW"));
     module->description =
-	_("Surface interpolation from vector point data by Inverse "
+	_("Provides surface interpolation from vector point data by Inverse "
 	  "Distance Squared Weighting.");
 
     parm.input = G_define_standard_option(G_OPT_V_INPUT);
 
-    parm.output = G_define_standard_option(G_OPT_R_OUTPUT);
-
     parm.dfield = G_define_standard_option(G_OPT_V_FIELD);
-    parm.dfield->description =
-	_("If set to 0, z coordinates are used (3D vector only)");
-    parm.dfield->answer = "1";
-    parm.dfield->gisprompt = "old_layer,layer,layer_zero"; 
-    parm.dfield->guisection = _("Values");
-
-    parm.col = G_define_option();
-    parm.col->key = "column";
-    parm.col->type = TYPE_STRING;
+    
+    parm.col = G_define_standard_option(G_OPT_DB_COLUMN);
     parm.col->required = NO;
-    parm.col->label = _("Attribute table column with values to interpolate");
-    parm.col->description = _("Required if layer > 0");
+    parm.col->label = _("Name of attribute column with values to interpolate");
+    parm.col->description = _("If not given and input is 2D vector map then category values are used. "
+                               "If input is 3D vector map then z-coordinates are used.");
     parm.col->guisection = _("Values");
+
+    parm.output = G_define_standard_option(G_OPT_R_OUTPUT);
 
     parm.npoints = G_define_option();
     parm.npoints->key = "npoints";
@@ -118,44 +117,37 @@ int main(int argc, char *argv[])
     parm.power->key = "power";
     parm.power->type = TYPE_DOUBLE;
     parm.power->answer = "2.0";
+    parm.power->label = _("Power parameter");
     parm.power->description = 
-    	_("Power parameter; greater values assign greater influence to closer points");
+    	_("Greater values assign greater influence to closer points");
     parm.power->guisection = _("Settings");
 
-    noindex = G_define_flag();
-    noindex->key = 'n';
-    noindex->label = _("Don't index points by raster cell");
-    noindex->description = _("Slower but uses"
-			     " less memory and includes points from outside region"
-			     " in the interpolation");
-    noindex->guisection = _("Settings");
+    flag.noindex = G_define_flag();
+    flag.noindex->key = 'n';
+    flag.noindex->label = _("Don't index points by raster cell");
+    flag.noindex->description = _("Slower but uses"
+				  " less memory and includes points from outside region"
+				  " in the interpolation");
+    flag.noindex->guisection = _("Settings");
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    if (G_legal_filename(parm.output->answer) < 0)
-	G_fatal_error(_("<%s> is an illegal file name"), parm.output->answer);
-
     if (sscanf(parm.npoints->answer, "%d", &search_points) != 1 ||
 	search_points < 1)
-	G_fatal_error(_("%s=%s - illegal number of interpolation points"),
-		      parm.npoints->key, parm.npoints->answer);
-
-    sscanf(parm.dfield->answer, "%d", &field);
-
-    if (field > 0 && !parm.col->answer)
-	G_fatal_error(_("No attribute column specified"));
-
+	G_fatal_error(_("Illegal number (%s) of interpolation points"),
+		      parm.npoints->answer);
+    
     list =
-	(struct list_Point *)G_calloc((size_t) search_points,
-				      sizeof(struct list_Point));
-				      
-    p = atof ( parm.power->answer );
+	(struct list_Point *) G_calloc((size_t) search_points,
+				       sizeof(struct list_Point));
+
+    p = atof(parm.power->answer);
 
     /* get the window, dimension arrays */
     G_get_window(&window);
 
-    if (!noindex->answer) {
+    if (!flag.noindex->answer) {
 	npoints_currcell = (long **)G_malloc(window.rows * sizeof(long *));
 	points =
 	    (struct Point ***)G_malloc(window.rows * sizeof(struct Point **));
@@ -176,13 +168,14 @@ int main(int argc, char *argv[])
     }
 
     /* read the elevation points from the input sites file */
-    read_sites(parm.input->answer, field, parm.col->answer);
-
+    read_sites(parm.input->answer, parm.dfield->answer,
+	       parm.col->answer, flag.noindex->answer);
+    
     if (npoints == 0)
-	G_fatal_error(_("No data points found"));
+	G_fatal_error(_("No points found"));
     nsearch = npoints < search_points ? npoints : search_points;
 
-    if (!noindex->answer) {
+    if (!flag.noindex->answer) {
 	/* Arbitrary point to switch between searching algorithms. Could do
 	 * with refinement PK */
 	if ((window.rows * window.cols) / npoints > 400) {
@@ -251,44 +244,40 @@ int main(int argc, char *argv[])
 
     /* allocate buffers, etc. */
 
-    dcell = G_allocate_d_raster_buf();
+    dcell = Rast_allocate_d_buf();
 
-    if ((maskfd = G_maskfd()) >= 0)
-	mask = G_allocate_cell_buf();
+    if ((maskfd = Rast_maskfd()) >= 0)
+	mask = Rast_allocate_c_buf();
     else
 	mask = NULL;
 
 
-    fd = G_open_raster_new(parm.output->answer, DCELL_TYPE);
-    if (fd < 0)
-	G_fatal_error(_("Unable to create raster map <%s>"),
-		      parm.output->answer);
+    fd = Rast_open_new(parm.output->answer, DCELL_TYPE);
 
     G_important_message(_("Interpolating raster map <%s> (%d rows, %d cols)... "),
 			parm.output->answer, window.rows, window.cols);
 
     north = window.north + window.ns_res / 2.0;
     for (row = 0; row < window.rows; row++) {
-	G_percent(row, window.rows - 1, 1);
+	G_percent(row, window.rows, 1);
 
-	if (mask) {
-	    if (G_get_map_row(maskfd, mask, row) < 0)
-		exit(1);
-	}
+	if (mask)
+	    Rast_get_c_row(maskfd, mask, row);
+
 	north -= window.ns_res;
 	east = window.west - window.ew_res / 2.0;
 	for (col = 0; col < window.cols; col++) {
 	    east += window.ew_res;
 	    /* don't interpolate outside of the mask */
 	    if (mask && mask[col] == 0) {
-		G_set_d_null_value(&dcell[col], 1);
+		Rast_set_d_null_value(&dcell[col], 1);
 		continue;
 	    }
 
 	    /* If current cell contains more than nsearch points just average
 	     * all the points in this cell and don't look in any others */
 
-	    if (!(noindex->answer) && npoints_currcell[row][col] >= nsearch) {
+	    if (!(flag.noindex->answer) && npoints_currcell[row][col] >= nsearch) {
 		sum1 = 0.0;
 		for (i = 0; i < npoints_currcell[row][col]; i++)
 		    sum1 += points[row][col][i].z;
@@ -296,7 +285,7 @@ int main(int argc, char *argv[])
 		interp_value = sum1 / npoints_currcell[row][col];
 	    }
 	    else {
-		if (noindex->answer)
+		if (flag.noindex->answer)
 		    calculate_distances_noindex(north, east);
 		else {
 		    pointsfound = 0;
@@ -390,8 +379,8 @@ int main(int argc, char *argv[])
 		sum2 = 0.0;
 		for (n = 0; n < nsearch; n++) {
 		    if ((dist = list[n].dist)) {
-			sum1 += list[n].z / pow ( dist, p );
-			sum2 += 1.0 / pow ( dist, p );
+			sum1 += list[n].z / pow(dist, p);
+			sum2 += 1.0 / pow(dist, p);
 		    }
 		    else {
 			/* If one site is dead on the centre of the cell, ignore
@@ -406,27 +395,30 @@ int main(int argc, char *argv[])
 	    }
 	    dcell[col] = (DCELL) interp_value;
 	}
-	G_put_d_raster_row(fd, dcell);
+	Rast_put_d_row(fd, dcell);
     }
-    G_close_cell(fd);
-    /* writing history file */
-    G_short_history(parm.output->answer, "raster", &history);
-    G_command_history(&history);
-    G_write_history(parm.output->answer, &history);
+    G_percent(1, 1, 1);
 
-    G_done_msg("");
+    Rast_close(fd);
+
+    /* writing history file */
+    Rast_short_history(parm.output->answer, "raster", &history);
+    Rast_command_history(&history);
+    Rast_write_history(parm.output->answer, &history);
+    
+    G_done_msg(" ");
 
     exit(EXIT_SUCCESS);
 }
 
-void newpoint(double z, double east, double north)
+void newpoint(double z, double east, double north, int noindex)
 {
     int row, column;
 
     row = (int)((window.north - north) / window.ns_res);
     column = (int)((east - window.west) / window.ew_res);
 
-    if (!noindex->answer) {
+    if (!noindex) {
 	if (row < 0 || row >= window.rows || column < 0 ||
 	    column >= window.cols) ;
 	else {			/* Ignore sites outside current region as can't be indexed */

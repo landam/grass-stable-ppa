@@ -8,44 +8,49 @@
  *               Jachym Cepicky <jachym les-ejk.cz>,
  *               Markus Neteler <neteler itc.it>,
  *               Paul Kelly <paul-grass stjohnspoint.co.uk>
+ *               OGR support by Martin Landa <landa.martin gmail.com>
  *               Markus Metz
  * PURPOSE:      
- * COPYRIGHT:    (C) 2003-2008 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2003-2014 by the GRASS Development Team
  *
- *               This program is free software under the GNU General Public
- *               License (>=v2). Read the file COPYING that comes with GRASS
- *               for details.
+ *               This program is free software under the GNU General
+ *               Public License (>=v2). Read the file COPYING that
+ *               comes with GRASS for details.
  *
  *****************************************************************************/
 
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <grass/gis.h>
 #include <grass/dbmi.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
+
 #include "local.h"
+
+void copy_table(struct Map_info *, struct Map_info *, int, int);
 
 int main(int argc, char *argv[])
 {
-    int i, input, line, nlines, operator;
+    int i, j, input, line, nlines, operator;
     int type[2], field[2], ofield[3];
     double snap_thresh;
-    char *mapset[2];
-    char *pre[2];
     struct GModule *module;
     struct Option *in_opt[2], *out_opt, *type_opt[2], *field_opt[2],
 	*ofield_opt, *operator_opt, *snap_opt;
     struct Flag *table_flag;
-    struct Map_info In[2], Out;
+    struct Map_info In[2], Out, Tmp;
     struct line_pnts *Points, *Points2;
     struct line_cats *Cats;
     struct ilist *BList;
+    char *desc;
     int verbose;
 
     struct field_info *Fi = NULL;
-    char buf[1000];
+    char buf[DB_SQL_MAX];
     dbString stmt;
     dbString sql, value_string, col_defs;
     dbDriver *driver;
@@ -53,30 +58,33 @@ int main(int argc, char *argv[])
 
     G_gisinit(argv[0]);
 
-    pre[0] = "a";
-    pre[1] = "b";
-
     module = G_define_module();
-    module->keywords = _("vector, geometry");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("geometry"));
+    G_add_keyword(_("spatial query"));
     module->description = _("Overlays two vector maps.");
 
     in_opt[0] = G_define_standard_option(G_OPT_V_INPUT);
     in_opt[0]->label = _("Name of input vector map (A)");
     in_opt[0]->key = "ainput";
 
+    field_opt[0] = G_define_standard_option(G_OPT_V_FIELD);
+    field_opt[0]->label = _("Layer number or name (vector map A)");
+    field_opt[0]->key = "alayer";
+
     type_opt[0] = G_define_standard_option(G_OPT_V_TYPE);
     type_opt[0]->label = _("Feature type (vector map A)");
     type_opt[0]->key = "atype";
-    type_opt[0]->options = "line,area";
-    type_opt[0]->answer = "area";
-
-    field_opt[0] = G_define_standard_option(G_OPT_V_FIELD);
-    field_opt[0]->label = _("Layer number (vector map A)");
-    field_opt[0]->key = "alayer";
+    type_opt[0]->options = "line,area,auto";
+    type_opt[0]->answer = "auto";
 
     in_opt[1] = G_define_standard_option(G_OPT_V_INPUT);
     in_opt[1]->label = _("Name of input vector map (B)");
     in_opt[1]->key = "binput";
+
+    field_opt[1] = G_define_standard_option(G_OPT_V_FIELD);
+    field_opt[1]->label = _("Layer number or name (vector map B)");
+    field_opt[1]->key = "blayer";
 
     type_opt[1] = G_define_standard_option(G_OPT_V_TYPE);
     type_opt[1]->label = _("Feature type (vector map B)");
@@ -84,19 +92,12 @@ int main(int argc, char *argv[])
     type_opt[1]->options = "area";
     type_opt[1]->answer = "area";
 
-    field_opt[1] = G_define_standard_option(G_OPT_V_FIELD);
-    field_opt[1]->label = _("Layer number (vector map B)");
-    field_opt[1]->key = "blayer";
-
-    out_opt = G_define_standard_option(G_OPT_V_OUTPUT);
-
     operator_opt = G_define_option();
     operator_opt->key = "operator";
     operator_opt->type = TYPE_STRING;
-    operator_opt->required = NO;
+    operator_opt->required = YES;
     operator_opt->multiple = NO;
     operator_opt->options = "and,or,not,xor";
-    operator_opt->answer = "or";
     operator_opt->label = _("Operator defines features written to "
 			    "output vector map");
     operator_opt->description =
@@ -104,14 +105,19 @@ int main(int argc, char *argv[])
 	  "of operation 'ainput operator binput' is true. "
 	  "Input feature is considered to be true, if "
 	  "category of given layer is defined.");
-    operator_opt->descriptions =
-	_("and;also known as 'intersection' in GIS;"
-	  "or;also known as 'union' in GIS (only for atype=area);"
-	  "not;features from ainput not overlayed by features " "from binput;"
-	  "xor;features from either ainput or binput but "
-	  "not those from ainput overlayed by binput (only "
-	  "for atype=area)");
+    desc = NULL;
+    G_asprintf(&desc,
+	       "and;%s;or;%s;not;%s;xor;%s",
+	       _("also known as 'intersection' in GIS"),
+	       _("also known as 'union' in GIS (only for atype=area)"),
+	       _("features from ainput not overlayed by features from binput"),
+	       _("features from either ainput or binput but "
+		 "not those from ainput overlayed by binput (only "
+		 "for atype=area)"));
+    operator_opt->descriptions = desc;
 
+    out_opt = G_define_standard_option(G_OPT_V_OUTPUT);
+    
     ofield_opt = G_define_standard_option(G_OPT_V_FIELD);
     ofield_opt->key = "olayer";
     ofield_opt->multiple = YES;
@@ -119,7 +125,9 @@ int main(int argc, char *argv[])
     ofield_opt->label = _("Output layer for new category, ainput and binput");
     ofield_opt->description = _("If 0 or not given, "
 				"the category is not written");
-
+    ofield_opt->required = NO;
+    ofield_opt->guisection = _("Attributes");
+    
     snap_opt = G_define_option();
     snap_opt->key = "snap";
     snap_opt->label = _("Snapping threshold for boundaries");
@@ -127,19 +135,19 @@ int main(int argc, char *argv[])
     snap_opt->type = TYPE_DOUBLE;
     snap_opt->answer = "1e-8";
 
-    table_flag = G_define_flag();
-    table_flag->key = 't';
-    table_flag->description = _("Do not create attribute table");
-
+    table_flag = G_define_standard_flag(G_FLG_V_TABLE);
+    table_flag->guisection = _("Attributes");
+    
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
     for (input = 0; input < 2; input++) {
 	type[input] = Vect_option_to_types(type_opt[input]);
-	field[input] = atoi(field_opt[input]->answer);
     }
+    /* not needed
     if (type[0] & GV_AREA)
 	type[0] = GV_AREA;
+    */
 
     ofield[0] = ofield[1] = ofield[2] = 0;
     i = 0;
@@ -159,16 +167,35 @@ int main(int argc, char *argv[])
     else
 	G_fatal_error(_("Unknown operator '%s'"), operator_opt->answer);
 
+    Vect_check_input_output_name(in_opt[0]->answer, out_opt->answer,
+				 G_FATAL_EXIT);
+    Vect_check_input_output_name(in_opt[1]->answer, out_opt->answer,
+				 G_FATAL_EXIT);
+
+    for (input = 0; input < 2; input++) {
+        Vect_set_open_level(2);
+        Vect_open_old2(&(In[input]), in_opt[input]->answer, "", field_opt[input]->answer);
+	field[input] = Vect_get_field_number(&(In[input]), field_opt[input]->answer);
+    }
+    if (type[0] == 0) { /* atype=auto */
+        type[0] = Vect_read_next_line(&(In[0]), NULL, NULL);
+        if (type[0] == -1)
+            G_fatal_error(_("Unable to determine feature type for <%s>"),
+                          in_opt[0]->key);
+        if (type[0] & (GV_BOUNDARY | GV_CENTROID))
+            type[0] = GV_AREA;
+               
+        if (!(type[0] & (GV_LINE | GV_AREA)))
+            G_fatal_error(_("Invalid feature type (%d) for <%s>. Only '%s' or '%s' supported."),
+                          type[0], in_opt[0]->key, "line", "area");
+        G_debug(1, "auto -> atype=%d", type[0]);
+    }
+
     /* OP_OR, OP_XOR is not supported for lines,
        mostly because I'am not sure if they make enouhg sense */
     if (type[0] == GV_LINE && (operator == OP_OR || operator == OP_XOR))
 	G_fatal_error(_("Operator '%s' is not supported for type line"),
 		      operator_opt->answer);
-
-    Vect_check_input_output_name(in_opt[0]->answer, out_opt->answer,
-				 GV_FATAL_EXIT);
-    Vect_check_input_output_name(in_opt[1]->answer, out_opt->answer,
-				 GV_FATAL_EXIT);
 
     snap_thresh = atof(snap_opt->answer);
 
@@ -181,10 +208,12 @@ int main(int argc, char *argv[])
     Vect_set_map_name(&Out, "Output from v.overlay");
     Vect_set_person(&Out, G_whoami());
     Vect_hist_command(&Out);
+    
+    Vect_open_tmp_new(&Tmp, NULL, WITHOUT_Z);
 
     /* Create dblinks */
     if (ofield[0] > 0) {
-	Fi = Vect_default_field_info(&Out, ofield[0], NULL, GV_1TABLE);
+	Fi = Vect_default_field_info(&Out, ofield[0], NULL, GV_MTABLE);
     }
 
     db_init_string(&sql);
@@ -212,22 +241,13 @@ int main(int argc, char *argv[])
     BList = Vect_new_list();
     verbose = G_verbose();
     G_set_verbose(0);
-    Vect_build_partial(&Out, GV_BUILD_BASE);
+    Vect_build_partial(&Tmp, GV_BUILD_BASE);
     G_set_verbose(verbose);
     for (input = 0; input < 2; input++) {
 	int ncats, index, nlines_out, newline;
 
-	G_message(_("Copying vector objects from vector map <%s>..."),
-		  in_opt[input]->answer);
-
-	if ((mapset[input] =
-	     G_find_vector2(in_opt[input]->answer, NULL)) == NULL) {
-	    G_fatal_error(_("Vector map <%s> not found"),
-			  in_opt[input]->answer);
-	}
-
-	Vect_set_open_level(2);
-	Vect_open_old(&(In[input]), in_opt[input]->answer, mapset[input]);
+	G_message(_("Copying vector features from <%s>..."),
+		  Vect_get_full_name(&(In[input])));
 
 	nlines = Vect_get_num_lines(&(In[input]));
 
@@ -250,7 +270,22 @@ int main(int argc, char *argv[])
 	    }
 	    
 	    /* lines and boundaries must have at least 2 distinct vertices */
-	    Vect_line_prune(Points);
+	    /* Vect_line_prune(Points); */
+
+	    if (Points->n_points > 0) {
+		j = 1;
+		for (i = 1; i < Points->n_points; i++) {
+		    Points->z[i] = 0;	/* Tmp, Out are 2D */
+		    if (Points->x[i] != Points->x[j - 1] ||
+			Points->y[i] != Points->y[j - 1]) {
+			Points->x[j] = Points->x[i];
+			Points->y[j] = Points->y[i];
+			j++;
+		    }
+		}
+		Points->n_points = j;
+	    }
+
 	    if (Points->n_points < 2)
 		continue;
 
@@ -274,21 +309,23 @@ int main(int argc, char *argv[])
 					  Points->z[v]);
 		    }
 
-		    newline = Vect_write_line(&Out, ltype, Points2, Cats);
+		    newline = Vect_write_line(&Tmp, ltype, Points2, Cats);
 		    if (input == 1)
-			Vect_list_append(BList, newline);
+			G_ilist_add(BList, newline);
 
 		    start = v;
 		}
 	    }
 	    else {
-		newline = Vect_write_line(&Out, ltype, Points, Cats);
+		newline = Vect_write_line(&Tmp, ltype, Points, Cats);
 		if (input == 1)
-		    Vect_list_append(BList, newline);
+		    G_ilist_add(BList, newline);
 	    }
 	    nlines_out++;
 	}
 	if (nlines_out == 0) {
+	    Vect_close(&Tmp);
+	    Vect_close(&Out);
 	    Vect_delete(out_opt->answer);
 	    G_fatal_error(_("No %s features found in vector map <%s>. Verify '%s' parameter."),
 		      type_opt[input]->answer, Vect_get_full_name(&(In[input])),
@@ -298,7 +335,8 @@ int main(int argc, char *argv[])
 	/* Allocate attributes */
 	attr[input].n = 0;
 	/* this may be more than necessary */
-	attr[input].attr = (ATTR *)
+	attr[input].attr =
+	    (ATTR *)
 	    G_calloc(Vect_cidx_get_type_count
 		     (&(In[input]), field[input], type[input]), sizeof(ATTR));
 
@@ -324,8 +362,6 @@ int main(int argc, char *argv[])
 
 	G_debug(3, "%d cats read from index", attr[input].n);
 
-	G_message(_("Collecting input attributes..."));
-
 	attr[input].null_values = NULL;
 	attr[input].columns = NULL;
 
@@ -339,6 +375,8 @@ int main(int argc, char *argv[])
 	    dbColumn *Column;
 	    dbValue *Value;
 	    int sqltype, ctype;
+
+	    G_verbose_message(_("Collecting input attributes..."));
 
 	    inFi = Vect_get_field(&(In[input]), field[input]);
 	    if (!inFi) {
@@ -526,7 +564,7 @@ int main(int argc, char *argv[])
 			  db_get_string(&stmt));
 	}
 	
-	if (db_create_index2(driver, Fi->table, "cat") != DB_OK)
+	if (db_create_index2(driver, Fi->table, GV_KEY_COLUMN) != DB_OK)
 	    G_warning(_("Unable to create index"));
 
 	if (db_grant_on_table
@@ -536,22 +574,22 @@ int main(int argc, char *argv[])
 			  Fi->table);
 
 	/* Table created, now we can write dblink */
-	Vect_map_add_dblink(&Out, ofield[0], NULL, Fi->table, "cat",
+	Vect_map_add_dblink(&Out, ofield[0], NULL, Fi->table, GV_KEY_COLUMN,
 			    Fi->database, Fi->driver);
     }
 
     /* AREA x AREA */
     if (type[0] == GV_AREA) {
-	area_area(In, field, &Out, Fi, driver, operator, ofield, attr, BList, snap_thresh);
+	area_area(In, field, &Tmp, &Out, Fi, driver, operator, ofield, attr, BList, snap_thresh);
     }
     else {			/* LINE x AREA */
-	line_area(In, field, &Out, Fi, driver, operator, ofield, attr, BList);
+	line_area(In, field, &Tmp, &Out, Fi, driver, operator, ofield, attr, BList);
     }
-
-    G_message(_("Rebuilding topology..."));
-    Vect_build_partial(&Out, GV_BUILD_NONE);
-    Vect_build(&Out);
+    
+    Vect_close(&Tmp);
+    
     /* Build topology to show the final result and prepare for Vect_close() */
+    Vect_build(&Out);
 
     if (driver) {
 	/* Close table */
@@ -559,20 +597,15 @@ int main(int argc, char *argv[])
 	db_close_database_shutdown_driver(driver);
     }
     if (ofield[0] < 1 && !table_flag->answer) {
-	int otype;
 	
-	if (type[0] == GV_AREA)
-	    otype = GV_CENTROID;
-	else
-	    otype = GV_LINE;
-	
+	/* TODO: copy only valid attributes */
 	/* copy attributes from ainput */
 	if (ofield[1] > 0 && field[0] > 0) {
-	    Vect_copy_table(&In[0], &Out, field[0], ofield[1], NULL, otype);
+	    copy_table(&In[0], &Out, field[0], ofield[1]);
 	}
 	/* copy attributes from binput */
 	if (ofield[2] > 0 && field[1] > 0 && ofield[1] != ofield[2]) {
-	    Vect_copy_table(&In[1], &Out, field[1], ofield[2], NULL, otype);
+	    copy_table(&In[1], &Out, field[1], ofield[2]);
 	}
     }
 
@@ -583,4 +616,19 @@ int main(int argc, char *argv[])
     G_done_msg(" ");
 
     exit(EXIT_SUCCESS);
+}
+
+void copy_table(struct Map_info *In, struct Map_info *Out, int infield, 
+                int outfield)
+{
+    struct ilist *list;
+    int findex;
+    
+    list = Vect_new_list();
+    findex = Vect_cidx_get_field_index(Out, outfield);
+    
+    Vect_cidx_get_unique_cats_by_index(Out, findex, list);
+    Vect_copy_table_by_cats(In, Out, infield, outfield, NULL, GV_MTABLE, list->value, list->n_values);
+    
+    Vect_destroy_list(list);
 }

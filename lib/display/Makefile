@@ -1,8 +1,13 @@
 MODULE_TOPDIR = ../..
 
-EXTRA_LIBS=$(GISLIB) $(RASTERLIB) $(MATHLIB)
+EXTRA_INC = -I../driver
 
-LIB_NAME = $(DISPLAY_LIBNAME)
+include $(MODULE_TOPDIR)/include/Make/Vars.make
+ifneq ($(USE_CAIRO),)
+EXTRA_CFLAGS += -DUSE_CAIRO
+endif
+
+LIB = DISPLAY
 
 include $(MODULE_TOPDIR)/include/Make/Lib.make
 include $(MODULE_TOPDIR)/include/Make/Doxygen.make

@@ -1,22 +1,22 @@
 MODULE_TOPDIR = ../..
 
+PGM = vectorascii
+
 SUBDIRS = rtree \
 	dglib \
 	diglib \
 	Vlib \
-	transform \
 	vedit \
 	neta
-
-#doxygen:
-DOXNAME=vector
 
 include $(MODULE_TOPDIR)/include/Make/Dir.make
 include $(MODULE_TOPDIR)/include/Make/Doxygen.make
 
-default: parsubdirs
+DOXNAME = vector
 
-clean: cleansubdirs
+default: htmldir
+
+htmldir: parsubdirs
 
 diglib: rtree
 

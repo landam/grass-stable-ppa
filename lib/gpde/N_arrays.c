@@ -4,8 +4,8 @@
 * MODULE:       Grass PDE Numerical Library
 * AUTHOR(S):    Soeren Gebbert, Berlin (GER) Dec 2006
 * 		soerengebbert <at> gmx <dot> de
-*               
-* PURPOSE:     	Array managment functions 
+*
+* PURPOSE:     	Array managment functions
 * 		part of the gpde library
 *
 * COPYRIGHT:    (C) 2000 by the GRASS Development Team
@@ -16,28 +16,31 @@
 *
 *****************************************************************************/
 
-#include "grass/N_pde.h"
-#include "grass/glocale.h"
 #include <math.h>
+
+#include <grass/N_pde.h>
+#include <grass/raster.h>
+#include <grass/glocale.h>
+
 
 /* ******************** 2D ARRAY FUNCTIONS *********************** */
 
 /*!
- * \brief Allocate memory for a N_array_2d data structure. 
+ * \brief Allocate memory for a N_array_2d data structure.
  *
- * This function allocates memory for an array of type N_array_2d 
+ * This function allocates memory for an array of type N_array_2d
  * and returns the pointer to the new allocated memory.
  * <br><br>
- * The data type of this array is set by "type" and must be 
+ * The data type of this array is set by "type" and must be
  * CELL_TYPE, FCELL_TYPE or DCELL_TYPE accordingly to the raster map data types.
- * The offset sets the number of boundary cols and rows. 
- * This option is useful to generate homogeneous Neumann boundary conditions around  
+ * The offset sets the number of boundary cols and rows.
+ * This option is useful to generate homogeneous Neumann boundary conditions around
  * an array or to establish overlapping boundaries. The array is initialized with 0 by default.
  * <br><br>
  * If the offset is greater then 0, negative indices are possible.
  * <br><br>
  *
- * The data structure of a array with 3 rows and cols and an offset of 1 
+ * The data structure of a array with 3 rows and cols and an offset of 1
  * will looks like this:
  * <br><br>
  *
@@ -52,19 +55,19 @@
  * 0 is the boundary.
  * <br><br>
  * Internal a one dimensional array is allocated to save memory and to speed up the memory access.
- * To access the one dimensional array with a two dimensional index use the provided 
+ * To access the one dimensional array with a two dimensional index use the provided
  * get and put functions. The internal representation of the above data will look like this:
  *
  \verbatim
- 0 0 0 0 0 0 0 1 2 0 0 3 4 5 0 0 6 7 8 0 0 0 0 0 0 
+ 0 0 0 0 0 0 0 1 2 0 0 3 4 5 0 0 6 7 8 0 0 0 0 0 0
  \endverbatim
  *
- * \param cols int 
- * \param rows int 
+ * \param cols int
+ * \param rows int
  * \param offset int
  * \param type int
  * \return N_array_2d *
- * 
+ *
  * */
 N_array_2d *N_alloc_array_2d(int cols, int rows, int offset, int type)
 {
@@ -91,7 +94,7 @@ N_array_2d *N_alloc_array_2d(int cols, int rows, int offset, int type)
 
     if (data->type == CELL_TYPE) {
 	data->cell_array =
-	    (CELL *) G_calloc(data->rows_intern * data->cols_intern,
+	    (CELL *) G_calloc((size_t) data->rows_intern * data->cols_intern,
 			      sizeof(CELL));
 	G_debug(3,
 		"N_alloc_array_2d: CELL array allocated rows_intern %i cols_intern %i offset %i",
@@ -99,7 +102,7 @@ N_array_2d *N_alloc_array_2d(int cols, int rows, int offset, int type)
     }
     else if (data->type == FCELL_TYPE) {
 	data->fcell_array =
-	    (FCELL *) G_calloc(data->rows_intern * data->cols_intern,
+	    (FCELL *) G_calloc((size_t) data->rows_intern * data->cols_intern,
 			       sizeof(FCELL));
 	G_debug(3,
 		"N_alloc_array_2d: FCELL array allocated rows_intern %i cols_intern %i offset %i",
@@ -108,7 +111,7 @@ N_array_2d *N_alloc_array_2d(int cols, int rows, int offset, int type)
     }
     else if (data->type == DCELL_TYPE) {
 	data->dcell_array =
-	    (DCELL *) G_calloc(data->rows_intern * data->cols_intern,
+	    (DCELL *) G_calloc((size_t) data->rows_intern * data->cols_intern,
 			       sizeof(DCELL));
 	G_debug(3,
 		"N_alloc_array_2d: DCELL array allocated rows_intern %i cols_intern %i offset %i",
@@ -121,7 +124,7 @@ N_array_2d *N_alloc_array_2d(int cols, int rows, int offset, int type)
 /*!
  * \brief Release the memory of a N_array_2d structure
  *
- * \param data N_array_2d * 
+ * \param data N_array_2d *
  * \return void
  * */
 void N_free_array_2d(N_array_2d * data)
@@ -155,7 +158,7 @@ void N_free_array_2d(N_array_2d * data)
  *
  * The data type can be CELL_TYPE, FCELL_TYPE or DCELL_TYPE accordingly to the raster map data types.
  *
- * \param array N_array_2d * 
+ * \param array N_array_2d *
  * \return type int
  * */
 int N_get_array_2d_type(N_array_2d * array)
@@ -166,9 +169,9 @@ int N_get_array_2d_type(N_array_2d * array)
 /*!
  * \brief Write the value of the N_array_2d struct at position col, row to value
  *
- * The value must be from the same type as the array. Otherwise you will risk data losses.  
+ * The value must be of the same type as the array. Otherwise you will risk data losses.
  *
- * \param data N_array_2d * 
+ * \param data N_array_2d *
  * \param col int
  * \param row int
  * \param value void * - this variable contains the array value at col, row position
@@ -214,13 +217,13 @@ void N_get_array_2d_value(N_array_2d * data, int col, int row, void *value)
 }
 
 /*!
- * \brief Returns 1 if the value of N_array_2d struct at postion col, row 
- * is of type null, otherwise 0 
+ * \brief Returns 1 if the value of N_array_2d struct at postion col, row
+ * is of type null, otherwise 0
  *
  * This function checks automatically the type of the array and checks for the
  * data type null value.
  *
- * \param data N_array_2d * 
+ * \param data N_array_2d *
  * \param col int
  * \param row int
  * \return int - 1 = is null, 0 otherwise
@@ -233,7 +236,7 @@ int N_is_array_2d_value_null(N_array_2d * data, int col, int row)
 	    G_debug(6,
 		    "N_is_array_2d_value_null: null value is of type CELL at pos [%i][%i]",
 		    col, row);
-	    return G_is_null_value((void *)
+	    return Rast_is_null_value((void *)
 				   &(data->
 				     cell_array[row * data->cols_intern +
 						col]), CELL_TYPE);
@@ -242,7 +245,7 @@ int N_is_array_2d_value_null(N_array_2d * data, int col, int row)
 	    G_debug(6,
 		    "N_is_array_2d_value_null: null value is of type FCELL at pos [%i][%i]",
 		    col, row);
-	    return G_is_null_value((void *)
+	    return Rast_is_null_value((void *)
 				   &(data->
 				     fcell_array[row * data->cols_intern +
 						 col]), FCELL_TYPE);
@@ -251,7 +254,7 @@ int N_is_array_2d_value_null(N_array_2d * data, int col, int row)
 	    G_debug(6,
 		    "N_is_array_2d_value_null: null value is of type DCELL at pos [%i][%i]",
 		    col, row);
-	    return G_is_null_value((void *)
+	    return Rast_is_null_value((void *)
 				   &(data->
 				     dcell_array[row * data->cols_intern +
 						 col]), DCELL_TYPE);
@@ -262,7 +265,7 @@ int N_is_array_2d_value_null(N_array_2d * data, int col, int row)
 	    G_debug(6,
 		    "N_is_array_2d_value_null: null value is of type CELL at pos [%i][%i]",
 		    col, row);
-	    return G_is_null_value((void *)
+	    return Rast_is_null_value((void *)
 				   &(data->
 				     cell_array[(row +
 						 data->offset) *
@@ -273,7 +276,7 @@ int N_is_array_2d_value_null(N_array_2d * data, int col, int row)
 	    G_debug(6,
 		    "N_is_array_2d_value_null: null value is of type FCELL at pos [%i][%i]",
 		    col, row);
-	    return G_is_null_value((void *)
+	    return Rast_is_null_value((void *)
 				   &(data->
 				     fcell_array[(row +
 						  data->offset) *
@@ -284,7 +287,7 @@ int N_is_array_2d_value_null(N_array_2d * data, int col, int row)
 	    G_debug(6,
 		    "N_is_array_2d_value_null: null value is of type DCELL at pos [%i][%i]",
 		    col, row);
-	    return G_is_null_value((void *)
+	    return Rast_is_null_value((void *)
 				   &(data->
 				     dcell_array[(row +
 						  data->offset) *
@@ -298,15 +301,15 @@ int N_is_array_2d_value_null(N_array_2d * data, int col, int row)
 
 
 /*!
- * \brief Returns the value of type CELL at position col, row 
+ * \brief Returns the value of type CELL at position col, row
  *
  * The data array can be of type CELL, FCELL or DCELL, the value will be casted to the CELL type.
  *
- * \param data N_array_2d * 
+ * \param data N_array_2d *
  * \param col int
  * \param row int
  * \return CELL
- *        
+ *
  * */
 CELL N_get_array_2d_c_value(N_array_2d * data, int col, int row)
 {
@@ -330,11 +333,11 @@ CELL N_get_array_2d_c_value(N_array_2d * data, int col, int row)
 }
 
 /*!
- * \brief Returns the value of type FCELL at position col, row 
- *        
+ * \brief Returns the value of type FCELL at position col, row
+ *
  * The data array can be of type CELL, FCELL or DCELL, the value will be casted to the FCELL type.
  *
- * \param data N_array_2d * 
+ * \param data N_array_2d *
  * \param col int
  * \param row int
  * \return FCELL
@@ -362,15 +365,15 @@ FCELL N_get_array_2d_f_value(N_array_2d * data, int col, int row)
 }
 
 /*!
- * \brief Returns the value of type DCELL at position col, row 
+ * \brief Returns the value of type DCELL at position col, row
  *
  * The data array can be of type CELL, FCELL or DCELL, the value will be casted to the DCELL type.
- * 
+ *
  * \param data N_array_2d *
  * \param col int
  * \param row int
  * \return DCELL
- *        
+ *
  * */
 DCELL N_get_array_2d_d_value(N_array_2d * data, int col, int row)
 {
@@ -461,19 +464,19 @@ void N_put_array_2d_value_null(N_array_2d * data, int col, int row)
 
     if (data->offset == 0) {
 	if (data->type == CELL_TYPE && data->cell_array != NULL) {
-	    G_set_c_null_value((void *)
+	    Rast_set_c_null_value((void *)
 			       &(data->
 				 cell_array[row * data->cols_intern + col]),
 			       1);
 	}
 	else if (data->type == FCELL_TYPE && data->fcell_array != NULL) {
-	    G_set_f_null_value((void *)
+	    Rast_set_f_null_value((void *)
 			       &(data->
 				 fcell_array[row * data->cols_intern + col]),
 			       1);
 	}
 	else if (data->type == DCELL_TYPE && data->dcell_array != NULL) {
-	    G_set_d_null_value((void *)
+	    Rast_set_d_null_value((void *)
 			       &(data->
 				 dcell_array[row * data->cols_intern + col]),
 			       1);
@@ -481,7 +484,7 @@ void N_put_array_2d_value_null(N_array_2d * data, int col, int row)
     }
     else {
 	if (data->type == CELL_TYPE && data->cell_array != NULL) {
-	    G_set_c_null_value((void *)
+	    Rast_set_c_null_value((void *)
 			       &(data->
 				 cell_array[(row +
 					     data->offset) *
@@ -489,7 +492,7 @@ void N_put_array_2d_value_null(N_array_2d * data, int col, int row)
 					    data->offset]), 1);
 	}
 	else if (data->type == FCELL_TYPE && data->fcell_array != NULL) {
-	    G_set_f_null_value((void *)
+	    Rast_set_f_null_value((void *)
 			       &(data->
 				 fcell_array[(row +
 					      data->offset) *
@@ -497,7 +500,7 @@ void N_put_array_2d_value_null(N_array_2d * data, int col, int row)
 					     data->offset]), 1);
 	}
 	else if (data->type == DCELL_TYPE && data->dcell_array != NULL) {
-	    G_set_d_null_value((void *)
+	    Rast_set_d_null_value((void *)
 			       &(data->
 				 dcell_array[(row +
 					      data->offset) *
@@ -512,7 +515,7 @@ void N_put_array_2d_value_null(N_array_2d * data, int col, int row)
 /*!
  * \brief Writes a CELL value to the N_array_2d struct at position col, row
  *
- * \param data N_array_2d * 
+ * \param data N_array_2d *
  * \param col int
  * \param row int
  * \param value CELL
@@ -657,19 +660,19 @@ void N_print_array_2d(N_array_2d * data)
 /* ******************** 3D ARRAY FUNCTIONS *********************** */
 
 /*!
- * \brief Allocate memory for a N_array_3d data structure. 
+ * \brief Allocate memory for a N_array_3d data structure.
  *
- * This functions allocates an array of type N_array_3d and returns a pointer 
+ * This functions allocates an array of type N_array_3d and returns a pointer
  * to the new allocated memory.
  * <br><br>
- * The data type of this array set by "type" must be 
+ * The data type of this array set by "type" must be
  * FCELL_TYPE or DCELL_TYPE accordingly to the raster3d map data types.
- * The offsets sets the number of boundary cols, rows and depths. 
- * This option is useful to generate homogeneous Neumann boundary conditions around  
+ * The offsets sets the number of boundary cols, rows and depths.
+ * This option is useful to generate homogeneous Neumann boundary conditions around
  * an array or to establish overlapping boundaries. The arrays are initialized with 0 by default.
  * <br><br>
  * If the offset is greater then 0, negative indices are possible.
- * The data structure of a array with 3 depths, rows and cols and an offset of 1 
+ * The data structure of a array with 3 depths, rows and cols and an offset of 1
  * will looks like this:
  *
  \verbatim
@@ -709,16 +712,16 @@ void N_print_array_2d(N_array_2d * data)
 
  * <br><br>
  * Internal a one dimensional array is allocated to speed up the memory access.
- * To access the dimensional array with a three dimensional indexing use the provided 
+ * To access the dimensional array with a three dimensional indexing use the provided
  * get and put functions.
  *
  * \param cols int
  * \param rows int
  * \param depths int
- * \param offset int 
+ * \param offset int
  * \param type int
  * \return N_array_3d *
- * 
+ *
  * */
 N_array_3d *N_alloc_array_3d(int cols, int rows, int depths, int offset,
 			     int type)
@@ -748,7 +751,7 @@ N_array_3d *N_alloc_array_3d(int cols, int rows, int depths, int offset,
 
     if (data->type == FCELL_TYPE) {
 	data->fcell_array =
-	    (float *)G_calloc(data->depths_intern * data->rows_intern *
+	    (float *)G_calloc((size_t) data->depths_intern * data->rows_intern *
 			      data->cols_intern, sizeof(float));
 	G_debug(3,
 		"N_alloc_array_3d: float array allocated rows_intern %i cols_intern %i depths_intern %i offset %i",
@@ -757,7 +760,7 @@ N_array_3d *N_alloc_array_3d(int cols, int rows, int depths, int offset,
     }
     else if (data->type == DCELL_TYPE) {
 	data->dcell_array =
-	    (double *)G_calloc(data->depths_intern * data->rows_intern *
+	    (double *)G_calloc((size_t) data->depths_intern * data->rows_intern *
 			       data->cols_intern, sizeof(double));
 	G_debug(3,
 		"N_alloc_array_3d: double array allocated rows_intern %i cols_intern %i depths_intern %i offset %i",
@@ -769,7 +772,7 @@ N_array_3d *N_alloc_array_3d(int cols, int rows, int depths, int offset,
 }
 
 /*!
- * \brief Release the memory of a N_array_3d 
+ * \brief Release the memory of a N_array_3d
  *
  * \param data N_array_3d *
  * \return void
@@ -813,7 +816,7 @@ int N_get_array_3d_type(N_array_3d * array)
  * \brief This function writes the value of N_array_3d data at position col, row, depth
  *        to the variable value
  *
- * The value must be from the same type as the array. Otherwise you will risk data losses.  
+ * The value must be from the same type as the array. Otherwise you will risk data losses.
  *
  * \param data N_array_3d *
  * \param col int
@@ -883,7 +886,7 @@ int N_is_array_3d_value_null(N_array_3d * data, int col, int row, int depth)
 	    G_debug(6,
 		    "N_is_array_3d_value_null: null value is of type DCELL_TYPE at pos [%i][%i][%i]",
 		    depth, row, col);
-	    return G3d_isNullValueNum((void *)
+	    return Rast3d_is_null_value_num((void *)
 				      &(data->
 					fcell_array[depth *
 						    (data->rows_intern *
@@ -895,7 +898,7 @@ int N_is_array_3d_value_null(N_array_3d * data, int col, int row, int depth)
 	    G_debug(6,
 		    "N_is_array_3d_value_null: null value is of type DCELL_TYPE at pos [%i][%i][%i]",
 		    depth, row, col);
-	    return G3d_isNullValueNum((void *)
+	    return Rast3d_is_null_value_num((void *)
 				      &(data->
 					dcell_array[depth *
 						    (data->rows_intern *
@@ -909,7 +912,7 @@ int N_is_array_3d_value_null(N_array_3d * data, int col, int row, int depth)
 	    G_debug(6,
 		    "N_is_array_3d_value_null: null value is of type DCELL_TYPE at pos [%i][%i][%i]",
 		    depth, row, col);
-	    return G3d_isNullValueNum((void *)
+	    return Rast3d_is_null_value_num((void *)
 				      &(data->
 					fcell_array[(depth +
 						     data->offset) *
@@ -925,7 +928,7 @@ int N_is_array_3d_value_null(N_array_3d * data, int col, int row, int depth)
 	    G_debug(6,
 		    "N_is_array_3d_value_null: null value is of type DCELL_TYPE at pos [%i][%i][%i]",
 		    depth, row, col);
-	    return G3d_isNullValueNum((void *)
+	    return Rast3d_is_null_value_num((void *)
 				      &(data->
 					dcell_array[(depth +
 						     data->offset) *
@@ -1009,7 +1012,7 @@ double N_get_array_3d_d_value(N_array_3d * data, int col, int row, int depth)
  *
  * \param data N_array_3d *
  * \param col int
- * \param row int 
+ * \param row int
  * \param depth int
  * \param value cahr *
  * \return void
@@ -1066,7 +1069,7 @@ N_put_array_3d_value(N_array_3d * data, int col, int row, int depth,
  *
  * \param data N_array_3d *
  * \param col int
- * \param row int 
+ * \param row int
  * \param depth int
  * \return void
  * */
@@ -1079,7 +1082,7 @@ void N_put_array_3d_value_null(N_array_3d * data, int col, int row, int depth)
 
     if (data->offset == 0) {
 	if (data->type == FCELL_TYPE && data->fcell_array != NULL) {
-	    G3d_setNullValue((void *)
+	    Rast3d_set_null_value((void *)
 			     &(data->
 			       fcell_array[depth *
 					   (data->rows_intern *
@@ -1088,7 +1091,7 @@ void N_put_array_3d_value_null(N_array_3d * data, int col, int row, int depth)
 			     FCELL_TYPE);
 	}
 	else if (data->type == DCELL_TYPE && data->dcell_array != NULL) {
-	    G3d_setNullValue((void *)
+	    Rast3d_set_null_value((void *)
 			     &(data->
 			       dcell_array[depth *
 					   (data->rows_intern *
@@ -1099,7 +1102,7 @@ void N_put_array_3d_value_null(N_array_3d * data, int col, int row, int depth)
     }
     else {
 	if (data->type == FCELL_TYPE && data->fcell_array != NULL) {
-	    G3d_setNullValue((void *)
+	    Rast3d_set_null_value((void *)
 			     &(data->
 			       fcell_array[(depth +
 					    data->offset) *
@@ -1113,7 +1116,7 @@ void N_put_array_3d_value_null(N_array_3d * data, int col, int row, int depth)
 			     FCELL_TYPE);
 	}
 	else if (data->type == DCELL_TYPE && data->dcell_array != NULL) {
-	    G3d_setNullValue((void *)
+	    Rast3d_set_null_value((void *)
 			     &(data->
 			       dcell_array[(depth +
 					    data->offset) *

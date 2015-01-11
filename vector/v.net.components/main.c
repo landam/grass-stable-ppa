@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 #include <grass/dbmi.h>
 #include <grass/neta.h>
@@ -48,13 +48,15 @@ int main(int argc, char *argv[])
     struct line_cats *Cats;
     struct GModule *module;	/* GRASS module for parsing arguments */
     struct Option *map_in, *map_out;
-    struct Option *field_opt, *method_opt;
+    struct Option *method_opt, *afield_opt, *nfield_opt, *abcol,
+                  *afcol, *ncol;
     struct Flag *add_f;
     int with_z;
-    int layer, mask_type;
+    int afield, nfield, mask_type;
     dglGraph_s *graph;
     int *component, nnodes, type, i, nlines, components, j, max_cat;
     char buf[2000], *covered;
+    char *desc;
 
     /* Attribute table */
     dbString sql;
@@ -66,13 +68,46 @@ int main(int argc, char *argv[])
 
     /* initialize module */
     module = G_define_module();
-    module->keywords = _("vector, network, components");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("network"));
+    G_add_keyword(_("components"));
     module->description =
 	_("Computes strongly and weakly connected components in the network.");
 
     /* Define the different options as defined in gis.h */
     map_in = G_define_standard_option(G_OPT_V_INPUT);
-    field_opt = G_define_standard_option(G_OPT_V_FIELD);
+
+    afield_opt = G_define_standard_option(G_OPT_V_FIELD);
+    afield_opt->key = "alayer";
+    afield_opt->answer = "1";
+    afield_opt->label = _("Arc layer");
+    afield_opt->guisection = _("Cost");
+
+    nfield_opt = G_define_standard_option(G_OPT_V_FIELD);
+    nfield_opt->key = "nlayer";
+    nfield_opt->answer = "2";
+    nfield_opt->label = _("Node layer");
+    nfield_opt->guisection = _("Cost");
+
+    afcol = G_define_standard_option(G_OPT_DB_COLUMN);
+    afcol->key = "afcolumn";
+    afcol->required = NO;
+    afcol->description =
+	_("Arc forward/both direction(s) cost column (number)");
+    afcol->guisection = _("Cost");
+
+    abcol = G_define_standard_option(G_OPT_DB_COLUMN);
+    abcol->key = "abcolumn";
+    abcol->required = NO;
+    abcol->description = _("Arc backward direction cost column (number)");
+    abcol->guisection = _("Cost");
+
+    ncol = G_define_option();
+    ncol->key = "ncolumn";
+    ncol->type = TYPE_STRING;
+    ncol->required = NO;
+    ncol->description = _("Node cost column (number)");
+    ncol->guisection = _("Cost");
 
     map_out = G_define_standard_option(G_OPT_V_OUTPUT);
 
@@ -82,8 +117,12 @@ int main(int argc, char *argv[])
     method_opt->required = YES;
     method_opt->multiple = NO;
     method_opt->options = "weak,strong";
-    method_opt->descriptions = _("weak;Weakly connected components;"
-				 "strong;Strongly connected components;");
+    desc = NULL;
+    G_asprintf(&desc,
+	       "weak;%s;strong;%s",
+	       _("Weakly connected components"),
+	       _("Strongly connected components"));
+    method_opt->descriptions = desc;
     method_opt->description = _("Type of components");
 
     add_f = G_define_flag();
@@ -100,7 +139,7 @@ int main(int argc, char *argv[])
     Cats = Vect_new_cats_struct();
 
     Vect_check_input_output_name(map_in->answer, map_out->answer,
-				 GV_FATAL_EXIT);
+				 G_FATAL_EXIT);
 
     Vect_set_open_level(2);
 
@@ -114,12 +153,15 @@ int main(int argc, char *argv[])
 	G_fatal_error(_("Unable to create vector map <%s>"), map_out->answer);
     }
 
-
     /* parse filter option and select appropriate lines */
-    layer = atoi(field_opt->answer);
+    afield = Vect_get_field_number(&In, afield_opt->answer);
+    nfield = Vect_get_field_number(&In, nfield_opt->answer);
 
-    Vect_net_build_graph(&In, mask_type, 0, 0, NULL, NULL, NULL, 0, 0);
-    graph = &(In.graph);
+    if (0 != Vect_net_build_graph(&In, mask_type, afield, nfield, afcol->answer,
+                                  abcol->answer, ncol->answer, 0, 0))
+        G_fatal_error(_("Unable to build graph for vector map <%s>"), Vect_get_full_name(&In));
+
+    graph = Vect_net_get_graph(&In);
     nnodes = Vect_get_num_nodes(&In);
     component = (int *)G_calloc(nnodes + 1, sizeof(int));
     covered = (char *)G_calloc(nnodes + 1, sizeof(char));
@@ -128,8 +170,8 @@ int main(int argc, char *argv[])
 	exit(EXIT_FAILURE);
     }
     /* Create table */
-    Fi = Vect_default_field_info(&Out, layer, NULL, GV_1TABLE);
-    Vect_map_add_dblink(&Out, layer, NULL, Fi->table, "cat", Fi->database,
+    Fi = Vect_default_field_info(&Out, 1, NULL, GV_1TABLE);
+    Vect_map_add_dblink(&Out, 1, NULL, Fi->table, GV_KEY_COLUMN, Fi->database,
 			Fi->driver);
     db_init_string(&sql);
     driver = db_start_driver_open_database(Fi->driver, Fi->database);
@@ -147,7 +189,7 @@ int main(int argc, char *argv[])
 	G_fatal_error(_("Unable to create table: '%s'"), db_get_string(&sql));
     }
 
-    if (db_create_index2(driver, Fi->table, "cat") != DB_OK)
+    if (db_create_index2(driver, Fi->table, GV_KEY_COLUMN) != DB_OK)
 	G_warning(_("Cannot create index"));
 
     if (db_grant_on_table
@@ -172,7 +214,7 @@ int main(int argc, char *argv[])
 	int comp, cat;
 
 	type = Vect_read_line(&In, Points, Cats, i);
-	if (!Vect_cat_get(Cats, layer, &cat))
+	if (!Vect_cat_get(Cats, afield, &cat))
 	    continue;
 	if (type == GV_LINE || type == GV_BOUNDARY) {
 	    int node1, node2;
@@ -188,7 +230,8 @@ int main(int argc, char *argv[])
 	else if (type == GV_POINT) {
 	    int node;
 
-	    Vect_get_line_nodes(&In, i, &node, NULL);
+	    /* Vect_get_line_nodes(&In, i, &node, NULL); */
+	    node = Vect_find_node(&In, Points->x[0], Points->y[0], Points->z[0], 0, 0);
 	    comp = component[node];
 	    covered[node] = 1;
 	}
@@ -215,7 +258,7 @@ int main(int argc, char *argv[])
 	for (i = 1; i <= nnodes; i++)
 	    if (!covered[i]) {
 		Vect_reset_cats(Cats);
-		Vect_cat_set(Cats, layer, max_cat);
+		Vect_cat_set(Cats, 1, max_cat);
 		NetA_add_point_on_node(&In, &Out, i, Cats);
 		insert_new_record(driver, Fi, &sql, max_cat++, component[i]);
 	    }

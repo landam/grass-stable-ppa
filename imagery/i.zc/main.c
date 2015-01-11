@@ -19,11 +19,10 @@
  *
  *****************************************************************************/
 
-#define MAIN
-
 #include <stdlib.h>
 #include <math.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/gmath.h>
 #include <grass/glocale.h>
 
@@ -34,7 +33,6 @@ int main(int argc, char *argv[])
     double Thresh;
     int NumOrients;
     int inputfd, zcfd;		/* the input and output file descriptors */
-    char *inmapset;		/* the input mapset name */
     struct Cell_head window;
     CELL *cell_row;
     float Width;
@@ -45,16 +43,14 @@ int main(int argc, char *argv[])
     int size;			/* the length of one side */
     long totsize;		/* the Total number of data points */
     double *data[2];		/* Data structure containing real & complex values of FFT */
-    int save_args();		/* function to stash the command line arguments */
     struct GModule *module;
     struct Option *input_map, *output_map, *width, *threshold, *orientations;
-    const char *me;
 
     G_gisinit(argv[0]);
-    me = G_program_name();
 
     module = G_define_module();
-    module->keywords = _("imagery, edges");
+    G_add_keyword(_("imagery"));
+    G_add_keyword(_("edges"));
     module->description =
 	_("Zero-crossing \"edge detection\" raster "
 	  "function for image processing.");
@@ -67,7 +63,6 @@ int main(int argc, char *argv[])
     input_map->multiple = NO;
     input_map->gisprompt = "old,cell,raster";
     input_map->description = _("Name of input raster map");
-#define INPUT_MAP input_map->answer
 
     output_map = G_define_option();
     output_map->key = "output";
@@ -76,7 +71,6 @@ int main(int argc, char *argv[])
     output_map->multiple = NO;
     output_map->gisprompt = "new,cell,raster";
     output_map->description = _("Zero crossing raster map");
-#define OUTPUT_MAP output_map->answer
 
     width = G_define_option();
     width->key = "width";
@@ -107,16 +101,7 @@ int main(int argc, char *argv[])
 	exit(EXIT_FAILURE);
 
     /* open input cell map */
-    if ((inmapset = G_find_cell(INPUT_MAP, "")) == NULL)
-	G_fatal_error(_("Raster map <%s> not found"), INPUT_MAP);
-
-    inputfd = G_open_cell_old(INPUT_MAP, inmapset);
-    if (inputfd < 0)
-	exit(EXIT_FAILURE);
-
-    /* check command line args for validity */
-    if (G_legal_filename(OUTPUT_MAP) < 0)
-	G_fatal_error(_("<%s> is an illegal file name"), OUTPUT_MAP);
+    inputfd = Rast_open_old(input_map->answer, "");
 
     sscanf(threshold->answer, "%1lf", &Thresh);
     if (Thresh <= 0.0)
@@ -137,8 +122,8 @@ int main(int argc, char *argv[])
     G_get_set_window(&window);
 
     /* get the rows and columns in the current window */
-    or = G_window_rows();
-    oc = G_window_cols();
+    or = Rast_window_rows();
+    oc = Rast_window_cols();
     rows = G_math_max_pow2((long)or);
     cols = G_math_max_pow2((long)oc);
     size = (rows > cols) ? rows : cols;
@@ -161,19 +146,18 @@ int main(int argc, char *argv[])
     }
 
     /* allocate the space for one row of cell map data */
-    cell_row = G_allocate_cell_buf();
+    cell_row = Rast_allocate_c_buf();
 
     /* Read in cell map values */
     G_message(_("Reading raster map..."));
     for (i = 0; i < or; i++) {
-	if (G_get_map_row(inputfd, cell_row, i) < 0)
-	    G_fatal_error(_("Error while reading input raster map."));
+	Rast_get_c_row(inputfd, cell_row, i);
 
 	for (j = 0; j < oc; j++)
 	    *(data[0] + (i * size) + j) = (double)cell_row[j];
     }
     /* close input cell map and release the row buffer */
-    G_close_cell(inputfd);
+    Rast_close(inputfd);
     G_free(cell_row);
 
     /* take the del**2g of image */
@@ -186,19 +170,18 @@ int main(int argc, char *argv[])
 
     /* open the output cell maps and allocate cell row buffers */
     G_message(_("Writing transformed data to file..."));
-    if ((zcfd = G_open_cell_new(OUTPUT_MAP)) < 0)
-	exit(EXIT_FAILURE);
+    zcfd = Rast_open_c_new(output_map->answer);
 
-    cell_row = G_allocate_cell_buf();
+    cell_row = Rast_allocate_c_buf();
 
     /* Write out result to a new cell map */
     for (i = 0; i < or; i++) {
 	for (j = 0; j < oc; j++) {
 	    *(cell_row + j) = (CELL) (*(data[1] + i * cols + j));
 	}
-	G_put_raster_row(zcfd, cell_row, CELL_TYPE);
+	Rast_put_row(zcfd, cell_row, CELL_TYPE);
     }
-    G_close_cell(zcfd);
+    Rast_close(zcfd);
 
     G_free(cell_row);
 

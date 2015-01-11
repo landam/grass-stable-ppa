@@ -3,42 +3,16 @@
  */
 
 #include <string.h>
+
 #include <grass/display.h>
 #include <grass/colors.h>
 #include <grass/raster.h>
 #include <grass/glocale.h>
+#include "driver.h"
 
 static struct color_rgb *colors;
 static int ncolors;
 static int nalloc;
-
-/*!
- * \brief color name to number
- *
- * Takes a
- * color <b>name</b> in ascii and returns the color number for that color.
- * Returns 0 if color is not known. The color number returned is for lines and
- * text, not raster graphics.
- *
- *  \param name
- *  \return int
- */
-
-int D_translate_color(const char *str)
-{
-    int num_names = G_num_standard_color_names();
-    int i;
-
-    for (i = 0; i < num_names; i++) {
-	const struct color_name *name = G_standard_color_name(i);
-
-	if (G_strcasecmp(str, name->name) == 0)
-	    return name->number;
-    }
-
-    return 0;
-}
-
 
 /*!
  * \brief color name and suggested number to actual number
@@ -47,7 +21,7 @@ int D_translate_color(const char *str)
  * and a <b>suggested color index</b>.
  * If the color is a standard preallocated color it returns the color number for that color.
  * Otherwise (if the color is not standard) it sets the color of the supplied index to 
- * the specified color (see R_reset_color).
+ * the specified color.
  * Returns -1 if color is not known and 0 if the color is none.
  *
  *  \param name_or_code
@@ -57,19 +31,23 @@ int D_translate_color(const char *str)
 
 static int translate_or_add_color(const char *str)
 {
+    int num_names = G_num_standard_color_names();
     int index;
     int red, grn, blu;
-    int i, preallocated, ret;
+    int i, ret;
     char lowerstr[MAX_COLOR_LEN];
 
     /* Make the color string lowercase for display colors */
-    G_strcpy(lowerstr, str);
+    strcpy(lowerstr, str);
     G_chop(lowerstr);
     G_tolcase(lowerstr);
 
-    preallocated = D_translate_color(lowerstr);
-    if (preallocated)
-	return preallocated;
+    for (i = 0; i < num_names; i++) {
+	const struct color_name *name = G_standard_color_name(i);
+
+	if (G_strcasecmp(str, name->name) == 0)
+	    return name->number;
+    }
 
     if (!nalloc) {
 	ncolors = G_num_standard_colors();
@@ -110,7 +88,7 @@ static int translate_or_add_color(const char *str)
  * \brief color option text to usable color number
  *
  * Converts or looks up the color provided in the string.
- * Returns a color number usable by D_raster_use_color.
+ * Returns a color number usable by D_use_color.
  * If the color does not exist exits with a fatal error and message.
  * If the color is none and none_acceptable is not true exits with
  * a fatal error and message.
@@ -132,6 +110,25 @@ int D_parse_color(const char *str, int none_acceptable)
     return color;
 }
 
+
+/*!
+ * \brief color name to number
+ *
+ * Takes a
+ * color <b>name</b> in ascii and returns the color number for that color.
+ * Returns 0 if color is not known. The color number returned is for lines and
+ * text, not raster graphics.
+ *
+ *  \param name
+ *  \return int
+ */
+
+int D_translate_color(const char *str)
+{
+    return D_parse_color(str, 0);
+}
+
+
 /*!
  * \brief draw with a color from D_parse_color
  *
@@ -143,20 +140,20 @@ int D_parse_color(const char *str, int none_acceptable)
  *  \return int
  */
 
-int D_raster_use_color(int color)
+int D_use_color(int color)
 {
     if (color <= 0)
 	return 0;
 
     if (color < G_num_standard_colors()) {
-	R_standard_color(color);
+	COM_Standard_color(color);
 	return 1;
     }
 
     if (color < ncolors) {
 	const struct color_rgb *c = &colors[color];
 
-	R_RGB_color(c->r, c->g, c->b);
+	D_RGB_color(c->r, c->g, c->b);
 	return 1;
     }
 
@@ -213,3 +210,9 @@ int D_color_number_to_RGB(int color, int *r, int *g, int *b)
 
     return 1;
 }
+
+void D_RGB_color(int red, int grn, int blu)
+{
+    COM_Color_RGB(red, grn, blu);
+}
+

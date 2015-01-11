@@ -22,9 +22,8 @@
 
 #include <stdlib.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/config.h>
-#include <grass/raster.h>
 #include <grass/display.h>
 #include <grass/glocale.h>
 #include "setup.h"
@@ -102,7 +101,7 @@ void sample(int t0, int b0, int l0, int r0, char *name, char *name1,
 		"    and a WARNING may be printed that can be ignored.\n");
 	fprintf(stderr,
 		"    If a MASK is present there will be no warning.\n");
-	fmask = G_open_cell_old("MASK", G_mapset());
+	fmask = Rast_open_old("MASK", G_mapset());
 	fprintf(stderr, "\n");
 
 
@@ -118,7 +117,7 @@ void sample(int t0, int b0, int l0, int r0, char *name, char *name1,
 	else if (d == 2)
 	    graph_unit(t0, b0, l0, r0, name, name1, name2, msc, fmask);
 
-	G_close_cell(fmask);
+	Rast_close(fmask);
     }
     /* if neither, then exit */
     else
@@ -353,18 +352,18 @@ static void man_unit(int t, int b, int l, int r, char *n1, char *n2, char *n3,
 
 		if (fmask > 0) {
 		    count = 0;
-		    row_buf = G_allocate_raster_buf(CELL_TYPE);
-		    fr = G_open_cell_old(n1, G_mapset());
+		    row_buf = Rast_allocate_buf(CELL_TYPE);
+		    fr = Rast_open_old(n1, G_mapset());
 		    for (j = t; j < b; j++) {
-			G_zero_raster_buf(row_buf, CELL_TYPE);
-			G_get_raster_row(fr, row_buf, j, CELL_TYPE);
+			Rast_zero_buf(row_buf, CELL_TYPE);
+			Rast_get_row(fr, row_buf, j, CELL_TYPE);
 			for (k = l; k < r; k++) {
 			    if (*(row_buf + k))
 				count++;
 			}
 		    }
 		    G_free(row_buf);
-		    G_close_cell(fr);
+		    Rast_close(fr);
 		    cnt = (double)(count);
 		    if (cnt)
 			cnt = sqrt(cnt);
@@ -410,18 +409,18 @@ static void man_unit(int t, int b, int l, int r, char *n1, char *n2, char *n3,
 
 		    if (fmask > 0) {
 			count = 0;
-			row_buf = G_allocate_raster_buf(CELL_TYPE);
-			fr = G_open_cell_old(n1, G_mapset());
+			row_buf = Rast_allocate_buf(CELL_TYPE);
+			fr = Rast_open_old(n1, G_mapset());
 			for (j = t; j < b; j++) {
-			    G_zero_raster_buf(row_buf, CELL_TYPE);
-			    G_get_raster_row(fr, row_buf, j, CELL_TYPE);
+			    Rast_zero_buf(row_buf, CELL_TYPE);
+			    Rast_get_row(fr, row_buf, j, CELL_TYPE);
 			    for (k = l; k < r; k++) {
 				if (*(row_buf + k))
 				    count++;
 			    }
 			}
 			G_free(row_buf);
-			G_close_cell(fr);
+			Rast_close(fr);
 			cnt = (double)(count);
 			if (cnt)
 			    cnt = sqrt(cnt);
@@ -767,10 +766,10 @@ static void draw_grid(int l, int t, int w_w, int w_l, int h_d, int v_d,
     R_open_driver();
     R_standard_color(D_translate_color("orange"));
     if (startx > 0) {
-	dx = (int)((double)((int)(colratio * ((int)
-					      ((double)(w_w - startx) /
-					       (double)(h_d)))) / colratio +
-			    0.5));
+	dx = (int)((double)((int)(colratio *
+				  ((int)
+				   ((double)(w_w - startx) /
+				    (double)(h_d)))) / colratio + 0.5));
 	l0 = l + startx;
     }
     else {
@@ -780,10 +779,10 @@ static void draw_grid(int l, int t, int w_w, int w_l, int h_d, int v_d,
 	l0 = l;
     }
     if (starty > 0) {
-	dy = (int)((double)((int)(rowratio * ((int)
-					      ((double)(w_l - starty) /
-					       (double)(v_d)))) / rowratio +
-			    0.5));
+	dy = (int)((double)((int)(rowratio *
+				  ((int)
+				   ((double)(w_l - starty) /
+				    (double)(v_d)))) / rowratio + 0.5));
 
 	t0 = t + starty;
     }
@@ -956,14 +955,14 @@ static int calc_unit_loc(double radius, int top, int bot, int left, int right,
 		   the unit will be within the mask area */
 
 		if (fmask > 0) {
-		    row_buf = G_allocate_cell_buf();
-		    G_get_map_row_nomask(fmask, row_buf, t + top1);
+		    row_buf = Rast_allocate_c_buf();
+		    Rast_get_c_row_nomask(fmask, row_buf, t + top1);
 		    if (!
 			(*(row_buf + l + left1) &&
 			 *(row_buf + l + left1 + u_w - 1)))
 			goto back;
-		    G_zero_cell_buf(row_buf);
-		    G_get_map_row_nomask(fmask, row_buf, t + top1 + u_l - 1);
+		    Rast_zero_c_buf(row_buf);
+		    Rast_get_c_row_nomask(fmask, row_buf, t + top1 + u_l - 1);
 		    if (!
 			(*(row_buf + l + left1) &&
 			 *(row_buf + l + left1 + u_w - 1)))
@@ -1407,8 +1406,8 @@ static void graph_unit(int t, int b, int l, int r, char *n1, char *n2,
 		   corners of the unit are in the mask */
 
 		if (fmask > 0) {
-		    row_buf = G_allocate_cell_buf();
-		    G_get_map_row_nomask(fmask, row_buf, at);
+		    row_buf = Rast_allocate_c_buf();
+		    Rast_get_c_row_nomask(fmask, row_buf, at);
 		    if (!(*(row_buf + al) && *(row_buf + ar - 1))) {
 			fprintf(stderr,
 				"\n    The unit would be outside the mask; ");
@@ -1417,8 +1416,8 @@ static void graph_unit(int t, int b, int l, int r, char *n1, char *n2,
 			G_free(row_buf);
 			goto back1;
 		    }
-		    G_zero_cell_buf(row_buf);
-		    G_get_map_row_nomask(fmask, row_buf, ab - 1);
+		    Rast_zero_c_buf(row_buf);
+		    Rast_get_c_row_nomask(fmask, row_buf, ab - 1);
 		    if (!(*(row_buf + al) && *(row_buf + ar - 1))) {
 			fprintf(stderr,
 				"\n    The unit would be outside the mask; ");
@@ -1529,8 +1528,8 @@ static void graph_unit(int t, int b, int l, int r, char *n1, char *n2,
 		   the unit will be within the mask area */
 
 		if (fmask > 0) {
-		    row_buf = G_allocate_cell_buf();
-		    G_get_map_row_nomask(fmask, row_buf, at);
+		    row_buf = Rast_allocate_c_buf();
+		    Rast_get_c_row_nomask(fmask, row_buf, at);
 		    if (!(*(row_buf + al) && *(row_buf + ar - 1))) {
 			fprintf(stderr,
 				"\n    The unit would be outside the mask; ");
@@ -1539,8 +1538,8 @@ static void graph_unit(int t, int b, int l, int r, char *n1, char *n2,
 			G_free(row_buf);
 			goto back2;
 		    }
-		    G_zero_cell_buf(row_buf);
-		    G_get_map_row_nomask(fmask, row_buf, ab - 1);
+		    Rast_zero_c_buf(row_buf);
+		    Rast_get_c_row_nomask(fmask, row_buf, ab - 1);
 		    if (!(*(row_buf + al) && *(row_buf + ar - 1))) {
 			fprintf(stderr,
 				"\n    The unit would be outside the mask; ");

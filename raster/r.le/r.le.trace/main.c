@@ -23,7 +23,6 @@
 #include <unistd.h>
 #include <grass/config.h>
 #include <grass/gis.h>
-#include <grass/raster.h>
 #include <grass/display.h>
 #include <grass/glocale.h>
 
@@ -43,7 +42,6 @@ int main(int argc, char *argv[])
     struct Cell_head window;
     int bot, right, t0, b0, l0, r0, clear = 0;
     double Rw_l, Rscr_wl;
-    char tmp[20];
     void set_map();
 
     setbuf(stdout, NULL);	/* unbuffered */
@@ -54,7 +52,7 @@ int main(int argc, char *argv[])
     choice = (struct CHOICE *)G_calloc(1, sizeof(struct CHOICE));
 
     module = G_define_module();
-    module->keywords = _("raster, landscape structure analysis, patch index");
+    G_add_keyword(_("raster"));
     module->description =
 	_("Displays the boundary of each r.le patch and shows how the boundary "
 	 "is traced, displays the attribute, size, perimeter and shape "
@@ -63,9 +61,8 @@ int main(int argc, char *argv[])
     user_input(argc, argv);
 
     /* setup the current window for display */
-    G_system(" d.colormode float");
-    G_system(" d.frame -e");
-    Rw_l = (double)G_window_cols() / G_window_rows();
+    G_system("d.frame -e");
+    Rw_l = (double)Rast_window_cols() / Rast_window_rows();
     R_open_driver();
     R_font("romant");
     G_get_set_window(&window);
@@ -109,14 +106,13 @@ int main(int argc, char *argv[])
 
 
 
-				/* DISPLAY A MESSAGE AND THE MAP, THEN
-				   TRACE THE PATCHES AND DISPLAY THEM */
+	/* DISPLAY A MESSAGE AND THE MAP, THEN
+	   TRACE THE PATCHES AND DISPLAY THEM */
 
 void set_map(char *name, struct Cell_head window, int top, int bot, int left,
 	     int right, char *fn)
 {
     char cmd[30];
-    int i, k = 0, j, btn, d, class;
     double msc[2];
     void scr_cell(), cell_clip_drv(), show_patch();
 
@@ -125,9 +121,8 @@ void set_map(char *name, struct Cell_head window, int top, int bot, int left,
 
     G_system("clear");
     puts("\n\nR.LE.TRACE IS WORKING...\n");
-    G_system("d.colormode mode=fixed");
-    sprintf(cmd, "d.rast %s", name);
     G_system("d.erase");
+    sprintf(cmd, "d.rast %s", name);
     G_system(cmd);
 
     /* setup the screen-cell array coordinate 
@@ -150,14 +145,11 @@ void set_map(char *name, struct Cell_head window, int top, int bot, int left,
 
 
 
-
-
-				/* DISPLAY THE PATCH INFORMATION */
+	/* DISPLAY THE PATCH INFORMATION */
 
 void show_patch(char *fn, double *msc, char *cmd)
 {
     PATCH *tmp, *tmp0;
-    register int i;
     int num;
     char c;
     void draw_patch(), patch_attr();
@@ -277,7 +269,7 @@ void show_patch(char *fn, double *msc, char *cmd)
 }
 
 
-				/* DISPLAY PATCH ATTRIBUTES ON THE SCREEN */
+	/* DISPLAY PATCH ATTRIBUTES ON THE SCREEN */
 
 void patch_attr(FILE * fp, PATCH * p, int show)
 {
@@ -329,7 +321,7 @@ void patch_attr(FILE * fp, PATCH * p, int show)
 
 
 
-				/* PLACE PATCH NUMBERS ON THE SCREEN */
+	/* PLACE PATCH NUMBERS ON THE SCREEN */
 
 void draw_patch(PATCH * p, double *m)
 {
@@ -371,8 +363,8 @@ void scr_cell(struct Cell_head *wind, int top, int bot, int left, int right,
 
 
 
-				/* DRIVER FOR CELL CLIPPING, TRACING,
-				   AND CALCULATIONS */
+	/* DRIVER FOR CELL CLIPPING, TRACING,
+	   AND CALCULATIONS */
 
 void cell_clip_drv(int col0, int row0, int ncols, int nrows, double **value,
 		   int index)
@@ -430,12 +422,13 @@ void cell_clip_drv(int col0, int row0, int ncols, int nrows, double **value,
        list_head =     point to the patch list
      */
 
+    pat = NULL;
 
     total_patches = 0;
 
     name = choice->fn;
-    mapset = G_mapset();
-    data_type = G_raster_map_type(name, mapset);
+    mapset = G_find_raster2(name, "");
+    data_type = Rast_map_type(name, mapset);
 
     /* dynamically allocate storage for the
        buffer that will hold the contents of
@@ -443,7 +436,7 @@ void cell_clip_drv(int col0, int row0, int ncols, int nrows, double **value,
 
     buf = (DCELL **) G_calloc(nrows + 3, sizeof(DCELL *));
     for (i = 0; i < nrows + 3; i++) {
-	buf[i] = (DCELL *) G_allocate_raster_buf(DCELL_TYPE);
+	buf[i] = (DCELL *) Rast_allocate_buf(DCELL_TYPE);
     }
 
 
@@ -453,7 +446,7 @@ void cell_clip_drv(int col0, int row0, int ncols, int nrows, double **value,
 
     null_buf = (DCELL **) G_calloc(nrows + 3, sizeof(DCELL *));
     for (i = 0; i < nrows + 3; i++)
-	null_buf[i] = (DCELL *) G_allocate_raster_buf(DCELL_TYPE);
+	null_buf[i] = (DCELL *) Rast_allocate_buf(DCELL_TYPE);
 
 
     /* clip out the sampling area */
@@ -496,8 +489,8 @@ void cell_clip_drv(int col0, int row0, int ncols, int nrows, double **value,
 
 
 
-				/* OPEN THE RASTER FILE TO BE CLIPPED,
-				   AND DO THE CLIPPING */
+	/* OPEN THE RASTER FILE TO BE CLIPPED,
+	   AND DO THE CLIPPING */
 
 void cell_clip(DCELL ** buf, DCELL ** null_buf, int row0, int col0, int nrows,
 	       int ncols, int index, int *centernull)
@@ -506,7 +499,7 @@ void cell_clip(DCELL ** buf, DCELL ** null_buf, int row0, int col0, int nrows,
     FCELL *ftmp;
     DCELL *dtmp;
     void *rastptr;
-    char *tmpname;
+    char *tmpname, *name, *mapset;
     int fr, x;
     register int i, j;
     double center_row = 0.0, center_col = 0.0;
@@ -552,22 +545,13 @@ void cell_clip(DCELL ** buf, DCELL ** null_buf, int row0, int col0, int nrows,
     /* check for input raster map and open it; this
        map remains open on finput while all the programs
        run, so it is globally available */
+    name = choice->fn;
 
-    if (0 > (finput = G_open_cell_old(choice->fn, G_mapset()))) {
-	fprintf(stderr, "\n");
-	fprintf(stderr,
-		"   ********************************************************\n");
-	fprintf(stderr,
-		"    The raster map you specified with the 'map=' parameter \n");
-	fprintf(stderr,
-		"    was not found in your mapset.                          \n");
-	fprintf(stderr,
-		"   ********************************************************\n");
-	exit(1);
-    }
+    if (0 > (finput = Rast_open_old(name, "")))
+	G_fatal_error(_("Unable to open raster map <%s>"), name);
 
-    else
-	data_type = G_raster_map_type(choice->fn, G_mapset());
+    mapset = G_find_raster2(name, "");
+    data_type = Rast_map_type(name, mapset);
 
     /* allocate memory to store a row of the
        raster map, depending on the type of
@@ -576,15 +560,15 @@ void cell_clip(DCELL ** buf, DCELL ** null_buf, int row0, int col0, int nrows,
 
     switch (data_type) {
     case CELL_TYPE:
-	tmp = G_allocate_raster_buf(CELL_TYPE);
+	tmp = Rast_allocate_buf(CELL_TYPE);
 	tmpname = "tmp";
 	break;
     case FCELL_TYPE:
-	ftmp = G_allocate_raster_buf(FCELL_TYPE);
+	ftmp = Rast_allocate_buf(FCELL_TYPE);
 	tmpname = "ftmp";
 	break;
     case DCELL_TYPE:
-	dtmp = G_allocate_raster_buf(DCELL_TYPE);
+	dtmp = Rast_allocate_buf(DCELL_TYPE);
 	tmpname = "dtmp";
 	break;
     }
@@ -609,16 +593,16 @@ void cell_clip(DCELL ** buf, DCELL ** null_buf, int row0, int col0, int nrows,
 
 	switch (data_type) {
 	case CELL_TYPE:
-	    G_zero_raster_buf(tmp, data_type);
-	    G_get_raster_row(finput, tmp, i, data_type);
+	    Rast_zero_buf(tmp, data_type);
+	    Rast_get_row(finput, tmp, i, data_type);
 	    break;
 	case FCELL_TYPE:
-	    G_zero_raster_buf(ftmp, data_type);
-	    G_get_raster_row(finput, ftmp, i, data_type);
+	    Rast_zero_buf(ftmp, data_type);
+	    Rast_get_row(finput, ftmp, i, data_type);
 	    break;
 	case DCELL_TYPE:
-	    G_zero_raster_buf(dtmp, data_type);
-	    G_get_raster_row(finput, dtmp, i, data_type);
+	    Rast_zero_buf(dtmp, data_type);
+	    Rast_get_row(finput, dtmp, i, data_type);
 	    break;
 	}
 
@@ -632,17 +616,17 @@ void cell_clip(DCELL ** buf, DCELL ** null_buf, int row0, int col0, int nrows,
 	case CELL_TYPE:
 	    rastptr = tmp;
 	    for (x = 0; x < col0; x++)
-		rastptr = G_incr_void_ptr(rastptr, G_raster_size(CELL_TYPE));
+		rastptr = G_incr_void_ptr(rastptr, Rast_cell_size(CELL_TYPE));
 	    break;
 	case FCELL_TYPE:
 	    rastptr = ftmp;
 	    for (x = 0; x < col0; x++)
-		rastptr = G_incr_void_ptr(rastptr, G_raster_size(FCELL_TYPE));
+		rastptr = G_incr_void_ptr(rastptr, Rast_cell_size(FCELL_TYPE));
 	    break;
 	case DCELL_TYPE:
 	    rastptr = dtmp;
 	    for (x = 0; x < col0; x++)
-		rastptr = G_incr_void_ptr(rastptr, G_raster_size(DCELL_TYPE));
+		rastptr = G_incr_void_ptr(rastptr, Rast_cell_size(DCELL_TYPE));
 	    break;
 	}
 
@@ -657,7 +641,7 @@ void cell_clip(DCELL ** buf, DCELL ** null_buf, int row0, int col0, int nrows,
 
 	    switch (data_type) {
 	    case CELL_TYPE:
-		if (G_is_null_value(rastptr, CELL_TYPE)) {
+		if (Rast_is_null_value(rastptr, CELL_TYPE)) {
 		    *(*(null_buf + i + 1 - row0) + j + 1 - col0) = 1.0;
 		    if (i == row0 + nrows / 2 && j == col0 + ncols / 2)
 			*centernull = 1;
@@ -665,11 +649,11 @@ void cell_clip(DCELL ** buf, DCELL ** null_buf, int row0, int col0, int nrows,
 		else {
 		    *(*(null_buf + i + 1 - row0) + j + 1 - col0) = 0.0;
 		}
-		rastptr = G_incr_void_ptr(rastptr, G_raster_size(CELL_TYPE));
+		rastptr = G_incr_void_ptr(rastptr, Rast_cell_size(CELL_TYPE));
 		break;
 
 	    case FCELL_TYPE:
-		if (G_is_null_value(rastptr, FCELL_TYPE)) {
+		if (Rast_is_null_value(rastptr, FCELL_TYPE)) {
 		    *(*(null_buf + i + 1 - row0) + j + 1 - col0) = 1.0;
 		    if (i == row0 + nrows / 2 && j == col0 + ncols / 2)
 			*centernull = 1;
@@ -677,11 +661,11 @@ void cell_clip(DCELL ** buf, DCELL ** null_buf, int row0, int col0, int nrows,
 		else {
 		    *(*(null_buf + i + 1 - row0) + j + 1 - col0) = 0.0;
 		}
-		rastptr = G_incr_void_ptr(rastptr, G_raster_size(FCELL_TYPE));
+		rastptr = G_incr_void_ptr(rastptr, Rast_cell_size(FCELL_TYPE));
 		break;
 
 	    case DCELL_TYPE:
-		if (G_is_null_value(rastptr, DCELL_TYPE)) {
+		if (Rast_is_null_value(rastptr, DCELL_TYPE)) {
 		    *(*(null_buf + i + 1 - row0) + j + 1 - col0) = 1.0;
 		    if (i == row0 + nrows / 2 && j == col0 + ncols / 2)
 			*centernull = 1;
@@ -689,7 +673,7 @@ void cell_clip(DCELL ** buf, DCELL ** null_buf, int row0, int col0, int nrows,
 		else {
 		    *(*(null_buf + i + 1 - row0) + j + 1 - col0) = 0.0;
 		}
-		rastptr = G_incr_void_ptr(rastptr, G_raster_size(CELL_TYPE));
+		rastptr = G_incr_void_ptr(rastptr, Rast_cell_size(CELL_TYPE));
 		break;
 	    }
 
@@ -728,14 +712,15 @@ void cell_clip(DCELL ** buf, DCELL ** null_buf, int row0, int col0, int nrows,
 
 
 
-				/* DRIVER TO LOOK FOR NEW PATCHES, CALL
-				   THE TRACING ROUTINE, AND ADD NEW PATCHES
-				   TO THE PATCH LIST */
 
-void trace(int nrows, int ncols, DCELL ** buf, DCELL ** null_buf, CELL ** pat)
+	/* DRIVER TO LOOK FOR NEW PATCHES, CALL
+	   THE TRACING ROUTINE, AND ADD NEW PATCHES
+	   TO THE PATCH LIST */
+
+void trace(int nrows, int ncols, DCELL **buf, DCELL **null_buf, CELL **pat)
 {
     double class = 0.0;
-    register int i, j, x;
+    register int i, j;
     PATCH *tmp, *find_any, *list_head;
 
     /*
@@ -745,20 +730,20 @@ void trace(int nrows, int ncols, DCELL ** buf, DCELL ** null_buf, CELL ** pat)
        nrows =      total number of rows in the area where tracing will occur
        ncols =      total number of cols in the area where tracing will occur
        buf =        pointer to array containing only the pixels inside the area
-       that was clipped and within which tracing will now occur, so
-       a smaller array than the original raster map
+		that was clipped and within which tracing will now occur, so
+		a smaller array than the original raster map
        null_buf =   pointer to array containing 0.0 if pixel in input raster map is
-       not null and 1.0 if pixel in input raster map is null
+		not null and 1.0 if pixel in input raster map is null
        pat =        pointer to array containing the map of patch numbers; this map
-       can only be integer
+		    can only be integer
        INTERNAL:
        class =      the attribute of each pixel
        i, j =       counts the row and column as the program goes through the area
        tmp =        pointer to a member of the PATCH list data structure, used to
-       advance through the patch list
+		advance through the patch list
        find_any =   pointer to a member of the patch list to hold the results after
-       routine get_bd is called to trace the boundary of the patch and
-       save the patch information in the PATCH data structure
+		routine get_bd is called to trace the boundary of the patch and
+		save the patch information in the PATCH data structure
        list_head =  pointer to the first member of the patch list
      */
 
@@ -787,7 +772,7 @@ void trace(int nrows, int ncols, DCELL ** buf, DCELL ** null_buf, CELL ** pat)
 
 		list_head = patch_list;
 
-		if (find_any = get_bd(i, j, nrows, ncols, class, buf, null_buf, list_head, pat)) {	/*4 */
+		if ((find_any = get_bd(i, j, nrows, ncols, class, buf, null_buf, list_head, pat))) {	/*4 */
 
 		    /* if the first patch, make tmp point to
 		       the patch list and add the first patch
@@ -841,11 +826,9 @@ void trace(int nrows, int ncols, DCELL ** buf, DCELL ** null_buf, CELL ** pat)
 
 
 
-
-
-				/* TRACE THE BOUNDARY OF A PATCH AND
-				   SAVE THE PATCH CHARACTERISTICS IN
-				   THE PATCH STRUCTURE */
+  /* TRACE THE BOUNDARY OF A PATCH AND
+     SAVE THE PATCH CHARACTERISTICS IN
+     THE PATCH STRUCTURE */
 
 PATCH *get_bd(int row0, int col0, int nrows, int ncols, double class,
 	      DCELL ** buf, DCELL ** null_buf, PATCH * p_list, CELL ** pat)
@@ -932,7 +915,7 @@ PATCH *get_bd(int row0, int col0, int nrows, int ncols, double class,
 
     patchmap = (CELL **) G_calloc(nrows + 3, sizeof(CELL *));
     for (m = 0; m < nrows + 3; m++)
-	patchmap[m] = (CELL *) G_allocate_raster_buf(CELL_TYPE);
+	patchmap[m] = (CELL *) Rast_allocate_buf(CELL_TYPE);
 
     /* if this is the first patch to be traced,
        then set the next patch on the patch list

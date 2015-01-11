@@ -21,8 +21,13 @@
 
 int main(int argc, char *argv[])
 {
-    char buf[512];
-    FILE *fd;
+    char input[GNAME_MAX+8];
+    char output[GNAME_MAX+8];
+    char rules[GNAME_MAX+8];
+    char title[GPATH_MAX];
+    const char *args[6];
+    struct Popen child;
+    FILE *fp;
     long old_min, old_max;
     long new_min, new_max;
     long new_delta, old_delta;
@@ -31,23 +36,17 @@ int main(int argc, char *argv[])
     float divisor;
     char *old_name;
     char *new_name;
-    char *mapset;
     struct GModule *module;
     struct
     {
 	struct Option *input, *from, *output, *to, *title;
     } parm;
 
-    /* please, remove before GRASS 7 released */
-    struct
-    {
-	struct Flag *quiet;
-    } flag;
-
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, rescale");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("rescale"));
     module->description =
 	_("Rescales the range of category values " "in a raster map layer.");
 
@@ -84,38 +83,16 @@ int main(int argc, char *argv[])
 
     parm.title = G_define_option();
     parm.title->key = "title";
-    parm.title->key_desc = "\"phrase\"";
+    parm.title->key_desc = "phrase";
     parm.title->type = TYPE_STRING;
     parm.title->required = NO;
     parm.title->description = _("Title for new raster map");
 
-    /* please, remove before GRASS 7 released */
-    flag.quiet = G_define_flag();
-    flag.quiet->key = 'q';
-    flag.quiet->description = _("Quietly");
-
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    /* please, remove before GRASS 7 released */
-    if (flag.quiet->answer) {
-	putenv("GRASS_VERBOSE=0");
-	G_warning(_("The '-q' flag is superseded and will be removed "
-		    "in future. Please use '--quiet' instead."));
-    }
-
     old_name = parm.input->answer;
     new_name = parm.output->answer;
-
-    mapset = G_find_cell(old_name, "");
-    if (mapset == NULL) {
-	sprintf(buf, "%s - not found\n", old_name);
-	G_fatal_error(buf);
-    }
-    if (G_legal_filename(new_name) < 0) {
-	sprintf(buf, "%s - illegal map name\n", new_name);
-	G_fatal_error(buf);
-    }
 
     if (parm.from->answer) {
 	sscanf(parm.from->answers[0], "%ld", &old_min);
@@ -123,7 +100,7 @@ int main(int argc, char *argv[])
 
     }
     else
-	get_range(old_name, mapset, &old_min, &old_max);
+	get_range(old_name, &old_min, &old_max);
     if (old_min > old_max) {
 	value = old_min;	/* swap */
 	old_min = old_max;
@@ -141,17 +118,25 @@ int main(int argc, char *argv[])
     G_message(_("Rescale %s[%ld,%ld] to %s[%ld,%ld]"),
 	      old_name, old_min, old_max, new_name, new_min, new_max);
 
-    sprintf(buf, "r.reclass input=\"%s\" output=\"%s\" title=\"", old_name,
-	    new_name);
-    if (parm.title->answer)
-	strcat(buf, parm.title->answer);
-    else {
-	strcat(buf, "rescale of ");
-	strcat(buf, old_name);
-    }
-    strcat(buf, "\"");
+    sprintf(input, "input=%s", old_name);
+    sprintf(output, "output=%s", new_name);
 
-    fd = popen(buf, "w");
+    if (parm.title->answer)
+	sprintf(title, "title=%s", parm.title->answer);
+    else
+	sprintf(title, "title=rescale of %s", old_name);
+
+    sprintf(rules, "rules=-");
+
+    args[0] = "r.reclass";
+    args[1] = input;
+    args[2] = output;
+    args[3] = title;
+    args[4] = rules;
+    args[5] = NULL;
+
+    fp = G_popen_write(&child, "r.reclass", args);
+
     old_delta = old_max - old_min;
     new_delta = new_max - new_min;
     divisor = (float)new_delta / (float)old_delta;
@@ -161,20 +146,21 @@ int main(int argc, char *argv[])
     for (cat = old_min; cat <= old_max; cat++) {
 	value = (int)(divisor * (cat - old_min) + new_min + .5);
 	if (value != prev) {
-	    fprintf(fd, "%ld thru %ld = %ld %ld", first, cat - 1, prev,
+	    fprintf(fp, "%ld thru %ld = %ld %ld", first, cat - 1, prev,
 		    first);
 	    if (cat - 1 != first)
-		fprintf(fd, " thru %ld", cat - 1);
-	    fprintf(fd, "\n");
+		fprintf(fp, " thru %ld", cat - 1);
+	    fprintf(fp, "\n");
 	    prev = value;
 	    first = cat;
 	}
     }
-    fprintf(fd, "%ld thru %ld = %ld %ld", first, cat - 1, prev, first);
+    fprintf(fp, "%ld thru %ld = %ld %ld", first, cat - 1, prev, first);
     if (cat - 1 != first)
-	fprintf(fd, " thru %ld", cat - 1);
-    fprintf(fd, "\n");
+	fprintf(fp, " thru %ld", cat - 1);
+    fprintf(fp, "\n");
 
-    pclose(fd);
-    exit(EXIT_SUCCESS);
+    G_popen_close(&child);
+
+    return EXIT_SUCCESS;
 }

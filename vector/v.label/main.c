@@ -16,8 +16,7 @@
 #include <math.h>
 #include <grass/gis.h>
 #include <grass/display.h>
-#include <grass/raster.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 
@@ -37,7 +36,6 @@ int main(int argc, char **argv)
     int cat, direction;
     double x, y, linlength, lablength, size, space, ldist;
     double rotate, rot;
-    char *mapset;
     char *txt, buf[2000];
     struct line_pnts *Points;
     struct line_cats *Cats;
@@ -58,7 +56,8 @@ int main(int argc, char **argv)
 
     G_gisinit(argv[0]);
     module = G_define_module();
-    module->keywords = _("vector, paint labels");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("paint labels"));
     module->description =
 	_("Creates paint labels for a vector map from attached attributes.");
 
@@ -74,7 +73,7 @@ int main(int argc, char **argv)
 
     Vectfile = G_define_standard_option(G_OPT_V_MAP);
 
-    Colopt = G_define_standard_option(G_OPT_COLUMN);
+    Colopt = G_define_standard_option(G_OPT_DB_COLUMN);
     Colopt->required = YES;
     Colopt->description = _("Name of attribute column to be used for labels");
 
@@ -83,7 +82,7 @@ int main(int argc, char **argv)
     Typopt->answer = "point,line,boundary,centroid";
 
     Fieldopt = G_define_standard_option(G_OPT_V_FIELD);
-    whereopt = G_define_standard_option(G_OPT_WHERE);
+    whereopt = G_define_standard_option(G_OPT_DB_WHERE);
 
     Along_flag = G_define_flag();
     Along_flag->key = 'a';
@@ -230,14 +229,14 @@ int main(int argc, char **argv)
 	/* figure out space param dynamically from current dispay */
 	/* don't bother if Space was explicitly given (bypasses xmon req) */
 	if (Along_flag->answer && !Space->answer) {
-	    if (R_open_driver() != 0)	/* connect to the driver */
+	    if (D_open_driver() != 0)	/* connect to the driver */
 		G_fatal_error(_("No graphics device selected"));
 
 	    /* Read in the map region associated with graphics window */
 	    D_setup(0);
 	    space = fontsize / D_get_u_to_d_xconv();	/* in earth units */
 
-	    R_close_driver();
+	    D_close_driver();
 	}
     }
     else
@@ -265,11 +264,7 @@ int main(int argc, char **argv)
     }
 
     /* open vector */
-    mapset = G_find_vector2(Vectfile->answer, NULL);
-    if (mapset == NULL)
-	G_fatal_error(_("Vector map <%s> not found"), Vectfile->answer);
-
-    Vect_open_old(&Map, Vectfile->answer, mapset);
+    Vect_open_old(&Map, Vectfile->answer, "");
 
     /* open database */
     field = atoi(Fieldopt->answer);

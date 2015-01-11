@@ -3,7 +3,6 @@
  *
  * MODULE:     v.out.vtk  
  * AUTHOR(S):  Soeren Gebbert
- 	       Benjamin Ducke (support for scalars from attribute table)
  *
  * PURPOSE:    v.out.vtk: writes ASCII VTK file
  *             this module is based on v.out.ascii
@@ -20,42 +19,42 @@
 #include <unistd.h>
 #include <string.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 #include <string.h>
 
-#define MAIN
 #include "local_proto.h"
+
+double x_extent;
+double y_extent;
 
 int main(int argc, char *argv[])
 {
     FILE *ascii;
     struct Option *input, *output, *type_opt, *dp_opt, *layer_opt, *scale;
     struct Flag *coorcorr, *numatts, *labels;
-    int *types = NULL, typenum = 0, dp, i;
+    int itype, *types = NULL, typenum = 0, dp, i;
     struct Map_info Map;
+    struct bound_box box;
     struct GModule *module;
-    int layer;
-    struct Cell_head region;
+    int layer, level;
     double zscale = 1.0, llscale = 1.0;
-   
-    
+
+
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, export");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("export"));
+    G_add_keyword("VTK");
     module->description =
-	_("Converts a GRASS binary vector map to VTK ASCII output.");
+	_("Converts a vector map to VTK ASCII output.");
 
     input = G_define_standard_option(G_OPT_V_INPUT);
 
-    output = G_define_option();
-    output->key = "output";
-    output->type = TYPE_STRING;
+    output = G_define_standard_option(G_OPT_F_OUTPUT);
     output->required = NO;
-    output->multiple = NO;
-    output->gisprompt = "new_file,file,output";
-    output->description = _("Path to resulting VTK file");
+    output->description = _("Name for output VTK file");
 
     type_opt = G_define_standard_option(G_OPT_V_TYPE);
     type_opt->answer = "point,kernel,centroid,line,boundary,area,face";
@@ -111,10 +110,10 @@ int main(int argc, char *argv[])
     else {
 	G_fatal_error("Usage: Wrong vector type");
     }
-  
+
     i = 0;
     while (type_opt->answers[i]) {
-        types[i] = -1;
+	types[i] = -1;
 	switch (type_opt->answers[i][0]) {
 	case 'p':
 	    types[i] = GV_POINT;
@@ -140,44 +139,15 @@ int main(int argc, char *argv[])
 	}
 	i++;
     }
-
-    G_get_set_window(&region);
-
-    /*Correct the coordinates, so the precision of VTK is not hurt :( */
-    if (coorcorr->answer) {
-       /*Get the default region for coordiante correction*/
-       G_get_default_window(&region);
-
-       /*Use the center of the current region as extent*/
-       y_extent = (region.north + region.south) / 2;
-       x_extent = (region.west + region.east) / 2;
-    } else {
-       x_extent = 0;
-       y_extent = 0;
-    }
-
+    itype = Vect_option_to_types(type_opt);
 
     /* read and compute the scale factor */
     sscanf(scale->answer, "%lf", &zscale);
-    /* if LL projection, convert the elevation values to degrees*/
-    if(region.proj == PROJECTION_LL) {
-      llscale = M_PI / (180) * 6378137;
-      zscale /= llscale;
-      printf("Scale %g\n", zscale);
-    }
-
-    /*We need level 2 functions */
-    Vect_set_open_level(2);
-    Vect_open_old(&Map, input->answer, "");
-
-    if (output->answer) {
-	ascii = fopen(output->answer, "w");
-	if (ascii == NULL) {
-	    G_fatal_error(_("Unable to open file <%s>"), output->answer);
-	}
-    }
-    else {
-	ascii = stdout;
+    /*if LL projection, convert the elevation values to degrees */
+    if (G_projection() == PROJECTION_LL) {
+	llscale = M_PI / (180) * 6378137;
+	zscale /= llscale;
+	printf("Scale %g\n", zscale);
     }
 
     /*The precision of the output */
@@ -200,6 +170,70 @@ int main(int argc, char *argv[])
 	layer = 1;
     }
 
+    if (output->answer) {
+	ascii = fopen(output->answer, "w");
+	if (ascii == NULL) {
+	    G_fatal_error(_("Unable to open file <%s>"), output->answer);
+	}
+    }
+    else {
+	ascii = stdout;
+    }
+
+    /* Open input vector */
+    level = Vect_open_old(&Map, input->answer, "");
+    if (level < 2 && (itype & GV_AREA))
+	G_fatal_error(_("Export of areas requires topology. "
+	                "Please adjust '%s' option or rebuild topology."),
+			type_opt->key);
+
+    if (level == 2)
+	Vect_get_map_box(&Map, &box);
+    else {
+	int i, type, first = TRUE;
+	struct line_pnts *Points = Vect_new_line_struct();
+
+	Vect_rewind(&Map);
+	while ((type = Vect_read_next_line(&Map, Points, NULL)) > 0) {
+
+	    if (first) {
+		box.E = box.W = Points->x[0];
+		box.N = box.S = Points->y[0];
+		box.B = box.T = Points->z[0];
+		first = FALSE;
+	    }
+	    for (i = 1; i < Points->n_points; i++) {
+		if (Points->x[i] > box.E)
+		    box.E = Points->x[i];
+		else if (Points->x[i] < box.W)
+		    box.W = Points->x[i];
+
+		if (Points->y[i] > box.N)
+		    box.N = Points->y[i];
+		else if (Points->y[i] < box.S)
+		    box.S = Points->y[i];
+
+		if (Points->z[i] > box.T)
+		    box.T = Points->z[i];
+		else if (Points->z[i] < box.B)
+		    box.B = Points->z[i];
+	    }
+	}
+	Vect_destroy_line_struct(Points);
+    }
+
+    /*Correct the coordinates, so the precision of VTK is not hurt :( */
+    if (coorcorr->answer) {
+
+	/*Use the center of the vector's bbox as extent */
+	y_extent = (box.N + box.S) / 2;
+	x_extent = (box.W + box.E) / 2;
+    }
+    else {
+	x_extent = 0;
+	y_extent = 0;
+    }
+
     /*Write the header */
     write_vtk_head(ascii, &Map);
     /*Write the geometry and data */
@@ -215,4 +249,3 @@ int main(int argc, char *argv[])
 
     exit(EXIT_SUCCESS);
 }
-

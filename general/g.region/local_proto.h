@@ -13,13 +13,10 @@
 #define PRINT_GMT    0x200
 #define PRINT_WMS    0x400
 
-/* adjust.c */
-int adjust_window(struct Cell_head *, int, int, int);
-
 /* zoom.c */
-int zoom(struct Cell_head *, char *, char *);
+int zoom(struct Cell_head *, const char *, const char *);
 
 /* printwindow.c */
-int print_window(struct Cell_head *, int);
+void print_window(struct Cell_head *, int);
 
 #endif

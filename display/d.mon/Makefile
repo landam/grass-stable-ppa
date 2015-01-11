@@ -1,13 +1,10 @@
-
 MODULE_TOPDIR = ../..
 
-SUBDIRS = \
-	cmd \
-	pgms
+PGM = d.mon
 
-include $(MODULE_TOPDIR)/include/Make/Dir.make
+LIBES = $(GISLIB) $(DISPLAYLIB)
+DEPENDENCIES= $(GISDEP) $(DISPLAYDEP)
 
-default: parsubdirs
+include $(MODULE_TOPDIR)/include/Make/Module.make
 
-clean: cleansubdirs
-
+default: cmd

@@ -17,10 +17,12 @@
  ***************************************************************************/
 
 #include <grass/gis.h>
+#include <grass/raster.h>
+#include <grass/glocale.h>
 #include "local_proto.h"
 
 
-int describe(char *name, char *mapset, int compact, char *no_data_str,
+int describe(const char *name, int compact, char *no_data_str,
 	     int range, int windowed, int nsteps, int as_int, int skip_nulls)
 {
     int fd;
@@ -35,32 +37,25 @@ int describe(char *name, char *mapset, int compact, char *no_data_str,
     struct Quant q;
     struct FPRange r;
     DCELL dmin, dmax;
-    int (*get_row) ();
+    void (*get_row)(int, CELL *, int);
 
     if (windowed) {
-	get_row = G_get_c_raster_row;
+	get_row = Rast_get_c_row;
     }
     else {
-	char msg[100];
+	Rast_get_cellhd(name, "", &window);
 
-	if (G_get_cellhd(name, mapset, &window) < 0) {
-	    sprintf(msg, "can't get cell header for [%s] in [%s]", name,
-		    mapset);
-	    G_fatal_error(msg);
-	}
-	G_set_window(&window);
-	get_row = G_get_c_raster_row_nomask;
+	Rast_set_window(&window);
+	get_row = Rast_get_c_row_nomask;
     }
-    fd = G_open_cell_old(name, mapset);
-    if (fd < 0)
-	return 0;
+    fd = Rast_open_old(name, "");
 
-    map_type = G_get_raster_map_type(fd);
+    map_type = Rast_get_map_type(fd);
     if (as_int)
 	map_type = CELL_TYPE;	/* read as int */
 
     /* allocate the cell buffer */
-    buf = G_allocate_cell_buf();
+    buf = Rast_allocate_c_buf();
 
     if (map_type != CELL_TYPE && range)
 	/* this will make it report fp range */
@@ -71,7 +66,7 @@ int describe(char *name, char *mapset, int compact, char *no_data_str,
 
     /* start the cell stats */
     if (!range) {
-	G_init_cell_stats(&statf);
+	Rast_init_cell_stats(&statf);
     }
     else {
 	zero = 0;
@@ -86,24 +81,23 @@ int describe(char *name, char *mapset, int compact, char *no_data_str,
 
     /* set up quantization rules */
     if (map_type != CELL_TYPE) {
-	G_quant_init(&q);
-	G_read_fp_range(name, mapset, &r);
-	G_get_fp_range_min_max(&r, &dmin, &dmax);
-	G_quant_add_rule(&q, dmin, dmax, 1, nsteps);
-	G_set_quant_rules(fd, &q);
+	Rast_quant_init(&q);
+	Rast_read_fp_range(name, "", &r);
+	Rast_get_fp_range_min_max(&r, &dmin, &dmax);
+	Rast_quant_add_rule(&q, dmin, dmax, 1, nsteps);
+	Rast_set_quant_rules(fd, &q);
     }
 
-    nrows = G_window_rows();
-    ncols = G_window_cols();
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
 
-    G_verbose_message("Reading [%s in %s] ...", name, mapset);
+    G_verbose_message(_("Reading <%s> ..."), name);
     for (row = 0; row < nrows; row++) {
 	G_percent(row, nrows, 2);
-	if ((*get_row) (fd, b = buf, row) < 0)
-	    break;
+	(*get_row) (fd, b = buf, row);
 	if (range) {
 	    for (col = ncols; col-- > 0; b++) {
-		if (G_is_c_null_value(b))
+		if (Rast_is_c_null_value(b))
 		    null = 1;
 		else if (*b == 0)
 		    zero = 1;
@@ -126,10 +120,10 @@ int describe(char *name, char *mapset, int compact, char *no_data_str,
 	    }
 	}
 	else
-	    G_update_cell_stats(buf, ncols, &statf);
+	    Rast_update_cell_stats(buf, ncols, &statf);
     }
     G_percent(nrows, nrows, 2);
-    G_close_cell(fd);
+    Rast_close(fd);
     G_free(buf);
 
     if (range) {
@@ -141,7 +135,7 @@ int describe(char *name, char *mapset, int compact, char *no_data_str,
 		       no_data_str, skip_nulls);
     }
     else {
-	G_rewind_cell_stats(&statf);
+	Rast_rewind_cell_stats(&statf);
 
 	if (compact)
 	    compact_list(&statf, dmin, dmax, no_data_str, skip_nulls,
@@ -150,7 +144,7 @@ int describe(char *name, char *mapset, int compact, char *no_data_str,
 	    long_list(&statf, dmin, dmax, no_data_str, skip_nulls, map_type,
 		      nsteps);
 
-	G_free_cell_stats(&statf);
+	Rast_free_cell_stats(&statf);
     }
     return 1;
 }

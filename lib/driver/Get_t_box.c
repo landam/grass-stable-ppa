@@ -1,16 +1,19 @@
 #include "driver.h"
 #include "driverlib.h"
 
-void COM_Get_text_box(const char *text, int *t, int *b, int *l, int *r)
+void COM_Get_text_box(const char *text, double *t, double *b, double *l, double *r)
 {
-    if (!font_is_freetype()) {
-	soft_text_ext(cur_x, cur_y,
-		      text_size_x, text_size_y, text_rotation, text);
-	get_text_ext(t, b, l, r);
-    }
-    else {
-	soft_text_ext_freetype(cur_x, cur_y,
-			       text_size_x, text_size_y, text_rotation, text);
-	get_text_ext_freetype(t, b, l, r);
+    switch (font_get_type()) {
+    case GFONT_STROKE:
+	get_text_ext(text, t, b, l, r);
+	break;
+    case GFONT_FREETYPE:
+	get_text_ext_freetype(text, t, b, l, r);
+	break;
+    case GFONT_DRIVER:
+	if (driver->Text_box)
+	    (*driver->Text_box)(text, t, b, l, r);
+	break;
     }
 }
+

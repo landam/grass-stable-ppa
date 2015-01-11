@@ -1,30 +1,36 @@
 #include <string.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
-
+#include "local_proto.h"
 
 /* function prototypes */
 static void write_history(int, char *, double **, double *);
 
 
-void write_support(int bands, char *outname, double **eigmat, double *eigval)
+void write_support(int bands, char *inname, char *outname, double **eigmat, double *eigval)
 {
     const char *mapset = G_mapset();
     struct Colors colors;
     struct FPRange range;
     DCELL min, max;
 
-    /* make grey scale color table */
-    G_read_fp_range(outname, mapset, &range);
-    G_get_fp_range_min_max(&range, &min, &max);
+    if (inname) {
+	Rast_read_colors(inname, "", &colors);
+    }
+    else {
+	/* make grey scale color table */
+	Rast_read_fp_range(outname, mapset, &range);
+	Rast_get_fp_range_min_max(&range, &min, &max);
 
-    G_make_grey_scale_fp_colors(&colors, min, max);
+	Rast_make_grey_scale_fp_colors(&colors, min, max);
 
-    if (G_raster_map_is_fp(outname, mapset))
-	G_mark_colors_as_fp(&colors);
+    }
 
-    if (G_write_colors(outname, mapset, &colors) < 0)
-	G_message(_("Unable to write color table for raster map <%s>"), outname);
+    if (Rast_map_is_fp(outname, mapset))
+	Rast_mark_colors_as_fp(&colors);
+
+    Rast_write_colors(outname, mapset, &colors);
 
     write_history(bands, outname, eigmat, eigval);
 }
@@ -37,10 +43,10 @@ static void write_history(int bands, char *outname, double **eigmat, double *eig
     struct History hist;
     double eigval_total = 0.0;
 
-    G_short_history(outname, "raster", &hist);
-    sprintf(hist.edhist[0], "Eigen values, (vectors), and [percent importance]:");
+    Rast_short_history(outname, "raster", &hist);
+    Rast_append_history(&hist, "Eigen values, (vectors), and [percent importance]:");
 
-    if (first_map)
+    if(first_map)
 	G_message(_("Eigen values, (vectors), and [percent importance]:"));
 
     for (i = 0; i < bands; i++)
@@ -60,21 +66,19 @@ static void write_history(int bands, char *outname, double **eigmat, double *eig
 	}
 	strcat(tmpeigen, ") ");
 	
-	sprintf(tmpa, "[%5.2f%%]", eigval[i] * 100/eigval_total);
+	sprintf(tmpa, "[%5.2f%%]", eigval[i] * 100 / eigval_total);
 	strcat(tmpeigen, tmpa);
 
-	sprintf(hist.edhist[i + 1], tmpeigen);
+	Rast_append_history(&hist, tmpeigen);
 
-	/* write eigen values to stdout */
+	/* write eigen values to screen */
 	if (first_map)
 	    fprintf(stdout, "%s\n", tmpeigen);
     }
 
-    hist.edlinecnt = i + 1;
-    G_command_history(&hist);
-
     /* only write to stderr the first time (this fn runs for every output map) */
     first_map = FALSE;
 
-    G_write_history(outname, &hist);
+    Rast_command_history(&hist);
+    Rast_write_history(outname, &hist);
 }

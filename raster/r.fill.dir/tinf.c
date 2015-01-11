@@ -2,13 +2,28 @@
 #include <float.h>
 #include <math.h>
 #include <grass/gis.h>
-#define TINF_MAIN
+#include <grass/raster.h>
 #include "tinf.h"
 
 /* To add a new multitype function, use the function below to initialize
  * the function pointer to each of the three typed functions.  The function
  * pointers and the function prototypes are defined in a header file.   
  * The actual functions follow. */
+
+int (*is_null) (void *);
+int (*bpe) ();
+void *(*get_max) (void *, void *);
+void *(*get_min) (void *, void *);
+void (*get_row) (int, void *, int);
+void *(*get_buf) ();
+void (*put_row) (int, void *);
+double (*slope) (void *, void *, double);
+void (*set_min) (void *);
+void (*set_max) (void *);
+void (*diff) (void *, void *);
+void (*sum) (void *, void *);
+void (*quot) (void *, void *);
+void (*prod) (void *, void *);
 
 void set_func_pointers(int in_type)
 {
@@ -73,15 +88,15 @@ void set_func_pointers(int in_type)
 /* check for null values */
 int is_null_c(void *value)
 {
-    return G_is_c_null_value((CELL *) value);
+    return Rast_is_c_null_value((CELL *) value);
 }
 int is_null_f(void *value)
 {
-    return G_is_f_null_value((FCELL *) value);
+    return Rast_is_f_null_value((FCELL *) value);
 }
 int is_null_d(void *value)
 {
-    return G_is_d_null_value((DCELL *) value);
+    return Rast_is_d_null_value((DCELL *) value);
 }
 
 /* return the size of the current type */
@@ -163,51 +178,51 @@ void *get_max_d(void *v1, void *v2)
 }
 
 /* Read one line from a raster map */
-int get_row_c(int fd, void *row, int n)
+void get_row_c(int fd, void *row, int n)
 {
-    return G_get_c_raster_row(fd, (CELL *) row, n);
+    Rast_get_c_row(fd, (CELL *) row, n);
 }
 
-int get_row_f(int fd, void *row, int n)
+void get_row_f(int fd, void *row, int n)
 {
-    return G_get_f_raster_row(fd, (FCELL *) row, n);
+    Rast_get_f_row(fd, (FCELL *) row, n);
 }
 
-int get_row_d(int fd, void *row, int n)
+void get_row_d(int fd, void *row, int n)
 {
-    return G_get_d_raster_row(fd, (DCELL *) row, n);
+    Rast_get_d_row(fd, (DCELL *) row, n);
 }
 
 /* Write one row to a raster map */
-int put_row_c(int fd, void *row)
+void put_row_c(int fd, void *row)
 {
-    return G_put_c_raster_row(fd, (CELL *) row);
+    Rast_put_c_row(fd, (CELL *) row);
 }
 
-int put_row_f(int fd, void *row)
+void put_row_f(int fd, void *row)
 {
-    return G_put_f_raster_row(fd, (FCELL *) row);
+    Rast_put_f_row(fd, (FCELL *) row);
 }
 
-int put_row_d(int fd, void *row)
+void put_row_d(int fd, void *row)
 {
-    return G_put_d_raster_row(fd, (DCELL *) row);
+    Rast_put_d_row(fd, (DCELL *) row);
 }
 
 /* Allocate memory for one line of data */
 void *get_buf_c()
 {
-    return (void *)G_allocate_c_raster_buf();
+    return (void *)Rast_allocate_c_buf();
 }
 
 void *get_buf_f()
 {
-    return (void *)G_allocate_f_raster_buf();
+    return (void *)Rast_allocate_f_buf();
 }
 
 void *get_buf_d()
 {
-    return (void *)G_allocate_d_raster_buf();
+    return (void *)Rast_allocate_d_buf();
 }
 
 /* initialize memory to a minimum value */
@@ -303,7 +318,7 @@ double slope_c(void *line1, void *line2, double cnst)
 
     rc = -HUGE_VAL;
     pedge = (CELL *) line2;
-    if (!G_is_c_null_value(pedge)) {
+    if (!Rast_is_c_null_value(pedge)) {
 	rc = (*(CELL *) line1 - *pedge) / cnst;
     }
     return rc;
@@ -316,7 +331,7 @@ double slope_f(void *line1, void *line2, double cnst)
 
     rc = -HUGE_VAL;
     pedge = (FCELL *) line2;
-    if (!G_is_f_null_value(pedge)) {
+    if (!Rast_is_f_null_value(pedge)) {
 	rc = (*(FCELL *) line1 - *pedge) / cnst;
     }
     return rc;
@@ -329,7 +344,7 @@ double slope_d(void *line1, void *line2, double cnst)
 
     rc = -HUGE_VAL;
     pedge = (DCELL *) line2;
-    if (!G_is_d_null_value(pedge)) {
+    if (!Rast_is_d_null_value(pedge)) {
 	rc = (*(DCELL *) line1 - *pedge) / cnst;
     }
     return rc;

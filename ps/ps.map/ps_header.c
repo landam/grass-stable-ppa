@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include "ps_info.h"
 
 static long bb_offset;
@@ -18,7 +19,7 @@ int write_PS_header(void)
     int cats_ok;
 
     if (PS.do_raster)
-	cats_ok = G_read_cats(PS.cell_name, PS.cell_mapset, &cats) >= 0;
+	cats_ok = Rast_read_cats(PS.cell_name, PS.cell_mapset, &cats) >= 0;
 
     /* write PostScript header */
     /*fprintf(PS.fp, "%%!PS-Adobe-2.0 EPSF-1.2\n"); */
@@ -27,7 +28,7 @@ int write_PS_header(void)
     else
 	fprintf(PS.fp, "%%!PS-Adobe-3.0\n");
 
-    bb_offset = ftell(PS.fp);
+    bb_offset = G_ftell(PS.fp);
     fprintf(PS.fp, "                                       ");
     fprintf(PS.fp, "                                       \n");
     fprintf(PS.fp, "%%%%Title: ");
@@ -66,7 +67,7 @@ int write_bounding_box(void)
 	ury = (int)72.0 *PS.page_width;
     }
 
-    fseek(PS.fp, bb_offset, SEEK_SET);
+    G_fseek(PS.fp, bb_offset, SEEK_SET);
     fprintf(PS.fp, "%%%%BoundingBox: %d %d %d %d", llx, lly, urx, ury);
 
     return 0;

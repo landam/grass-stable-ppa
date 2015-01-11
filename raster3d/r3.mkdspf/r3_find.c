@@ -5,12 +5,12 @@
  **************************************************************/
 #include <string.h>
 #include <grass/gis.h>
-#include <grass/G3d.h>
+#include <grass/raster3d.h>
 
 
-int g3_find_dsp_file(char *cell, char *file, char *mset)
+int g3_find_dsp_file(const char *cell, const char *file, const char *mset)
 {
-    char element[100], name[GNAME_MAX], mapset[GMAPSET_MAX],
+    char element[GNAME_MAX+10], name[GNAME_MAX], mapset[GMAPSET_MAX],
 	tofind[GNAME_MAX];
 
     if (file == NULL || *file == 0)
@@ -18,7 +18,7 @@ int g3_find_dsp_file(char *cell, char *file, char *mset)
 
     strcpy(tofind, file);
 
-    if (G__name_is_fully_qualified(cell, name, mapset))
+    if (G_name_is_fully_qualified(cell, name, mapset))
 	sprintf(element, "grid3/%s/dsp", name);
     else
 	sprintf(element, "grid3/%s/dsp", cell);
@@ -28,31 +28,16 @@ int g3_find_dsp_file(char *cell, char *file, char *mset)
 
 
 /* return NULL on error: otherwise returns dspout */
-char *check_get_any_dspname(char *dspf, char *g3f, char *mset)
+const char *check_get_any_dspname(const char *dspf, const char *g3f, const char *mset)
 {
-    char element[200], question[200];
-    static char dspout[200];
-
-    if (!G_legal_filename(dspf))
-	return (NULL);
-
-    if (!G_find_grid3(g3f, ""))
-	G_fatal_error("[%s] 3D raster map not found", g3f);
+    if (!G_find_raster3d(g3f, ""))
+	G_fatal_error("3D raster map <%s> not found", g3f);
 
     if (mset) {			/* otherwise must be reading only  */
 	if (g3_find_dsp_file(g3f, dspf, mset)) {	/* already exists */
-	    sprintf(question, "\n** %s exists. ok to overwrite? ", dspf);
-	    if (!G_yes(question, 0)) {
-		if (NULL == G_ask_any("", dspout, element, "display", 1))
-		    return (NULL);
-
-		return (dspout);
-	    }
-	    /* or else just print a warning & use it as is */
+	    /* the parser should handle the overwrite check */
 	}
     }
 
-    strcpy(dspout, dspf);
-
-    return (dspout);
+    return dspf;
 }

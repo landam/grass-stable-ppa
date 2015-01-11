@@ -5,9 +5,9 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <grass/colors.h>
 #include <grass/glocale.h>
 #include "map_info.h"
-#include "ps_info.h"
 #include "clr.h"
 #include "local_proto.h"
 

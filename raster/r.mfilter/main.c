@@ -14,30 +14,35 @@
  *               for details.
  *
  *****************************************************************************/
-#define MAIN
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
+
 #include "filter.h"
 #include "glob.h"
 
-int main(int argc, char *argv[])
+int nrows, ncols;
+int buflen;
+int direction;
+int null_only;
+int preserve_edges;
+
+int main(int argc, char **argv)
 {
     FILTER *filter;
     int nfilters;
     int repeat;
-    char *in_name, *in_mapset;
+    char *in_name;
     char *filt_name;
     char *out_name;
     char title[1024];
     char temp[300];
     int i;
     struct GModule *module;
-
-    /* please, remove before GRASS 7 released */
-    struct Flag *flag1;
     struct Flag *flag2;
     struct Option *opt1;
     struct Option *opt2;
@@ -48,7 +53,10 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, map algebra");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("algebra"));
+    G_add_keyword(_("statistics"));
+    G_add_keyword(_("filter"));
     module->description = _("Performs raster map matrix filter.");
 
     /* Define the different options */
@@ -79,11 +87,6 @@ int main(int argc, char *argv[])
 
     /* Define the different flags */
 
-    /* please, remove before GRASS 7 released */
-    flag1 = G_define_flag();
-    flag1->key = 'q';
-    flag1->description = _("Quiet");
-
     /* this isn't implemented at all 
        flag3 = G_define_flag() ;
        flag3->key         = 'p' ;
@@ -92,23 +95,16 @@ int main(int argc, char *argv[])
 
     flag2 = G_define_flag();
     flag2->key = 'z';
-    flag2->description = _("Apply filter only to zero data values");
+    flag2->description = _("Apply filter only to null data values");
     flag2->guisection = _("Filter");
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    /* please, remove before GRASS 7 released */
-    if (flag1->answer) {
-	putenv("GRASS_VERBOSE=0");
-	G_warning(_("The '-q' flag is superseded and will be removed "
-		    "in future. Please use '--quiet' instead"));
-    }
-
     /*
        preserve_edges = flag3->answer;
      */
-    zero_only = flag2->answer;
+    null_only = flag2->answer;
 
     sscanf(opt4->answer, "%d", &repeat);
     out_name = opt2->answer;
@@ -116,13 +112,9 @@ int main(int argc, char *argv[])
 
     in_name = opt1->answer;
 
-    in_mapset = G_find_cell2(in_name, "");
-    if (in_mapset == NULL)
-	G_fatal_error(_("Raster map <%s> not found"), in_name);
-
-    nrows = G_window_rows();
-    ncols = G_window_cols();
-    buflen = ncols * sizeof(CELL);
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
+    buflen = ncols * sizeof(DCELL);
 
     /* get the filter */
     filter = get_filter(filt_name, &nfilters, temp);
@@ -143,9 +135,9 @@ int main(int argc, char *argv[])
 	sprintf(title, "%s filtered using %s", in_name, temp);
     }
 
-    perform_filter(in_name, in_mapset, out_name, filter, nfilters, repeat);
+    perform_filter(in_name, out_name, filter, nfilters, repeat);
 
-    G_put_cell_title(out_name, title);
+    Rast_put_cell_title(out_name, title);
 
     exit(EXIT_SUCCESS);
 }

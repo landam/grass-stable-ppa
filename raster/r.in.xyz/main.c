@@ -3,7 +3,7 @@
  *
  *  Calculates univariate statistics from the non-null cells of a GRASS raster map
  *
- *   Copyright 2006 by M. Hamish Bowman, and The GRASS Development Team
+ *   Copyright 2006-2012 by M. Hamish Bowman, and The GRASS Development Team
  *   Author: M. Hamish Bowman, University of Otago, Dunedin, New Zealand
  *
  *   Extended 2007 by Volker Wichmann to support the aggregate functions
@@ -22,6 +22,7 @@
 #include <math.h>
 #include <sys/types.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "local_proto.h"
 
@@ -43,7 +44,7 @@ int new_node(void)
 
     if (num_nodes >= max_nodes) {
 	max_nodes += SIZE_INCREMENT;
-	nodes = G_realloc(nodes, max_nodes * sizeof(struct node));
+	nodes = G_realloc(nodes, (size_t)max_nodes * sizeof(struct node));
     }
 
     return n;
@@ -97,15 +98,14 @@ int main(int argc, char *argv[])
     FILE *in_fp;
     int out_fd;
     char *infile, *outmap;
-    int xcol, ycol, zcol, max_col, percent;
-    int do_zfilter;
+    int xcol, ycol, zcol, vcol, max_col, percent, skip_lines;
     int method = -1;
     int bin_n, bin_min, bin_max, bin_sum, bin_sumsq, bin_index;
-    double zrange_min, zrange_max, d_tmp;
+    double zrange_min, zrange_max, vrange_min, vrange_max, d_tmp;
     char *fs;			/* field delim */
     off_t filesize;
     int linesize;
-    long estimated_lines;
+    unsigned long estimated_lines, line;
     int from_stdin;
     int can_seek;
 
@@ -120,7 +120,6 @@ int main(int argc, char *argv[])
     int row, col;		/* counters */
 
     int pass, npasses;
-    unsigned long line;
     char buff[BUFFSIZE];
     double x, y, z;
     char **tokens;
@@ -132,6 +131,7 @@ int main(int argc, char *argv[])
     double min = 0.0 / 0.0;	/* init as nan */
     double max = 0.0 / 0.0;	/* init as nan */
     double zscale = 1.0;
+    double vscale = 1.0;
     size_t offset, n_offset;
     int n = 0;
     double sum = 0.;
@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
     struct Option *input_opt, *output_opt, *delim_opt, *percent_opt,
 	*type_opt;
     struct Option *method_opt, *xcol_opt, *ycol_opt, *zcol_opt, *zrange_opt,
-	*zscale_opt;
+	*zscale_opt, *vcol_opt, *vrange_opt, *vscale_opt, *skip_opt;
     struct Option *trim_opt, *pth_opt;
     struct Flag *scan_flag, *shell_style, *skipline;
 
@@ -156,9 +156,13 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, import, LIDAR");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("import"));
+    G_add_keyword(_("conversion"));
+    G_add_keyword("ASCII");
+    G_add_keyword(_("LIDAR"));
     module->description =
-	_("Create a raster map from an assemblage of many coordinates using univariate statistics.");
+	_("Creates a raster map from an assemblage of many coordinates using univariate statistics.");
 
     input_opt = G_define_standard_option(G_OPT_F_INPUT);
     input_opt->description =
@@ -209,8 +213,21 @@ int main(int argc, char *argv[])
     zcol_opt->type = TYPE_INTEGER;
     zcol_opt->required = NO;
     zcol_opt->answer = "3";
-    zcol_opt->description = _("Column number of data values in input file");
+    zcol_opt->label = _("Column number of data values in input file");
+    zcol_opt->description =
+	_("If a separate value column is given, this option refers to the "
+	  "z-coordinate column to be filtered by the zrange option");
     zcol_opt->guisection = _("Input");
+
+    skip_opt = G_define_option();
+    skip_opt->key = "skip";
+    skip_opt->type = TYPE_INTEGER;
+    skip_opt->required = NO;
+    skip_opt->multiple = NO;
+    skip_opt->answer = "0";
+    skip_opt->description =
+	_("Number of header lines to skip at top of input file");
+    skip_opt->guisection = _("Input");
 
     zrange_opt = G_define_option();
     zrange_opt->key = "zrange";
@@ -218,6 +235,7 @@ int main(int argc, char *argv[])
     zrange_opt->required = NO;
     zrange_opt->key_desc = "min,max";
     zrange_opt->description = _("Filter range for z data (min,max)");
+    zrange_opt->guisection = _("Advanced Input");
 
     zscale_opt = G_define_option();
     zscale_opt->key = "zscale";
@@ -225,6 +243,32 @@ int main(int argc, char *argv[])
     zscale_opt->required = NO;
     zscale_opt->answer = "1.0";
     zscale_opt->description = _("Scale to apply to z data");
+    zscale_opt->guisection = _("Advanced Input");
+
+    vcol_opt = G_define_option();
+    vcol_opt->key = "value_column";
+    vcol_opt->type = TYPE_INTEGER;
+    vcol_opt->required = NO;
+    vcol_opt->answer = "0";
+    vcol_opt->label = _("Alternate column number of data values in input file");
+    vcol_opt->description = _("If not given (or set to 0) the z-column data is used");
+    vcol_opt->guisection = _("Advanced Input");
+
+    vrange_opt = G_define_option();
+    vrange_opt->key = "vrange";
+    vrange_opt->type = TYPE_DOUBLE;
+    vrange_opt->required = NO;
+    vrange_opt->key_desc = "min,max";
+    vrange_opt->description = _("Filter range for alternate value column data (min,max)");
+    vrange_opt->guisection = _("Advanced Input");
+
+    vscale_opt = G_define_option();
+    vscale_opt->key = "vscale";
+    vscale_opt->type = TYPE_DOUBLE;
+    vscale_opt->required = NO;
+    vscale_opt->answer = "1.0";
+    vscale_opt->description = _("Scale to apply to alternate value column data");
+    vscale_opt->guisection = _("Advanced Input");
 
     percent_opt = G_define_option();
     percent_opt->key = "percent";
@@ -234,6 +278,8 @@ int main(int argc, char *argv[])
     percent_opt->options = "1-100";
     percent_opt->description = _("Percent of map to keep in memory");
 
+    /* I would prefer to call the following "percentile", but that has too
+     * much namespace overlap with the "percent" option above */
     pth_opt = G_define_option();
     pth_opt->key = "pth";
     pth_opt->type = TYPE_INTEGER;
@@ -273,42 +319,56 @@ int main(int argc, char *argv[])
     outmap = output_opt->answer;
 
     if (shell_style->answer && !scan_flag->answer) {
-	scan_flag->answer = 1;
+	scan_flag->answer = 1; /* pointer not int, so set = shell_style->answer ? */
     }
 
-    fs = delim_opt->answer;
-    if (strcmp(fs, "\\t") == 0)
-	fs = "\t";
-    if (strcmp(fs, "tab") == 0)
-	fs = "\t";
-    if (strcmp(fs, "space") == 0)
-	fs = " ";
-
+    fs = G_option_to_separator(delim_opt);
+    
     xcol = atoi(xcol_opt->answer);
     ycol = atoi(ycol_opt->answer);
     zcol = atoi(zcol_opt->answer);
-    if ((xcol < 0) || (ycol < 0) || (zcol < 0))
+    vcol = atoi(vcol_opt->answer);
+    if ((xcol < 0) || (ycol < 0) || (zcol < 0) || (vcol < 0))
 	G_fatal_error(_("Please specify a reasonable column number."));
     max_col = (xcol > ycol) ? xcol : ycol;
     max_col = (zcol > max_col) ? zcol : max_col;
+    if(vcol)
+	max_col = (vcol > max_col) ? vcol : max_col;
 
     percent = atoi(percent_opt->answer);
     zscale = atof(zscale_opt->answer);
+    vscale = atof(vscale_opt->answer);
 
-    /* parse zrange */
-    do_zfilter = FALSE;
+    skip_lines = atoi(skip_opt->answer);
+    if (skip_lines < 0)
+	G_fatal_error(_("Please specify reasonable number of lines to skip"));
+
+    /* parse zrange and vrange */
     if (zrange_opt->answer != NULL) {
 	if (zrange_opt->answers[0] == NULL)
 	    G_fatal_error(_("Invalid zrange"));
 
 	sscanf(zrange_opt->answers[0], "%lf", &zrange_min);
 	sscanf(zrange_opt->answers[1], "%lf", &zrange_max);
-	do_zfilter = TRUE;
 
 	if (zrange_min > zrange_max) {
 	    d_tmp = zrange_max;
 	    zrange_max = zrange_min;
 	    zrange_min = d_tmp;
+	}
+    }
+
+    if (vrange_opt->answer != NULL) {
+	if (vrange_opt->answers[0] == NULL)
+	    G_fatal_error(_("Invalid vrange"));
+
+	sscanf(vrange_opt->answers[0], "%lf", &vrange_min);
+	sscanf(vrange_opt->answers[1], "%lf", &vrange_max);
+
+	if (vrange_min > vrange_max) {
+	    d_tmp = vrange_max;
+	    vrange_max = vrange_min;
+	    vrange_min = d_tmp;
 	}
     }
 
@@ -426,20 +486,29 @@ int main(int argc, char *argv[])
     npasses = (int)ceil(1.0 * region.rows / rows);
 
     if (!scan_flag->answer) {
+	/* check if rows * (cols + 1) go into a size_t */
+	if (sizeof(size_t) < 8) {
+	    double dsize = rows * (cols + 1);
+	    
+	    if (dsize != (size_t)rows * (cols + 1))
+		G_fatal_error(_("Unable to process the hole map at once. "
+		                "Please set the %s option to some value lower than 100."),
+				percent_opt->key);
+	}
 	/* allocate memory (test for enough before we start) */
 	if (bin_n)
-	    n_array = G_calloc(rows * (cols + 1), G_raster_size(CELL_TYPE));
+	    n_array = G_calloc((size_t)rows * (cols + 1), Rast_cell_size(CELL_TYPE));
 	if (bin_min)
-	    min_array = G_calloc(rows * (cols + 1), G_raster_size(rtype));
+	    min_array = G_calloc((size_t)rows * (cols + 1), Rast_cell_size(rtype));
 	if (bin_max)
-	    max_array = G_calloc(rows * (cols + 1), G_raster_size(rtype));
+	    max_array = G_calloc((size_t)rows * (cols + 1), Rast_cell_size(rtype));
 	if (bin_sum)
-	    sum_array = G_calloc(rows * (cols + 1), G_raster_size(rtype));
+	    sum_array = G_calloc((size_t)rows * (cols + 1), Rast_cell_size(rtype));
 	if (bin_sumsq)
-	    sumsq_array = G_calloc(rows * (cols + 1), G_raster_size(rtype));
+	    sumsq_array = G_calloc((size_t)rows * (cols + 1), Rast_cell_size(rtype));
 	if (bin_index)
 	    index_array =
-		G_calloc(rows * (cols + 1), G_raster_size(CELL_TYPE));
+		G_calloc((size_t)rows * (cols + 1), Rast_cell_size(CELL_TYPE));
 
 	/* and then free it again */
 	if (bin_n)
@@ -466,11 +535,12 @@ int main(int argc, char *argv[])
 	infile = G_store("stdin");	/* filename for history metadata */
     }
     else {
+	from_stdin = FALSE;
 	if ((in_fp = fopen(infile, "r")) == NULL)
 	    G_fatal_error(_("Unable to open input file <%s>"), infile);
     }
 
-    can_seek = fseek(in_fp, 0, SEEK_SET) == 0;
+    can_seek = fseek(in_fp, 0L, SEEK_SET) == 0;
 
     /* can't rewind() non-files */
     if (!can_seek && npasses != 1) {
@@ -478,13 +548,20 @@ int main(int argc, char *argv[])
 	npasses = 1;
     }
 
+    /* skip past header lines */
+    for (line = 0; line < (unsigned long)skip_lines; line++) {
+	if (0 == G_getl2(buff, BUFFSIZE - 1, in_fp))
+	    break;
+    }
+
     if (scan_flag->answer) {
-	if (zrange_opt->answer)
-	    G_warning(_("zrange will not be taken into account during scan"));
+	if (zrange_opt->answer || vrange_opt->answer)
+	    G_warning(_("Range filters will not be taken into account during scan"));
 
-	scan_bounds(in_fp, xcol, ycol, zcol, fs, shell_style->answer,
-		    skipline->answer, zscale);
+	scan_bounds(in_fp, xcol, ycol, zcol, vcol, fs, shell_style->answer,
+		    skipline->answer, zscale, vscale);
 
+	/* close input file */
 	if (!from_stdin)
 	    fclose(in_fp);
 
@@ -493,9 +570,7 @@ int main(int argc, char *argv[])
 
 
     /* open output map */
-    out_fd = G_open_raster_new(outmap, rtype);
-    if (out_fd < 0)
-	G_fatal_error(_("Unable to create raster map <%s>"), outmap);
+    out_fd = Rast_open_new(outmap, rtype);
 
     if (can_seek) {
 	/* guess at number of lines in the file without actually reading it all in */
@@ -504,8 +579,8 @@ int main(int argc, char *argv[])
 		break;
 	    linesize = strlen(buff) + 1;
 	}
-	fseek(in_fp, 0L, SEEK_END);
-	filesize = ftell(in_fp);
+	G_fseek(in_fp, 0L, SEEK_END);
+	filesize = G_ftell(in_fp);
 	rewind(in_fp);
 	if (linesize < 6)	/* min possible: "0,0,0\n" */
 	    linesize = 6;
@@ -516,9 +591,9 @@ int main(int argc, char *argv[])
 	estimated_lines = -1;
 
     /* allocate memory for a single row of output data */
-    raster_row = G_allocate_raster_buf(rtype);
+    raster_row = Rast_allocate_buf(rtype);
 
-    G_message(_("Reading data ..."));
+    G_message(_("Reading input data..."));
 
     count_total = 0;
 
@@ -527,8 +602,15 @@ int main(int argc, char *argv[])
 	if (npasses > 1)
 	    G_message(_("Pass #%d (of %d) ..."), pass, npasses);
 
-	if (can_seek)
+	if (can_seek) {
 	    rewind(in_fp);
+
+	    /* skip past header lines again */
+	    for (line = 0; line < (unsigned long)skip_lines; line++) {
+		if (0 == G_getl2(buff, BUFFSIZE - 1, in_fp))
+		    break;
+	    }
+	}
 
 	/* figure out segmentation */
 	pass_north = region.north - (pass - 1) * rows * region.ns_res;
@@ -542,33 +624,33 @@ int main(int argc, char *argv[])
 
 	if (bin_n) {
 	    G_debug(2, "allocating n_array");
-	    n_array = G_calloc(rows * (cols + 1), G_raster_size(CELL_TYPE));
+	    n_array = G_calloc((size_t)rows * (cols + 1), Rast_cell_size(CELL_TYPE));
 	    blank_array(n_array, rows, cols, CELL_TYPE, 0);
 	}
 	if (bin_min) {
 	    G_debug(2, "allocating min_array");
-	    min_array = G_calloc(rows * (cols + 1), G_raster_size(rtype));
+	    min_array = G_calloc((size_t)rows * (cols + 1), Rast_cell_size(rtype));
 	    blank_array(min_array, rows, cols, rtype, -1);	/* fill with NULLs */
 	}
 	if (bin_max) {
 	    G_debug(2, "allocating max_array");
-	    max_array = G_calloc(rows * (cols + 1), G_raster_size(rtype));
+	    max_array = G_calloc((size_t)rows * (cols + 1), Rast_cell_size(rtype));
 	    blank_array(max_array, rows, cols, rtype, -1);	/* fill with NULLs */
 	}
 	if (bin_sum) {
 	    G_debug(2, "allocating sum_array");
-	    sum_array = G_calloc(rows * (cols + 1), G_raster_size(rtype));
+	    sum_array = G_calloc((size_t)rows * (cols + 1), Rast_cell_size(rtype));
 	    blank_array(sum_array, rows, cols, rtype, 0);
 	}
 	if (bin_sumsq) {
 	    G_debug(2, "allocating sumsq_array");
-	    sumsq_array = G_calloc(rows * (cols + 1), G_raster_size(rtype));
+	    sumsq_array = G_calloc((size_t)rows * (cols + 1), Rast_cell_size(rtype));
 	    blank_array(sumsq_array, rows, cols, rtype, 0);
 	}
 	if (bin_index) {
 	    G_debug(2, "allocating index_array");
 	    index_array =
-		G_calloc(rows * (cols + 1), G_raster_size(CELL_TYPE));
+		G_calloc((size_t)rows * (cols + 1), Rast_cell_size(CELL_TYPE));
 	    blank_array(index_array, rows, cols, CELL_TYPE, -1);	/* fill with NULLs */
 	}
 
@@ -635,7 +717,6 @@ int main(int argc, char *argv[])
 	    if (1 != sscanf(tokens[zcol - 1], "%lf", &z))
 		G_fatal_error(_("Bad z-coordinate line %lu column %d. <%s>"),
 			      line, zcol, tokens[zcol - 1]);
-
 	    z = z * zscale;
 
 	    if (zrange_opt->answer) {
@@ -645,8 +726,23 @@ int main(int argc, char *argv[])
 		}
 	    }
 
+	    if(vcol) {
+		if (1 != sscanf(tokens[vcol - 1], "%lf", &z))
+		    G_fatal_error(_("Bad data value line %lu column %d. <%s>"),
+				    line, vcol, tokens[vcol - 1]);
+		/* we're past the zrange check, so pass over control of the variable */
+		z = z * vscale;
+
+		if (vrange_opt->answer) {
+		    if (z < vrange_min || z > vrange_max) {
+		    	G_free_tokens(tokens);
+		    	continue;
+		    }
+		}
+	    }
+
 	    count++;
-	    /*          G_debug(5, "x: %f, y: %f, z: %f", x, y, z); */
+	    /* G_debug(5, "x: %f, y: %f, z: %f", x, y, z); */
 	    G_free_tokens(tokens);
 
 	    /* find the bin in the current array box */
@@ -691,20 +787,20 @@ int main(int argc, char *argv[])
 		ptr =
 		    G_incr_void_ptr(ptr,
 				    ((arr_row * cols) +
-				     arr_col) * G_raster_size(CELL_TYPE));
+				     arr_col) * Rast_cell_size(CELL_TYPE));
 
-		if (G_is_null_value(ptr, CELL_TYPE)) {	/* first node */
+		if (Rast_is_null_value(ptr, CELL_TYPE)) {	/* first node */
 		    head_id = new_node();
 		    nodes[head_id].next = -1;
 		    nodes[head_id].z = z;
-		    G_set_raster_value_c(ptr, head_id, CELL_TYPE);	/* store index to head */
+		    Rast_set_c_value(ptr, head_id, CELL_TYPE);	/* store index to head */
 		}
 		else {		/* head is already there */
 
-		    head_id = G_get_raster_value_c(ptr, CELL_TYPE);	/* get index to head */
+		    head_id = Rast_get_c_value(ptr, CELL_TYPE);	/* get index to head */
 		    head_id = add_node(head_id, z);
 		    if (head_id != -1)
-			G_set_raster_value_c(ptr, head_id, CELL_TYPE);	/* store index to head */
+			Rast_set_c_value(ptr, head_id, CELL_TYPE);	/* store index to head */
 		}
 	    }
 	}			/* while !EOF */
@@ -715,60 +811,60 @@ int main(int argc, char *argv[])
 
 
 	/* calc stats and output */
-	G_message(_("Writing to map ..."));
+	G_message(_("Writing to output raster map..."));
 	for (row = 0; row < rows; row++) {
 
 	    switch (method) {
 	    case METHOD_N:	/* n is a straight copy */
-		G_raster_cpy(raster_row,
+		Rast_raster_cpy(raster_row,
 			     n_array +
-			     (row * cols * G_raster_size(CELL_TYPE)), cols,
+			     (row * cols * Rast_cell_size(CELL_TYPE)), cols,
 			     CELL_TYPE);
 		break;
 
 	    case METHOD_MIN:
-		G_raster_cpy(raster_row,
-			     min_array + (row * cols * G_raster_size(rtype)),
+		Rast_raster_cpy(raster_row,
+			     min_array + (row * cols * Rast_cell_size(rtype)),
 			     cols, rtype);
 		break;
 
 	    case METHOD_MAX:
-		G_raster_cpy(raster_row,
-			     max_array + (row * cols * G_raster_size(rtype)),
+		Rast_raster_cpy(raster_row,
+			     max_array + (row * cols * Rast_cell_size(rtype)),
 			     cols, rtype);
 		break;
 
 	    case METHOD_SUM:
-		G_raster_cpy(raster_row,
-			     sum_array + (row * cols * G_raster_size(rtype)),
+		Rast_raster_cpy(raster_row,
+			     sum_array + (row * cols * Rast_cell_size(rtype)),
 			     cols, rtype);
 		break;
 
 	    case METHOD_RANGE:	/* (max-min) */
 		ptr = raster_row;
 		for (col = 0; col < cols; col++) {
-		    offset = (row * cols + col) * G_raster_size(rtype);
-		    min = G_get_raster_value_d(min_array + offset, rtype);
-		    max = G_get_raster_value_d(max_array + offset, rtype);
-		    G_set_raster_value_d(ptr, max - min, rtype);
-		    ptr = G_incr_void_ptr(ptr, G_raster_size(rtype));
+		    offset = (row * cols + col) * Rast_cell_size(rtype);
+		    min = Rast_get_d_value(min_array + offset, rtype);
+		    max = Rast_get_d_value(max_array + offset, rtype);
+		    Rast_set_d_value(ptr, max - min, rtype);
+		    ptr = G_incr_void_ptr(ptr, Rast_cell_size(rtype));
 		}
 		break;
 
 	    case METHOD_MEAN:	/* (sum / n) */
 		ptr = raster_row;
 		for (col = 0; col < cols; col++) {
-		    offset = (row * cols + col) * G_raster_size(rtype);
-		    n_offset = (row * cols + col) * G_raster_size(CELL_TYPE);
-		    n = G_get_raster_value_c(n_array + n_offset, CELL_TYPE);
-		    sum = G_get_raster_value_d(sum_array + offset, rtype);
+		    offset = (row * cols + col) * Rast_cell_size(rtype);
+		    n_offset = (row * cols + col) * Rast_cell_size(CELL_TYPE);
+		    n = Rast_get_c_value(n_array + n_offset, CELL_TYPE);
+		    sum = Rast_get_d_value(sum_array + offset, rtype);
 
 		    if (n == 0)
-			G_set_null_value(ptr, 1, rtype);
+			Rast_set_null_value(ptr, 1, rtype);
 		    else
-			G_set_raster_value_d(ptr, (sum / n), rtype);
+			Rast_set_d_value(ptr, (sum / n), rtype);
 
-		    ptr = G_incr_void_ptr(ptr, G_raster_size(rtype));
+		    ptr = G_incr_void_ptr(ptr, Rast_cell_size(rtype));
 		}
 		break;
 
@@ -777,45 +873,45 @@ int main(int argc, char *argv[])
 	    case METHOD_COEFF_VAR:	/*  100 * stdev / mean    */
 		ptr = raster_row;
 		for (col = 0; col < cols; col++) {
-		    offset = (row * cols + col) * G_raster_size(rtype);
-		    n_offset = (row * cols + col) * G_raster_size(CELL_TYPE);
-		    n = G_get_raster_value_c(n_array + n_offset, CELL_TYPE);
-		    sum = G_get_raster_value_d(sum_array + offset, rtype);
-		    sumsq = G_get_raster_value_d(sumsq_array + offset, rtype);
+		    offset = (row * cols + col) * Rast_cell_size(rtype);
+		    n_offset = (row * cols + col) * Rast_cell_size(CELL_TYPE);
+		    n = Rast_get_c_value(n_array + n_offset, CELL_TYPE);
+		    sum = Rast_get_d_value(sum_array + offset, rtype);
+		    sumsq = Rast_get_d_value(sumsq_array + offset, rtype);
 
 		    if (n == 0)
-			G_set_null_value(ptr, 1, rtype);
+			Rast_set_null_value(ptr, 1, rtype);
 		    else {
 			variance = (sumsq - sum * sum / n) / n;
 			if (variance < GRASS_EPSILON)
 			    variance = 0.0;
 
 			if (method == METHOD_STDDEV)
-			    G_set_raster_value_d(ptr, sqrt(variance), rtype);
+			    Rast_set_d_value(ptr, sqrt(variance), rtype);
 
 			else if (method == METHOD_VARIANCE)
-			    G_set_raster_value_d(ptr, variance, rtype);
+			    Rast_set_d_value(ptr, variance, rtype);
 
 			else if (method == METHOD_COEFF_VAR)
-			    G_set_raster_value_d(ptr,
+			    Rast_set_d_value(ptr,
 						 100 * sqrt(variance) / (sum /
 									 n),
 						 rtype);
 
 		    }
-		    ptr = G_incr_void_ptr(ptr, G_raster_size(rtype));
+		    ptr = G_incr_void_ptr(ptr, Rast_cell_size(rtype));
 		}
 		break;
 	    case METHOD_MEDIAN:	/* median, if only one point in cell we will use that */
 		ptr = raster_row;
 		for (col = 0; col < cols; col++) {
-		    n_offset = (row * cols + col) * G_raster_size(CELL_TYPE);
-		    if (G_is_null_value(index_array + n_offset, CELL_TYPE))	/* no points in cell */
-			G_set_null_value(ptr, 1, rtype);
+		    n_offset = (row * cols + col) * Rast_cell_size(CELL_TYPE);
+		    if (Rast_is_null_value(index_array + n_offset, CELL_TYPE))	/* no points in cell */
+			Rast_set_null_value(ptr, 1, rtype);
 		    else {	/* one or more points in cell */
 
 			head_id =
-			    G_get_raster_value_c(index_array + n_offset,
+			    Rast_get_c_value(index_array + n_offset,
 						 CELL_TYPE);
 			node_id = head_id;
 
@@ -827,7 +923,7 @@ int main(int argc, char *argv[])
 			}
 
 			if (n == 1)	/* only one point, use that */
-			    G_set_raster_value_d(ptr, nodes[head_id].z,
+			    Rast_set_d_value(ptr, nodes[head_id].z,
 						 rtype);
 			else if (n % 2 != 0) {	/* odd number of points: median_i = (n + 1) / 2 */
 			    n = (n + 1) / 2;
@@ -835,7 +931,7 @@ int main(int argc, char *argv[])
 			    for (j = 1; j < n; j++)	/* get "median element" */
 				node_id = nodes[node_id].next;
 
-			    G_set_raster_value_d(ptr, nodes[node_id].z,
+			    Rast_set_d_value(ptr, nodes[node_id].z,
 						 rtype);
 			}
 			else {	/* even number of points: median = (val_below + val_above) / 2 */
@@ -848,21 +944,21 @@ int main(int argc, char *argv[])
 
 			    z = (nodes[node_id].z +
 				 nodes[nodes[node_id].next].z) / 2;
-			    G_set_raster_value_d(ptr, z, rtype);
+			    Rast_set_d_value(ptr, z, rtype);
 			}
 		    }
-		    ptr = G_incr_void_ptr(ptr, G_raster_size(rtype));
+		    ptr = G_incr_void_ptr(ptr, Rast_cell_size(rtype));
 		}
 		break;
 	    case METHOD_PERCENTILE:	/* rank = (pth*(n+1))/100; interpolate linearly */
 		ptr = raster_row;
 		for (col = 0; col < cols; col++) {
-		    n_offset = (row * cols + col) * G_raster_size(CELL_TYPE);
-		    if (G_is_null_value(index_array + n_offset, CELL_TYPE))	/* no points in cell */
-			G_set_null_value(ptr, 1, rtype);
+		    n_offset = (row * cols + col) * Rast_cell_size(CELL_TYPE);
+		    if (Rast_is_null_value(index_array + n_offset, CELL_TYPE))	/* no points in cell */
+			Rast_set_null_value(ptr, 1, rtype);
 		    else {
 			head_id =
-			    G_get_raster_value_c(index_array + n_offset,
+			    Rast_get_c_value(index_array + n_offset,
 						 CELL_TYPE);
 			node_id = head_id;
 			n = 0;
@@ -893,20 +989,20 @@ int main(int argc, char *argv[])
 			    node_id = nodes[node_id].next;
 
 			z = (z + nodes[node_id].z) / 2;
-			G_set_raster_value_d(ptr, z, rtype);
+			Rast_set_d_value(ptr, z, rtype);
 		    }
-		    ptr = G_incr_void_ptr(ptr, G_raster_size(rtype));
+		    ptr = G_incr_void_ptr(ptr, Rast_cell_size(rtype));
 		}
 		break;
 	    case METHOD_SKEWNESS:	/* skewness = sum(xi-mean)^3/(N-1)*s^3 */
 		ptr = raster_row;
 		for (col = 0; col < cols; col++) {
-		    n_offset = (row * cols + col) * G_raster_size(CELL_TYPE);
-		    if (G_is_null_value(index_array + n_offset, CELL_TYPE))	/* no points in cell */
-			G_set_null_value(ptr, 1, rtype);
+		    n_offset = (row * cols + col) * Rast_cell_size(CELL_TYPE);
+		    if (Rast_is_null_value(index_array + n_offset, CELL_TYPE))	/* no points in cell */
+			Rast_set_null_value(ptr, 1, rtype);
 		    else {
 			head_id =
-			    G_get_raster_value_c(index_array + n_offset,
+			    Rast_get_c_value(index_array + n_offset,
 						 CELL_TYPE);
 			node_id = head_id;
 
@@ -941,20 +1037,20 @@ int main(int argc, char *argv[])
 				    sumdev / ((n - 1) *
 					      pow(sqrt(variance), 3));
 			}
-			G_set_raster_value_d(ptr, skew, rtype);
+			Rast_set_d_value(ptr, skew, rtype);
 		    }
-		    ptr = G_incr_void_ptr(ptr, G_raster_size(rtype));
+		    ptr = G_incr_void_ptr(ptr, Rast_cell_size(rtype));
 		}
 		break;
 	    case METHOD_TRIMMEAN:
 		ptr = raster_row;
 		for (col = 0; col < cols; col++) {
-		    n_offset = (row * cols + col) * G_raster_size(CELL_TYPE);
-		    if (G_is_null_value(index_array + n_offset, CELL_TYPE))	/* no points in cell */
-			G_set_null_value(ptr, 1, rtype);
+		    n_offset = (row * cols + col) * Rast_cell_size(CELL_TYPE);
+		    if (Rast_is_null_value(index_array + n_offset, CELL_TYPE))	/* no points in cell */
+			Rast_set_null_value(ptr, 1, rtype);
 		    else {
 			head_id =
-			    G_get_raster_value_c(index_array + n_offset,
+			    Rast_get_c_value(index_array + n_offset,
 						 CELL_TYPE);
 
 			node_id = head_id;
@@ -998,9 +1094,9 @@ int main(int argc, char *argv[])
 			    }
 			    mean = sum / n;
 			}
-			G_set_raster_value_d(ptr, mean, rtype);
+			Rast_set_d_value(ptr, mean, rtype);
 		    }
-		    ptr = G_incr_void_ptr(ptr, G_raster_size(rtype));
+		    ptr = G_incr_void_ptr(ptr, Rast_cell_size(rtype));
 		}
 		break;
 
@@ -1008,12 +1104,10 @@ int main(int argc, char *argv[])
 		G_fatal_error("?");
 	    }
 
+	    G_percent(row, rows, 5);
+
 	    /* write out line of raster data */
-	    if (1 != G_put_raster_row(out_fd, raster_row, rtype)) {
-		G_close_cell(out_fd);
-		G_fatal_error(_("Writing map, row %d"),
-			      ((pass - 1) * rows) + row);
-	    }
+	    Rast_put_row(out_fd, raster_row, rtype);
 	}
 
 	/* free memory */
@@ -1045,17 +1139,16 @@ int main(int argc, char *argv[])
 	fclose(in_fp);
 
     /* close raster file & write history */
-    G_close_cell(out_fd);
+    Rast_close(out_fd);
 
     sprintf(title, "Raw x,y,z data binned into a raster grid by cell %s",
 	    method_opt->answer);
-    G_put_cell_title(outmap, title);
+    Rast_put_cell_title(outmap, title);
 
-    G_short_history(outmap, "raster", &history);
-    G_command_history(&history);
-    strncpy(history.datsrc_1, infile, RECORD_LEN);
-    history.datsrc_1[RECORD_LEN - 1] = '\0';	/* strncpy() doesn't null terminate if maxfill */
-    G_write_history(outmap, &history);
+    Rast_short_history(outmap, "raster", &history);
+    Rast_command_history(&history);
+    Rast_set_history(&history, HIST_DATSRC_1, infile);
+    Rast_write_history(outmap, &history);
 
 
     sprintf(buff, _("%lu points found in region."), count_total);
@@ -1068,19 +1161,21 @@ int main(int argc, char *argv[])
 
 
 
-int scan_bounds(FILE * fp, int xcol, int ycol, int zcol, char *fs,
-		int shell_style, int skipline, double zscale)
+int scan_bounds(FILE * fp, int xcol, int ycol, int zcol, int vcol, char *fs,
+		int shell_style, int skipline, double zscale, double vscale)
 {
     unsigned long line;
     int first, max_col;
     char buff[BUFFSIZE];
-    double min_x, max_x, min_y, max_y, min_z, max_z;
+    double min_x, max_x, min_y, max_y, min_z, max_z, min_v, max_v;
     char **tokens;
     int ntokens;		/* number of tokens */
-    double x, y, z;
+    double x, y, z, v;
 
     max_col = (xcol > ycol) ? xcol : ycol;
     max_col = (zcol > max_col) ? zcol : max_col;
+    if(vcol)
+	max_col = (vcol > max_col) ? vcol : max_col;
 
     line = 0;
     first = TRUE;
@@ -1159,7 +1254,8 @@ int scan_bounds(FILE * fp, int xcol, int ycol, int zcol, char *fs,
 	if (first) {
 	    min_z = z;
 	    max_z = z;
-	    first = FALSE;
+	    if(!vcol)
+		first = FALSE;
 	}
 	else {
 	    if (z < min_z)
@@ -1168,22 +1264,47 @@ int scan_bounds(FILE * fp, int xcol, int ycol, int zcol, char *fs,
 		max_z = z;
 	}
 
+	if(vcol) {
+	    if (1 != sscanf(tokens[vcol - 1], "%lf", &v))
+	    	G_fatal_error(_("Bad data value line %lu column %d. <%s>"), line,
+	    		      vcol, tokens[vcol - 1]);
+
+	    if (first) {
+	    	min_v = v;
+	    	max_v = v;
+		first = FALSE;
+	    }
+	    else {
+	    	if (v < min_v)
+	    	    min_v = v;
+	    	if (v > max_v)
+	    	    max_v = v;
+	    }
+	}
 
 	G_free_tokens(tokens);
     }
 
     if (!shell_style) {
 	fprintf(stderr, _("Range:     min         max\n"));
-	fprintf(stdout, "x: %11f %11f\n", min_x, max_x);
-	fprintf(stdout, "y: %11f %11f\n", min_y, max_y);
-	fprintf(stdout, "z: %11f %11f\n", min_z * zscale, max_z * zscale);
+	fprintf(stdout, "x: %11.15g %11.15g\n", min_x, max_x);
+	fprintf(stdout, "y: %11.15g %11.15g\n", min_y, max_y);
+	fprintf(stdout, "z: %11.15g %11.15g\n", min_z * zscale, max_z * zscale);
+	if(vcol)
+	    fprintf(stdout, "v: %11.15g %11.15g\n", min_v * vscale, max_v * vscale);
     }
-    else
-	fprintf(stdout, "n=%f s=%f e=%f w=%f b=%f t=%f\n",
+    else {
+	fprintf(stdout, "n=%.15g s=%.15g e=%.15g w=%.15g b=%.15g t=%.15g",
 		max_y, min_y, max_x, min_x, min_z * zscale, max_z * zscale);
+	if(vcol)
+	    fprintf(stdout, " min=%.15g max=%.15g\n", min_v * vscale,
+		    max_v * vscale);
+	else
+	    fprintf(stdout, "\n");
+    }
 
     G_debug(1, "Processed %lu lines.", line);
-    G_debug(1, "region template: g.region n=%f s=%f e=%f w=%f",
+    G_debug(1, "region template: g.region n=%.15g s=%.15g e=%.15g w=%.15g",
 	    max_y, min_y, max_x, min_x);
 
     return 0;

@@ -3,7 +3,6 @@
 #include <math.h>
 #include <grass/gis.h>
 #include <grass/display.h>
-#include <grass/raster.h>
 #include "local_proto.h"
 
 static double round_to(double in, int sd)
@@ -178,7 +177,7 @@ int set_win(struct Cell_head *window, double ux1, double uy1, double ux2,
 
 	G_adjust_Cell_head3(window, 0, 0, 0);
 	G_put_window(window);
-	G_set_window(window);
+	Rast_set_window(window);
 	redraw();
     }
 

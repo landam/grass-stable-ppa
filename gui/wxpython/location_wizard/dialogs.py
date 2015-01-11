@@ -23,8 +23,14 @@ import sys
 import wx
 import wx.lib.scrolledpanel as scrolled
 
+if __name__ == '__main__':
+    wxbase = os.path.join(os.getenv('GISBASE'), 'etc', 'gui', 'wxpython')
+    if wxbase not in sys.path:
+        sys.path.append(wxbase)
+
 from core                 import globalvar
 from core.gcmd            import RunCommand
+from core.utils import _
 from location_wizard.base import BaseClass
 
 from grass.script import core as grass
@@ -205,6 +211,7 @@ class RegionDef(BaseClass, wx.Dialog):
         self.__DoLayout(panel)
         self.SetMinSize(self.GetBestSize())
         self.minWindowSize = self.GetMinSize()
+        wx.CallAfter(self.settings3D.Collapse, True)
     
     def MakeSettings3DPaneContent(self, pane):
         """!Create 3D region settings pane"""
@@ -487,7 +494,7 @@ class RegionDef(BaseClass, wx.Dialog):
 
     def OnCancel(self, event):
         self.Destroy()
-        
+
 class TransList(wx.VListBox):
     """!Creates a multiline listbox for selecting datum transforms"""
         
@@ -611,3 +618,17 @@ class SelectTransformDialog(wx.Dialog):
         self.transnum = self.translist.GetSelection()
         self.transnum = self.transnum - 1
         return self.transnum
+
+def testRegionDef():
+    import sys
+    import wx.lib.inspection
+    import grass.script as grass
+
+    app = wx.App()
+
+    dlg = RegionDef(None, location = grass.gisenv()["LOCATION_NAME"])
+    dlg.Show()
+    wx.lib.inspection.InspectionTool().Show()
+    app.MainLoop()
+if __name__ == '__main__':
+    testRegionDef()

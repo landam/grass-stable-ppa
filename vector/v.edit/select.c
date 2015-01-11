@@ -18,12 +18,12 @@
  * TODO:       3D support
  ****************************************************************/
 
-#include <string.h>
 #include <grass/dbmi.h>
 #include "global.h"
 
 static char first_selection = 1;
 static int merge_lists(struct ilist *, struct ilist *);
+static int merge_lists2(struct ilist *, struct boxlist *);
 
 /**
    \brief Select vector features
@@ -41,7 +41,7 @@ struct ilist *select_lines(struct Map_info *Map, enum mode action_mode,
 {
     int layer, type;
 
-    layer = atoi(params->fld->answer);
+    layer = Vect_get_field_number(Map, params->fld->answer);
     type = Vect_option_to_types(params->type);
 
     /* select by id's */
@@ -341,18 +341,12 @@ int sel_by_bbox(struct Map_info *Map,
 		int type, double x1, double y1, double x2, double y2,
 		struct ilist *List)
 {
-    BOUND_BOX bbox;
+    struct bound_box bbox;
 
-    struct ilist *List_tmp;
-
-    if (first_selection) {
-	List_tmp = List;
-	first_selection = 0;
-    }
-    else {
-	List_tmp = Vect_new_list();
-    }
-
+    struct boxlist *List_tmp;
+    
+    List_tmp = Vect_new_boxlist(0);
+    
     /* bounding box */
     bbox.N = y1 < y2 ? y2 : y1;
     bbox.S = y1 < y2 ? y1 : y2;
@@ -360,17 +354,15 @@ int sel_by_bbox(struct Map_info *Map,
     bbox.E = x1 < x2 ? x2 : x1;
     bbox.T = PORT_DOUBLE_MAX;
     bbox.B = -PORT_DOUBLE_MAX;
-
+    
     Vect_select_lines_by_box(Map, &bbox, type, List_tmp);
 
     G_debug(1, "  %d lines selected (by bbox)", List_tmp->n_values);
 
     /* merge lists (only duplicate items) */
-    if (List_tmp != List) {
-	merge_lists(List, List_tmp);
-	Vect_destroy_list(List_tmp);
-    }
-
+    merge_lists2(List, List_tmp);
+    Vect_destroy_boxlist(List_tmp);
+    
     return List->n_values;
 }
 
@@ -548,7 +540,7 @@ int sel_by_where(struct Map_info *Map,
 }
 
 /**
-   \brief merge two list, i.e. store only duplicate items
+   \brief merge two lists, i.e. store only duplicate items
 
    \param[in] alist,blist list to be merged
 
@@ -564,6 +556,33 @@ static int merge_lists(struct ilist *alist, struct ilist *blist)
 
     for (i = 0; i < alist->n_values; i++) {
 	if (!Vect_val_in_list(blist, alist->value[i]))
+	    Vect_list_append(list_del, alist->value[i]);
+    }
+
+    Vect_list_delete_list(alist, list_del);
+
+    Vect_destroy_list(list_del);
+
+    return alist->n_values;
+}
+
+/**
+   \brief merge two lists, i.e. store only duplicate items
+
+   \param[in] alist,blist list to be merged
+
+   \return result number of items
+*/
+static int merge_lists2(struct ilist *alist, struct boxlist *blist)
+{
+    int i;
+
+    struct ilist *list_del;
+
+    list_del = Vect_new_list();
+
+    for (i = 0; i < alist->n_values; i++) {
+	if (!Vect_val_in_boxlist(blist, alist->value[i]))
 	    Vect_list_append(list_del, alist->value[i]);
     }
 

@@ -1,25 +1,40 @@
+/*!
+   \file lib/vector/Vlib/e_intersect.c
+
+   \brief Vector library - intersection (lower level functions)
+
+   Higher level functions for reading/writing/manipulating vectors.
+
+   (C) 2008-2009 by the GRASS Development Team
+
+   This program is free software under the GNU General Public License
+   (>=v2). Read the file COPYING that comes with GRASS for details.
+
+   \author Rewritten by Rosen Matev (Google Summer of Code 2008)
+*/
+
 #include <stdlib.h>
 #include <math.h>
+
 #include <grass/gis.h>
+
 #include "e_intersect.h"
 
-#define SWAP(a,b) {t = a; a = b; b = t;}
+#define SWAP(a,b) {double t = a; a = b; b = t;}
 #ifndef MIN
 #define MIN(X,Y) ((X<Y)?X:Y)
 #endif
 #ifndef MAX
 #define MAX(X,Y) ((X>Y)?X:Y)
 #endif
-#define D (ax2-ax1)*(by1-by2) - (ay2-ay1)*(bx1-bx2)
-#define DA (bx1-ax1)*(by1-by2) - (by1-ay1)*(bx1-bx2)
-#define DB (ax2-ax1)*(by1-ay1) - (ay2-ay1)*(bx1-ax1)
+#define D ((ax2-ax1)*(by1-by2) - (ay2-ay1)*(bx1-bx2))
+#define DA ((bx1-ax1)*(by1-by2) - (by1-ay1)*(bx1-bx2))
+#define DB ((ax2-ax1)*(by1-ay1) - (ay2-ay1)*(bx1-ax1))
 
 
 #ifdef ASDASDASFDSAFFDAS
 mpf_t p11, p12, p21, p22, t1, t2;
-
 mpf_t dd, dda, ddb, delta;
-
 mpf_t rra, rrb;
 
 int initialized = 0;
@@ -680,8 +695,6 @@ int segment_intersection_2d(double ax1, double ay1, double ax2, double ay2,
 {
     const int DLEVEL = 4;
 
-    double t;
-
     int vertical;
 
     int f11, f12, f21, f22;
@@ -730,6 +743,31 @@ int segment_intersection_2d(double ax1, double ay1, double ax2, double ay2,
     if ((MAX(ay1, ay2) < MIN(by1, by2)) || (MAX(by1, by2) < MIN(ay1, ay2))) {
 	G_debug(DLEVEL, "    no intersection (disjoint bounding boxes)");
 	return 0;
+    }
+
+    /* swap endpoints if needed */
+    /* if segments are vertical, we swap x-coords with y-coords */
+    vertical = 0;
+    if (ax1 > ax2) {
+	SWAP(ax1, ax2);
+	SWAP(ay1, ay2);
+    }
+    else if (ax1 == ax2) {
+	vertical = 1;
+	if (ay1 > ay2)
+	    SWAP(ay1, ay2);
+	SWAP(ax1, ay1);
+	SWAP(ax2, ay2);
+    }
+    if (bx1 > bx2) {
+	SWAP(bx1, bx2);
+	SWAP(by1, by2);
+    }
+    else if (bx1 == bx2) {
+	if (by1 > by2)
+	    SWAP(by1, by2);
+	SWAP(bx1, by1);
+	SWAP(bx2, by2);
     }
 
     d = D;
@@ -791,31 +829,6 @@ int segment_intersection_2d(double ax1, double ay1, double ax2, double ay2,
     }
 
     /* segments are colinear. check for overlap */
-
-    /* swap endpoints if needed */
-    /* if segments are vertical, we swap x-coords with y-coords */
-    vertical = 0;
-    if (ax1 > ax2) {
-	SWAP(ax1, ax2);
-	SWAP(ay1, ay2);
-    }
-    else if (ax1 == ax2) {
-	vertical = 1;
-	if (ay1 > ay2)
-	    SWAP(ay1, ay2);
-	SWAP(ax1, ay1);
-	SWAP(ax2, ay2);
-    }
-    if (bx1 > bx2) {
-	SWAP(bx1, bx2);
-	SWAP(by1, by2);
-    }
-    else if (bx1 == bx2) {
-	if (by1 > by2)
-	    SWAP(by1, by2);
-	SWAP(bx1, by1);
-	SWAP(bx2, by2);
-    }
 
     G_debug(DLEVEL, "    collinear segments");
 

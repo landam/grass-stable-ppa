@@ -1,5 +1,7 @@
-#include <grass/gis.h>
 #include <math.h>
+
+#include <grass/gis.h>
+#include <grass/raster.h>
 
 void c_thresh(DCELL * result, DCELL * values, int n, const void *closure)
 {
@@ -8,15 +10,15 @@ void c_thresh(DCELL * result, DCELL * values, int n, const void *closure)
     double epsilon = GRASS_EPSILON;
     int i;
 
-    G_set_d_null_value(&thresh, 1);
-    G_set_d_null_value(&threshx, 1);
+    Rast_set_d_null_value(&thresh, 1);
+    Rast_set_d_null_value(&threshx, 1);
 
     for (i = 0; i < n; i++) {
 	/* already found */
-	if (! G_is_d_null_value(&threshx))
+	if (! Rast_is_d_null_value(&threshx))
 	    continue;
 
-	if (G_is_d_null_value(&values[i]))
+	if (Rast_is_d_null_value(&values[i]))
 	    continue;
 
 	G_debug(2, "values[%d] %f, tval %f", i, values[i], tval);
@@ -29,8 +31,8 @@ void c_thresh(DCELL * result, DCELL * values, int n, const void *closure)
 	}
     }
 
-    if (G_is_d_null_value(&threshx))
-	G_set_d_null_value(result, 1);
+    if (Rast_is_d_null_value(&threshx))
+	Rast_set_d_null_value(result, 1);
     else
 	*result = threshx;
 }

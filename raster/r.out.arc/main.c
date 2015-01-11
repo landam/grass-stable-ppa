@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 /*
@@ -30,7 +31,6 @@ int main(int argc, char *argv[])
      */
     RASTER_MAP_TYPE out_type, map_type;
     char *outfile;
-    char *mapset;
     char null_str[80];
     char cell_buf[300];
     int fd;
@@ -57,7 +57,9 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, export");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("export"));
+    G_add_keyword("ASCII");
     module->description =
 	_("Converts a raster map layer into an ESRI ARCGRID file.");
 
@@ -66,7 +68,7 @@ int main(int argc, char *argv[])
 
     parm.output = G_define_standard_option(G_OPT_F_OUTPUT);
     parm.output->description =
-	_("Name for output ARC-GRID map (use out=- for stdout)");
+	_("Name for output ARC-GRID file (use out=- for stdout)");
 
     parm.dp = G_define_option();
     parm.dp->key = "dp";
@@ -107,24 +109,18 @@ int main(int argc, char *argv[])
 
     sprintf(null_str, "-9999");
 
-    mapset = G_find_cell(parm.map->answer, "");
-    if (mapset == NULL)
-	G_fatal_error(_("Raster map <%s> not found"), parm.map->answer);
+    fd = Rast_open_old(parm.map->answer, "");
 
-    fd = G_open_cell_old(parm.map->answer, mapset);
-    if (fd < 0)
-	G_fatal_error(_("Unable to open raster map <%s>"), parm.map->answer);
-
-    map_type = G_get_raster_map_type(fd);
+    map_type = Rast_get_map_type(fd);
     out_type = map_type;
 
     /*
-       null_row = G_allocate_null_buf();
+       null_row = Rast_allocate_null_buf();
      */
-    raster = G_allocate_raster_buf(out_type);
+    raster = Rast_allocate_buf(out_type);
 
-    nrows = G_window_rows();
-    ncols = G_window_cols();
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
 
     /* open arc file for writing */
     if (do_stdout)
@@ -170,15 +166,13 @@ int main(int argc, char *argv[])
 
     for (row = 0; row < nrows; row++) {
 	G_percent(row, nrows, 2);
-	if (G_get_raster_row(fd, raster, row, out_type) < 0)
-	    exit(EXIT_FAILURE);
+	Rast_get_row(fd, raster, row, out_type);
 	/*
-	   if (G_get_null_value_row(fd, null_row, row) < 0)
-	   exit(EXIT_FAILURE);
+	   Rast_get_null_value_row(fd, null_row, row);
 	 */
 	for (col = 0, ptr = raster; col < ncols; col++,
-	     ptr = G_incr_void_ptr(ptr, G_raster_size(out_type))) {
-	    if (!G_is_null_value(ptr, out_type)) {
+	     ptr = G_incr_void_ptr(ptr, Rast_cell_size(out_type))) {
+	    if (!Rast_is_null_value(ptr, out_type)) {
 		if (out_type == CELL_TYPE)
 		    fprintf(fp, "%d", *((CELL *) ptr));
 
@@ -215,7 +209,7 @@ int main(int argc, char *argv[])
     /* make sure it got to 100% */
     G_percent(1, 1, 2);
 
-    G_close_cell(fd);
+    Rast_close(fd);
     fclose(fp);
 
     exit(EXIT_SUCCESS);

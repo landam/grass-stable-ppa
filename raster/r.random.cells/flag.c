@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <grass/gis.h>
 
-#undef MAIN
 #include "flag.h"
 
 void FlagClearAll(FLAG * flags)

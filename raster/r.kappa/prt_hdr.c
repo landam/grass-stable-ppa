@@ -1,4 +1,5 @@
 #include <string.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "kappa.h"
 #include "local_proto.h"
@@ -31,7 +32,7 @@ void prn_header(void)
     len = strlen(label);
 
     for (i = 0; i < nlayers; i++) {
-	titles = G_get_cats_title(&(layers[i].labels));
+	titles = Rast_get_cats_title(&(layers[i].labels));
 	if (titles)
 	    G_strip(titles);
 	if (titles == NULL || *titles == 0)

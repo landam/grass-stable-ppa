@@ -39,16 +39,16 @@ except ImportError:
 import wx
 
 from ctypes import *
-try:
-    from grass.lib.gis      import *
-    from grass.lib.g3d      import *
-    from grass.lib.vector   import *
-    from grass.lib.ogsf     import *
-    from grass.lib.nviz     import *
-except ImportError, e:
-    sys.stderr.write(_("3D view mode: %s\n") % e)
-    
+
+from grass.lib.gis      import *
+from grass.lib.raster3d import *
+from grass.lib.vector   import *
+from grass.lib.ogsf     import *
+from grass.lib.nviz     import *
+from grass.lib.raster   import *
+
 from core.debug import Debug
+from core.utils import _
 import grass.script as grass
 
 log      = None
@@ -68,22 +68,27 @@ def print_progress(value):
     """!Redirect progress info"""
     global progress
     if progress:
+        if not progress.GetRange() == 100:
+            progress.SetRange(100)
         progress.SetValue(value)
     else:
         print value
     
     return 0
 
-errtype = CFUNCTYPE(UNCHECKED(c_int), String, c_int)
-errfunc = errtype(print_error)
-pertype = CFUNCTYPE(UNCHECKED(c_int), c_int)
-perfunc = pertype(print_progress)
+try:
+    errtype = CFUNCTYPE(UNCHECKED(c_int), String, c_int)
+    errfunc = errtype(print_error)
+    pertype = CFUNCTYPE(UNCHECKED(c_int), c_int)
+    perfunc = pertype(print_progress)
+except NameError:
+    pass
 
 class Nviz(object):
     def __init__(self, glog, gprogress):
         """!Initialize Nviz class instance
         
-        @param log logging area
+        @param glog logging area
         @param gprogress progressbar
         """
         global errfunc, perfunc, log, progress
@@ -92,7 +97,7 @@ class Nviz(object):
         
         G_gisinit("wxnviz")
         # gislib is already initialized (where?)
-        G_set_error_routine(errfunc)
+        G_set_error_routine(errfunc) 
         G_set_percent_routine(perfunc)
         
         self.Init()
@@ -118,11 +123,12 @@ class Nviz(object):
     def Init(self):
         """!Initialize window"""
         locale.setlocale(locale.LC_NUMERIC, 'C')
-        #G_unset_window()
-        #Rast_unset_window()
-        #Rast__init_window()
+        G_unset_window()
+        Rast_unset_window()
+        Rast__init_window()
         GS_libinit()
         GVL_libinit()
+        GVL_init_region()
     
     def ResizeWindow(self, width, height):
         """!GL canvas resized
@@ -295,11 +301,13 @@ class Nviz(object):
         
     def SetLight(self, x, y, z, color, bright, ambient, w = 0, lid = 1):
         """!Change lighting settings
+        
         @param x,y,z position
         @param color light color (as string)
         @param bright light brightness
         @param ambient light ambient
         @param w local coordinate (default to 0)
+        @param lid light id
         """
         Nviz_set_light_position(self.data, lid, x, y, z, w)
         Nviz_set_light_bright(self.data, lid, bright)
@@ -316,7 +324,7 @@ class Nviz(object):
         @return object id
         @return -1 on failure
         """
-        mapset = G_find_cell2(name, "")
+        mapset = G_find_raster2(name, "")
         if mapset is None:
             G_warning(_("Raster map <%s> not found"), name)
             return -1
@@ -327,7 +335,7 @@ class Nviz(object):
                               self.data)
         
         if color_name:      # check for color map
-            mapset = G_find_cell2(color_name, "")
+            mapset = G_find_raster2(color_name, "")
             if mapset is None:
                 G_warning(_("Raster map <%s> not found"), color_name)
                 GS_delete_surface(id)
@@ -469,7 +477,7 @@ class Nviz(object):
         @return object id
         @return -1 on failure
         """
-        mapset = G_find_grid3(name, "")
+        mapset = G_find_raster3d(name, "")
         if mapset is None:
             G_warning(_("3d raster map <%s> not found"),
                       name)
@@ -481,7 +489,7 @@ class Nviz(object):
                               self.data)
         
         if color_name:      # check for color map
-            mapset = G_find_grid3(color_name, "")
+            mapset = G_find_raster3d(color_name, "")
             if mapset is None:
                 G_warning(_("3d raster map <%s> not found"),
                           color_name)
@@ -764,8 +772,8 @@ class Nviz(object):
         
         @todo all
          
-        @param surface id (< 0 for all)
-        @param color color string (R:G:B)
+        @param id surface id (< 0 for all)
+        @param color_str color string (R:G:B)
         
         @return 1 on success
         @return -1 surface not found
@@ -855,7 +863,7 @@ class Nviz(object):
         color = Nviz_color_from_str(color_str)
         
         # use memory by default
-        if GV_set_vectmode(id, 1, color, width, flat) < 0:
+        if GV_set_style(id, 1, color, width, flat) < 0:
             return -2
         
         return 1
@@ -929,7 +937,8 @@ class Nviz(object):
         @param id vector id
         @param color_str color string
         @param width line width
-        @param flat
+        @param size size of the symbol
+        @param marker type of the symbol
         
         @return -1 vector set not found
         """
@@ -946,7 +955,7 @@ class Nviz(object):
         
         color = Nviz_color_from_str(color_str)
         
-        if GP_set_sitemode(id, ST_ATT_NONE, color, width, size, marker) < 0:
+        if GP_set_style(id, color, width, size, marker) < 0:
             return -2
         
         return 1
@@ -996,7 +1005,7 @@ class Nviz(object):
         """!Read vector colors
         
         @param name vector map name
-        @mapset mapset name ("" for search path)
+        @param mapset mapset name (empty string (\c "") for search path)
         
         @return -1 on error 
         @return 0 if color table missing 
@@ -1026,6 +1035,63 @@ class Nviz(object):
             return -2
         
         return self.ReadVectorColors(file, "")
+        
+    def SetPointsStyleThematic(self, id, layer, color = None, colorTable = False, 
+                               width = None, size = None, symbol = None):
+        """!Set thematic style for vector points
+        
+        @param id vector set id
+        @param layer layer number for thematic mapping
+        @param colorTable use color table 
+        @param color color column name 
+        @param width width column name 
+        @param size size column name 
+        @param symbol symbol column name 
+        """
+        file = c_char_p()
+        ret = GP_get_sitename(id, byref(file))
+        if ret < 0:
+            return -1
+        
+        ret = self.ReadVectorColors(file, "")
+        if ret < 0:
+            return -1
+        
+        if colorTable:
+            GP_set_style_thematic(id, layer, color, width, size, symbol, self.color)
+        else:
+            GP_set_style_thematic(id, layer, color, width, size, symbol, None)
+
+    def SetLinesStyleThematic(self, id, layer, color = None, colorTable = False, width = None):
+        """!Set thematic style for vector lines
+        
+        @param id vector set id
+        @param layer layer number for thematic mapping
+        @param color color column name 
+        @param colorTable use color table 
+        @param width width column name 
+        """
+        file = c_char_p()
+        ret = GV_get_vectname(id, byref(file))
+        if ret < 0:
+            return -1
+        
+        ret = self.ReadVectorColors(file, "")
+        if ret < 0:
+            return -1
+        
+        if colorTable:
+            GV_set_style_thematic(id, layer, color, width, self.color)
+        else:
+            GV_set_style_thematic(id, layer, color, width, None)
+        
+    def UnsetLinesStyleThematic(self, id):
+        """!Unset thematic style for vector points"""
+        GV_unset_style_thematic(id)      
+         
+    def UnsetPointsStyleThematic(self, id):
+        """!Unset thematic style for vector lines"""
+        GP_unset_style_thematic(id)
         
     def UnsetVectorPointSurface(self, id, surf_id):
         """!Unset reference surface of vector set (points)
@@ -1069,6 +1135,7 @@ class Nviz(object):
         
         @param id volume id
         @param level isosurface level (topography)
+        @param isosurf_id isosurface id
         
         @return -1 on failure
         @return 1 on success
@@ -1093,6 +1160,7 @@ class Nviz(object):
         """!Add new slice
         
         @param id volume id
+        @param slice_id slice id
         
         @return -1 on failure
         @return number of slices
@@ -1415,7 +1483,8 @@ class Nviz(object):
     def SetIsosurfaceMode(self, id, mode):
         """!Set draw mode for isosurfaces
         
-        @param mode
+        @param id isosurface id
+        @param mode isosurface draw mode
         
         @return 1 on success
         @return -1 volume set not found
@@ -1434,7 +1503,8 @@ class Nviz(object):
     def SetSliceMode(self, id, mode):
         """!Set draw mode for slices
         
-        @param mode
+        @param id slice id
+        @param mode slice draw mode
         
         @return 1 on success
         @return -1 volume set not found
@@ -1453,6 +1523,7 @@ class Nviz(object):
     def SetIsosurfaceRes(self, id, res):
         """!Set draw resolution for isosurfaces
         
+        @param id isosurface id
         @param res resolution value
         
         @return 1 on success
@@ -1472,6 +1543,7 @@ class Nviz(object):
     def SetSliceRes(self, id, res):
         """!Set draw resolution for slices
         
+        @param id slice id
         @param res resolution value
         
         @return 1 on success
@@ -1519,7 +1591,6 @@ class Nviz(object):
         
         @param id volume id
         @param slice_id slice id
-        @param x1,x2,y1,y2,z1,z2 slice coordinates
         @param value transparency value (0 - 255)
         
         @return 1 on success
@@ -1544,6 +1615,8 @@ class Nviz(object):
     def SetIsosurfaceInOut(self, id, isosurf_id, inout):
         """!Set inout mode
         
+        @param id volume id
+        @param isosurf_id isosurface id
         @param inout mode true/false
         
         @return 1 on success
@@ -1602,7 +1675,25 @@ class Nviz(object):
         GVL_set_trans(id, x, y, z)
         
         return 1
-    
+
+    def SetVolumeDrawBox(self, id, ifBox):
+        """!Display volume wire box
+        
+        @param id volume id
+        @param ifBox True to draw wire box, False otherwise
+        
+        @return 1 on success
+        @return -1 volume not found
+        """
+        if not GVL_vol_exists(id):
+            return -1
+
+        Debug.msg(3, "Nviz::SetVolumeDrawBox(): id=%d, ifBox=%d", id, ifBox)
+        
+        GVL_set_draw_wire(id, int(ifBox))
+
+        return 1
+
     def GetCPlaneCurrent(self):
         return Nviz_get_current_cplane(self.data)
     
@@ -1907,7 +1998,7 @@ class Texture(object):
         self.width = self.image.GetWidth()
         self.height = self.image.GetHeight()
         self.id = overlayId
-        self.coords = list(coords)
+        self.coords = [0, 0]
         self.bounds = wx.Rect()
         self.active = True
         
@@ -2059,3 +2150,4 @@ class TextTexture(Texture):
                 return False
                 
         return True
+    

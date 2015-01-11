@@ -6,9 +6,10 @@
  *               Bernhard Reiter <bernhard intevation.de>, 
  *               Brad Douglas <rez touchofmadness.com>, 
  *               Glynn Clements <glynn gclements.plus.com>, 
- *               Markus Neteler <neteler itc.it>
+ *               Markus Neteler <neteler itc.it>,
+ *               Markus Metz <markus.metz.giswork googlemail.com>
  * PURPOSE:      Segment initialization routines
- * COPYRIGHT:    (C) 2000-2006 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2000-2009 by the GRASS Development Team
  *
  *               This program is free software under the GNU General Public
  *               License (>=v2). Read the file COPYING that comes with GRASS
@@ -20,10 +21,12 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
-#include <grass/segment.h>
+#include <grass/gis.h>
+#include "local_proto.h"
 
 
 static int read_int(int, int *);
+static int read_off_t(int, off_t *);
 
 /* fd must be open for read and write */
 
@@ -45,15 +48,15 @@ static int read_int(int, int *);
  * <b>Note:</b> The size of a segment is <em>scols*srows*len</em> plus a 
  * few bytes for managing each segment.
  *
- * \param[in,out] seg segment
+ * \param[in,out] SEG segment
  * \param[in] fd file descriptor
- * \param[in] nsegs number of segments to remain in memory
+ * \param[in] nseg number of segments to remain in memory
  * \return 1 if successful
  * \return -1 if unable to seek or read segment file
  * \return -2 if out of memory
  */
 
-int segment_init(SEGMENT * SEG, int fd, int nseg)
+int segment_init(SEGMENT *SEG, int fd, int nseg)
 {
     SEG->open = 0;
     SEG->fd = fd;
@@ -65,8 +68,8 @@ int segment_init(SEGMENT * SEG, int fd, int nseg)
     }
 
     /* read the header */
-    if (!read_int(fd, &SEG->nrows)
-	|| !read_int(fd, &SEG->ncols)
+    if (!read_off_t(fd, &SEG->nrows)
+	|| !read_off_t(fd, &SEG->ncols)
 	|| !read_int(fd, &SEG->srows)
 	|| !read_int(fd, &SEG->scols)
 	|| !read_int(fd, &SEG->len))
@@ -84,6 +87,18 @@ static int read_int(int fd, int *n)
 	G_warning("read_int: %s", strerror(errno));
 
     bytes_read = (bytes_read == sizeof(int));
+
+    return bytes_read;
+}
+
+static int read_off_t(int fd, off_t *n)
+{
+    int bytes_read;
+
+    if ((bytes_read = read(fd, n, sizeof(off_t))) == -1)
+	G_warning("read_off_t: %s", strerror(errno));
+
+    bytes_read = (bytes_read == sizeof(off_t));
 
     return bytes_read;
 }

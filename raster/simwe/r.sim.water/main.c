@@ -77,11 +77,11 @@
 #include <unistd.h>
 #endif
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/linkm.h>
 #include <grass/bitmap.h>
-/* #include <grass/site.h> */
 #include <grass/glocale.h>
+#include <grass/gmath.h>
 
 /********************************/
 /* Specific stuff               */
@@ -90,15 +90,6 @@
 
 #include <grass/waterglobs.h>
 
-char fncdsm[32];
-char filnam[10];
-
-/*struct BM *bitmask; */
-/*struct Cell_head cellhd; */
-struct GModule *module;
-struct Map_info Map;
-
-char msg[1024];
 
 /****************************************/
 /* MAIN                                 */
@@ -106,44 +97,41 @@ char msg[1024];
 /****************************************/
 int main(int argc, char *argv[])
 {
-    int i, j, l, ii;
+    int ii;
     int ret_val;
     double x_orig, y_orig;
     static int rand1 = 12345;
     static int rand2 = 67891;
+    struct GModule *module;
 
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, flow, hydrology");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("hydrology"));
     module->description =
 	_("Overland flow hydrologic simulation using "
 	  "path sampling method (SIMWE).");
 
-    parm.elevin = G_define_standard_option(G_OPT_R_INPUT);
-    parm.elevin->key = "elevin";
-    parm.elevin->description = _("Name of the elevation raster map [m]");
-    parm.elevin->guisection = _("Input");
-
+    parm.elevin = G_define_standard_option(G_OPT_R_ELEV);
+    
     parm.dxin = G_define_standard_option(G_OPT_R_INPUT);
-    parm.dxin->key = "dxin";
-    parm.dxin->description = _("Name of the x-derivatives raster map [m/m]");
-    parm.dxin->guisection = _("Input");
+    parm.dxin->key = "dx";
+    parm.dxin->description = _("Name of x-derivatives raster map [m/m]");
 
     parm.dyin = G_define_standard_option(G_OPT_R_INPUT);
-    parm.dyin->key = "dyin";
-    parm.dyin->description = _("Name of the y-derivatives raster map [m/m]");
-    parm.dyin->guisection = _("Input");
+    parm.dyin->key = "dy";
+    parm.dyin->description = _("Name of y-derivatives raster map [m/m]");
 
     parm.rain = G_define_standard_option(G_OPT_R_INPUT);
     parm.rain->key = "rain";
     parm.rain->required = NO;
     parm.rain->description =
-	_("Name of the rainfall excess rate (rain-infilt) raster map [mm/hr]");
+	_("Name of rainfall excess rate (rain-infilt) raster map [mm/hr]");
     parm.rain->guisection = _("Input");
-
+    
     parm.rainval = G_define_option();
-    parm.rainval->key = "rain_val";
+    parm.rainval->key = "rain_value";
     parm.rainval->type = TYPE_DOUBLE;
     parm.rainval->answer = RAINVAL;
     parm.rainval->required = NO;
@@ -155,11 +143,11 @@ int main(int argc, char *argv[])
     parm.infil->key = "infil";
     parm.infil->required = NO;
     parm.infil->description =
-	_("Name of the runoff infiltration rate raster map [mm/hr]");
+	_("Name of runoff infiltration rate raster map [mm/hr]");
     parm.infil->guisection = _("Input");
 
     parm.infilval = G_define_option();
-    parm.infilval->key = "infil_val";
+    parm.infilval->key = "infil_value";
     parm.infilval->type = TYPE_DOUBLE;
     parm.infilval->answer = INFILVAL;
     parm.infilval->required = NO;
@@ -168,13 +156,13 @@ int main(int argc, char *argv[])
     parm.infilval->guisection = _("Input");
 
     parm.manin = G_define_standard_option(G_OPT_R_INPUT);
-    parm.manin->key = "manin";
+    parm.manin->key = "man";
     parm.manin->required = NO;
     parm.manin->description = _("Name of the Manning's n raster map");
     parm.manin->guisection = _("Input");
 
     parm.maninval = G_define_option();
-    parm.maninval->key = "manin_val";
+    parm.maninval->key = "man_value";
     parm.maninval->type = TYPE_DOUBLE;
     parm.maninval->answer = MANINVAL;
     parm.maninval->required = NO;
@@ -185,44 +173,47 @@ int main(int argc, char *argv[])
     parm.traps->key = "traps";
     parm.traps->required = NO;
     parm.traps->description =
-	_("Name of the flow controls raster map (permeability ratio 0-1)");
+	_("Name of flow controls raster map (permeability ratio 0-1)");
     parm.traps->guisection = _("Input");
 
-/*
-    parm.sfile = G_define_standard_option(G_OPT_V_INPUT);
-    parm.sfile->key = "vector";
-    parm.sfile->required = NO;
-    parm.sfile->description =
+    parm.observation = G_define_standard_option(G_OPT_V_INPUT);
+    parm.observation->key = "observation";
+    parm.observation->required = NO;
+    parm.observation->description =
 	_("Name of the sampling locations vector points map");
-    parm.sfile->guisection = _("Input");
-*/
+    parm.observation->guisection = _("Input options");
+
+    parm.logfile = G_define_standard_option(G_OPT_F_OUTPUT);
+    parm.logfile->key = "logfile";
+    parm.logfile->required = NO;
+    parm.logfile->description =
+	_("Name of the sampling points output text file. For each observation vector point the time series of water depth is stored.");
+    parm.logfile->guisection = _("Output");
 
     parm.depth = G_define_standard_option(G_OPT_R_OUTPUT);
     parm.depth->key = "depth";
     parm.depth->required = NO;
-    parm.depth->description = _("Output water depth raster map [m]");
+    parm.depth->description = _("Name for output water depth raster map [m]");
     parm.depth->guisection = _("Output");
 
     parm.disch = G_define_standard_option(G_OPT_R_OUTPUT);
     parm.disch->key = "disch";
     parm.disch->required = NO;
-    parm.disch->description = _("Output water discharge raster map [m3/s]");
+    parm.disch->description = _("Name for output water discharge raster map [m3/s]");
     parm.disch->guisection = _("Output");
 
     parm.err = G_define_standard_option(G_OPT_R_OUTPUT);
     parm.err->key = "err";
     parm.err->required = NO;
-    parm.err->description = _("Output simulation error raster map [m]");
+    parm.err->description = _("Name for output simulation error raster map [m]");
     parm.err->guisection = _("Output");
 
-/*
     parm.outwalk = G_define_standard_option(G_OPT_V_OUTPUT);
     parm.outwalk->key = "outwalk";
     parm.outwalk->required = NO;
     parm.outwalk->description =
-	_("Name of the output walkers vector points map");
-    parm.outwalk->guisection = _("Output");
-*/
+	_("Base name of the output walkers vector points map");
+    parm.outwalk->guisection = _("Output options");
 
     parm.nwalk = G_define_option();
     parm.nwalk->key = "nwalk";
@@ -272,8 +263,9 @@ int main(int argc, char *argv[])
     parm.hmax->type = TYPE_DOUBLE;
     parm.hmax->answer = HMAX;
     parm.hmax->required = NO;
-    parm.hmax->description =
-	_("Threshold water depth [m] (diffusion increases after this water depth is reached)");
+    parm.hmax->label =
+	_("Threshold water depth [m]");
+    parm.hmax->description = _("Diffusion increases after this water depth is reached");
     parm.hmax->guisection = _("Parameters");
 
     parm.halpha = G_define_option();
@@ -297,12 +289,10 @@ int main(int argc, char *argv[])
     flag.tserie->key = 't';
     flag.tserie->description = _("Time-series output");
 
-
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    if (G_get_set_window(&cellhd) == -1)
-	exit(EXIT_FAILURE);
+    G_get_set_window(&cellhd);
 
     conv = G_database_units_to_meters_factor();
 
@@ -338,12 +328,10 @@ int main(int argc, char *argv[])
     depth = parm.depth->answer;
     disch = parm.disch->answer;
     err = parm.err->answer;
-/*    outwalk = parm.outwalk->answer; */
-/*    sfile = parm.sfile->answer; */
+    outwalk = parm.outwalk->answer; 
 
     sscanf(parm.niter->answer, "%d", &timesec);
     sscanf(parm.outiter->answer, "%d", &iterout);
-/*    sscanf(parm.density->answer, "%d", &ldemo); */
     sscanf(parm.diffc->answer, "%lf", &frac);
     sscanf(parm.hmax->answer, "%lf", &hhmax);
     sscanf(parm.halpha->answer, "%lf", &halpha);
@@ -405,7 +393,7 @@ int main(int argc, char *argv[])
 	}
     }
     /* Report the final value of manin_val */
-    G_debug(3, "manin_val is set to: %f\n", manin_val);
+    G_debug(1, "manin_val is set to: %f\n", manin_val);
 
     /* if no infiltration map, then: */
     if (parm.infil->answer == NULL) {
@@ -434,13 +422,13 @@ int main(int argc, char *argv[])
 	}
     }
     /* Report the final value of infil_val */
-    G_debug(3, "infil_val is set to: %f\n", infil_val);
+    G_debug(1, "infil_val is set to: %f\n", infil_val);
 
     /* Recompute timesec from user input in minutes
      * to real timesec in seconds */
     timesec = timesec * 60.0;
     iterout = iterout * 60.0;
-    if ((timesec / iterout) > 100.0)
+    if ((timesec / iterout) > 100.0 && ts == 1)
 	G_message(_("More than 100 files are going to be created !!!!!"));
 
     /* compute how big the raster is and set this to appr 2 walkers per cell */
@@ -460,19 +448,6 @@ int main(int argc, char *argv[])
 	G_message(_("Using metric conversion factor %f, step=%f"), conv,
 		  step);
 
-    /*
-     * G_set_embedded_null_value_mode(1);
-     */
-
-/* replaced with condition that skips outwalk */
-/*    if ((depth == NULL) && (disch == NULL) && (err == NULL) &&
-	(outwalk == NULL))
-	G_warning(_("You are not outputting any raster or vector points maps"));
-    ret_val = input_data();
-    if (ret_val != 1)
-	G_fatal_error(_("Input failed"));
-*/
-
  if ((depth == NULL) && (disch == NULL) && (err == NULL))
         G_warning(_("You are not outputting any raster maps"));
     ret_val = input_data();
@@ -481,59 +456,18 @@ int main(int argc, char *argv[])
 
 
     /* memory allocation for output grids */
-    G_debug(2, "beginning memory allocation for output grids");
+    G_debug(1, "beginning memory allocation for output grids");
 
-    gama = (double **)G_malloc(sizeof(double *) * (my));
-    for (l = 0; l < my; l++) {
-	gama[l] = (double *)G_malloc(sizeof(double) * (mx));
-    }
-    for (j = 0; j < my; j++) {
-	for (i = 0; i < mx; i++)
-	    gama[j][i] = 0.;
-    }
+    gama = G_alloc_matrix(my, mx);
+    if (err != NULL)
+	gammas = G_alloc_matrix(my, mx);
+    dif = G_alloc_fmatrix(my, mx);
 
-    if (err != NULL) {
-	gammas = (double **)G_malloc(sizeof(double *) * (my));
-	for (l = 0; l < my; l++) {
-	    gammas[l] = (double *)G_malloc(sizeof(double) * (mx));
-	}
-	for (j = 0; j < my; j++) {
-	    for (i = 0; i < mx; i++)
-		gammas[j][i] = 0.;
-	}
-    }
-
-    dif = (float **)G_malloc(sizeof(float *) * (my));
-    for (l = 0; l < my; l++) {
-	dif[l] = (float *)G_malloc(sizeof(float) * (mx));
-    }
-    for (j = 0; j < my; j++) {
-	for (i = 0; i < mx; i++)
-	    dif[j][i] = 0.;
-    }
-
-    /*  if (maskmap != NULL)
-       bitmask = BM_create (cols, rows);
-       IL_create_bitmask (&params, bitmask);
-     */
-    G_debug(2, "seeding randoms");
+    G_debug(1, "seeding randoms");
     seeds(rand1, rand2);
     grad_check();
     main_loop();
 
-    if (ts == 0) {
-	ii = output_data(0, 1.);
-	if (ii != 1)
-	    G_fatal_error(_("Cannot write raster maps"));
-    }
-
-/*
-    if (fdwalkers != NULL)
-	fclose(fdwalkers);
-
-    if (sfile != NULL)
-	fclose(fw);
-*/
     /* Exit with Success */
     exit(EXIT_SUCCESS);
 }

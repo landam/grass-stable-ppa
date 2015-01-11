@@ -2,15 +2,14 @@ MODULE_TOPDIR = ../..
 
 PGM = i.atcorr
 
-MOD_OBJS = $(subst .cpp,.o,$(wildcard *.cpp))
-
 include $(MODULE_TOPDIR)/include/Make/Module.make
 
-LIBES = $(GISLIB) 
-DEPENDENCIES = $(DEPGISLIB)
+LIBES = $(RASTERLIB) $(GISLIB) $(MATHLIB) $(BTREE2LIB) 
+DEPENDENCIES = $(RASTERDEP) $(GISDEP)
 
+LINK = $(CXX)
+
+ifneq ($(CXX),)
 default: cmd
-
-$(BIN)/$(PGM)$(EXE): $(ARCH_CMD_OBJS) $(DEPENDENCIES) 
-	$(CXX) $(LDFLAGS) $(XTRA_LDFLAGS) $(EXTRA_CFLAGS) $(NLS_CFLAGS) -o $@ $(ARCH_CMD_OBJS) $(FMODE_OBJ) $(LIBES) $(MATHLIB) $(XDRLIB)
+endif
 

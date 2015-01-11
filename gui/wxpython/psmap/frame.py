@@ -17,13 +17,9 @@ This program is free software under the GNU General Public License
 
 import os
 import sys
-import textwrap
 import Queue
 from math import sin, cos, pi, sqrt
 
-if __name__ == "__main__":
-    sys.path.append(os.path.join(os.getenv('GISBASE'), 'etc', 'gui', 'wxpython'))
-from core             import globalvar
 import wx
 
 try:
@@ -33,14 +29,18 @@ except ImportError:
 
 import grass.script as grass
 
+from core               import globalvar
 from gui_core.menu      import Menu
-from gui_core.goutput   import CmdThread, EVT_CMD_DONE
+from core.gconsole      import CmdThread, EVT_CMD_DONE
 from psmap.toolbars     import PsMapToolbar
 from core.gcmd          import RunCommand, GError, GMessage
 from core.settings      import UserSettings
+from core.utils import _
 from gui_core.forms     import GUI
 from gui_core.dialogs   import HyperlinkDialog
-from psmap.menudata     import PsMapData
+from gui_core.ghelp     import ShowAboutDialog
+from psmap.menudata     import PsMapMenuData
+from gui_core.toolbars import ToolSwitcher
 
 from psmap.dialogs      import *
 from psmap.instructions import *
@@ -48,7 +48,7 @@ from psmap.utils        import *
 
 class PsMapFrame(wx.Frame):
     def __init__(self, parent = None, id = wx.ID_ANY,
-                 title = _("GRASS GIS Cartographic Composer (experimental prototype)"), **kwargs):
+                 title = _("GRASS GIS Cartographic Composer"), **kwargs):
         """!Main window of ps.map GUI
         
         @param parent parent window
@@ -62,14 +62,14 @@ class PsMapFrame(wx.Frame):
         wx.Frame.__init__(self, parent = parent, id = id, title = title, name = "PsMap", **kwargs)
         self.SetIcon(wx.Icon(os.path.join(globalvar.ETCICONDIR, 'grass.ico'), wx.BITMAP_TYPE_ICO))
         #menubar
-        self.menubar = Menu(parent = self, data = PsMapData())
+        self.menubar = Menu(parent = self, model = PsMapMenuData().GetModel(separators=True))
         self.SetMenuBar(self.menubar)
         #toolbar
 
-        self.toolbar = PsMapToolbar(parent = self)
+        self._toolSwitcher = ToolSwitcher()
+        self.toolbar = PsMapToolbar(parent=self, toolSwitcher=self._toolSwitcher)
         self.SetToolBar(self.toolbar)
         
-        self.actionOld = self.toolbar.action['id']
         self.iconsize = (16, 16)
         #satusbar
         self.statusbar = self.CreateStatusBar(number = 1)
@@ -155,7 +155,9 @@ class PsMapFrame(wx.Frame):
         
         # set WIND_OVERRIDE
         grass.use_temp_region()
-        
+
+        self.toolbar.SelectDefault()
+
         # create queues
         self.requestQ = Queue.Queue()
         self.resultQ = Queue.Queue()
@@ -163,7 +165,7 @@ class PsMapFrame(wx.Frame):
         self.cmdThread = CmdThread(self, self.requestQ, self.resultQ)
         
         self._layout()
-        self.SetMinSize(wx.Size(750, 600))
+        self.SetMinSize(wx.Size(775, 600))
         
         self.Bind(fnb.EVT_FLATNOTEBOOK_PAGE_CHANGING, self.OnPageChanging)
         self.Bind(fnb.EVT_FLATNOTEBOOK_PAGE_CHANGED, self.OnPageChanged)
@@ -331,7 +333,7 @@ class PsMapFrame(wx.Frame):
         # show preview only when user doesn't want to create ps or pdf 
         if havePILImage and event.userData['temp'] and not event.userData['pdfname']:
             RunCommand('g.region', cols = event.userData['regionOld']['cols'], rows = event.userData['regionOld']['rows'])
-
+            # wx.BusyInfo does not display the message
             busy = wx.BusyInfo(message = _("Generating preview, wait please"), parent = self)
             wx.Yield()
             try:
@@ -412,7 +414,7 @@ class PsMapFrame(wx.Frame):
             instrFile.close()   
             
     def OnLoadFile(self, event):
-        """!Load file and read instructions"""
+        """!Launch file dialog and load selected file"""
         #find file
         filename = ''
         dlg = wx.FileDialog(self, message = "Find instructions file", defaultDir = "", 
@@ -424,6 +426,10 @@ class PsMapFrame(wx.Frame):
         if not filename:
             return
         # load instructions
+        self.LoadFile(filename)
+
+    def LoadFile(self, filename):
+        """!Load file and read instructions"""
         readObjectId = []
         readInstruction = Instruction(parent = self, objectsToDraw = readObjectId)
         ok = readInstruction.Read(filename)
@@ -440,7 +446,7 @@ class PsMapFrame(wx.Frame):
             #self.canvas.ZoomAll()
             
             self.DialogDataChanged(self.objectId)
-            
+
     def OnPageSetup(self, event = None):
         """!Specify paper size, margins and orientation"""
         id = self.instruction.FindInstructionByType('page').id
@@ -454,25 +460,21 @@ class PsMapFrame(wx.Frame):
         dlg.Destroy()
         
     def OnPointer(self, event):
-        self.toolbar.OnTool(event)
         self.mouse["use"] = "pointer"
         self.canvas.SetCursor(self.cursors["default"])
         self.previewCanvas.SetCursor(self.cursors["default"])
         
     def OnPan(self, event):
-        self.toolbar.OnTool(event)
         self.mouse["use"] = "pan"
         self.canvas.SetCursor(self.cursors["hand"])
         self.previewCanvas.SetCursor(self.cursors["hand"])
         
     def OnZoomIn(self, event):
-        self.toolbar.OnTool(event)
         self.mouse["use"] = "zoomin"
         self.canvas.SetCursor(self.cursors["cross"])
         self.previewCanvas.SetCursor(self.cursors["cross"])
         
     def OnZoomOut(self, event):
-        self.toolbar.OnTool(event)
         self.mouse["use"] = "zoomout"
         self.canvas.SetCursor(self.cursors["cross"])
         self.previewCanvas.SetCursor(self.cursors["cross"])
@@ -497,14 +499,7 @@ class PsMapFrame(wx.Frame):
         
         
     def OnAddMap(self, event, notebook = False):
-        """!Add or edit map frame"""
-        if event is not None:
-            if event.GetId() != self.toolbar.action['id']:
-                self.actionOld = self.toolbar.action['id']
-                self.mouseOld = self.mouse['use']
-                self.cursorOld = self.canvas.GetCursor()
-            self.toolbar.OnTool(event)
-        
+        """!Add or edit map frame"""        
         if self.instruction.FindInstructionByType('map'):
             mapId = self.instruction.FindInstructionByType('map').id
         else: mapId = None
@@ -521,19 +516,9 @@ class PsMapFrame(wx.Frame):
             id[2] = vectorId
         
         
-        if mapId: # map exists
-            
-            self.toolbar.ToggleTool(self.actionOld, True)
-            self.toolbar.ToggleTool(self.toolbar.action['id'], False)
-            self.toolbar.action['id'] = self.actionOld
-            try:
-                self.canvas.SetCursor(self.cursorOld) 
-            except AttributeError:
-                pass
-            
-##            dlg = MapDialog(parent = self, id  = id, settings = self.instruction,
-##                            notebook = notebook)
-##            dlg.ShowModal()  
+        if mapId: # map exists        
+            self.toolbar.SelectDefault()
+
             if notebook:
                 #check map, raster, vector and save, destroy them
                 if 'map' in self.openDialogs:
@@ -765,6 +750,17 @@ class PsMapFrame(wx.Frame):
             dlg.OnApply(event = None)
         dlg.Show()
 
+    def OnAddLabels(self, event, id = None):
+        """!Show dialog for labels"""
+        if self.instruction.FindInstructionByType('labels'):
+            id = self.instruction.FindInstructionByType('labels').id
+        else: id = None
+        
+        if 'labels' not in self.openDialogs:
+            dlg = LabelsDialog(self, id = id, settings = self.instruction)
+            self.openDialogs['labels'] = dlg
+        self.openDialogs['labels'].Show()
+
     def getModifiedTextBounds(self, x, y, textExtent, rotation):
         """!computes bounding box of rotated text, not very precisely"""
         w, h = textExtent
@@ -969,7 +965,7 @@ class PsMapFrame(wx.Frame):
                                         coords = coords, bounds = bounds)
                 self.canvas.RedrawSelectBox(id)
                 
-            if itype in ('map', 'vector', 'raster'):
+            if itype in ('map', 'vector', 'raster', 'labels'):
                 
                 if itype == 'raster':#set resolution
                     info = grass.raster_info(self.instruction[id]['raster'])
@@ -1041,24 +1037,15 @@ class PsMapFrame(wx.Frame):
         if self.parent and self.parent.GetName() == 'LayerManager':
             log = self.parent.GetLogWindow()
             log.RunCmd(['g.manual',
-                        'entry=wxGUI.PsMap'])
+                        'entry=wxGUI.psmap'])
         else:
             RunCommand('g.manual',
                        quiet = True,
-                       entry = 'wxGUI.PsMap')
+                       entry = 'wxGUI.psmap')
         
     def OnAbout(self, event):
         """!Display About window"""
-        info = wx.AboutDialogInfo()
-        
-        info.SetIcon(wx.Icon(os.path.join(globalvar.ETCICONDIR, 'grass.ico'), wx.BITMAP_TYPE_ICO))
-        info.SetName(_('wxGUI Cartographic Composer'))
-        info.SetWebSite('http://grass.osgeo.org')
-        info.SetDescription(_('(C) 2011 by the GRASS Development Team\n\n') + 
-                            '\n'.join(textwrap.wrap(_('This program is free software under the GNU General Public License'
-                                                      '(>=v2). Read the file COPYING that comes with GRASS for details.'), 75)))
-        
-        wx.AboutBox(info)
+        ShowAboutDialog(prgName=_('wxGUI Cartographic Composer'), startYear='2011')
 
     def OnCloseWindow(self, event):
         """!Close window"""
@@ -1109,13 +1096,13 @@ class PsMapBufferedWindow(wx.Window):
         
         
         #labels
-        self.itemLabelsDict = { 'map': 'MAP FRAME',
-                                'rasterLegend': 'RASTER LEGEND',
-                                'vectorLegend': 'VECTOR LEGEND',
-                                'mapinfo': 'MAP INFO',
-                                'scalebar': 'SCALE BAR',
-                                'image': 'IMAGE',
-                                'northArrow': 'NORTH ARROW'}
+        self.itemLabelsDict = { 'map': _("MAP FRAME"),
+                                'rasterLegend': _("RASTER LEGEND"),
+                                'vectorLegend': _("VECTOR LEGEND"),
+                                'mapinfo': _("MAP INFO"),
+                                'scalebar': _("SCALE BAR"),
+                                'image': _("IMAGE"),
+                                'northArrow': _("NORTH ARROW")}
         self.itemLabels = {}
         
         # define PseudoDC
@@ -1445,12 +1432,7 @@ class PsMapBufferedWindow(wx.Window):
             self.openDialogs['map'] = dlg
             self.openDialogs['map'].Show()
             
-            self.mouse['use'] = self.parent.mouseOld
-
-            self.SetCursor(self.parent.cursorOld)
-            self.parent.toolbar.ToggleTool(self.parent.actionOld, True)
-            self.parent.toolbar.ToggleTool(self.parent.toolbar.action['id'], False)
-            self.parent.toolbar.action['id'] = self.parent.actionOld
+            self.parent.toolbar.SelectDefault()
             return
 
         # resize resizable objects (map, line, rectangle)
@@ -1799,7 +1781,7 @@ class PsMapBufferedWindow(wx.Window):
 
 
             if self.mouse['use'] == 'zoomout':
-                zoomFactor = min(rW/cW, rH/cH) 
+                zoomFactor = min(rW/cW, rH/cH)
             try:
                 if rW/rH > cW/cH:
                     yView = rect.GetY() - (rW*(cH/cW) - rH)/2
@@ -1837,10 +1819,12 @@ class PsMapBufferedWindow(wx.Window):
             
             #redraw objects
             for id in self.objectId:
+                type = self.instruction[id].type
+                if type == 'labels':  # why it's here? it should not
+                    continue
                 oRect = self.CanvasPaperCoordinates(
                     rect = self.instruction[id]['rect'], canvasToPaper = False)
                 
-                type = self.instruction[id].type
                 if type == 'text':
                     coords = self.instruction[id]['coords']# recalculate coordinates, they are not equal to BB
                     self.instruction[id]['coords'] = coords = [(int(coord) - view[i]) * zoomFactor
@@ -2179,6 +2163,14 @@ class PsMapBufferedWindow(wx.Window):
         if vectorId: 
             for map in self.instruction[vectorId]['list']:
                 self.itemLabels[mapId].append('vector: ' + map[0].split('@')[0])
+                
+        labels = self.instruction.FindInstructionByType('labels')
+        if labels:
+            labelFiles = self.instruction[labels.id]['labels']
+            if not labelFiles:
+                return
+            labelFiles = [lFile.split('@')[0] for lFile in labelFiles]
+            self.itemLabels[mapId].append(_("labels: ") + ', '.join(labelFiles))
             
     def UpdateLabel(self, itype, id):
         self.itemLabels[id] = []
@@ -2212,19 +2204,5 @@ class PsMapBufferedWindow(wx.Window):
     def ScaleRect(self, rect, scale):
         """! Scale rectangle"""
         return wx.Rect(rect.GetLeft()*scale, rect.GetTop()*scale,
-                       rect.GetSize()[0]*scale, rect.GetSize()[1]*scale) 
+                       rect.GetSize()[0]*scale, rect.GetSize()[1]*scale)   
 
-
-def main():
-    import gettext
-    gettext.install('grasswxpy', os.path.join(os.getenv("GISBASE"), 'locale'), unicode = True)
-    
-    app = wx.PySimpleApp()
-    wx.InitAllImageHandlers()
-    frame = PsMapFrame()
-    frame.Show()
-    
-    app.MainLoop()
-
-if __name__ == "__main__":
-    main()

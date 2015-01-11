@@ -1,13 +1,7 @@
-#ifndef MAIN
-# define EXT extern
-#else
-# define EXT
-#endif
-
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 
-typedef struct
+struct value
 {
     int cat;			/* category */
     int count1, count2;		/* Count of found values; i1: count, coor, sides; i2: sides */
@@ -20,15 +14,13 @@ typedef struct
     int nqcats;			/* number of query cats */
     int aqcats;			/* number of allocated query cats */
     char null;			/* no records selected by query */
-} VALUE;
+};
 
-EXT VALUE *Values;
+extern struct value *Values;
 
-#define OPTIONS struct _options_
-EXT OPTIONS
+struct options
 {
     char *name;
-    char *mapset;
     int field;
     char *col[3];
     char *qcol;
@@ -39,10 +31,12 @@ EXT OPTIONS
     int total;			/* print totals */
     int units;
     int qfield;			/* query field */
-} options;
+    char *fs;
+};
 
-#define VSTAT struct _vstat_
-EXT VSTAT
+extern struct options options;
+
+struct vstat
 {
     int rcat;			/* number of categories read from map */
     int select;			/* number of categories selected from DB */
@@ -52,7 +46,9 @@ EXT VSTAT
     int update;			/* number of updated rows */
     int error;			/* number of errors */
     int qtype;			/* C type of query column */
-} vstat;
+};
+
+extern struct vstat vstat;
 
 #define O_CAT		1
 #define O_AREA		2
@@ -74,15 +70,6 @@ EXT VSTAT
 #define O_SINUOUS       14	/* sinuousity of a line (length / <distance between end points>) */
 
 #define O_AZIMUTH	15	/* line azimuth */
-
-#define U_ACRES		1
-#define U_HECTARES	2
-#define U_KILOMETERS	3
-#define U_METERS	4
-#define U_MILES		5
-#define U_FEET		6
-#define U_RADIANS	7
-#define U_DEGREES	8
 
 /* areas.c */
 int read_areas(struct Map_info *);

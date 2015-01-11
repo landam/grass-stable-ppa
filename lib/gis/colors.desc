@@ -20,6 +20,7 @@ grey.log: histogram logarithmic transformed grey scale
 gyr: green through yellow to red
 haxby: relative colors for bathymetry or topography
 ndvi: Normalized Difference Vegetation Index colors
+ndwi: Normalized Difference Water Index colors
 population: color table covering human population classification breaks
 population_dens: color table covering human population density classification breaks
 precipitation: precipitation color table (0..2000mm)
@@ -28,11 +29,11 @@ rainbow: rainbow color table
 ramp: color ramp
 random: random color table
 rstcurv: terrain curvature (from r.resamp.rst)
-rules: create new color table based on user-specified rules read from stdin
 ryb: red through yellow to blue
 ryg: red through yellow to green
 sepia: yellowish-brown through to white
 slope: r.slope.aspect-type slope colors for raster values 0-90
 srtm: color palette for Shuttle Radar Topography Mission elevation
+srtm_plus: color palette for Shuttle Radar Topography Mission elevation (with seafloor colors)
 terrain: global elevation color table covering -11000 to +8850m
 wave: color wave

@@ -40,11 +40,11 @@ Installation order:
 
 GRASS source code is currently distributed in 2 forms:
 
-1) Officially released source code (e.g. grass-6.4.0.tar.gz or later)
+1) Officially released source code (e.g. grass-7.0.0.tar.gz or later)
 
   The Full source code version contains all the GRASS source code
   required for compilation. It is distributed as one file (*.tar.gz
-  package) and the version is composed of 3 numbers, e.g. 6.4.0, 6.4.1
+  package) and the version is composed of 3 numbers, e.g. 7.0.0, 7.0.1
   etc.
 
 2) SVN or SVN Snapshots of source code (SVN or SVN snapshot)
@@ -53,7 +53,7 @@ GRASS source code is currently distributed in 2 forms:
   repository (http://svn.osgeo.org/grass/) or as a snapshot
   (*.tar.gz package) of that SVN repository. The SVN snapshot name
   contains the date when the snapshot was created (checked out from
-  the SVN repository), e.g. grass-6.4.svn_src_snapshot_2014_04_05.tar.gz
+  the SVN repository), e.g. grass-7.0.svn_src_snapshot_2008_10_19.tar.gz
   Further instructions at http://trac.osgeo.org/grass/wiki/DownloadSource
 
 
@@ -147,16 +147,16 @@ See also CODE OPTIMIZATION below.
 
 After compilation, the resulting code is stored in the directory
     ./dist.$ARCH
-and the scripts (grass6, ...) in
+and the scripts (grass70, ...) in
     ./bin.$ARCH
 
 To run GRASS, simply start
-    ./bin.$ARCH/grass64
+    ./bin.$ARCH/grass70
 
 or run
 
     make install
-    grass64
+    grass70
 
 
 (E) INSTALLATION ON MACOSX
@@ -184,7 +184,7 @@ SVN, you have to perform a few steps. In general:
 
 In detail:
 
-    cd /where/your/grass6sourcecode/lives/
+    cd /where/your/grass7sourcecode/lives/
     svn update
     ./configure ...
     make
@@ -201,17 +201,13 @@ done by launching:
 
 Then change into the module's directory and launch the "make" 
 command. The installation can be either done with "make install" from
-the main source code directory or locally with
-either
+the main source code directory or locally with 
     "INST_NOW=y make"
-    
-or (may not always work)
-    make install
 
-You may want to define an alias for the first method:
-    alias gmake6='INST_NOW=y make'
+You may want to define an alias for this:
+    alias gmake7='INST_NOW=y make'
 Then simply compile/install the current module with
-    gmake6
+    gmake7
 
 Note: If you keep your module source code outside the standard GRASS
 source code directory structure, you will have to change the relative
@@ -270,12 +266,11 @@ See also the file
 
 (K) LARGE FILE SUPPORT (for raster maps)
 
-GRASS >= 6.0 includes experimental support for reading and writing large files
+GRASS >= 7.0 includes improved support for reading and writing large files
 (> 2GB) if it is possible in your operating system. If you compile with
   configure [...] --enable-largefile
-you should be able to have raster maps which are larger than 2GB.
+you should be able to have raster and vector maps which are larger than 2GB.
 
-Note that the support currently only applies to the core raster I/O code.
 Individual programs may or may not work with large files - please report.
 
 
@@ -293,12 +288,12 @@ developers mailing list. See http://grass.osgeo.org/devel/index.php
 
 The Programmer's manual is generated with doxygen from the source code.
 Please see the README file and the files at:
-http://grass.osgeo.org/programming6/
+http://grass.osgeo.org/programming7/
 
 (N) CONTRIBUTING CODE AND PATCHES
 
-Please see ./SUBMITTING, ./SUBMITTING_DOCS, ./SUBMITTING_TCLTK
-./SUBMITTING_PYTHON and ./SUBMITTING_SCRIPTS in this directory.
+Please see ./SUBMITTING, ./SUBMITTING_DOCS, ./SUBMITTING_PYTHON,
+and ./SUBMITTING_SCRIPTS in this directory.
 
 
 (O) DRAFT TUTORIAL
@@ -307,4 +302,4 @@ http://grass.osgeo.org/wiki/GRASS_6_Tutorial
 
 ------------------
 (C) 1999-2010 by The GRASS Development Team
-$Date: 2014-04-08 22:34:08 +0200 (Tue, 08 Apr 2014) $
+$Date: 2010-07-28 16:37:07 -0700 (Wed, 28 Jul 2010) $

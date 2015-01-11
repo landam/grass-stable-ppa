@@ -1,3 +1,14 @@
+/*!
+  \file include/dbmi.h
+
+  \brief Main header of \ref dbmilib
+
+  (C) 1999-2009, 2011 by the GRASS Development Team
+  
+  This program is free software under the GNU General Public License
+  (>=v2). Read the file COPYING that comes with GRASS for details.
+*/
+
 #ifndef GRASS_DBMI_H
 #define GRASS_DBMI_H
 
@@ -6,7 +17,11 @@
 
 #define DB_VERSION "0"
 
+#ifdef HAVE_SQLITE
+#define DB_DEFAULT_DRIVER "sqlite"
+#else
 #define DB_DEFAULT_DRIVER "dbf"
+#endif
 
 /* DB Prodedure Numbers */
 #define DB_PROC_VERSION                 999
@@ -116,12 +131,15 @@
 /* Privileges */
 #define DB_PRIV_SELECT       0x01
 
-#define DB_GROUP         0x01
-#define DB_PUBLIC        0x02
+#define DB_GROUP             0x01
+#define DB_PUBLIC            0x02
 
 /* default value modes */
 #define DB_DEFINED	1
 #define DB_UNDEFINED	2
+
+/* static buffer for SQL statements */
+#define DB_SQL_MAX      4096
 
 typedef void *dbAddress;
 typedef int dbToken;
@@ -297,6 +315,6 @@ typedef struct
     char **label;		/* array of new category labels */
 } dbRclsRule;
 
-#include <grass/proto_dbmi.h>
+#include <grass/defs/dbmi.h>
 
 #endif

@@ -1,47 +1,43 @@
 MODULE_TOPDIR = ..
 
 SUBDIRS = \
-	i.ask \
+	i.albedo \
+	i.aster.toar \
+	i.atcorr \
+	i.biomass \
+	i.cca \
 	i.cluster \
+	i.eb.evapfr \
+	i.eb.eta \
+	i.eb.h_sebal01 \
+	i.eb.netrad \
+	i.eb.soilheatflux \
+	i.evapo.mh \
+	i.evapo.pm \
+	i.evapo.pt \
+	i.evapo.time \
+	i.emissivity \
 	i.find \
 	i.gensig \
 	i.gensigset \
 	i.group \
 	i.his.rgb \
-	i.landsat.acca \
 	i.landsat.toar \
+	i.landsat.acca \
 	i.maxlik \
 	i.modis.qc \
+	i.ortho.photo \
 	i.rectify \
 	i.rgb.his \
+	i.segment \
 	i.smap \
 	i.target \
 	i.topo.corr \
 	i.pca \
-	i.cca
-
-include $(MODULE_TOPDIR)/include/Make/Platform.make
-
-CXXBASED = i.atcorr
-
-FFTWBASED = i.fft i.ifft i.zc
-
-XMONBASED = i.class i.ortho.photo i.points i.vpoints
-
-#compile if C++ compiler present:
-ifneq ($(strip $(CXX)),)
-    SUBDIRS += $(CXXBASED)
-endif
-
-#compile if FFTW present:
-ifneq ($(strip $(FFTWLIB)),)
-    SUBDIRS += $(FFTWBASED)
-endif
-
-#compile if interactive Xmons are present:
-ifneq ($(USE_X11),)
-    SUBDIRS += $(XMONBASED)
-endif
+	i.vi \
+	i.fft \
+	i.ifft \
+	i.zc
 
 PGM = imageryintro
 
@@ -51,4 +47,3 @@ default: htmldir
 
 htmldir: parsubdirs
 
-clean: cleansubdirs

@@ -2,8 +2,8 @@ MODULE_TOPDIR = ../..
 
 PGM = r.reclass
 
-LIBES = $(GISLIB)
-DEPENDENCIES = $(GISDEP)
+LIBES = $(RASTERLIB) $(GISLIB)
+DEPENDENCIES = $(RASTERDEP) $(GISDEP)
 
 include $(MODULE_TOPDIR)/include/Make/Module.make
 

@@ -205,12 +205,12 @@ void user_input(int argc, char **argv)
     /* record the user inputs for map,
        sam and out parameters */
 
-    G_strcpy(choice->fn, name->answer);
+    strcpy(choice->fn, name->answer);
 
     choice->wrum = sampling_method->answer[0];
 
     if (out->answer && choice->wrum != 'm')
-	G_strcpy(choice->out, out->answer);
+	strcpy(choice->out, out->answer);
     else if (out->answer && choice->wrum == 'm') {
 	fprintf(stderr, "\n");
 	fprintf(stderr,
@@ -222,7 +222,7 @@ void user_input(int argc, char **argv)
 	exit(EXIT_FAILURE);
     }
     else
-	G_strcpy(choice->out, "");
+	strcpy(choice->out, "");
 
     /* check for unacceptable values for
        input parameters for sam */
@@ -383,8 +383,8 @@ void user_input(int argc, char **argv)
     if (edge->answer) {
 	choice->edge = atoi(edge->answer);
 	if (choice->edge < 0 ||
-	    choice->edge >= G_window_rows() ||
-	    choice->edge >= G_window_cols()) {
+	    choice->edge >= Rast_window_rows() ||
+	    choice->edge >= Rast_window_cols()) {
 	    fprintf(stderr, "\n");
 	    fprintf(stderr,
 		    "   ***********************************************\n");
@@ -405,7 +405,7 @@ void user_input(int argc, char **argv)
 
     if (!strcmp(sampling_method->answer, "r")) {
 	if (region->answer)
-	    G_strcpy(choice->reg, region->answer);
+	    strcpy(choice->reg, region->answer);
 	else {
 	    fprintf(stderr, "\n");
 	    fprintf(stderr,

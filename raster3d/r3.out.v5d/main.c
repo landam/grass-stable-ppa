@@ -20,7 +20,7 @@
 #include "binio.h"
 #include "v5d.h"
 #include <grass/gis.h>
-#include <grass/G3d.h>
+#include <grass/raster3d.h>
 #include <grass/glocale.h>
 
 #define MAX(a,b) (a > b ? a : b)
@@ -40,21 +40,21 @@ void convert(char *fileout, int, int, int, int);
 /* globals */
 void *map = NULL;
 paramType param;
-G3D_Region region;
+RASTER3D_Region region;
 
 /*---------------------------------------------------------------------------*/
 /* Simple error handling routine, will eventually replace this with
- * G3D_fatalError.
+ * RASTER3D_fatalError.
  */
 void fatalError(char *errorMsg)
 {
     if (map != NULL) {
 	/* should unopen map here! */
-	if (!G3d_closeCell(map))
+	if (!Rast3d_close(map))
 	    fatalError(_("Unable to close 3D raster map"));
     }
 
-    G3d_fatalError(errorMsg);
+    Rast3d_fatal_error(errorMsg);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -71,10 +71,7 @@ void setParams()
     param.input->description =
 	_("3D raster map to be converted to Vis5D (V5D) file");
 
-    param.output = G_define_option();
-    param.output->key = "output";
-    param.output->type = TYPE_STRING;
-    param.output->gisprompt = "new_file,file,output";
+    param.output = G_define_standard_option(G_OPT_F_OUTPUT);
     param.output->required = YES;
     param.output->description = _("Name for V5D output file");
 
@@ -140,7 +137,7 @@ void convert(char *fileout, int rows, int cols, int depths, int trueCoords)
 	   depths=region.depths;
 	 */
 	/* END OF ORIGINAL CODE WHICH IS NOT NECESSARY FOR ME, COMMENTED IT */
-	typeIntern = G3d_tileTypeMap(map);
+	typeIntern = Rast3d_tile_type_map(map);
 
     G_debug(3, "cols: %i rows: %i depths: %i\n", cols, rows, depths);
 
@@ -222,10 +219,10 @@ void convert(char *fileout, int rows, int cols, int depths, int trueCoords)
 	for (x = 0; x < cols; x++) {
 	    for (y = 0; y < rows; y++) {	/* north to south */
 
-		G3d_getValueRegion(map, x, y, z, d1p, typeIntern);
+		Rast3d_get_value_region(map, x, y, z, d1p, typeIntern);
 
 		if (typeIntern == FCELL_TYPE) {
-		    if (G3d_isNullValueNum(f1p, FCELL_TYPE)) {
+		    if (Rast3d_is_null_value_num(f1p, FCELL_TYPE)) {
 			g[cnt] = MISSING;
 			cnt++;
 		    }
@@ -235,7 +232,7 @@ void convert(char *fileout, int rows, int cols, int depths, int trueCoords)
 		    }
 		}
 		else {		/*double */
-		    if (G3d_isNullValueNum(d1p, DCELL_TYPE)) {
+		    if (Rast3d_is_null_value_num(d1p, DCELL_TYPE)) {
 			g[cnt] = MISSING;
 			cnt++;
 		    }
@@ -253,7 +250,7 @@ void convert(char *fileout, int rows, int cols, int depths, int trueCoords)
     /* Create the output v5d file */
 
      /*AV*/
-	if (!v5dCreate(fileout, NumTimes, NumVars, rows, cols, Nl, VarName,
+	if (!v5dCreate(fileout, NumTimes, NumVars, rows, cols, Nl, (const char (*)[10])VarName,
 		       TimeStamp, DateStamp, CompressMode, Projection,
 		       ProjArgs, Vertical, VertArgs))
 	G_fatal_error(_("Unable to create V5D file <%s>"), fileout);
@@ -283,7 +280,9 @@ int main(int argc, char *argv[])
     /* Initialize GRASS */
     G_gisinit(argv[0]);
     module = G_define_module();
-    module->keywords = _("raster3d, voxel, export");
+    G_add_keyword(_("raster3d"));
+    G_add_keyword(_("voxel"));
+    G_add_keyword(_("export"));
     module->description =
 	_("Exports GRASS 3D raster map to 3-dimensional Vis5D file.");
 
@@ -303,18 +302,18 @@ int main(int argc, char *argv[])
 
     trueCoords = coords->answer;
 
-    if (NULL == G_find_grid3(input, ""))
-	G3d_fatalError(_("3D raster map <%s> not found"), input);
+    if (NULL == G_find_raster3d(input, ""))
+	Rast3d_fatal_error(_("3D raster map <%s> not found"), input);
 
-    map = G3d_openCellOld(input, G_find_grid3(input, ""), G3D_DEFAULT_WINDOW,
-			  G3D_TILE_SAME_AS_FILE, G3D_NO_CACHE);
+    map = Rast3d_open_cell_old(input, G_find_raster3d(input, ""), RASTER3D_DEFAULT_WINDOW,
+			  RASTER3D_TILE_SAME_AS_FILE, RASTER3D_NO_CACHE);
     if (map == NULL)
-	G3d_fatalError(_("Unable to open 3D raster map <%s>"), input);
+	Rast3d_fatal_error(_("Unable to open 3D raster map <%s>"), input);
 
     /* Use default region */
-    /*  G3d_getRegionStructMap(map, &region); */
+    /*  Rast3d_get_region_struct_map(map, &region); */
     /* Figure out the region from current settings: */
-    G3d_getWindow(&region);
+    Rast3d_get_window(&region);
 
     G_debug(3, "cols: %i rows: %i layers: %i\n", region.cols, region.rows,
 	    region.depths);
@@ -322,7 +321,7 @@ int main(int argc, char *argv[])
     convert(output, region.rows, region.cols, region.depths, trueCoords);
 
     /* Close files and exit */
-    if (!G3d_closeCell(map))
+    if (!Rast3d_close(map))
 	fatalError(_("Unable to close 3D raster map"));
 
     map = NULL;

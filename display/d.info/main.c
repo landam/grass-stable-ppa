@@ -4,7 +4,7 @@
  * MODULE:       d.info
  * AUTHOR(S):    Glynn Clements
  * PURPOSE:      Display information about the active display monitor
- * COPYRIGHT:    (C) 2004 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2004, 2012 by the GRASS Development Team
  *
  *               This program is free software under the GNU General Public
  *               License (>=v2). Read the file COPYING that comes with GRASS
@@ -15,25 +15,26 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <grass/gis.h>
-#include <grass/raster.h>
 #include <grass/display.h>
 #include <grass/glocale.h>
 
 int main(int argc, char *argv[])
 {
     struct GModule *module;
-    struct Flag *rflag, *dflag, *cflag, *fflag, *bflag, *gflag;
-    int l, r, t, b;
+    struct Flag *rflag, *dflag, *fflag, *bflag, *gflag;
+    double t, b, l, r;
     double n, s, e, w;
-    char window_name[128];
-    struct Cell_head window;
 
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("display, metadata");
+    G_add_keyword(_("display"));
+    G_add_keyword(_("graphics"));
+    G_add_keyword(_("monitors"));
+    module->label =
+	_("Displays information about the active display monitor.");
     module->description =
-	_("Display information about the active display monitor");
+	_("Display monitors are maintained by d.mon.");
 
     rflag = G_define_flag();
     rflag->key = 'r';
@@ -57,92 +58,50 @@ int main(int argc, char *argv[])
     gflag->description =
 	_("Display geographic coordinates and resolution of entire screen");
 
-    cflag = G_define_flag();
-    cflag->key = 'c';
-    cflag->description = _("Display number of colors");
-
-    if (argc > 1 && G_parser(argc, argv))
+    if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    if (!rflag->answer && !dflag->answer && !cflag->answer &&
+    if (!rflag->answer && !dflag->answer &&
 	!fflag->answer && !bflag->answer && !gflag->answer) {
-	G_usage();
-	exit(EXIT_FAILURE);
+	G_fatal_error(_("No flag given"));
     }
 
-    if (R_open_driver() != 0)
-	G_fatal_error(_("No graphics device selected"));
+    if (D_open_driver() != 0)
+	G_fatal_error(_("No graphics device selected. "
+			"Use d.mon to select graphics device."));
+    
+    if (rflag->answer || dflag->answer || fflag->answer)
+	D_get_window(&t, &b, &l, &r);
 
-    if (rflag->answer || dflag->answer) {
-	l = R_screen_left();
-	r = R_screen_rite();
-	t = R_screen_top();
-	b = R_screen_bot();
-    }
 
     if (rflag->answer)
-	fprintf(stdout, "rectangle: %d %d %d %d\n", l, r, t, b);
+	fprintf(stdout, "rectangle: %f %f %f %f\n", l, r, t, b);
 
     if (dflag->answer)
-	fprintf(stdout, "dimensions: %d %d\n", r - l, b - t);
+	fprintf(stdout, "dimensions: %f %f\n", r - l, b - t);
 
-    if (cflag->answer) {
-	int colors;
-
-	R_get_num_colors(&colors);
-	fprintf(stdout, "colors: %d\n", colors);
-    }
-
-    if (fflag->answer) {
-	D_get_screen_window(&t, &b, &l, &r);
-	fprintf(stdout, "frame: %d %d %d %d\n", l, r, t, b);
-    }
+    if (fflag->answer)
+	fprintf(stdout, "frame: %f %f %f %f\n", l, r, t, b);
 
     if (bflag->answer) {
-	if (D_get_cur_wind(window_name))
-	    G_fatal_error(_("No current window"));
-	if (D_set_cur_wind(window_name))
-	    G_fatal_error(_("Current window not available"));
-
-	/* Read in the map window associated with window */
-	G_get_window(&window);
-
-	if (D_check_map_window(&window))
-	    G_fatal_error(_("Setting map window"));
-	if (D_get_screen_window(&t, &b, &l, &r))
-	    G_fatal_error(_("Getting screen window"));
-	if (D_do_conversions(&window, t, b, l, r))
-	    G_fatal_error(_("Error in calculating conversions"));
+	D_setup(0);
 
 	l = D_get_d_west();
 	r = D_get_d_east();
 	t = D_get_d_north();
 	b = D_get_d_south();
 
-	fprintf(stdout, "region: %d %d %d %d\n", l, r, t, b);
+	fprintf(stdout, "region: %f %f %f %f\n", l, r, t, b);
     }
 
     if (gflag->answer) {
-	/* outer bounds of the screen (including white bands) */
+	/* outer bounds of the screen (including margins) */
+	D_setup(0);
 
-	if (D_get_cur_wind(window_name))
-	    G_fatal_error(_("No current window"));
-	if (D_set_cur_wind(window_name))
-	    G_fatal_error(_("Current window not available"));
-
-	G_get_window(&window);
-
-	if (D_check_map_window(&window))
-	    G_fatal_error(_("Setting map window"));
-	if (D_get_screen_window(&t, &b, &l, &r))
-	    G_fatal_error(_("Getting screen window"));
-	if (D_do_conversions(&window, t, b, l, r))
-	    G_fatal_error(_("Error in calculating conversions"));
-
-	n = D_d_to_u_row((double)t);
-	s = D_d_to_u_row((double)b);
-	w = D_d_to_u_col((double)l);
-	e = D_d_to_u_col((double)r);
+	n = D_get_u_north();
+	s = D_get_u_south();
+	w = D_get_u_west();
+	e = D_get_u_east();
 
 	fprintf(stdout, "n=%f\n", n );
 	fprintf(stdout, "s=%f\n", s );
@@ -152,7 +111,8 @@ int main(int argc, char *argv[])
 	fprintf(stdout, "nsres=%.15g\n", (n-s)/(b-t) );
     }
 
-    R_close_driver();
+    
+    D_close_driver();
 
-    return EXIT_SUCCESS;
+    exit(EXIT_SUCCESS);
 }

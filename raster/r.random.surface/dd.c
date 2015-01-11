@@ -1,5 +1,4 @@
 /* dd.c                                                         */
-#undef MAIN
 #include <math.h>
 #include "ransurf.h"
 

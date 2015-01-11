@@ -1,5 +1,5 @@
 /******************************************************************************
- * $Id: shpopen.c 59648 2014-04-08 20:34:08Z mmetz $
+ * $Id: shpopen.c 55838 2013-04-17 06:03:16Z hamish $
  *
  * Project:  Shapelib
  * Purpose:  Implementation of core Shapefile read/write functions.
@@ -231,7 +231,7 @@
 #include <string.h>
 #include <stdio.h>
 
-SHP_CVSID("$Id: shpopen.c 59648 2014-04-08 20:34:08Z mmetz $")
+SHP_CVSID("$Id: shpopen.c 55838 2013-04-17 06:03:16Z hamish $")
 
 typedef unsigned char uchar;
 

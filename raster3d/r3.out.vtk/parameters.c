@@ -6,7 +6,7 @@
 * AUTHOR(S):    Original author 
 *               Soeren Gebbert soerengebbert at gmx de
 * 		27 Feb 2006 Berlin
-* PURPOSE:      Converts 3D raster maps (G3D) into the VTK-Ascii format  
+* PURPOSE:      Converts 3D raster maps (RASTER3D) into the VTK-Ascii format  
 *
 * COPYRIGHT:    (C) 2005 by the GRASS Development Team
 *
@@ -27,7 +27,7 @@ void set_params()
     param.input = G_define_standard_option(G_OPT_R3_INPUTS);
     param.input->required = NO;
     param.input->description =
-	_("G3D map(s) to be converted to VTK-ASCII data format");
+	_("RASTER3D map(s) to be converted to VTK-ASCII data format");
 
     param.output = G_define_standard_option(G_OPT_F_OUTPUT);
     param.output->required = NO;
@@ -91,7 +91,6 @@ void set_params()
     param.vectormaps->description =
 	_("Three (x,y,z) 3D raster maps to create vector values [xmap,ymap,zmap]");
 
-
     param.elevscale = G_define_option();
     param.elevscale->key = "elevscale";
     param.elevscale->type = TYPE_DOUBLE;
@@ -126,6 +125,13 @@ void set_params()
     param.coorcorr->guisection = "Advanced options";
     param.coorcorr->description =
 	_("Correct the coordinates to fit the VTK-OpenGL precision");
+
+    param.scalell = G_define_flag();
+    param.scalell->key = 'l';
+    param.scalell->guisection = "Advanced options";
+    param.scalell->description =
+	_("Do not convert the top-bottom resolution in case of lat long projection to meters");
+
 
     /* Maybe needed in the future
      * param.xml = G_define_flag ();

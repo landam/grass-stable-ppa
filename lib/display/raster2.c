@@ -28,9 +28,10 @@
  *
  */
 #include <stdlib.h>
+
 #include <grass/gis.h>
-#include <grass/display.h>
 #include <grass/raster.h>
+#include <grass/display.h>
 
 int D__overlay_mode = 0;	/* external for now, but to be fixed later */
 
@@ -136,8 +137,8 @@ int D_color_of_type(const void *raster,
 {
     int r, g, b;
 
-    G_get_raster_color(raster, &r, &g, &b, colors, data_type);
-    R_RGB_color((unsigned char)r, (unsigned char)g, (unsigned char)b);
+    Rast_get_color(raster, &r, &g, &b, colors, data_type);
+    D_RGB_color((unsigned char)r, (unsigned char)g, (unsigned char)b);
 
     return 0;
 }

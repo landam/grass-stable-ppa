@@ -269,15 +269,13 @@ int display_signature(void)
 	nbands = Refer.nfiles;
 
 	/* build new mask based on current signature and Nstd */
-	G_set_window(&VIEW_MAP1->cell.head);
+	Rast_set_window(&VIEW_MAP1->cell.head);
 	open_band_files();
 
-	if ((fd = G_open_cell_new(MASK)) < 0)
-	    G_fatal_error(_("Unable to open the cell map MASK."));
-	if ((buffer = G_allocate_cell_buf()) == NULL)
-	    G_fatal_error(_("Unable to allocate the cell buffer in display_signature()."));
-	nrows = G_window_rows();
-	ncols = G_window_cols();
+	fd = Rast_open_c_new(MASK);
+	buffer = Rast_allocate_c_buf();
+	nrows = Rast_window_rows();
+	ncols = Rast_window_cols();
 
 	for (row = 0; row < nrows; row++) {
 	    readbands(nbands, row);
@@ -291,23 +289,23 @@ int display_signature(void)
 		buffer[col] = (CELL) 1;
 	      past:;
 	    }
-	    G_put_raster_row(fd, buffer, CELL_TYPE);
+	    Rast_put_row(fd, buffer, CELL_TYPE);
 	}
 
-	G_close_cell(fd);
+	Rast_close(fd);
 	close_band_files();
     }				/* end of if first_display */
 
     /* generate and write the color table for the mask */
-    G_init_colors(&mask_colors);
-    G_set_color((CELL) 1, Color_table[Display_color].red,
+    Rast_init_colors(&mask_colors);
+    Rast_set_c_color((CELL) 1, Color_table[Display_color].red,
 		Color_table[Display_color].grn,
 		Color_table[Display_color].blue, &mask_colors);
-    G_write_colors(MASK, G_mapset(), &mask_colors);
+    Rast_write_colors(MASK, G_mapset(), &mask_colors);
 
     /* display new mask */
-    if (G_get_cellhd(MASK, G_mapset(), &cellhd) != 0)
-	G_fatal_error(_("Did not find input cell map MASK."));
+    Rast_get_cellhd(MASK, G_mapset(), &cellhd);
+
     G_adjust_window_to_box(&cellhd, &VIEW_MASK1->cell.head, VIEW_MASK1->nrows,
 			   VIEW_MASK1->ncols);
     draw_cell(VIEW_MASK1, OVER_LAY);

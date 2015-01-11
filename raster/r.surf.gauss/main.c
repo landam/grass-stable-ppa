@@ -28,39 +28,31 @@ int main(int argc, char *argv[])
     double gauss_mean, gauss_sigma;
 
     struct GModule *module;
-    struct Option *out;		/* Structures required for the G_parser()       */
-
-    /* call. These can be filled with the           */
-    struct Option *mean;	/* various defaults, mandatory paramters        */
-
-    /* etc. for the GRASS user interface.           */
+    struct Option *out;
+    struct Option *mean;
     struct Option *sigma;
 
-    G_gisinit(argv[0]);		/*      This GRASS library function MUST
-				   be called first to check for valid
-				   database and mapset. As usual argv[0]
-				   is the program name. This can be
-				   recalled using G_program_name(). */
+    G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, statistics");
-    module->description =
-	_("GRASS module to produce a raster map layer of "
-	  "gaussian deviates whose mean and standard deviation "
-	  "can be expressed by the user. It uses a gaussian "
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("surface"));
+    G_add_keyword(_("random"));
+    module->label =
+	_("Generates a raster map using gaussian "
 	  "random number generator.");
-
-    /****** SET PARSER OPTIONS ******/
+    module->description = _("Mean and standard deviation of gaussian deviates "
+			    "can be expressed by the user.");
+    
     out = G_define_standard_option(G_OPT_R_OUTPUT);
-    out->description = _("Name of the output random surface");
 
-    mean = G_define_option();	/*      Mean of the distribution  */
+    mean = G_define_option();
     mean->key = "mean";
     mean->description = _("Distribution mean");
     mean->type = TYPE_DOUBLE;
     mean->answer = "0.0";
 
-    sigma = G_define_option();	/*      Standard deviation of the distribution  */
+    sigma = G_define_option();
     sigma->key = "sigma";
     sigma->description = _("Standard deviation");
     sigma->type = TYPE_DOUBLE;
@@ -72,11 +64,6 @@ int main(int argc, char *argv[])
     sscanf(mean->answer, "%lf", &gauss_mean);
     sscanf(sigma->answer, "%lf", &gauss_sigma);
 
-    /****** CHECK THE CELL FILE (OUT) DOES NOT ALREADY EXIST******/
-    if (G_legal_filename(out->answer) == '\0')
-	G_fatal_error(_("<%s> is an illegal file name"), out->answer);
-
-    /****** CREATE THE RANDOM CELL FILE  ******/
     gaussurf(out->answer, gauss_mean, gauss_sigma);
 
     exit(EXIT_SUCCESS);

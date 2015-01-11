@@ -1,3 +1,4 @@
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "pv.h"
 
@@ -47,17 +48,17 @@ void vrml_put_grid(FILE * vout,
 	    if (!shh)
 		G_percent(row, rows - 1, 10);
 
-	    G_get_f_raster_row(elevfd, tf, row);
-	    coordz = G_row_to_northing((double)row, w);
+	    Rast_get_f_row(elevfd, tf, row);
+	    coordz = Rast_row_to_northing((double)row, w);
 	    do_coordcnv(&coordz, 'z');
 
 	    /* write a row */
 	    for (col = 0; col < cols; col++) {
-		coordx = G_col_to_easting((double)col, w);
+		coordx = Rast_col_to_easting((double)col, w);
 		do_coordcnv(&coordx, 'x');
 
 		/* HACK: no nulls in vrml grid */
-		if (G_is_f_null_value(tf))
+		if (Rast_is_f_null_value(tf))
 		    *tf = 0.0;
 		coordy = *tf;
 		do_coordcnv(&coordy, 'y');
@@ -98,8 +99,8 @@ void vrml_put_grid(FILE * vout,
 	    if (!shh)
 		G_percent(row, rows - 1, 5);
 
-	    G_get_f_raster_row(colorfd, tf, row);
-	    G_lookup_f_raster_colors(tf, red, green, blue, set, cols, colr);
+	    Rast_get_f_row(colorfd, tf, row);
+	    Rast_lookup_f_colors(tf, red, green, blue, set, cols, colr);
 
 	    for (col = 0; col < cols; col++) {
 		sprintf(str, "%.3f %.3f %.3f,",

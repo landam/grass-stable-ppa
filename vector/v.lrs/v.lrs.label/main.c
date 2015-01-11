@@ -30,7 +30,7 @@
 #include <time.h>
 #include <math.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 #include "../lib/lrs.h"
@@ -78,8 +78,8 @@ int main(int argc, char **argv)
     struct Option *Opaque;
 
     struct GModule *module;
-    char *mapset, buf[2000];
-    const char *drv, *db;
+    const char *mapset;
+    char buf[2000];
     struct Map_info In, Out;
     struct line_cats *LCats, *SCats;
     struct line_pnts *LPoints, *SPoints;
@@ -99,9 +99,11 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, LRS, networking");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("Linear Reference System"));
+    G_add_keyword(_("networking"));
     module->description = _("Creates stationing from input lines, "
-			    "and linear reference system");
+			    "and linear reference system.");
 
     in_opt = G_define_standard_option(G_OPT_V_INPUT);
     in_opt->description = _("Input vector map containing lines");
@@ -120,16 +122,15 @@ int main(int argc, char **argv)
     driver_opt->type = TYPE_STRING;
     driver_opt->required = NO;
     driver_opt->description = _("Driver name for reference system table");
-    if ((drv = db_get_default_driver_name()))
-	driver_opt->answer = drv;
+    driver_opt->options = db_list_drivers();
+    driver_opt->answer = db_get_default_driver_name();
 
     database_opt = G_define_option();
     database_opt->key = "rsdatabase";
     database_opt->type = TYPE_STRING;
     database_opt->required = NO;
     database_opt->description = _("Database name for reference system table");
-    if ((db = db_get_default_database_name()))
-	database_opt->answer = db;
+    database_opt->answer = db_get_default_database_name();
 
     table_opt = G_define_option();
     table_opt->key = "rstable";
@@ -318,7 +319,7 @@ int main(int argc, char **argv)
     nlines = Vect_get_num_lines(&In);
     /* for ( line = 19; line <= 19; line++ ) { */
     for (line = 1; line <= nlines; line++) {
-	G_debug(0, "  line = %d / %d", line, nlines);
+	G_debug(3, "  line = %d / %d", line, nlines);
 	type = Vect_read_line(&In, LPoints, LCats, line);
 	if (!(type & GV_LINE))
 	    continue;
@@ -390,7 +391,7 @@ int main(int argc, char **argv)
 	    nrseg++;
 	}
 
-	G_debug(0, "    %d reference segments selected", nrseg);
+	G_debug(3, "    %d reference segments selected", nrseg);
 	if (nrseg == 0)
 	    continue;
 
@@ -513,6 +514,11 @@ int main(int argc, char **argv)
     }
 
     db_close_database(rsdriver);
+
+    Vect_copy_head_data(&In, &Out);
+    Vect_hist_copy(&In, &Out);
+    Vect_hist_command(&Out);
+
     Vect_build(&Out);
 
     /* Free, close ... */

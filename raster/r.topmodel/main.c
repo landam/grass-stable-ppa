@@ -4,7 +4,7 @@
  * TMOD9502.FOR Author: Keith Beven <k.beven@lancaster.ac.uk>
  *                      http://www.es.lancs.ac.uk/hfdg/topmodel.html
  *
- *      Copyright (C) 2000 by the GRASS Development Team
+ *      Copyright (C) 2000, 2010, 2013 by the GRASS Development Team
  *      Author: Huidae Cho <grass4u@gmail.com>
  *              Hydro Laboratory, Kyungpook National University
  *              South Korea
@@ -14,213 +14,155 @@
  *
  */
 
-#define	MAIN
+#define _MAIN_C_
 #include <stdio.h>
 #include <stdlib.h>
+#include <grass/gis.h>
 #include <grass/glocale.h>
 #include "global.h"
 
-
 int main(int argc, char **argv)
 {
-
     struct GModule *module;
     struct
     {
-	struct Option *basin;
-	struct Option *elev;
-	struct Option *fill;
-	struct Option *dir;
-	struct Option *belev;
-	struct Option *topidx;
-	struct Option *nidxclass;
-	struct Option *idxstats;
 	struct Option *params;
+	struct Option *topidxstats;
 	struct Option *input;
 	struct Option *output;
-	struct Option *Qobs;
 	struct Option *timestep;
-	struct Option *idxclass;
-    } param;
-
+	struct Option *topidxclass;
+	struct Option *topidx;
+	struct Option *ntopidxclasses;
+	struct Option *outtopidxstats;
+    } params;
     struct
     {
-	struct Flag *input;
-    } flag;
+	struct Flag *preprocess;
+    } flags;
 
     /* Initialize GRASS and parse command line */
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, hydrology");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("hydrology"));
     module->description =
 	_("Simulates TOPMODEL which is a physically based hydrologic model.");
 
     /* Parameter definitions */
-    param.basin = G_define_option();
-    param.basin->key = "basin";
-    param.basin->description =
-	_("(i)   Basin map created by r.water.outlet (MASK)");
-    param.basin->type = TYPE_STRING;
-    param.basin->required = NO;
-    param.basin->gisprompt = "old,cell,raster";
+    params.params = G_define_standard_option(G_OPT_F_INPUT);
+    params.params->key = "parameters";
+    params.params->description = _("Name of TOPMODEL parameters file");
 
-    param.elev = G_define_option();
-    param.elev->key = "elevation";
-    param.elev->description = _("(i)   Elevation map");
-    param.elev->type = TYPE_STRING;
-    param.elev->required = NO;
-    param.elev->gisprompt = "old,cell,raster";
+    params.topidxstats = G_define_standard_option(G_OPT_F_INPUT);
+    params.topidxstats->key = "topidxstats";
+    params.topidxstats->description =
+	_("Name of topographic index statistics file");
 
-    param.fill = G_define_option();
-    param.fill->key = "depressionless";
-    param.fill->description = _("(o)   Depressionless elevation map");
-    param.fill->type = TYPE_STRING;
-    param.fill->required = NO;
-    param.fill->gisprompt = "new,cell,raster";
+    params.input = G_define_standard_option(G_OPT_F_INPUT);
+    params.input->description =
+	_("Name of rainfall and potential evapotranspiration data file");
 
-    param.dir = G_define_option();
-    param.dir->key = "direction";
-    param.dir->description =
-	_("(o)   Direction map for depressionless elevation map");
-    param.dir->type = TYPE_STRING;
-    param.dir->required = NO;
-    param.dir->gisprompt = "new,cell,raster";
+    params.output = G_define_standard_option(G_OPT_F_OUTPUT);
+    params.output->description = _("Name for output file");
 
-    param.belev = G_define_option();
-    param.belev->key = "belevation";
-    param.belev->description = _("(o/i) Basin elevation map (MASK applied)");
-    param.belev->type = TYPE_STRING;
-    param.belev->required = NO;
-    param.belev->gisprompt = "new,cell,raster";
+    params.timestep = G_define_option();
+    params.timestep->key = "timestep";
+    params.timestep->label = _("Time step");
+    params.timestep->description = _("Generate output for this time step.");
+    params.timestep->type = TYPE_INTEGER;
+    params.timestep->required = NO;
 
-    param.topidx = G_define_option();
-    param.topidx->key = "topidx";
-    param.topidx->description =
-	_("(o)   Topographic index ln(a/tanB) map (MASK applied)");
-    param.topidx->type = TYPE_STRING;
-    param.topidx->required = NO;
-    param.topidx->gisprompt = "new,cell,raster";
+    params.topidxclass = G_define_option();
+    params.topidxclass->key = "topidxclass";
+    params.topidxclass->label = _("Topographic index class");
+    params.topidxclass->description =
+	_("Generate output for this topographic index class.");
+    params.topidxclass->type = TYPE_INTEGER;
+    params.topidxclass->required = NO;
 
-    param.nidxclass = G_define_option();
-    param.nidxclass->key = "nidxclass";
-    param.nidxclass->description =
-	_("(i)   Number of topographic index classes");
-    param.nidxclass->type = TYPE_INTEGER;
-    param.nidxclass->required = NO;
-    param.nidxclass->answer = "30";
+    params.topidx = G_define_standard_option(G_OPT_R_INPUT);
+    params.topidx->key = "topidx";
+    params.topidx->label =
+	_("Name of input topographic index ln(a/tanB) raster map");
+    params.topidx->description =
+	_("Must be clipped to the catchment boundary. Used for generating outtopidxstats.");
+    params.topidx->required = NO;
+    params.topidx->guisection = _("Preprocess");
 
-    param.idxstats = G_define_option();
-    param.idxstats->key = "idxstats";
-    param.idxstats->description =
-	_("(o/i) Topographic index statistics file");
-    param.idxstats->type = TYPE_STRING;
-    param.idxstats->required = YES;
+    params.ntopidxclasses = G_define_option();
+    params.ntopidxclasses->key = "ntopidxclasses";
+    params.ntopidxclasses->label = _("Number of topographic index classes");
+    params.ntopidxclasses->description =
+	_("Used for generating outtopidxstats.");
+    params.ntopidxclasses->type = TYPE_INTEGER;
+    params.ntopidxclasses->required = NO;
+    params.ntopidxclasses->answer = "30";
+    params.ntopidxclasses->guisection = _("Preprocess");
 
-    param.params = G_define_option();
-    param.params->key = "parameters";
-    param.params->description = _("(i)   TOPMODEL Parameters file");
-    param.params->type = TYPE_STRING;
-    param.params->required = YES;
+    params.outtopidxstats = G_define_standard_option(G_OPT_F_OUTPUT);
+    params.outtopidxstats->key = "outtopidxstats";
+    params.outtopidxstats->label =
+	_("Name for output topographic index statistics file");
+    params.outtopidxstats->description =
+	_("Requires topidx and ntopidxclasses.");
+    params.outtopidxstats->required = NO;
+    params.outtopidxstats->guisection = _("Preprocess");
 
-    param.input = G_define_option();
-    param.input->key = "input";
-    param.input->description =
-	_("(i)   Rainfall and potential evapotranspiration data file");
-    param.input->type = TYPE_STRING;
-    param.input->required = YES;
-
-    param.output = G_define_option();
-    param.output->key = "output";
-    param.output->description = _("(o)   Output file");
-    param.output->type = TYPE_STRING;
-    param.output->required = YES;
-
-    param.Qobs = G_define_option();
-    param.Qobs->key = "Qobs";
-    param.Qobs->description = _("(i)   OPTIONAL Observed flow file");
-    param.Qobs->type = TYPE_STRING;
-    param.Qobs->required = NO;
-
-    param.timestep = G_define_option();
-    param.timestep->key = "timestep";
-    param.timestep->description =
-	_("(i)   OPTIONAL Output for given time step");
-    param.timestep->type = TYPE_INTEGER;
-    param.timestep->required = NO;
-
-    param.idxclass = G_define_option();
-    param.idxclass->key = "idxclass";
-    param.idxclass->description =
-	_("(i)   OPTIONAL Output for given topographic index class");
-    param.idxclass->type = TYPE_INTEGER;
-    param.idxclass->required = NO;
-
-
-    /* Flag definitions */
-    flag.input = G_define_flag();
-    flag.input->key = 'i';
-    flag.input->description = _("Input data given for (o/i)");
+    flags.preprocess = G_define_flag();
+    flags.preprocess->key = 'p';
+    flags.preprocess->description =
+	_("Preprocess only and stop after generating outtopidxstats");
+    flags.preprocess->suppress_required = YES;
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    /* Store given parameters and flags */
-    map.basin = param.basin->answer;
-    map.elev = param.elev->answer;
-    map.belev = param.belev->answer;
-    map.fill = param.fill->answer;
-    map.dir = param.dir->answer;
-    map.topidx = param.topidx->answer;
-    file.idxstats = param.idxstats->answer;
-    file.params = param.params->answer;
-    file.input = param.input->answer;
-    file.output = param.output->answer;
-    file.Qobs = param.Qobs->answer;
+    /* Store given parameters */
+    file.params = params.params->answer;
+    file.topidxstats = params.topidxstats->answer;
+    file.input = params.input->answer;
+    file.output = params.output->answer;
 
-    misc.nidxclass = atoi(param.nidxclass->answer);
+    if (!params.timestep->answer)
+	params.timestep->answer = "0";
+    misc.timestep = atoi(params.timestep->answer);
 
-    if (!param.timestep->answer)
-	param.timestep->answer = "0";
-    if (!param.idxclass->answer)
-	param.idxclass->answer = "0";
+    if (!params.topidxclass->answer)
+	params.topidxclass->answer = "0";
+    misc.topidxclass = atoi(params.topidxclass->answer);
 
-    misc.timestep = atoi(param.timestep->answer);
-    misc.idxclass = atoi(param.idxclass->answer);
+    if (params.topidx->answer && params.outtopidxstats->answer) {
+	char *topidx;
+	int ntopidxclasses;
+	char *outtopidxstats;
+	
+	topidx = params.topidx->answer;
+	ntopidxclasses = atoi(params.ntopidxclasses->answer);
+	outtopidxstats = params.outtopidxstats->answer;
 
-    flg.input = flag.input->answer;
-    flg.overwr = module->overwrite;
+	if (ntopidxclasses <= 0)
+	    G_fatal_error(_("ntopidxclasses must be positive."));
 
-
-    gisbase = G_gisbase();
-    mapset = G_mapset();
-
-
-    /* Check run conditions */
-    if (check_ready())
-	exit(1);
-
-    /* Adjust cell header */
-    gregion();
-
-    /* Create required maps */
-    if (!flg.input) {
-	if (map.fill)
-	    depressionless();
-	basin_elevation();
+	create_topidxstats(topidx, ntopidxclasses, outtopidxstats);
+    } else if (params.topidx->answer) {
+	G_warning(_("Ignoring topidx because outtopidxstats is not specified."));
+    } else if (params.outtopidxstats->answer) {
+	G_warning(_("Ignoring outtopidxstats because topidx is not specified."));
     }
 
-    top_index();
+    if (flags.preprocess->answer)
+        exit(EXIT_SUCCESS);
 
-    /* Read required files */
-    read_inputs();
+    /* Read input */
+    read_input();
 
-    /* Implement TOPMODEL */
-    topmodel();
+    /* Run TOPMODEL */
+    run_topmodel();
 
-    /* Write outputs */
-    write_outputs();
+    /* Write output */
+    write_output();
 
-
-    exit(0);
+    exit(EXIT_SUCCESS);
 }

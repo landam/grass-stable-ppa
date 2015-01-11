@@ -1,8 +1,8 @@
-%define shortver 63
+%define shortver 70
 
 Summary:	GRASS - Geographic Resources Analysis Support System
 Name:		grass
-Version:	6.3.0
+Version:	7.0.svn
 Release:	1
 License:	GPL
 Group:		Applications/GIS
@@ -151,10 +151,6 @@ install -d %{buildroot}/etc/ld.so.conf.d
 echo %{grasslib} >> %{buildroot}/etc/ld.so.conf.d/grass-%{version}.conf
 pushd %{buildroot}%{grassdir}/man
   gzip */*
-popd
-pushd %{buildroot}%{grassdir}/etc/gem/skeleton/
-chmod +x uninstall
-chmod +x post
 popd
 
 # this is possibly dangerous

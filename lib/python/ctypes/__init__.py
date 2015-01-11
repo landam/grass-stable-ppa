@@ -4,15 +4,16 @@ __all__ = [
     'date',
     'dbmi',
     'display',
-    'g3d',
     'gis',
     'gmath',
     'imagery',
     'nviz',
     'ogsf',
     'proj',
+    'raster3d',
+    'raster',
+    'rtree',
     'stats',
-    'trans',
     'vector',
     'vedit'
-]
+    ]

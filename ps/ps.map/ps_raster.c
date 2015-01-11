@@ -2,7 +2,7 @@
  **
  ** Author: Paul W. Carlson     3/92
  ** 
- ** ps_get_map_row is substituted by G_get_map_row_nomask
+ ** ps_get_map_row is substituted by Rast_get_c_row_nomask
  ** writing mask file is done separately by function ps_write_mask_row
  ** which used code previously in ps_get_map_row. This is done because
  ** sometimes the raster map is not drawn, but we still need a mask
@@ -12,9 +12,8 @@
  */
 #include <stdlib.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
-#include "ps_info.h"
-#include "group.h"
 #include "local_proto.h"
 
 static FILE *ps_mask_fp;
@@ -26,7 +25,7 @@ int PS_make_mask(void)
     CELL *maskbuf;
     int maskfd, r, g, b;
 
-    maskfd = G_maskfd();
+    maskfd = Rast_maskfd();
     if (maskfd < 0)
 	/* there is no mask */
     {
@@ -35,7 +34,7 @@ int PS_make_mask(void)
 	return 0;
     }
     if (maskfd >= 0)
-	maskbuf = G_allocate_cell_buf();
+	maskbuf = Rast_allocate_c_buf();
 
     /* if masked, open a file to hold the PostScript mask data */
     if (maskfd >= 0 && PS.mask_needed) {
@@ -43,13 +42,13 @@ int PS_make_mask(void)
 	    G_fatal_error(_("Can't create temporary PostScript mask file."));
 
 	/* get no data rgb values for mask */
-	G_get_null_value_color(&r, &g, &b, &PS.colors);
+	Rast_get_null_value_color(&r, &g, &b, &PS.colors);
 	PS.r0 = (double)r / 255.0;
 	PS.g0 = (double)g / 255.0;
 	PS.b0 = (double)b / 255.0;
 
 	for (row = 0; row < PS.w.rows; row++) {
-	    G_get_map_row_nomask(maskfd, maskbuf, row);
+	    Rast_get_c_row_nomask(maskfd, maskbuf, row);
 	    ps_write_mask_row(maskbuf);
 	}
 	fclose(ps_mask_fp);
@@ -100,22 +99,23 @@ int PS_raster_plot(void)
 
     /* let user know what's happenning */
     if (PS.do_raster)
-	G_message(_("Reading raster map <%s in %s> ..."),
-		  PS.cell_name, PS.cell_mapset);
+	G_message(_("Reading raster map <%s>..."),
+		  G_fully_qualified_name(PS.cell_name, PS.cell_mapset));
     else
-	G_message(_("Reading raster maps in group <%s> ..."), grp.group_name);
+	G_message(_("Reading raster maps in group <%s>..."),
+		  grp.group_name);
 
     /* build the image RGB string */
     if (PS.do_raster) {
-	map_type = G_get_raster_map_type(PS.cell_fd);
-	cellbuf = G_allocate_raster_buf(map_type);
+	map_type = Rast_get_map_type(PS.cell_fd);
+	cellbuf = Rast_allocate_buf(map_type);
 	n = 0;
 	for (row = 0; row < PS.w.rows; row++) {
-	    G_get_raster_row(PS.cell_fd, cellbuf, row, map_type);
+	    Rast_get_row(PS.cell_fd, cellbuf, row, map_type);
 	    if ((row % PS.row_delta) == 0) {
 		ptr = cellbuf;
 		for (col = 0; col < PS.w.cols; col += PS.col_delta) {
-		    G_get_raster_color(ptr, &r, &g, &b, &PS.colors, map_type);
+		    Rast_get_color(ptr, &r, &g, &b, &PS.colors, map_type);
 
 		    /* if color raster */
 		    if (doing_color) {
@@ -138,7 +138,7 @@ int PS_raster_plot(void)
 		    }
 		    ptr =
 			G_incr_void_ptr(ptr,
-					G_raster_size(map_type) *
+					Rast_cell_size(map_type) *
 					PS.col_delta);
 		}
 	    }
@@ -148,20 +148,20 @@ int PS_raster_plot(void)
 	void *cptr[3];
 
 	for (i = 0; i < 3; i++) {
-	    grp_map_type[i] = G_get_raster_map_type(grp.fd[i]);
-	    cbuf[i] = G_allocate_raster_buf(grp_map_type[i]);
+	    grp_map_type[i] = Rast_get_map_type(grp.fd[i]);
+	    cbuf[i] = Rast_allocate_buf(grp_map_type[i]);
 	}
 	n = 0;
 	for (row = 0; row < PS.w.rows; row++) {
 	    for (i = 0; i < 3; i++) {
-		G_get_raster_row(grp.fd[i], cbuf[i], row, grp_map_type[i]);
+		Rast_get_row(grp.fd[i], cbuf[i], row, grp_map_type[i]);
 		cptr[i] = cbuf[i];
 	    }
 
 	    if ((row % PS.row_delta) == 0) {
 		for (col = 0; col < PS.w.cols; col += PS.col_delta) {
 		    for (i = 0; i < 3; i++) {
-			G_get_raster_color(cptr[i], &rr, &gg, &bb,
+			Rast_get_color(cptr[i], &rr, &gg, &bb,
 					   &(grp.colors[i]), grp_map_type[i]);
 			if (i == 0)
 			    r = rr;
@@ -170,7 +170,7 @@ int PS_raster_plot(void)
 			if (i == 2)
 			    b = bb;
 			cptr[i] = G_incr_void_ptr(cptr[i],
-						  G_raster_size(grp_map_type
+						  Rast_cell_size(grp_map_type
 								[0]) *
 						  PS.col_delta);
 		    }
@@ -192,14 +192,14 @@ int PS_raster_plot(void)
     /* we're done with the cell stuff */
     if (PS.do_raster) {
 	if (!PS.do_colortable)
-	    G_free_colors(&PS.colors);
-	G_close_cell(PS.cell_fd);
+	    Rast_free_colors(&PS.colors);
+	Rast_close(PS.cell_fd);
 	G_free(cellbuf);
     }
     else {
 	for (i = 0; i < 3; i++) {
-	    G_free_colors(&(grp.colors[i]));
-	    G_close_cell(grp.fd[i]);
+	    Rast_free_colors(&(grp.colors[i]));
+	    Rast_close(grp.fd[i]);
 	    G_free(cbuf[i]);
 	}
 	I_free_group_ref(&grp.ref);
