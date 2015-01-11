@@ -1,3 +1,4 @@
 version=3
-opts=uversionmangle=s/(\d)[_\.\-\+]?((RC|rc|pre|dev|beta|alpha)\d*)$/$1~$2/ \
- http://grass.osgeo.org/grass64/source/grass-([\d\.]*(?:RC\d){0,1}).tar.gz
+opts=uversionmangle=s/(\d)[_\.\-\+]?((RC|rc|pre|dev|beta|alpha)\d*)$/$1~$2/;s/RC/rc/ \
+http://grass.osgeo.org/grass64/source/ \
+grass-([\d\.]*(?:(?:RC|rc|pre|dev|beta|alpha)?\d*)).tar.gz

@@ -1,6 +1,7 @@
 grass (6.4.4-2) UNRELEASED; urgency=medium
 
   * Add upstream metadata.
+  * Update watch file to use lower case RC.
 
  -- Bas Couwenberg <sebastic@xs4all.nl>  Fri, 28 Nov 2014 23:25:44 +0100
 
