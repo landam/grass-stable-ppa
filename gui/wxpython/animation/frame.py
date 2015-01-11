@@ -274,7 +274,8 @@ class AnimationFrame(wx.Frame):
         self._progressDlgMax = count
 
     def _updateProgress(self, current, text):
-        text += _(" ({} out of {})").format(current, self._progressDlgMax)
+        text += _(" ({c} out of {p})").format(c=current,
+                                              p=self._progressDlgMax)
         keepGoing, skip = self._progressDlg.Update(current, text)
         if not keepGoing:
             self.provider.RequestStopRendering()
@@ -309,10 +310,13 @@ class AnimationFrame(wx.Frame):
                    entry='wxGUI.animation')
 
     def OnCloseWindow(self, event):
+        if self.controller.timer.IsRunning():
+                self.controller.timer.Stop()
         CleanUp(TMP_DIR)()
         self.Destroy()
 
     def __del__(self):
+        """!It might not be called, therefore we try to clean it all in OnCloseWindow."""
         if hasattr(self, 'controller') and hasattr(self.controller, 'timer'):
             if self.controller.timer.IsRunning():
                 self.controller.timer.Stop()

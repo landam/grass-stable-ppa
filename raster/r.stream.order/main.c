@@ -8,7 +8,7 @@
  *			It use r.stream.extract or r.watershed output files: 
  * 			stream, direction, accumulation and elevation. 
  * 			The output are set of raster maps and vector file containing
- * 			addational stream attributes.
+ * 			additional stream attributes.
  *
  * COPYRIGHT:		(C) 2009-2014 by the GRASS Development Team
  *
@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
 {
 
     IO input[] = {
-        {"stream_rast", YES, _("Name of input streams mask raster map")},
+        {"stream_rast", YES, _("Name for input raster map with stream network")},
 	{"direction", YES, _("Name of input flow direction raster map")},
 	{"elevation", NO, _("Name of input elevation raster map")},
 	{"accumulation", NO, _("Name of input accumulation raster map")}

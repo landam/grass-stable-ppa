@@ -7,6 +7,8 @@ more than one cell (by varying the size of the <b>radius</b>
 parameter), or like <em>r.buffer</em>, but with the
 option of preserving the original cells (similar to combining
 <em>r.buffer</em> and <em>r.patch</em>).
+<p>
+A negative <b>radius</b> shrinks inwards instead of growing outwards.
 
 
 <h2>NOTES</h2>
@@ -56,18 +58,13 @@ candidates with the same northing, the westernmost is chosen.
 
 <h2>EXAMPLE</h2>
 
-You can shrink inwards by preparing an inverse map first, and then
-inverting the resulting grown map. For example:
+You can shrink inwards by using a negative radius. For example:
 <div class="code"><pre>
-# Spearfish sample dataset
+# North Carolina sample dataset
 
-MAP=fields
-g.region rast=$MAP
-r.mapcalc "inverse = if(isnull($MAP), 1, null())"
-r.grow in=inverse out=inverse.grown
-r.mapcalc "$MAP.shrunken = if(isnull(inverse.grown), $MAP, null())"
-r.colors $MAP.shrunken rast=$MAP
-g.remove inverse,inverse.grown
+g.region rast=lakes
+r.grow in=lakes out=lakes.shrunken radius=-2.01
+r.colors lakes.shrunken rast=lakes
 </pre></div>
 
 
@@ -97,4 +94,4 @@ U.S. Army Construction Engineering Research Laboratory
 Glynn Clements
 
 <p>
-<i>Last changed: $Date: 2013-11-16 18:01:09 +0100 (Sat, 16 Nov 2013) $</i>
+<i>Last changed: $Date: 2014-04-15 12:43:01 +0200 (Tue, 15 Apr 2014) $</i>
