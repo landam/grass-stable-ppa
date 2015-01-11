@@ -23,6 +23,9 @@ static double dist, e, n;
 int main(int argc, char *argv[])
 {
     char *name, *outfile;
+    const char *unit;
+    int unit_id;
+    double factor;
     int fd, projection;
     FILE *fp, *coor_fp;
     double res;
@@ -37,8 +40,8 @@ int main(int argc, char *argv[])
     struct Cell_head window;
     struct
     {
-	struct Option *opt1, *profile, *res, *output, *null_str, *coord_file;
-	struct Flag *g, *c;
+	struct Option *opt1, *profile, *res, *output, *null_str, *coord_file, *units;
+	struct Flag *g, *c, *m;
     }
     parm;
     struct GModule *module;
@@ -81,12 +84,8 @@ int main(int argc, char *argv[])
     parm.res->description =
 	_("Resolution along profile (default = current region resolution)");
 
-    parm.null_str = G_define_option();
-    parm.null_str->key = "null";
-    parm.null_str->type = TYPE_STRING;
-    parm.null_str->required = NO;
+    parm.null_str = G_define_standard_option(G_OPT_M_NULL_VALUE);
     parm.null_str->answer = "*";
-    parm.null_str->description = _("Character to represent no data cell");
 
     parm.g = G_define_flag();
     parm.g->key = 'g';
@@ -98,10 +97,14 @@ int main(int argc, char *argv[])
     parm.c->description =
 	_("Output RRR:GGG:BBB color values for each profile point");
 
+    parm.units = G_define_standard_option(G_OPT_M_UNITS);
+    parm.units->options = "meters,kilometers,feet,miles";
+    parm.units->label = parm.units->description;
+    parm.units->description = _("If units are not specified, current location units are used. "
+                                "Meters are used by default in geographic (latlon) locations.");
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
-
 
     clr = 0;
     if (parm.c->answer)
@@ -116,18 +119,36 @@ int main(int argc, char *argv[])
 
     G_get_window(&window);
     projection = G_projection();
+
+    /* get conversion factor and units name */
+    if (parm.units->answer) {
+        unit_id = G_units(parm.units->answer);
+        factor = 1. / G_meters_to_units_factor(unit_id);
+        unit = G_get_units_name(unit_id, 1, 0);
+    }
+    /* keep meters in case of latlon */
+    else if (projection == PROJECTION_LL) {
+        factor = 1;
+        unit = "meters";
+    } 
+    else {
+        /* get conversion factor to current units */
+        unit = G_database_unit_name(1);
+        factor = G_database_units_to_meters_factor();
+    }
+
     if (parm.res->answer) {
 	res = atof(parm.res->answer);
 	/* Catch bad resolution ? */
 	if (res <= 0)
-	    G_fatal_error(_("Illegal resolution! [%g]"), res);
+	    G_fatal_error(_("Illegal resolution %g [%s]"), res / factor, unit);
     }
     else {
 	/* Do average of EW and NS res */
 	res = (window.ew_res + window.ns_res) / 2;
     }
 
-    G_message(_("Using resolution [%g]"), res);
+    G_message(_("Using resolution: %g [%s]"), res / factor, unit);
 
     G_begin_distance_calculations();
 
@@ -158,14 +179,14 @@ int main(int argc, char *argv[])
     /* Done with file */
 
     /* Show message giving output format */
-    G_message(_("Output Format:"));
+    G_message(_("Output columns:"));
     if (coords == 1)
 	sprintf(formatbuff,
-		_("[Easting] [Northing] [Along Track Dist.(m)] [Elevation]"));
+		_("Easting, Northing, Along track dist. [%s], Elevation"), unit);
     else
-	sprintf(formatbuff, _("[Along Track Dist.(m)] [Elevation]"));
+	sprintf(formatbuff, _("Along track dist. [%s], Elevation"), unit);
     if (clr)
-	strcat(formatbuff, _(" [RGB Color]"));
+	strcat(formatbuff, _(" RGB color"));
     G_message(formatbuff);
 
     /* Get Profile Start Coords */
@@ -186,8 +207,8 @@ int main(int argc, char *argv[])
 		G_fatal_error(_("Invalid coordinates %s %s"), ebuf, nbuf);
 
 	    if (havefirst)
-		do_profile(e1, e2, n1, n2, name, coords, res, fd, data_type,
-			   fp, null_string);
+		do_profile(e1, e2, n1, n2, coords, res, fd, data_type,
+			   fp, null_string, unit, factor);
 	    e1 = e2;
 	    n1 = n2;
 	    havefirst = TRUE;
@@ -211,8 +232,8 @@ int main(int argc, char *argv[])
 	    n2 = n1;
 
 	    /* Get profile info */
-	    do_profile(e1, e2, n1, n2, name, coords, res, fd, data_type, fp,
-		       null_string);
+	    do_profile(e1, e2, n1, n2, coords, res, fd, data_type, fp,
+		       null_string, unit, factor);
 	}
 	else {
 	    for (i = 0; i <= k - 2; i += 2) {
@@ -225,8 +246,8 @@ int main(int argc, char *argv[])
 				G_projection());
 
 		/* Get profile info */
-		do_profile(e1, e2, n1, n2, name, coords, res, fd, data_type,
-			   fp, null_string);
+		do_profile(e1, e2, n1, n2, coords, res, fd, data_type,
+			   fp, null_string, unit, factor);
 
 	    }
 	}
@@ -243,18 +264,18 @@ int main(int argc, char *argv[])
 
 /* Calculate the Profile Now */
 /* Establish parameters */
-int do_profile(double e1, double e2, double n1, double n2, char *name,
+int do_profile(double e1, double e2, double n1, double n2,
 	       int coords, double res, int fd, int data_type, FILE * fp,
-	       char *null_string)
+	       char *null_string, const char *unit, double factor)
 {
-    float rows, cols, LEN;
-    double Y, X, AZI;
+    double rows, cols, LEN;
+    double Y, X, k;
 
     cols = e1 - e2;
     rows = n1 - n2;
 
     LEN = G_distance(e1, n1, e2, n2);
-    G_message(_("Approx. transect length [%f] m"), LEN);
+    G_message(_("Approx. transect length: %f [%s]"), LEN / factor, unit);
 
     if (!G_point_in_region(e2, n2))
 	G_warning(_("Endpoint coordinates are outside of current region settings"));
@@ -264,23 +285,25 @@ int do_profile(double e1, double e2, double n1, double n2, char *name,
 	/* Special case for no movement */
 	e = e1;
 	n = n1;
-	read_rast(e, n, dist, fd, coords, data_type, fp, null_string);
+	read_rast(e, n, dist / factor, fd, coords, data_type, fp, null_string);
+    }
+
+    k = res / hypot(rows, cols);
+    Y = k * rows;
+    X = k * cols;
+    if (Y < 0)
+        Y = Y * -1.;
+    if (X < 0)
+        X = X * -1.;
+
+    if (e != 0.0 && (e != e1 || n != n1)) {
+        dist -= G_distance(e, n, e1, n1);
     }
 
     if (rows >= 0 && cols < 0) {
 	/* SE Quad or due east */
-	AZI = atan((rows / cols));
-	Y = res * sin(AZI);
-	X = res * cos(AZI);
-	if (Y < 0)
-	    Y = Y * -1.;
-	if (X < 0)
-	    X = X * -1.;
-	if (e != 0.0 && (e != e1 || n != n1)) {
-	    dist -= G_distance(e, n, e1, n1);
-	}
 	for (e = e1, n = n1; e < e2 || n > n2; e += X, n -= Y) {
-	    read_rast(e, n, dist, fd, coords, data_type, fp, null_string);
+	    read_rast(e, n, dist / factor, fd, coords, data_type, fp, null_string);
 	    /* d+=res; */
 	    dist += G_distance(e - X, n + Y, e, n);
 	}
@@ -288,21 +311,8 @@ int do_profile(double e1, double e2, double n1, double n2, char *name,
 
     if (rows < 0 && cols <= 0) {
 	/* NE Quad  or due north */
-	AZI = atan((cols / rows));
-	X = res * sin(AZI);
-	Y = res * cos(AZI);
-	if (Y < 0)
-	    Y = Y * -1.;
-	if (X < 0)
-	    X = X * -1.;
-	if (e != 0.0 && (e != e1 || n != n1)) {
-	    dist -= G_distance(e, n, e1, n1);
-	    /*
-	     * read_rast (e1, n1, dist, fd, coords, data_type, fp, null_string);
-	     */
-	}
 	for (e = e1, n = n1; e < e2 || n < n2; e += X, n += Y) {
-	    read_rast(e, n, dist, fd, coords, data_type, fp, null_string);
+	    read_rast(e, n, dist / factor, fd, coords, data_type, fp, null_string);
 	    /* d+=res; */
 	    dist += G_distance(e - X, n - Y, e, n);
 	}
@@ -310,18 +320,8 @@ int do_profile(double e1, double e2, double n1, double n2, char *name,
 
     if (rows > 0 && cols >= 0) {
 	/* SW Quad or due south */
-	AZI = atan((rows / cols));
-	X = res * cos(AZI);
-	Y = res * sin(AZI);
-	if (Y < 0)
-	    Y = Y * -1.;
-	if (X < 0)
-	    X = X * -1.;
-	if (e != 0.0 && (e != e1 || n != n1)) {
-	    dist -= G_distance(e, n, e1, n1);
-	}
 	for (e = e1, n = n1; e > e2 || n > n2; e -= X, n -= Y) {
-	    read_rast(e, n, dist, fd, coords, data_type, fp, null_string);
+	    read_rast(e, n, dist / factor, fd, coords, data_type, fp, null_string);
 	    /* d+=res; */
 	    dist += G_distance(e + X, n + Y, e, n);
 	}
@@ -329,18 +329,8 @@ int do_profile(double e1, double e2, double n1, double n2, char *name,
 
     if (rows <= 0 && cols > 0) {
 	/* NW Quad  or due west */
-	AZI = atan((rows / cols));
-	X = res * cos(AZI);
-	Y = res * sin(AZI);
-	if (Y < 0)
-	    Y = Y * -1.;
-	if (X < 0)
-	    X = X * -1.;
-	if (e != 0.0 && (e != e1 || n != n1)) {
-	    dist -= G_distance(e, n, e1, n1);
-	}
 	for (e = e1, n = n1; e > e2 || n < n2; e -= X, n += Y) {
-	    read_rast(e, n, dist, fd, coords, data_type, fp, null_string);
+	    read_rast(e, n, dist / factor, fd, coords, data_type, fp, null_string);
 	    /* d+=res; */
 	    dist += G_distance(e + X, n - Y, e, n);
 	}

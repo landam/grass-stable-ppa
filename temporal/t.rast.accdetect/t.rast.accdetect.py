@@ -18,6 +18,7 @@
 #% description: Detects accumulation patterns in temporally accumulated space time raster datasets created by t.rast.accumulate.
 #% keywords: temporal
 #% keywords: accumulation
+#% keywords: raster
 #%end
 
 #%option G_OPT_STRDS_INPUT
@@ -110,7 +111,7 @@
 
 #%flag
 #% key: n
-#% description: Register empty maps in the output space time raster datasets, otherwise they will be deleted
+#% description: Register empty maps in the output space time raster dataset, otherwise they will be deleted
 #%end
 
 #%flag
@@ -418,7 +419,7 @@ def main():
     # Remove empty maps
     if len(empty_maps) > 0:
         for map in empty_maps:
-            grass.run_command("g.remove", rast=map.get_name(), quiet=True)
+            grass.run_command("g.remove", flags='f', type="raster",  name=map.get_name(), quiet=True)
 
 ############################################################################
 

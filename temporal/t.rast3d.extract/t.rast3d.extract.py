@@ -5,8 +5,8 @@
 # MODULE:	t.rast3d.extract
 # AUTHOR(S):	Soeren Gebbert
 #
-# PURPOSE:	Extract a subset of a space time raster3d dataset
-# COPYRIGHT:	(C) 2011 by the GRASS Development Team
+# PURPOSE:	Extract a subset of a space time 3D raster dataset
+# COPYRIGHT:	(C) 2011-2014 by the GRASS Development Team
 #
 #		This program is free software under the GNU General Public
 #		License (version 2). Read the file COPYING that comes with GRASS
@@ -15,9 +15,11 @@
 #############################################################################
 
 #%module
-#% description: Extracts a subset of a space time raster3d dataset.
+#% description: Extracts a subset of a space time 3D raster dataset.
 #% keywords: temporal
 #% keywords: extract
+#% keywords: raster3d
+#% keywords: voxel
 #%end
 
 #%option G_OPT_STR3DS_INPUT
@@ -29,7 +31,7 @@
 #%option
 #% key: expression
 #% type: string
-#% description: The r3.mapcalc expression assigned to all extracted raster3d maps
+#% description: The r3.mapcalc expression assigned to all extracted 3D raster maps
 #% required: no
 #% multiple: no
 #%end
@@ -38,9 +40,9 @@
 #%end
 
 #%option
-#% key: base
+#% key: basename
 #% type: string
-#% description: Base name of the new created raster3d maps
+#% description: Basename of the new generated 3D raster maps
 #% required: no
 #% multiple: no
 #%end
@@ -72,7 +74,7 @@ def main():
     output = options["output"]
     where = options["where"]
     expression = options["expression"]
-    base = options["base"]
+    base = options["basename"]
     nprocs = int(options["nprocs"])
     register_null = flags["n"]
 

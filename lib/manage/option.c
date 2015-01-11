@@ -47,11 +47,11 @@ struct Option* M_define_option(int n, const char *desc, int multiple)
     G_asprintf(&str, _("%s to be %s"),
 	       list[n].text, desc);
     p->description = str;
-    if (strcmp(p->key, "rast") == 0 || strcmp(p->key, "rast3d") == 0)
+    if (strcmp(p->key, "raster") == 0 || strcmp(p->key, "raster_3d") == 0)
 	p->guisection = _("Raster");
-    else if (strcmp(p->key, "vect") == 0 || strcmp(p->key, "oldvect") == 0 ||
-	     strcmp(p->key, "asciivect") == 0 ||
-	     strcmp(p->key, "sites") == 0)
+    else if (strcmp(p->key, "vector") == 0 ||
+             strcmp(p->key, "old_vector") == 0 ||
+	     strcmp(p->key, "ascii_vector") == 0)
 	p->guisection = _("Vector");
     else if (strcmp(p->key, "region") == 0 || strcmp(p->key, "region3d") == 0)
 	p->guisection = _("Region");
@@ -116,7 +116,7 @@ const char *M_get_option_desc(int do_all)
 	len += strlen(list[n].text) + 1;
     }
     if (do_all)
-	len += strlen(str_all);
+	len += strlen(str_all) + 1;
     str = G_malloc(len);
     
     for (n = 0; n < nlist; n++) {

@@ -167,7 +167,7 @@ help_text = r"""GRASS GIS %s
 Geographic Resources Analysis Support System (GRASS GIS).
 
 %s:
-  $CMD_NAME [-h | -help | --help] [-v | --version] [-c | -c geofile | -c EPSG:code]
+  $CMD_NAME [-h | -help | --help] [-v | --version] [-c | -c geofile | -c EPSG:code[:datum_trans]]
           [-e] [-text | -gui] [--config param]
           [[[<GISDBASE>/]<LOCATION_NAME>/]<MAPSET>]
 
@@ -381,11 +381,13 @@ def set_paths():
     if not addon_base:
         addon_base = os.path.join(grass_config_dir, 'addons')
         os.environ['GRASS_ADDON_BASE'] = addon_base
-    path_prepend(os.path.join(addon_base, 'scripts'), 'PATH')
+    if not windows:
+        path_prepend(os.path.join(addon_base, 'scripts'), 'PATH')
     path_prepend(os.path.join(addon_base, 'bin'), 'PATH')
     
     # standard installation
-    path_prepend(gfile('scripts'), 'PATH')
+    if not windows:
+        path_prepend(gfile('scripts'), 'PATH')
     path_prepend(gfile('bin'), 'PATH')
 
     # Set PYTHONPATH to find GRASS Python modules
@@ -420,11 +422,6 @@ def set_paths():
         else:
             os.environ['MANPATH'] = addons_man_path
             path_prepend(grass_man_path, 'MANPATH')
-
-    # Add .py (Python) to list of executable extensions to search for
-    # in MS-Windows PATH
-    if windows:
-        path_append('.PY', 'PATHEXT')
 
 
 def find_exe(pgm):
@@ -644,8 +641,12 @@ def non_interactive(arg, geofile=None):
                         if geofile and geofile.upper().find('EPSG:') > -1:
                             # create location using EPSG code
                             epsg = geofile.split(':', 1)[1]
+                            if ':' in epsg:
+                                epsg, datum_trans = epsg.split(':', 1)
+                            else:
+                                datum_trans = None
                             grass.create_location(gisdbase, location_name,
-                                                      epsg=epsg)
+                                                  epsg=epsg, datum_trans=datum_trans)
                         else:
                             # create location using georeferenced file
                             grass.create_location(gisdbase, location_name,
@@ -897,7 +898,7 @@ def check_shell():
     global sh, shellname, grass_env_file
     # cygwin has many problems with the shell setup
     # below, so i hardcoded everything here.
-    if os.getenv('CYGWIN'):
+    if sys.platform == 'cygwin':
         sh = "cygwin"
         shellname = "GNU Bash (Cygwin)"
         os.environ['SHELL'] = "/usr/bin/bash.exe"
@@ -1108,7 +1109,7 @@ def bash_startup():
         f.write("PS1='GRASS %s (%s):\w > '\n" % (grass_version, location_name))
     
     f.write("""grass_prompt() {
-	LOCATION="`g.gisenv GISDBASE`/`g.gisenv LOCATION_NAME`/`g.gisenv MAPSET`"
+	LOCATION="`g.gisenv get=GISDBASE,LOCATION_NAME,MAPSET separator='/'`"
 	if test -d "$LOCATION/grid3/G3D_MASK" && test -f "$LOCATION/cell/MASK" ; then
 		echo [%s]
 	elif test -f "$LOCATION/cell/MASK" ; then
@@ -1377,8 +1378,8 @@ set_browser()
 #predefine monitor size for certain architectures
 if os.getenv('HOSTTYPE') == 'arm':
     # small monitor on ARM (iPAQ, zaurus... etc)
-    os.environ['GRASS_HEIGHT'] = "320"
-    os.environ['GRASS_WIDTH'] = "240"
+    os.environ['GRASS_RENDER_HEIGHT'] = "320"
+    os.environ['GRASS_RENDER_WIDTH'] = "240"
 
 # First time user - GISRC is defined in the GRASS script
 if not os.access(gisrc, os.F_OK):

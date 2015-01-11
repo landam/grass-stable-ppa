@@ -53,6 +53,7 @@ int main(int argc, char *argv[])
     module = G_define_module();
     G_add_keyword(_("raster"));
     G_add_keyword(_("geometry"));
+    G_add_keyword(_("mosaicking"));
     module->description =
 	_("Creates a composite raster map layer by using "
 	  "known category values from one (or more) map layer(s) "
@@ -157,7 +158,7 @@ int main(int argc, char *argv[])
      * build the new cats and colors. do this before closing the new
      * file, in case the new file is one of the patching files as well.
      */
-    G_message(_("Creating support files for raster map <%s>"), new_name);
+    G_verbose_message(_("Creating support files for raster map <%s>..."), new_name);
     support(names, statf, nfiles, &cats, &cats_ok, &colr, &colr_ok, out_type);
 
     /* now close (and create) the result */

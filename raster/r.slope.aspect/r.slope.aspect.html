@@ -5,7 +5,7 @@ first and second order partial derivatives from a raster map of true
 elevation values. The user must specify the input <b>elevation</b> raster map
 and at least one output raster maps. The user can also specify the
 <b>format</b> for slope (degrees, percent; default=degrees), and the 
-<b>zfactor</b>: multiplicative factor to convert elevation units to meters;
+<b>zscale</b>: multiplicative factor to convert elevation units to meters;
 (default 1.0).
 
 <p>
@@ -13,7 +13,7 @@ The <b>elevation</b> input raster map specified by the user must contain true
 elevation values, <em>not</em> rescaled or categorized data. If the elevation
 values are in feet or other units than meters (with a conversion factor
 <i>meters:</i>, defined in PROJ_UNITS), they must be converted to meters using
-the parameter <b>zfactor</b>.
+the parameter <b>zscale</b>.
 
 <p>
 The <b>aspect</b> output raster map indicates the direction that slopes are
@@ -28,9 +28,9 @@ Thus, most cells with a very small slope end up having category 0,
 45, ..., 360 in <b>aspect</b> output.
 It is possible to reduce the bias in these directions
 by filtering out the aspect in areas where the terrain is almost flat.
-A option <b>min_slp_allowed</b> can be used to specify the minimum slope
+A option <b>min_slope</b> can be used to specify the minimum slope
 for which aspect is computed. The aspect for all cells with
-slope&nbsp;&lt;&nbsp;<b>min_slp_allowed</b> is set to <i>null</i> (no-data).
+slope&nbsp;&lt;&nbsp;<b>min_slope</b> is set to <i>null</i> (no-data).
 
 <center>
   <img src="aspect_diagram.png" border="0">
@@ -189,4 +189,4 @@ Michael Shapiro, U.S.Army Construction Engineering Research Laboratory<br>
 Olga Waupotitsch, U.S.Army Construction Engineering Research Laboratory
 
 <p>
-<i>Last changed: $Date: 2014-03-26 01:16:47 +0100 (Wed, 26 Mar 2014) $</i>
+<i>Last changed: $Date: 2014-11-28 16:46:08 +0100 (Fri, 28 Nov 2014) $</i>

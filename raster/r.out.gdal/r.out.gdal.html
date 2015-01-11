@@ -19,7 +19,7 @@ a group, when the imagery group's name is entered as input.
 module)
 <p>As with most GRASS raster modules, the current region extents and region
 resolution are used, and a MASK is respected if present.
-Use <em><a href="g.region.html">g.region</a></em>'s "align=", or "rast="
+Use <em><a href="g.region.html">g.region</a></em>'s "align=", or "raster="
 options if you need to realign the region settings to match the original
 map's before export.
 
@@ -29,7 +29,7 @@ map's before export.
 The set of <a href="http://www.gdal.org/formats_list.html">supported
 raster formats</a> written by <em>r.out.gdal</em> depends on the
 local GDAL installation. Available may be (incomplete list):<p>
-<pre>
+<div class="code"><pre>
   AAIGrid: Arc/Info ASCII Grid
   BMP: MS Windows Device Independent Bitmap
   BSB: Maptech BSB Nautical Charts
@@ -53,7 +53,7 @@ local GDAL installation. Available may be (incomplete list):<p>
   PNM: Portable Pixmap Format (netpbm)
   VRT: Virtual Raster
   XPM: X11 PixMap Format
-</pre>
+</pre></div>
 
 
 <h2>NOTES</h2>
@@ -75,7 +75,7 @@ for details.
 
 
 <h3>Ranges of GDAL data types</h3>
-<pre>
+<div class="code"><pre>
   GDAL data type	       minimum  	maximum
 
   Byte  			     0  	    255
@@ -85,7 +85,7 @@ for details.
   Int32, CInt32 	-2,147,483,648    2,147,483,647
   Float32, CFloat32	       -3.4E38  	 3.4E38
   Float64, CFloat64	     -1.79E308         1.79E308
-</pre>
+</pre></div>
 
 <p>If there is a need to keep file sizes small, use the simplest data type
 covering the data range of the raster(s) to be exported, e.g., if suitable
@@ -162,25 +162,36 @@ overviews.
 
 <h2>EXAMPLES</h2>
 
-<h3>Export the integer raster roads map to GeoTIFF format:</h3>
+<h3>Export the integer raster basin_50K map to GeoTIFF format:</h3>
 <div class="code"><pre>
-r.out.gdal input=roads output=roads.tif type=UInt16
+g.region raster=basin_50K -p
+r.out.gdal input=basin_50K output=basin_50K.tif
 </pre></div>
 <p>
 <h3>Export a DCELL raster map in GeoTIFF format suitable for ESRI software:</h3>
 <div class="code"><pre>
-r.out.gdal in=elevation.10m out=ned_elev10m.tif type=Float64 createopt="PROFILE=GeoTIFF,TFW=YES"
+g.region raster=elevation -p
+r.out.gdal in=elevation output=elevation.tif createopt="PROFILE=GeoTIFF,TFW=YES"
+</pre></div>
+<p>
+<h3>Export a raster map in "Deflate" compressed GeoTIFF format:</h3>
+<div class="code"><pre>
+g.region raster=elevation -p
+r.out.gdal in=elevation output=elevation.tif createopt="COMPRESS=DEFLATE"
 </pre></div>
 <p>
 <h3>Export R,G,B imagery bands in GeoTIFF format suitable for ESRI software:</h3>
 <div class="code"><pre>
 i.group group=nc_landsat_rgb input=lsat7_2002_30,lsat7_2002_20,lsat7_2002_10
-r.out.gdal in=nc_landsat_rgb out=nc_landsat_rgb.tif type=Byte createopt="PROFILE=GeoTIFF,INTERLEAVE=PIXEL,TFW=YES"
+g.region raster=lsat7_2002_30 -p
+r.out.gdal in=nc_landsat_rgb output=nc_landsat_rgb.tif type=Byte \
+  createopt="PROFILE=GeoTIFF,INTERLEAVE=PIXEL,TFW=YES"
 </pre></div>
 <p>
 <h3>Export the floating point raster elevation map to ERDAS/IMG format:</h3>
 <div class="code"><pre>
-r.out.gdal input=elevation.10m output=elev_dem10.img format=HFA type=Float32
+g.region raster=elevation -p
+r.out.gdal input=elevation output=elelevation.img format=HFA type=Float32
 </pre></div>
 
 <h3>Export group of image maps as multi-band file</h3>
@@ -188,7 +199,8 @@ r.out.gdal input=elevation.10m output=elev_dem10.img format=HFA type=Float32
 g.list group
 i.group group=tm7 subgroup=tm7 input=tm7_10,tm7_20,tm7_30,tm7_40,tm7_50,tm7_60,tm7_70
 i.group -l tm7
-r.out.gdal tm7 type=UInt16 out=lsat_multiband.tif
+g.region raster=tm7_10 -p
+r.out.gdal tm7 output=lsat_multiband.tif
 gdalinfo lsat_multiband.tif
 </pre></div>
 
@@ -217,16 +229,11 @@ page.
 <br>
 <em>
 <a href="r.out.ascii.html">r.out.ascii</a>,
-<a href="r.out.arc.html">r.out.arc</a>,
 <a href="r.out.bin.html">r.out.bin</a>,
 <a href="r.out.mat.html">r.out.mat</a>,
 <a href="r.out.png.html">r.out.png</a>,
-<a href="r.out.ppm.html">r.out.ppm</a>,
-<a href="r.out.tiff.html">r.out.tiff</a>
-<br>
-<a href="r.out.gdal.sh.html">r.out.gdal.sh</a></em>
- (old shell script version using <tt>gdal_translate</tt>)
-
+<a href="r.out.ppm.html">r.out.ppm</a>
+</em>
 
 <h2>REFERENCES</h2>
 
@@ -238,4 +245,4 @@ GDAL Pages: <a href="http://www.gdal.org">http://www.gdal.org</a>
 Vytautas Vebra (oliver4grass at gmail.com)<br>
 Markus Metz (improved nodata logic)
 
-<p><i>Last changed: $Date: 2011-11-08 13:24:20 -0800 (Tue, 08 Nov 2011) $</i>
+<p><i>Last changed: $Date: 2014-12-19 22:55:37 +0100 (Fri, 19 Dec 2014) $</i>

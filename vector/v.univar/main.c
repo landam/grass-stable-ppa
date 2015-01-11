@@ -9,7 +9,7 @@
  *               
  * PURPOSE:      Univariate Statistics for attribute
  *               
- * COPYRIGHT:    (C) 2004-2010 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2004-2014 by the GRASS Development Team
  *
  *               This program is free software under the GNU General
  *               Public License (>=v2).  Read the file COPYING that
@@ -91,6 +91,9 @@ int main(int argc, char *argv[])
     module = G_define_module();
     G_add_keyword(_("vector"));
     G_add_keyword(_("statistics"));
+    G_add_keyword(_("univariate statistics"));
+    G_add_keyword(_("attribute table"));
+    G_add_keyword(_("geometry"));
     module->label =
 	_("Calculates univariate statistics for attribute.");
     module->description = _("Variance and standard "
@@ -132,7 +135,7 @@ int main(int argc, char *argv[])
 
     geometry = G_define_flag();
     geometry->key = 'd';
-    geometry->description = _("Calculate geometry distances instead of table data.");
+    geometry->description = _("Calculate geometric distances instead of attribute statistics");
 
     G_gisinit(argv[0]);
 
@@ -206,7 +209,7 @@ int main(int argc, char *argv[])
     exit(EXIT_SUCCESS);
 }
 
-static void select_from_geometry(void)
+void select_from_geometry(void)
 {
     int i, j, k, ncats, *cats;
     int type;
@@ -229,6 +232,8 @@ static void select_from_geometry(void)
 	if (Driver == NULL)
 	    G_fatal_error("Unable to open database <%s> by driver <%s>",
 			  Fi->database, Fi->driver);
+        db_set_error_handler_driver(Driver);
+
 	ncats = db_select_int(Driver, Fi->table, Fi->key, where_opt->answer,
 			      &cats);
 	if (ncats == -1)
@@ -243,10 +248,12 @@ static void select_from_geometry(void)
     count = 0;
 
     nlines = Vect_get_num_lines(&Map);
+    G_message(_("Calculating geometric distances between %d primitives..."), nlines);
     /* Start calculating the statistics based on distance to all other primitives.
        Use the centroid of areas and the first point of lines */
     for (i = 1; i <= nlines; i++) {
 
+	G_percent(i, nlines, 2);
 	type = Vect_read_line(&Map, iPoints, Cats, i);
 
 	if (!(type & otype))
@@ -324,7 +331,7 @@ static void select_from_geometry(void)
     }
 }
 
-static void select_from_database(void)
+void select_from_database(void)
 {
     int nrec, ctype, nlines, line, nareas, area;
     struct line_pnts *Points;
@@ -338,13 +345,14 @@ static void select_from_database(void)
     if (Driver == NULL)
 	G_fatal_error("Unable to open database <%s> by driver <%s>",
 		      Fi->database, Fi->driver);
+    db_set_error_handler_driver(Driver);
 
     /* Note do not check if the column exists in the table because it may be an expression */
     db_CatValArray_init(&Cvarr);
     nrec =
 	db_select_CatValArray(Driver, Fi->table, Fi->key, col_opt->answer,
 			      where_opt->answer, &Cvarr);
-    G_debug(2, "nrec = %d", nrec);
+    G_debug(2, "db_select_CatValArray() nrec = %d", nrec);
 
     ctype = Cvarr.ctype;
     if (ctype != DB_C_TYPE_INT && ctype != DB_C_TYPE_DOUBLE)
@@ -362,18 +370,20 @@ static void select_from_database(void)
     if ((otype & GV_POINTS) || (otype & GV_LINES))
 	nlines = Vect_get_num_lines(&Map);
 
+    G_debug(1, "select_from_database: %d points", nlines);
     for (line = 1; line <= nlines; line++) {
 	int i, type;
 
 	G_debug(3, "line = %d", line);
 
+	G_percent(line, nlines, 2);
 	type = Vect_read_line(&Map, Points, Cats, line);
 	if (!(type & otype))
 	    continue;
 
 	for (i = 0; i < Cats->n_cats; i++) {
 	    if (Cats->field[i] == ofield) {
-		double val;
+		double val = 0.0;
 		dbCatVal *catval;
 
 		G_debug(3, "cat = %d", Cats->cat[i]);
@@ -455,7 +465,7 @@ static void select_from_database(void)
 
 	    for (i = 0; i < Cats->n_cats; i++) {
 		if (Cats->field[i] == ofield) {
-		    double val;
+		    double val = 0.0;
 		    dbCatVal *catval;
 
 		    G_debug(3, "cat = %d", Cats->cat[i]);
@@ -516,7 +526,7 @@ static void select_from_database(void)
     G_debug(2, "sum = %f total_size = %f", sum, total_size);
 }
 
-static void summary(void)
+void summary(void)
 {
     if (compatible) {
 	if (!geometry->answer && weight_flag->answer) {

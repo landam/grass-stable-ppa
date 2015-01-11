@@ -4,31 +4,62 @@
 This includes the number of features counted, minimum and maximum values,
 and range. 
 Variance and standard deviation is calculated only for points if
-<tt>type=point</tt> is defined.
+<b>type=point</b> is defined.
 
 <p>Extended statistics adds median, 1st and 3rd quartiles, and 90th
-percentile.
+percentile to the output.
+
+<h2>NOTES</h2>
+
+When using the <b>-d</b> flag, univariate statistics of vector
+geometry are calculated. Depending on the selected vector <b>type</b>,
+distances are calculated as follows:
+
+<ul>
+<li> <b>type=point</b>: point distances are considered;</li>
+<li> <b>type=line</b>: the first point of each line is considered;</li>
+<li> <b>type=area</b>: the centroid of each area is considered.</li>
+</ul>
 
 <h2>EXAMPLE</h2>
 
-<div class="code"><pre>
-g.region rast=elevation.10m -p
-v.random out=samples n=100
-v.db.addtable samples col="heights double precision"
-v.what.rast samples rast=elevation.10m col=heights
-v.db.select samples
+The example is based on the North Carolina sample dataset:
 
-v.univar samples col=heights type=point
+<div class="code"><pre>
+g.region raster=elevation -p
+v.random output=samples npoints=100
+v.db.addtable map=samples columns="heights double precision"
+v.what.rast map=samples rast=elevation column=heights
+v.db.select map=samples
+
+# calculate height attribute statistics:
+v.univar -e samples column=heights type=point
+
+# compare to statistics of original raster map:
+r.univar -e elevation
+
+# calculate distance between sampling points statistics:
+v.univar -d samples column=heights type=point
 </pre></div>
 
 
 <h2>SEE ALSO</h2>
 
-<em><a href="v.neighbors.html">v.neighbors</a></em>
+<em>
+<a href="db.univar.html">db.univar</a>,
+<a href="r.univar.html">r.univar</a>,
+<a href="v.db.univar.html">v.db.univar</a>,
+<a href="v.neighbors.html">v.neighbors</a>
+</em>
 
 
-<h2>AUTHOR</h2>
+<h2>AUTHORS</h2>
 
 Radim Blazek, ITC-irst
+<p>
+extended by:<br>
+Hamish Bowman, University of Otago, New Zealand<br>
+Martin Landa 
 
-<p><i>Last changed: $Date: 2011-11-08 13:24:20 -0800 (Tue, 08 Nov 2011) $</i>
+<p>
+<i>Last changed: $Date: 2014-12-19 22:55:37 +0100 (Fri, 19 Dec 2014) $</i>

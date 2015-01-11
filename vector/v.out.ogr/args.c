@@ -22,7 +22,7 @@ void parse_args(int argc, char **argv,
     options->type->guisection = _("Selection");
 
     options->dsn = G_define_option();
-    options->dsn->key = "dsn";
+    options->dsn->key = "output";
     options->dsn->type = TYPE_STRING;
     options->dsn->required = YES;
     options->dsn->label = _("Name of output OGR datasource");
@@ -40,7 +40,7 @@ void parse_args(int argc, char **argv,
     options->format->description = _("Data format to write");
     
     options->layer = G_define_option();
-    options->layer->key = "olayer";
+    options->layer->key = "output_layer";
     options->layer->type = TYPE_STRING;
     options->layer->required = NO;
     options->layer->label =
@@ -51,7 +51,7 @@ void parse_args(int argc, char **argv,
     options->layer->guisection = _("Creation");
 
     options->otype = G_define_standard_option(G_OPT_V_TYPE);
-    options->otype->key = "otype";
+    options->otype->key = "output_type";
     options->otype->options = "line,boundary";
     options->otype->answer = "";
     options->otype->description = _("Optionally change default output type");
@@ -87,7 +87,8 @@ void parse_args(int argc, char **argv,
 
     flags->append = G_define_flag();
     flags->append->key = 'a';
-    flags->append->description = _("Append to existing layer instead of creating new if it exists");
+    flags->append->label = _("Append to existing layer");
+    flags->append->description = _("A new OGR layer is created if it does not exist");
     
     flags->nocat = G_define_flag();
     flags->nocat->key = 's';

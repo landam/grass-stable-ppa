@@ -6,7 +6,7 @@
 # AUTHOR(S):    Soeren Gebbert
 #
 # PURPOSE:      Export a space time raster dataset
-# COPYRIGHT:    (C) 2011 by the GRASS Development Team
+# COPYRIGHT:    (C) 2011-2014 by the GRASS Development Team
 #
 #               This program is free software under the GNU General Public
 #               License (version 2). Read the file COPYING that comes with GRASS
@@ -18,6 +18,7 @@
 #% description: Exports space time raster dataset.
 #% keywords: temporal
 #% keywords: export
+#% keywords: raster
 #%end
 
 #%option G_OPT_STRDS_INPUT
@@ -28,7 +29,7 @@
 #%end
 
 #%option G_OPT_M_DIR
-#% key: workdir
+#% key: directory
 #% description: Path to the work directory, default is /tmp
 #% required: no
 #% answer: /tmp
@@ -69,7 +70,7 @@ def main():
     _input = options["input"]
     output = options["output"]
     compression = options["compression"]
-    workdir = options["workdir"]
+    directory = options["directory"]
     where = options["where"]
     _format = options["format"]
 
@@ -77,7 +78,7 @@ def main():
     tgis.init()
     # Export the space time raster dataset
     tgis.export_stds(
-        _input, output, compression, workdir, where, _format, "strds")
+        _input, output, compression, directory, where, _format, "strds")
 
 ############################################################################
 if __name__ == "__main__":

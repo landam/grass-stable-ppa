@@ -53,6 +53,7 @@ int main(int argc, char **argv)
     G_add_keyword(_("vector"));
     G_add_keyword(_("attribute table"));
     G_add_keyword(_("database"));
+    G_add_keyword(_("SQL"));
     module->description = _("Prints vector map attributes.");
 
     map_opt = G_define_standard_option(G_OPT_V_MAP);
@@ -70,16 +71,12 @@ int main(int argc, char **argv)
     fs_opt->guisection = _("Format");
 
     vs_opt = G_define_standard_option(G_OPT_F_SEP);
-    vs_opt->key = "vs";
+    vs_opt->key = "vertical_separator";
     vs_opt->label = _("Output vertical record separator");
     vs_opt->answer = NULL;
     vs_opt->guisection = _("Format");
 
-    nv_opt = G_define_option();
-    nv_opt->key = "nv";
-    nv_opt->type = TYPE_STRING;
-    nv_opt->required = NO;
-    nv_opt->description = _("Null value indicator");
+    nv_opt = G_define_standard_option(G_OPT_M_NULL_VALUE);
     nv_opt->guisection = _("Format");
 
     file_opt = G_define_standard_option(G_OPT_F_OUTPUT); 
@@ -170,6 +167,7 @@ int main(int argc, char **argv)
     if (!driver)
 	G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 		      Fi->database, Fi->driver);
+    db_set_error_handler_driver(driver);
 
     if (col_opt->answer)
 	sprintf(query, "SELECT %s FROM ", col_opt->answer);

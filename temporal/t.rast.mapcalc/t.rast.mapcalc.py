@@ -6,7 +6,7 @@
 # AUTHOR(S):	Soeren Gebbert
 #
 # PURPOSE:	Perform spatio-temporal mapcalc expressions on temporal sampled maps of space time raster datasets
-# COPYRIGHT:	(C) 2012 by the GRASS Development Team
+# COPYRIGHT:	(C) 2012-2014 by the GRASS Development Team
 #
 #		This program is free software under the GNU General Public
 #		License (version 2). Read the file COPYING that comes with GRASS
@@ -18,6 +18,7 @@
 #% description: Performs spatio-temporal mapcalc expressions on temporally sampled maps of space time raster datasets.
 #% keywords: temporal
 #% keywords: algebra
+#% keywords: raster
 #%end
 
 #%option G_OPT_STRDS_INPUTS
@@ -39,14 +40,11 @@
 #%option G_OPT_STRDS_OUTPUT
 #%end
 
-#%option
+#%option G_OPT_R_BASENAME_OUTPUT
 #% key: basename
-#% type: string
-#% label: Basename of the new generated output maps
+#% label: Basename for output raster maps
 #% description: A numerical suffix separated by an underscore will be attached to create a unique identifier
 #% required: yes
-#% multiple: no
-#% gisprompt:
 #%end
 
 #%option

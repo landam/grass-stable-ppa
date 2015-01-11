@@ -27,13 +27,13 @@ Assuming that 'test_shape.shp' is located in directory
 '/home/user/shape_data'.
 
 <div class="code"><pre>
-v.external dsn=/home/user/shape_data layer=test_shape output=grass_map 
+v.external input=/home/user/shape_data layer=test_shape output=grass_map 
 </pre></div>
 
 <h3>MapInfo files</h3>
 
 <div class="code"><pre>
-v.external dsn=./ layer=mapinfo_test output=grass_map
+v.external input=./ layer=mapinfo_test output=grass_map
 </pre></div>
 
 <h3>SDTS files</h3>
@@ -41,13 +41,13 @@ v.external dsn=./ layer=mapinfo_test output=grass_map
 Note: you have to select the CATD file
 
 <div class="code"><pre>
-v.external dsn=CITXCATD.DDF output=cities
+v.external input=CITXCATD.DDF output=cities
 </pre></div>
 
 <h3>TIGER files</h3>
 
 <div class="code"><pre>
-v.external dsn=input/2000/56015/ layer=CompleteChain,PIP output=t56015_all
+v.external input=input/2000/56015/ layer=CompleteChain,PIP output=t56015_all
 </pre></div>
 
 <h3>PostGIS layers</h3>
@@ -59,7 +59,7 @@ without PostgreSQL support then GRASS will use OGR-PostgreSQL driver
 for creating a link.
 
 <div class="code"><pre>
-v.external dsn="PG:host=localhost user=postgres dbname=postgis" layer=polymap
+v.external input="PG:host=localhost user=postgres dbname=postgis" layer=polymap
 </pre></div>
 
 <h2>NOTES</h2>
@@ -106,4 +106,4 @@ Radim Blazek, ITC-Irst, Trento, Italy
 PostGIS support by Martin Landa, Czech Technical University in Prague, Czech Republic
 
 <p>
-<i>Last changed: $Date: 2014-06-25 16:10:20 +0200 (Wed, 25 Jun 2014) $</i>
+<i>Last changed: $Date: 2014-11-26 18:33:23 +0100 (Wed, 26 Nov 2014) $</i>

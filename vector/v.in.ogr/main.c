@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
     double xmin, ymin, xmax, ymax;
     int ncols = 0, type;
     double min_area, snap;
-    char buf[2000], namebuf[2000];
+    char buf[DB_SQL_MAX], namebuf[1024];
     char *separator;
     
     struct Key_Value *loc_proj_info, *loc_proj_units;
@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
     module->description = _("Imports vector data into a GRASS vector map using OGR library.");
 
     param.dsn = G_define_option();
-    param.dsn->key = "dsn";
+    param.dsn->key = "input";
     param.dsn->type = TYPE_STRING;
     param.dsn->required =YES;
     param.dsn->label = _("OGR datasource name");
@@ -214,11 +214,7 @@ int main(int argc, char *argv[])
     param.outloc->description = _("Name for new location to create");
     param.outloc->key_desc = "name";
     
-    param.cnames = G_define_option();
-    param.cnames->key = "cnames";
-    param.cnames->type = TYPE_STRING;
-    param.cnames->required = NO;
-    param.cnames->multiple = YES;
+    param.cnames = G_define_standard_option(G_OPT_DB_COLUMNS);
     param.cnames->description =
 	_("List of column names to be used instead of original names, "
 	  "first is used for category column");
@@ -310,6 +306,10 @@ int main(int argc, char *argv[])
 
     G_begin_polygon_area_calculations();	/* Used in geom() */
 
+    /* TODO: threshold might be recalculated with optional geodesic support to meters */
+    if (G_projection() == PROJECTION_LL)
+        G_important_message(_("Note: In latitude-longitude coordinate system specify threshold in degree unit"));
+
     OGRRegisterAll();
 
     /* list supported formats */
@@ -340,16 +340,16 @@ int main(int argc, char *argv[])
 
     driver_name = db_get_default_driver_name();
 
-    if (strcmp(driver_name, "pg") == 0)
+    if (driver_name && strcmp(driver_name, "pg") == 0)
 	datetime_type = "timestamp";
-    else if (strcmp(driver_name, "dbf") == 0)
+    else if (driver_name && strcmp(driver_name, "dbf") == 0)
 	datetime_type = "varchar(22)";
     else
 	datetime_type = "datetime";
 
     /* dsn is 'PG:', check default connection settings */
     dsn = NULL;
-    if (strcmp(driver_name, "pg") == 0 &&
+    if (driver_name && strcmp(driver_name, "pg") == 0 &&
         G_strcasecmp(param.dsn->answer, "PG:") == 0) {
         const char *dbname;
         dbConnection conn;
@@ -429,12 +429,12 @@ int main(int argc, char *argv[])
 
     /* check encoding for given driver */
     if (param.encoding->answer) {
-        const char *driver_name;
+        const char *ogr_driver;
 
-        driver_name = OGR_Dr_GetName(OGR_DS_GetDriver(Ogr_ds));
-        if (strcmp(driver_name, "ESRI Shapefile") != 0 &&
-            strcmp(driver_name, "DXF") != 0)
-            G_warning(_("Encoding value not supported by OGR driver <%s>"), driver_name);
+        ogr_driver = OGR_Dr_GetName(OGR_DS_GetDriver(Ogr_ds));
+        if (strcmp(ogr_driver, "ESRI Shapefile") != 0 &&
+            strcmp(ogr_driver, "DXF") != 0)
+            G_warning(_("Encoding value not supported by OGR driver <%s>"), ogr_driver);
     }
 
     /* make a list of available layers */
@@ -763,10 +763,6 @@ int main(int argc, char *argv[])
 		    else if (cellhd.proj == PROJECTION_UTM)
 			sprintf(error_msg + strlen(error_msg),
 				"Dataset proj = %d (UTM), zone = %d\n",
-				cellhd.proj, cellhd.zone);
-		    else if (cellhd.proj == PROJECTION_SP)
-			sprintf(error_msg + strlen(error_msg),
-				"Dataset proj = %d (State Plane), zone = %d\n",
 				cellhd.proj, cellhd.zone);
 		    else
 			sprintf(error_msg + strlen(error_msg),
@@ -1141,6 +1137,7 @@ int main(int argc, char *argv[])
 			}
 #endif
 			else if (Ogr_ftype == OFTString ||
+				 Ogr_ftype == OFTStringList ||
 				 Ogr_ftype == OFTIntegerList) {
 			    db_set_string(&strval, (char *)
 					  OGR_F_GetFieldAsString(Ogr_feature,
@@ -1166,6 +1163,7 @@ int main(int argc, char *argv[])
 			}
 #endif
 			else if (Ogr_ftype == OFTString ||
+				 Ogr_ftype == OFTStringList ||
 				 Ogr_ftype == OFTIntegerList) {
 			    sprintf(buf, ", ''");
 			}

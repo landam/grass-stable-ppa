@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 ############################################################################
 #
-# MODULE:   t.snap
+# MODULE:       t.snap
 # AUTHOR(S):    Soeren Gebbert
 #
-# PURPOSE:  Temporally snap the maps of a space time dataset.
+# PURPOSE:      Temporally snap the maps of a space time dataset.
 # COPYRIGHT:    (C) 2013 by the GRASS Development Team
 #
 #       This program is free software under the GNU General Public
@@ -17,22 +17,16 @@
 #%module
 #% description: Snaps temporally the maps of a space time dataset.
 #% keywords: temporal
-#% keywords: snap
+#% keywords: snapping
 #%end
 
 #%option G_OPT_STDS_INPUT
 #% description: Name of an existing space time dataset
 #%end
 
-#%option
-#% key: type
-#% type: string
-#% description: Type of the dataset, default is strds (space time raster dataset)
-#% required: no
+#%option G_OPT_STDS_TYPE
 #% guidependency: input
 #% guisection: Required
-#% options: strds, str3ds, stvds
-#% answer: strds
 #%end
 
 import grass.script as grass
@@ -52,7 +46,7 @@ def main():
     dbif = tgis.SQLDatabaseInterfaceConnection()
     dbif.connect()
 
-    stds = tgis.open_old_space_time_dataset(name, type, dbif)
+    stds = tgis.open_old_stds(name, type, dbif)
     stds.snap(dbif=dbif)
 
     stds.update_command_string(dbif=dbif)

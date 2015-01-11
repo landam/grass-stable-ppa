@@ -254,9 +254,8 @@ int main(int argc, char *argv[]) {
 	module->description =
 			_("Imports a binary raster file into a GRASS 3D raster map.");
 
-	parm.input = G_define_standard_option(G_OPT_F_INPUT);
+	parm.input = G_define_standard_option(G_OPT_F_BIN_INPUT);
 	parm.input->description = _("Name of binary 3D raster file to be imported");
-	parm.input->gisprompt = "old,bin,file";
 
 	parm.output = G_define_standard_option(G_OPT_R3_OUTPUT);
 
@@ -266,7 +265,6 @@ int main(int argc, char *argv[]) {
 	parm.bytes->required = YES;
 	parm.bytes->options = "1,2,4,8";
 	parm.bytes->description = _("Number of bytes per cell in binary file");
-	parm.bytes->guisection = _("Settings");
 
 	parm.order = G_define_option();
 	parm.order->key = "order";
@@ -349,7 +347,6 @@ int main(int argc, char *argv[]) {
 	parm.null->type = TYPE_DOUBLE;
 	parm.null->required = NO;
 	parm.null->description = _("Set Value to NULL");
-	parm.null->guisection = _("Settings");
 
 	flag.row = G_define_flag();
 	flag.row->key = 'r';
@@ -369,7 +366,6 @@ int main(int argc, char *argv[]) {
 	flag.sign = G_define_flag();
 	flag.sign->key = 's';
 	flag.sign->description = _("Signed data (two's complement)");
-	flag.sign->guisection = _("Settings");
 
 	if (G_parser(argc, argv))
 		exit(EXIT_FAILURE);

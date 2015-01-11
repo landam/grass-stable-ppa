@@ -11,14 +11,6 @@ value equal to the average of the values
 appearing in its 3 x 3 cell "neighborhood" in the input
 layer.
 
-<p>
-The program will be run non-interactively if the user
-specifies program arguments (see OPTIONS) on the command
-line.  Alternately, the user can simply type
-<em><b>r.neighbors</b></em> on the command line, without program
-arguments.  In this case, the user will be prompted for
-flag settings and parameter values.
-
 <h3>OPTIONS</h3>
 
 The user must specify the names of the raster map layers to
@@ -230,9 +222,9 @@ weights are not used.
 
 When weights are used, the calculation for <b>method=average</b> is:
 
-<pre>
+<div class="code"><pre>
   sum(w[i]*x[i]) / sum(w[i])
-</pre>
+</pre></div>
 
 In the case where all weights are zero, this will end up with both the
 numerator and denominator to zero, which produces a NULL result.
@@ -396,4 +388,4 @@ U.S.Army Construction Engineering Research Laboratory
 <br>
 Updates for GRASS GIS 7 by Glynn Clements and others
 
-<p><i>Last changed: $Date: 2014-07-13 18:30:53 +0200 (Sun, 13 Jul 2014) $</i>  
+<p><i>Last changed: $Date: 2014-12-12 00:16:30 +0100 (Fri, 12 Dec 2014) $</i>  

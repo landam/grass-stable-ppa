@@ -66,7 +66,7 @@ v.random pnts n=100
 v.db.addtable pnts column="heights double precision"
 
 # query raster map and upload values to vector table into specified column
-g.region rast=elevation -p
+g.region raster=elevation -p
 v.what.rast map=pnts raster=elevation column=heights
 
 # verify new attribute table:
@@ -86,7 +86,6 @@ v.univar map=pnts column=heights type=point
 <a href="v.drape.html">v.drape</a>,
 <a href="v.univar.html">v.univar</a>,
 <a href="v.rast.stats.html">v.rast.stats</a>,
-v.what.rast.buffer (AddOn module),
 <a href="v.what.vect.html">v.what.vect</a>
 </em>
 
@@ -96,4 +95,4 @@ Radim Blazek<br>
 Hamish Bowman (interpolation)
 
 <p>
-<i>Last changed: $Date: 2014-03-25 21:38:16 +0100 (Tue, 25 Mar 2014) $</i>
+<i>Last changed: $Date: 2014-12-19 22:55:37 +0100 (Fri, 19 Dec 2014) $</i>

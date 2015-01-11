@@ -1,19 +1,19 @@
 <h2>DESCRIPTION</h2>
 
-<em>v.what.vect</em> transfers attributes from the <b>qvector</b>'s map
+<em>v.what.vect</em> transfers attributes from the <b>query_map</b>'s map
 attribute table into the attribute table of <u>points</u> present in the
-<b>vector</b> map. The script is based on <em>v.distance</em>.
+<b>map</b> map. The script is based on <em>v.distance</em>.
 
 <h2>NOTES</h2>
 
 The upload <b>column</b>, into which the query results are stored, must be
-present in the <b>vector</b> map. Use <em>v.db.addcolumn</em> to add one if needed.
+present in the <b>map</b> map. Use <em>v.db.addcolumn</em> to add one if needed.
 <p>Use dmax parameter to control query distance tolerance (how far points/centroids
-can be from <b>qvector</b> features). For more options, use
+can be from <b>query_map</b> features). For more options, use
 <em>v.distance</em> instead.
-<p>In case of a multipoint input <b>vector</b> map, with several points having the
+<p>In case of a multipoint input <b>map</b> map, with several points having the
 same category number, it can happen, that the query result is NULL, if the same
-category number falls into different <b>qvector</b> polygons.
+category number falls into different <b>query_map</b> polygons.
 <p>When transferring attributes from a point map to a polygon map, usually <b>dmax</b>
 has to be larger than zero (determined by distance between query points and
 polygon centroids).
@@ -28,7 +28,7 @@ map at the hospital points' locations:
 <div class="code"><pre>
 g.copy vect=hospitals,myhospitals
 v.db.addcolumn myhospitals column="urb_name varchar(25)"
-v.what.vect myhospitals qmap=urbanarea column=urb_name qcolumn=NAME
+v.what.vect myhospitals query_map=urbanarea column=urb_name query_column=NAME
 # verification:
 v.db.select myhospitals
 </pre></div>
@@ -46,8 +46,8 @@ v.extract geonames_IT where="featurecla='P'" output=geonames_IT_cities
 # add new column 
 v.db.addcol corine_code111_112_cities column="gnameid double precision"
 # transfer geonameid (3000m maximal distance between points and centroids)
-v.what.vect corine_code111_112_cities qmap=geonames_IT_cities column=gnameid \
-            qcolumn=geonameid dmax=3000
+v.what.vect corine_code111_112_cities query_map=geonames_IT_cities column=gnameid \
+            query_column=geonameid dmax=3000
 # now gnameid can be used for v.db.join to join further
 # attributes in from geonames.org
 </pre></div>
@@ -59,7 +59,8 @@ v.what.vect corine_code111_112_cities qmap=geonames_IT_cities column=gnameid \
 <a href="v.db.select.html">v.db.select</a>,
 <a href="v.distance.html">v.distance</a>,
 <a href="v.rast.stats.html">v.rast.stats</a>,
-<a href="v.what.rast.html">v.what.rast</a>
+<a href="v.what.rast.html">v.what.rast</a>,
+<a href="v.what.rast3.html">v.what.rast3</a>
 </em>
 
 
@@ -67,4 +68,4 @@ v.what.vect corine_code111_112_cities qmap=geonames_IT_cities column=gnameid \
 
 Markus Neteler
 
-<p><i>Last changed: $Date: 2011-11-08 13:24:20 -0800 (Tue, 08 Nov 2011) $</i>
+<p><i>Last changed: $Date: 2014-11-28 17:25:40 +0100 (Fri, 28 Nov 2014) $</i>

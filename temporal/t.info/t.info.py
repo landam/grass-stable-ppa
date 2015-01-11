@@ -2,15 +2,15 @@
 # -*- coding: utf-8 -*-
 ############################################################################
 #
-# MODULE:	t.info
-# AUTHOR(S):	Soeren Gebbert
+# MODULE:       t.info
+# AUTHOR(S):    Soeren Gebbert
 #
-# PURPOSE:	Print information about a space-time dataset
-# COPYRIGHT:	(C) 2011 by the GRASS Development Team
+# PURPOSE:      Print information about a space-time dataset
+# COPYRIGHT:    (C) 2011-2014 by the GRASS Development Team
 #
-#		This program is free software under the GNU General Public
-#		License (version 2). Read the file COPYING that comes with GRASS
-#		for details.
+#       This program is free software under the GNU General Public
+#       License (version 2). Read the file COPYING that comes with GRASS
+#       for details.
 #
 #############################################################################
 
@@ -18,26 +18,22 @@
 #% description: Lists information about space time datasets and maps.
 #% keywords: temporal
 #% keywords: metadata
+#% keywords: extent
 #%end
 
 #%option G_OPT_STDS_INPUT
 #% description: Name of an existing space time dataset or map
 #%end
 
-#%option
-#% key: type
-#% type: string
-#% description: Type of the dataset, default is strds (space time raster dataset)
-#% required: no
+#%option G_OPT_STDS_TYPE
 #% guidependency: input
 #% guisection: Required
-#% options: strds, str3ds, stvds, rast, rast3d, vect
-#% answer: strds
+#% options: strds, str3ds, stvds, raster, raster_3d, vector
 #%end
 
 #%flag
 #% key: g
-#% description: Print information in shell style
+#% description: Print in shell script style
 #%end
 
 #%flag
@@ -77,7 +73,7 @@ def main():
     if system and not shellstyle:
         #      0123456789012345678901234567890
         print " +------------------- Temporal DBMI backend information ----------------------+"
-        print " | DBMI Python interface:...... " + str(dbif.dbmi.__name__)
+        print " | DBMI Python interface:...... " + str(dbif.get_dbmi().__name__)
         print " | Temporal database string:... " + str(
             tgis.get_tgis_database_string())
         print " | SQL template path:.......... " + str(
@@ -88,7 +84,7 @@ def main():
         print " +----------------------------------------------------------------------------+"
         return
     elif system:
-        print "dbmi_python_interface=\'" + str(dbif.dbmi.__name__) + "\'"
+        print "dbmi_python_interface=\'" + str(dbif.get_dbmi().__name__) + "\'"
         print "dbmi_string=\'" + str(tgis.get_tgis_database_string()) + "\'"
         print "sql_template_path=\'" + str(tgis.get_sql_template_path()) + "\'"
         if rows:
@@ -106,10 +102,10 @@ def main():
 
     dataset = tgis.dataset_factory(type_, id_)
 
-    if dataset.is_in_db() == False:
+    if dataset.is_in_db(dbif) == False:
         grass.fatal(_("Dataset <%s> not found in temporal database") % (id_))
 
-    dataset.select()
+    dataset.select(dbif)
 
     if history == True and type in ["strds", "stvds", "str3ds"]:
         dataset.print_history()

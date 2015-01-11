@@ -64,6 +64,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifndef RELDIR
+#define RELDIR "?"
+#endif
+
 /* adj_cellhd.c */
 void G_adjust_Cell_head(struct Cell_head *, int, int);
 void G_adjust_Cell_head3(struct Cell_head *, int, int, int);
@@ -81,9 +85,9 @@ void *G_incr_void_ptr(const void *, size_t);
 #endif
 
 #ifndef CTYPESGEN
-#define G_malloc(n)     G__malloc(__FILE__, __LINE__, (n))
-#define G_calloc(m, n)  G__calloc(__FILE__, __LINE__, (m), (n))
-#define G_realloc(p, n) G__realloc(__FILE__, __LINE__, (p), (n))
+#define G_malloc(n)     G__malloc(RELDIR "/" __FILE__, __LINE__, (n))
+#define G_calloc(m, n)  G__calloc(RELDIR "/" __FILE__, __LINE__, (m), (n))
+#define G_realloc(p, n) G__realloc(RELDIR "/" __FILE__, __LINE__, (p), (n))
 #else
 #define G_malloc(n)     G__malloc("<ctypesgen>", 0, (n))
 #define G_calloc(m, n)  G__calloc("<ctypesgen>", 0, (m), (n))
@@ -135,6 +139,11 @@ int G_rasprintf(char **, size_t *,const char *, ...)
 
 /* basename.c */
 char *G_basename(char *, const char *);
+size_t G_get_num_decimals(const char *);
+char *G_double_to_basename_format(double, size_t, size_t);
+char *G_get_basename_separator();
+char *G_join_basename_strings(const char**, size_t);
+char *G_generate_basename(const char*, double, size_t, size_t);
 
 /* bres_line.c */
 void G_bresenham_line(int, int, int, int, int (*)(int, int));
@@ -216,6 +225,8 @@ void G_set_gisrc_mode(int);
 int G_get_gisrc_mode(void);
 void G_create_alt_env(void);
 void G_switch_env(void);
+void G__read_mapset_env(void);
+void G__read_gisrc_env(void);
 
 /* error.c */
 jmp_buf *G_fatal_longjmp(int);
@@ -407,8 +418,8 @@ void G_ls_format(char **, int, int, FILE *);
 
 /* ls_filter.c */
 #ifdef HAVE_REGEX_H
-void *G_ls_regex_filter(const char *, int, int);
-void *G_ls_glob_filter(const char *, int);
+void *G_ls_regex_filter(const char *, int, int, int);
+void *G_ls_glob_filter(const char *, int, int);
 void G_free_ls_filter(void *);
 #endif
 
@@ -507,6 +518,15 @@ int G_get_overwrite();
 char *G_option_to_separator(const struct Option *);
 FILE *G_open_option_file(const struct Option *);
 void G_close_option_file(FILE *);
+
+/* parser_dependencies.c */
+void G__option_rule(int, int, void **);
+void G_option_exclusive(void *, ...);
+void G_option_required(void *, ...);
+void G_option_requires(void *, ...);
+void G_option_requires_all(void *, ...);
+void G_option_excludes(void *, ...);
+void G_option_collective(void *, ...);
 
 /* paths.c */
 int G_mkdir(const char *);

@@ -5,7 +5,7 @@
 # AUTHOR(S):	Radim Blazek
 #               Converted to Python by Glynn Clements
 # PURPOSE:	Test database driver
-# COPYRIGHT:	(C) 2004 by the GRASS Development Team
+# COPYRIGHT:	(C) 2004-2014 by the GRASS Development Team
 #
 #		This program is free software under the GNU General Public
 #		License (version 2). Read the file COPYING that comes with GRASS
@@ -30,6 +30,7 @@ import sys
 import os
 from grass.script import core as grass
 from grass.script import db as grassdb
+from grass.exceptions import CalledModuleError
 
 def main():
     test_file = options['test']
@@ -54,17 +55,18 @@ def main():
 
 	# Copy expected result to temp file
 
-	if type == 'X':
-	    r = grass.write_command('db.execute', input = '-', stdin = sql + '\n')
-	else:
-	    resf = file(result, 'w')
-	    r = grass.write_command('db.select', input = '-', flags = 'c', stdin = sql + '\n', stdout = resf)
-	    resf.close()
+        try:
+            if type == 'X':
+                grass.write_command('db.execute', input = '-', stdin = sql + '\n')
+            else:
+                resf = file(result, 'w')
+                grass.write_command('db.select', input = '-', flags = 'c', stdin = sql + '\n', stdout = resf)
+                resf.close()
 
-	if r != 0:
-	    grass.error("EXECUTE: ******** ERROR ********")
-	else:
-	    grass.message(_("EXECUTE: OK"))
+        except CalledModuleError:
+            grass.error("EXECUTE: ******** ERROR ********")
+        else:
+            grass.message(_("EXECUTE: OK"))
 
 	expf = file(expected, 'w')
 	while True:

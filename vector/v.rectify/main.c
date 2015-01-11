@@ -7,7 +7,7 @@
  * PURPOSE:      calculate a transformation matrix and then convert x,y(,z) 
  *               coordinates to standard map coordinates for all objects in 
  *               the vector
- *               control points can come from i.points or i.vpoints or 
+ *               control points can come from g.gui.gcp or 
  *               a user-given text file
  * COPYRIGHT:    (C) 2002-2011 by the GRASS Development Team
  *
@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
     val->required = NO;
     val->options = "1-3";
     val->answer = "1";
-    val->description = _("Rectification polynom order (1-3)");
+    val->description = _("Rectification polynomial order (1-3)");
     
     sep = G_define_standard_option(G_OPT_F_SEP);
     sep->label = _("Field separator for RMS report");

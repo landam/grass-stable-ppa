@@ -168,6 +168,8 @@ int main(int argc, char *argv[])
     G_add_keyword(_("algebra"));
     G_add_keyword(_("statistics"));
     G_add_keyword(_("aggregation"));
+    G_add_keyword(_("neighbor"));
+    G_add_keyword(_("focal statistics"));
     G_add_keyword(_("filter"));
     module->description =
 	_("Makes each cell category value a "
@@ -216,7 +218,7 @@ int main(int argc, char *argv[])
     parm.title->key_desc = "phrase";
     parm.title->type = TYPE_STRING;
     parm.title->required = NO;
-    parm.title->description = _("Title of the output raster map");
+    parm.title->description = _("Title for output raster map");
 
     parm.weight = G_define_standard_option(G_OPT_F_INPUT);
     parm.weight->key = "weight";

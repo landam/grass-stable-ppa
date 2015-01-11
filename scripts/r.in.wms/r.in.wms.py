@@ -51,7 +51,7 @@ This program is free software under the GNU General Public License
 #% type: string
 #% description: Image format requested from the server
 #% options: geotiff,tiff,jpeg,gif,png,png8
-#% answer: geotiff
+#% answer: png
 #% guisection: Request
 #%end
 
@@ -143,17 +143,16 @@ This program is free software under the GNU General Public License
 #% guisection: Map style
 #%end
 
-#%option G_OPT_F_INPUT
+#%option G_OPT_F_BIN_INPUT
 #% key: capfile
 #% required: no
-#% gisprompt: old,bin,file
 #% description: Capabilities file to parse (input). It is relevant for WMTS_GRASS and OnEarth_GRASS drivers
 #%end
 
 #%option G_OPT_F_OUTPUT
 #% key: capfile_output
 #% required: no
-#% description: File in which the server capabilities will be saved ('c' flag)
+#% description: File where the server capabilities will be saved ('c' flag)
 #%end
 
 #%flag
@@ -165,8 +164,12 @@ This program is free software under the GNU General Public License
 
 #%flag
 #% key: o
-#% description: Don't request transparent data
+#% description: Do not request transparent data
 #% guisection: Map style
+#%end
+
+#%rules
+#% exclusive: capfile_output, capfile
 #%end
 
 import os

@@ -91,7 +91,7 @@ static void init_xlib(const char *scr, const char *vis)
     if (scr)
 	scrn = atoi(scr);
     else {
-	const char *p = getenv("GRASS_CAIRO_SCREEN");
+	const char *p = getenv("GRASS_RENDER_CAIRO_SCREEN");
 	if (!p || sscanf(p, "%i", &scrn) != 1)
 	    scrn = DefaultScreen(dpy);
     }
@@ -101,7 +101,7 @@ static void init_xlib(const char *scr, const char *vis)
     if (vis)
 	visid = strtoul(vis, NULL, 0);
     else {
-	const char *p = getenv("GRASS_CAIRO_VISUAL");
+	const char *p = getenv("GRASS_RENDER_CAIRO_VISUAL");
 	if (!p || sscanf(p, "%li", &visid) != 1)
 	    visid = DefaultVisual(dpy, scrn)->visualid;
     }
@@ -241,7 +241,7 @@ int main(int argc, char *argv[])
 
     flag_d = G_define_flag();
     flag_d->key = 'd';
-    flag_d->description = _("Don't composite; just delete input Pixmaps");
+    flag_d->description = _("Do not composite; just delete input Pixmaps");
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);

@@ -19,7 +19,7 @@ db.copy from_table=probe_orig to_table=probe_3_2
 db.copy from_table=probe_orig to_table=probe_3_3
 
 # Removing un-needed vectors and tables
-g.remove vect=probe_orig
+g.remove -f type=vector name=probe_orig
 v.db.droptable -f map=probe_3 table=probe_3 layer=1
 
 # Adding tables to layer
@@ -37,9 +37,9 @@ v.pack --o -c input=probe_2 output=probe_2_uncompressed.pack
 v.pack --o -c input=probe_3 output=probe_3_uncompressed.pack
 
 # We need to clean before import
-g.remove vect=probe_1,probe_2,probe_3
+g.remove -f type=vector name=probe_1,probe_2,probe_3
 
-# Test the import with v.unpack
+# Test the compressed import with v.unpack
 v.unpack --o input=probe_1.pack
 v.category input=probe_1 option=report
 v.unpack --o input=probe_2.pack
@@ -47,13 +47,13 @@ v.category input=probe_2 option=report
 v.unpack --o input=probe_3.pack
 v.category input=probe_3 option=report
 
-# Test the import with v.unpack
-v.unpack --o input=probe_1.pack output=probe_1_uncompressed
+# Test the uncompressed import with v.unpack (Seems to fail?)
+v.unpack --o input=probe_1_uncompressed.pack output=probe_1_uncompressed
 v.category input=probe_1_uncompressed option=report
-v.unpack --o input=probe_2.pack output=probe_2_uncompressed
+v.unpack --o input=probe_2_uncompressed.pack output=probe_2_uncompressed
 v.category input=probe_2_uncompressed option=report
-v.unpack --o input=probe_3.pack output=probe_3_uncompressed
+v.unpack --o input=probe_3_uncompressed.pack output=probe_3_uncompressed
 v.category input=probe_3_uncompressed option=report
 
-g.remove vect=probe_1_uncompressed,probe_2_uncompressed,probe_3_uncompressed
-rm *.pack
+g.remove -f type=vector name=probe_1_uncompressed,probe_2_uncompressed,probe_3_uncompressed
+#rm *.pack

@@ -5,7 +5,8 @@
 # MODULE:	t.rast3d.univar
 # AUTHOR(S):	Soeren Gebbert
 #
-# PURPOSE:	Calculates univariate statistics from the non-null cells for each registered raster3d map of a space time raster3d dataset
+# PURPOSE:	Calculates univariate statistics from the non-null cells for each registered 3D 
+#               raster map of a space time 3D raster dataset
 # COPYRIGHT:	(C) 2011-2014, Soeren Gebbert and the GRASS Development Team
 #
 #		This program is free software under the GNU General Public
@@ -15,10 +16,11 @@
 #############################################################################
 
 #%module
-#% description: Calculates univariate statistics from the non-null cells for each registered raster3d map of a space time raster3d dataset.
+#% description: Calculates univariate statistics from the non-null cells for each registered 3D raster map of a space time 3D raster dataset.
 #% keywords: temporal
 #% keywords: statistics
-#% keywords: raster
+#% keywords: raster3d
+#% keywords: voxel
 #%end
 
 #%option G_OPT_STR3DS_INPUT
@@ -39,8 +41,8 @@
 #%end
 
 #%flag
-#% key: h
-#% description: Print the column names as first row
+#% key: s
+#% description: Suppress printing of column names
 #% guisection: Formatting
 #%end
 
@@ -56,14 +58,14 @@ def main():
     input = options["input"]
     where = options["where"]
     extended = flags["e"]
-    header = flags["h"]
+    no_header = flags["s"]
     separator = grass.separator(options["separator"])
 
     # Make sure the temporal database exists
     tgis.init()
 
     tgis.print_gridded_dataset_univar_statistics(
-        "str3ds", input, where, extended, header, separator)
+        "str3ds", input, where, extended, no_header, separator)
 
 if __name__ == "__main__":
     options, flags = grass.parser()

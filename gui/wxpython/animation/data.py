@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""!
+"""
 @package animation.data
 
 @brief animation data structures
@@ -19,6 +19,7 @@ This program is free software under the GNU General Public License
 import os
 import copy
 
+from grass.script.utils import parse_key_val
 from grass.script import core as gcore
 
 from core.utils import _
@@ -75,7 +76,7 @@ class AnimationData(object):
     windowIndex = property(fget=GetWindowIndex, fset=SetWindowIndex)
 
     def SetLayerList(self, layerList):
-        """!
+        """
         Throws GException if layer list's combination of stds is not valid.
         """
         mapSeriesList = []
@@ -232,11 +233,11 @@ class AnimationData(object):
             self._regions = regions
             return
 
-        startRegionDict = gcore.parse_key_val(gcore.read_command('g.region', flags='gu',
+        startRegionDict = parse_key_val(gcore.read_command('g.region', flags='gu',
                                                                  region=startRegion),
                                               val_type=float)
         if endRegion:
-            endRegionDict = gcore.parse_key_val(gcore.read_command('g.region', flags='gu',
+            endRegionDict = parse_key_val(gcore.read_command('g.region', flags='gu',
                                                                    region=endRegion),
                                                 val_type=float)
             for key in ('n', 's', 'e', 'w'):
@@ -269,7 +270,7 @@ class AnimationData(object):
 
 
 class AnimLayer(Layer):
-    """!Animation layer allows to add either space-time dataset
+    """Animation layer allows to add either space-time dataset
     or series of maps."""
     def __init__(self):
         Layer.__init__(self)

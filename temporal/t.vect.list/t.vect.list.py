@@ -44,7 +44,7 @@
 #% required: no
 #% multiple: yes
 #% options: id,name,layer,creator,mapset,temporal_type,creation_time,start_time,end_time,north,south,west,east,points,lines,boundaries,centroids,faces,kernels,primitives,nodes,areas,islands,holes,volumes
-#% answer: id,name,layer,mapset,start_time,end_time
+#% answer: name,layer,mapset,start_time,end_time
 #%end
 
 #%option G_OPT_T_WHERE
@@ -67,8 +67,8 @@
 #%end
 
 #%flag
-#% key: h
-#% description: Print the column names as first row
+#% key: s
+#% description: Suppress printing of column names
 #% guisection: Formatting
 #%end
 
@@ -87,7 +87,7 @@ def main():
     where = options["where"]
     separator = grass.separator(options["separator"])
     method = options["method"]
-    header = flags["h"]
+    header = flags["s"]
 
     # Make sure the temporal database exists
     tgis.init()

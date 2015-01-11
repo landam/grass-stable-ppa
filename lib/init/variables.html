@@ -161,13 +161,25 @@ PERMANENT
     &lt;key&gt;, without the bracketing &lt;string&gt; tags.</dd>
 
   <dt>GRASS_INT_ZLIB</dt>
-  <dd>[libgis]<br> if the environment variable GRASS_INT_ZLIB exists,
+  <dd>[libraster]<br> if the environment variable GRASS_INT_ZLIB exists and has the value 0,
     new compressed <i>integer</i> (CELL type) raster maps will be compressed
-    using zlib instead of RLE compression. Such rasters will have a <tt>compressed</tt>
+    using RLE compression.
+    <br><br>
+    If the variable doesn't exist, or the value is non-zero, zlib compression
+    will be used instead. Such rasters will have a <tt>compressed</tt>
     value of 2 in the cellhd file.
     <br><br>
     Obviously, decompression is controlled by the
     raster's <tt>compressed</tt> value, not the environment variable.</dd>
+
+  <dt>GRASS_ZLIB_LEVEL</dt>
+  <dd>[libgis]<br> if the environment variable GRASS_ZLIB_LEVEL exists and its value can
+    be parsed as an integer, it determines the compression level used when new compressed
+    raster maps are compressed using zlib compression. This applies to all 
+    raster map types (CELL, FCELL, DCELL).
+    <br><br>
+    If the variable doesn't exist, or the value cannot be parsed as an
+    integer, zlib's default compression level will be used.</dd>
   
   <dt>GRASS_MESSAGE_FORMAT</dt>
   <dd>[various modules, wxGUI]<br>
@@ -325,19 +337,21 @@ PERMANENT
   values: <em><a href="cairodriver.html">cairo</a></em>, <em><a href="pngdriver.html">png</a></em>, <em><a href="psdriver.html">ps</a></em>
   or <em><a href="htmldriver.html">html</a></em></dd>
   
-  <dt>GRASS_WIDTH</dt>
+  <dt>GRASS_RENDER_WIDTH</dt>
   <dd>defines the width of output image (default is 640).</dd>
   
-  <dt>GRASS_HEIGHT</dt>
+  <dt>GRASS_RENDER_HEIGHT</dt>
   <dd>defines the height of output image (default is 480).</dd>
   
-  <dt>GRASS_FRAME</dt>
-  <dd>contains 4 coordinates, <em>top,bottom,left,right</em> (pixel values), defining the initial frame.</dd>
+  <dt>GRASS_RENDER_FRAME</dt>
+  <dd>contains 4 coordinates, <em>top,bottom,left,right</em> (pixel
+  values) with respect to the top left corner of the output image,
+  defining the initial frame.</dd>
 
-  <dt>GRASS_LINE_WIDTH</dt>
+  <dt>GRASS_RENDER_LINE_WIDTH</dt>
   <dd>defines default line width.</dd>
   
-  <dt>GRASS_TEXT_SIZE</dt>
+  <dt>GRASS_RENDER_TEXT_SIZE</dt>
   <dd>defines default text size.</dd>
 
 </dl>
@@ -488,6 +502,8 @@ g.gisenv set=DEBUG=0
    See also GIS_ERROR_LOG variable.</dd>
 </dl>
 
+Note: On MS Windows the files are stored in <tt>%APPDATA%</tt>.
+
 <h2>SEE ALSO</h2>
 
 <em>
@@ -496,4 +512,4 @@ g.gisenv set=DEBUG=0
 </em>
 
 <p>
-<i>Last changed: $Date: 2014-07-31 14:08:48 +0200 (Thu, 31 Jul 2014) $</i>
+<i>Last changed: $Date: 2014-12-07 10:58:42 +0100 (Sun, 07 Dec 2014) $</i>

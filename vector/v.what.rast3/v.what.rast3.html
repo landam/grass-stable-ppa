@@ -1,17 +1,17 @@
 <h2>DESCRIPTION</h2>
 
-<em>v.what.rast3</em> reads 3d raster value for each point in the vector and updates <b>col</b> 
+<em>v.what.rast3</em> reads 3D raster value for each point in the vector and updates <b>col</b> 
 column in vector attribute table by this value. The column should be type double. This module is based on 
 <a href="v.what.rast.html">v.what.rast</a>.
 <br>
 If more points have the same category, attribute value is set to NULL.
-If 3d raster values is NULL, attribute value is set to NULL.
+If 3D raster values is NULL, attribute value is set to NULL.
 
 <h2>NOTES</h2>
 
 <h2>EXAMPLES</h2>
 
-A) Reading values from 3d raster map at position of vector points, writing these values
+A) Reading values from 3D raster map at position of vector points, writing these values
    into a column of the attribute table connected to the vector map:
 <br>
 <div class="code"><pre>
@@ -25,13 +25,13 @@ queried from the raster map:
 <br>
 <div class="code"><pre>
 # create new random 3d vector points map
-v.random -z output=pnts n=100 zmin=0  zmax=50
+v.random -z output=pnts npoints=100 zmin=0  zmax=50
 
 # add new table, link to map
 v.db.addtable map=pnts column="concentration double precision"
 
 # query raster map and upload values to vector table into specified column
-g.region rast3d=plume -p
+g.region raster3d=plume -p
 v.what.rast3 map=pnts raster3d=plume column=concentration
 
 # verify new attribute table:
@@ -44,9 +44,10 @@ v.univar map=pnts column=concentration type=point
 <h2>SEE ALSO</h2>
 
 <em>
-<a href="v.what.rast.html">v.what.rast</a>,
 <a href="v.db.addtable.html">v.db.addtable</a>,
 <a href="v.db.select.html">v.db.select</a>,
+<a href="v.what.rast.html">v.what.rast</a>,
+<a href="v.what.vect.html">v.what.vect</a>,
 <a href="v.univar.html">v.univar</a>
 </em>
 
@@ -54,4 +55,4 @@ v.univar map=pnts column=concentration type=point
 Soeren Gebbert, heavily based on v.what.rast by Radim Blazed
 
 <p>
-<i>Last changed: $Date: 2012-05-14 01:15:42 -0700 (Mon, 14 May 2012) $</i>
+<i>Last changed: $Date: 2014-12-19 22:55:37 +0100 (Fri, 19 Dec 2014) $</i>

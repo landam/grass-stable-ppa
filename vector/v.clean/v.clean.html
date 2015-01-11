@@ -160,8 +160,8 @@ longest boundary with an adjacent area is removed or all boundaries if
 there is no adjacent area. Area categories are not combined when a small 
 area is merged with a larger area.
 <p>
-Threshold gives area size in map units, for latitude-longitude locations
-in square meters.
+Threshold must always be in square meters, also for latitude-longitude 
+locations or locations with units other than meters.
 
 <h3>Remove all lines or boundaries of zero length</h3>
 <em>tool=rmline</em>
@@ -210,7 +210,7 @@ topology is always built for <em>error</em> vector.
 
 <h3>Snap lines to vertex in threshold</h3>
 <div class="code"><pre>
-v.clean input=testmap output=cleanmap tool=snap thresh=1
+v.clean input=testmap output=cleanmap tool=snap threshold=1
 </pre></div>
 
 <h3>Cleaning OGR imported data (Simple Feature data) such as SHAPE file</h3>
@@ -277,7 +277,7 @@ v.clean type=boundary would remove nothing.
 
 <div class="code"><pre>
 v.clean input=testmap output=cleanmap type=line \
-        tool=rmdangle,rmdangle,rmdangle,rmdangle thresh=5,10,20,50
+        tool=rmdangle,rmdangle,rmdangle,rmdangle threshold=5,10,20,50
 </pre></div>
 
 <h2>SEE ALSO</h2>
@@ -295,4 +295,4 @@ David Gerdes, U.S. Army Construction Engineering Research Laboratory<br>
 Radim Blazek, ITC-irst, Trento, Italy<br>
 Martin Landa, FBK-irst (formerly ITC-irst), Trento, Italy
 
-<p><i>Last changed: $Date: 2014-06-17 15:45:46 +0200 (Tue, 17 Jun 2014) $</i>
+<p><i>Last changed: $Date: 2014-11-28 17:25:40 +0100 (Fri, 28 Nov 2014) $</i>

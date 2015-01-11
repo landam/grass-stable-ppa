@@ -36,15 +36,16 @@ import sys
 import os
 import atexit
 import string
+from grass.script.utils import separator, try_remove
 from grass.script import core as grass
 
 def cleanup():
-    grass.try_remove(tmp)
+    try_remove(tmp)
 
 def main():
     global tmp
 
-    fs = options['separator']
+    fs = separator(options['separator'])
     threeD = flags['z']
 
     prog = 'v.in.lines'
@@ -57,19 +58,6 @@ def main():
 
     tmp = grass.tempfile()
 
-
-    #### parse field separator
-    if fs in ('space', 'tab'):
-        fs = ' '
-    elif fs == 'comma':
-        fs = ','
-    else:
-        if len(fs) > 1:
-            grass.warning(_("Invalid field separator, using '%s'") % fs[0])
-        try:
-            fs = fs[0]
-        except IndexError:
-            grass.fatal(_("Invalid field separator '%s'") % fs)
 
     #### set up input file
     if options['input'] == '-':

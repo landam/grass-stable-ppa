@@ -1,4 +1,4 @@
-"""!
+"""
 @package core.globalvar
 
 @brief Global variables used by wxGUI
@@ -42,7 +42,7 @@ except IOError:
 from grass.script.core import get_commands
 
 def CheckWxVersion(version = [2, 8, 11, 0]):
-    """!Check wx version"""
+    """Check wx version"""
     ver = wx.version().split(' ')[0]
     if map(int, ver.split('.')) < version:
         return False
@@ -50,7 +50,7 @@ def CheckWxVersion(version = [2, 8, 11, 0]):
     return True
 
 def CheckForWx():
-    """!Try to import wx module and check its version"""
+    """Try to import wx module and check its version"""
     if 'wx' in sys.modules.keys():
         return
 
@@ -91,7 +91,7 @@ Deleted automatically on re-render action
 # temporal query layer (removed on re-render action)
 QUERYLAYER = 'qlayer'
 
-"""!Style definition for FlatNotebook pages"""
+"""Style definition for FlatNotebook pages"""
 FNPageStyle = FN.FNB_VC8 | \
     FN.FNB_BACKGROUND_GRADIENT | \
     FN.FNB_NODRAG | \
@@ -104,7 +104,7 @@ FNPageDStyle = FN.FNB_FANCY_TABS | \
 
 FNPageColor = wx.Colour(125,200,175)
 
-"""!Dialog widget dimension"""
+"""Dialog widget dimension"""
 DIALOG_SPIN_SIZE = (150, -1)
 DIALOG_COMBOBOX_SIZE = (300, -1)
 DIALOG_GSELECT_SIZE = (400, -1)
@@ -131,16 +131,16 @@ else:
 
 if sys.platform == 'win32':
     BIN_EXT = '.exe'
-    SCT_EXT = '.py'
+    SCT_EXT = '.bat'
 else:
     BIN_EXT = SCT_EXT = ''
 
 
 def UpdateGRASSAddOnCommands(eList = None):
-    """!Update list of available GRASS AddOns commands to use when
+    """Update list of available GRASS AddOns commands to use when
     parsing string from the command line
 
-    @param eList list of AddOns commands to remove
+    :param eList: list of AddOns commands to remove
     """
     global grassCmd, grassScripts
 
@@ -148,9 +148,10 @@ def UpdateGRASSAddOnCommands(eList = None):
     addonPath = os.getenv('GRASS_ADDON_PATH', '')
     addonBase = os.getenv('GRASS_ADDON_BASE')
     if addonBase:
-        addonPath += os.pathsep + os.path.join(addonBase, 'bin') + os.pathsep + \
-            os.path.join(addonBase, 'scripts')
-
+        addonPath += os.pathsep + os.path.join(addonBase, 'bin')
+        if sys.platform != 'win32':
+            addonPath += os.pathsep + os.path.join(addonBase, 'scripts')
+    
     # remove commands first
     if eList:
         for ext in eList:
@@ -189,22 +190,16 @@ def UpdateGRASSAddOnCommands(eList = None):
                     grassCmd.add(fname)
                     Debug.msg(3, "AddOn commands: %s", fname)
                     nCmd += 1
-
-    Debug.msg(1, "Number of new AddOn commands: %d", nCmd)
+    
+    Debug.msg(1, "Number of GRASS AddOn commands: %d", nCmd)
 
 """@brief Collected GRASS-relared binaries/scripts"""
 grassCmd, grassScripts = get_commands()
-Debug.msg(1, "Number of GRASS commands: %d", len(grassCmd))
+Debug.msg(1, "Number of core GRASS commands: %d", len(grassCmd))
 UpdateGRASSAddOnCommands()
 
 """@Toolbar icon size"""
 toolbarSize = (24, 24)
-
-"""@Is g.mlist available?"""
-if 'g.mlist' in grassCmd:
-    have_mlist = True
-else:
-    have_mlist = False
 
 """@Check version of wxPython, use agwStyle for 2.8.11+"""
 hasAgw = CheckWxVersion()

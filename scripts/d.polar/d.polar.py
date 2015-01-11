@@ -33,7 +33,6 @@
 #% required : no
 #%End
 #%option G_OPT_F_OUTPUT
-#% key: eps
 #% description: Name for optional EPS output file
 #% required : no
 #%end
@@ -50,12 +49,13 @@ import math
 import atexit
 import glob
 import shutil
+from grass.script.utils import try_remove, basename
 from grass.script import core as grass
 
 def cleanup():
-    grass.try_remove(tmp)
+    try_remove(tmp)
     for f in glob.glob(tmp + '_*'):
-	grass.try_remove(f)
+	try_remove(f)
 
 def plot_xgraph():
     newline = ['\n']
@@ -86,7 +86,7 @@ def plot_dgraph():
     fb = frame_height - dy
 
     tenv = os.environ.copy()
-    tenv['GRASS_FRAME'] = '%f,%f,%f,%f' % (ft, fb, fl, fr)
+    tenv['GRASS_RENDER_FRAME'] = '%f,%f,%f,%f' % (ft, fb, fl, fr)
 
     # polyline calculations
     ring = 0.95
@@ -383,7 +383,7 @@ def main():
 
     map = options['map']
     undef = options['undef']
-    eps = options['eps']
+    eps = options['output']
     xgraph = flags['x']
 
     tmp = grass.tempfile()
@@ -480,7 +480,7 @@ def main():
     # Now output:
 
     if eps:
-	psout = grass.basename(eps, 'eps') + '.eps'
+	psout = basename(eps, 'eps') + '.eps'
 	plot_eps(psout)
     elif xgraph:
 	plot_xgraph()

@@ -221,7 +221,10 @@ int main(int argc, char *argv[])
     module = G_define_module();
     G_add_keyword(_("vector"));
     G_add_keyword(_("buffer"));
+    G_add_keyword(_("area"));
+    G_add_keyword(_("circle"));
     G_add_keyword(_("geometry"));
+    G_add_keyword(_("line"));
     module->description =
 	_("Creates a buffer around vector features of given type.");
 
@@ -268,7 +271,6 @@ int main(int argc, char *argv[])
     angle_opt->guisection = _("Distance");
 
     bufcol_opt = G_define_standard_option(G_OPT_DB_COLUMN);
-    bufcol_opt->key = "bufcolumn";
     bufcol_opt->description =
 	_("Name of column to use for buffer distances");
     bufcol_opt->guisection = _("Distance");
@@ -296,7 +298,7 @@ int main(int argc, char *argv[])
 
     nocaps_flag = G_define_flag();
     nocaps_flag->key = 'c';
-    nocaps_flag->description = _("Don't make caps at the ends of polylines");
+    nocaps_flag->description = _("Do not make caps at the ends of polylines");
 
     cats_flag = G_define_flag();
     cats_flag->key = 't';
@@ -320,7 +322,7 @@ int main(int argc, char *argv[])
 
     /* TODO: no geodesic support yet in GEOS */
     if (G_projection() == PROJECTION_LL)
-        G_important_message(_("Note: In latitude-longitude coordinate system distances are in degree units"));
+        G_important_message(_("Note: In latitude-longitude coordinate system specify distances in degree unit"));
 
     if ((dista_opt->answer && bufcol_opt->answer) ||
 	(!(dista_opt->answer || bufcol_opt->answer)))
@@ -409,6 +411,7 @@ int main(int argc, char *argv[])
 	if (Driver == NULL)
 	    G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 			  Fi->database, Fi->driver);
+        db_set_error_handler_driver(Driver);
 
 	/* Note do not check if the column exists in the table because it may be expression */
 

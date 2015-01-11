@@ -27,40 +27,26 @@ static double dst[2][2];
 
 static int draw_cell(int, const void *, struct Colors *, RASTER_MAP_TYPE);
 
-/* routines used by programs such as Dcell, display, combine, and weight
- * for generating raster images (for 1-byte, i.e. not super-cell, data)
- *
- * D_cell_draw_setup(t, b, l, r)
- *    int t, b, l, r    (pixle extents of display window)
- *                      (obtainable via D_get_dst(&t, &b, &l, &r)
- *   Sets up the environment for D_draw_cell
- *
- * D_draw_cell(A_row, xarray, colors)
- *    int A_row ;  
- *    CELL *xarray ;
- *   - determinew which pixle row gets the data
- *   - resamples the data to create a pixle array
- *   - determines best way to draw the array
- *      a - for single cat array, a move and a draw
- *      b - otherwise, a call to D_raster()
- *   - returns  -1 on error or end of picture
- *         or array row number needed for next pixle row.
- *
- *   presumes the map is drawn from north to south
- *
- * ALSO: if overlay mode is desired, then call D_set_overlay_mode(1)
- *       first.
- */
-
 /*!
   \brief Draw raster row
   
-  \param A_row row number
-  \param array
+  - determine which pixel row gets the data
+  - resamples the data to create a pixel array
+  - determines best way to draw the array
+  a - for single cat array, a move and a draw
+  b - otherwise, a call to D_raster()
+
+  Presumes the map is drawn from north to south.
+
+  If overlay mode is desired, then call D_set_overlay_mode() first.
+
+  \param A_row row number (starts at 0)
+  \param array data buffer
   \param colors pointer to Colors structure
   \param data_type raster type (CELL, FCELL, DCELL)
 
-  \return 
+  \return row number needed for next pixel row
+  \return -1 nothing to draw (on error or end of raster)
 */
 int D_draw_raster(int A_row,
 		  const void *array,
@@ -72,8 +58,8 @@ int D_draw_raster(int A_row,
 /*!
   \brief Draw raster row (DCELL)
   
-  \param A_row row number
-  \param darray
+  \param A_row row number (starts at 0)
+  \param darray data buffer
   \param colors pointer to Colors structure
 
   \return 
@@ -86,11 +72,12 @@ int D_draw_d_raster(int A_row, const DCELL * darray, struct Colors *colors)
 /*!
   \brief Draw raster row (FCELL)
   
-  \param A_row row number
-  \param farray
+  \param A_row row number (starts at 0)
+  \param farray data buffer
   \param colors pointer to Colors structure
 
-  \return 
+  \return row number needed for next pixel row
+  \return -1 nothing to draw (on error or end of raster)
 */
 int D_draw_f_raster(int A_row, const FCELL * farray, struct Colors *colors)
 {
@@ -99,39 +86,23 @@ int D_draw_f_raster(int A_row, const FCELL * farray, struct Colors *colors)
 
 /*!
   \brief Draw raster row (CELL)
-  
-  \param A_row row number
-  \param carray
-  \param colors pointer to Colors structure
 
-  \return 
-*/
-int D_draw_c_raster(int A_row, const CELL * carray, struct Colors *colors)
-{
-    return draw_cell(A_row, carray, colors, CELL_TYPE);
-}
-
-
-/*!
-  \brief Render a raster row
-
-  \todo Replace by D_draw_c_raster()
-  
-  The <b>row</b> gives the map array row. The <b>raster</b> array
+  The <b>row</b> gives the map array row. The <b>carray</b> array
   provides the categories for each raster value in that row.  This
   routine is called consecutively with the information necessary to
   draw a raster image from north to south. No rows can be skipped. All
   screen pixel rows which represent the current map array row are
   rendered. The routine returns the map array row which is needed to
   draw the next screen pixel row.
- 
-  \param A_row row number
-  \param carray
-  \param colors pointer to Colors structure
   
-  \return
+  \param A_row row number (starts at 0)
+  \param carray data buffer
+  \param colors pointer to Colors structure
+
+  \return row number needed for next pixel row
+  \return -1 nothing to draw (on error or end of raster)
 */
-int D_draw_cell(int A_row, const CELL * carray, struct Colors *colors)
+int D_draw_c_raster(int A_row, const CELL * carray, struct Colors *colors)
 {
     return draw_cell(A_row, carray, colors, CELL_TYPE);
 }
@@ -175,11 +146,10 @@ static int draw_cell(int A_row,
  
   The raster display subsystem establishes conversion parameters based
   on the screen extent defined by <b>top, bottom, left</b>, and
-  <b>right</b>, all of which are obtainable from <i>D_get_dst for the
-  current frame.</i>
+  <b>right</b>, all of which are obtainable from D_get_dst() for the
+  current frame.
 */
-
-void D_cell_draw_begin(void)
+void D_raster_draw_begin(void)
 {
     /* Set up the screen for drawing map */
     D_get_a(src);
@@ -190,7 +160,7 @@ void D_cell_draw_begin(void)
 /*!
   \brief Draw raster row in RGB mode
 
-  \param A_row row number
+  \param A_row row number (starts at 0)
   \param r_raster red data buffer
   \param g_raster green data buffer
   \param b_raster blue data buffer
@@ -201,7 +171,8 @@ void D_cell_draw_begin(void)
   \param g_type raster type used for red channel
   \param b_type raster type used for red channel
 
-  \return
+  \return row number needed for next pixel row
+  \return -1 nothing to draw (on error or end of raster)
 */
 int D_draw_raster_RGB(int A_row,
 		      const void *r_raster, const void *g_raster,
@@ -255,9 +226,9 @@ int D_draw_raster_RGB(int A_row,
 }
 
 /*!
-  \brief Finish rendering
+  \brief Finish raster rendering
 */
-void D_cell_draw_end(void)
+void D_raster_draw_end(void)
 {
     COM_end_raster();
 }

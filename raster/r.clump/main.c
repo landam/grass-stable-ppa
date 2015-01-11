@@ -30,6 +30,7 @@ int main(int argc, char *argv[])
     struct Range range;
     struct History hist;
     CELL min, max;
+    int range_return, n_clumps;
     int in_fd, out_fd;
     char title[512];
     char name[GNAME_MAX];
@@ -40,6 +41,7 @@ int main(int argc, char *argv[])
     struct Option *opt_out;
     struct Option *opt_title;
     struct Flag *flag_diag;
+    struct Flag *flag_print;
 
     G_gisinit(argv[0]);
 
@@ -49,6 +51,7 @@ int main(int argc, char *argv[])
     G_add_keyword(_("raster"));
     G_add_keyword(_("statistics"));
     G_add_keyword(_("reclass"));
+    G_add_keyword(_("clumps"));
     module->description =
 	_("Recategorizes data in a raster map by grouping cells "
 	  "that form physically discrete areas into unique categories.");
@@ -56,6 +59,7 @@ int main(int argc, char *argv[])
     opt_in = G_define_standard_option(G_OPT_R_INPUT);
 
     opt_out = G_define_standard_option(G_OPT_R_OUTPUT);
+    opt_out->required = NO;
 
     opt_title = G_define_option();
     opt_title->key = "title";
@@ -66,48 +70,57 @@ int main(int argc, char *argv[])
     flag_diag = G_define_flag();
     flag_diag->key = 'd';
     flag_diag->label = _("Clump also diagonal cells");
-    flag_diag->description = _("Clumps are also traced along diagonal neighboring cells"); 
+    flag_diag->description = _("Clumps are also traced along diagonal neighboring cells");
+
+    flag_print = G_define_flag();
+    flag_print->key = 'g';
+    flag_print->label = _("Print only the number of clumps in shell script style");
 
     /* parse options */
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
     INPUT = opt_in->answer;
-    OUTPUT = opt_out->answer;
-
     strcpy(name, INPUT);
 
     in_fd = Rast_open_old(name, "");
 
-    out_fd = Rast_open_c_new(OUTPUT);
+    if (!flag_print->answer) {
+	OUTPUT = opt_out->answer;
+	out_fd = Rast_open_c_new(OUTPUT);
+    }
 
-    clump(in_fd, out_fd, flag_diag->answer);
-
-    G_debug(1, "Creating support files...");
+    clump(in_fd, out_fd, flag_diag->answer, flag_print->answer);
 
     Rast_close(in_fd);
-    Rast_close(out_fd);
 
-    /* build title */
-    if (opt_title->answer != NULL)
-	strcpy(title, opt_title->answer);
-    else
-	sprintf(title, "clump of <%s@%s>", name, G_mapset());
-    Rast_put_cell_title(OUTPUT, title);
+    if (!flag_print->answer) {
+	Rast_close(out_fd);
 
-    /* colors */
-    Rast_read_range(OUTPUT, G_mapset(), &range);
-    Rast_get_range_min_max(&range, &min, &max);
-    Rast_make_random_colors(&colr, min, max);
-    Rast_write_colors(OUTPUT, G_mapset(), &colr);
+	G_debug(1, "Creating support files...");
 
-    /* history */
-    Rast_short_history(OUTPUT, "raster", &hist);
-    Rast_set_history(&hist, HIST_DATSRC_1, INPUT);
-    Rast_command_history(&hist);
-    Rast_write_history(OUTPUT, &hist);
+	/* build title */
+	if (opt_title->answer != NULL)
+	    strcpy(title, opt_title->answer);
+	else
+	    sprintf(title, "clump of <%s@%s>", name, G_mapset());
+	Rast_put_cell_title(OUTPUT, title);
 
-    G_done_msg(_n("%d clump.", "%d clumps.", range.max), range.max);
+	/* colors */
+	range_return = Rast_read_range(OUTPUT, G_mapset(), &range);
+	Rast_get_range_min_max(&range, &min, &max);
+	Rast_make_random_colors(&colr, min, max);
+	Rast_write_colors(OUTPUT, G_mapset(), &colr);
+
+	/* history */
+	Rast_short_history(OUTPUT, "raster", &hist);
+	Rast_set_history(&hist, HIST_DATSRC_1, INPUT);
+	Rast_command_history(&hist);
+	Rast_write_history(OUTPUT, &hist);
+
+	n_clumps = range_return == 2 ? 0 : range.max;
+	G_done_msg(_n("%d clump.", "%d clumps.", n_clumps), n_clumps);
+    }
 
     exit(EXIT_SUCCESS);
 }

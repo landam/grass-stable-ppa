@@ -1,26 +1,34 @@
 <h2>DESCRIPTION</h2>
 
-<em>t.list</em> lists any dataset that is registered in the temporal database. 
-Datasets are raster, 3D raster and vector maps as well as their 
-corresponding space time datasets (STRDS, STR3DS and STVDS). The type of the dataset
-can be specified using the <em>type</em> option, default is STRDS. By default all datasets with
-relative and absolute time are listed. However, the user has the ability to specify
-a single temporal type with the <em>temporaltype</em> option.
-The user can define the columns that should 
-be printed for each dataset and the order of the datasets. In addition a SQL WHERE statement can
-be specified to select a subset of the requested datasets.
+<em>t.list</em> lists any dataset that is registered in the temporal 
+database. Datasets are raster, 3D raster and vector maps as well as 
+their corresponding space time datasets (STRDS, STR3DS and STVDS). The 
+type of the dataset can be specified using the <em>type</em> option, 
+default is STRDS. By default all datasets with relative and absolute 
+time are listed. However, the user has the ability to specify a single 
+temporal type with the <em>temporaltype</em> option. The user can 
+define the columns that should be printed for each dataset and the 
+order of the datasets. In addition a SQL WHERE statement can be 
+specified to select a subset of the requested datasets.
 
+<h2>NOTE</h2>
+
+The SQL where and sort expression will be applied for each temporal 
+database that was found in accessible mapsets. Hence sorting works only 
+on mapset basis.
 
 <h2>EXAMPLE</h2>
 
-In this example we will create 3 raster maps and register them first only in the
-temporal database an then in the newly created space time raster dataset.
-We use t.list to show what maps are already in the 
+In this example we will create three raster maps and register them 
+in the temporal database an then in the newly created space time 
+raster dataset. We use <em>t.list</em> to show what maps are already
+in the temporal database:
 
 <div class="code"><pre>
-r.mapcalc expr="map1 = rand(0, 10)" 
-r.mapcalc expr="map2 = rand(10, 20)" 
-r.mapcalc expr="map3 = rand(20, 30)" 
+# Generate data
+r.mapcalc expr="map1 = rand(0,  10)" -s
+r.mapcalc expr="map2 = rand(10, 20)" -s
+r.mapcalc expr="map3 = rand(20, 30)" -s
 
 t.register type=rast maps=map1 start=2012-08-20 end=2012-08-21
 t.register type=rast maps=map2 start=2012-08-21 end=2012-08-22
@@ -40,14 +48,12 @@ t.register type=rast input=precipitation_daily maps=map1,map2,map3
 
 t.list strds
  precipitation_daily@soeren
-
 </pre></div>
 
 <h2>SEE ALSO</h2>
 
 <em>
 <a href="g.list.html">g.list</a>,
-<a href="g.mlist.html">g.mlist</a>,
 <a href="t.create.html">t.create</a>,
 <a href="t.info.html">t.info</a>,
 <a href="t.rast.list.html">t.rast.list</a>,
@@ -57,7 +63,7 @@ t.list strds
 
 <h2>AUTHOR</h2>
 
-S&ouml;ren Gebbert
+S&ouml;ren Gebbert, Th&uuml;nen Institute of Climate-Smart Agriculture
 
-<p><i>Last changed: $Date: 2014-04-29 14:16:07 +0200 (Tue, 29 Apr 2014) $</i>
+<p><i>Last changed: $Date: 2014-11-26 14:30:48 +0100 (Wed, 26 Nov 2014) $</i>
 

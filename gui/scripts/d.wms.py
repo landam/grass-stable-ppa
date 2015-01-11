@@ -59,7 +59,7 @@
 #% type: string
 #% description: Image format requested from the server
 #% options: geotiff,tiff,jpeg,gif,png,png8
-#% answer: geotiff
+#% answer: png
 #% guisection: Request
 #%end
 
@@ -143,10 +143,9 @@
 #% guisection: Map style
 #%end
 
-#%option G_OPT_F_INPUT
+#%option G_OPT_F_BIN_INPUT
 #% key: capfile
 #% required: no
-#% gisprompt: old,bin,file
 #% description: Capabilities file to parse (input). It is relevant for WMTS_GRASS and OnEarth_GRASS drivers
 #%end
 
@@ -203,7 +202,7 @@ def main():
         wms = WMSGdalDrv()
     
     temp_map = wms.GetMap(options, flags) 
-    os.rename(temp_map, os.environ["GRASS_PNGFILE"])
+    os.rename(temp_map, os.environ["GRASS_RENDER_FILE"])
 
     return 0
 

@@ -1,4 +1,4 @@
-"""!
+"""
 @package vnet.vnet_core
 
 @brief Vector network analysis logic.
@@ -20,6 +20,7 @@ This program is free software under the GNU General Public License
 """
 
 import os
+from grass.script.utils import try_remove
 from grass.script     import core as grass
 
 import wx
@@ -75,7 +76,7 @@ class VNETManager:
         self.CleanUp()
 
     def CleanUp(self):
-        """!Removes temp layers, unregisters handlers and graphics"""
+        """Removes temp layers, unregisters handlers and graphics"""
 
         update = self.tmp_maps.DeleteAllTmpMaps()
 
@@ -120,8 +121,8 @@ class VNETManager:
 
         # for case there is some map with same name 
         # (when analysis does not produce any map, this map would have been shown as result) 
-        RunCommand('g.remove', 
-                    vect = self.results["vect_map"].GetVectMapName())
+        RunCommand('g.remove', flags = 'f', type = 'vector',
+                    name = self.results["vect_map"].GetVectMapName())
 
         # save data from 
         self.history._saveAnInputToHist(analysis, params, flags)
@@ -204,7 +205,7 @@ class VNETManager:
         return self.vnet_data.GetParam(param)
 
     def _checkResultMapChanged(self, resultVectMap):
-        """!Check if map was modified outside"""
+        """Check if map was modified outside"""
         if resultVectMap.VectMapState() == 0:
             dlg = wx.MessageDialog(parent = self,
                                    message = _("Temporary map '%s' with result " + 
@@ -304,7 +305,7 @@ class VNETManager:
         self.ttbCreated.emit(returncode = returncode)
 
     def SaveTmpLayer(self, layer_name):
-        """!Permanently saves temporary map of analysis result"""
+        """Permanently saves temporary map of analysis result"""
         msg = _("Vector map with analysis result does not exist.")
 
         if not hasattr(self.results["vect_map"], "GetVectMapName"):
@@ -347,7 +348,7 @@ class VNETManager:
 
         RunCommand("g.copy",
                     overwrite = True,
-                    vect = [self.results["vect_map"].GetVectMapName(), mapName])
+                    vector = [self.results["vect_map"].GetVectMapName(), mapName])
 
         if len(self.giface.GetLayerList().GetLayersByName(mapName)) == 0:
             # TODO: get rid of insert
@@ -378,7 +379,7 @@ class VNETAnalyses:
         self.goutput = goutput
 
     def RunAnalysis(self, output, params, flags):
-        """!Perform network analysis"""
+        """Perform network analysis"""
 
         analysis, valid = self.data.GetParam("analysis")
 
@@ -392,7 +393,7 @@ class VNETAnalyses:
             self._runAn(analysis, output, params, flags, catPts)
 
     def _vnetPathRunAn(self, analysis, output, params, flags, catPts):
-        """!Called when analysis is run for v.net.path module"""
+        """Called when analysis is run for v.net.path module"""
         if self.pts_data.GetPointsCount() < 1:
             return False
         cats = self.data.GetAnalysisProperties()["cmdParams"]["cats"]
@@ -428,14 +429,14 @@ class VNETAnalyses:
             mapName, mapSet = ParseMapStr(self.tmpTurnAn.GetVectMapName())
             cmdCopy = [ 
                         "g.copy",
-                        "vect=%s,%s" % (params["input"], mapName), 
+                        "vector=%s,%s" % (params["input"], mapName), 
                         "--overwrite",                             
                        ]
             cmdParams.append("input=" + self.tmpTurnAn.GetVectMapName())
 
             ret, msg, err = RunCommand('g.copy',
                                         getErrorMsg = True,
-                                        vect = "%s,%s" % (params['input'], mapName),
+                                        vector = "%s,%s" % (params['input'], mapName),
                                         read = True,
                                         overwrite = True)
 
@@ -465,8 +466,8 @@ class VNETAnalyses:
         self._vnetPathRunAnDone(cmd, returncode)
 
     def _vnetPathRunAnDone(self, cmd, returncode):
-        """!Called when v.net.path analysis is done"""
-        grass.try_remove(self.coordsTmpFile)
+        """Called when v.net.path analysis is done"""
+        try_remove(self.coordsTmpFile)
 
         self._onDone(cmd, returncode)
 
@@ -513,14 +514,14 @@ class VNETAnalyses:
         mapName, mapSet = ParseMapStr(self.tmpTurnAn.GetVectMapName())
         cmdCopy = [ 
                     "g.copy",
-                    "vect=%s,%s" % (params['input'], mapName), 
+                    "vector=%s,%s" % (params['input'], mapName), 
                     "--overwrite",                             
                    ]
         cmdParams.append("input=" + self.tmpTurnAn.GetVectMapName())
 
         ret, msg, err = RunCommand('g.copy',
                                     getErrorMsg = True,
-                                    vect = "%s,%s" % (params['input'], mapName),
+                                    vector = "%s,%s" % (params['input'], mapName),
                                     read = True,
                                     overwrite = True)
 
@@ -582,17 +583,17 @@ class VNETAnalyses:
                                driver = driver,
                                database = database)
 
-        grass.try_remove(sqlFile)
+        try_remove(sqlFile)
 
     def _runTurnsAnDone(self, cmd, returncode):
-        """!Called when analysis is done"""
+        """Called when analysis is done"""
         #self.tmp_maps.DeleteTmpMap(self.tmpTurnAn) #TODO remove earlier (OnDone lambda?)
  
         self._onDone(cmd, returncode)
 
 
     def _runAn(self, analysis, output, params, flags, catPts):
-        """!Called for all v.net.* analysis (except v.net.path)"""
+        """Called for all v.net.* analysis (except v.net.path)"""
 
         # Creates part of cmd fro analysis
         cmdParams = [analysis]
@@ -691,10 +692,10 @@ class VNETAnalyses:
         self.goutput.RunCmd(command = cmdParams, onDone = self._runAnDone)
 
     def _runAnDone(self, cmd, returncode):
-        """!Called when analysis is done"""
+        """Called when analysis is done"""
         self.tmp_maps.DeleteTmpMap(self.tmpInPts) #TODO remove earlier (OnDone lambda?)
         self.tmp_maps.DeleteTmpMap(self.tmpInPtsConnected)
-        grass.try_remove(self.tmpPtsAsciiFile)
+        try_remove(self.tmpPtsAsciiFile)
 
         if cmd[0] == "v.net.flow":
             self.tmp_maps.DeleteTmpMap(self.vnetFlowTmpCut)
@@ -702,7 +703,7 @@ class VNETAnalyses:
         self._onDone(cmd, returncode)
 
     def _setInputParams(self, analysis, params, flags):
-        """!Return list of chosen values (vector map, layers). 
+        """Return list of chosen values (vector map, layers). 
 
         The list items are in form to be used in command for analysis e.g. 'alayer=1'.    
         """
@@ -730,7 +731,7 @@ class VNETAnalyses:
         return inParams
 
     def _getPtByCat(self, analysis):
-        """!Return points separated by theirs categories"""
+        """Return points separated by theirs categories"""
         anProps = self.data.GetAnalysisProperties()
         cats = anProps["cmdParams"]["cats"]
 
@@ -750,7 +751,7 @@ class VNETAnalyses:
         return ptByCats
 
     def _getAsciiPts (self, catPts, maxCat, layerNum):
-        """!Return points separated by categories in GRASS ASCII vector representation"""
+        """Return points separated by categories in GRASS ASCII vector representation"""
         catsNums = {}
         pt_ascii = ""
         catNum = maxCat
@@ -769,7 +770,7 @@ class VNETAnalyses:
         return pt_ascii, catsNums
 
     def _prepareCmd(self, cmd):
-        """!Helper function for preparation of cmd list into form for RunCmd method"""
+        """Helper function for preparation of cmd list into form for RunCmd method"""
         for c in cmd[:]:
             if c.find("=") == -1:
                 continue
@@ -807,7 +808,7 @@ class VNETHistory():
         self.data = data
     
     def Undo(self):
-        """!Step back in history"""
+        """Step back in history"""
         histStepData = self.history.GetPrev()
 
         if histStepData:
@@ -816,7 +817,7 @@ class VNETHistory():
         return None
 
     def Redo(self):
-        """!Step forward in history"""
+        """Step forward in history"""
         histStepData = self.history.GetNext()
 
         if histStepData:
@@ -828,7 +829,7 @@ class VNETHistory():
         return self.history.GetCurrHistStep(), self.history.GetStepsNum()
 
     def SaveHistStep(self):
-        """!Save new step into history"""
+        """Save new step into history"""
         removedHistData = self.history.SaveHistStep()
 
         if not removedHistData:
@@ -848,7 +849,7 @@ class VNETHistory():
         self.tmpVectMapsToHist= []
 
     def _updateHistStepData(self, histStepData):
-        """!Updates dialog according to chosen history step"""
+        """Updates dialog according to chosen history step"""
         # set analysis module
         analysis = histStepData["vnet_modules"]["curr_module"]
         self.data.SetParams({"analysis" : analysis}, {})
@@ -906,7 +907,7 @@ class VNETHistory():
         return analysis, resultMapName, params, flags 
 
     def _saveAnInputToHist(self, analysis, params, flags):
-        """!Save all data needed for analysis into history buffer"""
+        """Save all data needed for analysis into history buffer"""
         pts_num = self.data.GetPointsData().GetPointsCount()
 
         for pt_id in range(pts_num):
@@ -953,7 +954,7 @@ class VNETHistory():
 
 
     def NewTmpVectMapToHist(self, prefMapName):
-        """!Add new vector map, which will be saved into history step"""
+        """Add new vector map, which will be saved into history step"""
 
         mapName = prefMapName + str(self.histTmpVectMapNum)
         self.histTmpVectMapNum += 1
@@ -970,7 +971,7 @@ class VNETHistory():
         return tmpMap
 
 def AddTmpMapAnalysisMsg(mapName, tmp_maps): #TODO 
-        """!Wraped AddTmpVectMap"""
+        """Wraped AddTmpVectMap"""
         msg = _("Temporary map %s  already exists.\n"  + 
                 "Do you want to continue in analysis and overwrite it?") \
                  % (mapName +'@' + grass.gisenv()['MAPSET'])
@@ -993,7 +994,7 @@ class SnappingNodes(wx.EvtHandler):
         self.snapData = {}
 
     def ComputeNodes(self, activate):
-        """!Start/stop snapping mode"""
+        """Start/stop snapping mode"""
 
         if not haveCtypes:
             GMessage(parent = self,
@@ -1096,7 +1097,7 @@ class SnappingNodes(wx.EvtHandler):
             return 1
 
     def _onNodesDone(self, event):
-        """!Update map window, when map with nodes to snap is created"""
+        """Update map window, when map with nodes to snap is created"""
         if not event.aborted:
             self.snapPts.SaveVectMapState()
             self.snapPts.AddRenderLayer() 

@@ -29,8 +29,9 @@ visible or the respective point in the elevation map is NULL.
 
 Otherwise, a value in [0, 180] representing the vertical angle with
 regard to the viewpoint, in degrees, if the point is visible.
-0 degrees: directly above the observer,
-180 degrees: directly below the observer
+A value of 0 is directly below the specified viewing position,
+90 is due horizontal. The angle to the cell containing the viewing
+position is undefined and set to 180. 
 
 <p>
 If the <b>-b</b> flag is set, the output is in boolean-mode, and each point
@@ -67,19 +68,19 @@ earth. The user can turn this on with flag
 <p>
 By default the observer is assumed to have height 1.75 map units above
 the terrain.  The user can change this using option
-<b>obs_elev</b>. The value entered is in the same units as the
+<b>observer_elevation</b>. The value entered is in the same units as the
 elevation.
 
 <p>
-By default the target is assumed to have height 0 map units above the
+By default the target is assumed to have height of 0 map units above the
 terrain.  The user can change this using option
-<b>tgt_elev</b> to determine if objects of a given height would be
+<b>target_elevation</b> to determine if objects of a given height would be
 visible. The value entered is in the same units as the elevation.
 
 <p>
 By default there is no restriction on the maximum distance to which
 the observer can see.  The user can set a maximum distance of
-visibility using option <b>max_dist</b>.  The value entered is in the
+visibility using option <b>max_distance</b>.  The value entered is in the
 same units as the cell size of the raster.
 
 <p>
@@ -177,9 +178,9 @@ point (coordinates: 638728.087167, 220609.261501) which is 5 meters
 above ground:
 
 <div class="code"><pre>
-g.region rast=elev_lid792_1m -p
+g.region raster=elev_lid792_1m -p
 r.viewshed input=elev_lid792_1m output=elev_lid792_1m_viewshed \
-  coordinates=638728.087167,220609.261501 obs_elev=5.0
+  coordinates=638728.087167,220609.261501 observer_elevation=5.0
 </pre></div>
 
 <div align="center" style="margin: 10px">
@@ -201,7 +202,7 @@ Using the Spearfish dataset:  calculating the viewpoint from top
 of a mountain:
 
 <div class="code"><pre>
-g.region rast=elevation.10m
+g.region raster=elevation.10m
 r.viewshed input=elevation.10m output=viewshed \
   coordinates=598869,4916642 mem=800
 </pre></div>
@@ -225,7 +226,6 @@ and Combinatorics (ALENEX/ANALCO 2007)</em>.</li>
 <h2>SEE ALSO</h2>
 
 <em>
-<a href="r.los.html">r.los</a>,
 <a href="r.mapcalc.html">r.mapcalc</a>
 </em>
 
@@ -237,4 +237,4 @@ and Combinatorics (ALENEX/ANALCO 2007)</em>.</li>
 <p>Markus Metz
 
 <p>
-<i>Last changed: $Date: 2014-06-18 10:51:26 +0200 (Wed, 18 Jun 2014) $</i>
+<i>Last changed: $Date: 2014-12-19 22:55:37 +0100 (Fri, 19 Dec 2014) $</i>

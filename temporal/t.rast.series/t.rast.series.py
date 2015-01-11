@@ -7,7 +7,7 @@
 #
 # PURPOSE:	Perform different aggregation algorithms from r.series on all or a
 #          selected subset of raster maps in a space time raster dataset
-# COPYRIGHT:	(C) 2011 by the GRASS Development Team
+# COPYRIGHT:	(C) 2011-2014 by the GRASS Development Team
 #
 #		This program is free software under the GNU General Public
 #		License (version 2). Read the file COPYING that comes with GRASS
@@ -19,6 +19,7 @@
 #% description: Performs different aggregation algorithms from r.series on all or a subset of raster maps in a space time raster dataset.
 #% keywords: temporal
 #% keywords: series
+#% keywords: raster
 #%end
 
 #%option G_OPT_STRDS_INPUT
@@ -41,7 +42,7 @@
 #% required: no
 #% multiple: yes
 #% options: id, name, creator, mapset, creation_time, modification_time, start_time, end_time, north, south, west, east, min, max
-#% answer: id
+#% answer: start_time
 #%end
 
 #%option G_OPT_T_WHERE
@@ -63,6 +64,7 @@
 
 import grass.script as grass
 import grass.temporal as tgis
+from grass.exceptions import CalledModuleError
 
 ############################################################################
 
@@ -81,7 +83,7 @@ def main():
     # Make sure the temporal database exists
     tgis.init()
 
-    sp = tgis.open_old_space_time_dataset(input, "strds")
+    sp = tgis.open_old_stds(input, "strds")
 
     rows = sp.get_registered_maps("id", where, order, None)
 
@@ -100,11 +102,14 @@ def main():
         if nulls:
             flag += "n"
 
-        ret = grass.run_command("r.series", flags=flag, file=filename,
-                                output=output, overwrite=grass.overwrite(),
-                                method=method)
+        try:
+            grass.run_command("r.series", flags=flag, file=filename,
+                              output=output, overwrite=grass.overwrite(),
+                              method=method)
+        except CalledModuleError:
+            grass.fatal(_("%s failed. Check above error messages.") % 'r.series')
 
-        if ret == 0 and not add_time:
+        if not add_time:
             # Create the time range for the output map
             if output.find("@") >= 0:
                 id = output

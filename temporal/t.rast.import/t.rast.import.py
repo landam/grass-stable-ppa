@@ -6,7 +6,7 @@
 # AUTHOR(S):     Soeren Gebbert
 #
 # PURPOSE:        Import a space time raster dataset
-# COPYRIGHT:        (C) 2011 by the GRASS Development Team
+# COPYRIGHT:        (C) 2011-2014 by the GRASS Development Team
 #
 #                This program is free software under the GNU General Public
 #                License (version 2). Read the file COPYING that comes with GRASS
@@ -18,6 +18,7 @@
 #% description: Imports space time raster dataset.
 #% keywords: temporal
 #% keywords: import
+#% keywords: raster
 #%end
 
 #%option G_OPT_F_INPUT
@@ -37,7 +38,7 @@
 #%end
 
 #%option G_OPT_M_DIR
-#% key: extrdir
+#% key: directory
 #% description: Path to the extraction directory
 #%end
 
@@ -60,7 +61,7 @@
 #%option
 #% key: location
 #% type: string
-#% description: Create a new location and import the data into it. Please do not run this module in parallel or interrupt it when a new location should be created.
+#% description: Create a new location and import the data into it. Do not run this module in parallel or interrupt it when a new location should be created
 #% required: no
 #% multiple: no
 #%end
@@ -85,7 +86,6 @@
 #% description: Override projection (use location's projection)
 #%end
 
-
 #%flag
 #% key: c
 #% description: Create the location specified by the "location" parameter and exit. Do not import the space time raster datasets.
@@ -100,7 +100,7 @@ def main():
     # Get the options
     input = options["input"]
     output = options["output"]
-    extrdir = options["extrdir"]
+    directory = options["directory"]
     title = options["title"]
     descr = options["description"]
     location = options["location"]
@@ -113,7 +113,7 @@ def main():
 
     tgis.init()
 
-    tgis.import_stds(input, output, extrdir, title, descr, location,
+    tgis.import_stds(input, output, directory, title, descr, location,
                      link, exp, overr, create, "strds", base, 
                      set_current_region)
 

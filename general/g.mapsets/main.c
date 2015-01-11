@@ -71,7 +71,6 @@ int main(int argc, char *argv[])
     opt.mapset->required = YES;
     opt.mapset->multiple = YES;
     opt.mapset->description = _("Name(s) of existing mapset(s) to add/remove or set");
-    opt.mapset->guisection = _("Search path");
     
     opt.op = G_define_option();
     opt.op->key = "operation";
@@ -79,8 +78,7 @@ int main(int argc, char *argv[])
     opt.op->required = YES;
     opt.op->multiple = NO;
     opt.op->options = "set,add,remove";
-    opt.op->description = _("Operation to perform");
-    opt.op->guisection = _("Search path");
+    opt.op->description = _("Operation to be performed");
     opt.op->answer = "add";
     
     opt.fs = G_define_standard_option(G_OPT_F_SEP);

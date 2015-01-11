@@ -20,17 +20,17 @@ import types
 import wx
 
 from gui_core.gselect import VectorDBInfo as VectorDBInfoBase
-from core.gcmd        import RunCommand
+from core.gcmd        import RunCommand, GError
 from core.settings    import UserSettings
 from core.utils import _
 import grass.script as grass
 
 def GetUnicodeValue(value):
-    """!Get unicode value
+    """Get unicode value
 
-    @param value value to be recoded
+    :param value: value to be recoded
 
-    @return unicode value
+    :return: unicode value
     """
     if type(value) == types.UnicodeType:
         return value
@@ -44,7 +44,7 @@ def GetUnicodeValue(value):
     return unicode(str(value), enc, errors = 'replace')
 
 def CreateDbInfoDesc(panel, mapDBInfo, layer):
-    """!Create database connection information content"""
+    """Create database connection information content"""
     infoFlexSizer = wx.FlexGridSizer (cols = 2, hgap = 1, vgap = 1)
     infoFlexSizer.AddGrowableCol(1)
     
@@ -68,13 +68,13 @@ def CreateDbInfoDesc(panel, mapDBInfo, layer):
     return infoFlexSizer
         
 class VectorDBInfo(VectorDBInfoBase):
-    """!Class providing information about attribute tables
+    """Class providing information about attribute tables
     linked to the vector map"""
     def __init__(self, map):
         VectorDBInfoBase.__init__(self, map)
         
     def GetColumns(self, table):
-        """!Return list of columns names (based on their index)"""
+        """Return list of columns names (based on their index)"""
         try:
             names = [''] * len(self.tables[table].keys())
         except KeyError:
@@ -86,15 +86,20 @@ class VectorDBInfo(VectorDBInfoBase):
         return names
 
     def SelectByPoint(self, queryCoords, qdist):
-        """!Get attributes by coordinates (all available layers)
+        """Get attributes by coordinates (all available layers)
 
         Return line id or None if no line is found"""
         line = None
         nselected = 0
 
-        data = grass.vector_what(map = self.map,
-                                 coord = (float(queryCoords[0]), float(queryCoords[1])),
-                                 distance = float(qdist))
+        try:
+            data = grass.vector_what(map=self.map,
+                                     coord=(float(queryCoords[0]), float(queryCoords[1])),
+                                     distance=float(qdist))
+        except grass.ScriptError:
+            GError(parent=None,
+                   message=_("Failed to query vector map <{map}>. "
+                             "Check database settings and topology.").format(map=self.map))
 
         if len(data) < 1 or all(('Table' not in record) for record in data):
             return None
@@ -130,7 +135,7 @@ class VectorDBInfo(VectorDBInfoBase):
         return ret
     
     def SelectFromTable(self, layer, cols = '*', where = None):
-        """!Select records from the table
+        """Select records from the table
 
         Return number of selected records, -1 on error
         """
@@ -147,7 +152,6 @@ class VectorDBInfo(VectorDBInfoBase):
             sql = "SELECT %s FROM %s WHERE %s" % (cols, table, where)
         
         ret = RunCommand('db.select',
-                         parent = self,
                          read = True,
                          quiet = True,
                          flags = 'v',

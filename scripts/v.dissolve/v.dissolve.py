@@ -20,6 +20,7 @@
 #% keywords: vector
 #% keywords: dissolve
 #% keywords: area
+#% keywords: line
 #%end
 #%option G_OPT_V_INPUT
 #%end
@@ -37,10 +38,12 @@ import os
 import atexit
 
 import grass.script as grass
+from grass.exceptions import CalledModuleError
+
 
 def cleanup():
     nuldev = file(os.devnull, 'w')
-    grass.run_command('g.remove', vect = '%s_%s' % (output, tmp), quiet = True, stderr = nuldev)
+    grass.run_command('g.remove', flags = 'f', type = 'vector', name = '%s_%s' % (output, tmp), quiet = True, stderr = nuldev)
 
 def main():
     global output, tmp
@@ -82,10 +85,15 @@ def main():
 
 	tmpfile = '%s_%s' % (output, tmp)
 
-	if grass.run_command('v.reclass', input = input, output = tmpfile,
-                             layer = layer, column = column) == 0:
-            grass.run_command('v.extract', flags = 'd', input = tmpfile,
-                              output = output, type = 'area', layer = layer)
+        try:
+            grass.run_command('v.reclass', input=input, output=tmpfile,
+                              layer=layer, column=column)
+            grass.run_command('v.extract', flags='d', input=tmpfile,
+                              output=output, type='area', layer=layer)
+        except CalledModuleError, e:
+            grass.fatal(_("Final extraction steps failed."
+                          " Check above error messages and"
+                          " see following details:\n%s") % e)
 
     # write cmd history:
     grass.vector_history(output)

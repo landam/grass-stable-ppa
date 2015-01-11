@@ -44,9 +44,7 @@
 # 	 imagery/i.ortho.photo/photo.elev/OBJ.i686-pc-linux-gnu/main.o
 # 	 imagery/i.ortho.photo/photo.rectify/OBJ.i686-pc-linux-gnu/target.o
 # 	 imagery/i.ortho.photo/photo.target/OBJ.i686-pc-linux-gnu/main.o
-# 	 imagery/i.points/OBJ.i686-pc-linux-gnu/target.o
 # 	 imagery/i.rectify/OBJ.i686-pc-linux-gnu/target.o
-# 	 imagery/i.vpoints/OBJ.i686-pc-linux-gnu/target.o
 #
 # to discover which files import a given symbol, or more complex queries
 # such as:
@@ -55,7 +53,6 @@
 # 	grass-> WHERE a.library = 'libgrass_form.6.1.cvs.so' AND a.symbol = b.symbol ;
 # 	                          object                           
 # 	-----------------------------------------------------------
-# 	 display/d.what.vect/OBJ.i686-pc-linux-gnu/what.o
 # 	 vector/v.digit/OBJ.i686-pc-linux-gnu/attr.o
 # 	 vector/v.digit/OBJ.i686-pc-linux-gnu/line.o
 # 	 vector/v.what/OBJ.i686-pc-linux-gnu/what.o

@@ -7,7 +7,7 @@
 #               Extensions by Markus Neteler
 #               Converted to Python by Glynn Clements
 # PURPOSE:      Interface to db.execute to update a column in the attribute table connected to a given map
-# COPYRIGHT:    (C) 2005,2007-2008,2011 by the GRASS Development Team
+# COPYRIGHT:    (C) 2005-2014 by the GRASS Development Team
 #
 #               This program is free software under the GNU General Public
 #               License (>=v2). Read the file COPYING that comes with GRASS
@@ -38,7 +38,7 @@
 #% required: no
 #%end
 #%option G_OPT_DB_COLUMN
-#% key: qcolumn
+#% key: query_column
 #% description: Name of other attribute column to query, can be combination of columns (e.g. co1+col2)
 #%end
 #%option G_OPT_DB_WHERE
@@ -53,7 +53,7 @@ def main():
     layer = options['layer']
     column = options['column']
     value = options['value']
-    qcolumn = options['qcolumn']
+    qcolumn = options['query_column']
     where = options['where']
 
     mapset = grass.gisenv()['MAPSET']

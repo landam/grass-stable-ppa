@@ -78,6 +78,7 @@ int main(int argc, char *argv[])
     out_opt = G_define_standard_option(G_OPT_V_OUTPUT);
     
     feature_opt = G_define_standard_option(G_OPT_V_TYPE);
+    feature_opt->description = _("Output feature type");
     feature_opt->required = YES;
     feature_opt->multiple = NO;
     feature_opt->options = "point,line,area";
@@ -180,6 +181,7 @@ int main(int argc, char *argv[])
 	if (driver == NULL)
 	    G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 			  Fi->database, Fi->driver);
+        db_set_error_handler_driver(driver);
 
 	/* Create new table */
 	db_zero_string(&sql);

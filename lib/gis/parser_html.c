@@ -49,7 +49,8 @@ void G__usage_html(void)
     fprintf(stdout,
 	    "<link rel=\"stylesheet\" href=\"grassdocs.css\" type=\"text/css\">\n");
     fprintf(stdout, "</head>\n");
-    fprintf(stdout, "<body bgcolor=\"white\">\n\n");
+    fprintf(stdout, "<body bgcolor=\"white\">\n");
+    fprintf(stdout, "<div id=\"container\">\n\n");
     fprintf(stdout,
 	    "<a href=\"index.html\"><img src=\"grass_logo.png\" alt=\"GRASS logo\"></a>\n");
     fprintf(stdout, "<hr class=\"header\">\n\n");
@@ -73,11 +74,9 @@ void G__usage_html(void)
     }
     fprintf(stdout, "<h2>%s</h2>\n", _("SYNOPSIS"));
     fprintf(stdout, "<div id=\"name\"><b>%s</b><br></div>\n", st->pgm_name);
-    fprintf(stdout, "<b>%s help</b><br>\n", st->pgm_name);
+    fprintf(stdout, "<b>%s --help</b><br>\n", st->pgm_name);
 
     fprintf(stdout, "<div id=\"synopsis\"><b>%s</b>", st->pgm_name);
-
-
 
     /* print short version first */
     if (st->n_flags) {
@@ -132,17 +131,17 @@ void G__usage_html(void)
     fprintf(stdout, " [--<b>help</b>] ");
     fprintf(stdout, " [--<b>verbose</b>] ");
     fprintf(stdout, " [--<b>quiet</b>] ");
-
+    fprintf(stdout, " [--<b>ui</b>] ");
+    
     fprintf(stdout, "\n</div>\n");
-
 
     /* now long version */
     fprintf(stdout, "\n");
     fprintf(stdout, "<div id=\"flags\">\n");
-    if (st->n_flags || new_prompt) {
+    fprintf(stdout, "<h3>%s:</h3>\n", _("Flags"));
+    fprintf(stdout, "<dl>\n");
+    if (st->n_flags) {
 	flag = &st->first_flag;
-	fprintf(stdout, "<h3>%s:</h3>\n", _("Flags"));
-	fprintf(stdout, "<dl>\n");
 	while (st->n_flags && flag != NULL) {
 	    fprintf(stdout, "<dt><b>-%c</b></dt>\n", flag->key);
 
@@ -161,23 +160,26 @@ void G__usage_html(void)
 	    flag = flag->next_flag;
 	    fprintf(stdout, "\n");
 	}
-	if (new_prompt) {
-	    fprintf(stdout, "<dt><b>--overwrite</b></dt>\n");
-	    fprintf(stdout, "<dd>%s</dd>\n",
-		    _("Allow output files to overwrite existing files"));
-	}
-
-	fprintf(stdout, "<dt><b>--help</b></dt>\n");
-	fprintf(stdout, "<dd>%s</dd>\n", _("Print usage summary"));
-
-	fprintf(stdout, "<dt><b>--verbose</b></dt>\n");
-	fprintf(stdout, "<dd>%s</dd>\n", _("Verbose module output"));
-
-	fprintf(stdout, "<dt><b>--quiet</b></dt>\n");
-	fprintf(stdout, "<dd>%s</dd>\n", _("Quiet module output"));
-
-	fprintf(stdout, "</dl>\n");
     }
+    if (new_prompt) {
+	fprintf(stdout, "<dt><b>--overwrite</b></dt>\n");
+	fprintf(stdout, "<dd>%s</dd>\n",
+		_("Allow output files to overwrite existing files"));
+    }
+    /* these flags are always available */
+    fprintf(stdout, "<dt><b>--help</b></dt>\n");
+    fprintf(stdout, "<dd>%s</dd>\n", _("Print usage summary"));
+
+    fprintf(stdout, "<dt><b>--verbose</b></dt>\n");
+    fprintf(stdout, "<dd>%s</dd>\n", _("Verbose module output"));
+
+    fprintf(stdout, "<dt><b>--quiet</b></dt>\n");
+    fprintf(stdout, "<dd>%s</dd>\n", _("Quiet module output"));
+
+    fprintf(stdout, "<dt><b>--ui</b></dt>\n");
+    fprintf(stdout, "<dd>%s</dd>\n", _("Force launching GUI dialog"));
+
+    fprintf(stdout, "</dl>\n");
     fprintf(stdout, "</div>\n");
 
     fprintf(stdout, "\n");
@@ -321,13 +323,15 @@ void print_escaped_for_html_options(FILE * f, const char *str)
 
 void print_escaped_for_html_keywords(FILE * f, const char * str)
 {
-#if 0 /* temporary disabled */
+    /* generate HTML links */
+
     /* HTML link only for second keyword */
     if (st->n_keys > 1 &&
         strcmp(st->module_info.keywords[1], str) == 0) {
     
         const char *s;
         
+        /* TODO: fprintf(f, _("topic: ")); */
         fprintf(f, "<a href=\"topic_");
         for (s = str; *s; s++) {
             switch (*s) {
@@ -338,11 +342,32 @@ void print_escaped_for_html_keywords(FILE * f, const char * str)
         }
         fprintf(f, ".html\">%s</a>", str);
     }
-    else {
-#endif
-        fprintf(f, "%s", str);
-#if 0
+    else { /* first and other than second keyword */
+         if (st->n_keys > 0 &&
+             strcmp(st->module_info.keywords[0], str) == 0) {
+             /* command family */
+             const char *s;
+
+             fprintf(f, "<a href=\"");
+             for (s = str; *s; s++) {
+                 switch (*s) {
+                     do_escape(' ', "_");
+                 default:
+                     fputc(*s, f);
+                 }
+             }
+             fprintf(f, ".html\">%s</a>", str);
+         } else {
+             /* keyword index */
+             if (st->n_keys > 0 &&
+                strcmp(st->module_info.keywords[2], str) == 0) {
+
+                /* TODO: fprintf(f, _("keywords: ")); */
+                fprintf(f, "<a href=\"keywords.html#%s\">%s</a>", str, str);
+             } else {
+                fprintf(f, "<a href=\"keywords.html#%s\">%s</a>", str, str);
+             }
+         }
     }
-#endif
 }
 #undef do_escape

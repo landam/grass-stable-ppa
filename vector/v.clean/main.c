@@ -51,6 +51,7 @@ int main(int argc, char *argv[])
     G_add_keyword(_("vector"));
     G_add_keyword(_("topology"));
     G_add_keyword(_("geometry"));
+    G_add_keyword(_("snapping"));
     module->description = _("Toolset for cleaning topology of vector map.");
 
     opt.in = G_define_standard_option(G_OPT_V_INPUT);
@@ -126,7 +127,7 @@ int main(int argc, char *argv[])
     flag.no_build = G_define_flag();
     flag.no_build->key = 'b';
     flag.no_build->description =
-	_("Don't build topology for the output vector");
+	_("Do not build topology for the output vector");
 
     flag.combine = G_define_flag();
     flag.combine->key = 'c';
@@ -195,6 +196,10 @@ int main(int argc, char *argv[])
 
     G_debug(1, "ntools = %d", ntools);
     threshs = (double *)G_malloc(ntools * sizeof(double));
+
+    /* TODO: threshold might be recalculated with optional geodesic support to meters */
+    if (G_projection() == PROJECTION_LL)
+        G_important_message(_("Note: In latitude-longitude coordinate system specify threshold in degree unit"));
 
     /* Read thresholds */
     for (i = 0; i < ntools; i++)

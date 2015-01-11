@@ -1,4 +1,4 @@
-"""!
+"""
 @package mapwin.decorations
 
 @brief Map display decorations (overlays) - text, barscale and legend
@@ -10,7 +10,7 @@ Classes:
  - decorations::LegendController
  - decorations::TextLayerDialog
 
-(C) 2006-2013 by the GRASS Development Team
+(C) 2006-2014 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -18,9 +18,11 @@ This program is free software under the GNU General Public License
 @author Anna Kratochvilova <kratochanna gmail.com>
 """
 
-import wx
 from core.utils import _
 
+import wx
+from wx.lib.expando import ExpandoTextCtrl, EVT_ETC_LAYOUT_NEEDED
+        
 from grass.pydispatch.signal import Signal
 try:
     from PIL import Image
@@ -31,7 +33,7 @@ except ImportError:
 
 class OverlayController(object):
 
-    """!Base class for decorations (barscale, legend) controller."""
+    """Base class for decorations (barscale, legend) controller."""
 
     def __init__(self, renderer, giface):
         self._giface = giface
@@ -117,7 +119,7 @@ class OverlayController(object):
         return False
 
     def Show(self, show=True):
-        """!Activate or deactivate overlay."""
+        """Activate or deactivate overlay."""
         if show:
             if not self._overlay:
                 self._add()
@@ -134,12 +136,12 @@ class OverlayController(object):
         self.overlayChanged.emit()
 
     def GetOptData(self, dcmd, layer, params, propwin):
-        """!Called after options are set through module dialog.
+        """Called after options are set through module dialog.
 
-        @param dcmd resulting command
-        @param layer not used
-        @param params module parameters (not used)
-        @param propwin dialog window
+        :param dcmd: resulting command
+        :param layer: not used
+        :param params: module parameters (not used)
+        :param propwin: dialog window
         """
         if not dcmd:
             return
@@ -160,13 +162,13 @@ class OverlayController(object):
                                      render=False)
 
     def CmdIsValid(self):
-        """!If command is valid"""
+        """If command is valid"""
         return True
 
     def GetPlacement(self, screensize):
-        """!Get coordinates where to place overlay in a reasonable way
+        """Get coordinates where to place overlay in a reasonable way
 
-        @param screensize sreen size
+        :param screensize: screen size
         """
         if not hasPIL:
             self._giface.WriteWarning(_("Please install Python Imaging Library (PIL)\n"
@@ -232,16 +234,16 @@ class LegendController(OverlayController):
         inputs = 0
         for param in self._cmd:
             param = param.split('=')
-            if param[0] == 'rast' and len(param) == 2:
+            if param[0] == 'raster' and len(param) == 2:
                 inputs += 1
-            elif param[0] == 'rast3d' and len(param) == 2:
+            elif param[0] == 'raster_3d' and len(param) == 2:
                 inputs += 1
             if inputs == 1:
                 return True
         return False
 
     def ResizeLegend(self, begin, end, screenSize):
-        """!Resize legend according to given bbox coordinates."""
+        """Resize legend according to given bbox coordinates."""
         w = abs(begin[0] - end[0])
         h = abs(begin[1] - end[1])
         if begin[0] < end[0]:
@@ -268,7 +270,7 @@ class LegendController(OverlayController):
         self.Show()
 
     def StartResizing(self):
-        """!Tool in toolbar or button itself were pressed"""
+        """Tool in toolbar or button itself were pressed"""
         # prepare for resizing
         window = self._giface.GetMapWindow()
         window.SetNamedCursor('cross')
@@ -288,17 +290,12 @@ class LegendController(OverlayController):
 
 
 class TextLayerDialog(wx.Dialog):
-
+    """!Controls setting options and displaying/hiding map overlay decorations
     """
-    Controls setting options and displaying/hiding map overlay decorations
-    """
+    def __init__(self, parent, ovlId, title, name='text', size=wx.DefaultSize,
+                 style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER):
 
-    def __init__(self, parent, ovlId, title, name='text',
-                 pos=wx.DefaultPosition, size=wx.DefaultSize,
-                 style=wx.DEFAULT_DIALOG_STYLE):
-
-        wx.Dialog.__init__(self, parent, wx.ID_ANY, title, pos, size, style)
-        from wx.lib.expando import ExpandoTextCtrl, EVT_ETC_LAYOUT_NEEDED
+        wx.Dialog.__init__(self, parent=parent, id=wx.ID_ANY, title=title, style=style, size=size)
 
         self.ovlId = ovlId
         self.parent = parent
@@ -320,7 +317,9 @@ class TextLayerDialog(wx.Dialog):
 
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         box = wx.GridBagSizer(vgap=5, hgap=5)
-
+        box.AddGrowableCol(1)
+        box.AddGrowableRow(1)
+        
         # show/hide
         self.chkbox = wx.CheckBox(parent=self, id=wx.ID_ANY,
                                   label=_('Show text object'))
@@ -329,17 +328,14 @@ class TextLayerDialog(wx.Dialog):
         else:
             self.chkbox.SetValue(self.parent.MapWindow.overlays[self.ovlId]['layer'].IsActive())
         box.Add(item=self.chkbox, span=(1, 2),
-                flag=wx.ALIGN_LEFT | wx.ALL, border=5,
                 pos=(0, 0))
 
         # text entry
-        label = wx.StaticText(parent=self, id=wx.ID_ANY, label=_("Enter text:"))
-        box.Add(item=label,
+        box.Add(item=wx.StaticText(parent=self, id=wx.ID_ANY, label=_("Text:")),
                 flag=wx.ALIGN_CENTER_VERTICAL,
                 pos=(1, 0))
 
-        self.textentry = ExpandoTextCtrl(
-            parent=self, id=wx.ID_ANY, value="", size=(300, -1))
+        self.textentry = ExpandoTextCtrl(parent=self, id=wx.ID_ANY, value="", size=(300, -1))
         self.textentry.SetFont(self.currFont)
         self.textentry.SetForegroundColour(self.currClr)
         self.textentry.SetValue(self.currText)
@@ -347,11 +343,11 @@ class TextLayerDialog(wx.Dialog):
         self.textentry.SetClientSize((300, -1))
 
         box.Add(item=self.textentry,
+                flag=wx.EXPAND,
                 pos=(1, 1))
 
         # rotation
-        label = wx.StaticText(parent=self, id=wx.ID_ANY, label=_("Rotation:"))
-        box.Add(item=label,
+        box.Add(item=wx.StaticText(parent=self, id=wx.ID_ANY, label=_("Rotation:")),
                 flag=wx.ALIGN_CENTER_VERTICAL,
                 pos=(2, 0))
         self.rotation = wx.SpinCtrl(parent=self, id=wx.ID_ANY, value="", pos=(30, 50),
@@ -363,13 +359,16 @@ class TextLayerDialog(wx.Dialog):
                 pos=(2, 1))
 
         # font
+        box.Add(item=wx.StaticText(parent=self, id=wx.ID_ANY, label=_("Font:")),
+                flag=wx.ALIGN_CENTER_VERTICAL,
+                pos=(3, 0))
         fontbtn = wx.Button(parent=self, id=wx.ID_ANY, label=_("Set font"))
         box.Add(item=fontbtn,
                 flag=wx.ALIGN_RIGHT,
                 pos=(3, 1))
 
         self.sizer.Add(item=box, proportion=1,
-                       flag=wx.ALL, border=10)
+                       flag=wx.ALL | wx.EXPAND, border=10)
 
         # note
         box = wx.BoxSizer(wx.HORIZONTAL)
@@ -408,22 +407,24 @@ class TextLayerDialog(wx.Dialog):
         self.Bind(wx.EVT_TEXT,       self.OnText,       self.textentry)
         self.Bind(wx.EVT_SPINCTRL,   self.OnRotation,   self.rotation)
 
+        self.SetMinSize((400, 230))
+        
     def OnRefit(self, event):
-        """!Resize text entry to match text"""
+        """Resize text entry to match text"""
         self.sizer.Fit(self)
 
     def OnText(self, event):
-        """!Change text string"""
+        """Change text string"""
         self.currText = event.GetString()
 
     def OnRotation(self, event):
-        """!Change rotation"""
+        """Change rotation"""
         self.currRot = event.GetInt()
 
         event.Skip()
 
     def OnSelectFont(self, event):
-        """!Change font"""
+        """Change font"""
         data = wx.FontData()
         data.EnableEffects(True)
         data.SetColour(self.currClr)         # set colour
@@ -444,7 +445,7 @@ class TextLayerDialog(wx.Dialog):
         dlg.Destroy()
 
     def GetValues(self):
-        """!Get text properties"""
+        """Get text properties"""
         return {'text': self.currText,
                 'font': self.currFont,
                 'color': self.currClr,

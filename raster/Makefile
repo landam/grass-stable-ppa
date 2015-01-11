@@ -2,7 +2,6 @@ MODULE_TOPDIR = ..
 
 SUBDIRS = \
 	r.basins.fill \
-	r.bitpattern \
 	r.buffer \
 	r.carve \
 	r.category \
@@ -28,7 +27,6 @@ SUBDIRS = \
 	r.gwflow \
 	r.his \
 	r.horizon \
-	r.in.arc \
 	r.in.ascii \
 	r.in.bin \
 	r.in.gdal \
@@ -43,13 +41,11 @@ SUBDIRS = \
 	r.latlong \
 	r.lake \
 	r.li \
-	r.los \
 	r.mapcalc \
 	r.mfilter \
 	r.mode \
 	r.neighbors \
 	r.null \
-	r.out.arc \
 	r.out.ascii \
 	r.out.bin \
 	r.out.gdal \
@@ -60,7 +56,6 @@ SUBDIRS = \
 	r.out.pov \
 	r.out.ppm \
 	r.out.ppm3 \
-	r.out.tiff \
 	r.out.vrml \
 	r.out.vtk \
 	r.param.scale \
@@ -90,7 +85,8 @@ SUBDIRS = \
 	r.series \
 	r.series.accumulate \
 	r.series.interp \
-	r.shaded.relief \
+	r.relief \
+	r.sim \
 	r.slope.aspect \
 	r.solute.transport \
 	r.spread \
@@ -110,7 +106,6 @@ SUBDIRS = \
 	r.surf.fractal \
 	r.surf.gauss \
 	r.surf.idw \
-	r.surf.idw2 \
 	r.surf.random \
 	r.terraflow \
 	r.texture \
@@ -132,10 +127,7 @@ SUBDIRS = \
 	r.water.outlet \
 	r.watershed \
 	r.what \
-	r.what.color \
-	simwe
-
-#	r.le \
+	r.what.color
 
 PGM = rasterintro
 

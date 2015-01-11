@@ -49,18 +49,17 @@ int main(int argc, char *argv[])
 
     module = G_define_module();
     G_add_keyword(_("raster"));
+    G_add_keyword(_("buffer"));
     G_add_keyword(_("geometry"));
+    G_add_keyword(_("circle"));
     module->description =
 	_("Creates a raster map containing concentric "
 	  "rings around a given point.");
 
     out_file = G_define_standard_option(G_OPT_R_OUTPUT);
 
-    coord = G_define_option();
-    coord->key = "coordinate";
-    coord->type = TYPE_STRING;
+    coord = G_define_standard_option(G_OPT_M_COORDS);
     coord->required = YES;
-    coord->key_desc = "x,y";
     coord->description = _("The coordinate of the center (east,north)");
 
     min = G_define_option();
@@ -76,7 +75,7 @@ int main(int argc, char *argv[])
     max->description = _("Maximum radius for ring/circle map (in meters)");
 
     mult = G_define_option();
-    mult->key = "mult";
+    mult->key = "multiplier";
     mult->type = TYPE_DOUBLE;
     mult->required = NO;
     mult->description = _("Data value multiplier");

@@ -3,12 +3,15 @@ MODULE_TOPDIR = ..
 SUBDIRS = \
 	d.correlate \
 	d.out.file \
+	d.to.rast \
 	d.polar \
 	d.rast.edit \
 	d.rast.leg \
 	d.redraw \
-	d.shadedmap \
+	d.shade \
 	d.vect.thematic \
+	d.what.rast \
+	d.what.vect \
 	db.dropcolumn \
 	db.droptable \
 	db.in.ogr \
@@ -40,6 +43,7 @@ SUBDIRS = \
 	r.plane \
 	r.reclass.area \
 	r.rgb \
+	r.shade \
 	r.tileset \
 	r.unpack \
 	r3.in.xyz \
@@ -59,15 +63,14 @@ SUBDIRS = \
 	v.dissolve \
 	v.in.e00 \
 	v.in.geonames \
-	v.in.gns \
 	v.in.lines \
 	v.in.mapgen \
-	v.in.sites.all \
 	v.in.wfs \
 	v.rast.stats \
 	v.report \
 	v.out.gps \
 	v.pack \
+        v.to.lines \
 	v.unpack \
 	v.what.vect \
 	wxpyimgview \

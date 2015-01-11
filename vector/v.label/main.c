@@ -153,7 +153,7 @@ int main(int argc, char **argv)
 
     Rotation = G_define_option();
     Rotation->key = "rotation";
-    Rotation->description = _("Rotation angle (degrees counter-clockwise)");
+    Rotation->description = _("Rotation angle in degrees (counter-clockwise)");
     Rotation->type = TYPE_DOUBLE;
     Rotation->required = NO;
     Rotation->options = "0-360";
@@ -183,8 +183,6 @@ int main(int argc, char **argv)
     Hwidth->guisection = _("Effects");
 
     Bcolor = G_define_standard_option(G_OPT_C_BG);
-    Bcolor->key = "background";
-    Bcolor->label = _("Background color");
     Bcolor->answer = "none";
     Bcolor->guisection = _("Colors");
 

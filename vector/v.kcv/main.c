@@ -55,6 +55,7 @@ int main(int argc, char *argv[])
     G_add_keyword(_("vector"));
     G_add_keyword(_("statistics"));
     G_add_keyword(_("points"));
+    G_add_keyword(_("point pattern"));
     module->description =
 	_("Randomly partition points into test/train sets.");
 
@@ -63,7 +64,7 @@ int main(int argc, char *argv[])
     field_opt = G_define_standard_option(G_OPT_V_FIELD);
 
     npart_opt = G_define_option();
-    npart_opt->key = "k";
+    npart_opt->key = "npartitions";
     npart_opt->type = TYPE_INTEGER;
     npart_opt->required = YES;
     npart_opt->label = _("Number of partitions");
@@ -125,6 +126,7 @@ int main(int argc, char *argv[])
 	G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 		      Fi->database, Fi->driver);
     }
+    db_set_error_handler_driver(Driver);
 
     buf[0] = '\0';
     if (nlinks < 1)

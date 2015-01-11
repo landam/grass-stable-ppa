@@ -59,13 +59,8 @@ int main(int argc, char *argv[])
     /* define different options */
     option.map = G_define_standard_option(G_OPT_R_MAP);
 
-    option.nv = G_define_option();
-    option.nv->key = "nv";
-    option.nv->type = TYPE_STRING;
-    option.nv->required = NO;
-    option.nv->multiple = NO;
+    option.nv = G_define_standard_option(G_OPT_M_NULL_VALUE);
     option.nv->answer = "*";
-    option.nv->description = _("String representing no data cell value");
 
     option.nsteps = G_define_option();
     option.nsteps->key = "nsteps";
@@ -95,7 +90,7 @@ int main(int argc, char *argv[])
 
     flag.i = G_define_flag();
     flag.i->key = 'i';
-    flag.i->description = _("Read fp map as integer");
+    flag.i->description = _("Read floating-point map as integer");
 
     if (0 > G_parser(argc, argv))
 	exit(EXIT_FAILURE);

@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
     stepN_opt->guisection = _("Settings");
 
     lambda_f_opt = G_define_option();
-    lambda_f_opt->key = "lambda_i";
+    lambda_f_opt->key = "lambda";
     lambda_f_opt->type = TYPE_DOUBLE;
     lambda_f_opt->required = NO;
     lambda_f_opt->description = _("Tykhonov regularization weight");
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
     lambda_f_opt->guisection = _("Settings");
 
     Thres_O_opt = G_define_option();
-    Thres_O_opt->key = "thres_o";
+    Thres_O_opt->key = "threshold";
     Thres_O_opt->type = TYPE_DOUBLE;
     Thres_O_opt->required = NO;
     Thres_O_opt->description = _("Threshold for the outliers");
@@ -184,6 +184,8 @@ int main(int argc, char *argv[])
 	if (driver == NULL)
 	    G_fatal_error(_("No database connection for driver <%s> is defined. Run db.connect."),
 			  dvr);
+        db_set_error_handler_driver(driver);
+
 	if (P_Drop_Aux_Table(driver, table_name) != DB_OK)
 	    G_fatal_error(_("Old auxiliar table could not be dropped"));
 	db_close_database_shutdown_driver(driver);
@@ -250,6 +252,7 @@ int main(int argc, char *argv[])
     if (driver == NULL)
 	G_fatal_error(_("No database connection for driver <%s> is defined. Run db.connect."),
 		      dvr);
+    db_set_error_handler_driver(driver);
 
     /* Create auxiliar table */
     if ((flag_auxiliar =
@@ -257,7 +260,7 @@ int main(int argc, char *argv[])
 	G_fatal_error(_("It was impossible to create <%s> table."), table_name);
 
     db_create_index2(driver, table_name, "ID");
-    /* sqlite likes that */
+    /* sqlite likes that ??? */
     db_close_database_shutdown_driver(driver);
     driver = db_start_driver_open_database(dvr, db);
 

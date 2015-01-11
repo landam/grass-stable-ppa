@@ -67,29 +67,29 @@ int main(int argc, char **argv)
     G_add_keyword("IHS");
     module->description =
 	_("Displays the result obtained by combining "
-	  "hue, intensity, and saturation (his) values "
+	  "hue, intensity, and saturation (HIS) values "
 	  "from user-specified input raster map layers.");
 
     opt_h = G_define_option();
-    opt_h->key = "h_map";
+    opt_h->key = "hue";
     opt_h->type = TYPE_STRING;
     opt_h->required = YES;
     opt_h->gisprompt = "old,cell,raster";
-    opt_h->description = _("Name of layer to be used for HUE");
+    opt_h->description = _("Name of layer to be used for hue");
 
     opt_i = G_define_option();
-    opt_i->key = "i_map";
+    opt_i->key = "intensity";
     opt_i->type = TYPE_STRING;
     opt_i->required = NO;
     opt_i->gisprompt = "old,cell,raster";
-    opt_i->description = _("Name of layer to be used for INTENSITY");
+    opt_i->description = _("Name of layer to be used for intensity");
 
     opt_s = G_define_option();
-    opt_s->key = "s_map";
+    opt_s->key = "saturation";
     opt_s->type = TYPE_STRING;
     opt_s->required = NO;
     opt_s->gisprompt = "old,cell,raster";
-    opt_s->description = _("Name of layer to be used for SATURATION");
+    opt_s->description = _("Name of layer to be used for saturation");
 
     brighten = G_define_option();
     brighten->key = "brighten";
@@ -187,7 +187,7 @@ int main(int argc, char **argv)
     intensity = 255;		/* default is to not change intensity */
     saturation = 255;		/* default is to not change saturation */
 
-    D_cell_draw_begin();
+    D_raster_draw_begin();
 
     next_row = 0;
     for (atrow = 0; atrow < window.rows;) {
@@ -238,7 +238,7 @@ int main(int argc, char **argv)
 	    break;
     }
     G_percent(window.rows, window.rows, 5);
-    D_cell_draw_end();
+    D_raster_draw_end();
 
     D_save_command(G_recreate_command());
     

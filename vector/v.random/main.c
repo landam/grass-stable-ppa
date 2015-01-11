@@ -97,17 +97,19 @@ int main(int argc, char *argv[])
     G_add_keyword(_("sampling"));
     G_add_keyword(_("statistics"));
     G_add_keyword(_("random"));
+    G_add_keyword(_("point pattern"));
     module->description = _("Generates random 2D/3D vector points.");
 
     parm.output = G_define_standard_option(G_OPT_V_OUTPUT);
 
     parm.nsites = G_define_option();
-    parm.nsites->key = "n";
+    parm.nsites->key = "npoints";
     parm.nsites->type = TYPE_INTEGER;
     parm.nsites->required = YES;
     parm.nsites->description = _("Number of points to be created");
 
     parm.input = G_define_standard_option(G_OPT_V_INPUT);
+    parm.input->key = "restrict";
     parm.input->required = NO;
     parm.input->description = _("Restrict points to areas in input vector");
     parm.input->guisection = _("Selection");
@@ -144,7 +146,7 @@ int main(int argc, char *argv[])
     parm.seed->type = TYPE_INTEGER;
     parm.seed->required = NO;
     parm.seed->description =
-	_("The seed to initialize the random generator. If not set the process id is used.");
+	_("The seed to initialize the random generator. If not set the process ID is used");
 
     parm.zcol = G_define_standard_option(G_OPT_DB_COLUMN);
     parm.zcol->label = _("Name of column for z values");
@@ -251,6 +253,10 @@ int main(int argc, char *argv[])
 	    G_fatal_error(_("Unable to create table: %s"),
 			  db_get_string(&sql));
 	}
+
+	/* Create index */
+	if (db_create_index2(driver, Fi->table, Fi->key) != DB_OK)
+	    G_warning(_("Unable to create index"));
 
 	/* Grant */
 	if (db_grant_on_table

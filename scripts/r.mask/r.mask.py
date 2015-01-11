@@ -32,7 +32,7 @@
 #% key: maskcats
 #% type: string
 #% label: Raster values to use for mask
-#% description: format: 1 2 3 thru 7 *
+#% description: Format: 1 2 3 thru 7 *
 #% answer: *
 #% guisection: Raster
 #%end
@@ -66,16 +66,20 @@
 #% guisection: Remove
 #%end
 
-import sys
 import os
-import grass.script as grass
 import atexit
+
+import grass.script as grass
+from grass.exceptions import CalledModuleError
+
 
 def cleanup():
     if tmp:
-        grass.run_command('g.remove', rast = tmp, quiet = True)
+        grass.run_command('g.remove', flags = 'f', type = 'raster',
+                          name = tmp, quiet = True)
     if tmp_hull:
-        grass.run_command('g.remove', vect = tmp_hull, quiet = True)
+        grass.run_command('g.remove', flags = 'f', type = 'vector',
+                          name = tmp_hull, quiet = True)
 
 def main():
     raster = options['raster']
@@ -96,7 +100,8 @@ def main():
     if remove:
         # -> remove
         if exists:
-            grass.run_command('g.remove', quiet = True, rast = 'MASK')
+            grass.run_command('g.remove', flags = 'f', quiet = True,
+                              type = 'raster', name = 'MASK')
             grass.message(_("Raster MASK removed"))
         else:
             grass.fatal(_("No existing MASK to remove"))
@@ -107,7 +112,8 @@ def main():
                 grass.fatal(_("MASK already found in current mapset. Delete first or overwrite."))
             else:
                 grass.warning(_("MASK already exists and will be overwritten"))
-                grass.run_command('g.remove', quiet = True, rast = 'MASK')
+                grass.run_command('g.remove', flags = 'f', quiet = True,
+                                  type = 'raster', name = 'MASK')
         
         if raster:
             # check if input raster exists
@@ -141,9 +147,11 @@ def main():
                 tmp_hull = "tmp_hull_%d" % os.getpid()
                 to_rast_input = tmp_hull
                 # force 'flat' convex hull for 3D vector maps
-                if 0 != grass.run_command('v.hull', flags = 'f', quiet = True,
-                                          input = vector_name, output = tmp_hull,
-                                          layer = layer, cats = cats, where = where):
+                try:
+                    grass.run_command('v.hull', flags='f', quiet=True,
+                                      input=vector_name, output=tmp_hull,
+                                      layer=layer, cats=cats, where=where)
+                except CalledModuleError:
                     grass.fatal(_("Unable to create a convex hull for vector map <%s>") % vector_name)
             else:
                 to_rast_input = vector_name
@@ -158,7 +166,7 @@ def main():
         if invert:
             global tmp
             tmp = "r_mask_%d" % os.getpid()
-            grass.run_command('g.rename', rast = ('MASK', tmp), quiet = True)
+            grass.run_command('g.rename', raster = ('MASK', tmp), quiet = True)
             grass.message(_("Creating inverted raster MASK..."))
             grass.mapcalc("MASK = if(isnull($tmp), 1, null())", tmp = tmp)
             grass.verbose(_("Inverted raster MASK created"))

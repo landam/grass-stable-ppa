@@ -28,6 +28,7 @@
 
 import sys
 import os
+from grass.script.utils import try_remove
 from grass.script import core as grass
 
 def main():
@@ -44,7 +45,7 @@ def main():
 
     grass.write_command('d.text', color = 'black', size = 4, line = 1, stdin = "CORRELATION")
 
-    os.environ['GRASS_PNG_READ'] = 'TRUE'
+    os.environ['GRASS_RENDER_FILE_READ'] = 'TRUE'
 
     colors = "red black blue green gray violet".split()
     line = 2
@@ -96,7 +97,7 @@ def main():
 		ofile.close()
 		p.wait()
 
-    grass.try_remove(tmpfile)
+    try_remove(tmpfile)
 
 if __name__ == "__main__":
     options, flags = grass.parser()

@@ -2,8 +2,8 @@
 
 <em>r.univar</em> calculates the univariate statistics of one or several raster
 map(s). This includes the number of cells counted, minimum and maximum cell
-values, range, arithmetic mean, population variance, standard deviation, and 
-coefficient of variation. Statistics are calculated separately for every
+values, range, arithmetic mean, population variance, standard deviation,
+coefficient of variation, and sum. Statistics are calculated separately for every
 category/zone found in the <b>zones</b> input map if given.
 If the <b>-e</b> extended statistics flag is given the 1st quartile, median,
 3rd quartile, and given <b>percentile</b> are calculated.
@@ -45,7 +45,7 @@ coverage (basins, North Carolina sample dataset):
 
 <div class="code"><pre>
 # set computational region
-g.region rast=basin -p
+g.region raster=basin -p
 
 # check basin IDs
 r.category basin
@@ -83,4 +83,4 @@ Extended statistics by Martin Landa<br>
 Multiple input map support by Ivan Shmakov<br>
 Zonal loop by Markus Metz
 
-<p><i>Last changed: $Date: 2014-06-01 00:58:08 +0200 (Sun, 01 Jun 2014) $</i>
+<p><i>Last changed: $Date: 2014-12-19 22:55:37 +0100 (Fri, 19 Dec 2014) $</i>

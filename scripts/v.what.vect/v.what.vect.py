@@ -18,6 +18,8 @@
 #% keywords: vector
 #% keywords: sampling
 #% keywords: database
+#% keywords: position
+#% keywords: querying
 #% keywords: attribute table
 #%end
 
@@ -31,15 +33,15 @@
 #% required: yes
 #%end
 #%option G_OPT_V_MAP
-#% key: qmap
+#% key: query_map
 #% label: Name of vector map to be queried
 #% required : yes
 #%end
 #%option G_OPT_V_FIELD
-#% key: qlayer
+#% key: query_layer
 #%end
 #%option G_OPT_DB_COLUMN
-#% key: qcolumn
+#% key: query_column
 #% description: Name of attribute column to be queried
 #% required: yes
 #%end
@@ -53,18 +55,26 @@
 
 import sys
 from grass.script import core as grass
+from grass.exceptions import CalledModuleError
+
 
 def main():
-    return grass.run_command("v.distance",
-                             _from = options['map'],
-                             to = options['qmap'],
-                             column = options['column'],
-                             to_column = options['qcolumn'],
-                             upload = "to_attr",
-                             dmax = options['dmax'],
-                             from_layer = options['layer'],
-                             to_layer = options['qlayer'])
-    
+    try:
+        grass.run_command('v.distance',
+                          from_=options['map'],
+                          to=options['qmap'],
+                          column=options['column'],
+                          to_column=options['qcolumn'],
+                          upload='to_attr',
+                          dmax=options['dmax'],
+                          from_layer=options['layer'],
+                          to_layer=options['qlayer'])
+    except CalledModuleError:
+        return 1
+    else:
+        return 0
+
+
 if __name__ == "__main__":
     options, flags = grass.parser()
     sys.exit(main())

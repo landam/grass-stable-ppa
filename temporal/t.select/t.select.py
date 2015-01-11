@@ -7,7 +7,7 @@
 #
 # PURPOSE:      Select maps from space time datasets by topological relationships to
 #               other space time datasets using temporal algebra.
-# COPYRIGHT:    (C) 2011 by the GRASS Development Team
+# COPYRIGHT:    (C) 2011-2014 by the GRASS Development Team
 #
 #               This program is free software under the GNU General Public
 #               License (version 2). Read the file COPYING that comes with GRASS
@@ -44,6 +44,8 @@ import grass.script as grass
 import grass.temporal as tgis
 import sys
 
+############################################################################
+
 def main():
 
     expression = options['expression']
@@ -59,7 +61,7 @@ def main():
 
     tgis.init(True)
     p = tgis.TemporalAlgebraParser(run=True, debug=False, spatial = spatial)
-    p.parse(expression, stdstype)
+    p.parse(expression, stdstype,  overwrite=grass.overwrite)
 
 if __name__ == "__main__":
     options, flags = grass.parser()

@@ -471,7 +471,7 @@ class Application(wx.App):
     def initialize(self):
 	grass.use_temp_region()
 
-	run('g.region', rast = self.inmap)
+	run('g.region', raster = self.inmap)
 
 	reg = grass.region()
 	for k, f in wind_keys.values():
@@ -490,12 +490,12 @@ class Application(wx.App):
 
 	atexit.register(self.cleanup)
 
-	run('g.copy', rast = (self.inmap, self.outmap), overwrite = True)
+	run('g.copy', raster = (self.inmap, self.outmap), overwrite = True)
 	run('r.colors', map = self.outmap, rast = self.inmap)
 
     def cleanup(self):
 	grass.try_remove(self.tempfile)
-	run('g.remove', rast = self.tempmap)
+	run('g.remove', flags = 'f', type = 'raster', name = self.tempmap)
 
     def finalize(self):
 	self.save_map()
@@ -526,10 +526,10 @@ class Application(wx.App):
 	outf.close()
 	p.wait()
 
-	run('g.region', rast = self.inmap)
+	run('g.region', raster = self.inmap)
 	run('r.patch', input = (self.tempmap, self.outmap), output = self.outmap, overwrite = True)
 	run('r.colors', map = self.outmap, rast = self.inmap)
-	run('g.remove', rast = self.tempmap)
+	run('g.remove', flags = 'f', type = 'raster', name = self.tempmap)
 
     def read_header(self, infile):
 	wind = {}
@@ -635,7 +635,7 @@ class Application(wx.App):
 	run('r.mapcalc', expression = "%s = %d" % (self.tempmap, val))
 	run('r.colors', map = self.tempmap, rast = self.inmap)
 	run('r.out.ppm', input = self.tempmap, out = self.tempfile)
-	run('g.remove', rast = self.tempmap)
+	run('g.remove', flags = 'f', type = 'raster', name = self.tempmap)
 
 	tempimg = wx.Image(self.tempfile)
 	grass.try_remove(self.tempfile)

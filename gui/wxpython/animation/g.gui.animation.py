@@ -24,15 +24,16 @@
 #% keywords: general
 #% keywords: GUI
 #% keywords: display
+#% keywords: animation
 #%end
 #%option G_OPT_R_INPUTS
-#% key: rast
+#% key: raster
 #% description: Raster maps to animate
 #% required: no
 #% guisection: Input
 #%end
 #%option G_OPT_V_INPUTS
-#% key: vect
+#% key: vector
 #% label: Vector maps to animate
 #% required: no
 #% guisection: Input
@@ -66,8 +67,8 @@ from animation.data import AnimLayer
 
 
 def main():
-    rast = options['rast']
-    vect = options['vect']
+    rast = options['raster']
+    vect = options['vector']
     strds = options['strds']
     stvds = options['stvds']
 
@@ -84,7 +85,8 @@ def main():
         
 
     if numInputs > 1:
-        grass.fatal(_("Options 'rast', 'vect', 'strds' and 'stvds' are mutually exclusive."))
+        grass.fatal(_("%s=, %s=, %s= and %s= are mutually exclusive.") %
+                ("raster", "vector", "strds", "stvds"))
         
     if numInputs > 0:
         # We need to initialize the temporal framework in case
@@ -95,13 +97,13 @@ def main():
     layerList = LayerList()
     if rast:
         layer = AnimLayer()
-        layer.mapType = 'rast'
+        layer.mapType = 'raster'
         layer.name = rast
         layer.cmd = ['d.rast', 'map={name}'.format(name=rast.split(',')[0])]
         layerList.AddLayer(layer)
     if vect:
         layer = AnimLayer()
-        layer.mapType = 'vect'
+        layer.mapType = 'vector'
         layer.name = vect
         layer.cmd = ['d.vect', 'map={name=}'.format(name=vect.split(',')[0])]
         layerList.AddLayer(layer)

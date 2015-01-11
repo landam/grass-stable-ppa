@@ -22,6 +22,8 @@ import urllib2
 from httplib import HTTPException
 
 import grass.script as grass
+from grass.exceptions import CalledModuleError
+
 
 class WMSBase:
     def __init__(self):
@@ -230,6 +232,7 @@ class WMSBase:
                 
                 grass.fatal(msg)
         
+        grass.debug('Fetching capabilities OK')
         return cap
 
     def _fetchDataFromServer(self, url, username = None, password = None):
@@ -438,20 +441,21 @@ class GRASSImporter:
     def __del__(self):
         # removes temporary mask, used for import transparent or warped temp_map
         if self.cleanup_mask:
-            # clear temporary mask, which was set by module      
-            if grass.run_command('r.mask',
-                                 quiet = True,
-                                 flags = 'r') != 0:  
+            # clear temporary mask, which was set by module
+            try:
+                grass.run_command('r.mask', quiet=True, flags='r')
+            except CalledModuleError:
                 grass.fatal(_('%s failed') % 'r.mask')
-            
+
             # restore original mask, if exists 
             if grass.find_file(self.opt_output + self.original_mask_suffix, element = 'cell', mapset = '.' )['name']:
-                if grass.run_command('g.copy',
-                                     quiet = True,
-                                     rast =  self.opt_output + self.original_mask_suffix + ',MASK') != 0:
+                try:
+                    mask_copy = self.opt_output + self.original_mask_suffix
+                    grass.run_command('g.copy', quiet=True,
+                                      raster=mask_copy + ',MASK')
+                except CalledModuleError:
                     grass.fatal(_('%s failed') % 'g.copy')
-        
-        
+
         # remove temporary created rasters
         if self.cleanup_layers: 
             maps = []
@@ -463,8 +467,9 @@ class GRASSImporter:
             if maps:
                 grass.run_command('g.remove',
                                   quiet = True,
-                                  flags = 'f',
-                                  rast  = ','.join(maps))
+                                  flags = 'fb',
+                                  type = 'raster',
+                                  name = ','.join(maps))
         
         # delete environmental variable which overrides region 
         if 'GRASS_REGION' in os.environ.keys():
@@ -474,13 +479,13 @@ class GRASSImporter:
         """!Import raster into GRASS.
         """
         # importing temp_map into GRASS
-        if grass.run_command('r.in.gdal',
-                             quiet = True,
-                             overwrite = True,
-                             input = raster,
-                             output = self.opt_output) != 0:
+        try:
+            grass.run_command('r.in.gdal',
+                              quiet=True, overwrite=True,
+                              input=raster, output=self.opt_output)
+        except CalledModuleError:
             grass.fatal(_('%s failed') % 'r.in.gdal')
-        
+
         # information for destructor to cleanup temp_layers, created
         # with r.in.gdal
         self.cleanup_layers = True
@@ -498,30 +503,34 @@ class GRASSImporter:
         if grass.find_file( self.opt_output + '.alpha', element = 'cell', mapset = '.' )['name']:
             # saving current mask (if exists) into temp raster
             if grass.find_file('MASK', element = 'cell', mapset = '.' )['name']:
-                if grass.run_command('g.copy',
-                                     quiet = True,
-                                     rast = 'MASK,' + self.opt_output + self.original_mask_suffix) != 0:    
+                try:
+                    mask_copy = self.opt_output + self.original_mask_suffix
+                    grass.run_command('g.copy', quiet=True,
+                                      raster='MASK,' + mask_copy)
+                except CalledModuleError:
                     grass.fatal(_('%s failed') % 'g.copy')
-            
+
             # info for destructor
             self.cleanup_mask = True
-            if grass.run_command('r.mask',
-                                 quiet = True,
-                                 overwrite = True,
-                                 maskcats = "0",
-                                 flags = 'i',
-                                 raster = self.opt_output + '.alpha') != 0: 
+            try:
+                grass.run_command('r.mask',
+                                  quiet=True, overwrite=True,
+                                  maskcats="0",
+                                  flags='i',
+                                  raster=self.opt_output + '.alpha')
+            except CalledModuleError:
                 grass.fatal(_('%s failed') % 'r.mask')
-        
+
         #TODO one band + alpha band?
         if grass.find_file(self.opt_output + '.red', element = 'cell', mapset = '.')['file']:
-            if grass.run_command('r.composite',
-                                 quiet = True,
-                                 overwrite = True,
-                                 red = self.opt_output + '.red',
-                                 green = self.opt_output +  '.green',
-                                 blue = self.opt_output + '.blue',
-                                 output = self.opt_output ) != 0:
+            try:
+                grass.run_command('r.composite',
+                                  quiet=True, overwrite=True,
+                                  red=self.opt_output + '.red',
+                                  green=self.opt_output + '.green',
+                                  blue=self.opt_output + '.blue',
+                                  output=self.opt_output)
+            except CalledModuleError:
                 grass.fatal(_('%s failed') % 'r.composite')
 
         grass.message(_('<%s> created.') % self.opt_output)

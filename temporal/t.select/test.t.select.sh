@@ -1,7 +1,5 @@
 #!/usr/bin/sh
 
-export GRASS_OVERWRITE=1
-
 # Test for temporal algebra in LatLon location.
 n1=`g.tempfile pid=1 -d`
 n2=`g.tempfile pid=2 -d`
@@ -13,17 +11,17 @@ export GRASS_OVERWRITE=1
 # Create random points test maps.
 for i in {1..60}
   do
-    if [[ "$i" -le 20 ]]; then
+    if [ "$i" -le 20 ]; then
       echo testpoint1_$i >> ${n1}
-      v.random  -z output=testpoint1_$i n=3 seed=$i
+      v.random  -z output=testpoint1_$i npoints=3 seed=$i
     elif [ "$i" -gt 20 ] && [ "$i" -le 40 ]; then
       echo testpoint2_$i >>  ${n2}
-      v.random  -z output=testpoint2_$i n=3 seed=$i
+      v.random  -z output=testpoint2_$i npoints=3 seed=$i
     else
       echo testpoint3_$i >>  ${n3}
       echo testpoint4_$i >>  ${n4}
-      v.random  -z output=testpoint3_$i n=3 seed=$i
-      v.random  -z output=testpoint4_$i n=3 seed=$i
+      v.random  -z output=testpoint3_$i npoints=3 seed=$i
+      v.random  -z output=testpoint4_$i npoints=3 seed=$i
     fi
   done
 
@@ -34,10 +32,10 @@ t.create  output=test3 type=stvds title="test dataset" descr="test dataset"
 t.create  output=test4 type=stvds title="test dataset" descr="test dataset"
 
 
-t.register -i  type=vect input=test1 file=${n1} increment="1 days" start="2013-01-01"
-t.register -i  type=vect input=test2 file=${n2} increment="1 days" start="2013-01-10"
-t.register -i  type=vect input=test3 file=${n3} increment="3 days" start="2013-01-01"
-t.register -i  type=vect input=test4 file=${n4} increment="3 days" start="2013-01-10"
+t.register -i  type=vector input=test1 file=${n1} increment="1 days" start="2013-01-01"
+t.register -i  type=vector input=test2 file=${n2} increment="1 days" start="2013-01-10"
+t.register -i  type=vector input=test3 file=${n3} increment="3 days" start="2013-01-01"
+t.register -i  type=vector input=test4 file=${n4} increment="3 days" start="2013-01-10"
 
 t.info type=stvds input=test1
 t.info type=stvds input=test2

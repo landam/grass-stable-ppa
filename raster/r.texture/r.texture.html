@@ -103,16 +103,16 @@ Importantly, the input raster map cannot have more than 255 categories.
 Calculation of Angular Second Moment of B/W orthophoto (North Carolina data set):
 
 <div class="code"><pre>
-g.region rast=ortho_2001_t792_1m -p
+g.region raster=ortho_2001_t792_1m -p
 # set grey level color table 0% black 100% white
 r.colors ortho_2001_t792_1m color=grey
 # extract grey levels
-r.mapcalc "ortho_2001_t792_1m.greylevel = #ortho_2001_t792_1m"
+r.mapcalc "ortho_2001_t792_1m.greylevel = ortho_2001_t792_1m"
 # texture analysis
-r.texture ortho_2001_t792_1m.greylevel prefix=ortho_texture measure=asm -s 
+r.texture ortho_2001_t792_1m.greylevel prefix=ortho_texture method=asm -s 
 # display
 g.region n=221461 s=221094 w=638279 e=638694
-d.shadedmap drape=ortho_texture_ASM_0 rel=ortho_2001_t792_1m
+d.shade drape=ortho_texture_ASM_0 rel=ortho_2001_t792_1m
 </pre></div>
 
 This calculates four maps (requested texture at four orientations):
@@ -160,4 +160,4 @@ of <a href="http://netpbm.sourceforge.net/doc/pgmtexture.html">pgmtexture</a>.
 C. Basco -  RCOST (Research Centre on Software Technology - Viale Traiano - 82100 Benevento)<br>
 M. Ceccarelli - Facolta di Scienze, Universita del Sannio, Benevento
 
-<p><i>Last changed: $Date: 2011-11-27 06:06:22 -0800 (Sun, 27 Nov 2011) $</i>
+<p><i>Last changed: $Date: 2014-12-20 05:56:06 +0100 (Sat, 20 Dec 2014) $</i>

@@ -3,7 +3,7 @@
 ;GRASS GIS Installer for Windows
 ;Written by Marco Pasetti
 ;Updated for OSGeo4W by Colin Nielsen, Helmut Kudrnovsky, and Martin Landa
-;Last Update: $Id: GRASS-Installer.nsi.tmpl 61454 2014-07-30 08:33:06Z martinl $
+;Last Update: $Id: GRASS-Installer.nsi.tmpl 62106 2014-09-27 07:57:05Z hellik $
 ;Mail to: grass-dev@lists.osgeo.org 
 
 ;----------------------------------------------------------------------------------------------------------------------------
@@ -59,7 +59,7 @@ SetCompressorDictSize 128
 
 !include "MUI2.nsh"
 !include "LogicLib.nsh"
-!include "FileAssociation.nsh"
+!include "Sections.nsh"
 
 ;----------------------------------------------------------------------------------------------------------------------------
 
@@ -632,10 +632,6 @@ Section "GRASS" SecGRASS
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${GRASS_BASE}" "URLInfoAbout" "${WEB_SITE}"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${GRASS_BASE}" "Publisher" "${PUBLISHER}"
         
-        ;File Association
-        ;${registerExtension} "$INSTALL_DIR\extrabin\pythonw.exe" ".py"  "Python File"
-        ;${registerExtension} "$INSTALL_DIR\extrabin\pythonw.exe" ".pyc" "Compiled Python File"
-        ;${registerExtension} "$INSTALL_DIR\extrabin\pythonw.exe" ".pyw" "Python File (no console)"
 
 	;Create the Desktop Shortcut
 	SetShellVarContext current
@@ -936,17 +932,6 @@ Function DownloadInstallMSRuntime
 	Pop $0
 	StrCmp $0 "success" untar_ok untar_failed
 	
-	untar_ok:
-	ExecWait "$TEMP\$ORIGINAL_UNTAR_FOLDER\bin\vcredist_2005_x86.exe /q"
-	ExecWait "$TEMP\$ORIGINAL_UNTAR_FOLDER\bin\vcredist_2008_x86.exe /q"	
-	ExecWait "$TEMP\$ORIGINAL_UNTAR_FOLDER\bin\vcredist_2010_x86.exe /q"
-	CopyFiles "$TEMP\$ORIGINAL_UNTAR_FOLDER\bin\*.dll" "$INSTDIR\extrabin"
-	Delete "$TEMP\$ARCHIVE_NAME"
-	RMDir /r "$TEMP\$ORIGINAL_UNTAR_FOLDER"
-	;the following doesn't work. Maybe because the installer is still running?
-	RMDir "$TEMP\$ORIGINAL_UNTAR_FOLDER"
-	Goto end
-	
 	download_failed:
 	DetailPrint "$0" ;print error message to log
 	MessageBox MB_OK "Download Failed.$\r$\nGRASS will be installed without the $EXTENDED_ARCHIVE_NAME."
@@ -958,6 +943,19 @@ Function DownloadInstallMSRuntime
 	
 	untar_failed:
 	DetailPrint "$0" ;print error message to log
+
+	untar_ok:
+	DetailPrint "Archive successfully unzipped."
+	DetailPrint "Installing vcredist_2005_x86.exe ..."
+	ExecWait '"$TEMP\$ORIGINAL_UNTAR_FOLDER\bin\vcredist_2005_x86.exe" /q'
+	DetailPrint "Installing vcredist_2008_x86.exe ..."
+	ExecWait '"$TEMP\$ORIGINAL_UNTAR_FOLDER\bin\vcredist_2008_x86.exe" /q'	
+	DetailPrint "Installing vcredist_2010_x86.exe ..."
+	ExecWait '"$TEMP\$ORIGINAL_UNTAR_FOLDER\bin\vcredist_2010_x86.exe" /q'
+	DetailPrint "Copying runtime files ..."
+	CopyFiles "$TEMP\$ORIGINAL_UNTAR_FOLDER\bin\*.dll" "$INSTALL_DIR\extrabin"
+	DetailPrint "MS runtime files installed."
+	Goto end
 	
 	end:
 
@@ -1068,6 +1066,17 @@ Section /O "South Dakota (Spearfish County) Data Set" SecSpearfishSDB
 SectionEnd
 
 ;--------------------------------------------------------------------------
+;Clean downloaded MS runtime files  by .onInstSuccess
+
+Function .onInstSuccess
+	${If} ${SectionIsSelected} ${SecMSRuntime}
+		Delete "$TEMP\$ARCHIVE_NAME"
+		RMDir /r "$TEMP\$ORIGINAL_UNTAR_FOLDER"
+		RMDir "$TEMP\$ORIGINAL_UNTAR_FOLDER"	
+	${EndIf}
+FunctionEnd
+
+;--------------------------------------------------------------------------
 
 ;Uninstaller Section
 
@@ -1095,10 +1104,6 @@ Section "Uninstall"
 	DeleteRegKey HKLM "Software\${GRASS_BASE}"
 	DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${GRASS_BASE}"
 
-        ;File Association
-        ${unregisterExtension} ".py"  "Python File"
-        ${unregisterExtension} ".pyc" "Compiled Python File"
-        ${unregisterExtension} ".pyw" "Python File (no console)"
 SectionEnd
 
 ;--------------------------------------------------------------------------

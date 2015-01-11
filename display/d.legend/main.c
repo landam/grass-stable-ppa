@@ -85,16 +85,16 @@ int main(int argc, char **argv)
     G_add_keyword(_("display"));
     G_add_keyword(_("cartography"));
     module->description =
-	_("Displays a legend for a raster map (2 or 3D) in the active frame "
+	_("Displays a legend for a 2D or 3D raster map in the active frame "
 	  "of the graphics monitor.");
 
     opt_rast2d = G_define_standard_option(G_OPT_R_MAP);
-    opt_rast2d->key = "rast";
+    opt_rast2d->key = "raster";
     opt_rast2d->required = NO;
     opt_rast2d->guisection = _("Input");
 
     opt_rast3d = G_define_standard_option(G_OPT_R3_MAP);
-    opt_rast3d->key = "rast3d";
+    opt_rast3d->key = "raster_3d";
     opt_rast3d->required = NO;
     opt_rast3d->guisection = _("Input");
 

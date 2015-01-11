@@ -13,8 +13,8 @@ This script needs gnuplot to be installed.
 Analysis of LANDSAT TM7 channels (North Carolina dataset):
 
 <div class="code"><pre>
-g.region rast=lsat7_2002_10 -p
-i.spectral -g raster=lsat7_2002_10,lsat7_2002_20,lsat7_2002_30,lsat7_2002_40,lsat7_2002_50,lsat7_2002_70 \
+g.region raster=lsat7_2002_10 -p
+i.spectral -g input=lsat7_2002_10,lsat7_2002_20,lsat7_2002_30,lsat7_2002_40,lsat7_2002_50,lsat7_2002_70 \
            coordinates=636069,215440,637958,223393,633277,223605
 </pre></div>
 
@@ -28,9 +28,9 @@ Spectral plot of 3 different land cover types: (1) water, (2) green vegetation, 
 North Carolina sample dataset:
 
 <div class="code"><pre>
-g.region rast=lsat7_2002_10 -p
-LIST=`g.mlist type=rast pattern="lsat7_2002_[1-5,7]0" separator=","`
-i.spectral raster=$LIST coordinates=637502.25,221744.25
+g.region raster=lsat7_2002_10 -p
+LIST=`g.list type=rast pattern="lsat7_2002_[1-5,7]0" separator=","`
+i.spectral input=$LIST coordinates=637502.25,221744.25
 </pre></div>
 
 This will search all LANDSAT map for 2002 but select only the B, G, R, 
@@ -39,10 +39,10 @@ NIR, and MIR channels.
 
 <h2>SEE ALSO</h2>
 
-<em><a href="d.what.rast.html">d.what.rast</a></em><br>
-<em><a href="d.where.html">d.where</a></em><br>
-<em><a href="r.what.html">r.what</a></em><br>
-
+<em>
+<a href="d.where.html">d.where</a>,
+<a href="r.what.html">r.what</a>
+</em>
 
 <h2>AUTHOR</h2>
 
@@ -50,4 +50,4 @@ Markus Neteler<br>
 Francesco Pirotti
 
 <p>
-<i>Last changed: $Date: 2012-09-09 12:11:23 -0700 (Sun, 09 Sep 2012) $</i>
+<i>Last changed: $Date: 2014-12-19 22:55:37 +0100 (Fri, 19 Dec 2014) $</i>

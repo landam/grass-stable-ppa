@@ -1,4 +1,4 @@
-"""!
+"""
 @package mapdisp.main
 
 @brief Start Map Display as standalone application
@@ -38,10 +38,11 @@ from core.gcmd     import RunCommand
 from core.render   import Map, MapLayer
 from core.utils import _
 from mapdisp.frame import MapFrame
-from grass.script  import core as grass
 from core.debug    import Debug
 from core.settings import UserSettings
 
+from grass.script.utils import try_remove
+from grass.script import core as grass
 from grass.pydispatch.signal import Signal
 
 # for standalone app
@@ -54,10 +55,10 @@ monSize = list(globalvar.MAP_WINDOW_SIZE)
 
 class DMonMap(Map):
     def __init__(self, giface, cmdfile=None, mapfile=None):
-        """!Map composition (stack of map layers and overlays)
+        """Map composition (stack of map layers and overlays)
 
-        @param cmdline full path to the cmd file (defined by d.mon)
-        @param mapfile full path to the map file (defined by d.mon)
+        :param cmdline: full path to the cmd file (defined by d.mon)
+        :param mapfile: full path to the map file (defined by d.mon)
         """
 
         Map.__init__(self)
@@ -78,12 +79,18 @@ class DMonMap(Map):
             self.maskfileCmd = os.path.splitext(mapfile)[0] + '.pgm'
 
         # generated file for g.pnmcomp output for rendering the map
-        self.mapfile = monFile['map'] + '.ppm'
-        # signal sent when d.out.file appears in cmd file, attribute is cmd
+        self.mapfile = monFile['map']
+        if os.path.splitext(self.mapfile)[1] != '.ppm':
+            self.mapfile += '.ppm'
+        
+        # signal sent when d.out.file/d.to.rast appears in cmd file, attribute is cmd
         self.saveToFile = Signal('DMonMap.saveToFile')
+        self.dToRast = Signal('DMonMap.dToRast')
+        # signal sent when d.what.rast/vect appears in cmd file, attribute is cmd
+        self.query = Signal('DMonMap.query')
 
     def GetLayersFromCmdFile(self):
-        """!Get list of map layers from cmdfile
+        """Get list of map layers from cmdfile
         """
         if not self.cmdfile:
             return
@@ -95,13 +102,28 @@ class DMonMap(Map):
             lines = fd.readlines()
             fd.close()
             # detect d.out.file, delete the line from the cmd file and export graphics
-            if len(lines) > 0 and lines[-1].startswith('d.out.file'):
-                dOutFileCmd = lines[-1].strip()
-                fd = open(self.cmdfile, 'w')
-                fd.writelines(lines[:-1])
-                fd.close()
-                self.saveToFile.emit(cmd=utils.split(dOutFileCmd))
-                return
+            if len(lines) > 0:
+                if lines[-1].startswith('d.out.file') or lines[-1].startswith('d.to.rast'):
+                    dCmd = lines[-1].strip()
+                    fd = open(self.cmdfile, 'w')
+                    fd.writelines(lines[:-1])
+                    fd.close()
+                    if lines[-1].startswith('d.out.file'):
+                        self.saveToFile.emit(cmd=utils.split(dCmd))
+                    else:
+                        self.dToRast.emit(cmd=utils.split(dCmd))
+                    return
+                if lines[-1].startswith('d.what'):
+                    dWhatCmd = lines[-1].strip()
+                    fd = open(self.cmdfile, 'w')
+                    fd.writelines(lines[:-1])
+                    fd.close()
+                    if '=' in utils.split(dWhatCmd)[1]:
+                        maps = utils.split(dWhatCmd)[1].split('=')[1].split(',')
+                    else:
+                        maps = utils.split(dWhatCmd)[1].split(',')
+                    self.query.emit(ltype=utils.split(dWhatCmd)[0].split('.')[-1], maps=maps)
+                    return
 
             existingLayers = self.GetListOfLayers()
 
@@ -190,7 +212,7 @@ class DMonMap(Map):
         Debug.msg(1, "                            nlayers=%d" % nlayers)
                 
     def Render(self, *args, **kwargs):
-        """!Render layer to image.
+        """Render layer to image.
 
         For input params and returned data see overridden method in Map class.
         """
@@ -199,7 +221,7 @@ class DMonMap(Map):
         return ret
     
     def AddLayer(self, *args, **kwargs):
-        """!Adds generic map layer to list of layers.
+        """Adds generic map layer to list of layers.
 
         For input params and returned data see overridden method in Map class.
         """
@@ -218,7 +240,7 @@ class DMonMap(Map):
 
 
 class Layer(object):
-    """!@implements core::giface::Layer"""
+    """@implements core::giface::Layer"""
     def __init__(self, maplayer):
         self._maplayer = maplayer
 
@@ -239,7 +261,7 @@ class Layer(object):
 
 class LayerList(object):
     def __init__(self, map, giface):
-        """!@implements core::giface::LayerList"""
+        """@implements core::giface::LayerList"""
         self._map = map
         self._giface = giface
 
@@ -253,7 +275,7 @@ class LayerList(object):
         return layers
 
     def GetSelectedLayer(self, checkedOnly=False):
-        """!Returns selected layer or None when there is no selected layer."""
+        """Returns selected layer or None when there is no selected layer."""
         layers = self.GetSelectedLayers()
         if len(layers) > 0:
             return layers[0]
@@ -262,15 +284,15 @@ class LayerList(object):
 
     def AddLayer(self, ltype, name=None, checked=None,
                  opacity=1.0, cmd=None):
-        """!Adds a new layer to the layer list.
+        """Adds a new layer to the layer list.
 
         Launches property dialog if needed (raster, vector, etc.)
 
-        @param ltype layer type (raster, vector, 3d-raster, ...)
-        @param name layer name
-        @param checked if True layer is checked
-        @param opacity layer opacity level
-        @param cmd command (given as a list)
+        :param ltype: layer type (raster, vector, 3d-raster, ...)
+        :param name: layer name
+        :param checked: if True layer is checked
+        :param opacity: layer opacity level
+        :param cmd: command (given as a list)
         """
         self._map.AddLayer(ltype=ltype, command=cmd,
                            name=name, active=True,
@@ -304,7 +326,7 @@ class LayerList(object):
 
 
 class DMonGrassInterface(StandaloneGrassInterface):
-    """!@implements GrassInterface"""
+    """@implements GrassInterface"""
     def __init__(self, mapframe):
         StandaloneGrassInterface.__init__(self)
         self._mapframe = mapframe
@@ -314,6 +336,9 @@ class DMonGrassInterface(StandaloneGrassInterface):
 
     def GetMapWindow(self):
         return self._mapframe.GetMapWindow()
+
+    def GetProgress(self):
+        return self._mapframe.GetProgressBar()
 
 
 class DMonFrame(MapFrame):
@@ -327,6 +352,7 @@ class MapApp(wx.App):
         if not globalvar.CheckWxVersion([2, 9]):
             wx.InitAllImageHandlers()
 
+        grass.set_raise_on_error(True)
         # actual use of StandaloneGrassInterface not yet tested
         # needed for adding functionality in future
         giface = DMonGrassInterface(None)
@@ -345,6 +371,8 @@ class MapApp(wx.App):
         # self.SetTopWindow(Map)
         self.mapFrm.GetMapWindow().SetAlwaysRenderEnabled(True)
         self.Map.saveToFile.connect(lambda cmd: self.mapFrm.DOutFile(cmd))
+        self.Map.dToRast.connect(lambda cmd: self.mapFrm.DToRast(cmd))
+        self.Map.query.connect(lambda ltype, maps: self.mapFrm.SetQueryLayersAndActivate(ltype=ltype, maps=maps))
         self.mapFrm.Show()
         
         if __name__ == "__main__":
@@ -362,10 +390,10 @@ class MapApp(wx.App):
             # self.timer.Stop()
             # terminate thread
             for f in monFile.itervalues():
-                grass.try_remove(f)
+                try_remove(f)
             
     def watcher(self):
-        """!Redraw, if new layer appears (check's timestamp of
+        """Redraw, if new layer appears (check's timestamp of
         cmdfile)
         """
         try:
@@ -390,7 +418,7 @@ class MapApp(wx.App):
             self.timer.Stop()
 
     def GetMapFrame(self):
-        """!Get Map Frame instance"""
+        """Get Map Frame instance"""
         return self.mapFrm
 
 if __name__ == "__main__":

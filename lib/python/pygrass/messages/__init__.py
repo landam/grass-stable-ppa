@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""@package grass.pygrass.massages
+"""@package grass.pygrass.messages
 
 @brief PyGRASS message interface
 
@@ -14,19 +14,11 @@ for details.
 @author Soeren Gebbert
 """
 import sys
-import grass.lib.gis as libgis
 from multiprocessing import Process, Lock, Pipe
 
+import grass.lib.gis as libgis
 
-class FatalError(Exception):
-    """This error will be raised in case raise_on_error was set True
-       when creating the messenger object.
-    """
-    def __init__(self, msg):
-        self.value = msg
-
-    def __str__(self):
-        return self.value
+from grass.exceptions import FatalError
 
 
 def message_server(lock, conn):
@@ -84,7 +76,11 @@ def message_server(lock, conn):
             libgis.G_debug(1, "Stop messenger server")
             sys.exit()
 
-        message = data[1]
+        message = data[1]            
+        # libgis limitation
+        if isinstance(message,  type(" ")):
+            if len(message) >= 2000:
+                message = message[:1999]
 
         if message_type == "PERCENT":
             n = int(data[1])
@@ -139,12 +135,6 @@ class Messenger(object):
        >>> msgr.percent(1, 1, 1)
        >>> msgr.warning("Ohh")
        >>> msgr.error("Ohh no")
-       D0/0: debug 0
-       message
-       important message
-        100%
-       WARNING: Ohh
-       ERROR: Ohh no
 
        >>> msgr = Messenger()
        >>> msgr.fatal("Ohh no no no!")
@@ -183,9 +173,6 @@ class Messenger(object):
         self.server = None
         self.raise_on_error = raise_on_error
         self.start_server()
-
-    def __del__(self):
-        self.stop()
 
     def start_server(self):
         """Start the messenger server and open the pipe

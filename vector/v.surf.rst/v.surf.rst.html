@@ -22,7 +22,8 @@ tangential and mean curvatures respectively. If the input vector map
 have time stamp, the program creates time stamp for all output maps.
 
 <p>
-User can define a raster map named <b>mask</b>, which will be used
+User can either use <em><a href="r.mask.html">r.mask</a></em>to set a mask
+or specify a raster map in <b>mask</b> option, which will be used
 as a mask. The approximation is skipped for cells which have zero or
 NULL value in mask. NULL values will be assigned to these cells in all
 output raster maps. Data points are checked for identical points and
@@ -46,7 +47,7 @@ preserving the geometrical properties of the surface.  With the
 smoothing parameter set to zero (<b>smooth=0</b>) the resulting
 surface passes exactly through the data points (spatial interpolation
 is performed). When smoothing parameter is used, it is also possible
-to output a vector point map <b>devi</b> containing deviations of the
+to output a vector point map <b>deviations</b> containing deviations of the
 resulting surface from the given data.
 
 <p>
@@ -161,7 +162,7 @@ stability of the computation):
     depend on the actual scale (distances) of the original data (which
     can be km for regional applications or cm for field
     experiments).</li>
-  <li>Flag<b> -t </b>: The given <b>tension</b> is applied to
+  <li>Flag<b>-t</b>: The given <b>tension</b> is applied to
     un-normalized data (rescaled <em>tension = tension*dnorm/1000</em>
     is applied to normalized data (<em>x/dnorm</em>) and
     therefore <b>dnorm</b> cancels out) so here <b>tension</b> truly
@@ -261,7 +262,7 @@ must be done outside <em>v.surf.rst</em>.
 
 <p>
 The &quot;optimal&quot; approximation parameters for given data can be
-found using a cross-validation (CV) procedure (<b>-c </b>flag).  The
+found using a cross-validation (CV) procedure (<b>-c</b>flag).  The
 CV procedure is based on removing one input data point at a time,
 performing the approximation for the location of the removed point
 using the remaining data points and calculating the difference between
@@ -302,20 +303,20 @@ Spearfish example (we simulate randomly distributed elevation
 measures):
 
 <div class="code"><pre>
-g.region rast=elevation.10m -p
+g.region raster=elevation.10m -p
 # random elevation extraction
 r.random elevation.10m vector_output=elevrand n=200
 v.info -c elevrand
 v.db.select elevrand
 
 # interpolation based on all points
-v.surf.rst elevrand zcol=value elev=elev_full
+v.surf.rst elevrand zcol=value elevation=elev_full
 r.colors elev_full rast=elevation.10m
 d.rast elev_full
 d.vect elevrand
 
 # interpolation based on subset of points (only those over 1300m/asl)
-v.surf.rst elevrand zcol=value elev=elev_partial where="value > 1300"
+v.surf.rst elevrand zcol=value elevation=elev_partial where="value > 1300"
 r.colors elev_partial rast=elevation.10m
 d.rast elev_partial
 d.vect elevrand where="value > 1300"
@@ -393,4 +394,4 @@ procedure):</em>
 <br>Jaroslav Hofierka, University of Presov; Radim Blazek, ITC-irst
 
 <p>
-<i>Last changed: $Date: 2014-03-15 15:08:40 +0100 (Sat, 15 Mar 2014) $</i>
+<i>Last changed: $Date: 2014-12-19 22:55:37 +0100 (Fri, 19 Dec 2014) $</i>

@@ -27,7 +27,7 @@
 #% description: Type of the space time dataset or map, default is strds
 #% guisection: Selection
 #% required: no
-#% options: strds, str3ds, stvds, rast, rast3d, vect
+#% options: strds, str3ds, stvds, raster, raster_3d, vector
 #% answer: strds
 #%end
 
@@ -71,12 +71,12 @@
 #%end
 
 #%flag
-#% key: h
+#% key: c
 #% description: Print the column names as first row
 #% guisection: Formatting
 #%end
 
-import grass.script as grass
+import grass.script as gscript
 import grass.temporal as tgis
 import sys
 
@@ -91,8 +91,8 @@ def main():
     columns = options["columns"]
     order = options["order"]
     where = options["where"]
-    separator = grass.separator(options["separator"])
-    colhead = flags['h']
+    separator = gscript.separator(options["separator"])
+    colhead = flags['c']
 
     # Make sure the temporal database exists
     tgis.init()
@@ -100,7 +100,8 @@ def main():
     sp = tgis.dataset_factory(type, None)
     first = True
     
-    sys.stderr.write("----------------------------------------------\n")
+    if  gscript.verbosity() > 0:
+        sys.stderr.write("----------------------------------------------\n")
 
     for ttype in temporal_type.split(","):
         if ttype == "absolute":
@@ -120,12 +121,13 @@ def main():
                 rows = stds_list[key]
 
                 if rows:
-                    if issubclass(sp.__class__,  tgis.AbstractMapDataset):
-                        sys.stderr.write(_("Time stamped %s maps with %s available in mapset <%s>:\n")%\
-                                                 (sp.get_type(),  time,  key))
-                    else:
-                        sys.stderr.write(_("Space time %s datasets with %s available in mapset <%s>:\n")%\
-                                                 (sp.get_new_map_instance(None).get_type(),  time,  key))
+                    if  gscript.verbosity() > 0:
+                        if issubclass(sp.__class__,  tgis.AbstractMapDataset):
+                            sys.stderr.write(_("Time stamped %s maps with %s available in mapset <%s>:\n")%\
+                                                     (sp.get_type(),  time,  key))
+                        else:
+                            sys.stderr.write(_("Space time %s datasets with %s available in mapset <%s>:\n")%\
+                                                     (sp.get_new_map_instance(None).get_type(),  time,  key))
 
                     # Print the column names if requested
                     if colhead == True and first == True:
@@ -153,5 +155,5 @@ def main():
                         print output
 
 if __name__ == "__main__":
-    options, flags = grass.parser()
+    options, flags = gscript.parser()
     main()

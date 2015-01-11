@@ -64,15 +64,7 @@
       <subtoolbox name="QueryRasterMaps"/>
       <subtoolbox name="RasterMapTypeConversions"/>
       <separator/>
-      <module-item name="r.buffer">
-        <label>Buffer rasters</label>
-      </module-item>
-      <module-item name="r.circle">
-        <label>Concentric circles</label>
-      </module-item>
-      <module-item name="r.distance">
-        <label>Closest points</label>
-      </module-item>
+      <subtoolbox name="RasterBufferDistance"/>
       <module-item name="r.mask">
         <label>Mask</label>
       </module-item>
@@ -85,7 +77,6 @@
       <separator/>
       <subtoolbox name="HydrologicModeling"/>
       <subtoolbox name="GroundwaterModeling"/>
-      <subtoolbox name="LandscapeStructureModeling"/>
       <subtoolbox name="LandscapePatchAnalysis"/>
       <subtoolbox name="WildfireModeling"/>
       <separator/>
@@ -271,9 +262,6 @@
       <module-item name="r.in.bin">
         <label>Raw binary array import</label>
       </module-item>
-      <module-item name="r.in.arc">
-        <label>ESRI ASCII grid import</label>
-      </module-item>
       <module-item name="r.in.gridatb">
         <label>GRIDATB.FOR import</label>
       </module-item>
@@ -393,9 +381,6 @@
         <label>ASCII x,y,z points export</label>
       </module-item>
       <separator/>
-      <module-item name="r.out.arc">
-        <label>ESRI ASCII grid export</label>
-      </module-item>
       <module-item name="r.out.gridatb">
         <label>GRIDATB.FOR export</label>
       </module-item>
@@ -421,9 +406,6 @@
       </module-item>
       <module-item name="r.out.pov">
         <label>POV-Ray export</label>
-      </module-item>
-      <module-item name="r.out.tiff">
-        <label>TIFF export</label>
       </module-item>
       <module-item name="r.out.vrml">
         <label>VRML export</label>
@@ -514,23 +496,14 @@
       <module-item name="g.copy">
         <label>Copy</label>
       </module-item>
-      <separator/>
       <module-item name="g.list">
         <label>List</label>
       </module-item>
-      <module-item name="g.mlist">
-        <label>List filtered</label>
-      </module-item>
-      <separator/>
       <module-item name="g.rename">
         <label>Rename</label>
       </module-item>
-      <separator/>
       <module-item name="g.remove">
         <label>Delete</label>
-      </module-item>
-      <module-item name="g.mremove">
-        <label>Delete filtered</label>
       </module-item>
     </items>
   </toolbox>
@@ -571,6 +544,26 @@
       <wxgui-item name="DisplayRegion"/>
       <module-item name="g.region">
         <label>Set region</label>
+      </module-item>
+    </items>
+  </toolbox>
+  <toolbox name="RasterBufferDistance">
+    <label>Raster buffers and distance</label>
+    <items>
+      <module-item name="r.buffer">
+        <label>Buffer rasters</label>
+      </module-item>
+      <module-item name="r.circle">
+        <label>Concentric circles</label>
+      </module-item>
+      <module-item name="r.distance">
+        <label>Closest points</label>
+      </module-item>
+      <module-item name="r.grow">
+        <label>Grow by one cell</label>
+      </module-item>
+      <module-item name="r.grow.distance">
+        <label>Distance to features</label>
       </module-item>
     </items>
   </toolbox>
@@ -741,12 +734,15 @@
       <module-item name="r.cross">
         <label>Cross product</label>
       </module-item>
-      <module-item name="r.series">
-        <label>Raster series</label>
-      </module-item>
       <module-item name="r.patch">
         <label>Patch raster maps</label>
       </module-item>
+      <module-item name="r.series">
+        <label>Raster series aggregation</label>
+      </module-item>
+      <module-item name="r.series.accumulate">
+        <label>Raster series accumulation</label> 
+      </module-item> 
       <separator/>
       <module-item name="r.stats.zonal">
         <label>Statistical overlay</label>
@@ -789,8 +785,11 @@
         <label>Least cost route or flow</label>
       </module-item>
       <separator/>
-      <module-item name="r.shaded.relief">
-        <label>Shaded relief</label>
+      <module-item name="r.relief">
+        <label>Compute shaded relief</label>
+      </module-item>
+      <module-item name="r.shade">
+        <label>Apply shade to raster</label>
       </module-item>
       <separator/>
       <module-item name="r.slope.aspect">
@@ -805,9 +804,6 @@
       <separator/>
       <module-item name="r.viewshed">
         <label>Visibility</label>
-      </module-item>
-      <module-item name="r.los">
-        <label>Visibility [DEPRECATED]</label>
       </module-item>
       <module-item name="r.grow.distance">
         <label>Distance to features</label>
@@ -923,17 +919,6 @@
       </module-item>
     </items>
   </toolbox>
-  <toolbox name="LandscapeStructureModeling">
-    <label>Landscape structure modeling</label>
-    <items>
-      <module-item name="r.le.pixel">
-        <label>Analyze landscape</label>
-      </module-item>
-      <module-item name="r.le.patch">
-        <label>Analyze patches</label>
-      </module-item>
-    </items>
-  </toolbox>
   <toolbox name="LandscapePatchAnalysis">
     <label>Landscape patch analysis</label>
     <items>
@@ -1000,6 +985,9 @@
   <toolbox name="ChangeCategoryValuesAndLabels">
     <label>Change category values and labels</label>
     <items>
+      <module-item name="r.category">
+        <label>Manage category information</label>
+      </module-item>
       <module-item name="d.rast.edit">
         <label>Interactively edit category values</label>
       </module-item>
@@ -1083,6 +1071,10 @@
       <module-item name="v.surf.rst">
         <label>Regularized spline tension</label>
       </module-item>
+      <separator/>
+      <module-item name="r.series.interp"> 
+        <label>Raster series interpolation</label> 
+      </module-item> 
       <separator/>
       <wxgui-item name="OrdinaryOrBlockKriging"/>
       <separator/>
@@ -1618,7 +1610,7 @@
       <module-item name="i.eb.soilheatflux">
         <label>Soil heat flux</label>
       </module-item>
-      <module-item name="i.eb.h_sebal01">
+      <module-item name="i.eb.hsebal01">
         <label>Sensible heat flux</label>
       </module-item>
       <separator/>

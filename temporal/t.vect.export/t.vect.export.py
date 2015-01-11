@@ -6,7 +6,7 @@
 # AUTHOR(S):    Soeren Gebbert
 #
 # PURPOSE:      Export a space time vector dataset.as GRASS specific archive file
-# COPYRIGHT:    (C) 2011 by the GRASS Development Team
+# COPYRIGHT:    (C) 2011-2014 by the GRASS Development Team
 #
 #               This program is free software under the GNU General Public
 #               License (version 2). Read the file COPYING that comes with GRASS
@@ -18,6 +18,7 @@
 #% description: Exports a space time vector dataset as GRASS GIS specific archive file.
 #% keywords: temporal
 #% keywords: export
+#% keywords: vector
 #%end
 
 #%option G_OPT_STVDS_INPUT
@@ -28,7 +29,7 @@
 #%end
 
 #%option G_OPT_M_DIR
-#% key: workdir
+#% key: directory
 #% description: Path to the work directory, default is /tmp
 #% required: no
 #% answer: /tmp
@@ -47,7 +48,7 @@
 #%option
 #% key: format
 #% type: string
-#% label: The export format of a single raster map
+#% label: The export format of a single vector map
 #% description: Supported are GML via v.out.ogr and the GRASS package format of v.pack
 #% required: no
 #% multiple: no
@@ -69,7 +70,7 @@ def main():
     _input = options["input"]
     output = options["output"]
     compression = options["compression"]
-    workdir = options["workdir"]
+    directory = options["directory"]
     where = options["where"]
     _format = options["format"]
 
@@ -77,7 +78,7 @@ def main():
     tgis.init()
     # Export the space time raster dataset
     tgis.export_stds(
-        _input, output, compression, workdir, where, _format, "stvds")
+        _input, output, compression, directory, where, _format, "stvds")
 
 ############################################################################
 if __name__ == "__main__":

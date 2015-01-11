@@ -1,15 +1,14 @@
 /****************************************************************************
 *
 * MODULE:       v.transform
-* AUTHOR(S):    See below also.
-*               Eric G. Miller <egm2@jps.net>
+* AUTHOR(S):    Eric G. Miller <egm2@jps.net>
 *               Upgrade to 5.7 Radim Blazek
 *               Column support & OGR support added by Martin Landa (09/2007)
 *
 * PURPOSE:      To transform a vector map's coordinates via a set of tie
 *               points.
 *
-* COPYRIGHT:    (C) 2002-2011 by the GRASS Development Team
+* COPYRIGHT:    (C) 2002-2014 by the GRASS Development Team
 *
 *               This program is free software under the GNU General Public
 *   	    	License (>=v2). Read the file COPYING that comes with GRASS
@@ -69,6 +68,7 @@ int main(int argc, char *argv[])
     module = G_define_module();
     G_add_keyword(_("vector"));
     G_add_keyword(_("transformation"));
+    G_add_keyword(_("geometry"));
     G_add_keyword("GCP");
     module->description =
 	_("Performs an affine transformation (shift, scale and rotate) "
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
     
     no_topo = G_define_flag();
     no_topo->key = 'b';
-    no_topo->description = _("Do not build topology for output");
+    no_topo->description = _("Do not build topology");
 
     vold = G_define_standard_option(G_OPT_V_INPUT);
 
@@ -149,12 +149,12 @@ int main(int argc, char *argv[])
     zscale->guisection = _("Custom");
 
     zrot = G_define_option();
-    zrot->key = "zrot";
+    zrot->key = "zrotation";
     zrot->type = TYPE_DOUBLE;
     zrot->required = NO;
     zrot->multiple = NO;
     zrot->description =
-	_("Rotation around z axis in degrees counterclockwise");
+	_("Rotation around z axis in degrees (counter-clockwise)");
     zrot->answer = "0.0";
     zrot->guisection = _("Custom");
 
