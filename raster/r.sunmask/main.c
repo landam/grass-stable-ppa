@@ -189,6 +189,7 @@ int main(int argc, char *argv[])
     parm.seconds->required = NO;
     parm.seconds->description = _("Seconds (B)");
     parm.seconds->options = "0-60";
+    parm.seconds->answer = "0";
     parm.seconds->guisection = _("Time");
 
     parm.timezone = G_define_option();
@@ -246,7 +247,7 @@ int main(int argc, char *argv[])
     if (!parm.north->answer || !parm.east->answer) {
 	north = (window.north - window.south) / 2. + window.south;
 	east = (window.west - window.east) / 2. + window.east;
-	G_verbose_message(_("Using map center coordinates: %f %f"), east, north);
+	G_message(_("Using map center coordinates: %f %f"), east, north);
     }
     else {			/* user defined east, north: */
 

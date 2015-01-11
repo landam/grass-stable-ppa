@@ -110,16 +110,16 @@ v.out.ogr input=multi type=line dsn=/tmp/testogr.gml olayer=testogr format=GML
 
 <h3>Export to PostgreSQL/PostGIS</h3>
 
-Export areas from GRASS vector map directly to PostGIS:
+Export areas from GRASS vector map to PostGIS database:
 
 <div class="code"><pre>
 v.out.ogr input=polygons type=area dsn="PG:host=localhost dbname=postgis user=postgres" olayer=polymap format=PostgreSQL
 </pre></div>
 
-<i>Note:</i> For exporting GRASS vector data to PostGIS database
-should be used <em><a href="v.out.postgis.html">v.out.postgis</a></em>
-module. This module supports beside simple features also topological
-format PostGIS Topology.
+<i>Note:</i> For exporting GRASS vector data to PostGIS database can
+be also used <em><a href="v.out.postgis.html">v.out.postgis</a></em>
+module. This module is not based on OGR library and supports beside
+simple features also topological format (PostGIS Topology).
 
 <h3>Export to KML (Google Earth)</h3>
 
@@ -179,5 +179,5 @@ Some contributions: Markus Neteler<br>
 Multi-feature support by Martin Landa, Czech Technical University in Prague, 2013
 
 <p>
-<i>Last changed: $Date: 2013-12-12 00:33:42 +0100 (Thu, 12 Dec 2013) $</i>
+<i>Last changed: $Date: 2014-04-07 11:45:27 +0200 (Mon, 07 Apr 2014) $</i>
 
