@@ -118,11 +118,10 @@ int main(int argc, char **argv)
 	G_free(buf);
     }
 
-    out = G_define_standard_option(G_OPT_R_OUTPUT);
-    out->description = _("Name for output file");
+    out = G_define_standard_option(G_OPT_F_OUTPUT);
     
     qual = G_define_option();
-    qual->key = "qual";
+    qual->key = "quality";
     qual->type = TYPE_INTEGER;
     qual->required = NO;
     qual->multiple = NO;
@@ -398,7 +397,7 @@ static void mlist(const char *element, const char *wildarg, const char *outfile)
 	sprintf(pattern_arg, "pattern=%s", wildarg);
 	sprintf(mapset_arg, "mapset=%s", mapset);
 
-	G_spawn_ex("g.mlist", "g.mlist",
+	G_spawn_ex("g.list", "g.list",
 		   type_arg, pattern_arg, mapset_arg,
 		   SF_REDIRECT_FILE, SF_STDOUT, SF_MODE_APPEND, outfile,
 		   NULL);

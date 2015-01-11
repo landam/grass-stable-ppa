@@ -14,6 +14,8 @@ allow easier usage.
 
 <h2>EXAMPLES</h2>
 
+<h3>Replacing of NULL values</h3>
+
 In this example, selectively display lakes without (blue) and with
 NULL (red) are shown to find out which type is undefined. In the
 original map there are lakes missing FTYPE attribute which are
@@ -26,7 +28,7 @@ v.db.select mylakes
 v.db.select mylakes where="FTYPE IS NULL"
 
 # display the lakes, show undefined FTYPE lakes in red
-g.region vect=mylakes
+g.region vector=mylakes
 d.mon wx0
 d.vect mylakes where="FTYPE NOT NULL" type=area col=blue
 d.vect mylakes where="FTYPE IS NULL" type=area col=red
@@ -37,7 +39,9 @@ v.db.update mylakes col=FTYPE value=WETLAND \
 v.db.select mylakes
 </pre></div>
 
-Spearfish example: adding new column, copying values from other table
+<h3>Updating of columns with on the fly calculation</h3>
+
+Spearfish example: adding new column, copying values from another table
 column with on the fly calculation:
 <div class="code"><pre>
 g.copy vect=fields,myfields
@@ -45,6 +49,8 @@ v.db.addcolumn myfields col="polynum integer"
 v.db.update myfields col=polynum qcol="cat*2"
 v.db.select myfields
 </pre></div>
+
+<h3>Type casting</h3>
 
 Type cast (type conversion) of strings to double precision
 (unsupported by DBF driver):
@@ -74,4 +80,4 @@ v.db.update mygeodetic_pts col=zval qcol="CAST(z_value AS double precision)" \
 Moritz Lennert (mlennert@club.worldonline.be)
 
 <p>
-<i>Last changed: $Date: 2013-04-30 09:50:14 +0200 (Tue, 30 Apr 2013) $</i>
+<i>Last changed: $Date: 2014-12-20 15:33:06 +0100 (Sat, 20 Dec 2014) $</i>

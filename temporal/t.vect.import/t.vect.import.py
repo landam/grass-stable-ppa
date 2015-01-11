@@ -6,7 +6,7 @@
 # AUTHOR(S):     Soeren Gebbert
 #
 # PURPOSE:        Import a space time vector dataset archive file
-# COPYRIGHT:        (C) 2011 by the GRASS Development Team
+# COPYRIGHT:        (C) 2011-2014 by the GRASS Development Team
 #
 #                This program is free software under the GNU General Public
 #                License (version 2). Read the file COPYING that comes with GRASS
@@ -18,6 +18,7 @@
 #% description: Imports a space time vector dataset from a GRASS GIS specific archive file.
 #% keywords: temporal
 #% keywords: import
+#% keywords: vector
 #%end
 
 #%option G_OPT_F_INPUT
@@ -26,8 +27,17 @@
 #%option G_OPT_STVDS_OUTPUT
 #%end
 
+#%option
+#% key: basename
+#% type: string
+#% label: Basename of the new generated output maps
+#% description: A numerical suffix separated by an underscore will be attached to create a unique identifier
+#% required: no
+#% multiple: no
+#%end
+
 #%option G_OPT_M_DIR
-#% key: extrdir
+#% key: directory
 #% description: Path to the extraction directory
 #%end
 
@@ -79,18 +89,19 @@ def main():
     # Get the options
     input = options["input"]
     output = options["output"]
-    extrdir = options["extrdir"]
+    directory = options["directory"]
     title = options["title"]
     descr = options["description"]
     location = options["location"]
+    base = options["basename"]
     exp = flags["e"]
     overr = flags["o"]
     create = flags["c"]
-    
+
     tgis.init()
 
-    tgis.import_stds(input, output, extrdir, title, descr, location,
-                     None, exp, overr, create, "stvds")
+    tgis.import_stds(input, output, directory, title, descr, location,
+                     None, exp, overr, create, "stvds", base)
 
 if __name__ == "__main__":
     options, flags = grass.parser()

@@ -4,8 +4,8 @@ g.region w=0 e=180 s=0 n=90 b=0 t=100 res3=10
 
 r3.mapcalc --o expr="test_out_bin_float = float(if(row() == 2, null(), row()))"
 r3.mapcalc --o expr="test_out_bin_double = double(if(row() == 2, null(), row()))"
-r3.out.ascii --o dp=0 input=test_out_bin_float output=test_out_bin_float.ref; 
-r3.out.ascii --o dp=0 input=test_out_bin_double output=test_out_bin_double.ref; 
+r3.out.ascii --o precision=0 input=test_out_bin_float output=test_out_bin_float.ref; 
+r3.out.ascii --o precision=0 input=test_out_bin_double output=test_out_bin_double.ref; 
 
 # @test
 
@@ -124,15 +124,15 @@ r3.in.bin --o output=test_in_bin_float_13 byte=4 null=-9999 \
     bottom=0 top=100 west=0 east=180 south=0 north=90 \
     cols=18 rows=9 depths=10
 
-for map in `g.mlist type=rast3d pattern=test_in_bin_float*` ; do
-  r3.out.ascii input=${map} output=${map}.txt dp=0
+for map in `g.list type=raster_3d pattern=test_in_bin_float*` ; do
+  r3.out.ascii input=${map} output=${map}.txt precision=0
 done
 
 for i in `ls test_in_bin_float_*.txt` ; do 
     diff $i test_out_bin_float.ref
 done
 
-g.mremove -f rast3d=test_in*
-g.mremove -f rast3d=test_out*
+g.remove -f type=raster_3d pattern=test_in*
+g.remove -f type=raster_3d pattern=test_out*
 rm test_in_*.txt
 rm test_out_*.bin

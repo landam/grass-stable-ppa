@@ -125,6 +125,8 @@ int main(int argc, char *argv[])
     double pass_north, pass_south;
     int arr_row, arr_col;
     unsigned long count, count_total;
+    int skipme, i;
+    int point_class;
 
     double min = 0.0 / 0.0;	/* init as nan */
     double max = 0.0 / 0.0;	/* init as nan */
@@ -143,10 +145,10 @@ int main(int argc, char *argv[])
     int r_low, r_up;
 
     struct GModule *module;
-    struct Option *input_opt, *output_opt, *percent_opt, *type_opt, *filter_opt;
+    struct Option *input_opt, *output_opt, *percent_opt, *type_opt, *filter_opt, *class_opt;
     struct Option *method_opt, *zrange_opt, *zscale_opt;
     struct Option *trim_opt, *pth_opt, *res_opt;
-    struct Flag *print_flag, *scan_flag, *shell_style, *over_flag, *extents_flag;
+    struct Flag *print_flag, *scan_flag, *shell_style, *over_flag, *extents_flag, *intens_flag;
 
     /* LAS */
     LASReaderH LAS_reader;
@@ -244,12 +246,21 @@ int main(int argc, char *argv[])
 	_("Output raster resolution");
 
     filter_opt = G_define_option();
-    filter_opt->key = "filter";
+    filter_opt->key = "return_filter";
     filter_opt->type = TYPE_STRING;
     filter_opt->required = NO;
     filter_opt->label = _("Only import points of selected return type");
     filter_opt->description = _("If not specified, all points are imported");
     filter_opt->options = "first,last,mid";
+
+    class_opt = G_define_option();
+    class_opt->key = "class_filter";
+    class_opt->type = TYPE_INTEGER;
+    class_opt->multiple = YES;
+    class_opt->required = NO;
+    class_opt->label = _("Only import points of selected class(es)");
+    class_opt->description = _("Input is comma separated integers. "
+                               "If not specified, all points are imported.");
 
     print_flag = G_define_flag();
     print_flag->key = 'p';
@@ -276,6 +287,11 @@ int main(int argc, char *argv[])
     shell_style->key = 'g';
     shell_style->description =
 	_("In scan mode, print using shell script style");
+
+    intens_flag = G_define_flag();
+    intens_flag->key = 'i';
+    intens_flag->description =
+        _("Import intensity values rather than z values");
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
@@ -402,10 +418,6 @@ int main(int argc, char *argv[])
 		    else if (cellhd.proj == PROJECTION_UTM)
 			sprintf(error_msg + strlen(error_msg),
 				"Dataset proj = %d (UTM), zone = %d\n",
-				cellhd.proj, cellhd.zone);
-		    else if (cellhd.proj == PROJECTION_SP)
-			sprintf(error_msg + strlen(error_msg),
-				"Dataset proj = %d (State Plane), zone = %d\n",
 				cellhd.proj, cellhd.zone);
 		    else
 			sprintf(error_msg + strlen(error_msg),
@@ -749,7 +761,7 @@ int main(int argc, char *argv[])
 	    line++;
 	    counter++;
 
-	    if (counter == 10000) {	/* speed */
+	    if (counter == 100000) {	/* speed */
 		if (line < estimated_lines)
 		    G_percent(line, estimated_lines, 3);
 		counter = 0;
@@ -761,32 +773,49 @@ int main(int argc, char *argv[])
 
 	    x = LASPoint_GetX(LAS_point);
 	    y = LASPoint_GetY(LAS_point);
-	    z = LASPoint_GetZ(LAS_point);
+	    if (intens_flag->answer)
+		/* use z variable here to allow for scaling of intensity below */
+		z = LASPoint_GetIntensity(LAS_point);
+	    else
+		z = LASPoint_GetZ(LAS_point);
 
 	if (return_filter != LAS_ALL) {
 	    int return_no = LASPoint_GetReturnNumber(LAS_point);
 	    int n_returns = LASPoint_GetNumberOfReturns(LAS_point);
-	    int skipme = 1;
+	    skipme = 1;
 
-	    if (n_returns > 1) {
-
-		switch (return_filter) {
-		case LAS_FIRST:
-		    if (return_no == 1)
-			skipme = 0;
-		    break;
-		case LAS_LAST:
-		    if (return_no == n_returns)
-			skipme = 0;
-		    break;
-		case LAS_MID:
-		    if (return_no > 1 && return_no < n_returns)
-			skipme = 0;
-		    break;
-		}
+	    switch (return_filter) {
+	    case LAS_FIRST:
+		if (return_no == 1)
+		    skipme = 0;
+		break;
+	    case LAS_MID:
+		if (return_no > 1 && return_no < n_returns)
+		    skipme = 0;
+		break;
+	    case LAS_LAST:
+		if (n_returns > 1 && return_no == n_returns)
+		    skipme = 0;
+		break;
 	    }
+
 	    if (skipme) {
 		n_filtered++;
+		continue;
+	    }
+	}
+	if (class_opt->answer) {
+	    point_class = (int) LASPoint_GetClassification(LAS_point);
+	    i = 0;
+	    skipme = TRUE;
+	    while (class_opt->answers[i]) {
+		if (point_class == atoi(class_opt->answers[i])) {
+		    skipme = FALSE;
+		    break;
+		}
+		i++;
+	    }
+	    if (skipme) {
 		continue;
 	    }
 	}

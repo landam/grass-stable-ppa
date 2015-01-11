@@ -38,7 +38,7 @@ system).
 Note for module usage with the <em>-g</em> flag, when performing calculations
 close to sunset/sunrise:
 
-<pre>
+<div class="code"><pre>
  [...]
  sunangleabovehorizont=0.434240
  sunrise=07:59:19
@@ -46,7 +46,7 @@ close to sunset/sunrise:
  Time (07:59:02) is before sunrise (07:59:19)!
  WARNING: Nothing to calculate. Please verify settings.
  No map calculation requested. Finished.
-</pre>
+</pre></div>
 
 In above calculation it appears to be a mistake as
 the program indicates that we are before sunrise while
@@ -64,7 +64,7 @@ of sun position angles and more:
 
 <div class="code"><pre>
 # set the region to a place near Raleigh (NC)
-g.region rast=elev_lid792_1m -p
+g.region raster=elev_lid792_1m -p
 
 # compute only sun position and no output map
 r.sunmask -s elev_lid792_1m year=2012 month=2 \
@@ -114,4 +114,4 @@ Janne Soimasuo, Finland 1994<br>
 update to FP by Huidae Cho 2001<br>
 added solpos algorithm feature by Markus Neteler 2001
 
-<p><i>Last changed: $Date: 2014-04-02 14:35:01 +0200 (Wed, 02 Apr 2014) $</i>
+<p><i>Last changed: $Date: 2014-12-19 22:55:37 +0100 (Fri, 19 Dec 2014) $</i>

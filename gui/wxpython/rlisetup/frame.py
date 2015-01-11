@@ -10,7 +10,7 @@ import os
 
 from core import globalvar, gcmd
 from core.utils import _
-from grass.script import core as grass
+from grass.script.utils import try_remove
 from rlisetup.functions import retRLiPath
 from rlisetup.wizard import RLIWizard
 import locale
@@ -75,11 +75,11 @@ class ViewFrame(wx.Frame):
         self.Layout()
 
     def OnClose(self, event):
-        """!Close window"""
+        """Close window"""
         self.Destroy()
 
     def OnOk(self, event):
-        """!Launches help"""
+        """Launches help"""
         dlg = wx.MessageDialog(parent=self.parent,
                                 message=_("Are you sure that you want modify" \
                                           " r.li configuration file {name}?" \
@@ -188,7 +188,7 @@ class RLiSetupFrame(wx.Frame):
         self.Layout()
 
     def ListFiles(self):
-        """!Check the configuration files inside the path"""
+        """Check the configuration files inside the path"""
         # list of configuration file
         listfiles = []
         #return all the configuration files in self.rlipath, check if there are
@@ -199,15 +199,15 @@ class RLiSetupFrame(wx.Frame):
         return sorted(listfiles)
 
     def OnClose(self, event):
-        """!Close window"""
+        """Close window"""
         self.Destroy()
 
     def OnHelp(self, event):
-        """!Launches help"""
+        """Launches help"""
         gcmd.RunCommand('g.manual', parent=self, entry='wxGUI.rlisetup')
 
     def OnRemove(self, event):
-        """!Remove configuration file from path and update the list"""
+        """Remove configuration file from path and update the list"""
         confile = self.listfiles[self.listfileBox.GetSelections()[0]]
         dlg = wx.MessageDialog(parent=self.parent,
                                 message=_("Do you want remove r.li " \
@@ -217,20 +217,20 @@ class RLiSetupFrame(wx.Frame):
 
         if dlg.ShowModal() == wx.ID_YES:
             self.listfileBox.Delete(self.listfileBox.GetSelections()[0])
-            grass.try_remove(os.path.join(self.rlipath, confile))
+            try_remove(os.path.join(self.rlipath, confile))
             self.listfiles = self.ListFiles()
         dlg.Destroy()
         return
 
     def OnNew(self, event):
-        """!Remove configuration file from path and update the list"""
+        """Remove configuration file from path and update the list"""
         RLIWizard(self)
         self.listfiles = self.ListFiles()
         self.listfileBox.Clear()
         self.listfileBox.Set(self.listfiles)
 
     def OnRename(self, event):
-        """!Rename an existing configuration file"""
+        """Rename an existing configuration file"""
         try:
             confile = self.listfiles[self.listfileBox.GetSelections()[0]]
         except:
@@ -250,7 +250,7 @@ class RLiSetupFrame(wx.Frame):
             self.listfileBox.Set(self.listfiles)
 
     def OnView(self, event):
-        """!Show and edit a configuration file"""
+        """Show and edit a configuration file"""
         try:
             confile = self.listfiles[self.listfileBox.GetSelections()[0]]
         except:

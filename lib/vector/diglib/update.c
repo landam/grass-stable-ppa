@@ -34,12 +34,15 @@ void dig_line_reset_updated(struct Plus_head *Plus)
    \param line line id
    \param offset line offset (negative offset is ignored)
  */
-void dig_line_add_updated(struct Plus_head *Plus, int line)
+void dig_line_add_updated(struct Plus_head *Plus, int line, off_t offset)
 {
     int i;
     
     G_debug(3, "dig_line_add_updated(): line = %d", line);
 
+    /* undo/redo in the digitizer needs all steps, 
+     * disable check */
+#if 0
     /* Check if already in list */
     for (i = 0; i < Plus->uplist.n_uplines; i++) {
 	if (Plus->uplist.uplines[i] == line) {
@@ -47,6 +50,7 @@ void dig_line_add_updated(struct Plus_head *Plus, int line)
 	    return;
         }
     }
+#endif
     
     /* Alloc space if needed */
     if (Plus->uplist.n_uplines == Plus->uplist.alloc_uplines) {
@@ -60,6 +64,7 @@ void dig_line_add_updated(struct Plus_head *Plus, int line)
     }
 
     Plus->uplist.uplines[Plus->uplist.n_uplines] = line;
+    Plus->uplist.uplines_offset[Plus->uplist.n_uplines] = offset;
     Plus->uplist.n_uplines++;
 }
 

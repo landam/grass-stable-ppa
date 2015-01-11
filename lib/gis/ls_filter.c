@@ -1,5 +1,5 @@
 /*!
- * \file gis/ls_filter.c
+ * \file lib/gis/ls_filter.c
  *
  * \brief GIS Library - Filename filter functions
  *
@@ -84,6 +84,11 @@ static int wc2regex(struct buffer *buf, const char *pat)
     for (p = pat; p && *p; p++) {
 	switch (*p) {
 	case '\\':
+	    add(buf, '\\');
+	    if (!*++p)
+		return 0;
+	    add(buf, *p);
+	    break;
 	case '.':
 	case '|':
 	case '(':
@@ -100,15 +105,13 @@ static int wc2regex(struct buffer *buf, const char *pat)
 	    add(buf, '.');
 	    break;
 	case '{':
-	    if (in_brace)
-		return 0;
-	    in_brace = 1;
+	    in_brace++;
 	    add(buf, '(');
 	    break;
 	case '}':
 	    if (!in_brace)
 		return 0;
-	    in_brace = 0;
+	    in_brace--;
 	    add(buf, ')');
 	    break;
 	case ',':
@@ -118,7 +121,8 @@ static int wc2regex(struct buffer *buf, const char *pat)
 		add(buf, ',');
 	    break;
 	case '[':
-	    p = do_set(buf, p);
+	    if (!(p = do_set(buf, p)))
+		return 0;
 	    break;
 	default:
 	    add(buf, *p);
@@ -142,15 +146,17 @@ static int re_filter(const char *filename, void *closure)
 {
     regex_t *regex = closure;
 
-    return filename[0] != '.' &&
-	regexec(regex, filename, 0, NULL, 0) == 0;
+    return filename[0] != '.' && regexec(regex, filename, 0, NULL, 0) == 0;
 }
 
-void *G_ls_regex_filter(const char *pat, int exclude, int extended)
+void *G_ls_regex_filter(const char *pat, int exclude, int extended,
+			int ignorecase)
 {
     regex_t *regex = G_malloc(sizeof(regex_t));
 
-    if (regcomp(regex, pat, (extended ? REG_EXTENDED : 0) | REG_NOSUB) != 0) {
+    if (regcomp(regex, pat, REG_NOSUB |
+			    (extended ? REG_EXTENDED : 0) |
+			    (ignorecase ? REG_ICASE : 0)) != 0) {
 	G_free(regex);
 	return NULL;
     }
@@ -163,7 +169,7 @@ void *G_ls_regex_filter(const char *pat, int exclude, int extended)
     return regex;
 }
 
-void *G_ls_glob_filter(const char *pat, int exclude)
+void *G_ls_glob_filter(const char *pat, int exclude, int ignorecase)
 {
     struct buffer buf;
     regex_t *regex;
@@ -175,7 +181,7 @@ void *G_ls_glob_filter(const char *pat, int exclude)
 	return NULL;
     }
 
-    regex = G_ls_regex_filter(buf.buf, exclude, 1);
+    regex = G_ls_regex_filter(buf.buf, exclude, 1, ignorecase);
 
     fini(&buf);
 

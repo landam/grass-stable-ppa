@@ -10,8 +10,8 @@ Blending the aspect map with the elevation map for a shaded map
 (North Carolina sample dataset):
 
 <div class="code"><pre>
-g.region rast=aspect -p
-r.blend first=aspect second=elevation output_prefix=elev_shade_blend
+g.region raster=aspect -p
+r.blend first=aspect second=elevation output=elev_shade_blend
 d.mon wx0
 d.rgb blue=elev_shade_blend.b green=elev_shade_blend.g red=elev_shade_blend.r
 </pre></div>
@@ -20,11 +20,13 @@ d.rgb blue=elev_shade_blend.b green=elev_shade_blend.g red=elev_shade_blend.r
 <h2>SEE ALSO</h2>
 
 <em>
-<a href="d.shadedmap.html">d.shadedmap</a>,
-<a href="g.region.html">g.region</a>,
+<a href="r.shade.html">r.shade</a>,
+<a href="r.his.html">r.his</a>,
 <a href="r.mapcalc.html">r.mapcalc</a>,
 <a href="r.colors.html">r.colors</a>,
-<a href="r.support.html">r.support</a>
+<a href="r.support.html">r.support</a>,
+<a href="d.shade.html">d.shade</a>,
+<a href="g.region.html">g.region</a>
 </em>
 
 
@@ -34,4 +36,4 @@ Unknown: probably CERL<br>
 Updated to GRASS 5.7 by Michael Barton, Arizona State University
 
 <p>
-<i>Last changed: $Date: 2012-06-23 01:46:23 -0700 (Sat, 23 Jun 2012) $</i>
+<i>Last changed: $Date: 2014-12-20 05:56:06 +0100 (Sat, 20 Dec 2014) $</i>

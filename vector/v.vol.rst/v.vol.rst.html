@@ -4,21 +4,21 @@
 3-dimensional point data (e.g. temperature, rainfall data from climatic
 stations, concentrations from drill holes etc.) given in a 3-D vector
 point file named <b>input</b>.&nbsp; The size of the output 
-3d raster map <b>elev</b> is given by the current 3D region. Sometimes, the
+3D raster map <b>elevation</b> is given by the current 3D region. Sometimes, the
 user
 may want to get a 2-D map showing a modelled phenomenon at a
-crossection surface. In that case, <b>cellinp</b> and <b>cellout</b>
-options must be specified, with the output 2D raster map <b>cellout</b>
+crossection surface. In that case, <b>cross_input</b> and <b>cross_output</b>
+options must be specified, with the output 2D raster map <b>cross_output</b>
 containing the crossection of the interpolated volume with a surface 
-defined by <b>cellinp</b>
+defined by <b>cross_input</b>
 2D raster map. As an option, simultaneously with interpolation, 
 geometric parameters of the interpolated
 phenomenon can be computed (magnitude of gradient, direction of
 gradient defined by horizontal and vertical angles), change of gradient,
 Gauss-Kronecker curvature, or mean curvature). These geometric
 parameteres are saved as
-3d raster maps <b>gradient, aspect1, aspect2, ncurv, gcurv, mcurv</b>,
-respectively. Maps <b>aspect1</b> and <b>aspect2</b> are in degrees.
+3D raster maps <b>gradient, aspect_horizontal, aspect_vertical, ncurvature, gcurvature, mcurvature</b>,
+respectively. Maps <b>aspect_horizontal</b> and <b>aspect_vertical</b> are in degrees.
 
 <p>At first, data points are checked for identical positions and points
 that are closer to each other than given <b>dmin</b> are removed.
@@ -43,12 +43,12 @@ is possible to define a global smoothing parameter, <b>smooth</b>.
 With the
 smoothing parameter set to zero (<b>smooth=0</b>) the resulting volume
 passes exactly through the data points. 
-When smoothing is used, it is possible to output a vector map <b>devi</b>
+When smoothing is used, it is possible to output a vector map <b>deviations</b>
 containing deviations of the resulting volume from the given data. 
 <p>The user can define a 2D raster map named <b>maskmap</b>, which will
 be used as a mask. The interpolation is skipped for 3-dimensional cells
 whose 2-dimensional projection has a zero value in the mask. Zero values will
-be assigned to these cells in all output 3d raster maps. 
+be assigned to these cells in all output 3D raster maps. 
 <p>If the number of given points is greater than 700, segmented
 processing is used. The region is split into 3-dimensional "box"
 segments, each having less than <b>segmax</b> points and interpolation
@@ -69,7 +69,7 @@ only a subset of the input vectors.
 
 <div class="code"><pre>
 # preparation as in above example
-v.vol.rst elevrand_3d wcol=soilrange elev=soilrange zmult=100 where="soilrange > 3"
+v.vol.rst elevrand_3d wcol=soilrange elevation=soilrange zmult=100 where="soilrange > 3"
 </pre></div>
 
 
@@ -127,9 +127,9 @@ interpolation from point data (as described in Mitasova and Mitas,
 on Oct-trees which enhances the efficiency for large data sets. 
 
 <p>Geometric parameters - magnitude of gradient (<b>gradient</b>),
-horizontal (<b>aspect1</b>) and vertical (<b>aspect2) </b>aspects,
-change of gradient (<b>ncurv</b>), Gauss-Kronecker (<b>gcurv</b>) and
-mean curvatures (<b>mcurv</b>) are computed directly from the
+horizontal (<b>aspect_horizontal</b>) and vertical (<b>aspect_vertical)</b>aspects,
+change of gradient (<b>ncurvature</b>), Gauss-Kronecker (<b>gcurvature</b>) and
+mean curvatures (<b>mcurvature</b>) are computed directly from the
 interpolation function so that the important relationships between
 these parameters are preserved. More information on these parameters
 can be found in Mitasova et al., 1995 or Thorpe, 1979.
@@ -209,7 +209,7 @@ paraview --data=elevrand_3d.vtk
 
 ### Second part: 3D interpolation from 3D point data
 # interpolate volume to "soilrange" voxel map
-v.vol.rst input=elevrand_3d wcol=soilrange elev=soilrange zmult=100
+v.vol.rst input=elevrand_3d wcol=soilrange elevation=soilrange zmult=100
 
 # visualize I: in GRASS GIS wxGUI
 g.gui
@@ -223,7 +223,7 @@ paraview --data=volume.vtk
 </pre></div>
 
 <h2>BUGS</h2>
-<b>devi</b> file is written as 2D and deviations are not written as attributes.
+<b>deviations</b> file is written as 2D and deviations are not written as attributes.
 
 <h2>REFERENCES</h2>
 <p>Hofierka J., Parajka J., Mitasova H., Mitas L., 2002, Multivariate
@@ -306,4 +306,4 @@ University of Presov, Presov, Slovakia,
 <a href="mailto:hofierka@fhpv.unipo.sk">hofierka@fhpv.unipo.sk</a>,
 <a href="http://www.geomodel.sk">http://www.geomodel.sk</a>
 
-<p><i>Last changed: $Date: 2014-06-22 09:31:07 +0200 (Sun, 22 Jun 2014) $</i> 
+<p><i>Last changed: $Date: 2014-11-28 17:25:40 +0100 (Fri, 28 Nov 2014) $</i> 

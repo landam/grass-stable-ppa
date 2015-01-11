@@ -79,7 +79,8 @@ int main(int argc, char **argv)
     db_set_handle(&handle, parms.database, NULL);
     if (db_open_database(driver, &handle) != DB_OK)
 	G_fatal_error(_("Unable to open database <%s>"), parms.database);
-
+    db_set_error_handler_driver(driver);
+ 
     /* check for sql, table, and input */
     if (parms.sql) {
         /* parms.sql */
@@ -226,16 +227,12 @@ void parse_command_line(int argc, char **argv)
     fs->guisection = _("Format");
 
     vs = G_define_standard_option(G_OPT_F_SEP);
-    vs->key = "vseparator";
+    vs->key = "vertical_separator";
     vs->label = _("Vertical record separator (requires -v flag)");
     vs->answer = NULL;
     vs->guisection = _("Format");
 
-    nv = G_define_option();
-    nv->key = "nv";
-    nv->type = TYPE_STRING;
-    nv->required = NO;
-    nv->description = _("Null value indicator");
+    nv = G_define_standard_option(G_OPT_M_NULL_VALUE);
     nv->guisection = _("Format");
 
     output = G_define_standard_option(G_OPT_F_OUTPUT); 

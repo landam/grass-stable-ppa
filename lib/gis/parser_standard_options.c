@@ -3,7 +3,7 @@
   
   \brief GIS Library - Argument parsing functions (standard options)
   
-  (C) 2001-2013 by the GRASS Development Team
+  (C) 2001-2014 by the GRASS Development Team
   
   This program is free software under the GNU General Public License
   (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -61,6 +61,8 @@
    - G_OPT_R_ELEV
    - G_OPT_R_ELEVS
    - G_OPT_R_INTERP_TYPE
+   - G_OPT_R_BASENAME_INPUT
+   - G_OPT_R_BASENAME_OUTPUT
 
   - raster3d:
    - G_OPT_R3_INPUT
@@ -85,6 +87,7 @@
    
   - files
    - G_OPT_F_INPUT
+   - G_OPT_F_BIN_INPUT
    - G_OPT_F_OUTPUT
    - G_OPT_F_SEP
    
@@ -100,6 +103,7 @@
    - G_OPT_M_COORDS
    - G_OPT_M_COLR
    - G_OPT_M_REGION
+   - G_OPT_M_NULL_VALUE
 
   - temporal GIS framework
    - G_OPT_STDS_INPUT
@@ -260,6 +264,15 @@ struct Option *G_define_standard_option(int opt)
 	Opt->gisprompt = "new,cell,raster";
 	Opt->description = _("Name for output raster map");
 	break;
+    case G_OPT_R_OUTPUTS:
+	Opt->key = "output";
+	Opt->type = TYPE_STRING;
+	Opt->key_desc = "name";
+	Opt->required = YES;
+	Opt->multiple = YES;
+	Opt->gisprompt = "new,cell,raster";
+	Opt->description = _("Name for output raster map(s)");
+	break;
     case G_OPT_R_MAP:
 	Opt->key = "map";
 	Opt->type = TYPE_STRING;
@@ -321,6 +334,24 @@ struct Option *G_define_standard_option(int opt)
                    _("Nearest-neighbor interpolation"),
                    _("Bilinear interpolation"),
                    _("Bicubic interpolation"));
+        break;
+    case G_OPT_R_BASENAME_INPUT:
+        Opt->key = "input";
+        Opt->type = TYPE_STRING;
+        Opt->key_desc = "basename";
+        Opt->required = YES;
+        Opt->multiple = NO;
+        Opt->gisprompt = "old,cell,raster";
+        Opt->description = _("Name of input basename raster map(s)");
+        break;
+    case G_OPT_R_BASENAME_OUTPUT:
+        Opt->key = "output";
+        Opt->type = TYPE_STRING;
+        Opt->key_desc = "basename";
+        Opt->required = YES;
+        Opt->multiple = NO;
+        Opt->gisprompt = "new,cell,raster";
+        Opt->description = _("Name for output basename raster map(s)");
         break;
 
 	/*g3d maps */
@@ -531,6 +562,14 @@ struct Option *G_define_standard_option(int opt)
 	Opt->gisprompt = "old,file,file";
 	Opt->description = _("Name of input file");
 	break;
+    case G_OPT_F_BIN_INPUT:
+	Opt->key = "input";
+	Opt->type = TYPE_STRING;
+	Opt->key_desc = "name";
+	Opt->required = YES;
+	Opt->gisprompt = "old,bin,file";
+	Opt->description = _("Name of input file");
+	break;
     case G_OPT_F_OUTPUT:
 	Opt->key = "output";
 	Opt->type = TYPE_STRING;
@@ -559,7 +598,8 @@ struct Option *G_define_standard_option(int opt)
 	Opt->answer = DEFAULT_FG_COLOR;
 	Opt->gisprompt = "old,color,color";
 	Opt->label = _("Color");
-	Opt->description = _("Either a standard color name or R:G:B triplet");
+	Opt->description =
+	    _("Either a standard color name, R:G:B triplet, or \"none\"");
 	break;
     case G_OPT_C_BG:
 	Opt->key = "bgcolor";
@@ -570,7 +610,7 @@ struct Option *G_define_standard_option(int opt)
 	Opt->gisprompt = "old,color_none,color";
 	Opt->label = _("Background color");
 	Opt->description =
-	    _("Either a standard GRASS color, R:G:B triplet, or \"none\"");
+	    _("Either a standard color name, R:G:B triplet, or \"none\"");
 	break;
 
 	/* misc */
@@ -581,7 +621,7 @@ struct Option *G_define_standard_option(int opt)
         Opt->key_desc = "name";
         Opt->required = YES;
         Opt->gisprompt = "old,dir,dir";
-        Opt->description = _("Name to input directory");
+        Opt->description = _("Name of input directory");
         break;
 
     case G_OPT_M_UNITS:
@@ -634,7 +674,16 @@ struct Option *G_define_standard_option(int opt)
 	Opt->descriptions = G_color_rules_descriptions();
         Opt->gisprompt = "old,colortable,colortable";
 	break;
-
+        
+    case G_OPT_M_NULL_VALUE:
+        Opt->key = "null_value";
+        Opt->key_desc = "string";
+        Opt->type = TYPE_STRING;
+        Opt->required = NO;
+        Opt->multiple = NO;
+        Opt->description = _("String representing NULL value");
+        break;
+        
     case G_OPT_M_REGION:
         Opt->key = "region";
         Opt->type = TYPE_STRING;
@@ -776,8 +825,8 @@ struct Option *G_define_standard_option(int opt)
 	Opt->type = TYPE_STRING;
 	Opt->key_desc = "name";
 	Opt->required = NO;
-	Opt->answer = "rast";
-	Opt->options = "rast,vect,rast3d";
+	Opt->answer = "raster";
+	Opt->options = "raster,vector,raster_3d";
 	Opt->description = _("Type of the input map");
 	break;
     case G_OPT_T_TYPE:

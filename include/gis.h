@@ -38,8 +38,8 @@
 static const char *GRASS_copyright __attribute__ ((unused))
     = "GRASS GNU GPL licensed Software";
 
-#define GIS_H_VERSION "$Revision: 60642 $"
-#define GIS_H_DATE    "$Date: 2014-05-31 17:20:13 +0200 (Sat, 31 May 2014) $"
+#define GIS_H_VERSION "$Revision: 63222 $"
+#define GIS_H_DATE    "$Date: 2014-11-28 10:04:17 +0100 (Fri, 28 Nov 2014) $"
 
 #define G_gisinit(pgm) G__gisinit(GIS_H_VERSION, (pgm))
 #define G_no_gisinit() G__no_gisinit(GIS_H_VERSION)
@@ -74,6 +74,7 @@ static const char *GRASS_copyright __attribute__ ((unused))
 #define U_FEET		6
 #define U_RADIANS	7
 #define U_DEGREES	8
+#define U_USFEET	9
 /* Temporal units from the datetime library */
 #define U_YEARS         DATETIME_YEAR   
 #define U_MONTHS        DATETIME_MONTH  
@@ -137,6 +138,9 @@ static const char *GRASS_copyright __attribute__ ((unused))
 
 #define GPATH_MAX 4096
 
+/* Basename default separator */
+#define GBASENAME_SEP "_"
+
 /* Macros for type size independent integers                    */
 /* Use these for portability to ensure integers are truly 32bit */
 /* and are handled in a uniform manner                          */
@@ -191,9 +195,12 @@ static const char *GRASS_copyright __attribute__ ((unused))
   that the map is not supposed to exist and that module will create one.
 
   Used by the G_parser() system.
-*/
 
-/**/ typedef enum
+  IMPORTANT NOTE: when adding new item to STD_OPT you should also
+  update STD_OPT_STRINGS array in general/g.parser/standard_option.c.
+
+*/
+typedef enum
 {
     G_OPT_UNDEFINED,
     G_OPT_DB_SQL,		/*!< SQL statements */
@@ -211,6 +218,7 @@ static const char *GRASS_copyright __attribute__ ((unused))
     G_OPT_R_INPUT,		/*!< old input raster map */
     G_OPT_R_INPUTS,		/*!< old input raster maps */
     G_OPT_R_OUTPUT,		/*!< new output raster map */
+    G_OPT_R_OUTPUTS,		/*!< new output raster maps */
     G_OPT_R_MAP,		/*!< old input raster map */
     G_OPT_R_MAPS,		/*!< old input rasters map */
     G_OPT_R_BASE,		/*!< old input base raster map */
@@ -218,6 +226,8 @@ static const char *GRASS_copyright __attribute__ ((unused))
     G_OPT_R_ELEV,		/*!< old input elevation raster map */
     G_OPT_R_ELEVS,		/*!< old input elevation raster maps */
     G_OPT_R_INTERP_TYPE,        /*!< interpolation type */
+    G_OPT_R_BASENAME_INPUT,     /*!< old input basename raster maps */
+    G_OPT_R_BASENAME_OUTPUT,    /*!< new output basename raster maps */
 
     G_OPT_R3_INPUT,		/*!< old input raster3d map */
     G_OPT_R3_INPUTS,		/*!< old input raster3d maps */
@@ -244,6 +254,7 @@ static const char *GRASS_copyright __attribute__ ((unused))
     G_OPT_V_IDS,		/*!< more feature ids */
 
     G_OPT_F_INPUT,		/*!< old input file */
+    G_OPT_F_BIN_INPUT,		/*!< old binary input file */
     G_OPT_F_OUTPUT,		/*!< new output file */
     G_OPT_F_SEP,		/*!< data field separator */
 
@@ -257,7 +268,8 @@ static const char *GRASS_copyright __attribute__ ((unused))
     G_OPT_M_COLR,               /*!< color rules */
     G_OPT_M_DIR,                /*!< directory input */    
     G_OPT_M_REGION,             /*!< saved region */
-
+    G_OPT_M_NULL_VALUE,         /*!< null value string */
+    
     G_OPT_STDS_INPUT,           /*!< old input space time dataset of type strds, str3ds or stvds */
     G_OPT_STDS_INPUTS,          /*!< old input space time datasets */
     G_OPT_STDS_OUTPUT,          /*!< new output space time dataset */
@@ -295,6 +307,16 @@ static const char *GRASS_copyright __attribute__ ((unused))
     G_FLG_V_TABLE,		/*!< do not create attribute table */
     G_FLG_V_TOPO,               /*!< do not build topology */
 } STD_FLG;
+
+/* Parser rules for G__option_rule() */
+enum rule_type {
+    RULE_EXCLUSIVE,
+    RULE_REQUIRED,
+    RULE_REQUIRES,
+    RULE_REQUIRES_ALL,
+    RULE_EXCLUDES,
+    RULE_COLLECTIVE
+};
 
 /* Message format */
 #define G_INFO_FORMAT_STANDARD 0	/* GRASS_MESSAGE_FORMAT=standard or not defined */

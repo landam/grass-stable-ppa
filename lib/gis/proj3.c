@@ -73,6 +73,8 @@ const char *G_database_unit_name(int plural)
 	    units = U_MILES;
 	else if (strcasecmp(name, "foot") == 0 || strcasecmp(name, "feet") == 0)
 	    units = U_FEET;
+	else if (strcasecmp(name, "foot_us") == 0 || strcasecmp(name, "foot_uss") == 0)
+	    units = U_USFEET;
 	else if (strcasecmp(name, "degree") == 0 || strcasecmp(name, "degrees") == 0)
 	    units = U_DEGREES;
 	else
@@ -100,7 +102,6 @@ const char *G_database_projection_name(void)
     case PROJECTION_XY:
     case PROJECTION_UTM:
     case PROJECTION_LL:
-    case PROJECTION_SP:
 	return G__projection_name(n);
     }
 
@@ -127,6 +128,7 @@ double G_database_units_to_meters_factor(void)
     double factor;
     int n;
 
+    /* TODO: sync with definitions in ../proj/units.table */
     static const struct
     {
 	char *unit;
@@ -134,7 +136,8 @@ double G_database_units_to_meters_factor(void)
     } table[] = {
 	{"unit",  1.0},
 	{"meter", 1.0},
-	{"foot", .3048},
+	{"foot",  .3048},
+	{"foot_us", 1200/3937.},
 	{"inch", .0254},
 	{NULL, 0.0}
     };

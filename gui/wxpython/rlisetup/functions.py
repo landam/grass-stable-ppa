@@ -10,6 +10,7 @@ import sys
 from grass.script import core as grass
 from core.gcmd import GError
 
+
 class SamplingType:
     """"
     KMVWINC = samplingtype=moving, regionbox=keyboard, shape=circle
@@ -26,7 +27,7 @@ class SamplingType:
     WHOLE = 'whole'
     REGIONS = 'regions'
     UNITS = 'units'
-    VECT = 'vect'
+    VECT = 'vector'
     MVWIN = 'moving'
 
     KMVWINC = 'kmvwin_circle'
@@ -66,8 +67,8 @@ def retRLiPath():
         return rlipath
 
 
-def checkMapExists(name, typ='rast'):
-    """!Check if a map already exist in the working mapset"""
+def checkMapExists(name, typ='raster'):
+    """Check if a map already exist in the working mapset"""
     env = grass.gisenv()
     mapset = env['MAPSET']
     mapp = grass.find_file(name, typ, mapset)
@@ -82,11 +83,11 @@ def convertFeature(vect, outrast, cat, origrast):
     tmp_vect = "tmp_{rast}".format(rast=outrast)
     grass.run_command('v.extract', input=vect, output=tmp_vect, cats=cat,
                       overwrite=True, quiet=True)
-    grass.run_command('g.region', vect=tmp_vect, align=origrast)
+    grass.run_command('g.region', vector=tmp_vect, align=origrast)
     grass.run_command('v.to.rast', input=vect, output=outrast, use='cat',
                       cats=cat, overwrite=True, quiet=True)
-    grass.run_command('g.remove', vect=tmp_vect, quiet=True)
-
+    grass.run_command('g.remove', flags='f', type='vector',
+                      name=tmp_vect, quiet=True)
 
 def obtainAreaVector(outrast):
     """Create the string for configuration file"""

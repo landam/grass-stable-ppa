@@ -18,7 +18,7 @@
 #############################################################################
 
 #%module
-#% description: Calculates univariate statistics from a raster map based on vector polygon map and uploads statistics to new attribute columns.
+#% description: Calculates univariate statistics from a raster map based on a vector map and uploads statistics to new attribute columns.
 #% keywords: vector
 #% keywords: statistics
 #% keywords: raster
@@ -65,15 +65,18 @@ import sys
 import os
 import atexit
 import grass.script as grass
+from grass.exceptions import CalledModuleError
 
 
 def cleanup():
     if rastertmp:
-        grass.run_command('g.remove', rast=rastertmp, quiet=True)
-    grass.run_command('g.remove', rast='MASK', quiet=True, stderr=nuldev)
+        grass.run_command('g.remove', flags='f', type='raster',
+                          name=rastertmp, quiet=True)
+    grass.run_command('g.remove', flags='f', type='raster',
+                      name='MASK', quiet=True, stderr=nuldev)
     if mask_found:
         grass.message(_("Restoring previous MASK..."))
-        grass.run_command('g.rename', rast=(tmpname + "_origmask", 'MASK'),
+        grass.run_command('g.rename', raster=(tmpname + "_origmask", 'MASK'),
                           quiet=True)
 #    for f in [tmp, tmpname, sqltmp]:
 #        grass.try_remove(f)
@@ -124,7 +127,7 @@ def main():
     mask_found = bool(grass.find_file('MASK', 'cell')['file'])
     if mask_found:
         grass.message(_("Raster MASK found, temporarily disabled"))
-        grass.run_command('g.rename', rast=('MASK', tmpname + "_origmask"),
+        grass.run_command('g.rename', raster=('MASK', tmpname + "_origmask"),
                           quiet=True)
 
     # save current settings:
@@ -135,8 +138,10 @@ def main():
     grass.run_command('g.region', align=raster)
 
     # prepare raster MASK
-    if grass.run_command('v.to.rast', input=vector, output=rastertmp,
-                         use='cat', quiet=True) != 0:
+    try:
+        grass.run_command('v.to.rast', input=vector, output=rastertmp,
+                          use='cat', quiet=True)
+    except CalledModuleError:
         grass.fatal(_("An error occurred while converting vector to raster"))
 
     # dump cats to file to avoid "too many argument" problem:
@@ -225,8 +230,10 @@ def main():
 
     if addcols:
         grass.verbose(_("Adding columns '%s'") % addcols)
-        if grass.run_command('v.db.addcolumn', map=vector, columns=addcols,
-                             layer=layer) != 0:
+        try:
+            grass.run_command('v.db.addcolumn', map=vector, columns=addcols,
+                              layer=layer)
+        except CalledModuleError:
             grass.fatal(_("Adding columns failed. Exiting."))
 
     # calculate statistics:
@@ -276,16 +283,20 @@ def main():
     f.close()
 
     grass.message(_("Updating the database ..."))
-    exitcode = grass.run_command('db.execute', input=sqltmp,
-                                 database=fi['database'], driver=fi['driver'])
-
-    grass.run_command('g.remove', rast='MASK', quiet=True, stderr=nuldev)
-
-    if exitcode == 0:
-        grass.verbose((_("Statistics calculated from raster map <%s>") % raster) +
-                      (_(" and uploaded to attribute table of vector map <%s>.") % vector))
-    else:
+    exitcode = 0
+    try:
+        grass.run_command('db.execute', input=sqltmp,
+                          database=fi['database'], driver=fi['driver'])
+        grass.verbose((_("Statistics calculated from raster map <{raster}>"
+                         " and uploaded to attribute table"
+                         " of vector map <{vector}>."
+                         ).format(raster=raster, vector=vector)))
+    except CalledModuleError:
         grass.warning(_("Failed to upload statistics to attribute table of vector map <%s>.") % vector)
+        exitcode = 1
+    finally:
+         grass.run_command('g.remove', flags='f', type='raster',
+                           name='MASK', quiet=True, stderr=nuldev)
 
     sys.exit(exitcode)
 

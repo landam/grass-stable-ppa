@@ -1,15 +1,15 @@
 <h2>DESCRIPTION</h2>
 
 <em>i.tasscap</em> calculates Tasseled Cap (Kauth Thomas, TC) transformation
-for LANDSAT-TM data (TM4, TM5, TM7).
+for Landsat TM data (TM4, TM5, ETM7) and MODIS data.
 
 The tasseled cap transformation is effectively a compression method to
 reduce multiple spectral data into a few bands. The method was originally
 developed for understanding important phenomena of crop development in
 spectral space (Kauth and Thomas 1976).
 <p>
-Tasseled cap coefficients for Landsat 7 ETM+ at-satellite reflectance
-(C. Huang et al., 2001), the conversion can be achieved with
+Tasseled cap coefficients for Landsat 7 ETM+ are at-satellite reflectance
+values (C. Huang et al., 2001), the conversion can be achieved with
 <em>i.landsat.toar</em>.
 <p>
 The following TC components are generated:
@@ -18,20 +18,19 @@ The following TC components are generated:
 <li> tasscap.1: corresponds to brightness,
 <li> tasscap.2: corresponds to greenness,
 <li> tasscap.3: corresponds to wetness,
-<li> tasscap.4: corresponds to atmospheric haze.
+<li> tasscap.4: corresponds to atmospheric haze (only selected sensors: Landsat 5,7,8).
 </ul>
 
 
 <h2>EXAMPLE</h2>
 
-Calculation of TC maps from North Carolina Landsat scene:
+Calculation of TC maps from North Carolina Landsat 7 ETM scene:
 
 <div class="code"><pre>
-g.region rast=lsat7_2002_10 -p
-i.tasscap -7 band1=lsat7_2002_10 band2=lsat7_2002_20 \
-             band3=lsat7_2002_30 band4=lsat7_2002_40 \
-             band5=lsat7_2002_50 band7=lsat7_2002_70 \
-	     outprefix=tasscap
+g.region raster=lsat7_2002_10 -p
+i.tasscap sensor=landsat7_etm \
+  input=lsat7_2002_10,lsat7_2002_20,lsat7_2002_30,lsat7_2002_40,lsat7_2002_50,lsat7_2002_70 \
+  output=tasscap
 </pre></div>
 
 Results:
@@ -84,15 +83,15 @@ Results:
 <li>Crist, E. P., 1985, A TM tasseled cap equivalent transformation for reflectance
     factor data, Remote Sensing of Environment, 17: 301-306.
 <li>LANDSAT-7: TASSCAP factors cited from:
-  DERIVATION OF A TASSELED CAP TRANSFORMATION BASED ON LANDSAT 7 AT-SATELLITE REFLECTANCE
+  DERIVATION OF A TASSELED CAP TRANSFORMATION BASED ON LANDSAT 7 AT-SATELLITE REFLECTANCE.
   Chengquan Huang, Bruce Wylie, Limin Yang, Collin Homer and Gregory Zylstra Raytheon ITSS, 
   USGS EROS Data Center Sioux Falls, SD 57198, USA
   http://landcover.usgs.gov/pdf/tasseled.pdf
 <br>
  This is published as well in INT. J. OF RS, 2002, VOL 23, NO. 8, 1741-1748.
-<br>
- Compare discussion:
- http://adis.cesnet.cz/cgi-bin/lwgate/IMAGRS-L/archives/imagrs-l.log0211/date/article-14.html
+<li> MODIS Tasselled Cap coefficients - Ref: Lobser & Cohen (2007). MODIS tasselled cap:
+ land cover characteristics expressed through transformed MODIS data.
+ International Journal of Remote Sensing, Volume 28(22), Table 3
 </ul>
 
 <h2>SEE ALSO</h2>
@@ -107,5 +106,5 @@ Results:
 
 <h2>AUTHOR</h2>
 
-Markus Neteler, ITC-irst
-<p><i>Last changed: $Date: 2013-11-07 07:14:31 +0100 (Thu, 07 Nov 2013) $</i>
+Markus Neteler, ITC-irst, based on a script by Agustin Lobo
+<p><i>Last changed: $Date: 2014-12-19 22:55:37 +0100 (Fri, 19 Dec 2014) $</i>

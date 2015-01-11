@@ -120,7 +120,7 @@ int main(int argc, char **argv)
     module = G_define_module();
     G_add_keyword(_("vector"));
     G_add_keyword(_("Linear Reference System"));
-    G_add_keyword(_("networking"));
+    G_add_keyword(_("network"));
     module->description = _("Creates a linear reference system.");
 
     in_lines_opt = G_define_standard_option(G_OPT_V_INPUT);
@@ -287,6 +287,7 @@ int main(int argc, char **argv)
     if (db_open_database(ldriver, &lhandle) != DB_OK)
 	G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 		      Lfi->database, Lfi->driver);
+    db_set_error_handler_driver(ldriver);
 
     db_init_handle(&phandle);
     db_init_string(&pstmt);
@@ -295,6 +296,7 @@ int main(int argc, char **argv)
     if (db_open_database(pdriver, &phandle) != DB_OK)
 	G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 		      Pfi->database, Pfi->driver);
+    db_set_error_handler_driver(pdriver);
 
     /* Open database for RS table */
     db_init_handle(&rshandle);
@@ -303,6 +305,7 @@ int main(int argc, char **argv)
     db_set_handle(&rshandle, database_opt->answer, NULL);
     if (db_open_database(rsdriver, &rshandle) != DB_OK)
 	G_fatal_error(_("Unable to open database for reference table"));
+    db_set_error_handler_driver(rsdriver);
 
     /* Create new reference table */
     /* perhaps drop table to be conditionalized upon --o ? */

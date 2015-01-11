@@ -2,15 +2,15 @@
 # -*- coding: utf-8 -*-
 ############################################################################
 #
-# MODULE:	t.remove
-# AUTHOR(S):	Soeren Gebbert
+# MODULE:   t.remove
+# AUTHOR(S):    Soeren Gebbert
 #
-# PURPOSE:	Remove space time datasets from the temporal database
-# COPYRIGHT:	(C) 2011 by the GRASS Development Team
+# PURPOSE:  Remove space time datasets from the temporal database
+# COPYRIGHT:    (C) 2011-2014 by the GRASS Development Team
 #
-#		This program is free software under the GNU General Public
-#		License (version 2). Read the file COPYING that comes with GRASS
-#		for details.
+#       This program is free software under the GNU General Public
+#       License (version 2). Read the file COPYING that comes with GRASS
+#       for details.
 #
 #############################################################################
 
@@ -107,11 +107,11 @@ def main():
     statement = ""
 
     # Create the pygrass Module object for g.remove
-    remove = pyg.Module("g.remove", quiet=True, run_=False)
+    remove = pyg.Module("g.remove", quiet=True, flags='f', run_=False)
 
     for name in dataset_list:
         name = name.strip()
-        sp = tgis.open_old_space_time_dataset(name, type, dbif)
+        sp = tgis.open_old_stds(name, type, dbif)
 
         if recursive and force:
             grass.message(_("Removing registered maps"))
@@ -125,14 +125,19 @@ def main():
                 # to avoid multiple deletation of the same map,
                 # but the database entries are still present and must be removed
                 if map.get_name() not in name_list:
-                    name_list.append(map.get_name())
+                    name_list.append(str(map.get_name()))
                 map_statement += map.delete(dbif=dbif, execute=False)
 
                 count += 1
                 # Delete every 100 maps
                 if count%100 == 0:
                     dbif.execute_transaction(map_statement)
-                    remove(rast=name_list, run_=True)
+                    if type == "strds":
+                        remove(type="raster", name=name_list, run_=True)
+                    if type == "stvds":
+                        remove(type="vector", name=name_list, run_=True)
+                    if type == "str3ds":
+                        remove(type="raster_3d", name=name_list, run_=True)
                     map_statement = ""
                     name_list = []
 
@@ -140,11 +145,11 @@ def main():
                 dbif.execute_transaction(map_statement)
             if name_list:
                 if type == "strds":
-                    remove(rast=name_list, run_=True)
+                    remove(type="raster", name=name_list, run_=True)
                 if type == "stvds":
-                    remove(vect=name_list, run_=True)
+                    remove(type="vector", name=name_list, run_=True)
                 if type == "str3ds":
-                    remove(rast3d=name_list, run_=True)
+                    remove(type="raster_3d", name=name_list, run_=True)
 
         statement += sp.delete(dbif=dbif, execute=False)
 

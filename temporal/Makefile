@@ -1,5 +1,9 @@
 MODULE_TOPDIR = ..
 
+#	t.rast.algebra \
+#	t.rast3d.algebra \
+#	t.vect.algebra \
+
 SUBDIRS = \
 	t.connect \
 	t.create \
@@ -33,6 +37,7 @@ SUBDIRS = \
 	t.rast3d.mapcalc \
 	t.rast3d.univar \
 	t.rename \
+	t.select \
 	t.snap \
 	t.shift \
 	t.vect.list \
@@ -43,10 +48,6 @@ SUBDIRS = \
 	t.vect.what.strds \
 	t.vect.observe.strds \
 	t.vect.univar
-#	t.rast.mapcalc2
-#	t.rast3d.mapcalc2 
-#	t.select 
-#	t.vect.mapcalc 
 
 PGM = temporalintro
 

@@ -4,7 +4,7 @@
 #
 # MODULE:       v.unpack
 # AUTHOR(S):    Luca Delucchi
-#               
+#
 # PURPOSE:      Unpack up a vector map packed with v.pack
 # COPYRIGHT:    (C) 2010-2013 by the GRASS Development Team
 #
@@ -16,12 +16,12 @@
 
 #%module
 #% description: Unpacks a vector map packed with v.pack.
-#% keywords: vector, import, copying
+#% keywords: vector
+#% keywords: import
+#% keywords: copying
 #%end
 #%option G_OPT_F_INPUT
-#% gisprompt: old,bin,file
 #% description: Name of input pack file
-#% required : yes
 #%end
 #%option G_OPT_V_OUTPUT
 #% label: Name for output vector map
@@ -39,12 +39,14 @@ import shutil
 import tarfile
 import atexit
 
+from grass.script.utils import diff_files, try_rmdir
 from grass.script import core as grass
 from grass.script import db as grassdb
+from grass.exceptions import CalledModuleError
 
 
 def cleanup():
-    grass.try_rmdir(tmp_dir)
+    try_rmdir(tmp_dir)
 
 
 def main():
@@ -89,26 +91,34 @@ def main():
         grass.fatal(_("Vector map <%s> already exists") % map_name)
     elif overwrite == '1' and gfile['file']:
         grass.warning(_("Vector map <%s> already exists and will be overwritten") % map_name)
-        grass.run_command('g.remove', quiet=True, vect=map_name)
+        grass.run_command('g.remove', flags='f', quiet=True, type='vector',
+                          name=map_name)
         shutil.rmtree(new_dir, True)
 
     # extract data
     tar.extractall()
+    if os.path.exists(os.path.join(map_name, 'coor')):
+        pass
+    elif os.path.exists(os.path.join(map_name, 'cell')):
+        grass.fatal(_("This GRASS GIS pack file contains raster data. Use "
+                      "r.unpack to unpack <%s>" % map_name))
+    else:
+        grass.fatal(_("Pack file unreadable"))
 
     # check projection compatibility in a rather crappy way
     loc_proj = os.path.join(mset_dir, '..', 'PERMANENT', 'PROJ_INFO')
     loc_proj_units = os.path.join(mset_dir, '..', 'PERMANENT', 'PROJ_UNITS')
 
     diff_result_1 = diff_result_2 = None
-    if not grass.compare_key_value_text_files(filename_a=os.path.join(tmp_dir,'PROJ_INFO'),
+    if not grass.compare_key_value_text_files(filename_a=os.path.join(tmp_dir, 'PROJ_INFO'),
                                               filename_b=loc_proj, proj=True):
-        diff_result_1 = grass.diff_files(os.path.join(tmp_dir, 'PROJ_INFO'),
+        diff_result_1 = diff_files(os.path.join(tmp_dir, 'PROJ_INFO'),
                                          loc_proj)
 
-    if not grass.compare_key_value_text_files(filename_a=os.path.join(tmp_dir,'PROJ_UNITS'),
+    if not grass.compare_key_value_text_files(filename_a=os.path.join(tmp_dir, 'PROJ_UNITS'),
                                               filename_b=loc_proj_units,
                                               units=True):
-        diff_result_2 = grass.diff_files(os.path.join(tmp_dir, 'PROJ_UNITS'),
+        diff_result_2 = diff_files(os.path.join(tmp_dir, 'PROJ_UNITS'),
                                          loc_proj_units)
 
     if diff_result_1 or diff_result_2:
@@ -130,7 +140,7 @@ def main():
     # exist fromdb
     if os.path.exists(fromdb):
         # the db connection in the output mapset
-        dbconn = grassdb.db_connection()
+        dbconn = grassdb.db_connection(force=True)
         todb = dbconn['database']
         # return all tables
         list_fromtable = grass.read_command('db.tables', driver='sqlite',
@@ -168,23 +178,27 @@ def main():
                                                                   to_table))
 
             # copy the table in the default database
-            if 0 != grass.run_command('db.copy', to_driver=dbconn['driver'],
-                                      to_database=todb, to_table=to_table,
-                                      from_driver='sqlite',
-                                      from_database=fromdb,
-                                      from_table=from_table):
+            try:
+                grass.run_command('db.copy', to_driver=dbconn['driver'],
+                                  to_database=todb, to_table=to_table,
+                                  from_driver='sqlite',
+                                  from_database=fromdb,
+                                  from_table=from_table)
+            except CalledModuleError:
                 grass.fatal(_("Unable to copy table <%s> as table <%s>") % (from_table, to_table))
 
-            grass.verbose(_("Connect table <%s> to vector map <%s> at layer <%s>") % \
-                              (to_table, map_name, layer))
+            grass.verbose(_("Connect table <%s> to vector map <%s> at layer <%s>") %
+                           (to_table, map_name, layer))
 
             # and connect the new tables with the right layer
-            if 0 != grass.run_command('v.db.connect', flags='o', quiet=True,
-                                      driver=dbconn['driver'], database=todb,
-                                      map=map_name, key=values[2],
-                                      layer=layer, table=to_table):
-                grass.fatal(_("Unable to connect table <%s> to vector map <%s>") % \
-                                (to_table, map_name))
+            try:
+                grass.run_command('v.db.connect', flags='o', quiet=True,
+                                  driver=dbconn['driver'], database=todb,
+                                  map=map_name, key=values[2],
+                                  layer=layer, table=to_table)
+            except CalledModuleError:
+                grass.fatal(_("Unable to connect table <%s> to vector map <%s>") %
+                             (to_table, map_name))
 
     grass.message(_("Vector map <%s> succesfully unpacked") % map_name)
 

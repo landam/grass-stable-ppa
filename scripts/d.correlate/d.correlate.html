@@ -6,8 +6,9 @@ highlights the correlation (or lack of it) among data
 layers (scattergram).
 
 <p>The results are displayed in the active display frame on
-the user's graphics monitor.  <em>d.correlate</em> erases
-the active frame before displaying results.
+the user's graphics monitor. <em>d.correlate</em> erases
+the active frame before displaying results. If no graphics monitor
+is open, a file <tt>map.png</tt> is generated in the current directory.
 
 <h2>NOTES</h2>
 
@@ -18,7 +19,7 @@ among each combination of two data layers is displayed.
 
 Scatterplot of two LANDSAT TM7 channels (North Carolina sample dataset):
 <p><div class="code"><pre>
-g.region rast=lsat7_2002_30 -p
+g.region raster=lsat7_2002_30 -p
 d.correlate map=lsat7_2002_30,lsat7_2002_40
 </pre></div>
 
@@ -32,10 +33,10 @@ d.correlate map=lsat7_2002_30,lsat7_2002_40
 <a href="r.stats.html">r.stats</a>
 </em>
 
-<h2>AUTHOR</h2>
+<h2>AUTHORS</h2>
 
 Michael Shapiro,
 <a href="http://www.cecer.army.mil/">U.S.Army Construction Engineering Research Laboratory</a>
 <p>Rewritten to GRASS 6 (from csh to sh) by Markus Neteler; from sh to Python by Glynn Clements
 
-<p><i>Last changed: $Date: 2011-11-08 13:24:20 -0800 (Tue, 08 Nov 2011) $</i>
+<p><i>Last changed: $Date: 2014-12-19 22:55:37 +0100 (Fri, 19 Dec 2014) $</i>

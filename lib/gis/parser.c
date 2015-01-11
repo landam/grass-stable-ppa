@@ -1,70 +1,70 @@
 /*!
- * \file gis/parser.c
+ * \file lib/gis/parser.c
  *
  * \brief GIS Library - Argument parsing functions.
  *
  * Parses the command line provided through argc and argv.  Example:
  * Assume the previous calls:
  *
- * \code
- *  opt1 = G_define_option() ;
- *  opt1->key        = "map",
- *  opt1->type       = TYPE_STRING,
- *  opt1->required   = YES,
- *  opt1->checker    = sub,
- *  opt1->description= "Name of an existing raster map" ;
- *
- *  opt2 = G_define_option() ;
- *  opt2->key        = "color",
- *  opt2->type       = TYPE_STRING,
- *  opt2->required   = NO,
- *  opt2->answer     = "white",
- *  opt2->options    = "red,orange,blue,white,black",
- *  opt2->description= "Color used to display the map" ;
- *
- *  opt3 = G_define_option() ;
- *  opt3->key        = "number",
- *  opt3->type       = TYPE_DOUBLE,
- *  opt3->required   = NO,
- *  opt3->answer     = "12345.67",
- *  opt3->options    = "0-99999",
- *  opt3->description= "Number to test parser" ;
- * \endcode
+ \code
+  opt1 = G_define_option() ;
+  opt1->key        = "map",
+  opt1->type       = TYPE_STRING,
+  opt1->required   = YES,
+  opt1->checker    = sub,
+  opt1->description= "Name of an existing raster map" ;
+
+  opt2 = G_define_option() ;
+  opt2->key        = "color",
+  opt2->type       = TYPE_STRING,
+  opt2->required   = NO,
+  opt2->answer     = "white",
+  opt2->options    = "red,orange,blue,white,black",
+  opt2->description= "Color used to display the map" ;
+
+  opt3 = G_define_option() ;
+  opt3->key        = "number",
+  opt3->type       = TYPE_DOUBLE,
+  opt3->required   = NO,
+  opt3->answer     = "12345.67",
+  opt3->options    = "0-99999",
+  opt3->description= "Number to test parser" ;
+ \endcode
  *
  * G_parser() will respond to the following command lines as described:
  *
- * \verbatim
- * command      (No command line arguments)
- * \endverbatim
+ \verbatim
+ command      (No command line arguments)
+ \endverbatim
  *    Parser enters interactive mode.
  *
- * \verbatim
- * command map=map.name
- * \endverbatim
+ \verbatim
+ command map=map.name
+ \endverbatim
  *    Parser will accept this line.  Map will be set to "map.name", the
  *    'a' and 'b' flags will remain off and the num option will be set
  *    to the default of 5.
  *
- * \verbatim
- * command -ab map=map.name num=9
- * command -a -b map=map.name num=9
- * command -ab map.name num=9
- * command map.name num=9 -ab
- * command num=9 -a map=map.name -b
- * \endverbatim
+ \verbatim
+ command -ab map=map.name num=9
+ command -a -b map=map.name num=9
+ command -ab map.name num=9
+ command map.name num=9 -ab
+ command num=9 -a map=map.name -b
+ \endverbatim
  *    These are all treated as acceptable and identical. Both flags are
  *    set to on, the map option is "map.name" and the num option is "9".
  *    Note that the "map=" may be omitted from the command line if it
  *    is part of the first option (flags do not count).
  *
- * \verbatim
- * command num=12
- * \endverbatim
+ \verbatim
+ command num=12
+ \endverbatim
  *    This command line is in error in two ways.  The user will be told
  *    that the "map" option is required and also that the number 12 is
  *    out of range.  The acceptable range (or list) will be printed.
  *
- * (C) 2001-2009, 2011 by the GRASS Development Team
+ * (C) 2001-2014 by the GRASS Development Team
  *
  * This program is free software under the GNU General Public License
  * (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -101,7 +101,10 @@ struct state *st = &state;
 /* local prototypes */
 static void set_flag(int);
 static int contains(const char *, int);
+static int valid_option_name(const char *);
 static int is_option(const char *);
+static int match_option_1(const char *, const char *);
+static int match_option(const char *, const char *);
 static void set_option(const char *);
 static void check_opts(void);
 static void check_an_opt(const char *, int, const char *, const char **, char **);
@@ -113,9 +116,10 @@ static void split_opts(void);
 static void check_multiple_opts(void);
 static int check_overwrite(void);
 static void define_keywords(void);
-static void split_gisprompt(const char *gisprompt, char *age, char *element, char *desc);
+static void split_gisprompt(const char *, char *, char *, char *);
 static void module_gui_wx(void);
 static void append_error(const char *);
+static const char *get_renamed_option(const char *);
 
 /*!
  * \brief Disables the ability of the parser to operate interactively.
@@ -277,16 +281,31 @@ struct GModule *G_define_module(void)
  *  - G_define_module()
  *  - G_define_flag()
  *  - G_define_option()
+ *  - G_define_standard_flag()
  *  - G_define_standard_option()
  *  - G_disable_interactive()
+ *  - G_option_exclusive()
+ *  - G_option_required()
+ *  - G_option_requires()
+ *  - G_option_requires_all()
+ *  - G_option_excludes()
+ *  - G_option_collective()
  *
  * The usual order a module calls functions is:
  *
- *  # G_gisinit()
- *  # G_define_module()
- *  # G_define_flag()
- *  # G_define_option()
- *  # G_parser()
+ *  1. G_gisinit()
+ *  2. G_define_module()
+ *  3. G_define_standard_flag()
+ *  4. G_define_standard_option()
+ *  5. G_define_flag()
+ *  6. G_define_option()
+ *  7. G_option_exclusive()
+ *  8. G_option_required()
+ *  9. G_option_requires()
+ *  10. G_option_requires_all()
+ *  11. G_option_excludes()
+ *  12. G_option_collective()
+ *  13. G_parser()
  *
  * \param argc number of arguments
  * \param argv argument list
@@ -322,9 +341,12 @@ int G_parser(int argc, char **argv)
     /* Stash default answers */
 
     opt = &st->first_option;
-    while (opt) {
+    while (st->n_opts && opt) {
 	if (opt->required)
 	    st->has_required = 1;
+
+	if (!valid_option_name(opt->key))
+	    G_warning(_("BUG in option name, '%s' is not valid"), opt->key);
 
 	/* Parse options */
 	if (opt->options) {
@@ -337,6 +359,7 @@ int G_parser(int argc, char **argv)
 
 	    i = 0;
 	    while (tokens[i]) {
+		G_chop(tokens[i]);
 		cnt++;
 		i++;
 	    }
@@ -362,6 +385,8 @@ int G_parser(int argc, char **argv)
 
 		    if (!tokens[i + 1])
 			break;
+
+		    G_chop(tokens[i]);
 
 		    j = 0;
 		    found = 0;
@@ -404,7 +429,8 @@ int G_parser(int argc, char **argv)
 
     /* If there are NO arguments, go interactive */
 
-    if (argc < 2 && st->has_required && !st->no_interactive && isatty(0)) {
+    if (argc < 2 && (st->has_required || G__has_required_rule())
+        && !st->no_interactive && isatty(0)) {
 	module_gui_wx();
 	return -1;
     }
@@ -559,7 +585,9 @@ int G_parser(int argc, char **argv)
     /* Make sure all required options are set */
     if (!st->suppress_required)
 	check_required();
-    
+
+    G__check_option_rules();
+
     if (st->n_errors > 0) {
         if (G_verbose() > -1) {
             if (G_verbose() > G_verbose_min())
@@ -637,7 +665,7 @@ char *G_recreate_command(void)
     }
 
     opt = &st->first_option;
-    while (opt) {
+    while (st->n_opts && opt) {
 	if (opt->answer && opt->answers && opt->answers[0]) {
 	    slen = strlen(opt->key) + strlen(opt->answers[0]) + 4;	/* +4 for: ' ' = " " */
 	    if (len + slen >= nalloced) {
@@ -796,7 +824,7 @@ void define_keywords(void)
 /*!
   \brief Invoke GUI dialog
 */
-static void module_gui_wx(void)
+void module_gui_wx(void)
 {
     char script[GPATH_MAX];
 
@@ -810,7 +838,7 @@ static void module_gui_wx(void)
     G_spawn(getenv("GRASS_PYTHON"), getenv("GRASS_PYTHON"), script, G_recreate_command(), NULL);
 }
 
-static void set_flag(int f)
+void set_flag(int f)
 {
     struct Flag *flag;
     char *err;
@@ -819,7 +847,7 @@ static void set_flag(int f)
 
     /* Flag is not valid if there are no flags to set */
     if (!st->n_flags) {
-	G_asprintf(&err, _("Sorry, <%c> is not a valid flag"), f);
+	G_asprintf(&err, _("%s: Sorry, <%c> is not a valid flag"), G_program_name(), f);
 	append_error(err);
 	return;
     }
@@ -836,14 +864,14 @@ static void set_flag(int f)
 	flag = flag->next_flag;
     }
 
-    G_asprintf(&err, _("Sorry, <%c> is not a valid flag"), f);
+    G_asprintf(&err, _("%s: Sorry, <%c> is not a valid flag"), G_program_name(), f);
     append_error(err);
 }
 
 /* contents() is used to find things strings with characters like commas and
  * dashes.
  */
-static int contains(const char *s, int c)
+int contains(const char *s, int c)
 {
     while (*s) {
 	if (*s == c)
@@ -853,14 +881,31 @@ static int contains(const char *s, int c)
     return FALSE;
 }
 
-static int is_option(const char *string)
+int valid_option_name(const char *string)
+{
+    int m = strlen(string);
+    int n = strspn(string, "abcdefghijklmnopqrstuvwxyz0123456789_");
+
+    if (!m)
+	return 0;
+
+    if (m != n)
+	return 0;
+
+    if (string[m-1] == '_')
+	return 0;
+
+    return 1;
+}
+
+int is_option(const char *string)
 {
     int n = strspn(string, "abcdefghijklmnopqrstuvwxyz0123456789_");
 
     return n > 0 && string[n] == '=' && string[0] != '_' && string[n-1] != '_';
 }
 
-static int match_option_1(const char *string, const char *option)
+int match_option_1(const char *string, const char *option)
 {
     const char *next;
 
@@ -886,13 +931,13 @@ static int match_option_1(const char *string, const char *option)
     return match_option_1(string, next + 1);
 }
 
-static int match_option(const char *string, const char *option)
+int match_option(const char *string, const char *option)
 {
     return (*string == *option)
 	&& match_option_1(string + 1, option + 1);
 }
 
-static void set_option(const char *string)
+void set_option(const char *string)
 {
     struct Option *at_opt = NULL;
     struct Option *opt = NULL;
@@ -936,18 +981,37 @@ static void set_option(const char *string)
     }
 
     if (found > 1 && prefix > 1) {
-	G_asprintf(&err, _("Sorry, <%s=> is ambiguous"), the_key);
+	G_asprintf(&err, _("%s: Sorry, <%s=> is ambiguous"), G_program_name(), the_key);
 	append_error(err);
 	return;
+    }
+
+    /* First, check if key has been renamed in GRASS 7 */
+    if (found == 0) {
+        const char *renamed_key = NULL;
+
+        renamed_key = get_renamed_option(the_key);
+        if (renamed_key) {
+            for (at_opt = &st->first_option; at_opt; at_opt = at_opt->next_opt) {
+                if (strcmp(renamed_key, at_opt->key) == 0) {
+                    G_warning(_("Please update the usage of <%s>: "
+                                "option <%s> has been renamed to <%s>"),
+                              G_program_name(), the_key, renamed_key);
+                    opt = at_opt;
+                    found = 1;
+                    break; 
+                }
+            }
+        }
     }
 
     /* If there is no match, complain */
     if (found == 0) {
-	G_asprintf(&err, _("Sorry, <%s> is not a valid parameter"), the_key);
-	append_error(err);
-	return;
+        G_asprintf(&err, _("%s: Sorry, <%s> is not a valid parameter"), G_program_name(), the_key);
+        append_error(err);
+        return;
     }
-
+    
     /* Allocate memory where answer is stored */
     if (opt->count++) {
 	if (!opt->multiple) {
@@ -963,7 +1027,7 @@ static void set_option(const char *string)
 	opt->answer = G_store(string);
 }
 
-static void check_opts(void)
+void check_opts(void)
 {
     struct Option *opt;
     int ans;
@@ -995,7 +1059,7 @@ static void check_opts(void)
     }
 }
 
-static void check_an_opt(const char *key, int type, const char *options,
+void check_an_opt(const char *key, int type, const char *options,
 			const char **opts, char **answerp)
 {
     const char *answer = *answerp;
@@ -1051,7 +1115,7 @@ static void check_an_opt(const char *key, int type, const char *options,
     }
 }
 
-static int check_int(const char *ans, const char **opts)
+int check_int(const char *ans, const char **opts)
 {
     int d, i;
 
@@ -1098,7 +1162,7 @@ static int check_int(const char *ans, const char **opts)
     return OUT_OF_RANGE;
 }
 
-static int check_double(const char *ans, const char **opts)
+int check_double(const char *ans, const char **opts)
 {
     double d;
     int i;
@@ -1146,7 +1210,7 @@ static int check_double(const char *ans, const char **opts)
     return OUT_OF_RANGE;
 }
 
-static int check_string(const char *ans, const char **opts, int *result)
+int check_string(const char *ans, const char **opts, int *result)
 {
     int len = strlen(ans);
     int found = 0;
@@ -1182,7 +1246,7 @@ static int check_string(const char *ans, const char **opts, int *result)
     }
 }
 
-static void check_required(void)
+void check_required(void)
 {
     struct Option *opt;
     char *err;
@@ -1204,7 +1268,7 @@ static void check_required(void)
     }
 }
 
-static void split_opts(void)
+void split_opts(void)
 {
     struct Option *opt;
     const char *ptr1;
@@ -1261,7 +1325,7 @@ static void split_opts(void)
     }
 }
 
-static void check_multiple_opts(void)
+void check_multiple_opts(void)
 {
     struct Option *opt;
     const char *ptr;
@@ -1299,7 +1363,7 @@ static void check_multiple_opts(void)
 }
 
 /* Check for all 'new' if element already exists */
-static int check_overwrite(void)
+int check_overwrite(void)
 {
     struct Option *opt;
     char age[KEYLENGTH];
@@ -1385,7 +1449,7 @@ static int check_overwrite(void)
     return (error);
 }
 
-static void split_gisprompt(const char *gisprompt, char *age, char *element,
+void split_gisprompt(const char *gisprompt, char *age, char *element,
 			    char *desc)
 {
     const char *ptr1;
@@ -1413,10 +1477,39 @@ static void split_gisprompt(const char *gisprompt, char *age, char *element,
     *ptr2 = '\0';
 }
 
-static void append_error(const char *msg)
+void append_error(const char *msg)
 {
     st->error = G_realloc(st->error, sizeof(char *) * (st->n_errors + 1));
     st->error[st->n_errors++] = G_store(msg);
+}
+
+const char *get_renamed_option(const char *key)
+{
+    const char *pgm, *key_new;
+    char *pgm_key;
+    
+    if (!st->renamed_options) {
+        /* read renamed options from file (renamed_options) */
+        char path[GPATH_MAX];
+        
+        G_snprintf(path, GPATH_MAX, "%s/etc/renamed_options", G_gisbase());
+        st->renamed_options = G_read_key_value_file(path);
+    }
+
+    /* try to check global changes first */
+    key_new = G_find_key_value(key, st->renamed_options);
+    if (key_new)
+        return key_new;
+
+    /* then check module-relevant changes */
+    pgm = G_program_name();
+    pgm_key = (char *) G_malloc (strlen(pgm) + strlen(key) + 2);
+    G_asprintf(&pgm_key, "%s|%s", pgm, key);
+
+    key_new = G_find_key_value(pgm_key, st->renamed_options);
+    G_free(pgm_key);
+
+    return key_new;
 }
 
 /*!
@@ -1445,8 +1538,12 @@ char* G_option_to_separator(const struct Option *option)
 {
     char* sep;
     
+    if (option->gisprompt == NULL ||
+	strcmp(option->gisprompt, "old,separator,separator") != 0)
+        G_fatal_error(_("%s= is not a separator option"), option->key);
+
     if (option->answer == NULL)
-        G_fatal_error(_("No separator given"));
+        G_fatal_error(_("No separator given for %s="), option->key);
 
     if (strcmp(option->answer, "pipe") == 0)
         sep = G_store("|");
@@ -1457,12 +1554,13 @@ char* G_option_to_separator(const struct Option *option)
     else if (strcmp(option->answer, "tab") == 0 ||
              strcmp(option->answer, "\\t") == 0)
         sep = G_store("\t");
-    else if (strcmp(option->answer, "newline") == 0)
+    else if (strcmp(option->answer, "newline") == 0 ||
+	     strcmp(option->answer, "\\n") == 0)
         sep = G_store("\n");
     else
         sep = G_store(option->answer);
     
-    G_debug(1, "G_option_to_separator(): key = %s -> sep = '%s'",
+    G_debug(2, "G_option_to_separator(): key = %s -> sep = '%s'",
 	    option->key, sep);
     
     return sep;
@@ -1507,9 +1605,10 @@ FILE *G_open_option_file(const struct Option *option)
 	    strcmp(option->answer, "-") == 0;
 
     if (option->gisprompt == NULL)
-        G_fatal_error(_("Not a file option"));
+        G_fatal_error(_("%s= is not a file option"), option->key);
     else if (option->multiple)
-	G_fatal_error(_("Multiple files not supported"));
+	G_fatal_error(_("Opening multiple files not supported for %s="),
+			option->key);
     else if (strcmp(option->gisprompt, "old,file,file") == 0) {
 	if (stdinout)
 	    fp = stdin;
@@ -1523,7 +1622,7 @@ FILE *G_open_option_file(const struct Option *option)
 	    G_fatal_error(_("Unable to create %s file <%s>"),
 			    option->key, option->answer);
     } else
-        G_fatal_error(_("Not a file option"));
+        G_fatal_error(_("%s= is not a file option"), option->key);
 
     return fp;
 }

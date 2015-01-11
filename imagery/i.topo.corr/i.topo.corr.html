@@ -90,10 +90,10 @@ method:
 
 <div class="code"><pre>
 # first pass: create illumination model
-i.topo.corr -i base=SRTM zenith=33.3631 azimuth=59.8897 out=SRTM.illumination
+i.topo.corr -i base=SRTM zenith=33.3631 azimuth=59.8897 output=SRTM.illumination
 
 # second pass: apply illumination model
-i.topo.corr base=SRTM.illumination input=toar.5,toar.4,toar.3 out=tcor \ 
+i.topo.corr base=SRTM.illumination input=toar.5,toar.4,toar.3 output=tcor \ 
   zenith=33.3631 method=c-factor
 </pre></div>
 
@@ -135,4 +135,4 @@ Dept. Biodiversity and Environmental Management, University of Le&oacute;n, Spai
 Figure derived from Neteler &amp; Mitasova, 2008.
 
 <p>
-<i>Last changed: $Date: 2014-04-02 16:19:50 +0200 (Wed, 02 Apr 2014) $</i>
+<i>Last changed: $Date: 2014-12-09 19:46:50 +0100 (Tue, 09 Dec 2014) $</i>

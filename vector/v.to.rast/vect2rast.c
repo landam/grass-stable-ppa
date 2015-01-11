@@ -8,7 +8,7 @@
 
 
 int vect_to_rast(const char *vector_map, const char *raster_map, const char *field_name,
-		 const char *column, int nrows, int use, double value,
+		 const char *column, int cache_mb, int use, double value,
 		 int value_type, const char *rgbcolumn, const char *labelcolumn,
 		 int ftype, char *where, char *cats, int dense)
 {
@@ -57,6 +57,7 @@ int vect_to_rast(const char *vector_map, const char *raster_map, const char *fie
 	     db_start_driver_open_database(Fi->driver, Fi->database)) == NULL)
 	    G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 			  Fi->database, Fi->driver);
+        db_set_error_handler_driver(Driver);
 
 	/* Note do not check if the column exists in the table because it may be expression */
 
@@ -142,7 +143,7 @@ int vect_to_rast(const char *vector_map, const char *raster_map, const char *fie
     }
 
     nlines = 1;
-    npasses = begin_rasterization(nrows, format, dense);
+    npasses = begin_rasterization(cache_mb, format, dense);
     pass = 0;
 
     nareas_all = Vect_get_num_areas(&Map);
@@ -223,7 +224,8 @@ int vect_to_rast(const char *vector_map, const char *raster_map, const char *fie
 		  column);
 
     if (nareas_all > 0)
-	G_message(_("Converted areas: %d of %d"), nareas, nareas_all);
+	G_message(_("Converted areas: %d of %d"), nareas,
+	          nareas_all - Vect_get_num_primitives(&Map, GV_CENTROID));
     if (nplines_all > 0)
 	G_message(_("Converted points/lines: %d of %d"), nlines, nplines_all);
 

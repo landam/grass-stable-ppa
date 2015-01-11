@@ -82,10 +82,11 @@
 import sys
 import os
 import atexit
-import string
 import re
 
 import grass.script as grass
+from grass.exceptions import CalledModuleError
+
 
 def cleanup():
     grass.verbose("Cleaning up ...")
@@ -99,10 +100,12 @@ def cleanup():
     # only try to remove map if it exists to avoid ugly warnings
     if tmp_vogb:
 	if grass.find_file(tmp_vogb, element = 'vector')['name']:
-	    grass.run_command('g.remove', vect = tmp_vogb, quiet = True)
+	    grass.run_command('g.remove', flags = 'f', type = 'vector',
+                          name = tmp_vogb, quiet = True)
     if tmp_extr:
 	if grass.find_file(tmp_extr, element = 'vector')['name']:
-	    grass.run_command('g.remove', vect = tmp_vogb, quiet = True)
+	    grass.run_command('g.remove', flags = 'f', type = 'vector',
+                          name = tmp_vogb, quiet = True)
 
 tmp = None
 tmp_proj = None
@@ -158,11 +161,12 @@ def main():
     if where:
 	grass.verbose("Extracting data ...")
 	tmp_extr = "tmp_vogb_extr_%d" % os.getpid()
-	ret = grass.run_command('v.extract', input = "$GIS_OPT_INPUT",
-				output = tmp_extr, type = type, layer = layer,
-				where = where, quiet = True)
-	if ret != 0:
-	    grass.fatal(_("Error executing SQL query"))
+        try:
+            grass.run_command('v.extract', input="$GIS_OPT_INPUT",
+                              output=tmp_extr, type=type, layer=layer,
+                              where=where, quiet=True)
+        except CalledModuleError:
+            grass.fatal(_("Error executing SQL query"))
 
 	kv = grass.vector_info_topo(tmp_extr)
 	if kv['primitives'] == 0:
@@ -170,7 +174,7 @@ def main():
 
 	inmap = tmp_extr
     else:
-	#   g.copy "$GIS_OPT_INPUT,tmp_vogb_extr_$$"   # to get a copy of DB into local mapset
+	#   g.copy vector="$GIS_OPT_INPUT,tmp_vogb_extr_$$"   # to get a copy of DB into local mapset
 	#   INMAP="tmp_vogb_extr_$$"
 	inmap = input
 
@@ -241,17 +245,20 @@ def main():
 	db_database = db_params['database']
 	db_driver = db_params['driver']
 
-	ret = grass.run_command('db.copy',
-				from_driver = db_driver,
-				from_database = db_database,
-				from_table = db_table,
-				to_table = tmp_vogb)
-	if ret != 0:
-	    grass.fatal(_("Error copying temporary DB"))
+        try:
+            grass.run_command('db.copy',
+                              from_driver=db_driver,
+                              from_database=db_database,
+                              from_table=db_table,
+                              to_table=tmp_vogb)
+        except CalledModuleError:
+            grass.fatal(_("Error copying temporary DB"))
 
-	ret = grass.run_command('v.db.connect', map = tmp_vogb, table = tmp_vogb, quiet = True)
-	if ret != 0:
-	    grass.fatal(_("Error reconnecting temporary DB"))
+        try:
+            grass.run_command('v.db.connect',
+                              map=tmp_vogb, table=tmp_vogb, quiet=True)
+        except CalledModuleError:
+            grass.fatal(_("Error reconnecting temporary DB"))
 
     # export as GPX using v.out.ogr
     if trk:
@@ -273,11 +280,12 @@ def main():
     grass.verbose("Exporting data ...")
 
     tmp_gpx = tmp + ".gpx"
-    ret = grass.run_command('v.out.ogr', input = tmp_vogb, dsn = tmp_gpx,
-			    type = type, format = 'GPX', lco = linetype,
-			    dsco = "GPX_USE_EXTENSIONS=YES", quiet = True)
-    if ret != 0:
-	grass.fatal(_("Error exporting data"))
+    try:
+        grass.run_command('v.out.ogr', input=tmp_vogb, output=tmp_gpx,
+                          type=type, format='GPX', lco=linetype,
+                          dsco="GPX_USE_EXTENSIONS=YES", quiet=True)
+    except CalledModuleError:
+        grass.fatal(_("Error exporting data"))
 
     if format == 'gpx':
 	# short circuit, we have what we came for.

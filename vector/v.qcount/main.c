@@ -59,7 +59,8 @@ int main(int argc, char **argv)
     module = G_define_module();
     G_add_keyword(_("vector"));
     G_add_keyword(_("statistics"));
-    module->description = _("Indices for quadrat counts of sites lists.");
+    G_add_keyword(_("point pattern"));
+    module->description = _("Indices for quadrat counts of vector point lists.");
 
     parm.input = G_define_standard_option(G_OPT_V_INPUT);
 
@@ -68,16 +69,16 @@ int main(int argc, char **argv)
     parm.output = G_define_standard_option(G_OPT_V_OUTPUT);
     parm.output->required = NO;
     parm.output->description =
-	_("Name for output quadrant centres map (number of points is written as category)");
+	_("Name for output quadrant centers map (number of points is written as category)");
 
     parm.n = G_define_option();
-    parm.n->key = "n";
+    parm.n->key = "nquadrats";
     parm.n->type = TYPE_INTEGER;
     parm.n->required = YES;
     parm.n->description = _("Number of quadrats");
 
     parm.r = G_define_option();
-    parm.r->key = "r";
+    parm.r->key = "radius";
     parm.r->type = TYPE_DOUBLE;
     parm.r->required = YES;
     parm.r->description = _("Quadrat radius");

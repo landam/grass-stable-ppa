@@ -70,7 +70,7 @@ int main(int argc, char **argv)
     module = G_define_module();
     G_add_keyword(_("vector"));
     G_add_keyword(_("Linear Reference System"));
-    G_add_keyword(_("networking"));
+    G_add_keyword(_("network"));
     module->description =
 	_("Creates points/segments from input lines, linear reference "
 	  "system and positions read from stdin or a file.");
@@ -151,6 +151,7 @@ int main(int argc, char **argv)
     db_set_handle(&rshandle, database_opt->answer, NULL);
     if (db_open_database(rsdriver, &rshandle) != DB_OK)
 	G_fatal_error(_("Unable to open database for reference table"));
+    db_set_error_handler_driver(rsdriver);
 
     points_read = 0;
     lines_read = 0;

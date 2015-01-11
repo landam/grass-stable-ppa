@@ -23,6 +23,7 @@
    - U_UNKNOWN (XY)
    - U_METERS  (UTM)
    - U_FEET    (SP)
+   - U_USFEET (a few SP)
    - U_DEGREES (LL)
    
   \return units code (see gis.h)
@@ -35,8 +36,6 @@ int G__projection_units(int n)
 	return U_UNKNOWN;
     case PROJECTION_UTM:
 	return U_METERS;
-    case PROJECTION_SP:
-	return U_FEET;
     case PROJECTION_LL:
 	return U_DEGREES;
     default:
@@ -60,8 +59,6 @@ const char *G__projection_name(int n)
 	return "x,y";
     case PROJECTION_UTM:
 	return "UTM";
-    case PROJECTION_SP:
-	return _("State Plane");
     case PROJECTION_LL:
 	return _("Latitude-Longitude");
     case PROJECTION_OTHER:

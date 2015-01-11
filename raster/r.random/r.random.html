@@ -71,8 +71,8 @@ and then use the reclassed raster map layer as input to <em>r.random</em>.
 Spearfish region, result stored in 2D vector map:
 
 <div class="code"><pre>
-g.region rast=elevation.10m -p
-r.random elevation.10m vector_output=elevrand n=100
+g.region raster=elevation.10m -p
+r.random elevation.10m vector=elevrand n=100
 v.db.select elevrand
 v.univar elevrand col=value type=point
 </pre></div>
@@ -83,8 +83,8 @@ Spearfish region with collocated values sampled from landuse map,
 result stored in 3D vector map:
 
 <div class="code"><pre>
-g.region rast=elevation.10m -p
-r.random -d elevation.10m cover=landcover.30m vector_output=luserand3d n=100
+g.region raster=elevation.10m -p
+r.random -d elevation.10m cover=landcover.30m vector=luserand3d n=100
 
 # data output (value: elevation, covervalue: landuse class):
 v.db.select luserand3d
@@ -119,4 +119,4 @@ Central Washington University
 <p>Modified for GRASS 5.0 by Eric G. Miller
 <p>Cover map support by Markus Neteler, 2007
 
-<p><i>Last changed: $Date: 2011-11-08 13:24:20 -0800 (Tue, 08 Nov 2011) $</i>
+<p><i>Last changed: $Date: 2014-12-19 22:55:37 +0100 (Fri, 19 Dec 2014) $</i>

@@ -6,7 +6,7 @@
 # AUTHOR(S):    Soeren Gebbert
 #
 # PURPOSE:      Modify the metadata of a space time dataset
-# COPYRIGHT:    (C) 2011 by the GRASS Development Team
+# COPYRIGHT:    (C) 2011-2014 by the GRASS Development Team
 #
 #               This program is free software under the GNU General Public
 #               License (version 2). Read the file COPYING that comes with GRASS
@@ -65,8 +65,9 @@
 #% description: Update metadata information, temporal and spatial extent from registered maps
 #%end
 
-import grass.temporal as tgis
+
 import grass.script as grass
+import grass.temporal as tgis
 
 ############################################################################
 
@@ -87,7 +88,7 @@ def main():
     dbif = tgis.SQLDatabaseInterfaceConnection()
     dbif.connect()
 
-    stds = tgis.open_old_space_time_dataset(name, type, dbif)
+    stds = tgis.open_old_stds(name, type, dbif)
 
     update = False
     if title:

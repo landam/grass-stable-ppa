@@ -104,6 +104,13 @@ final pass, the threshold is ignored for any segments smaller then
 the set size, thus forcing very small segments to merge with their 
 most similar neighbor.
 
+<h3>Goodness of Fit</h3>
+The <b>goodness</b> of fit for each pixel is calculated as 1 - distance 
+of the pixel to the object it belongs to. The distance is calculated 
+with the selected <b>similarity</b> method. A value of 1 means 
+identical values, perfect fit, and a value of 0 means maximum possible 
+distance, worst possible fit.
+
 <h2>EXAMPLE</h2>
 This example uses the ortho photograph included in the NC Sample 
 Dataset. Set up an imagery group:
@@ -115,7 +122,7 @@ i.group group=ortho_group input=ortho_2001_t792_1m@PERMANENT
 input ortho photograph).
 
 <div class="code"><pre>
-g.region -p rast=ortho_2001_t792_1m n=220446 s=220075 e=639151 w=638592
+g.region -p raster=ortho_2001_t792_1m n=220446 s=220075 e=639151 w=638592
 </pre></div>
 
 Try out a low threshold and check the results.
@@ -155,7 +162,7 @@ they are less similar than required by our threshold):
 
 <p>Set the region to match the entire map(s) in the group.
 <div class="code"><pre>
-g.region -p rast=ortho_2001_t792_1m@PERMANENT
+g.region -p raster=ortho_2001_t792_1m@PERMANENT
 </pre></div>
 
 <p>
@@ -219,5 +226,5 @@ Eric Momsen - North Dakota State University<br>
 Markus Metz (GSoC Mentor)
 
 <p>
-<i>Last changed: $Date: 2013-12-17 22:29:07 +0100 (Tue, 17 Dec 2013) $</i>
+<i>Last changed: $Date: 2014-12-19 22:55:37 +0100 (Fri, 19 Dec 2014) $</i>
 

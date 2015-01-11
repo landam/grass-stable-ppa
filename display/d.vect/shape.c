@@ -7,13 +7,6 @@
 
 static int ncolor_rules_skipped = 0;
 
-static void error_handler(void *p)
-{
-    dbDriver *driver = (dbDriver *) p;
-    
-    db_close_database_shutdown_driver(driver);
-}
-
 int get_num_color_rules_skipped()
 {
     return ncolor_rules_skipped;
@@ -50,9 +43,7 @@ int display_shape(struct Map_info *Map, int type, struct cat_list *Clist, const 
 	if (!driver)
 	    G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 			  fi->database, fi->driver);
-
-	/* add error handler */
-	G_add_error_handler(error_handler, driver);
+        db_set_error_handler_driver(driver);
     }
     
     /* fisrt search for color table */
@@ -183,9 +174,6 @@ int display_shape(struct Map_info *Map, int type, struct cat_list *Clist, const 
     }
 
     if (open_db) {
-	/* remove error handler */
-	G_remove_error_handler(error_handler, driver);
-	
 	db_close_database_shutdown_driver(driver);
     }
 
@@ -208,7 +196,7 @@ int display_shape(struct Map_info *Map, int type, struct cat_list *Clist, const 
     stat = 0;
     if (type & GV_AREA && Vect_get_num_primitives(Map, GV_CENTROID | GV_BOUNDARY) > 0)
 	stat += display_area(Map, Clist, window, 
-			     type & GV_BOUNDARY ? bcolor : NULL, fcolor, chcat,
+			     bcolor, fcolor, chcat,
 			     id_flag, cats_colors_flag,
 			     default_width, width_scale,
 			     z_style ? &zcolors : NULL,

@@ -13,10 +13,13 @@ with:
 
 <h2>NOTES</h2>
 
-Do not use absolute path names for the <b>output</b> map/file.
+Do not use absolute path names for the <b>config</b> and <b>output</b>
+file/map parameters.
+
 If the "moving window" method was selected in <b>g.gui.rlisetup</b>, then the
 output will be a raster map, otherwise an ASCII file will be generated in
-the <tt>$HOME/.grass7/r.li/output/</tt> folder.
+the folder <tt>C:\Users\userxy\AppData\Roaming\GRASS7\r.li\output\</tt>
+(MS-Windows) or <tt>$HOME/.grass7/r.li/output/</tt> (GNU/Linux).
 <p>
 <!-- TODO: verify next: -->
 If the input raster map contains only NULL values then <em>r.li.shape</em>
@@ -33,10 +36,25 @@ r.li.shape input=my_map conf=my_conf output=my_out
 
 Forest map (Spearfish sample dataset) example:
 <div class="code"><pre>
-g.region rast=landcover.30m -p
+g.region raster=landcover.30m -p
 r.mapcalc "forests = if(landcover.30m >= 41 && landcover.30m <= 43,1,null())"
 r.li.shape input=forests conf=movwindow7 out=forests_shape_mov7
 r.univar forests_shape_mov7
+</pre></div>
+<p>
+
+Forest map (North Carolina sample dataset) example:
+<div class="code"><pre>
+g.region raster=landclass96 -p
+r.mapcalc "forests = if(landclass96 == 5, 1, null() )"
+r.li.shape input=forests conf=movwindow7 out=forests_shape_mov7
+
+# verify
+r.univar forests_shape_mov7
+r.to.vect input=forests output=forests type=area
+d.mon wx0
+d.rast forests_shape_mov7
+d.vect forests type=boundary
 </pre></div>
 
 <h2>SEE ALSO</h2>
@@ -56,4 +74,4 @@ University of Pisa (Italy).<br>
 Commission from Faunalia Pontedera (PI) (www.faunalia.it)<br>
 
 <p>
-<i>Last changed: $Date: 2014-03-02 23:34:11 +0100 (Sun, 02 Mar 2014) $</i>
+<i>Last changed: $Date: 2014-12-19 22:55:37 +0100 (Fri, 19 Dec 2014) $</i>

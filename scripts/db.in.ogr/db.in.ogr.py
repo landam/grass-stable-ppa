@@ -6,7 +6,7 @@
 # AUTHOR(S):   	Markus Neteler
 # PURPOSE:      imports attribute tables in various formats
 #               Converted to Python by Glynn Clements
-# COPYRIGHT:    (C) 2007, 2008 by Markus Neteler and the GRASS Development Team
+# COPYRIGHT:    (C) 2007-2014 by Markus Neteler and the GRASS Development Team
 #
 #               This program is free software under the GNU General Public
 #               License (>=v2). Read the file COPYING that comes with GRASS
@@ -15,16 +15,14 @@
 #############################################################################
 
 #%Module
-#%  description: Imports attribute tables in various formats.
-#%  keywords: database
-#%  keywords: attribute table
+#% description: Imports attribute tables in various formats.
+#% keywords: database
+#% keywords: import
+#% keywords: attribute table
 #%End
 
-#%option G_OPT_F_INPUT
-#% key: dsn
-#% gisprompt: old,bin,file
+#%option G_OPT_F_BIN_INPUT
 #% description: Table file to be imported or DB connection string
-#% required : yes
 #%end
 
 #%option
@@ -50,12 +48,13 @@
 #% required : no
 #%end
 
-import sys
 import os
 import grass.script as grass
+from grass.exceptions import CalledModuleError
+
 
 def main():
-    dsn = options['dsn']
+    input = options['input']
     db_table = options['db_table']
     output = options['output']
     key = options['key']
@@ -64,8 +63,6 @@ def main():
 
     if db_table:
 	input = db_table
-    else:
-	input = dsn
 
     if not output:
 	tmpname = input.replace('.', '_')
@@ -85,13 +82,15 @@ def main():
     else:
 	layer = None
 
-    if grass.run_command('v.in.ogr', flags = 'o', dsn = dsn, output = output,
-			 layer = layer, quiet = True) != 0:
-	if db_table:
-	    grass.fatal(_("Input table <%s> not found or not readable") % input)
-	else:
-	    grass.fatal(_("Input DSN <%s> not found or not readable") % input)
-    
+    try:
+        grass.run_command('v.in.ogr', flags='o', input=input, output=output,
+                          layer=layer, quiet=True)
+    except CalledModuleError:
+        if db_table:
+            grass.fatal(_("Input table <%s> not found or not readable") % input)
+        else:
+            grass.fatal(_("Input DSN <%s> not found or not readable") % input)
+
     # rename ID col if requested from cat to new name
     if key:
 	grass.write_command('db.execute', quiet = True,
@@ -108,7 +107,7 @@ def main():
     else:
 	# remove the vector part
 	grass.run_command('v.db.connect', quiet = True, map = output, layer = '1', flags = 'd')
-	grass.run_command('g.remove', quiet = True, vect = output)
+	grass.run_command('g.remove', flags = 'f', quiet = True, type = 'vector', name = output)
 
     # get rid of superfluous auto-added cat column (and cat_ if present)
     nuldev = file(os.devnull, 'w+')

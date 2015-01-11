@@ -66,7 +66,7 @@ int main(int argc, char **argv)
     for (i = 0; i < 3; i++) {
 	char buff[80];
 
-	sprintf(buff, _("Name of raster map to be used for '%s'"),
+	sprintf(buff, _("Name of raster map to be used for <%s>"),
 		color_names[i]);
 
 	B[i].opt = G_define_standard_option(G_OPT_R_MAP);
@@ -106,7 +106,7 @@ int main(int argc, char **argv)
     /* read in current window */
     G_get_window(&window);
 
-    D_cell_draw_begin();
+    D_raster_draw_begin();
 
     next_row = 0;
     for (row = 0; row < window.rows;) {
@@ -127,7 +127,7 @@ int main(int argc, char **argv)
 	    break;
     }
     G_percent(window.rows, window.rows, 5);
-    D_cell_draw_end();
+    D_raster_draw_end();
     
     D_save_command(G_recreate_command());
     D_close_driver();

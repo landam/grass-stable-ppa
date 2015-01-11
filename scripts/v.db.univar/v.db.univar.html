@@ -15,7 +15,7 @@ A database connection must be defined for the selected vector layer.
 In this example, random points are sampled from the elevation map
 (North Carolina sample dataset) and univariate statistics performed:
 <div class="code"><pre>
-g.region rast=elevation -p
+g.region raster=elevation -p
 v.random output=samples n=100
 v.db.addtable samples column="heights double precision"
 v.what.rast samples raster=elevation colum=heights
@@ -38,4 +38,4 @@ v.db.univar samples colum=heights
  Michael Barton, Arizona State University
 <p>and authors of <em>r.univar.sh</em>
 
-<p><i>Last changed: $Date: 2013-07-16 16:37:10 +0200 (Tue, 16 Jul 2013) $</i>
+<p><i>Last changed: $Date: 2014-12-19 22:55:37 +0100 (Fri, 19 Dec 2014) $</i>

@@ -64,7 +64,7 @@ contain only the imagery band files that the user wishes to
 classify.  Note that this subgroup must contain more than
 one band file.  The purpose of the group and subgroup is to
 collect map layers for classification or analysis. The
-<em>sigfile</em> is the file to contain result signatures
+<em>signaturefile</em> is the file to contain result signatures
 which can be used as input for
 
 <em><a href="i.maxlik.html">i.maxlik</a></em>. 
@@ -93,7 +93,7 @@ subgroup by running the GRASS program
 before
 running <em>i.cluster</em>.
 
-<dt><b>sigfile=</b><em>name</em> 
+<dt><b>signaturefile=</b><em>name</em> 
 
 <dd>The name assigned to output signature file which
 contains signatures of classes and can be used as the input
@@ -219,21 +219,27 @@ Preparing the statistics for unsupervised classification of
 a LANDSAT subscene in North Carolina:
 
 <div class="code"><pre>
-g.region rast=lsat7_2002_10 -p
+g.region raster=lsat7_2002_10 -p
 
 # store VIZ, NIR, MIR into group/subgroup
-i.group group=my_lsat7_2002 subgroup=my_lsat7_2002 \
+i.group group=lsat7_2002 subgroup=lsat7_2002 \
   input=lsat7_2002_10,lsat7_2002_20,lsat7_2002_30,lsat7_2002_40,lsat7_2002_50,lsat7_2002_70
 
-i.cluster group=my_lsat7_2002 subgroup=my_lsat7_2002 sigfile=sig_clust_lsat2002 \
-          classes=10 report=rep_clust_lsat2002.txt
+i.cluster group=my_lsat7_2002 subgroup=my_lsat7_2002 \
+  signaturefile=sig_cluster_lsat2002 \
+  classes=10 report=rep_clust_lsat2002.txt
 </pre></div>
 
 To complete the unsupervised classification, <em>i.maxlik</em> is subsequently used.
+See example in its manual page.
 
 <h2>SEE ALSO</h2>
 
-The GRASS 4 <em>
+<a href="http://grasswiki.osgeo.org/wiki/Image_processing">Image processing</a>
+and
+<a href="http://grasswiki.osgeo.org/wiki/Image_classification">Image classification</a>
+wiki pages and for historical reference also
+the GRASS GIS 4<em>
 <a href="http://grass.osgeo.org/gdp/imagery/grass4_image_processing.pdf">Image
 Processing manual</a></em>
 
@@ -260,4 +266,4 @@ Tao Wen,
 University of Illinois at 
 Urbana-Champaign, 
 Illinois
-<p><i>Last changed: $Date: 2013-05-11 15:23:40 +0200 (Sat, 11 May 2013) $</i>
+<p><i>Last changed: $Date: 2014-12-20 06:05:23 +0100 (Sat, 20 Dec 2014) $</i>

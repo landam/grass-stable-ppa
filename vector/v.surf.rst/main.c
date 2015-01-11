@@ -203,25 +203,25 @@ int main(int argc, char *argv[])
     parm.aspect->guisection = _("Outputs");
 
     parm.pcurv = G_define_standard_option(G_OPT_R_OUTPUT);
-    parm.pcurv->key = "pcurv";
+    parm.pcurv->key = "pcurvature";
     parm.pcurv->required = NO;
     parm.pcurv->description = _("Name for output profile curvature raster map");
     parm.pcurv->guisection = _("Outputs");
 
     parm.tcurv = G_define_standard_option(G_OPT_R_OUTPUT);
-    parm.tcurv->key = "tcurv";
+    parm.tcurv->key = "tcurvature";
     parm.tcurv->required = NO;
     parm.tcurv->description = _("Name for output tangential curvature raster map");
     parm.tcurv->guisection = _("Outputs");
 
     parm.mcurv = G_define_standard_option(G_OPT_R_OUTPUT);
-    parm.mcurv->key = "mcurv";
+    parm.mcurv->key = "mcurvature";
     parm.mcurv->required = NO;
     parm.mcurv->description = _("Name for output mean curvature raster map");
     parm.mcurv->guisection = _("Outputs");
 
     parm.devi = G_define_standard_option(G_OPT_V_OUTPUT);
-    parm.devi->key = "devi";
+    parm.devi->key = "deviations";
     parm.devi->required = NO;
     parm.devi->description = _("Name for output deviations vector point map");
     parm.devi->guisection = _("Outputs");
@@ -269,7 +269,7 @@ int main(int argc, char *argv[])
     parm.rsm->guisection = _("Parameters");
 
     parm.scol = G_define_option();
-    parm.scol->key = "scolumn";
+    parm.scol->key = "smooth_column";
     parm.scol->type = TYPE_STRING;
     parm.scol->required = NO;
     parm.scol->description =
@@ -310,7 +310,7 @@ int main(int argc, char *argv[])
     parm.dmax->guisection = _("Parameters");
 
     parm.zmult = G_define_option();
-    parm.zmult->key = "zmult";
+    parm.zmult->key = "zscale";
     parm.zmult->type = TYPE_DOUBLE;
     parm.zmult->answer = ZMULT;
     parm.zmult->required = NO;
@@ -586,13 +586,13 @@ int main(int argc, char *argv[])
 	if (driver2 == NULL)
 	    G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 			  ff->database, ff->driver);
+        db_set_error_handler_driver(driver2);
 
 	if (db_execute_immediate(driver2, &sql2) != DB_OK) {
-	    db_close_database(driver2);
-	    db_shutdown_driver(driver2);
 	    G_fatal_error(_("Unable to create table: '%s'"),
 			  db_get_string(&sql2));
 	}
+	db_begin_transaction(driver2);
 	count = 1;
 
     }
@@ -668,7 +668,7 @@ int main(int argc, char *argv[])
 
     if (dtens) {
 	params.fi = params.fi * dnorm / 1000.;
-	G_debug(1, "dnorm = %f, rescaled tension = %f", dnorm, params.fi);
+	G_verbose_message("dnorm = %f, rescaled tension = %f", dnorm, params.fi);
     }
     
     bitmask = IL_create_bitmask(&params);
@@ -752,8 +752,8 @@ int main(int argc, char *argv[])
 	unlink(Tmp_file_xy);
 
     if (cvdev != NULL || devi != NULL) {
-	/*  db_close_database_shutdown_driver ( driver2 ); */
-	db_close_database(driver2);
+	db_commit_transaction(driver2);
+	db_close_database_shutdown_driver(driver2);
 	Vect_build(&Map2);
 	Vect_close(&Map2);
     }

@@ -14,7 +14,7 @@
  *               Markus Metz
  * PURPOSE:      calculate a transformation matrix and then convert x,y cell 
  *               coordinates to standard map coordinates for each pixel in the 
- *               image (control points can come from i.points or i.vpoints)
+ *               image (control points can come from g.gui.gcp)
  * COPYRIGHT:    (C) 2002-2011 by the GRASS Development Team
  *
  *               This program is free software under the GNU General Public
@@ -121,10 +121,10 @@ int main(int argc, char *argv[])
     val->options = "1-3";
     val->answer = "1";
     val->required = YES;
-    val->description = _("Rectification polynom order (1-3)");
+    val->description = _("Rectification polynomial order (1-3)");
 
     tres = G_define_option();
-    tres->key = "res";
+    tres->key = "resolution";
     tres->type = TYPE_DOUBLE;
     tres->required = NO;
     tres->description = _("Target resolution (ignored if -c flag used)");

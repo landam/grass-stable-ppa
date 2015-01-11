@@ -20,8 +20,6 @@
 #include <grass/config.h>
 #include "parameters.h"
 
-
-
 /* ************************************************************************* */
 /* PARAMETERS ************************************************************** */
 /* ************************************************************************* */
@@ -48,11 +46,11 @@ void set_params()
     param.null_val->answer = "-99999.99";
 
     param.elev = G_define_option();
-    param.elev->key = "elevation2d";
+    param.elev->key = "z";
     param.elev->type = TYPE_DOUBLE;
     param.elev->required = NO;
     param.elev->description =
-	_("Elevation (if no elevation map is specified)");
+	_("Constant elevation (if no elevation map is specified)");
     param.elev->answer = "0.0";
 
     param.point = G_define_flag();
@@ -68,7 +66,7 @@ void set_params()
     param.rgbmaps->multiple = YES;
     param.rgbmaps->guisection = "Advanced options";
     param.rgbmaps->description =
-	_("Three (r,g,b) raster maps to create rgb values [redmap,greenmap,bluemap]");
+	_("Three (r,g,b) raster maps to create RGB values [redmap,greenmap,bluemap]");
 
     param.vectmaps = G_define_option();
     param.vectmaps->key = "vectormaps";
@@ -81,15 +79,15 @@ void set_params()
 	_("Three (x,y,z) raster maps to create vector values [xmap,ymap,zmap]");
 
     param.elevscale = G_define_option();
-    param.elevscale->key = "elevscale";
+    param.elevscale->key = "zscale";
     param.elevscale->type = TYPE_DOUBLE;
     param.elevscale->required = NO;
-    param.elevscale->guisection = "Advanced options";
     param.elevscale->description = _("Scale factor for elevation");
+    param.elevscale->guisection = "Advanced options";
     param.elevscale->answer = "1.0";
 
     param.decimals = G_define_option();
-    param.decimals->key = "dp";
+    param.decimals->key = "precision";
     param.decimals->type = TYPE_INTEGER;
     param.decimals->required = NO;
     param.decimals->multiple = NO;
@@ -121,13 +119,13 @@ void set_params()
     param.origin->key = 'o';
     param.origin->guisection = "Advanced options";
     param.origin->description =
-	_("Scale factor effects the origin (if no elevation map is given)");
+	_("Scale factor affects the origin (if no elevation map is given)");
 
     param.coorcorr = G_define_flag();
     param.coorcorr->key = 'c';
     param.coorcorr->guisection = "Advanced options";
     param.coorcorr->description =
-	_("Correct the coordinates to fit the VTK-OpenGL precision");
+	_("Correct the coordinates to match the VTK-OpenGL precision");
 
 
     /* 

@@ -1,20 +1,20 @@
-"""!@package grass.temporal
-
-@brief GRASS Python scripting module (temporal GIS functions)
-
-Temporal GIS related functions to be used in Python scripts.
+"""
+Extract functions for space time raster, 3d raster and vector datasets
 
 (C) 2012-2013 by the GRASS Development Team
 This program is free software under the GNU General Public
 License (>=v2). Read the file COPYING that comes with GRASS
 for details.
 
-@author Soeren Gebbert
+:authors: Soeren Gebbert
 """
 
+from grass.script.utils import get_num_suffix
 from space_time_datasets import *
 from open_stds import *
 from multiprocessing import Process
+import grass.script as gscript
+from grass.exceptions import CalledModuleError
 
 ############################################################################
 
@@ -22,28 +22,28 @@ from multiprocessing import Process
 def extract_dataset(input, output, type, where, expression, base, nprocs=1,
                     register_null=False, layer=1,
                     vtype="point,line,boundary,centroid,area,face"):
-    """!Extract a subset of a space time raster, raster3d or vector dataset
+    """Extract a subset of a space time raster, raster3d or vector dataset
 
        A mapcalc expression can be provided to process the temporal extracted
        maps.
        Mapcalc expressions are supported for raster and raster3d maps.
 
-       @param input The name of the input space time raster/raster3d dataset
-       @param output The name of the extracted new space time raster/raster3d
+       :param input: The name of the input space time raster/raster3d dataset
+       :param output: The name of the extracted new space time raster/raster3d
                      dataset
-       @param type The type of the dataset: "raster", "raster3d" or vector
-       @param where The temporal SQL WHERE statement for subset extraction
-       @param expression The r(3).mapcalc expression or the v.extract where
+       :param type: The type of the dataset: "raster", "raster3d" or vector
+       :param where: The temporal SQL WHERE statement for subset extraction
+       :param expression: The r(3).mapcalc expression or the v.extract where
                          statement
-       @param base The base name of the new created maps in case a mapclac
+       :param base: The base name of the new created maps in case a mapclac
                    expression is provided
-       @param nprocs The number of parallel processes to be used for mapcalc
+       :param nprocs: The number of parallel processes to be used for mapcalc
                      processing
-       @param register_null Set this number True to register empty maps
+       :param register_null: Set this number True to register empty maps
                             (only raster and raster3d maps)
-       @param layer The vector layer number to be used when no timestamped
+       :param layer: The vector layer number to be used when no timestamped
               layer is present, default is 1
-       @param vtype The feature type to be extracted for vector maps, default
+       :param vtype: The feature type to be extracted for vector maps, default
               is point,line,boundary,centroid,area and face
     """
 
@@ -58,10 +58,9 @@ def extract_dataset(input, output, type, where, expression, base, nprocs=1,
     dbif = SQLDatabaseInterfaceConnection()
     dbif.connect()
 
-    sp = open_old_space_time_dataset(input, type, dbif)
+    sp = open_old_stds(input, type, dbif)
     # Check the new stds
-    new_sp = check_new_space_time_dataset(output, type, dbif,
-                                          core.overwrite())
+    new_sp = check_new_stds(output, type, dbif, gscript.overwrite())
     if type == "vector":
         rows = sp.get_registered_maps(
             "id,name,mapset,layer", where, "start_time", dbif)
@@ -86,7 +85,9 @@ def extract_dataset(input, output, type, where, expression, base, nprocs=1,
                 if count % 10 == 0:
                     msgr.percent(count, num_rows, 1)
 
-                map_name = "%s_%i" % (base, count)
+                map_name = "{base}_{suffix}".format(base=base,
+                                                    suffix=get_num_suffix(count,
+                                                                          num_rows))
 
                 # We need to modify the r(3).mapcalc expression
                 if type != "vector":
@@ -98,13 +99,14 @@ def extract_dataset(input, output, type, where, expression, base, nprocs=1,
                     # We need to build the id
                     map_id = AbstractMapDataset.build_id(map_name, mapset)
                 else:
-                    map_id = AbstractMapDataset.build_id(map_name, mapset, row["layer"])
+                    map_id = AbstractMapDataset.build_id(map_name, mapset,
+                                                         row["layer"])
 
                 new_map = sp.get_new_map_instance(map_id)
 
                 # Check if new map is in the temporal database
                 if new_map.is_in_db(dbif):
-                    if core.overwrite():
+                    if gscript.overwrite():
                         # Remove the existing temporal database entry
                         new_map.delete(dbif)
                         new_map = sp.get_new_map_instance(map_id)
@@ -130,16 +132,16 @@ def extract_dataset(input, output, type, where, expression, base, nprocs=1,
                                  % expression)
                     if row["layer"]:
                         proc_list.append(Process(target=run_vector_extraction,
-                                                 args=(row["name"] + "@" + \
-                                                       row["mapset"],
-                                                 map_name, row["layer"],
-                                                 vtype, expression)))
+                                                 args=(row["name"] + "@" +
+                                                       row["mapset"], map_name,
+                                                       row["layer"], vtype,
+                                                       expression)))
                     else:
                         proc_list.append(Process(target=run_vector_extraction,
-                                                 args=(row["name"] + "@" + \
-                                                       row["mapset"],
-                                                 map_name, layer, vtype,
-                                                 expression)))
+                                                 args=(row["name"] + "@" +
+                                                       row["mapset"], map_name,
+                                                       layer, vtype,
+                                                       expression)))
 
                 proc_list[proc_count].start()
                 proc_count += 1
@@ -165,11 +167,9 @@ def extract_dataset(input, output, type, where, expression, base, nprocs=1,
         msgr.percent(0, num_rows, 1)
 
         temporal_type, semantic_type, title, description = sp.get_initial_values()
-        new_sp = open_new_space_time_dataset(output, type,
-                                             sp.get_temporal_type(),
-                                             title, description,
-                                             semantic_type, dbif,
-                                             core.overwrite())
+        new_sp = open_new_stds(output, type, sp.get_temporal_type(), title, 
+                               description, semantic_type, dbif,
+                               gscript.overwrite())
 
         # collect empty maps to remove them
         empty_maps = []
@@ -234,11 +234,14 @@ def extract_dataset(input, output, type, where, expression, base, nprocs=1,
                     names += ",%s" % (map.get_name())
                 count += 1
             if type == "raster":
-                core.run_command("g.remove", rast=names, quiet=True)
+                gscript.run_command("g.remove", flags='f', type='raster',
+                                    name=names, quiet=True)
             elif type == "raster3d":
-                core.run_command("g.remove", rast3d=names, quiet=True)
+                gscript.run_command("g.remove", flags='f', type='raster_3d',
+                                    name=names, quiet=True)
             elif type == "vector":
-                core.run_command("g.remove", vect=names, quiet=True)
+                gscript.run_command("g.remove", flags='f', type='vector',
+                                    name=names, quiet=True)
 
     dbif.close()
 
@@ -247,18 +250,27 @@ def extract_dataset(input, output, type, where, expression, base, nprocs=1,
 
 def run_mapcalc2d(expr):
     """Helper function to run r.mapcalc in parallel"""
-    exit(core.run_command("r.mapcalc", expression=expr,
-                            overwrite=core.overwrite(), quiet=True))
+    try:
+        gscript.run_command("r.mapcalc", expression=expr,
+                            overwrite=gscript.overwrite(), quiet=True)
+    except CalledModuleError:
+        exit(1)
 
 
 def run_mapcalc3d(expr):
     """Helper function to run r3.mapcalc in parallel"""
-    exit(core.run_command("r3.mapcalc", expression=expr,
-                            overwrite=core.overwrite(), quiet=True))
+    try:
+        gscript.run_command("r3.mapcalc", expression=expr,
+                            overwrite=gscript.overwrite(), quiet=True)
+    except CalledModuleError:
+        exit(1)
 
 
 def run_vector_extraction(input, output, layer, type, where):
     """Helper function to run r.mapcalc in parallel"""
-    exit(core.run_command("v.extract", input=input, output=output,
+    try:
+        gscript.run_command("v.extract", input=input, output=output,
                             layer=layer, type=type, where=where,
-                            overwrite=core.overwrite(), quiet=True))
+                            overwrite=gscript.overwrite(), quiet=True)
+    except CalledModuleError:
+        exit(1)

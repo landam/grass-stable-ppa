@@ -39,6 +39,8 @@ struct state {
 
     char **error;
     int n_errors;
+
+    struct Key_Value *renamed_options;
 };
 
 extern struct state *st;
@@ -53,6 +55,10 @@ void G__script(void);
 void G__wps_print_process_description(void);
 int  G__uses_new_gisprompt(void);
 void G__print_keywords(FILE *, void (*)(FILE *, const char *));
+
+void G__check_option_rules(void);
+void G__describe_option_rules(void);
+int G__has_required_rule(void);
 
 #endif
 

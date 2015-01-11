@@ -42,12 +42,12 @@
 
 int main(int argc, char *argv[])
 {
-    struct Map_info In, Out;
+    struct Map_info In, Out, Error;
     struct line_pnts *Points;
     struct line_cats *Cats;
     int i, type, iter;
     struct GModule *module;	/* GRASS module for parsing arguments */
-    struct Option *map_in, *map_out, *thresh_opt, *method_opt,
+    struct Option *map_in, *map_out, *error_out, *thresh_opt, *method_opt,
 	*look_ahead_opt;
     struct Option *iterations_opt, *cat_opt, *alpha_opt, *beta_opt, *type_opt;
     struct Option *field_opt, *where_opt, *reduction_opt, *slide_opt;
@@ -93,6 +93,11 @@ int main(int argc, char *argv[])
     
     map_out = G_define_standard_option(G_OPT_V_OUTPUT);
 
+    error_out = G_define_standard_option(G_OPT_V_OUTPUT);
+    error_out->key = "error";
+    error_out->required = NO;
+    error_out->description =
+	_("Error map of all lines and boundaries not being generalized due to topology issues or over-simplification");
 
     method_opt = G_define_option();
     method_opt->key = "method";
@@ -317,12 +322,24 @@ int main(int argc, char *argv[])
     if (Vect_open_old2(&In, map_in->answer, "", field_opt->answer) < 1)
 	G_fatal_error(_("Unable to open vector map <%s>"), map_in->answer);
 
+    if (Vect_get_num_primitives(&In, mask_type) == 0) {
+	G_warning(_("No lines found in input map <%s>"), map_in->answer);
+	Vect_close(&In);
+	exit(EXIT_SUCCESS);
+    }
     with_z = Vect_is_3d(&In);
 
     if (0 > Vect_open_new(&Out, map_out->answer, with_z)) {
 	Vect_close(&In);
 	G_fatal_error(_("Unable to create vector map <%s>"), map_out->answer);
     }
+
+    if(error_out->answer)
+        if (0 > Vect_open_new(&Error, error_out->answer, with_z)) {
+	    Vect_close(&In);
+	    G_fatal_error(_("Unable to create error vector map <%s>"), error_out->answer);
+        }
+
 
 
     Vect_copy_head_data(&In, &Out);
@@ -533,12 +550,16 @@ int main(int argc, char *argv[])
 	    if (Points->n_points < 2) {
 		after = APoints->n_points;
 		n_oversimplified++;
+                if(error_out->answer)
+		    Vect_write_line(&Error, type, APoints, Cats);
 	    }
 	    /* check for topology corruption */
 	    else if (type == GV_BOUNDARY) {
 		if (!check_topo(&Out, i, APoints, Points, Cats)) {
 		    after = APoints->n_points;
 		    not_modified_boundaries++;
+                    if(error_out->answer)
+		        Vect_write_line(&Error, type, APoints, Cats);
 		}
 		else
 		    after = Points->n_points;
@@ -561,12 +582,18 @@ int main(int argc, char *argv[])
 
 	/* make sure that clean topo is built at the end */
 	Vect_build_partial(&Out, GV_BUILD_NONE);
+        if(error_out->answer)
+	    Vect_build_partial(&Error, GV_BUILD_NONE);
     }
 
     Vect_build(&Out);
+    if(error_out->answer)
+        Vect_build(&Error);
 
     Vect_close(&In);
     Vect_close(&Out);
+    if(error_out->answer)
+        Vect_close(&Error);
 
     G_message("-----------------------------------------------------");
     if (total_input != 0 && total_input != total_output)

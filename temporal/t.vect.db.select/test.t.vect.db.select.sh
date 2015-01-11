@@ -28,7 +28,7 @@ t.vect.db.select input=prec_observer where="cat = 1" separator="  |  " columns=o
 # Time instances
 t.register --o input=precip_abs1 maps=prec_1,prec_2,prec_3,prec_4,prec_5,prec_6 start="2004-01-01 00:00:00" increment="3 months"
 
-t.vect.observe.strds --o input=prec strds=precip_abs1 output=prec_observer vector=prec_observer 
+t.vect.observe.strds --o input=prec strds=precip_abs1 output=prec_observer vector=prec_observer column=observation
 t.vect.list input=prec_observer
 t.vect.db.select input=prec_observer
 t.vect.db.select input=prec_observer where="cat = 1" separator="  |  "
@@ -37,8 +37,8 @@ t.vect.db.select input=prec_observer where="cat = 1" separator="  |  "
 t.unregister type=rast maps=prec_1,prec_2,prec_3,prec_4,prec_5,prec_6
 t.remove type=strds input=precip_abs1
 t.remove type=stvds input=prec_observer
-t.unregister type=vect maps=prec_observer:1,prec_observer:2,prec_observer:3,prec_observer:4,prec_observer:5,prec_observer:6
+t.unregister type=vector maps=prec_observer:1,prec_observer:2,prec_observer:3,prec_observer:4,prec_observer:5,prec_observer:6
 
-g.remove vect=prec_observer,test_extract
-g.remove rast=prec_1,prec_2,prec_3,prec_4,prec_5,prec_6
+g.remove -f type=vector name=prec_observer,test_extract
+g.remove -f type=rast name=prec_1,prec_2,prec_3,prec_4,prec_5,prec_6
 

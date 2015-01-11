@@ -240,7 +240,9 @@ int Vect__open_old(struct Map_info *Map, const char *name, const char *mapset,
         }
         else {
             char file_path[GPATH_MAX];
-            
+            /* reduce to current mapset if search path was set */
+            if(strcmp(Map->mapset, "") == 0)
+                Map->mapset = G_store(G_mapset());
             /* temporary map: reduce to current mapset if search path
              * was set */
             if (strcmp(Map->mapset, "") == 0)
@@ -404,7 +406,7 @@ int Vect__open_old(struct Map_info *Map, const char *name, const char *mapset,
             if (!ogr_mapset) {
                 /* for direct OGR read access is built pseudo-topology on the fly */
                 G_warning(_("Unable to open vector map <%s> on level %d. "
-                            "Try to rebuild vector topology by v.build."),
+                            "Try to rebuild vector topology with v.build."),
                           Vect_get_full_name(Map), level_request);
                 return -1;
             }
@@ -421,13 +423,8 @@ int Vect__open_old(struct Map_info *Map, const char *name, const char *mapset,
             if (level >= 2) {   /* support files opened */
                 dig_free_plus(&(Map->plus));
             }
-            if (level_request == 0)
-                G_fatal_error(_("Unable to open vector map <%s>"),
-                              Vect_get_full_name(Map));
-            else
-                G_fatal_error(_("Unable to open vector map <%s> on level %d. "
-                                "Try to rebuild vector topology by v.build."),
-                              Vect_get_full_name(Map), level_request);
+	    G_fatal_error(_("Unable to open vector map <%s>"),
+			  Vect_get_full_name(Map));
             return -1;
         }
         if (ogr_mapset && !head_only && level_request != 1) {
@@ -768,7 +765,7 @@ int open_new(struct Map_info *Map, const char *name, int with_z, int is_tmp)
     /* check for fully-qualified map name */
     if (G_name_is_fully_qualified(name, xname, xmapset)) {
         if (strcmp(xmapset, G_mapset()) != 0) {
-            G_warning(_("Unable to create new vector map: <%s> is not the current mapset (%s)"),
+            G_warning(_("Unable to create vector map: <%s> is not in the current mapset (%s)"),
                       name, G_mapset());
             return -1;
         }
@@ -777,7 +774,7 @@ int open_new(struct Map_info *Map, const char *name, int with_z, int is_tmp)
 
     /* check for [A-Za-z][A-Za-z0-9_]* in name */
     if (Vect_legal_filename(name) < 0) {
-        G_fatal_error(_("Unable to create vector map <%s>. Name is not SQL compliant."),
+        G_fatal_error(_("Unable to create vector map: <%s> is not SQL compliant"),
                       name);
         return -1;
     }
@@ -859,7 +856,9 @@ int open_new(struct Map_info *Map, const char *name, int with_z, int is_tmp)
     dig_init_plus(&(Map->plus));
 
     /* open new spatial index */
-    Vect_open_sidx(Map, 2);
+    if (Vect_open_sidx(Map, 2) < 0)
+	G_fatal_error(_("Unable to open spatial index file for vector map <%s>"),
+			Vect_get_full_name(Map));
 
     Map->open = VECT_OPEN_CODE;
     Map->head_only = FALSE;
@@ -1164,6 +1163,7 @@ int Vect_open_topo(struct Map_info *Map, int head_only)
   \param[in,out] Map pointer to Map_info
   \param mode 0 old, 1 update, 2 new
   
+  \return 1 if sidx file is not available
   \return 0 on success
   \return -1 on error
 */

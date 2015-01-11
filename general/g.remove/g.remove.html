@@ -1,58 +1,37 @@
 <h2>DESCRIPTION</h2>
 
-<em>g.remove</em> allows the user to remove specified data
-base element files from the current mapset.  
+<em>g.remove</em> removes data files matching a pattern given by wildcards or
+POSIX Extended Regular Expressions. If the <b>-f</b> force flag is not given
+then nothing is removed, instead the list of selected file names is printed to
+<tt>stdout</tt> as a preview of the files to be deleted.
 
-<h2>EXAMPLE</h2>
+<h2>EXAMPLES</h2>
 
-For example, the below command will cause the raster maps
-named <em>soils</em>, <em>slope</em>, and <em>temp</em>,
-the vector maps named <em>roads</em> and <em>rail</em>,
-and the
-
-
-<a href="i.group.html">imagery</a> group files
-
-named <em>nhap.1</em> and <em>nhap.2</em>, and these files'
-associated support files (e.g., cell header files, category
-files, etc.), to be removed from the user's current
-mapset.
-
+Delete <tt>map1</tt> and <tt>map2</tt> raster maps in the current mapset:
 <div class="code"><pre>
-g.remove rast=soils,slope,temp vect=roads,rail group=nhap.1,nhap.2
+g.remove -f type=raster name=tmp1,tmp2
 </pre></div>
 
-<h2>NOTE</h2>
+Delete all raster and vector maps starting with "<tt>tmp_</tt>" in the current
+mapset:
+<div class="code"><pre>
+# show matching raster and vector maps but do not delete yet (as verification)
+g.remove type=raster,vector pattern="tmp_*"
 
-If a particular data base element file has support files
-associated with it (e.g., as is commonly the case with
-raster maps), <em>g.remove</em> will remove these support
-files along with the data base element file specified.
+# actually delete the matching raster and vector maps
+g.remove -f type=raster,vector pattern="tmp_*"
+</pre></div>
 
-<p>
-The user can only use <em>g.remove</em> to remove data
-files existing under the user's <em>current mapset</em>.
-
-<p> 
-To remove multiple files, the script <em>g.mremove</em> may be used.
-
-<h2>FILES</h2>
-
-<kbd>$GISBASE/etc/element_list</kbd> lists the element 
-types whose files can be removed by the user.
-
-<h2>SEE ALSO</h2>
-
-<em><a href="g.copy.html">g.copy</a></em><br>
-<em><a href="g.list.html">g.list</a></em><br>
-
-<em><a href="g.rename.html">g.rename</a></em><br>
-<em>g.mremove</em> 
+Delete all vector maps starting with "<tt>stream_</tt>" in the current mapset,
+but exclude those ending with "<tt>_final</tt>":
+<div class="code"><pre>
+g.remove -f type=vector pattern="stream_*" exclude="*_final"
+</pre></div>
 
 <h2>AUTHOR</h2>
 
-Michael Shapiro,
-U.S.Army Construction Engineering 
-Research Laboratory
+Huidae Cho<br>
+grass4u@gmail.com
 
-<p><i>Last changed: $Date: 2011-11-08 13:24:20 -0800 (Tue, 08 Nov 2011) $</i>
+<p>
+<i>Last changed: $Date: 2014-12-19 21:07:19 +0100 (Fri, 19 Dec 2014) $</i>

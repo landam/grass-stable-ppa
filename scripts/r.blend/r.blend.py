@@ -27,12 +27,8 @@
 #% key: second
 #% description: Name of second raster map for blending
 #%end
-#%option 
-#% key: output_prefix
-#% type: string
-#% description: Prefix for red, green and blue output raster maps containing
-#% key_desc : name
-#% required : yes
+#%option G_OPT_R_BASENAME_OUTPUT
+#% description: Basename for red, green and blue output raster maps
 #%end
 #%option
 #% key: percent
@@ -56,7 +52,7 @@ import grass.script as grass
 def main():
     first = options['first']
     second = options['second']
-    output = options['output_prefix']
+    output = options['output']
     percent = options['percent']
 
     mapset = grass.gisenv()['MAPSET']

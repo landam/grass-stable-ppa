@@ -1,11 +1,10 @@
 <!-- meta page description: Landscape structure analysis package overview -->
 <h2>DESCRIPTION</h2>
 
-The <em>r.li</em> suite is a toolset for multiscale analysis of landscape structure.
-<!-- rephrase reference to r.le which is long time ago ...-->
-It aims at replacing the <em>r.le</em> suite of modules through a client-server,
-multiprocess implementation. External software for quantitative measures of landscape
-structure is for example FRAGSTATS (McGarigal and Marks 1995).
+The <em>r.li</em> suite is a toolset for multiscale analysis of 
+landscape structure. It aims at implementing metrics as found in 
+external software for quantitative measures of landscape structure like 
+FRAGSTATS (McGarigal and Marks 1995).
 <p>
 The <em>r.li</em> suite offers a set of patch and diversity indices.
 It supports analysis of landscapes composed of a mosaic of
@@ -27,30 +26,28 @@ as well as measures that produce a distribution of values as output
 (e.g. frequency distribution of patch sizes in the sampling area). The
 results are stored as raster maps.
 
-<p>
+<h2>NOTES</h2>
+
 The general procedure to calculate an index from a raster map is two-fold:
 
 <ol>
-<li>run <em>g.gui.rlisetup</em>: create a configuration file selecting the parts of
-    raster to analyze.
+<li>run <em>g.gui.rlisetup</em>: create a configuration file selecting
+    the parts of raster map to be analyzed. This file allows to re-run
+    an analysis easily. It is stored on Windows in the directory <tt>C:\Users\userxy\AppData\Roaming\GRASS7\r.li\</tt>, on GNU/Linux in
+    <tt>$HOME/.grass7/r.li/</tt>. <!-- TODO: and Mac OSX? -->
 
 <li>run one or more of the <em>r.li.<b>[index]</b></em> modules (e.g.,
     <em>r.li.<b>patchdensity</b></em>) to calculate the selected index
     using on the areas selected on configuration file.
 </ol>
 
-
-<h2>NOTE</h2>
-
-The <em>r.li.daemon</em> module also has a "main" function front-end
-which can be run, but it is only a template for development of new
-indices so not built by default.
 <!-- mhh ??: 
-The function itself has no meaning, it is only useful as an example and 
-for debugging.
+The <em>r.li.daemon</em> source code has a "main" function front-end
+which can be run, but it is only a template for development of new
+indices.
 -->
 
-<h2>EXAMPLE</h2>
+<h2>EXAMPLES</h2>
 
 Calculate a patch density index on the entire 'geology' raster map
 in the Spearfish sample dataset, using a 5x5 moving window:
@@ -84,7 +81,7 @@ in the Spearfish sample dataset, using a 5x5 moving window:
   <ol>
   <li> set the region settings to the "<tt>geology</tt>" raster map:
 <div class="code"><pre>
-  g.region rast=geology -p
+  g.region raster=geology -p
 </pre></div>
 
   <li> run <em>r.li.patchdensity</em>:
@@ -116,7 +113,7 @@ configuration file on a 200x200 raster map, then the sample area is
 
 <b>Core modules</b>:
 <ul>
-  <li> <a href="r.li.daemon.html">r.li.daemon</a>: job launch daemon</li>
+  <li> <a href="r.li.daemon.html">r.li.daemon</a>: job launch daemon (not visible to the user)</li>
   <li> <a href="g.gui.rlisetup.html">g.gui.rlisetup</a>: Configuration editor for r.li.'index'</li>
 </ul>
 
@@ -188,7 +185,9 @@ Gen. Tech. Rep. PNW-351
 
 Claudio Porta and Lucio Davide Spano, students of Computer Science,
 University of Pisa (Italy).<br>
-Commission from Faunalia Pontedera (PI)<br>
+Commission from Faunalia Pontedera (PI)
+<p>
+Partially rewritten by Markus Metz
 
 <p>
-<i>Last changed: $Date: 2014-04-20 19:54:31 +0200 (Sun, 20 Apr 2014) $</i>
+<i>Last changed: $Date: 2014-12-19 22:55:37 +0100 (Fri, 19 Dec 2014) $</i>

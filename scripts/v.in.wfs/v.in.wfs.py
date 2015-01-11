@@ -76,6 +76,7 @@
 
 import os
 import sys
+from grass.script.utils import try_remove
 from grass.script import core as grass
 import urllib
 
@@ -131,18 +132,19 @@ def main():
             grass.fatal('A file called "wms_capabilities.xml" already exists here')
         # os.move() might fail if the temp file is on another volume, so we copy instead
         shutil.copy(tmpxml, 'wms_capabilities.xml')
-        grass.try_remove(tmpxml)
+        try_remove(tmpxml)
         sys.exit(0)
 
 
     grass.message(_("Importing data..."))
-    ret = grass.run_command('v.in.ogr', flags = 'o', dsn = tmpxml, out = out)
-    grass.try_remove(tmpxml)
-    
-    if ret == 0:
+    try:
+        grass.run_command('v.in.ogr', flags='o', input=tmpxml, output=out)
         grass.message(_("Vector points map <%s> imported from WFS.") % out)
-    else:
+    except:
         grass.message(_("WFS import failed"))
+    finally:
+        try_remove(tmpxml)
+
 
 if __name__ == "__main__":
     options, flags = grass.parser()

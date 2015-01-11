@@ -1,7 +1,7 @@
 <h2>DESCRIPTION</h2>
 
 <em>v.kcv</em> randomly divides a points lists into <em>k</em> sets of
-test/train data (for <b>k</b>-fold <b>c</b>ross <b>v</b>alidation).
+test/train data (for <b>npartitions</b>-fold <b>c</b>ross <b>v</b>alidation).
 Test partitions are mutually exclusive. That is, a point will appear in
 only one test partition and <em>k-1</em> training partitions.
 
@@ -35,13 +35,13 @@ All examples are based on the North Carolina sample dataset.
 
 <div class="code"><pre>
 g.copy vect=geonames_wake,my_geonames_wake
-v.kcv map=my_geonames_wake column=part k=10
+v.kcv map=my_geonames_wake column=part npartitions=10
 </pre></div>
 
 <p>
 <div class="code"><pre>
 g.copy vect=geodetic_pts,my_geodetic_pts
-v.kcv map=my_geodetic_pts column=part k=10
+v.kcv map=my_geodetic_pts column=part npartitions=10
 </pre></div>
 
 <h2>SEE ALSO</h2>
@@ -67,4 +67,4 @@ OGR support by Martin Landa (2009)<br>
 Speed-up by Jan Vandrol and Jan Ruzicka (2013)
 
 <p>
-<i>Last changed: $Date: 2014-05-01 22:19:54 +0200 (Thu, 01 May 2014) $</i>
+<i>Last changed: $Date: 2014-11-28 17:25:40 +0100 (Fri, 28 Nov 2014) $</i>

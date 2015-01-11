@@ -3,7 +3,7 @@
  *
  *  Calculates univariate statistics from the non-null cells of a GRASS raster map
  *
- *   Copyright 2006-2012 by M. Hamish Bowman, and The GRASS Development Team
+ *   Copyright 2006-2014 by M. Hamish Bowman, and The GRASS Development Team
  *   Author: M. Hamish Bowman, University of Otago, Dunedin, New Zealand
  *
  *   Extended 2007 by Volker Wichmann to support the aggregate functions
@@ -159,6 +159,7 @@ int main(int argc, char *argv[])
     G_add_keyword(_("raster"));
     G_add_keyword(_("import"));
     G_add_keyword(_("conversion"));
+    G_add_keyword(_("aggregation"));
     G_add_keyword("ASCII");
     G_add_keyword(_("LIDAR"));
     module->description =
@@ -661,7 +662,7 @@ int main(int argc, char *argv[])
 	while (0 != G_getl2(buff, BUFFSIZE - 1, in_fp)) {
 	    line++;
 
-	    if (line % 10000 == 0) {	/* mod for speed */
+	    if (line % 100000 == 0) {	/* mod for speed */
 		if (!can_seek)
 		    G_clicker();
 		else if (line < estimated_lines)
@@ -749,7 +750,7 @@ int main(int argc, char *argv[])
 	    arr_row = (int)((pass_north - y) / region.ns_res);
 	    arr_col = (int)((x - region.west) / region.ew_res);
 
-	    /*          G_debug(5, "arr_row: %d   arr_col: %d", arr_row, arr_col); */
+	    /* G_debug(5, "arr_row: %d   arr_col: %d", arr_row, arr_col); */
 
 	    /* The range should be [0,cols-1]. We use (int) to round down,
 	       but if the point exactly on eastern edge arr_col will be /just/

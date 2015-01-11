@@ -6,7 +6,7 @@
 # AUTHOR(S):    Soeren Gebbert
 #
 # PURPOSE:      Export space time raster dataset as VTK time series
-# COPYRIGHT:    (C) 2011 by the GRASS Development Team
+# COPYRIGHT:    (C) 2011-2014 by the GRASS Development Team
 #
 #               This program is free software under the GNU General Public
 #               License (version 2). Read the file COPYING that comes with GRASS
@@ -26,7 +26,7 @@
 #%end
 
 #%option
-#% key: expdir
+#% key: directory
 #% type: string
 #% description: Path to the export directory
 #% required: yes
@@ -67,6 +67,7 @@
 import os
 import grass.script as grass
 import grass.temporal as tgis
+from grass.exceptions import CalledModuleError
 
 ############################################################################
 
@@ -76,7 +77,7 @@ def main():
     # Get the options
     input = options["input"]
     elevation = options["elevation"]
-    expdir = options["expdir"]
+    expdir = options["directory"]
     where = options["where"]
     null = options["null"]
     use_pdata = flags["p"]
@@ -91,7 +92,7 @@ def main():
 
     os.chdir(expdir)
 
-    sp = tgis.open_old_space_time_dataset(input, "strds")
+    sp = tgis.open_old_stds(input, "strds")
 
     if use_granularity:
         # Attention: A list of lists of maps will be returned
@@ -118,7 +119,7 @@ def main():
             if id is None:
                 id = null_map
 
-            grass.run_command("g.copy", rast="%s,%s" % (id, map_name),
+            grass.run_command("g.copy", raster="%s,%s" % (id, map_name),
                               overwrite=True)
             out_name = "%6.6i_%s.vtk" % (count, sp.base.get_name())
 
@@ -129,23 +130,24 @@ def main():
                 mflags += "c"
 
             # Export the raster map with r.out.vtk
-            if elevation:
-                ret = grass.run_command("r.out.vtk", flags=mflags, null=null,
-                                        input=map_name, elevation=elevation,
-                                        output=out_name,
-                                        overwrite=grass.overwrite())
-            else:
-                ret = grass.run_command("r.out.vtk", flags=mflags, null=null,
-                                        input=map_name, output=out_name,
-                                        overwrite=grass.overwrite())
-            if ret != 0:
+            try:
+                if elevation:
+                    grass.run_command("r.out.vtk", flags=mflags, null=null,
+                                      input=map_name, elevation=elevation,
+                                      output=out_name,
+                                      overwrite=grass.overwrite())
+                else:
+                    grass.run_command("r.out.vtk", flags=mflags, null=null,
+                                      input=map_name, output=out_name,
+                                      overwrite=grass.overwrite())
+            except CalledModuleError:
                 grass.fatal(_("Unable to export raster map <%s>" % map_name))
 
             count += 1
 
     if use_granularity:
-        grass.run_command("g.remove", rast=null_map)
-    grass.run_command("g.remove", rast=map_name)
+        grass.run_command("g.remove", flags='f', type='raster', name=null_map)
+    grass.run_command("g.remove", flags='f', type='raster', name=map_name)
 
 if __name__ == "__main__":
     options, flags = grass.parser()

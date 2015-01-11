@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
 	       _("add the value specified by cat option to the current category value"),
 	       _("copy values from one layer to another (e.g. layer=1,2,3 copies values from layer 1 to layer 2 and 3)"),
 	       _("print report (statistics), in shell style: layer type count min max"),
-	       _("print category values, more cats in the same layer are separated by '/'"),
+	       _("print category values, layers are separated by '|', more cats in the same layer are separated by '/'"),
 	       _("print only layer numbers"));
     option_opt->descriptions = desc;
     
@@ -778,9 +778,12 @@ int main(int argc, char *argv[])
         for(i = 1; i < nfields; i++)
 	    G_important_message(_("Categories copied from layer %d to layer %d"),
 		                  fields[0], fields[i]);
-    G_done_msg(_n("%d feature modified.",
-                  "%d features modified.",
-                  nmodified), nmodified);
+
+    if (option != O_REP && option != O_PRN) 
+        G_done_msg(_n("%d feature modified.",
+                      "%d features modified.",
+                      nmodified), nmodified);
+    
     Vect_close(&In);
 
     exit(EXIT_SUCCESS);

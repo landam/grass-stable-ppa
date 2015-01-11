@@ -50,20 +50,19 @@
 #%end
 
 #%flag
-#% key: h
+#% key: c
 #% description: Print the column names as first row
 #%end
 
 #%flag
 #% key: s
-#% description: Check spatial overlap to perform spatio-temporal sampling
+#% description: Check spatial overlap
 #%end
 
 import grass.script as grass
 import grass.temporal as tgis
 
 ############################################################################
-
 
 def main():
 
@@ -74,7 +73,7 @@ def main():
     intype = options["intype"]
     separator = grass.separator(options["separator"])
     method = options["method"]
-    header = flags["h"]
+    header = flags["c"]
     spatial = flags["s"]
 
     # Make sure the temporal database exists

@@ -319,7 +319,7 @@ int main(int argc, char *argv[])
 	Rast_set_d_null_value(&null_cost, 1);
     }
     else if (keep_nulls)
-	G_debug(1, "Null cell will be retained into output map");
+	G_debug(1,"Input null cell will be retained into output map");
 
     if (opt7->answer) {
 	search_mapset = G_find_vector2(opt7->answer, "");
@@ -405,7 +405,7 @@ int main(int argc, char *argv[])
 	mem_mb  = (double) srows * scols * 24. / 1048576. * segments_in_memory;
 	mem_mb += nrows * ncols * 0.05 * 20. / 1048576.;    /* for Dijkstra search */
     }
-    
+
     if (flag5->answer) {
 	fprintf(stdout, _("Will need at least %.2f MB of disk space"), disk_mb);
         fprintf(stdout, "\n");
@@ -423,15 +423,14 @@ int main(int argc, char *argv[])
     /* Create segmented format files for cost layer and output layer */
     G_verbose_message(_("Creating some temporary files..."));
 
-    if (segment_open(&cost_seg, G_tempfile(), nrows, ncols, srows, scols,
+    if (Segment_open(&cost_seg, G_tempfile(), nrows, ncols, srows, scols,
 		     sizeof(struct cc), segments_in_memory) != 1)
 	G_fatal_error(_("Can not create temporary file"));
 
     if (dir == TRUE) {
-	if (segment_open(&dir_seg, G_tempfile(), nrows, ncols, srows, scols,
+	if (Segment_open(&dir_seg, G_tempfile(), nrows, ncols, srows, scols,
 		         sizeof(FCELL), segments_in_memory) != 1)
 	    G_fatal_error(_("Can not create temporary file"));
-
     }
 
     /* Write the cost layer in the segmented file */
@@ -486,7 +485,7 @@ int main(int argc, char *argv[])
 		    p = null_cost;
 		}
 		costs.cost_in = p;
-		segment_put(&cost_seg, &costs, row, i);
+		Segment_put(&cost_seg, &costs, row, i);
 		ptr2 = G_incr_void_ptr(ptr2, dsize);
 	    }
 	}
@@ -495,14 +494,11 @@ int main(int argc, char *argv[])
     }
 
     if (dir == TRUE) {
-	int i;
-
 	G_message(_("Initializing directional output..."));
-
 	for (row = 0; row < nrows; row++) {
 	    G_percent(row, nrows, 2);
-	    for (i = 0; i < ncols; i++) {
-		segment_put(&dir_seg, &dnullval, row, i);
+	    for (col = 0; col < ncols; col++) {
+		Segment_put(&dir_seg, &dnullval, row, col);
 	    }
 	}
 	G_percent(1, 1, 1);
@@ -511,7 +507,7 @@ int main(int argc, char *argv[])
      *   Create a heap of starting points ordered by increasing costs.
      */
     init_heap();
-    
+
     /* read vector with start points */
     if (opt7->answer) {
 	struct Map_info In;
@@ -646,7 +642,7 @@ int main(int argc, char *argv[])
 	Vect_close(&In);
 
 	if (!have_stop_points)
-	    G_warning(_("No stop points found in vector <%s>"), opt8->answer);
+	    G_fatal_error(_("No stop points found in vector <%s>"), opt8->answer);
     }
 
     /* read raster with start points */
@@ -660,7 +656,7 @@ int main(int argc, char *argv[])
 
 	if (search_mapset == NULL)
 	    G_fatal_error(_("Raster map <%s> not found"), opt9->answer);
-	    
+
 	fd = Rast_open_old(opt9->answer, search_mapset);
 	data_type2 = Rast_get_map_type(fd);
 	nearest_data_type = data_type2;
@@ -679,21 +675,21 @@ int main(int argc, char *argv[])
 		if (!Rast_is_null_value(ptr2, data_type2)) {
 		    double cellval;
 
-		    segment_get(&cost_seg, &costs, row, col);
+		    Segment_get(&cost_seg, &costs, row, col);
 
 		    cellval = Rast_get_d_value(ptr2, data_type2);
 		    if (start_with_raster_vals == 1) {
                         insert(cellval, row, col);
 			costs.cost_out = cellval;
 			costs.nearest = cellval;
-			segment_put(&cost_seg, &costs, row, col);
+			Segment_put(&cost_seg, &costs, row, col);
 		    }
 		    else {
 			value = &zero;
 			insert(zero, row, col);
 			costs.cost_out = *value;
 			costs.nearest = cellval;
-			segment_put(&cost_seg, &costs, row, col);
+			Segment_put(&cost_seg, &costs, row, col);
 		    }
 		    got_one = 1;
 		}
@@ -722,13 +718,12 @@ int main(int argc, char *argv[])
 		|| top_start_pt->col < 0 || top_start_pt->col >= ncols)
 		G_fatal_error(_("Specified starting location outside database window"));
 	    insert(zero, top_start_pt->row, top_start_pt->col);
-	    segment_get(&cost_seg, &costs, top_start_pt->row,
+	    Segment_get(&cost_seg, &costs, top_start_pt->row,
 			top_start_pt->col);
-
 	    costs.cost_out = *value;
 	    costs.nearest = top_start_pt->value;
 
-	    segment_put(&cost_seg, &costs, top_start_pt->row,
+	    Segment_put(&cost_seg, &costs, top_start_pt->row,
 			top_start_pt->col);
 	    top_start_pt = top_start_pt->next;
 	}
@@ -741,6 +736,8 @@ int main(int argc, char *argv[])
      *   3) Free the memory allocated to the present cell.
      */
 
+    G_debug(1, "total cells: %ld", total_cells);
+    G_debug(1, "nrows x ncols: %d", nrows * ncols);
     G_message(_("Finding cost path..."));
     n_processed = 0;
 
@@ -758,7 +755,7 @@ int main(int argc, char *argv[])
 	    break;
 
 	/* If I've already been updated, delete me */
-	segment_get(&cost_seg, &costs, pres_cell->row, pres_cell->col);
+	Segment_get(&cost_seg, &costs, pres_cell->row, pres_cell->col);
 	old_min_cost = costs.cost_out;
 	if (!Rast_is_d_null_value(&old_min_cost)) {
 	    if (pres_cell->min_cost > old_min_cost) {
@@ -768,11 +765,11 @@ int main(int argc, char *argv[])
 	    }
 	}
 
-	row = pres_cell->row;
-	col = pres_cell->col;
-
 	my_cost = costs.cost_in;
 	nearest = costs.nearest;
+
+	row = pres_cell->row;
+	col = pres_cell->col;
 
 	G_percent(n_processed++, total_cells, 1);
 
@@ -881,99 +878,86 @@ int main(int argc, char *argv[])
 	    if (col < 0 || col >= ncols)
 		continue;
 
+	    min_cost = dnullval;
+	    Segment_get(&cost_seg, &costs, row, col);
+
 	    switch (neighbor) {
 	    case 1:
-		segment_get(&cost_seg, &costs, row, col);
 		W = costs.cost_in;
 		fcost = (double)(W + my_cost);
 		min_cost = pres_cell->min_cost + fcost * EW_fac;
 		break;
 	    case 2:
-		segment_get(&cost_seg, &costs, row, col);
 		E = costs.cost_in;
 		fcost = (double)(E + my_cost);
 		min_cost = pres_cell->min_cost + fcost * EW_fac;
 		break;
 	    case 3:
-		segment_get(&cost_seg, &costs, row, col);
 		N = costs.cost_in;
 		fcost = (double)(N + my_cost);
 		min_cost = pres_cell->min_cost + fcost * NS_fac;
 		break;
 	    case 4:
-		segment_get(&cost_seg, &costs, row, col);
 		S = costs.cost_in;
 		fcost = (double)(S + my_cost);
 		min_cost = pres_cell->min_cost + fcost * NS_fac;
 		break;
 	    case 5:
-		segment_get(&cost_seg, &costs, row, col);
 		NW = costs.cost_in;
 		fcost = (double)(NW + my_cost);
 		min_cost = pres_cell->min_cost + fcost * DIAG_fac;
 		break;
 	    case 6:
-		segment_get(&cost_seg, &costs, row, col);
 		NE = costs.cost_in;
 		fcost = (double)(NE + my_cost);
 		min_cost = pres_cell->min_cost + fcost * DIAG_fac;
 		break;
 	    case 7:
-		segment_get(&cost_seg, &costs, row, col);
 		SE = costs.cost_in;
 		fcost = (double)(SE + my_cost);
 		min_cost = pres_cell->min_cost + fcost * DIAG_fac;
 		break;
 	    case 8:
-		segment_get(&cost_seg, &costs, row, col);
 		SW = costs.cost_in;
 		fcost = (double)(SW + my_cost);
 		min_cost = pres_cell->min_cost + fcost * DIAG_fac;
 		break;
 	    case 9:
-		segment_get(&cost_seg, &costs, row, col);
 		NNW = costs.cost_in;
 		fcost = (double)(N + NW + NNW + my_cost);
 		min_cost = pres_cell->min_cost + fcost * V_DIAG_fac;
 		break;
 	    case 10:
-		segment_get(&cost_seg, &costs, row, col);
 		NNE = costs.cost_in;
 		fcost = (double)(N + NE + NNE + my_cost);
 		min_cost = pres_cell->min_cost + fcost * V_DIAG_fac;
 		break;
 	    case 11:
-		segment_get(&cost_seg, &costs, row, col);
 		SSE = costs.cost_in;
 		fcost = (double)(S + SE + SSE + my_cost);
 		min_cost = pres_cell->min_cost + fcost * V_DIAG_fac;
 		break;
 	    case 12:
-		segment_get(&cost_seg, &costs, row, col);
 		SSW = costs.cost_in;
 		fcost = (double)(S + SW + SSW + my_cost);
 		min_cost = pres_cell->min_cost + fcost * V_DIAG_fac;
 		break;
 	    case 13:
-		segment_get(&cost_seg, &costs, row, col);
 		WNW = costs.cost_in;
 		fcost = (double)(W + NW + WNW + my_cost);
 		min_cost = pres_cell->min_cost + fcost * H_DIAG_fac;
 		break;
 	    case 14:
-		segment_get(&cost_seg, &costs, row, col);
 		ENE = costs.cost_in;
 		fcost = (double)(E + NE + ENE + my_cost);
 		min_cost = pres_cell->min_cost + fcost * H_DIAG_fac;
 		break;
 	    case 15:
-		segment_get(&cost_seg, &costs, row, col);
 		ESE = costs.cost_in;
 		fcost = (double)(E + SE + ESE + my_cost);
 		min_cost = pres_cell->min_cost + fcost * H_DIAG_fac;
 		break;
 	    case 16:
-		segment_get(&cost_seg, &costs, row, col);
 		WSW = costs.cost_in;
 		fcost = (double)(W + SW + WSW + my_cost);
 		min_cost = pres_cell->min_cost + fcost * H_DIAG_fac;
@@ -984,26 +968,27 @@ int main(int argc, char *argv[])
 	    if (Rast_is_d_null_value(&min_cost))
 		continue;
 
+	    Segment_get(&cost_seg, &costs, row, col);
 	    old_min_cost = costs.cost_out;
 
 	    /* add to list */
 	    if (Rast_is_d_null_value(&old_min_cost)) {
 		costs.cost_out = min_cost;
 		costs.nearest = nearest;
-		segment_put(&cost_seg, &costs, row, col);
+		Segment_put(&cost_seg, &costs, row, col);
 		insert(min_cost, row, col);
 		if (dir == TRUE) {
-		    segment_put(&dir_seg, &cur_dir, row, col);
+		    Segment_put(&dir_seg, &cur_dir, row, col);
 		}
 	    }
 	    /* update with lower costs */
 	    else if (old_min_cost > min_cost) {
 		costs.cost_out = min_cost;
 		costs.nearest = nearest;
-		segment_put(&cost_seg, &costs, row, col);
+		Segment_put(&cost_seg, &costs, row, col);
 		insert(min_cost, row, col);
 		if (dir == TRUE) {
-		    segment_put(&dir_seg, &cur_dir, row, col);
+		    Segment_put(&dir_seg, &cur_dir, row, col);
 		}
 	    }
 	}
@@ -1015,9 +1000,8 @@ int main(int argc, char *argv[])
 	delete(pres_cell);
 	pres_cell = get_lowest();
 
-	if (ct == pres_cell) {
+	if (ct == pres_cell)
 	    G_warning(_("Error, ct == pres_cell"));
-	}
     }
     G_percent(1, 1, 1);
 
@@ -1076,7 +1060,7 @@ int main(int argc, char *argv[])
 			continue;
 		    }
 		}
-		segment_get(&cost_seg, &costs, row, col);
+		Segment_get(&cost_seg, &costs, row, col);
 		min_cost = costs.cost_out;
 		nearest = costs.nearest;
 		if (Rast_is_d_null_value(&min_cost)) {
@@ -1141,7 +1125,7 @@ int main(int argc, char *argv[])
 	for (row = 0; row < nrows; row++) {
 	    p = dir_cell;
 	    for (col = 0; col < ncols; col++) {
-		segment_get(&dir_seg, &cur_dir, row, col);
+		Segment_get(&dir_seg, &cur_dir, row, col);
 		*((FCELL *) p) = cur_dir;
 		p = G_incr_void_ptr(p, dir_size);
 	    }
@@ -1152,9 +1136,9 @@ int main(int argc, char *argv[])
 	G_free(dir_cell);
     }
 
-    segment_close(&cost_seg);	/* release memory  */
+    Segment_close(&cost_seg);	/* release memory  */
     if (dir == TRUE)
-	segment_close(&dir_seg);
+	Segment_close(&dir_seg);
     Rast_close(cost_fd);
     Rast_close(cum_fd);
     if (dir == TRUE)
@@ -1194,7 +1178,7 @@ int main(int argc, char *argv[])
 	}
     }
 
-    /*  Create colours for output map    */
+    /* Create colours for output map */
 
     /*
      * Rast_read_range (cum_cost_layer, current_mapset, &range);
@@ -1203,8 +1187,8 @@ int main(int argc, char *argv[])
      * Rast_write_colors (cum_cost_layer,current_mapset,&colors);
      */
 
-    G_done_msg(_("Peak cost value: %f."), peak);
-    
+    G_done_msg(_("Peak cost value: %g"), peak);
+
     exit(EXIT_SUCCESS);
 }
 
@@ -1231,7 +1215,7 @@ process_answers(char **answers, struct start_pt **points,
 
 	if (east < window.west || east > window.east ||
 	    north < window.south || north > window.north) {
-	    G_warning(_("Warning, ignoring point outside window: %.4f,%.4f"),
+	    G_warning(_("Warning, ignoring point outside window: %g, %g"),
 		      east, north);
 	    continue;
 	}

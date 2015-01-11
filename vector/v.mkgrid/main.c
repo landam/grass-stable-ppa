@@ -6,8 +6,11 @@
  *               Upgrade to 5.7 Radim Blazek 10/2004
  *               Hamish Bowman <hamish_b yahoo.com>,
  *               Jachym Cepicky <jachym les-ejk.cz>, Markus Neteler <neteler itc.it>
- * PURPOSE:      
- * COPYRIGHT:    (C) 1999-2009 by the GRASS Development Team
+ *               Ivan Shevlakov: points support -p
+ *               Luca Delucchi: lines support -l, vertical breaks
+ *               Markus Metz: rewrite, hexagon creation 
+ * PURPOSE:
+ * COPYRIGHT:    (C) 1999-2014 by the GRASS Development Team
  *
  *               This program is free software under the GNU General
  *               Public License (>=v2). Read the file COPYING that
@@ -45,10 +48,11 @@ int main(int argc, char *argv[])
     struct grid_description grid_info;
     struct Cell_head window;
     struct Map_info Map;
-    struct Option *vectname, *grid, *coord, *box, *angle, *position_opt, *breaks;
+    struct Option *vectname, *grid, *coord, *box, *angle, *position_opt,
+                  *breaks, *type_opt;
     struct GModule *module;
-    struct Flag *points_fl;
-    int points_p;
+    struct Flag *hex_flag, *ha_flag;
+    int otype, ptype, ltype;
     char *desc;
 
     struct line_pnts *Points;
@@ -65,6 +69,8 @@ int main(int argc, char *argv[])
     module = G_define_module();
     G_add_keyword(_("vector"));
     G_add_keyword(_("geometry"));
+    G_add_keyword(_("grid"));
+    G_add_keyword(_("point pattern"));
     module->description = _("Creates a vector map of a user-defined grid.");
 
     vectname = G_define_standard_option(G_OPT_V_OUTPUT);
@@ -74,7 +80,7 @@ int main(int argc, char *argv[])
     grid->key = "grid";
     grid->key_desc = _("rows,columns");
     grid->type = TYPE_INTEGER;
-    grid->required = YES;
+    grid->required = NO;
     grid->multiple = NO;
     grid->description = _("Number of rows and columns in grid");
 
@@ -93,12 +99,7 @@ int main(int argc, char *argv[])
             _("use 'coor' and 'box' options"));
     position_opt->descriptions = desc;
 
-    coord = G_define_option();
-    coord->key = "coor";
-    coord->key_desc = "x,y";
-    coord->type = TYPE_DOUBLE;
-    coord->required = NO;
-    coord->multiple = NO;
+    coord = G_define_standard_option(G_OPT_M_COORDS);
     coord->description =
 	_("Lower left easting and northing coordinates of map");
 
@@ -123,20 +124,46 @@ int main(int argc, char *argv[])
     breaks->type = TYPE_INTEGER;
     breaks->required = NO;
     breaks->description =
-	_("Number of horizontal vertex points per grid cell");
+	_("Number of vertex points per grid cell");
     breaks->options = "0-60";
-    breaks->answer = "3";
+    breaks->answer = "0";
 
-    points_fl = G_define_flag();
-    points_fl->key = 'p';
-    points_fl->description =
-	_("Create grid of points instead of areas and centroids");
+    type_opt = G_define_standard_option(G_OPT_V_TYPE);
+    type_opt->options = "point,line,area";
+    type_opt->answer = "area";
+    type_opt->multiple = NO;
+    type_opt->description = _("Output feature type");
+
+    hex_flag = G_define_flag();
+    hex_flag->key = 'h';
+    hex_flag->description =
+	_("Create hexagons (default: rectangles)");
+
+    ha_flag = G_define_flag();
+    ha_flag->key = 'a';
+    ha_flag->description =
+	_("Allow asymmetric hexagons");
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
+    otype = 0;
+    switch (type_opt->answer[0]) {
+    case 'p':
+	otype |= GV_POINT;
+	break;
+    case 'l':
+	otype |= GV_LINE;
+	break;
+    case 'a':
+	otype |= GV_CENTROID;
+	otype |= GV_BOUNDARY;
+	break;
+    }
 
-    points_p = points_fl->answer;
+    ptype = (otype & GV_POINTS);
+    ltype = (otype & GV_LINES);
+    
 
     /* get the current window  */
     G_get_window(&window);
@@ -147,11 +174,8 @@ int main(int argc, char *argv[])
      */
     dig_file = G_store(vectname->answer);
 
-    /* Number of row and cols */
-    grid_info.num_rows = atoi(grid->answers[0]);
-    grid_info.num_cols = atoi(grid->answers[1]);
-
     grid_info.angle = M_PI / 180 * atof(angle->answer);
+    set_angle(grid_info.angle);
 
     nbreaks = atoi(breaks->answer);
 
@@ -160,22 +184,51 @@ int main(int argc, char *argv[])
 	if (coord->answer)
 	    G_fatal_error(_("'coor' and 'position=region' are exclusive options"));
 
-	if (box->answer)
-	    G_fatal_error(_("'box' and 'position=region' are exclusive options"));
+	if (box->answer && grid->answer)
+	    G_fatal_error(_("'box' and 'grid' are exclusive options for 'position=region'"));
 
-	if (grid_info.angle != 0.0)
-	    G_fatal_error(_("'angle' and 'position=region' are exclusive options"));
+	grid_info.west = window.west;
+	grid_info.south = window.south;
+	grid_info.east = window.east;
+	grid_info.north = window.north;
 
-	grid_info.origin_x = window.west;
-	grid_info.origin_y = window.south;
+	grid_info.num_rows = window.rows;
+	grid_info.num_cols = window.cols;
 
-	grid_info.length = (window.east - window.west) / grid_info.num_cols;
-	grid_info.width = (window.north - window.south) / grid_info.num_rows;
+	grid_info.width = window.ew_res;
+	grid_info.height = window.ns_res;
 
-	G_debug(2, "x = %e y = %e l = %e w = %e", grid_info.origin_x,
-		grid_info.origin_y, grid_info.length, grid_info.width);
+	if (grid->answer) {
+	    grid_info.num_rows = atoi(grid->answers[0]);
+	    grid_info.num_cols = atoi(grid->answers[1]);
+
+	    grid_info.width = (grid_info.east - grid_info.west) / grid_info.num_cols;
+	    grid_info.height = (grid_info.north - grid_info.south) / grid_info.num_rows;
+	}
+	else if (box->answer) {
+	    if (!G_scan_resolution
+		(box->answers[0], &(grid_info.width), window.proj))
+		G_fatal_error(_("Invalid width"));
+	    if (!G_scan_resolution
+		(box->answers[1], &(grid_info.height), window.proj))
+		G_fatal_error(_("Invalid height"));
+
+	    /* register to lower left corner as for position=coor */
+	    grid_info.num_cols = (grid_info.east - grid_info.west + 
+	                         grid_info.width / 2.0) / grid_info.width;
+	    grid_info.num_rows = (grid_info.north - grid_info.south + 
+	                         grid_info.height / 2.0) / grid_info.height;
+	    grid_info.north = grid_info.south + grid_info.num_rows * grid_info.height;
+	    grid_info.east = grid_info.west + grid_info.num_cols * grid_info.width;
+	}
+
+	G_debug(2, "x = %e y = %e w = %e h = %e", grid_info.west,
+		grid_info.south, grid_info.width, grid_info.height);
     }
     else {
+	if (!grid->answer)
+	    G_fatal_error(_("'grid' option missing"));
+
 	if (!coord->answer)
 	    G_fatal_error(_("'coor' option missing"));
 
@@ -183,31 +236,27 @@ int main(int argc, char *argv[])
 	    G_fatal_error(_("'box' option missing"));
 
 	if (!G_scan_easting
-	    (coord->answers[0], &(grid_info.origin_x), window.proj))
-	    G_fatal_error(_("Invalid easting"));;
+	    (coord->answers[0], &(grid_info.west), window.proj))
+	    G_fatal_error(_("Invalid easting"));
 	if (!G_scan_northing
-	    (coord->answers[1], &(grid_info.origin_y), window.proj))
-	    G_fatal_error(_("Invalid northing"));;
+	    (coord->answers[1], &(grid_info.south), window.proj))
+	    G_fatal_error(_("Invalid northing"));
 
 	if (!G_scan_resolution
-	    (box->answers[0], &(grid_info.length), window.proj))
-	    G_fatal_error(_("Invalid distance"));;
+	    (box->answers[0], &(grid_info.width), window.proj))
+	    G_fatal_error(_("Invalid width"));
 	if (!G_scan_resolution
-	    (box->answers[1], &(grid_info.width), window.proj))
-	    G_fatal_error(_("Invalid distance"));;
+	    (box->answers[1], &(grid_info.height), window.proj))
+	    G_fatal_error(_("Invalid height"));
 
+	grid_info.num_rows = atoi(grid->answers[0]);
+	grid_info.num_cols = atoi(grid->answers[1]);
+
+	grid_info.east = grid_info.west + grid_info.width * grid_info.num_cols;
+	grid_info.north = grid_info.south + grid_info.height * grid_info.num_rows;
     }
-
-    /*
-     * vector rows are the actual number of rows of vectors to make up the
-     * entire grid.   ditto for cols.
-     */
-    grid_info.num_vect_rows = grid_info.num_rows + 1;
-    grid_info.num_vect_cols = grid_info.num_cols + 1;
-
-    Points = Vect_new_line_struct();
-    Cats = Vect_new_cats_struct();
-    db_init_string(&sql);
+    grid_info.xo = (grid_info.east + grid_info.west) / 2.0;
+    grid_info.yo = (grid_info.north + grid_info.south) / 2.0;
 
     /* Open output map */
     if (0 > Vect_open_new(&Map, dig_file, 0)) {
@@ -227,86 +276,194 @@ int main(int argc, char *argv[])
     if (Driver == NULL)
 	G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 		      Fi->database, Fi->driver);
+    db_set_error_handler_driver(Driver);
+    db_init_string(&sql);
 
-    if (grid_info.num_rows < 27 && grid_info.num_cols < 27) {
-	sprintf(buf,
-		"create table %s ( cat integer, row integer, col integer, "
-		"rown varchar(1), coln varchar(1))", Fi->table);
-    }
-    else {
-	sprintf(buf,
-		"create table %s ( cat integer, row integer, col integer)",
-		Fi->table);
-    }
-    db_set_string(&sql, buf);
+    if (hex_flag->answer) {
 
-    G_debug(1, "SQL: %s", db_get_string(&sql));
+	grid_info.num_vect_rows = 2 * grid_info.num_rows + 1;
+	grid_info.num_vect_cols = grid_info.num_cols;
 
-    if (db_execute_immediate(Driver, &sql) != DB_OK) {
-	G_fatal_error(_("Unable to create table: %s"), db_get_string(&sql));
-    }
+	/* figure out hexagon radius */
+	grid_info.rstep = (grid_info.north - grid_info.south) /
+	                  (grid_info.num_rows * 2);
+	grid_info.rrad = grid_info.rstep * 2 / sqrt(3.0);
 
-    if (db_create_index2(Driver, Fi->table, Fi->key) != DB_OK)
-	G_warning(_("Unable to create index"));
+	grid_info.cstep = (grid_info.east - grid_info.west) / 
+	                  (grid_info.num_cols + 1.0 / 3.0);
+	grid_info.crad = grid_info.cstep / 1.5;
 
-    if (db_grant_on_table
-	(Driver, Fi->table, DB_PRIV_SELECT, DB_GROUP | DB_PUBLIC) != DB_OK)
-	G_fatal_error(_("Unable to grant privileges on table <%s>"),
-		      Fi->table);
+	if (!ha_flag->answer || grid_info.width == grid_info.height) {
+	    if (grid_info.rrad > grid_info.crad) {
+		grid_info.rrad = grid_info.crad;
+		grid_info.rstep = grid_info.rrad * sqrt(3.0) / 2.0;
+	    }
+	    else if (grid_info.crad > grid_info.rrad) {
+		grid_info.crad = grid_info.rrad;
+		grid_info.cstep = grid_info.crad * 1.5;
+	    }
+	}
+	else {
+	    if (grid_info.width != grid_info.height) {
+		G_important_message(_("The hexagons will be asymmetrical."));
+	    }
+	}
 
-    if (!points_p) {
-	/* create areas */
-	write_grid(&grid_info, &Map, nbreaks);
-    }
+	grid_info.num_vect_rows = (grid_info.north - grid_info.south) / 
+	     grid_info.rstep;
+	if (grid_info.north - grid_info.rstep * (grid_info.num_vect_rows + 1) < 
+	    grid_info.south)
+	    grid_info.num_vect_rows--;
+	grid_info.num_vect_cols = (grid_info.east - grid_info.west -
+	     grid_info.crad * 0.5) / grid_info.cstep;
 
-    /* Create a grid of label points at the centres of the grid cells */
-    G_verbose_message(_("Creating centroids..."));
+	if (grid_info.east - grid_info.west < 3.5 * grid_info.crad) {
+	    G_fatal_error(_("Please use a higher resolution or a larger region"));
+	}
+	if (grid_info.north - grid_info.south < 3 * grid_info.rstep) {
+	    G_fatal_error(_("Please use a higher resolution or a larger region"));
+	}
 
-    /* Write out centroids and attributes */
-    db_begin_transaction(Driver);
-    attCount = 0;
-    for (i = 0; i < grid_info.num_rows; ++i) {
-	for (j = 0; j < grid_info.num_cols; ++j) {
-	    double x, y;
-	    const int point_type = points_p ? GV_POINT : GV_CENTROID;
+	if ((int)(grid_info.num_vect_rows / 2.0 + 0.5) != grid_info.num_rows)
+	    G_message(_("The number of rows has been adjusted from %d to %d"),
+	              grid_info.num_rows, (int)(grid_info.num_vect_rows / 2.0 + 0.5));
+	if (grid_info.num_vect_cols != grid_info.num_cols)
+	    G_message(_("The number of columns has been adjusted from %d to %d"),
+	              grid_info.num_cols, grid_info.num_vect_cols);
 
-	    x = grid_info.origin_x + (0.5 + j) * grid_info.length;
-	    y = grid_info.origin_y + (0.5 + i) * grid_info.width;
+	sprintf(buf, "create table %s ( %s integer)", Fi->table, Fi->key);
 
-	    rotate(&x, &y, grid_info.origin_x, grid_info.origin_y,
-		   grid_info.angle);
+	db_set_string(&sql, buf);
 
-	    Vect_reset_line(Points);
-	    Vect_reset_cats(Cats);
+	G_debug(1, "SQL: %s", db_get_string(&sql));
 
-	    Vect_append_point(Points, x, y, 0.0);
-	    Vect_cat_set(Cats, 1, attCount + 1);
-	    Vect_write_line(&Map, point_type, Points, Cats);
+	if (db_execute_immediate(Driver, &sql) != DB_OK) {
+	    G_fatal_error(_("Unable to create table: %s"), db_get_string(&sql));
+	}
 
-	    sprintf(buf, "insert into %s values ", Fi->table);
+	if (db_create_index2(Driver, Fi->table, Fi->key) != DB_OK)
+	    G_warning(_("Unable to create index"));
+
+	if (db_grant_on_table
+	    (Driver, Fi->table, DB_PRIV_SELECT, DB_GROUP | DB_PUBLIC) != DB_OK)
+	    G_fatal_error(_("Unable to grant privileges on table <%s>"),
+			  Fi->table);
+
+	attCount = hexgrid(&grid_info, &Map, nbreaks, otype);
+
+	db_begin_transaction(Driver);
+
+	for (i = 1; i <= attCount; ++i) {
+
+	    sprintf(buf, "insert into %s values ( %d )", Fi->table, i);
 	    if (db_set_string(&sql, buf) != DB_OK)
 		G_fatal_error(_("Unable to fill attribute table"));
 
-            if (grid_info.num_rows < 27 && grid_info.num_cols < 27) {
-		sprintf(buf,
-			"( %d, %d, %d, '%c', '%c' )",
-			attCount + 1, grid_info.num_rows - i,
-			j + 1, 'A' + grid_info.num_rows - i - 1, 'A' + j);
-	    }
-	    else {
-		sprintf(buf, "( %d, %d, %d )",
-			attCount + 1, i + 1, j + 1);
-	    }
-            if (db_append_string(&sql, buf) != DB_OK)
-                    G_fatal_error(_("Unable to fill attribute table"));
-
 	    G_debug(3, "SQL: %s", db_get_string(&sql));
-
 	    if (db_execute_immediate(Driver, &sql) != DB_OK) {
 		G_fatal_error(_("Unable to insert new record: %s"),
-			    db_get_string(&sql));
+			      db_get_string(&sql));
 	    }
-	    attCount++;
+	}
+    }
+    else {
+	if (grid_info.width != grid_info.height) {
+	    G_important_message(_("The rectangles will be asymmetrical."));
+	}
+
+	/*
+	 * vector rows are the actual number of rows of vectors to make up the
+	 * entire grid.   ditto for cols.
+	 */
+	grid_info.num_vect_rows = grid_info.num_rows + 1;
+	grid_info.num_vect_cols = grid_info.num_cols + 1;
+
+	Points = Vect_new_line_struct();
+	Cats = Vect_new_cats_struct();
+
+	if (grid_info.num_rows < 27 && grid_info.num_cols < 27) {
+	    sprintf(buf,
+		    "create table %s ( cat integer, row integer, col integer, "
+		    "rown varchar(1), coln varchar(1))", Fi->table);
+	}
+	else {
+	    sprintf(buf,
+		    "create table %s ( cat integer, row integer, col integer)",
+		    Fi->table);
+	}
+	db_set_string(&sql, buf);
+
+	G_debug(1, "SQL: %s", db_get_string(&sql));
+
+	if (db_execute_immediate(Driver, &sql) != DB_OK) {
+	    G_fatal_error(_("Unable to create table: %s"), db_get_string(&sql));
+	}
+
+	if (db_create_index2(Driver, Fi->table, Fi->key) != DB_OK)
+	    G_warning(_("Unable to create index"));
+
+	if (db_grant_on_table
+	    (Driver, Fi->table, DB_PRIV_SELECT, DB_GROUP | DB_PUBLIC) != DB_OK)
+	    G_fatal_error(_("Unable to grant privileges on table <%s>"),
+			  Fi->table);
+
+	if (ltype) {
+	    /* create areas */
+	    write_grid(&grid_info, &Map, nbreaks, ltype);
+	}
+
+	/* Create a grid of label points at the centres of the grid cells */
+	G_verbose_message(_("Creating centroids..."));
+
+	/* Write out centroids and attributes */
+	/* If the output id is lines it skips to add centroids and attributes
+	   TODO decide what to write in the attribute table
+	 */
+	if (ptype) {
+            db_begin_transaction(Driver);
+	    attCount = 0;
+	    for (i = 0; i < grid_info.num_rows; ++i) {
+	        for (j = 0; j < grid_info.num_cols; ++j) {
+		    double x, y;
+
+		    x = grid_info.west + (0.5 + j) * grid_info.width;
+		    y = grid_info.south + (0.5 + i) * grid_info.height;
+
+		    rotate(&x, &y, grid_info.xo, grid_info.yo,
+			   grid_info.angle);
+
+		    Vect_reset_line(Points);
+		    Vect_reset_cats(Cats);
+
+		    Vect_append_point(Points, x, y, 0.0);
+		    Vect_cat_set(Cats, 1, attCount + 1);
+		    Vect_write_line(&Map, ptype, Points, Cats);
+
+		    sprintf(buf, "insert into %s values ", Fi->table);
+		    if (db_set_string(&sql, buf) != DB_OK)
+		        G_fatal_error(_("Unable to fill attribute table"));
+
+		    if (grid_info.num_rows < 27 && grid_info.num_cols < 27) {
+		        sprintf(buf, "( %d, %d, %d, '%c', '%c' )",
+			      attCount + 1, grid_info.num_rows - i,
+			      j + 1, 'A' + grid_info.num_rows - i - 1, 'A' + j);
+		    }
+		    else {
+		        sprintf(buf, "( %d, %d, %d )",
+			        attCount + 1, i + 1, j + 1);
+		    }
+		    if (db_append_string(&sql, buf) != DB_OK)
+		        G_fatal_error(_("Unable to fill attribute table"));
+
+		    G_debug(3, "SQL: %s", db_get_string(&sql));
+
+		    if (db_execute_immediate(Driver, &sql) != DB_OK) {
+		        G_fatal_error(_("Unable to insert new record: %s"),
+				  db_get_string(&sql));
+		    }
+		    attCount++;
+	        }
+	    }
 	}
     }
     db_commit_transaction(Driver);

@@ -5,8 +5,8 @@
 # MODULE:       t.rast.to.rast3
 # AUTHOR(S):    Soeren Gebbert
 #
-# PURPOSE:      Convert a space time raster dataset into a rast3d map
-# COPYRIGHT:    (C) 2011 by the GRASS Development Team
+# PURPOSE:      Convert a space time raster dataset into a 3D raster map
+# COPYRIGHT:    (C) 2011-2014 by the GRASS Development Team
 #
 #               This program is free software under the GNU General Public
 #               License (version 2). Read the file COPYING that comes with GRASS
@@ -15,10 +15,12 @@
 #############################################################################
 
 #%module
-#% description: Converts a space time raster dataset into a raster3d map.
+#% description: Converts a space time raster dataset into a 3D raster map.
 #% keywords: temporal
 #% keywords: conversion
+#% keywords: raster
 #% keywords: raster3d
+#% keywords: voxel
 #%end
 
 #%option G_OPT_STRDS_INPUT
@@ -31,6 +33,7 @@ import os
 import grass.script as grass
 import grass.temporal as tgis
 from datetime import datetime
+from grass.exceptions import CalledModuleError
 
 ############################################################################
 
@@ -46,7 +49,7 @@ def main():
 
     mapset = grass.gisenv()["MAPSET"]
 
-    sp = tgis.open_old_space_time_dataset(input, "strds")
+    sp = tgis.open_old_stds(input, "strds")
 
     grass.use_temp_region()
 
@@ -111,10 +114,10 @@ def main():
         bottom = start
 
     top = float(bottom + granularity * float(num_maps))
-    ret = grass.run_command("g.region", t=top, b=bottom, tbres=granularity)
-
-    if ret != 0:
-        grass.fatal(_("Unable to set 3d region"))
+    try:
+        grass.run_command("g.region", t=top, b=bottom, tbres=granularity)
+    except CalledModuleError:
+        grass.fatal(_("Unable to set 3D region"))
 
     # Create a NULL map to fill the gaps
     null_map = "temporary_null_map_%i" % os.getpid()
@@ -142,21 +145,24 @@ def main():
 
             count += 1
 
-        ret = grass.run_command("r.to.rast3", input=map_names,
-                                output=output, overwrite=grass.overwrite())
+        try:
+            grass.run_command("r.to.rast3", input=map_names,
+                              output=output, overwrite=grass.overwrite())
+        except CalledModuleError:
+            grass.fatal(_("Unable to create 3D raster map <%s>" % output))
 
-        if ret != 0:
-            grass.fatal(_("Unable to create raster3d map <%s>" % output))
-
-    grass.run_command("g.remove", rast=null_map)
+    grass.run_command("g.remove", flags='f', type='raster', name=null_map)
 
     title = _("Space time voxel cube")
     descr = _("This space time voxel cube was created with t.rast.to.rast3")
 
     # Set the unit
-    ret = grass.run_command("r3.support", map=output, vunit=unit,
-                            title=title, description=descr,
-                            overwrite=grass.overwrite())
+    try:
+        grass.run_command("r3.support", map=output, vunit=unit,
+                          title=title, description=descr,
+                          overwrite=grass.overwrite())
+    except CalledModuleError:
+        grass.warning(_("%s failed to set units.") % 'r3.support')
 
     # Register the space time voxel cube in the temporal GIS
     if output.find("@") >= 0:

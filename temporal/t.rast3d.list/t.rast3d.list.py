@@ -2,15 +2,15 @@
 # -*- coding: utf-8 -*-
 ############################################################################
 #
-# MODULE:	t.rast3d.list
-# AUTHOR(S):	Soeren Gebbert
+# MODULE:   t.rast3d.list
+# AUTHOR(S):    Soeren Gebbert
 #
-# PURPOSE:	List registered maps of a space time raster3d dataset
-# COPYRIGHT:	(C) 2011-2014, Soeren Gebbert and the GRASS Development Team
+# PURPOSE:  List registered maps of a space time raster3d dataset
+# COPYRIGHT:    (C) 2011-2014, Soeren Gebbert and the GRASS Development Team
 #
-#		This program is free software under the GNU General Public
-#		License (version 2). Read the file COPYING that comes with GRASS
-#		for details.
+#       This program is free software under the GNU General Public
+#       License (version 2). Read the file COPYING that comes with GRASS
+#       for details.
 #
 #############################################################################
 
@@ -18,8 +18,9 @@
 #% description: Lists registered maps of a space time raster3d dataset.
 #% keywords: temporal
 #% keywords: map management
-#% keywords: raster3d
 #% keywords: list
+#% keywords: raster3d
+#% keywords: voxel
 #%end
 
 #%option G_OPT_STR3DS_INPUT
@@ -66,8 +67,8 @@
 #%end
 
 #%flag
-#% key: h
-#% description: Print the column names as first row
+#% key: s
+#% description: Suppress printing of column names
 #% guisection: Formatting
 #%end
 
@@ -86,7 +87,7 @@ def main():
     where = options["where"]
     separator = grass.separator(options["separator"])
     method = options["method"]
-    header = flags["h"]
+    header = flags["s"]
 
     # Make sure the temporal database exists
     tgis.init()

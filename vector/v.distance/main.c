@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
     struct Map_info From, To, Out, *Outp;
     int from_type, to_type, from_field, to_field, with_z;
     double max, min;
-    double *max_step;
+    double *max_step, max_map;
     int n_max_steps, curr_step;
     struct line_pnts *FPoints, *TPoints;
     struct line_cats *FCats, *TCats;
@@ -66,6 +66,7 @@ int main(int argc, char *argv[])
     double fx, fy, fz, falong, fangle, tx, ty, tz, talong, tangle, dist;
     double tmp_fx, tmp_fy, tmp_fz, tmp_falong, tmp_fangle, tmp_dist;
     double tmp_tx, tmp_ty, tmp_tz, tmp_talong, tmp_tangle;
+    int geodesic;
     struct field_info *Fi, *toFi;
     dbString stmt, dbstr;
     dbDriver *driver, *to_driver;
@@ -152,6 +153,7 @@ int main(int argc, char *argv[])
     opt.upload->type = TYPE_STRING;
     opt.upload->required = YES;
     opt.upload->multiple = YES;
+    opt.upload->guisection = _("From");
     opt.upload->options = "cat,dist,to_x,to_y,to_along,to_angle,to_attr";
     opt.upload->description =
 	_("Values describing the relation between two nearest features");
@@ -183,7 +185,7 @@ int main(int argc, char *argv[])
     opt.upload->descriptions = desc;
 
     opt.column = G_define_standard_option(G_OPT_DB_COLUMN);
-    opt.column->required = YES;
+    opt.column->required = NO;
     opt.column->multiple = YES;
     opt.column->description =
 	_("Column name(s) where values specified by 'upload' option will be uploaded");
@@ -223,6 +225,9 @@ int main(int argc, char *argv[])
     sprintf(buf1, "%s,%s", opt.to_field->key, opt.to_column->key);
     opt.to->guidependency = G_store(buf1);
     opt.to_field->guidependency = G_store(opt.to_column->key);
+    
+    G_option_exclusive(opt.column, flag.print, NULL);
+    G_option_required(opt.column, flag.print, NULL);
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
@@ -235,6 +240,8 @@ int main(int argc, char *argv[])
 
     if (flag.all->answer)
 	do_all = TRUE;
+
+    geodesic = G_projection() == PROJECTION_LL;
 
     /* Read upload and column options */
     /* count */
@@ -280,7 +287,7 @@ int main(int argc, char *argv[])
     Upload[i].upload = END;
     /* read columns */
     i = 0;
-    while (opt.column->answers[i]) {
+    while (opt.column->answer && opt.column->answers[i]) {
 	if (Upload[i].upload == END) {
 	    G_warning(_("Too many column names"));
 	    break;
@@ -288,14 +295,15 @@ int main(int argc, char *argv[])
 	Upload[i].column = G_store(opt.column->answers[i]);
 	i++;
     }
-    if (Upload[i].upload != END)
+    if (opt.column->answer && Upload[i].upload != END)
 	G_fatal_error(_("Not enough column names"));
 
     sep = G_option_to_separator(opt.sep);
 
     /* Open 'from' vector */
     Vect_set_open_level(2);
-    Vect_open_old2(&From, opt.from->answer, G_mapset(), opt.from_field->answer);
+    if (Vect_open_old2(&From, opt.from->answer, "", opt.from_field->answer) < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), opt.from->answer);
 
     from_field = Vect_get_field_number(&From, opt.from_field->answer);
 
@@ -313,7 +321,8 @@ int main(int argc, char *argv[])
     
     /* Open 'to' vector */
     Vect_set_open_level(2);
-    Vect_open_old2(&To, opt.to->answer, "", opt.to_field->answer);
+    if (Vect_open_old2(&To, opt.to->answer, "", opt.to_field->answer) < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), opt.to->answer);
 
     ntolines = Vect_get_num_primitives(&To, to_type);
     ntoareas = 0;
@@ -333,7 +342,10 @@ int main(int argc, char *argv[])
 
     /* Open output vector */
     if (opt.out->answer) {
-	Vect_open_new(&Out, opt.out->answer, WITHOUT_Z);
+	if (Vect_open_new(&Out, opt.out->answer, WITHOUT_Z) < 0)
+	    G_fatal_error(_("Unable to create vector map <%s>"),
+			    opt.out->answer);
+
 	Vect_hist_command(&Out);
 	Outp = &Out;
     }
@@ -344,9 +356,10 @@ int main(int argc, char *argv[])
     /* TODO: add maxdist = -1 to Vect_select_ !!! */
     /* Calc maxdist */
     n_max_steps = 1;
+    max_map = max;
     if (max != 0) {
 	struct bound_box fbox, tbox;
-	double dx, dy, dz, tmp_max;
+	double dx, dy, dz;
 
 	Vect_get_map_box(&From, &fbox);
 	Vect_get_map_box(&To, &tbox);
@@ -355,21 +368,29 @@ int main(int argc, char *argv[])
 
 	dx = fbox.E - fbox.W;
 	dy = fbox.N - fbox.S;
+
 	if (Vect_is_3d(&From))
 	    dz = fbox.T - fbox.B;
 	else
 	    dz = 0.0;
 
-	tmp_max = sqrt(dx * dx + dy * dy + dz * dz);
-	if (max < 0)
-	    max = tmp_max;
+	max_map = sqrt(dx * dx + dy * dy + dz * dz);
+	if (max < 0) {
+	    if (geodesic)
+		max = PORT_DOUBLE_MAX;
+	    else
+		max = max_map;
+	}
 
 	/* how to determine a reasonable number of steps to increase the search box? */
 	/* with max > 0 but max <<< tmp_max, 2 steps are sufficient, first 0 then max
 	 * a reasonable number of steps also depends on the number of features in To
 	 * e.g. only one area in To, no need to step */
 
-	n_max_steps = sqrt(nto) * max / tmp_max;
+	if (geodesic)
+	    n_max_steps = sqrt(nto);
+	else
+	    n_max_steps = sqrt(nto) * max / max_map;
 	/* max 9 steps from testing */
 	if (n_max_steps > 9)
 	    n_max_steps = 9;
@@ -378,8 +399,8 @@ int main(int argc, char *argv[])
 	if (n_max_steps > nto)
 	    n_max_steps = nto;
 
-	G_debug(2, "max = %f", max);
-	G_debug(2, "maximum reasonable search distance = %f", tmp_max);
+	G_debug(2, "max = %g", max);
+	G_debug(2, "maximum reasonable search distance = %g", max_map);
 	G_debug(2, "n 'to' features = %d", nto);
 	G_debug(2, "n_max_steps = %d", n_max_steps);
     }
@@ -391,14 +412,17 @@ int main(int argc, char *argv[])
 	/* set up steps to increase search box */
 	max_step = G_malloc(n_max_steps * sizeof(double));
 	/* first step always 0 */
-	max_step[0] = (min < 0 ? 0 : min);
+	if (geodesic)
+	    max_step[0] = 0;
+	else
+	    max_step[0] = (min < 0 ? 0 : min);
 
 	for (curr_step = 1; curr_step < n_max_steps - 1; curr_step++) {
 	    /* for 9 steps, this would be max / [128, 64, 32, 16, 8, 4, 2] */
-	    max_step[curr_step] = max / (2 << (n_max_steps - 1 - curr_step));
+	    max_step[curr_step] = max_map / (2 << (n_max_steps - 1 - curr_step));
 	}
 	/* last step always max */
-	max_step[n_max_steps - 1] = max;
+	max_step[n_max_steps - 1] = max_map;
 	j = 1;
 	for (i = 1; i < n_max_steps; i++) {
 	    if (max_step[j - 1] < max_step[i]) {
@@ -410,7 +434,7 @@ int main(int argc, char *argv[])
     }
     else {
 	max_step = G_malloc(sizeof(double));
-	max_step[0] = max;
+	max_step[0] = max_map;
     }
 
     /* Open database driver */
@@ -608,6 +632,9 @@ int main(int argc, char *argv[])
 	    double box_edge = 0;
 	    int done = FALSE;
 
+	    if (geodesic)
+		tmp_min = 0;
+
 	    curr_step = 0;
 
 	    G_debug(3, "fline = %d", fline);
@@ -665,10 +692,10 @@ int main(int argc, char *argv[])
 		    }
 		}
 		else {
-		    box.E = fbox.E + max;
-		    box.W = fbox.W - max;
-		    box.N = fbox.N + max;
-		    box.S = fbox.S - max;
+		    box.E = fbox.E + max_map;
+		    box.W = fbox.W - max_map;
+		    box.N = fbox.N + max_map;
+		    box.S = fbox.S - max_map;
 		    box.T = PORT_DOUBLE_MAX;
 		    box.B = -PORT_DOUBLE_MAX;
 
@@ -684,7 +711,7 @@ int main(int argc, char *argv[])
 		    line2line(FPoints, ftype, TPoints, ttype,
 		              &tmp_fx, &tmp_fy, &tmp_fz, &tmp_falong, &tmp_fangle,
 		              &tmp_tx, &tmp_ty, &tmp_tz, &tmp_talong, &tmp_tangle,
-			      &tmp_dist, with_z, 0);
+			      &tmp_dist, with_z, geodesic);
 
 		    if (tmp_dist > max || tmp_dist < min)
 			continue;	/* not in threshold */
@@ -758,7 +785,7 @@ int main(int argc, char *argv[])
 		    line2area(&To, FPoints, ftype, aList->id[i], &aList->box[i],
 		              &tmp_fx, &tmp_fy, &tmp_fz, &tmp_falong, &tmp_fangle,
 		              &tmp_tx, &tmp_ty, &tmp_tz, &tmp_talong, &tmp_tangle,
-			      &tmp_dist, with_z, 0);
+			      &tmp_dist, with_z, geodesic);
 
 		    if (tmp_dist > max || tmp_dist < min)
 			continue;	/* not in threshold */
@@ -828,8 +855,17 @@ int main(int argc, char *argv[])
 		G_debug(4, "  dist = %f", dist);
 
 		if (!do_all && curr_step < n_max_steps) {
+		    double dist_map = dist;
+		    
+		    if (geodesic && tfeature > 0) {
+			double dx = fx - tx;
+			double dy = fy - ty;
+			double dz = fz - tz;
+
+			dist_map = sqrt(dx * dx + dy * dy + dz * dz);
+		    }
 		    /* enlarging the search box is possible */
-		    if (tfeature > 0 && dist > box_edge) {
+		    if (tfeature > 0 && dist_map > box_edge) {
 			/* line found but distance > search edge:
 			 * line bbox overlaps with search box, line itself is outside search box */
 			done = FALSE;
@@ -876,7 +912,10 @@ int main(int argc, char *argv[])
 	    double tmp_min = (min < 0 ? 0 : min);
 	    double box_edge = 0;
 	    int done = FALSE;
-	    
+
+	    if (geodesic)
+		tmp_min = 0;
+
 	    curr_step = 0;
 
 	    G_debug(3, "farea = %d", area);
@@ -935,10 +974,10 @@ int main(int argc, char *argv[])
 		    }
 		}
 		else {
-		    box.E = fbox.E + max;
-		    box.W = fbox.W - max;
-		    box.N = fbox.N + max;
-		    box.S = fbox.S - max;
+		    box.E = fbox.E + max_map;
+		    box.W = fbox.W - max_map;
+		    box.N = fbox.N + max_map;
+		    box.S = fbox.S - max_map;
 		    box.T = PORT_DOUBLE_MAX;
 		    box.B = -PORT_DOUBLE_MAX;
 
@@ -957,7 +996,7 @@ int main(int argc, char *argv[])
 		    line2area(&From, TPoints, ttype, area, &fbox,
 		              &tmp_tx, &tmp_ty, &tmp_tz, &tmp_talong, &tmp_tangle,
 		              &tmp_fx, &tmp_fy, &tmp_fz, &tmp_falong, &tmp_fangle,
-			      &tmp_dist, with_z, 0);
+			      &tmp_dist, with_z, geodesic);
 
 		    if (tmp_dist > max || tmp_dist < min)
 			continue;	/* not in threshold */
@@ -1043,7 +1082,7 @@ int main(int argc, char *argv[])
 		    poly = line2area(&From, TPoints, ttype, area, &fbox,
 		              &tmp_tx, &tmp_ty, &tmp_tz, &tmp_talong, &tmp_tangle,
 		              &tmp_fx, &tmp_fy, &tmp_fz, &tmp_falong, &tmp_fangle,
-			      &tmp_dist, with_z, 0);
+			      &tmp_dist, with_z, geodesic);
 
 		    if (poly == 3) {
 			/* 'to' outer ring is outside 'from' area,
@@ -1067,7 +1106,7 @@ int main(int argc, char *argv[])
 			    poly = line2area(&To, FPoints, ttype, tarea, &aList->box[i],
 				      &tmp_fx, &tmp_fy, &tmp_fz, &tmp_falong, &tmp_fangle,
 				      &tmp_tx, &tmp_ty, &tmp_tz, &tmp_talong, &tmp_tangle,
-				      &tmp_dist, with_z, 0);
+				      &tmp_dist, with_z, geodesic);
 
 			    /* inside isle ? */
 			    poly = poly == 2;
@@ -1087,7 +1126,7 @@ int main(int argc, char *argv[])
 				line2area(&From, TPoints, ttype, area, &fbox,
 					  &tmp2_tx, &tmp2_ty, &tmp2_tz, &tmp2_talong, &tmp2_tangle,
 					  &tmp2_fx, &tmp2_fy, &tmp2_fz, &tmp2_falong, &tmp2_fangle,
-					  &tmp2_dist, with_z, 0);
+					  &tmp2_dist, with_z, geodesic);
 
 				if (tmp2_dist < tmp_dist) {
 				    tmp_dist = tmp2_dist;
@@ -1167,8 +1206,17 @@ int main(int argc, char *argv[])
 		}
 
 		if (!do_all && curr_step < n_max_steps) {
+		    double dist_map = dist;
+		    
+		    if (geodesic && tfeature > 0) {
+			double dx = fx - tx;
+			double dy = fy - ty;
+			double dz = fz - tz;
+
+			dist_map = sqrt(dx * dx + dy * dy + dz * dz);
+		    }
 		    /* enlarging the search box is possible */
-		    if (tfeature > 0 && dist > box_edge) {
+		    if (tfeature > 0 && dist_map > box_edge) {
 			/* area found but distance > search edge:
 			 * area bbox overlaps with search box, area itself is outside search box */
 			done = FALSE;
@@ -1262,7 +1310,10 @@ int main(int argc, char *argv[])
     else if (do_all && opt.table->answer) {	/* create new table */
 	db_set_string(&stmt, "create table ");
 	db_append_string(&stmt, opt.table->answer);
-	db_append_string(&stmt, " (from_cat integer");
+	if (Outp)
+	    db_append_string(&stmt, " (cat integer,from_cat integer");
+	else
+	    db_append_string(&stmt, " (from_cat integer");
 
 	j = 0;
 	while (Upload[j].upload != END) {
@@ -1331,6 +1382,8 @@ int main(int argc, char *argv[])
 	    Vect_reset_line(FPoints);
 	    Vect_reset_cats(FCats);
 
+	    Vect_cat_set(FCats, 1, i);
+
 	    Vect_append_point(FPoints, Near[i].from_x, Near[i].from_y, 0);
 
 	    if (Near[i].dist == 0) {
@@ -1385,8 +1438,13 @@ int main(int argc, char *argv[])
 	    }
 	}
 	else if (do_all) {		/* insert new record */
-	    sprintf(buf1, "insert into %s values ( %d ", opt.table->answer,
-		    Near[i].from_cat);
+	    if (!Outp)
+		sprintf(buf1, "insert into %s values ( %d ", opt.table->answer,
+			Near[i].from_cat);
+	    else
+		sprintf(buf1, "insert into %s values ( %d, %d ", opt.table->answer,
+			i, Near[i].from_cat);
+
 	    db_set_string(&stmt, buf1);
 
 	    j = 0;
@@ -1611,6 +1669,15 @@ int main(int argc, char *argv[])
 
     Vect_close(&From);
     if (Outp != NULL) {
+	if (do_all && opt.table->answer) {
+	    dbConnection connection;
+
+	    db_set_default_connection();
+	    db_get_connection(&connection);
+	    Vect_map_add_dblink(Outp, 1, NULL, opt.table->answer, "cat", 
+				connection.databaseName,
+				connection.driverName);
+	}
 	Vect_build(Outp);
 	Vect_close(Outp);
     }

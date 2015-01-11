@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 ############################################################################
 #
-# MODULE:	t.topology
-# AUTHOR(S):	Soeren Gebbert
+# MODULE:       t.topology
+# AUTHOR(S):    Soeren Gebbert
 #
-# PURPOSE:	List temporal topology of a space time dataset
-# COPYRIGHT:	(C) 2011 by the GRASS Development Team
+# PURPOSE:      List temporal topology of a space time dataset
+# COPYRIGHT:    (C) 2011-2014 by the GRASS Development Team
 #
 #		This program is free software under the GNU General Public
 #		License (version 2). Read the file COPYING that comes with GRASS
@@ -59,7 +59,7 @@ def main():
     # Make sure the temporal database exists
     tgis.init()
 
-    sp = tgis.open_old_space_time_dataset(name, type)
+    sp = tgis.open_old_stds(name, type)
 
     # Get ordered map list
     maps = sp.get_registered_maps_as_objects(

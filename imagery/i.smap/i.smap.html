@@ -147,7 +147,7 @@ r.mapcalc "MASKed_map = classification_results"
 Supervised classification of LANDSAT
 
 <div class="code"><pre>
-g.region rast=lsat7_2002_10 -p
+g.region raster=lsat7_2002_10 -p
 
 # store VIZ, NIR, MIR into group/subgroup
 i.group group=my_lsat7_2002 subgroup=my_lsat7_2002 \
@@ -155,7 +155,7 @@ i.group group=my_lsat7_2002 subgroup=my_lsat7_2002 \
 
 # Now digitize training areas "training" with the digitizer
 # and convert to raster model with v.to.rast
-v.to.rast training out=training use=cat labelcolumn=label
+v.to.rast input=training output=training use=cat label_column=label
 
 # calculate statistics
 i.gensigset trainingmap=training group=my_lsat7_2002 subgroup=my_lsat7_2002 \
@@ -222,4 +222,4 @@ U.S.Army Construction Engineering
 Research Laboratory
 
 <p>
-<i>Last changed: $Date: 2014-06-25 13:53:43 +0200 (Wed, 25 Jun 2014) $</i>
+<i>Last changed: $Date: 2014-12-19 22:55:37 +0100 (Fri, 19 Dec 2014) $</i>

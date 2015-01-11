@@ -50,11 +50,14 @@ import atexit
 import string
 import time
 import shutil
+from grass.script.utils import try_remove
 from grass.script import core as grass
+from grass.exceptions import CalledModuleError
+
 
 def cleanup():
-    grass.try_remove(tmp)
-    grass.try_remove(tmp + '.dig')
+    try_remove(tmp)
+    try_remove(tmp + '.dig')
 
 def main():
     global tmp
@@ -192,8 +195,10 @@ VERTI:
     else:
         #### import to binary vector file
         grass.message(_("Importing with v.in.ascii...")) 
-        if grass.run_command('v.in.ascii', flags = do3D, input = digfile,
-                             output = name, format = 'standard') != 0:
+        try:
+            grass.run_command('v.in.ascii', flags=do3D, input=digfile,
+                              output=name, format='standard')
+        except CalledModuleError:
             grass.fatal(_('An error occurred on creating "%s", please check') % name)
 
 if __name__ == "__main__":

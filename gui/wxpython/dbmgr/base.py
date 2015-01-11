@@ -1,4 +1,4 @@
-"""!
+"""
 @package dbmgr.base
 
 @brief GRASS Attribute Table Manager base classes
@@ -14,8 +14,10 @@ List of classes:
  - base::TableListCtrl
  - base::LayerListCtrl
  - base::LayerBook
+ - base::FieldStatistics
 
-@todo Implement giface class
+.. todo::
+    Implement giface class
 
 (C) 2007-2014 by the GRASS Development Team
 
@@ -33,11 +35,13 @@ import locale
 import tempfile
 import copy
 import types
+import math
 
 from core import globalvar
 import wx
 import wx.lib.mixins.listctrl as listmix
 import wx.lib.flatnotebook    as FN
+import wx.lib.scrolledpanel as scrolled
 
 import grass.script as grass
 
@@ -51,21 +55,21 @@ from dbmgr.dialogs    import ModifyTableRecord, AddColumnDialog
 from core.settings    import UserSettings
 
 class Log:
-    """!The log output SQL is redirected to the status bar of the
+    """The log output SQL is redirected to the status bar of the
     containing frame.
     """
     def __init__(self, parent):
         self.parent = parent
 
     def write(self, text_string):
-        """!Update status bar"""
+        """Update status bar"""
         if self.parent:
             self.parent.SetStatusText(text_string.strip())
 
 class VirtualAttributeList(wx.ListCtrl,
                            listmix.ListCtrlAutoWidthMixin,
                            listmix.ColumnSorterMixin):
-    """!Support virtual list class for Attribute Table Manager (browse page)
+    """Support virtual list class for Attribute Table Manager (browse page)
     """
     def __init__(self, parent, log, dbMgrData, layer, pages):
         # initialize variables
@@ -76,7 +80,8 @@ class VirtualAttributeList(wx.ListCtrl,
         self.layer   = layer
         self.pages = pages
 
-        self.fieldCalc = None      
+        self.fieldCalc = None
+        self.fieldStats = None      
         self.columns = {} # <- LoadData()
         
         self.sqlFilter = {}
@@ -121,7 +126,7 @@ class VirtualAttributeList(wx.ListCtrl,
         self.Bind(wx.EVT_LIST_COL_RIGHT_CLICK, self.OnColumnMenu)     
         
     def Update(self, mapDBInfo = None):
-        """!Update list according new mapDBInfo description"""
+        """Update list according new mapDBInfo description"""
         if mapDBInfo:
             self.mapDBInfo = mapDBInfo
             self.LoadData(self.layer)
@@ -129,15 +134,15 @@ class VirtualAttributeList(wx.ListCtrl,
             self.LoadData(self.layer, **self.sqlFilter)
 
     def LoadData(self, layer, columns = None, where = None, sql = None):
-        """!Load data into list
+        """Load data into list
 
-        @param layer layer number
-        @param columns list of columns for output (-> v.db.select)
-        @param where where statement (-> v.db.select)
-        @param sql full sql statement (-> db.select)
+        :param layer: layer number
+        :param columns: list of columns for output (-> v.db.select)
+        :param where: where statement (-> v.db.select)
+        :param sql: full sql statement (-> db.select)
         
-        @return id of key column 
-        @return -1 if key column is not displayed
+        :return: id of key column 
+        :return: -1 if key column is not displayed
         """
         self.log.write(_("Loading data..."))
         
@@ -252,13 +257,21 @@ class VirtualAttributeList(wx.ListCtrl,
                 return
 
             self.AddDataRow(i, record, columns, keyId)
-
+            
             i += 1
             if i >= 100000:
                 self.log.write(_("Viewing limit: 100000 records."))
                 break
         
         self.SetItemCount(i)
+        
+        if where:
+            item = -1
+            while True:
+                item = self.GetNextItem(item)
+                if item == -1:
+                    break
+                self.SetItemState(item, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED)
         
         i = 0
         for col in columns:
@@ -278,7 +291,7 @@ class VirtualAttributeList(wx.ListCtrl,
         return keyId
     
     def AddDataRow(self, i, record, columns, keyId):
-        """!Add row to the data list"""
+        """Add row to the data list"""
         self.itemDataMap[i] = []
         keyColumn = self.mapDBInfo.layers[self.layer]['key']
         j = 0
@@ -324,7 +337,7 @@ class VirtualAttributeList(wx.ListCtrl,
             self.itemCatsMap[i] = cat
         
     def OnItemSelected(self, event):
-        """!Item selected. Add item to selected cats..."""
+        """Item selected. Add item to selected cats..."""
         #         cat = int(self.GetItemText(event.m_itemIndex))
         #         if cat not in self.selectedCats:
         #             self.selectedCats.append(cat)
@@ -333,7 +346,7 @@ class VirtualAttributeList(wx.ListCtrl,
         event.Skip()
 
     def OnItemDeselected(self, event):
-        """!Item deselected. Remove item from selected cats..."""
+        """Item deselected. Remove item from selected cats..."""
         #         cat = int(self.GetItemText(event.m_itemIndex))
         #         if cat in self.selectedCats:
         #             self.selectedCats.remove(cat)
@@ -342,7 +355,7 @@ class VirtualAttributeList(wx.ListCtrl,
         event.Skip()
 
     def GetSelectedItems(self):
-        """!Return list of selected items (category numbers)"""
+        """Return list of selected items (category numbers)"""
         cats = []
         item = self.GetFirstSelected()
         while item != -1:
@@ -352,7 +365,7 @@ class VirtualAttributeList(wx.ListCtrl,
         return cats
 
     def GetItems(self):
-        """!Return list of items (category numbers)"""
+        """Return list of items (category numbers)"""
         cats = []
         for item in range(self.GetItemCount()):
             cats.append(self.GetItemText(item))
@@ -360,98 +373,100 @@ class VirtualAttributeList(wx.ListCtrl,
         return cats
 
     def GetColumnText(self, index, col):
-        """!Return column text"""
+        """Return column text"""
         item = self.GetItem(index, col)
         return item.GetText()
 
     def GetListCtrl(self):
-        """!Returt list"""
+        """Returt list"""
         return self
 
     def OnGetItemText(self, item, col):
-        """!Get item text"""
+        """Get item text"""
         index = self.itemIndexMap[item]
         s = self.itemDataMap[index][col]
         return s
 
     def OnGetItemAttr(self, item):
-        """!Get item attributes"""
+        """Get item attributes"""
         if ( item % 2) == 0:
             return self.attr2
         else:
             return self.attr1
 
     def OnColumnMenu(self, event):
-        """!Column heading right mouse button -> pop-up menu"""
+        """Column heading right mouse button -> pop-up menu"""
         self._col = event.GetColumn()
         
         popupMenu = wx.Menu()
 
-        if not hasattr (self, "popupID1"):
-            #TODO put to dict
-            self.popupID1 = wx.NewId()
-            self.popupID2 = wx.NewId()
-            self.popupID3 = wx.NewId()
-            self.popupID4 = wx.NewId()
-            self.popupID5 = wx.NewId()
-            self.popupID6 = wx.NewId()
-            self.popupID7 = wx.NewId()
-            self.popupID8 = wx.NewId()
-            self.popupID9 = wx.NewId()
-            self.popupID10 = wx.NewId()
-            self.popupID11 = wx.NewId()
-            self.popupID12 = wx.NewId()
-            self.popupID13 = wx.NewId()
-
-
-        popupMenu.Append(self.popupID1, text = _("Sort ascending"))
-        popupMenu.Append(self.popupID2, text = _("Sort descending"))
+        if not hasattr (self, "popupID"):
+            self.popupId = { 'sortAsc' : wx.NewId(),
+                             'sortDesc' : wx.NewId(),
+                             'calculate' : wx.NewId(),
+                             'area' : wx.NewId(),
+                             'length' : wx.NewId(),
+                             'compact' : wx.NewId(),
+                             'fractal' : wx.NewId(),
+                             'perimeter' : wx.NewId(),
+                             'ncats' : wx.NewId(),
+                             'slope' : wx.NewId(),
+                             'lsin' : wx.NewId(),
+                             'lazimuth' : wx.NewId(),
+                             'calculator' : wx.NewId(),
+                             'stats' : wx.NewId() }
+        
+        popupMenu.Append(self.popupId['sortAsc'], text = _("Sort ascending"))
+        popupMenu.Append(self.popupId['sortDesc'], text = _("Sort descending"))
         popupMenu.AppendSeparator()
         subMenu = wx.Menu()
-        popupMenu.AppendMenu(self.popupID3, _("Calculate (only numeric columns)"),
+        popupMenu.AppendMenu(self.popupId['calculate'], _("Calculate (only numeric columns)"),
                              subMenu)
-        popupMenu.Append(self.popupID13, text = _("Field calculator"))
-
+        popupMenu.Append(self.popupId['calculator'], text = _("Field calculator"))
+        popupMenu.AppendSeparator()
+        popupMenu.Append(self.popupId['stats'], text = _("Statistics"))
+        
         if not self.pages['manageTable']:
             popupMenu.AppendSeparator()
-            self.popupID14 = wx.NewId()
-            popupMenu.Append(self.popupID14, text = _("Add column"))
+            self.popupId['addCol'] = wx.NewId()
+            popupMenu.Append(self.popupId['addCol'], text = _("Add column"))
             if not self.dbMgrData['editable']:
-                popupMenu.Enable(self.popupID14, False)
+                popupMenu.Enable(self.popupId['addCol'], False)
 
         if not self.dbMgrData['editable']:
-            popupMenu.Enable(self.popupID13, False)
+            popupMenu.Enable(self.popupId['calculator'], False)
           
         if not self.dbMgrData['editable'] or \
                 self.columns[self.GetColumn(self._col).GetText()]['ctype'] not in (types.IntType, types.FloatType):
-            popupMenu.Enable(self.popupID3, False)
+            popupMenu.Enable(self.popupId['calculate'], False)
         
-        subMenu.Append(self.popupID4,  text = _("Area size"))
-        subMenu.Append(self.popupID5,  text = _("Line length"))
-        subMenu.Append(self.popupID6,  text = _("Compactness of an area"))
-        subMenu.Append(self.popupID7,  text = _("Fractal dimension of boundary defining a polygon"))
-        subMenu.Append(self.popupID8,  text = _("Perimeter length of an area"))
-        subMenu.Append(self.popupID9,  text = _("Number of features for each category"))
-        subMenu.Append(self.popupID10, text = _("Slope steepness of 3D line"))
-        subMenu.Append(self.popupID11, text = _("Line sinuousity"))
-        subMenu.Append(self.popupID12, text = _("Line azimuth"))
+        subMenu.Append(self.popupId['area'],  text = _("Area size"))
+        subMenu.Append(self.popupId['length'],  text = _("Line length"))
+        subMenu.Append(self.popupId['compact'],  text = _("Compactness of an area"))
+        subMenu.Append(self.popupId['fractal'],  text = _("Fractal dimension of boundary defining a polygon"))
+        subMenu.Append(self.popupId['perimeter'],  text = _("Perimeter length of an area"))
+        subMenu.Append(self.popupId['ncats'],  text = _("Number of features for each category"))
+        subMenu.Append(self.popupId['slope'], text = _("Slope steepness of 3D line"))
+        subMenu.Append(self.popupId['lsin'], text = _("Line sinuousity"))
+        subMenu.Append(self.popupId['lazimuth'], text = _("Line azimuth"))
         
-        self.Bind (wx.EVT_MENU, self.OnColumnSortAsc, id = self.popupID10)
-        self.Bind (wx.EVT_MENU, self.OnColumnSortDesc, id = self.popupID2)
-        self.Bind(wx.EVT_MENU, self.OnFiledCalculator, id = self.popupID13)
+        self.Bind (wx.EVT_MENU, self.OnColumnSortAsc,  id = self.popupId['sortAsc'])
+        self.Bind (wx.EVT_MENU, self.OnColumnSortDesc, id = self.popupId['sortDesc'])
+        self.Bind(wx.EVT_MENU, self.OnFieldCalculator, id = self.popupId['calculator'])
+        self.Bind(wx.EVT_MENU, self.OnFieldStatistics, id = self.popupId['stats'])
         if not self.pages['manageTable']:
-            self.Bind(wx.EVT_MENU, self.OnAddColumn, id = self.popupID14)
+            self.Bind(wx.EVT_MENU, self.OnAddColumn, id = self.popupId['addCol'])
 
-        for id in (self.popupID4, self.popupID5, self.popupID6,
-                   self.popupID7, self.popupID8, self.popupID9,
-                   self.popupID10, self.popupID11, self.popupID12):
+        for id in (self.popupId['area'], self.popupId['length'], self.popupId['compact'],
+                   self.popupId['fractal'], self.popupId['perimeter'], self.popupId['ncats'],
+                   self.popupId['slope'], self.popupId['lsin'], self.popupId['lazimuth']):
             self.Bind(wx.EVT_MENU, self.OnColumnCompute, id = id)
 
         self.PopupMenu(popupMenu)
         popupMenu.Destroy()
 
     def OnColumnSort(self, event):
-        """!Column heading left mouse button -> sorting"""
+        """Column heading left mouse button -> sorting"""
         self._col = event.GetColumn()
         
         self.ColumnSort()
@@ -459,37 +474,37 @@ class VirtualAttributeList(wx.ListCtrl,
         event.Skip()
 
     def OnColumnSortAsc(self, event):
-        """!Sort values of selected column (ascending)"""
+        """Sort values of selected column (ascending)"""
         self.SortListItems(col = self._col, ascending = True)
         event.Skip()
 
     def OnColumnSortDesc(self, event):
-        """!Sort values of selected column (descending)"""
+        """Sort values of selected column (descending)"""
         self.SortListItems(col = self._col, ascending = False)
         event.Skip()
         
     def OnColumnCompute(self, event):
-        """!Compute values of selected column"""
+        """Compute values of selected column"""
         id = event.GetId()
         
         option = None
-        if id == self.popupID4:
+        if id == self.popupId['area']:
             option = 'area'
-        elif id == self.popupID5:
+        elif id == self.popupId['length']:
             option = 'length'
-        elif id == self.popupID6:
+        elif id == self.popupId['compact']:
             option = 'compact'
-        elif id == self.popupID7:
+        elif id == self.popupId['fractal']:
             option = 'fd'
-        elif id == self.popupID8:
+        elif id == self.popupId['perimeter']:
             option = 'perimeter'
-        elif id == self.popupID9:
+        elif id == self.popupId['ncats']:
             option = 'count'
-        elif id == self.popupID10:
+        elif id == self.popupId['slope']:
             option = 'slope'
-        elif id == self.popupID11:
+        elif id == self.popupId['lsin']:
             option = 'sinuous'
-        elif id == self.popupID12:
+        elif id == self.popupId['lazimuth']:
             option = 'azimuth'
         
         if not option:
@@ -505,7 +520,7 @@ class VirtualAttributeList(wx.ListCtrl,
         self.LoadData(self.layer)
         
     def ColumnSort(self):
-        """!Sort values of selected column (self._col)"""
+        """Sort values of selected column (self._col)"""
         # remove duplicated arrow symbol from column header
         # FIXME: should be done automatically
         info = wx.ListItem()
@@ -515,8 +530,8 @@ class VirtualAttributeList(wx.ListCtrl,
             info.m_text = self.GetColumn(column).GetText()
             self.SetColumn(column, info)
         
-    def OnFiledCalculator(self, event):
-        """!Calls SQLBuilderUpdate instance"""
+    def OnFieldCalculator(self, event):
+        """Calls SQLBuilderUpdate instance"""
         if not self.fieldCalc:
             self.fieldCalc = SQLBuilderUpdate(parent = self, id = wx.ID_ANY,
                                               vectmap = self.dbMgrData['vectName'],
@@ -526,8 +541,22 @@ class VirtualAttributeList(wx.ListCtrl,
         else:
             self.fieldCalc.Raise()
 
+    def OnFieldStatistics(self, event):
+        """Calls FieldStatistics instance"""
+        if not self.fieldStats:
+            self.fieldStats = FieldStatistics(parent = self, id = wx.ID_ANY)
+            self.fieldStats.Show()
+        else:
+            self.fieldStats.Raise()
+
+        selLayer = self.dbMgrData['mapDBInfo'].layers[self.layer]
+        self.fieldStats.Update(driver = selLayer['driver'],
+                               database = selLayer['database'],
+                               table = selLayer['table'],
+                               column = self.GetColumn(self._col).GetText())
+
     def OnAddColumn(self, event):
-        """!Add column into table"""
+        """Add column into table"""
         table = self.dbMgrData['mapDBInfo'].layers[self.layer]['table']
         dlg = AddColumnDialog(parent = self, title = _('Add column to table <%s>') % table)
         if not dlg:
@@ -540,7 +569,7 @@ class VirtualAttributeList(wx.ListCtrl,
         dlg.Destroy()
 
     def SortItems(self, sorter = cmp):
-        """!Sort items"""
+        """Sort items"""
         items = list(self.itemDataMap.keys())
         items.sort(self.Sorter)
         self.itemIndexMap = items
@@ -574,11 +603,11 @@ class VirtualAttributeList(wx.ListCtrl,
             return -cmpVal
 
     def GetSortImages(self):
-        """!Used by the ColumnSorterMixin, see wx/lib/mixins/listctrl.py"""
+        """Used by the ColumnSorterMixin, see wx/lib/mixins/listctrl.py"""
         return (self.sm_dn, self.sm_up)
 
     def IsEmpty(self):
-        """!Check if list if empty"""
+        """Check if list if empty"""
         if self.columns:
             return False
         
@@ -589,15 +618,15 @@ class DbMgrBase:
                  vectorName = None, item = None, giface = None,
                  statusbar = None, 
                  **kwargs):
-        """!Base class, which enables usage of separate pages of Attribute Table Manager 
+        """Base class, which enables usage of separate pages of Attribute Table Manager 
 
-        @param id window id
-        @param mapdisplay MapFrame instance
-        @param vetorName name of vector map
-        @param item item from Layer Tree
-        @param log log window
-        @param statusbar widget with statusbar 
-        @param kwagrs other wx.Frame's arguments
+        :param id: window id
+        :param mapdisplay: MapFrame instance
+        :param vectorName: name of vector map
+        :param item: item from Layer Tree
+        :param log: log window
+        :param statusbar: widget with statusbar 
+        :param kwagrs: other wx.Frame's arguments
         """
 
         # stores all data, which are shared by pages
@@ -646,7 +675,7 @@ class DbMgrBase:
                      }
 
     def ChangeVectorMap(self, vectorName):
-        """!Change of vector map
+        """Change of vector map
 
         Does not import layers of new vector map into pages.
         For the import use methods addLayer in DbMgrBrowsePage and DbMgrTablesPage
@@ -674,13 +703,15 @@ class DbMgrBase:
             self.pages['manageLayer'].UpdatePage()       
 
     def CreateDbMgrPage(self, parent, pageName, onlyLayer = -1):
-        """!Creates chosen page
+        """Creates chosen page
 
-        @param pageName can be 'browse' or 'manageTable' or 'manageLayer' which corresponds with pages in 
-                        Attribute Table Manager
-        @return created instance of page - if the page has been already created returns the previously created instance
-        @return None  if wrong identifier was passed
-        """         
+        :param pageName: can be 'browse' or 'manageTable' or
+                         'manageLayer' which corresponds with pages in
+                         Attribute Table Manager
+        :return: created instance of page, if the page has been already
+                 created returns the previously created instance
+        :return: None  if wrong identifier was passed
+        """       
         if pageName == 'browse':
             if not self.pages['browse']:
                 self.pages[pageName] = DbMgrBrowsePage(parent = parent, parentDbMgrBase = self,
@@ -698,7 +729,7 @@ class DbMgrBase:
         return None
 
     def UpdateDialog(self, layer):
-        """!Updates dialog layout for given layer"""
+        """Updates dialog layout for given layer"""
         # delete page
         if layer in self.dbMgrData['mapDBInfo'].layers.keys():
             # delete page
@@ -730,19 +761,19 @@ class DbMgrBase:
             self.pages['manageLayer'].UpdatePage()
     
     def GetVectorName(self):
-        """!Get vector name"""
+        """Get vector name"""
         return self.dbMgrData['vectName']
 
     def GetVectorLayers(self):
-        """!Get layers of vector map which have table"""
+        """Get layers of vector map which have table"""
         return self.dbMgrData['mapDBInfo'].layers.keys()
 
 class DbMgrNotebookBase(FN.FlatNotebook):
     def __init__(self, parent, parentDbMgrBase):
-        """!Base class for notebook with attribute tables in tabs
+        """Base class for notebook with attribute tables in tabs
 
-        @param parent GUI parent
-        @param parentDbMgrBase instance of DbMgrBase class
+        :param parent: GUI parent
+        :param parentDbMgrBase: instance of DbMgrBase class
         """
 
         self.parent = parent
@@ -785,7 +816,7 @@ class DbMgrNotebookBase(FN.FlatNotebook):
         self.Bind(FN.EVT_FLATNOTEBOOK_PAGE_CHANGED, self.OnLayerPageChanged)
 
     def OnLayerPageChanged(self, event):
-        """!Layer tab changed"""
+        """Layer tab changed"""
 
         # because of SQL Query notebook  
         if event.GetEventObject() != self:
@@ -812,9 +843,10 @@ class DbMgrNotebookBase(FN.FlatNotebook):
             self.dbMgrData['mapDBInfo'].GetColumns(table)
 
     def ApplyCommands(self, listOfCommands, listOfSQLStatements):
-        """!Apply changes
+        """Apply changes
 
-        @todo: this part should be _completely_ redesigned
+        .. todo::
+            this part should be _completely_ redesigned
         """
         # perform GRASS commands (e.g. v.db.addcolumn)
         wx.BeginBusyCursor()
@@ -846,7 +878,7 @@ class DbMgrNotebookBase(FN.FlatNotebook):
                 if enc:
                     sqlFile.write(sql.encode(enc) + ';')
                 else:
-                    sqlFile.write(sql + ';')
+                    sqlFile.write(sql.encode('utf-8') + ';')
                 sqlFile.write(os.linesep)
             sqlFile.close()
 
@@ -870,7 +902,7 @@ class DbMgrNotebookBase(FN.FlatNotebook):
         wx.EndBusyCursor()        
 
     def DeletePage(self, layer):
-        """!Removes layer page"""
+        """Removes layer page"""
         if layer not in self.layers:
             return False
 
@@ -887,14 +919,14 @@ class DbMgrNotebookBase(FN.FlatNotebook):
         return True
 
     def DeleteAllPages(self):
-        """!Removes all layer pages"""
+        """Removes all layer pages"""
         FN.FlatNotebook.DeleteAllPages(self)
         self.layerPage = {}
         self.layers = []
         self.selLayer = None
 
     def AddColumn(self, name, ctype, length):
-        """!Add new column to the table"""
+        """Add new column to the table"""
         table = self.dbMgrData['mapDBInfo'].layers[self.selLayer]['table']
         
         if not name:
@@ -931,16 +963,17 @@ class DbMgrNotebookBase(FN.FlatNotebook):
         return True
 
     def GetAddedLayers(self):
-        """!Get list of added layers"""
+        """Get list of added layers"""
         return self.layers[:]
 
 class DbMgrBrowsePage(DbMgrNotebookBase):
     def __init__(self, parent, parentDbMgrBase, onlyLayer = -1):
-        """!Browse page class
+        """Browse page class
 
-        @param parent GUI parent
-        @param parentDbMgrBase instance of DbMgrBase class
-        @param onlyLayer create only tab of given layer, if -1 creates tabs of all layers 
+        :param parent: GUI parent
+        :param parentDbMgrBase: instance of DbMgrBase class
+        :param onlyLayer: create only tab of given layer, if -1 creates
+                          tabs of all layers 
         """
 
         DbMgrNotebookBase.__init__(self, parent = parent, 
@@ -967,13 +1000,14 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
         self.builder = None
 
     def AddLayer(self, layer, pos = -1):
-        """!Adds tab which represents table and enables browse it
+        """Adds tab which represents table and enables browse it
 
-        @param layer vector map layer conntected to table
-        @param pos position of tab, if -1 it is added to end
+        :param layer: vector map layer conntected to table
+        :param pos: position of tab, if -1 it is added to end
 
-        @return True if layer was added 
-        @return False if layer was not added - layer has been already added or has empty table or does not exist 
+        :return: True if layer was added 
+        :return: False if layer was not added - layer has been already
+                 added or has empty table or does not exist 
         """
         if layer in self.layers or \
             layer not in self.parentDbMgrBase.GetVectorLayers():
@@ -1152,11 +1186,11 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
         return True
 
     def OnSqlQuerySizeWrap(self, layer):
-        """!Helper function"""
+        """Helper function"""
         return lambda event : self.OnSqlQuerySize(event, layer)  
 
     def OnSqlQuerySize(self, event, layer):
-        """!Adapts SQL Query Simple tab on current width"""
+        """Adapts SQL Query Simple tab on current width"""
 
         sqlNtb = event.GetEventObject()
         if not self.sqlBestSize:
@@ -1189,13 +1223,13 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
         event.Skip()
 
     def OnDataItemActivated(self, event):
-        """!Item activated, highlight selected item"""
+        """Item activated, highlight selected item"""
         self.OnDataDrawSelected(event)
 
         event.Skip()
 
     def OnDataRightUp(self, event):
-        """!Table description area, context menu"""
+        """Table description area, context menu"""
         if not hasattr(self, "popupDataID1"):
             self.popupDataID1 = wx.NewId()
             self.popupDataID2 = wx.NewId()
@@ -1263,7 +1297,7 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
                            tlist.GetItemCount())
 
     def OnDataItemEdit(self, event):
-        """!Edit selected record of the attribute table"""
+        """Edit selected record of the attribute table"""
         tlist      = self.FindWindowById(self.layerPage[self.selLayer]['data'])
         item      = tlist.GetFirstSelected()
         if item == -1:
@@ -1360,7 +1394,7 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
             tlist.Update()
         
     def OnDataItemAdd(self, event):
-        """!Add new record to the attribute table"""
+        """Add new record to the attribute table"""
         tlist      = self.FindWindowById(self.layerPage[self.selLayer]['data'])
         table     = self.dbMgrData['mapDBInfo'].layers[self.selLayer]['table']
         keyColumn = self.dbMgrData['mapDBInfo'].layers[self.selLayer]['key']
@@ -1432,14 +1466,13 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
                     try:
                         if tlist.columns[columnName[i]]['ctype'] == int:
                             # values[i] is stored as text. 
-                            value = float(values[i])
-                        else:
-                            value = values[i]
-                        values[i] = tlist.columns[columnName[i]]['ctype'] (value)
+                            values[i] = int(float(values[i]))
+                        elif tlist.columns[columnName[i]]['ctype'] == float:
+                            values[i] = float(values[i])
                     except:
-                        raise ValueError(_("Value '%(value)s' needs to be entered as %(type)s.") % 
-                                         {'value' : str(values[i]),
-                                          'type' : tlist.columns[columnName[i]]['type']})
+                        raise ValueError(_("Value '%(value)s' needs to be entered as %(type)s.") %
+                                         {'value': values[i],
+                                          'type': tlist.columns[columnName[i]]['type']})
                     columnsString += '%s,' % columnName[i]
                     
                     if tlist.columns[columnName[i]]['ctype'] == str:
@@ -1478,7 +1511,7 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
 
         
     def OnDataItemDelete(self, event):
-        """!Delete selected item(s) from the tlist (layer/category pair)"""
+        """Delete selected item(s) from the tlist (layer/category pair)"""
         dlist = self.FindWindowById(self.layerPage[self.selLayer]['data'])
         item = dlist.GetFirstSelected()
         
@@ -1542,7 +1575,7 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
         return True
 
     def OnDataItemDeleteAll(self, event):
-        """!Delete all items from the list"""
+        """Delete all items from the list"""
         dlist = self.FindWindowById(self.layerPage[self.selLayer]['data'])
         if UserSettings.Get(group = 'atm', key = 'askOnDeleteRec', subkey = 'enabled'):
             deleteDialog = wx.MessageBox(parent = self,
@@ -1567,7 +1600,7 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
         event.Skip()
 
     def _drawSelected(self, zoom, selectedOnly=True):
-        """!Highlight selected features"""
+        """Highlight selected features"""
         if not self.map or not self.mapdisplay:
             return
         
@@ -1648,9 +1681,9 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
             self.mapdisplay.MapWindow.UpdateMap(render = False, renderVector = True)
         
     def AddQueryMapLayer(self, selectedOnly = True):
-        """!Redraw a map
+        """Redraw a map
 
-        Return True if map has been redrawn, False if no map is given
+        :return: True if map has been redrawn, False if no map is given
         """
         tlist = self.FindWindowById(self.layerPage[self.selLayer]['data'])
         if selectedOnly:
@@ -1671,12 +1704,12 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
         return self.qlayer
 
     def OnDataReload(self, event):
-        """!Reload tlist of records"""
+        """Reload tlist of records"""
         self.OnApplySqlStatement(None)
         self.listOfSQLStatements = []
 
     def OnDataSelectAll(self, event):
-        """!Select all items"""
+        """Select all items"""
         tlist = self.FindWindowById(self.layerPage[self.selLayer]['data'])
         item = -1
 
@@ -1689,7 +1722,7 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
         event.Skip()
 
     def OnDataSelectNone(self, event):
-        """!Deselect items"""
+        """Deselect items"""
         tlist = self.FindWindowById(self.layerPage[self.selLayer]['data'])
         item = -1
 
@@ -1703,7 +1736,7 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
 
 
     def OnDataDrawSelected(self, event):
-        """!Reload table description"""
+        """Reload table description"""
         self._drawSelected(zoom = False)
         event.Skip()
 
@@ -1712,7 +1745,7 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
         event.Skip()
  
     def OnExtractSelected(self, event):
-        """!Extract vector objects selected in attribute browse window
+        """Extract vector objects selected in attribute browse window
         to new vector map
         """
         tlist = self.FindWindowById(self.layerPage[self.selLayer]['data'])
@@ -1746,7 +1779,7 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
             dlg.Destroy()
             
     def OnDeleteSelected(self, event):
-        """!Delete vector objects selected in attribute browse window
+        """Delete vector objects selected in attribute browse window
         (attribures and geometry)
         """
         tlist = self.FindWindowById(self.layerPage[self.selLayer]['data'])
@@ -1782,7 +1815,7 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
             self.mapdisplay.MapWindow.UpdateMap(render = True, renderVector = True)
      
     def OnApplySqlStatement(self, event):
-        """!Apply simple/advanced sql statement"""
+        """Apply simple/advanced sql statement"""
         keyColumn = -1 # index of key column
         listWin = self.FindWindowById(self.layerPage[self.selLayer]['data'])
         sql = None
@@ -1859,7 +1892,7 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
                 self.mapdisplay.MapWindow.UpdateMap(render=False) # TODO: replace by signals
 
     def OnBuilder(self,event):
-        """!SQL Builder button pressed -> show the SQLBuilder dialog"""
+        """SQL Builder button pressed -> show the SQLBuilder dialog"""
         if not self.builder:
             self.builder = SQLBuilderSelect(parent = self, id = wx.ID_ANY, 
                                             vectmap = self.dbMgrData['vectName'],
@@ -1883,10 +1916,10 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
             self.builder = None
 
     def ValidateSelectStatement(self, statement):
-        """!Validate SQL select statement
+        """Validate SQL select statement
 
-        @return (columns, where)
-        @return None on error
+        :return: (columns, where)
+        :return: None on error
         """
         if statement[0:7].lower() != 'select ':
             return None
@@ -1922,15 +1955,15 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
         return (cols, where)
 
     def LoadData(self, layer, columns = None, where = None, sql = None):
-        """!Load data into list
+        """Load data into list
 
-        @param layer layer number
-        @param columns list of columns for output
-        @param where where statement
-        @param sql full sql statement
+        :param int layer: layer number
+        :param list columns: list of columns for output
+        :param str where: where statement
+        :param str sql: full sql statement
 
-        @return id of key column 
-        @return -1 if key column is not displayed
+        :return: id of key column 
+        :return: -1 if key column is not displayed
         """
         listWin = self.FindWindowById(self.layerPage[layer]['data'])
         return listWin.LoadData(layer, columns, where, sql)
@@ -1943,11 +1976,12 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
 
 class DbMgrTablesPage(DbMgrNotebookBase):   
     def __init__(self, parent, parentDbMgrBase, onlyLayer = -1):
-        """!Page for managing tables
+        """Page for managing tables
 
-        @param parent GUI parent
-        @param parentDbMgrBase instance of DbMgrBase class
-        @param onlyLayer create only tab of given layer, if -1 creates tabs of all layers 
+        :param parent: GUI parent
+        :param parentDbMgrBase: instance of DbMgrBase class
+        :param onlyLayer: create only tab of given layer, if -1
+                          creates tabs of all layers 
         """
 
         DbMgrNotebookBase.__init__(self, parent = parent,
@@ -1963,13 +1997,13 @@ class DbMgrTablesPage(DbMgrNotebookBase):
             self.selLayer = self.layers[0]
 
     def AddLayer(self, layer, pos = -1):
-        """!Adds tab which represents table 
+        """Adds tab which represents table 
 
-        @param layer vector map layer connected to table
-        @param pos position of tab, if -1 it is added to end
+        :param layer: vector map layer connected to table
+        :param pos: position of tab, if -1 it is added to end
 
-        @return True if layer was added 
-        @return False if layer was not added - layer has been already added or does not exist 
+        :return: True if layer was added 
+        :return: False if layer was not added - layer has been already added or does not exist 
         """
         if layer in self.layers or \
             layer not in self.parentDbMgrBase.GetVectorLayers():
@@ -2138,7 +2172,7 @@ class DbMgrTablesPage(DbMgrNotebookBase):
         return True
 
     def _createTableDesc(self, parent, table):
-        """!Create list with table description"""
+        """Create list with table description"""
         tlist = TableListCtrl(parent = parent, id = wx.ID_ANY,
                              table = self.dbMgrData['mapDBInfo'].tables[table],
                              columns = self.dbMgrData['mapDBInfo'].GetColumns(table))
@@ -2150,7 +2184,7 @@ class DbMgrTablesPage(DbMgrNotebookBase):
         return tlist
 
     def OnTableChangeType(self, event):
-        """!Data type for new column changed. Enable or disable
+        """Data type for new column changed. Enable or disable
         data length widget"""
         win = self.FindWindowById(self.layerPage[self.selLayer]['addColLength'])
         if event.GetString() == "varchar":
@@ -2159,7 +2193,7 @@ class DbMgrTablesPage(DbMgrNotebookBase):
             win.Enable(False)
 
     def OnTableRenameColumnName(self, event):
-        """!Editing column name to be added to the table"""
+        """Editing column name to be added to the table"""
         btn  = self.FindWindowById(self.layerPage[self.selLayer]['renameColButton'])
         col  = self.FindWindowById(self.layerPage[self.selLayer]['renameCol'])
         colTo = self.FindWindowById(self.layerPage[self.selLayer]['renameColTo'])
@@ -2171,7 +2205,7 @@ class DbMgrTablesPage(DbMgrNotebookBase):
         event.Skip()
 
     def OnTableAddColumnName(self, event):
-        """!Editing column name to be added to the table"""
+        """Editing column name to be added to the table"""
         btn = self.FindWindowById(self.layerPage[self.selLayer]['addColButton'])
         if len(event.GetString()) > 0:
             btn.Enable(True)
@@ -2181,7 +2215,7 @@ class DbMgrTablesPage(DbMgrNotebookBase):
         event.Skip()
 
     def OnTableItemChange(self, event):
-        """!Rename column in the table"""
+        """Rename column in the table"""
         tlist   = self.FindWindowById(self.layerPage[self.selLayer]['tableData'])
         name   = self.FindWindowById(self.layerPage[self.selLayer]['renameCol']).GetValue()
         nameTo = self.FindWindowById(self.layerPage[self.selLayer]['renameColTo']).GetValue()
@@ -2230,7 +2264,7 @@ class DbMgrTablesPage(DbMgrNotebookBase):
         event.Skip()
 
     def OnTableRightUp(self, event):
-        """!Table description area, context menu"""
+        """Table description area, context menu"""
         if not hasattr(self, "popupTableID"):
             self.popupTableID1 = wx.NewId()
             self.popupTableID2 = wx.NewId()
@@ -2256,7 +2290,7 @@ class DbMgrTablesPage(DbMgrNotebookBase):
         menu.Destroy()
 
     def OnTableItemDelete(self, event):
-        """!Delete selected item(s) from the list"""
+        """Delete selected item(s) from the list"""
         tlist = self.FindWindowById(self.layerPage[self.selLayer]['tableData'])
         
         item = tlist.GetFirstSelected()
@@ -2301,7 +2335,7 @@ class DbMgrTablesPage(DbMgrNotebookBase):
         event.Skip()
 
     def OnTableItemDeleteAll(self, event):
-        """!Delete all items from the list"""
+        """Delete all items from the list"""
         table     = self.dbMgrData['mapDBInfo'].layers[self.selLayer]['table']
         cols      = self.dbMgrData['mapDBInfo'].GetColumns(table)
         keyColumn = self.dbMgrData['mapDBInfo'].layers[self.selLayer]['key']
@@ -2337,12 +2371,12 @@ class DbMgrTablesPage(DbMgrNotebookBase):
         event.Skip()
 
     def OnTableReload(self, event = None):
-        """!Reload table description"""
+        """Reload table description"""
         self.FindWindowById(self.layerPage[self.selLayer]['tableData']).Populate(update = True)
         self.listOfCommands = []
 
     def OnTableItemAdd(self, event):
-        """!Add new column to the table"""
+        """Add new column to the table"""
         name = self.FindWindowById(self.layerPage[self.selLayer]['addColName']).GetValue()
                 
         ctype = self.FindWindowById(self.layerPage[self.selLayer]['addColType']). \
@@ -2383,7 +2417,7 @@ class DbMgrTablesPage(DbMgrNotebookBase):
 
 class DbMgrLayersPage(wx.Panel):
     def __init__(self, parent, parentDbMgrBase):
-        """!Create layer manage page"""
+        """Create layer manage page"""
         self.parentDbMgrBase = parentDbMgrBase
         self.dbMgrData = self.parentDbMgrBase.dbMgrData
 
@@ -2445,7 +2479,7 @@ class DbMgrLayersPage(wx.Panel):
         self.SetSizer(panelSizer)
 
     def _createLayerDesc(self, parent):
-        """!Create list of linked layers"""
+        """Create list of linked layers"""
         tlist = LayerListCtrl(parent = parent, id = wx.ID_ANY,
                              layers = self.dbMgrData['mapDBInfo'].layers)
         
@@ -2488,13 +2522,13 @@ class DbMgrLayersPage(wx.Panel):
         self.manageLayerBook.OnChangeLayer(event = None)
 
     def OnLayerRightUp(self, event):
-        """!Layer description area, context menu"""
+        """Layer description area, context menu"""
         pass
 
 class TableListCtrl(wx.ListCtrl,
                     listmix.ListCtrlAutoWidthMixin):
     #                    listmix.TextEditMixin):
-    """!Table description list"""
+    """Table description list"""
 
     def __init__(self, parent, id, table, columns, pos = wx.DefaultPosition,
                  size = wx.DefaultSize):
@@ -2510,12 +2544,12 @@ class TableListCtrl(wx.ListCtrl,
         # listmix.TextEditMixin.__init__(self)
 
     def Update(self, table, columns):
-        """!Update column description"""
+        """Update column description"""
         self.table   = table
         self.columns = columns
 
     def Populate(self, update = False):
-        """!Populate the list"""
+        """Populate the list"""
         itemData = {} # requested by sorter
 
         if not update:
@@ -2549,7 +2583,7 @@ class LayerListCtrl(wx.ListCtrl,
                     listmix.ListCtrlAutoWidthMixin):
                     # listmix.ColumnSorterMixin):
                     # listmix.TextEditMixin):
-    """!Layer description list"""
+    """Layer description list"""
 
     def __init__(self, parent, id, layers,
                  pos = wx.DefaultPosition,
@@ -2565,11 +2599,11 @@ class LayerListCtrl(wx.ListCtrl,
         # listmix.TextEditMixin.__init__(self)
 
     def Update(self, layers):
-        """!Update description"""
+        """Update description"""
         self.layers = layers
 
     def Populate(self, update = False):
-        """!Populate the list"""
+        """Populate the list"""
         itemData = {} # requested by sorter
 
         if not update:
@@ -2611,7 +2645,7 @@ class LayerListCtrl(wx.ListCtrl,
         return itemData
 
 class LayerBook(wx.Notebook):
-    """!Manage layers (add, delete, modify)"""
+    """Manage layers (add, delete, modify)"""
     def __init__(self, parent, id,
                  parentDialog,
                  style = wx.BK_DEFAULT):
@@ -2667,7 +2701,7 @@ class LayerBook(wx.Notebook):
         self._createModifyPage()
 
     def _createAddPage(self):
-        """!Add new layer"""
+        """Add new layer"""
         self.addPanel = wx.Panel(parent = self, id = wx.ID_ANY)
         self.AddPage(page = self.addPanel, text = _("Add layer"))
         
@@ -2861,7 +2895,7 @@ class LayerBook(wx.Notebook):
         pageSizer.Fit(self.addPanel)
         
     def _createDeletePage(self):
-        """!Delete layer"""
+        """Delete layer"""
         self.deletePanel = wx.Panel(parent = self, id = wx.ID_ANY)
         self.AddPage(page = self.deletePanel, text = _("Remove layer"))
 
@@ -2928,7 +2962,7 @@ class LayerBook(wx.Notebook):
         self.deletePanel.SetSizer(pageSizer)
 
     def _createModifyPage(self):
-        """!Modify layer"""
+        """Modify layer"""
         self.modifyPanel = wx.Panel(parent = self, id = wx.ID_ANY)
         self.AddPage(page = self.modifyPanel, text = _("Modify layer"))
 
@@ -3038,7 +3072,7 @@ class LayerBook(wx.Notebook):
         self.modifyPanel.SetSizer(pageSizer)
 
     def _getTables(self, driver, database):
-        """!Get list of tables for given driver and database"""
+        """Get list of tables for given driver and database"""
         tables = []
 
         ret = RunCommand('db.tables',
@@ -3061,7 +3095,7 @@ class LayerBook(wx.Notebook):
         return tables
 
     def _getColumns(self, driver, database, table):
-        """!Get list of column of given table"""
+        """Get list of column of given table"""
         columns = []
 
         ret = RunCommand('db.columns',
@@ -3081,7 +3115,7 @@ class LayerBook(wx.Notebook):
         return columns
 
     def OnDriverChanged(self, event):
-        """!Driver selection changed, update list of tables"""
+        """Driver selection changed, update list of tables"""
         driver = event.GetString()
         database = self.addLayerWidgets['database'][1].GetValue()
 
@@ -3098,11 +3132,11 @@ class LayerBook(wx.Notebook):
         event.Skip()
 
     def OnDatabaseChanged(self, event):
-        """!Database selection changed, update list of tables"""
+        """Database selection changed, update list of tables"""
         event.Skip()
 
     def OnTableChanged(self, event):
-        """!Table name changed, update list of columns"""
+        """Table name changed, update list of columns"""
         driver   = self.addLayerWidgets['driver'][1].GetStringSelection()
         database = self.addLayerWidgets['database'][1].GetValue()
         table    = event.GetString()
@@ -3115,7 +3149,7 @@ class LayerBook(wx.Notebook):
         event.Skip()
 
     def OnSetDefault(self, event):
-        """!Set default values"""
+        """Set default values"""
         driver   = self.addLayerWidgets['driver'][1]
         database = self.addLayerWidgets['database'][1]
         table    = self.addLayerWidgets['table'][1]
@@ -3139,7 +3173,7 @@ class LayerBook(wx.Notebook):
         event.Skip()
 
     def OnCreateTable(self, event):
-        """!Create new table (name and key column given)"""
+        """Create new table (name and key column given)"""
         driver   = self.addLayerWidgets['driver'][1].GetStringSelection()
         database = self.addLayerWidgets['database'][1].GetValue()
         table    = self.tableWidgets['table'][1].GetValue()
@@ -3181,7 +3215,7 @@ class LayerBook(wx.Notebook):
         event.Skip()
 
     def OnAddLayer(self, event):
-        """!Add new layer to vector map"""
+        """Add new layer to vector map"""
         layer    = int(self.addLayerWidgets['layer'][1].GetValue())
         layerWin = self.addLayerWidgets['layer'][1]
         driver   = self.addLayerWidgets['driver'][1].GetStringSelection()
@@ -3234,7 +3268,7 @@ class LayerBook(wx.Notebook):
                 self.modifyLayerWidgets[label][1].Enable()
             
     def OnDeleteLayer(self, event):
-        """!Delete layer"""
+        """Delete layer"""
         try:
             layer = int(self.deleteLayer.GetValue())
         except:
@@ -3280,7 +3314,7 @@ class LayerBook(wx.Notebook):
         event.Skip()
 
     def OnChangeLayer(self, event):
-        """!Layer number of layer to be deleted is changed"""
+        """Layer number of layer to be deleted is changed"""
         try:
             layer = int(event.GetString())
         except:
@@ -3306,7 +3340,7 @@ class LayerBook(wx.Notebook):
             event.Skip()
 
     def OnModifyLayer(self, event):
-        """!Modify layer connection settings"""
+        """Modify layer connection settings"""
 
         layer = int(self.modifyLayerWidgets['layer'][1].GetStringSelection())
 
@@ -3346,3 +3380,146 @@ class LayerBook(wx.Notebook):
             self.mapDBInfo = self.parentDialog.dbMgrData['mapDBInfo']
 
         event.Skip()
+
+class FieldStatistics(wx.Frame):
+    def __init__(self, parent, id=wx.ID_ANY,
+                 style = wx.DEFAULT_FRAME_STYLE, **kwargs):
+        """Dialog to display and save statistics of field stats
+        """
+        self.parent = parent
+        wx.Frame.__init__(self, parent, id, style = style, **kwargs)
+        
+        self.SetTitle(_("Field statistics"))
+        self.SetIcon(wx.Icon(os.path.join(globalvar.ICONDIR, 'grass_sql.ico'), wx.BITMAP_TYPE_ICO))
+
+        self.panel = wx.Panel(parent = self, id = wx.ID_ANY)
+        
+        self.sp = scrolled.ScrolledPanel(parent=self.panel, id=wx.ID_ANY, size=(250, 150),
+                                         style = wx.TAB_TRAVERSAL|wx.SUNKEN_BORDER, name="Statistics" )
+        self.text = wx.TextCtrl(parent=self.sp, id=wx.ID_ANY, style=wx.TE_MULTILINE|wx.TE_READONLY)
+        self.text.SetBackgroundColour("white")
+                
+        # buttons
+        self.btnClipboard = wx.Button(parent=self.panel, id = wx.ID_COPY)
+        self.btnClipboard.SetToolTipString(_("Copy statistics the clipboard (Ctrl+C)"))
+        self.btnCancel = wx.Button(parent=self.panel, id=wx.ID_CLOSE)
+        self.btnCancel.SetDefault()
+
+        # bindings
+        self.btnCancel.Bind(wx.EVT_BUTTON, self.OnClose)
+        self.btnClipboard.Bind(wx.EVT_BUTTON, self.OnCopy)
+        
+        self._layout()
+
+    def _layout(self):
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        txtSizer = wx.BoxSizer(wx.VERTICAL)
+        btnSizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        txtSizer.Add(item = self.text, proportion = 1, 
+                     flag = wx.EXPAND|wx.ALIGN_CENTER_VERTICAL|wx.ALL, border = 5)
+        
+        self.sp.SetSizer(txtSizer)
+        self.sp.SetAutoLayout(True)
+        self.sp.SetupScrolling() 
+
+        sizer.Add(item = self.sp, proportion = 1, flag = wx.GROW |
+                  wx.LEFT | wx.RIGHT | wx.BOTTOM, border = 3)
+
+        line = wx.StaticLine(parent = self.panel, id = wx.ID_ANY,
+                             size = (20, -1), style = wx.LI_HORIZONTAL)
+        sizer.Add(item = line, proportion = 0,
+                  flag = wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.LEFT|wx.RIGHT, border = 3)
+
+        # buttons
+        btnSizer.Add(item = self.btnClipboard, proportion = 0,
+                     flag = wx.ALIGN_LEFT | wx.ALL, border = 5)
+        btnSizer.Add(item = self.btnCancel, proportion = 0,
+                     flag = wx.ALIGN_RIGHT | wx.ALL, border = 5)        
+        sizer.Add(item = btnSizer, proportion = 0, flag = wx.ALIGN_RIGHT | wx.ALL, border = 5)
+
+        self.panel.SetSizer(sizer)
+        sizer.Fit(self.panel)
+
+    def OnCopy(self, event):
+        """!Copy the statistics to the clipboard
+        """
+        stats = self.text.GetValue()
+        rdata = wx.TextDataObject()
+        rdata.SetText(stats)
+        
+        if wx.TheClipboard.Open():
+            wx.TheClipboard.SetData(rdata)
+            wx.TheClipboard.Close()
+
+    def OnClose(self, event):
+        """!Button 'Close' pressed
+        """
+        self.Close(True)
+
+    def Update(self, driver, database, table, column):
+        """!Update statistics for given column
+        
+        :param: column column name
+        """
+        if driver == 'dbf':
+            GError(parent=self,
+                   message=_("Statistics is not support for DBF tables."))
+            self.Close()
+            return
+        
+        fd, sqlFilePath = tempfile.mkstemp(text=True)
+        sqlFile = open(sqlFilePath, 'w')
+        stats = ['count', 'min', 'max', 'avg', 'sum', 'null']
+        for fn in stats:
+            if fn == 'null':
+                sqlFile.write('select count(*) from %s where %s is null;%s' % (table, column, os.linesep))
+            else:
+                sqlFile.write('select %s(%s) from %s;%s' % (fn, column, table, os.linesep))
+        sqlFile.close()
+        
+        dataStr = RunCommand('db.select',
+                             parent = self.parent,
+                             read = True,
+                             flags='c',
+                             input = sqlFilePath,
+                             driver = driver,
+                             database = database)
+        if not dataStr:
+            GError(parent = self.parent,
+                   message = _("Unable to calculte statistics."))
+            self.Close()
+            return
+        
+        dataLines = dataStr.splitlines()
+        if len(dataLines) != len(stats):
+            GError(parent = self.parent,
+                   message = _("Unable to calculte statistics. "
+                               "Invalid number of lines %d (should be %d).") % (len(dataLines), len(stats)))
+            self.Close()
+            return
+        
+        # calculate stddev
+        avg = float(dataLines[stats.index('avg')])
+        count = float(dataLines[stats.index('count')])
+        sql = "select (%(column)s - %(avg)f)*(%(column)s - %(avg)f) from %(table)s" % { 'column' : column, 'avg' : avg, 'table' : table }
+        dataVar = RunCommand('db.select',
+                             parent = self.parent,
+                             read = True,
+                             flags='c',
+                             sql = sql,
+                             driver = driver,
+                             database = database)
+        if not dataVar:
+            GWarning(parent = self.parent,
+                     message = _("Unable to calculte standard deviation."))
+        varSum = 0
+        for var in dataVar.splitlines():
+            varSum += float(var)
+        stddev = math.sqrt(varSum/count)
+        
+        self.SetTitle(_("Field statistics <%s>") % column)
+        self.text.Clear()
+        for idx in range(len(stats)):
+            self.text.AppendText('%s: %s\n' % (stats[idx], dataLines[idx]))
+        self.text.AppendText('stddev: %f\n' % stddev)

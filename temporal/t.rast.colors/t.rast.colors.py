@@ -6,7 +6,7 @@
 # AUTHOR(S):	Soeren Gebbert
 #
 # PURPOSE:  Creates/modifies the color table associated with each raster map of the space time raster dataset.
-# COPYRIGHT:	(C) 2011 by the GRASS Development Team
+# COPYRIGHT:	(C) 2011-2014 by the GRASS Development Team
 #
 #		This program is free software under the GNU General Public
 #		License (version 2). Read the file COPYING that comes with GRASS
@@ -18,6 +18,7 @@
 #% description: Creates/modifies the color table associated with each raster map of the space time raster dataset.
 #% keywords: temporal
 #% keywords: color table
+#% keywords: raster
 #%end
 
 #%option G_OPT_STRDS_INPUT
@@ -55,7 +56,7 @@
 
 #%flag
 #% key: r
-#% description: Remove existing color tables
+#% description: Remove existing color table
 #% guisection: Remove
 #%end
 
@@ -96,6 +97,7 @@
 
 import grass.script as grass
 import grass.temporal as tgis
+from grass.exceptions import CalledModuleError
 
 ############################################################################
 
@@ -131,7 +133,7 @@ def main():
     # Make sure the temporal database exists
     tgis.init()
 
-    sp = tgis.open_old_space_time_dataset(input, "strds")
+    sp = tgis.open_old_stds(input, "strds")
 
     rows = sp.get_registered_maps("id", None, None, None)
 
@@ -162,11 +164,11 @@ def main():
         if(equi):
             flags_+="e"
 
-        ret = grass.run_command("r.colors", flags=flags_, file=filename,
-                                color=color, raster=raster, volume=volume,
-                                rules=rules, overwrite=grass.overwrite())
-
-        if ret != 0:
+        try:
+            grass.run_command("r.colors", flags=flags_, file=filename,
+                              color=color, raster=raster, volume=volume,
+                              rules=rules, overwrite=grass.overwrite())
+        except CalledModuleError:
             grass.fatal(_("Error in r.colors call"))
 
 if __name__ == "__main__":

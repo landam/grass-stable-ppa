@@ -1,8 +1,7 @@
 <h2>DESCRIPTION</h2>
 
-The purpose of <em>t.rast.colors</em> is to compute a 
-color table based on all registered maps of a space time 
-raster dataset and to assign this color table to each map. 
+<em>t.rast.colors</em> computes a color table based on all registered maps
+of a space time raster dataset and to assign this color table to each map. 
 Hence the created color table reflects the data range of 
 the space time raster dataset. This module is a simple 
 wrapper around <a href="r.colors.html">r.colors</a>. 
@@ -15,23 +14,23 @@ manual page for further informations.
 
 <h2>EXAMPLE</h2>
 
-In this example we create 6 raster maps that will be registered in a single space time
-raster dataset named <em>precip_abs</em> using a monthly temporal granularity.
-Then we set an equilized grey color table using <em>t.rast.colors</em> and print the
-color table of the first map to stdout representing the data range of the space time raster dataset.
+In this example we create six raster maps that will be registered in a 
+single space time raster dataset named <em>precip_abs</em> using a 
+monthly temporal granularity. Then we set an equilized grey color table 
+using <em>t.rast.colors</em> and print the color table of the first map 
+to stdout representing the data range of the space time raster dataset.
 
 <div class="code"><pre>
-
 g.region s=0 n=80 w=0 e=120 b=0 t=50 res=10 res3=10 -p3
 
-r.mapcalc --o expr="prec_1 = 100"
-r.mapcalc --o expr="prec_2 = 200"
-r.mapcalc --o expr="prec_3 = 300"
-r.mapcalc --o expr="prec_4 = 400"
-r.mapcalc --o expr="prec_5 = 500"
-r.mapcalc --o expr="prec_6 = 600"
+r.mapcalc expr="prec_1 = 100"
+r.mapcalc expr="prec_2 = 200"
+r.mapcalc expr="prec_3 = 300"
+r.mapcalc expr="prec_4 = 400"
+r.mapcalc expr="prec_5 = 500"
+r.mapcalc expr="prec_6 = 600"
 
-t.create --o type=strds temporaltype=absolute \
+t.create type=strds temporaltype=absolute \
     output=precip_abs title="Color setting example" \
     descr="Color setting example"
 
@@ -56,7 +55,6 @@ r.colors.out map=prec_1
 600 234:234:234
 nv 255:255:255
 default 255:255:255
-
 </pre></div>
 
 <h2>SEE ALSO</h2>
@@ -67,7 +65,7 @@ default 255:255:255
 
 <h2>AUTHOR</h2>
 
-S&ouml;ren Gebbert
+S&ouml;ren Gebbert, Th&uuml;nen Institute of Climate-Smart Agriculture
 
-<p><i>Last changed: $Date: 2012-11-04 07:05:21 -0800 (Sun, 04 Nov 2012) $</i>
+<p><i>Last changed: $Date: 2014-11-26 14:30:48 +0100 (Wed, 26 Nov 2014) $</i>
 

@@ -38,7 +38,7 @@ int write_output(struct globals *globals)
 	for (col = 0; col < globals->ncols; col++) {
 
 	    if (!(FLAG_GET(globals->null_flag, row, col))) {
-		segment_get(&globals->rid_seg, (void *) &rid, row, col);
+		Segment_get(&globals->rid_seg, (void *) &rid, row, col);
 
 		if (rid > 0) {
 		    outbuf[col] = rid;
@@ -73,6 +73,8 @@ int write_output(struct globals *globals)
 	struct Ref Ref;		/* group reference list */
 	DCELL **inbuf;		/* buffers to store lines from each of the imagery group rasters */
 	int n, *in_fd;
+	struct FPRange *fp_range;	/* min/max values of each input raster */
+	DCELL *min, *max;
 
 	mean_fd = Rast_open_new(globals->out_band, FCELL_TYPE);
 	meanbuf = Rast_allocate_f_buf();
@@ -100,11 +102,23 @@ int write_output(struct globals *globals)
 
 	in_fd = G_malloc(Ref.nfiles * sizeof(int));
 	inbuf = (DCELL **) G_malloc(Ref.nfiles * sizeof(DCELL *));
+	fp_range = G_malloc(Ref.nfiles * sizeof(struct FPRange));
+	min = G_malloc(Ref.nfiles * sizeof(DCELL));
+	max = G_malloc(Ref.nfiles * sizeof(DCELL));
 
 	G_debug(1, "Opening input rasters...");
 	for (n = 0; n < Ref.nfiles; n++) {
 	    inbuf[n] = Rast_allocate_d_buf();
 	    in_fd[n] = Rast_open_old(Ref.file[n].name, Ref.file[n].mapset);
+
+	    /* returns -1 on error, 2 on empty range, quitting either way. */
+	    if (Rast_read_fp_range(Ref.file[n].name, Ref.file[n].mapset, &fp_range[n]) != 1)
+		G_fatal_error(_("No min/max found in raster map <%s>"),
+			      Ref.file[n].name);
+	    Rast_get_fp_range_min_max(&(fp_range[n]), &min[n], &max[n]);
+
+	    G_debug(1, "Range for layer %d: min = %f, max = %f",
+			n, min[n], max[n]);
 	}
 
 	G_message(_("Writing out goodness of fit"));
@@ -122,7 +136,7 @@ int write_output(struct globals *globals)
 
 		if (!(FLAG_GET(globals->null_flag, row, col))) {
 		    
-		    segment_get(&globals->rid_seg, (void *) &rid, row, col);
+		    Segment_get(&globals->rid_seg, (void *) &rid, row, col);
 
 		    if (rid > 0) {
 			
@@ -141,7 +155,11 @@ int write_output(struct globals *globals)
 
 			    /* get values for Rk = this cell */
 			    for (n = 0; n < Ref.nfiles; n++) {
-				globals->second_val[n] = inbuf[n][col];
+				if (globals->weighted == FALSE)
+				    /* scaled version */
+				    globals->second_val[n] = (inbuf[n][col] - min[n]) / (max[n] - min[n]);
+				else
+				    globals->second_val[n] = inbuf[n][col];
 			    }
 
 			    Rk.mean = globals->second_val;
@@ -161,7 +179,7 @@ int write_output(struct globals *globals)
 			    }
 			}
 			else {
-			    sim = 1 - sim / globals->max_diff;
+			    sim = 1 - sim;
 			    meanbuf[col] = sim;
 			    if (mingood > sim)
 				mingood = sim;
@@ -203,14 +221,14 @@ int close_files(struct globals *globals)
 {
     /* close segmentation files and output raster */
     G_debug(1, "closing files");
-    segment_close(&globals->bands_seg);
+    Segment_close(&globals->bands_seg);
     if (globals->bounds_map)
-	segment_close(&globals->bounds_seg);
+	Segment_close(&globals->bounds_seg);
 
     G_free(globals->bands_val);
     G_free(globals->second_val);
 
-    segment_close(&globals->rid_seg);
+    Segment_close(&globals->rid_seg);
 
     flag_destroy(globals->null_flag);
     flag_destroy(globals->candidate_flag);

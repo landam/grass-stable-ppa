@@ -188,7 +188,8 @@ int main(int argc, char *argv[])
     memory_opt->type = TYPE_INTEGER;
     memory_opt->required = NO;
     memory_opt->answer = "300";
-    memory_opt->description = _("Maximum memory to be used for raster output (in MB)");
+    memory_opt->label = _("Maximum memory to be used (in MB)");
+    memory_opt->description = _("Cache size for raster rows");
 
     /*----------------------------------------------------------------*/
     /* Parsing */
@@ -239,6 +240,8 @@ int main(int argc, char *argv[])
 	if (driver == NULL)
 	    G_fatal_error(_("No database connection for driver <%s> is defined. Run db.connect."),
 			  drv);
+        db_set_error_handler_driver(driver);
+
 	if (P_Drop_Aux_Table(driver, table_name) != DB_OK)
 	    G_fatal_error(_("Old auxiliary table could not be dropped"));
 	db_close_database_shutdown_driver(driver);
@@ -378,6 +381,7 @@ int main(int argc, char *argv[])
 	if (driver_cats == NULL)
 	    G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 			  Fi->database, Fi->driver);
+        db_set_error_handler_driver(driver_cats);
 
 	nrec =
 	    db_select_CatValArray(driver_cats, Fi->table, Fi->key,
@@ -405,6 +409,7 @@ int main(int argc, char *argv[])
     if (driver == NULL)
 	G_fatal_error(_("No database connection for driver <%s> is defined. "
 			"Run db.connect."), drv);
+    db_set_error_handler_driver(driver);
 
     /* Create auxiliary table */
     if (vector) {
@@ -415,7 +420,7 @@ int main(int argc, char *argv[])
 			  table_name);
 	}
 	/* db_create_index2(driver, table_name, "ID"); */
-	/* sqlite likes that */
+	/* sqlite likes that ??? */
 	db_close_database_shutdown_driver(driver);
 	driver = db_start_driver_open_database(drv, db);
     }
@@ -454,12 +459,12 @@ int main(int argc, char *argv[])
 
 	out_file = G_tempfile();
 	out_fd = creat(out_file, 0666);
-	if (segment_format(out_fd, nrows, ncols, SEGSIZE, SEGSIZE, sizeof(double)) != 1)
+	if (Segment_format(out_fd, nrows, ncols, SEGSIZE, SEGSIZE, sizeof(double)) != 1)
 	    G_fatal_error(_("Can not create temporary file"));
 	close(out_fd);
 
 	out_fd = open(out_file, 2);
-	if (segment_init(&out_seg, out_fd, segments_in_memory) != 1)
+	if (Segment_init(&out_seg, out_fd, segments_in_memory) != 1)
 	    G_fatal_error(_("Can not initialize temporary file"));
 
 	/* initialize output */
@@ -469,7 +474,7 @@ int main(int argc, char *argv[])
 	Rast_set_d_null_value(drastbuf, ncols);
 	for (row = 0; row < nrows; row++) {
 	    G_percent(row, nrows, 2);
-	    segment_put_row(&out_seg, drastbuf, row);
+	    Segment_put_row(&out_seg, drastbuf, row);
 	}
 	G_percent(row, nrows, 2);
 
@@ -482,12 +487,12 @@ int main(int argc, char *argv[])
 
 	    mask_file = G_tempfile();
 	    mask_fd = creat(mask_file, 0666);
-	    if (segment_format(mask_fd, nrows, ncols, SEGSIZE, SEGSIZE, sizeof(char)) != 1)
+	    if (Segment_format(mask_fd, nrows, ncols, SEGSIZE, SEGSIZE, sizeof(char)) != 1)
 		G_fatal_error(_("Can not create temporary file"));
 	    close(mask_fd);
 
 	    mask_fd = open(mask_file, 2);
-	    if (segment_init(&mask_seg, mask_fd, segments_in_memory) != 1)
+	    if (Segment_init(&mask_seg, mask_fd, segments_in_memory) != 1)
 		G_fatal_error(_("Can not initialize temporary file"));
 
 	    maskfd = Rast_open_old(mask_opt->answer, "");
@@ -503,7 +508,7 @@ int main(int argc, char *argv[])
 		    else
 			mask_val = 1;
 			
-		    segment_put(&mask_seg, &mask_val, row, col);
+		    Segment_put(&mask_seg, &mask_val, row, col);
 		}
 	    }
 
@@ -888,7 +893,7 @@ int main(int argc, char *argv[])
 
 
 	if (have_mask) {
-	    segment_release(&mask_seg);	/* release memory  */
+	    Segment_release(&mask_seg);	/* release memory  */
 	    close(mask_fd);
 	    unlink(mask_file);
 	}
@@ -897,7 +902,7 @@ int main(int argc, char *argv[])
 	for (row = 0; row < nrows; row++) {
 	    G_percent(row, nrows, 2);
 	    for (col = 0; col < ncols; col++) {
-		segment_get(&out_seg, &dval, row, col);
+		Segment_get(&out_seg, &dval, row, col);
 		drastbuf[col] = dval;
 	    }
 	    Rast_put_d_row(raster, drastbuf);
@@ -905,7 +910,7 @@ int main(int argc, char *argv[])
 
 	Rast_close(raster);
 
-	segment_release(&out_seg);	/* release memory  */
+	Segment_release(&out_seg);	/* release memory  */
 	close(out_fd);
 	unlink(out_file);
 	/* set map title */

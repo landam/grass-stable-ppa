@@ -6,7 +6,7 @@
 # AUTHOR(S):    Soeren Gebbert
 #
 # PURPOSE:      Store raster map values at spatial and temporal positions of vector points as vector attributes.
-# COPYRIGHT:    (C) 2011 by the GRASS Development Team
+# COPYRIGHT:    (C) 2011-2014 by the GRASS Development Team
 #
 #               This program is free software under the GNU General Public
 #               License (version 2). Read the file COPYING that comes with GRASS
@@ -18,6 +18,7 @@
 #% description: Stores raster map values at spatial and temporal positions of vector points as vector attributes.
 #% keywords: temporal
 #% keywords: sampling
+#% keywords: vector
 #%end
 
 #%option G_OPT_STVDS_INPUT
@@ -60,6 +61,7 @@ import os
 import grass.script as grass
 import grass.temporal as tgis
 import grass.script.raster as raster
+from grass.exceptions import CalledModuleError
 
 ############################################################################
 
@@ -84,8 +86,8 @@ def main():
     dbif = tgis.SQLDatabaseInterfaceConnection()
     dbif.connect()
 
-    sp = tgis.open_old_space_time_dataset(input, "stvds", dbif)
-    strds_sp = tgis.open_old_space_time_dataset(strds, "strds", dbif)
+    sp = tgis.open_old_stds(input, "stvds", dbif)
+    strds_sp = tgis.open_old_stds(strds, "strds", dbif)
 
     if strds_sp.get_temporal_type() != sp.get_temporal_type():
         dbif.close()
@@ -153,40 +155,42 @@ def main():
                 if rasterinfo["datatype"] == "CELL":
                     coltype = "INT"
 
-                if layer:
-                    ret = grass.run_command("v.db.addcolumn",
-                                            map=vectmap, layer=layer,
-                                            column="%s %s" % (col_name, coltype),
-                                            overwrite=grass.overwrite())
-                else:
-                    ret = grass.run_command("v.db.addcolumn", map=vectmap,
-                                            column="%s %s" % (col_name, coltype),
-                                            overwrite=grass.overwrite())
-
-                if ret != 0:
+                try:
+                    if layer:
+                        grass.run_command("v.db.addcolumn",
+                                          map=vectmap, layer=layer,
+                                          column="%s %s" % (col_name, coltype),
+                                          overwrite=grass.overwrite())
+                    else:
+                        grass.run_command("v.db.addcolumn", map=vectmap,
+                                          column="%s %s" % (col_name, coltype),
+                                          overwrite=grass.overwrite())
+                except CalledModuleError:
                     dbif.close()
                     grass.fatal(_("Unable to add column %s to vector map <%s>")
                                 % (col_name, vectmap))
 
                 # Call v.what.rast
-                if layer:
-                    ret = grass.run_command("v.what.rast", map=vectmap,
-                                            layer=layer, raster=rastermap,
-                                            column=col_name, where=where)
-                else:
-                    ret = grass.run_command("v.what.rast", map=vectmap,
-                                            raster=rastermap, column=col_name,
-                                            where=where)
-                if ret != 0:
+                try:
+                    if layer:
+                        grass.run_command("v.what.rast", map=vectmap,
+                                          layer=layer, raster=rastermap,
+                                          column=col_name, where=where)
+                    else:
+                        grass.run_command("v.what.rast", map=vectmap,
+                                          raster=rastermap, column=col_name,
+                                          where=where)
+                except CalledModuleError:
                     dbif.close()
                     grass.fatal(_("Unable to run v.what.rast for vector map "
                                   "<%s> and raster map <%s>") % (vectmap,
                                                                  rastermap))
 
                 if aggreagated_map_name:
-                    ret = grass.run_command("g.remove",
-                                            rast=aggreagated_map_name)
-                    if ret != 0:
+                    try:
+                        grass.run_command("g.remove", flags='f', type='raster',
+                                          name=aggreagated_map_name)
+                    except CalledModuleError:
                         dbif.close()
                         grass.fatal(_("Unable to remove raster map <%s>")
                                     % (aggreagated_map_name))

@@ -16,7 +16,9 @@
 
 #%module
 #% description: Packs up a vector map and support files for copying.
-#% keywords: vector, export, copying
+#% keywords: vector
+#% keywords: export
+#% keywords: copying
 #%end
 #%option G_OPT_V_INPUT
 #% label: Name of vector map to pack up
@@ -37,11 +39,12 @@ import shutil
 import tarfile
 import atexit
 
+from grass.script.utils import try_rmdir, try_remove
 from grass.script import core as grass
 from grass.script import vector as vector
 
 def cleanup():
-    grass.try_rmdir(basedir)
+    try_rmdir(basedir)
 
 def main():
     infile = options['input']
@@ -74,7 +77,7 @@ def main():
     if os.path.exists(outfile):
         if os.getenv('GRASS_OVERWRITE'):
             grass.warning(_("Pack file <%s> already exists and will be overwritten") % outfile)
-            grass.try_remove(outfile)
+            try_remove(outfile)
         else:
             grass.fatal(_("option <%s>: <%s> exists.") % ("output", outfile))
     

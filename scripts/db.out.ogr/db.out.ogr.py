@@ -6,7 +6,7 @@
 # AUTHOR(S):   	Markus Neteler
 #               Converted to Python by Glynn Clements
 # PURPOSE:      exports attribute tables into various formats
-# COPYRIGHT:    (C) 2007 by Markus Neteler and the GRASS Development Team
+# COPYRIGHT:    (C) 2007-2014 by Markus Neteler and the GRASS Development Team
 #
 #               This program is free software under the GNU General Public
 #               License (>=v2). Read the file COPYING that comes with GRASS
@@ -17,17 +17,19 @@
 #%module
 #% description: Exports attribute tables into various formats.
 #% keywords: database
+#% keywords: export
 #% keywords: attribute table
 #%end
 
 #%option G_OPT_V_INPUT
 #% key: input
+#% label: GRASS table name
 #% required: yes
 #%end
 
 #%option G_OPT_F_OUTPUT
-#% key: dsn
-#% description: Table file to be exported or DB connection string
+#% key: output
+#% description: Output table file name or DB connection string
 #% required : yes
 #%end
 
@@ -48,26 +50,29 @@
 #% key: table
 #% type: string
 #% key_desc: name
-#% description: Name for output table (defaut: input)
+#% description: Name for output table (default: input name)
 #% required: no
 #%end
 
 import sys
 import os
+from grass.script.utils import try_remove, basename
 from grass.script import core as grass
+from grass.exceptions import CalledModuleError
+
 
 def main():
     input = options['input']
     layer = options['layer']
     format = options['format']
-    dsn = options['dsn']
+    output = options['output']
     table = options['table']
 
     if format.lower() == 'dbf':
 	format = "ESRI_Shapefile"
 
     if format.lower() == 'csv':
-	olayer = grass.basename(dsn, 'csv')
+	olayer = basename(output, 'csv')
     else:
 	olayer = None
 
@@ -77,28 +82,35 @@ def main():
 	grass.fatal(_("File <%s> already exists") % dbffile)
 
     if olayer:
-	if grass.run_command('v.out.ogr', quiet = True, input = input, layer = layer,
-			     dsn = dsn,
-			     format = format, type = 'point,line,area', olayer = olayer) != 0:
-	    sys.exit(1)
+        try:
+            grass.run_command('v.out.ogr', quiet=True, input=input, layer=layer,
+                              output=output,
+                              format=format, type='point,line,area',
+                              olayer=olayer)
+        except CalledModuleError:
+            grass.fatal(_("Module <%s> failed") % 'v.out.ogr')
+
     else:
-	if grass.run_command('v.out.ogr', quiet = True, input = input, layer = layer,
-			     dsn = dsn, format = format, type = 'point,line,area') != 0:
-	    sys.exit(1)
+        try:
+            grass.run_command('v.out.ogr', quiet=True, input=input,
+                              layer=layer, output=output,
+                              format=format, type='point,line,area')
+        except CalledModuleError:
+            grass.fatal(_("Module <%s> failed") % 'v.out.ogr')
 
     if format == "ESRI_Shapefile":
 	exts = ['shp', 'shx', 'prj']
-	if dsn.endswith('.dbf'):
-	    outname = grass.basename(dsn, 'dbf')
+	if output.endswith('.dbf'):
+	    outname = basename(output, 'dbf')
 	    for ext in exts:
-		grass.try_remove("%s.%s" % (outname, ext))
+		try_remove("%s.%s" % (outname, ext))
 	    outname += '.dbf'
 	else:
 	    for ext in exts:
-		grass.try_remove(os.path.join(dsn, "%s.%s" % (input, ext)))
-	    outname = os.path.join(dsn, input + ".dbf")
+		try_remove(os.path.join(output, "%s.%s" % (input, ext)))
+	    outname = os.path.join(output, input + ".dbf")
     elif format.lower() == 'csv':
-	outname = dsn + '.csv'
+	outname = output + '.csv'
     else:
 	outname = input
 

@@ -253,15 +253,16 @@ dataset.
 
 <!-- todo: check if i.landsat.toar use is needed for NC data -->
 <div class="code"><pre>
-g.region rast=lsat5_1987_30 -p
+g.region raster=lsat5_1987_30 -p
 i.vi red=lsat5_1987_30 viname=ndvi output=lsat5_1987.ndvi nir=lsat5_1987_40
 r.colors lsat5_1987.ndvi color=ndvi
 </pre></div>
 
 <h2>NOTES</h2>
 
-Originally from kepler.gps.caltech.edu:
-<p>A FAQ on Vegetation in Remote Sensing<br>
+Originally from kepler.gps.caltech.edu (<a href="http://www.yale.edu/ceo/Documentation/rsvegfaq.html">FAQ</a>):
+<p>
+A FAQ on Vegetation in Remote Sensing<br>
 Written by Terrill W. Ray, Div. of Geological and Planetary Sciences,
 California Institute of Technology, email: terrill@mars1.gps.caltech.edu
 <p>Snail Mail:  Terrill Ray<br>
@@ -279,11 +280,6 @@ California Institute of Technology, email: terrill@mars1.gps.caltech.edu
 <a href="i.tasscap.html">i.tasscap</a>
 </em>
 
-
-<h2>AUTHORS</h2>
-Baburao Kamble, Asian Institute of Technology, Thailand<br>
-Yann Chemin, Asian Institute of Technology, Thailand
-
 <h2>REFERENCES</h2>
 
 AVHRR, Landsat TM5:
@@ -293,6 +289,11 @@ densities and moisture indicators in composite terrain; a remote
 sensing approach under clear skies in mediterranean climates. PhD 
 thesis, Wageningen Agricultural Univ., The Netherland, 271 pp.
 (<a href="http://edepot.wur.nl/206553">PDF</a>)</li>
+<li> <a href="http://www.indexdatabase.de/db/i.php">Index DataBase: List of available Indices</a></li>
 </ul>
 
-<p><i>Last changed: $Date: 2014-02-01 16:04:41 +0100 (Sat, 01 Feb 2014) $</i>
+<h2>AUTHORS</h2>
+Baburao Kamble, Asian Institute of Technology, Thailand<br>
+Yann Chemin, Asian Institute of Technology, Thailand
+
+<p><i>Last changed: $Date: 2014-12-19 22:55:37 +0100 (Fri, 19 Dec 2014) $</i>

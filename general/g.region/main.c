@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
 	struct Option
 	    *north, *south, *east, *west, *top, *bottom,
 	    *res, *nsres, *ewres, *res3, *tbres, *rows, *cols,
-	    *save, *region, *view, *raster, *raster3d, *align,
+	    *save, *region, *raster, *raster3d, *align,
 	    *zoom, *vect;
     } parm;
 
@@ -161,14 +161,14 @@ int main(int argc, char *argv[])
     parm.region->guisection = _("Existing");
 
     parm.raster = G_define_standard_option(G_OPT_R_MAP);
-    parm.raster->key = "rast";
+    parm.raster->key = "raster";
     parm.raster->required = NO;
     parm.raster->multiple = YES;
     parm.raster->description = _("Set region to match raster map(s)");
     parm.raster->guisection = _("Existing");
 
     parm.raster3d = G_define_standard_option(G_OPT_R3_MAP);
-    parm.raster3d->key = "rast3d";
+    parm.raster3d->key = "raster_3d";
     parm.raster3d->required = NO;
     parm.raster3d->multiple = NO;
     parm.raster3d->description =
@@ -177,22 +177,12 @@ int main(int argc, char *argv[])
     parm.raster3d->guisection = _("Existing");
 
     parm.vect = G_define_standard_option(G_OPT_V_MAP);
-    parm.vect->key = "vect";
+    parm.vect->key = "vector";
     parm.vect->required = NO;
     parm.vect->multiple = YES;
     parm.vect->label = _("Set region to match vector map(s)");
     parm.vect->description = NULL;
     parm.vect->guisection = _("Existing");
-
-    parm.view = G_define_option();
-    parm.view->key = "3dview";
-    parm.view->key_desc = "name";
-    parm.view->required = NO;
-    parm.view->multiple = NO;
-    parm.view->type = TYPE_STRING;
-    parm.view->description = _("Set region to match this 3dview file");
-    parm.view->gisprompt = "old,3d.view,3d view";
-    parm.view->guisection = _("Existing");
 
     parm.north = G_define_option();
     parm.north->key = "n";
@@ -346,6 +336,15 @@ int main(int argc, char *argv[])
     parm.save->gisprompt = "new,windows,region";
     parm.save->guisection = _("Effects");
 
+    G_option_required(flag.dflt, flag.savedefault, flag.print, flag.lprint,
+                      flag.eprint, flag.center, flag.gmt_style, flag.wms_style,
+                      flag.dist_res, flag.nangle, flag. z, flag.bbox, flag.gprint,
+                      flag.res_set, flag.update, parm.region, parm.raster,
+                      parm.raster3d, parm.vect, parm.north, parm.south, parm.east,
+                      parm.west, parm.top, parm.bottom, parm.rows, parm.cols,
+                      parm.res, parm.res3, parm.nsres, parm.ewres, parm.tbres,
+                      parm.zoom, parm.align, parm.save, NULL);
+
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
@@ -405,46 +404,6 @@ int main(int argc, char *argv[])
 	G__get_window(&window, "windows", name, mapset);
     }
 
-    /* 3dview= */
-    if ((name = parm.view->answer)) {
-	struct G_3dview v;
-	FILE *fp;
-	int ret;
-
-	mapset = G_find_file2("3d.view", name, "");
-	if (!mapset)
-	    G_fatal_error(_("3dview file <%s> not found"), name);
-
-	G_3dview_warning(0);	/* suppress boundary mismatch warning */
-
-	if (NULL == (fp = G_fopen_old("3d.view", name, mapset)))
-	    G_fatal_error(_("Unable to open 3dview file <%s> in <%s>"), name,
-			  mapset);
-
-	temp_window = window;
-
-	if (0 > (ret = G_get_3dview(name, mapset, &v)))
-	    G_fatal_error(_("Unable to read 3dview file <%s> in <%s>"), name,
-			  mapset);
-	if (ret == 0)
-	    G_fatal_error(_("Old 3dview file. Region <%s> not found in <%s>"),
-			  name, mapset);
-
-
-	window.north = v.vwin.north;
-	window.south = v.vwin.south;
-	window.west = v.vwin.west;
-	window.east = v.vwin.east;
-
-	window.rows = v.vwin.rows;
-	window.cols = v.vwin.cols;
-	window.ns_res = v.vwin.ns_res;
-	window.ew_res = v.vwin.ew_res;
-
-	fclose(fp);
-
-    }
-
     /* raster= */
     if (parm.raster->answer) {
 	int first = 0;
@@ -491,7 +450,7 @@ int main(int argc, char *argv[])
 	Rast3d_region_to_cell_head(&win, &window);
     }
 
-    /* vect= */
+    /* vector= */
     if (parm.vect->answer) {
 	int first = 0;
 

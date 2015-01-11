@@ -2,6 +2,7 @@
 #include <string.h>
 #include <grass/gis.h>
 #include <grass/spawn.h>
+#include <grass/display.h>
 #include <grass/glocale.h>
 
 #include "proto.h"
@@ -9,18 +10,62 @@
 static void start(const char *, const char *);
 static void start_wx(const char *, const char *, const char *,
 		     const char *, int, int);
+static void error_handler(void *);
 
 /* start file-based monitor */
 void start(const char *name, const char *output)
 {
-    char *env_name;
+    char *env_name, output_path[GPATH_MAX];
+    const char *output_name;
+    
+    /* stop monitor on failure */
+    G_add_error_handler(error_handler, (char *)name);
+    
+    if (!output) {
+        if (D_open_driver() != 0)
+            G_fatal_error(_("No graphics device selected. "
+                            "Use d.mon to select graphics device."));
+        output_name = D_get_file();
+        if (!output_name) 
+            return;
+        if (access(output_name, F_OK) == 0) {
+            if (G_get_overwrite()) {
+                G_warning(_("File '%s' already exists and will be overwritten"), output_name);
+            }
+            else {
+                D_close_driver();
+                G_fatal_error(_("option <%s>: <%s> exists."),
+                              "output", output_name);
+            }
+        }
+        D_close_driver(); /* must be called after check because this
+                           * function produces default map file */
+    }
+    else {
+        output_name = output;
+    }
 
-    if (!output)
-	return;
+        
+    if (!strchr(output_name, HOST_DIRSEP)) { /* relative path */
+        char *ptr;
+        
+        if (!getcwd(output_path, GPATH_MAX))
+            G_fatal_error(_("Unable to get current working directory"));
+        ptr = output_path + strlen(output_path) - 1;
+        if (*(ptr++) != HOST_DIRSEP) {
+            *(ptr++) = HOST_DIRSEP;
+            *(ptr) = '\0';
+        }
+        strcat(output_path, output_name);
+        G_message(_("Output file: %s"), output_path);
+    }
+    else {
+        strcpy(output_path, output_name); /* already full path */
+    }
 
     env_name = NULL;
     G_asprintf(&env_name, "MONITOR_%s_MAPFILE", G_store_upper(name));
-    G_setenv(env_name, output);
+    G_setenv(env_name, output_path);
 }
 
 /* start wxGUI display monitor */
@@ -85,25 +130,25 @@ int start_mon(const char *name, const char *output, int select,
     if (env_fd < 0)
 	G_fatal_error(_("Unable to create file '%s'"), env_value);
 
-    sprintf(buf, "GRASS_PNG_READ=TRUE\n");
+    sprintf(buf, "GRASS_RENDER_FILE_READ=TRUE\n");
     write(env_fd, buf, strlen(buf));
     if (width) {
-	sprintf(buf, "GRASS_WIDTH=%d\n", width);
+	sprintf(buf, "GRASS_RENDER_WIDTH=%d\n", width);
 	write(env_fd, buf, strlen(buf));
     }
     if (height) {
-	sprintf(buf, "GRASS_HEIGHT=%d\n", height);
+	sprintf(buf, "GRASS_RENDER_HEIGHT=%d\n", height);
 	write(env_fd, buf, strlen(buf));
     }
     if (bgcolor) {
 	if (strcmp(bgcolor, "none") == 0)
-	    sprintf(buf, "GRASS_TRANSPARENT=TRUE\n");
+	    sprintf(buf, "GRASS_RENDER_TRANSPARENT=TRUE\n");
 	else
-	    sprintf(buf, "GRASS_BACKGROUNDCOLOR=%s\n", bgcolor);
+	    sprintf(buf, "GRASS_RENDER_BACKGROUNDCOLOR=%s\n", bgcolor);
 	write(env_fd, buf, strlen(buf));
     }
     if (truecolor) {
-	sprintf(buf, "GRASS_TRUECOLOR=TRUE\n");
+	sprintf(buf, "GRASS_RENDER_TRUECOLOR=TRUE\n");
 	write(env_fd, buf, strlen(buf));
     }
     close(env_fd);
@@ -132,11 +177,17 @@ int start_mon(const char *name, const char *output, int select,
     if (select)
 	G_setenv("MONITOR", name);
     
-    if (strncmp(name, "wx", 2) == 0) /* use G_strncasecmp() instead */
+    if (strncmp(name, "wx", 2) == 0) 
 	start_wx(name, tempfile, env_value, cmd_value, 
 		 width, height);
     else
 	start(name, output);
     
     return 0;
+}
+
+void error_handler(void *p)
+{
+    const char *name = (const char *) p;
+    stop_mon(name);
 }

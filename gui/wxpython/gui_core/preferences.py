@@ -1,4 +1,4 @@
-"""!
+"""
 @package gui_core.preferences
 
 @brief User preferences dialog
@@ -45,7 +45,7 @@ from grass.pydispatch.signal import Signal
 from grass.script import core as grass
 
 from core          import globalvar
-from core.gcmd     import RunCommand
+from core.gcmd     import RunCommand, GError
 from core.utils    import ListOfMapsets, GetColorTables, ReadEpsgCodes, _
 from core.settings import UserSettings
 from gui_core.dialogs import SymbolDialog
@@ -53,7 +53,7 @@ from gui_core.widgets import IntegerValidator, ColorTablesComboBox
 from core.debug       import Debug
 
 class PreferencesBaseDialog(wx.Dialog):
-    """!Base preferences dialog"""
+    """Base preferences dialog"""
     def __init__(self, parent, giface, settings, title = _("User settings"),
                  size = (500, 475),
                  style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER):
@@ -85,9 +85,10 @@ class PreferencesBaseDialog(wx.Dialog):
         
         # bindigs
         self.btnDefault.Bind(wx.EVT_BUTTON, self.OnDefault)
-        self.btnDefault.SetToolTipString(_("Revert settings to default and apply changes"))
+        self.btnDefault.SetToolTipString(_("Revert settings to default"))
         self.btnApply.Bind(wx.EVT_BUTTON, self.OnApply)
-        self.btnApply.SetToolTipString(_("Apply changes for the current session"))
+        self.btnApply.SetToolTipString(_("Apply changes for the current session only and close"))
+        self.btnApply.SetLabel(_("Save for this session only"))
         self.btnSave.Bind(wx.EVT_BUTTON, self.OnSave)
         self.btnSave.SetToolTipString(_("Apply and save changes to user settings file (default for next sessions)"))
         self.btnSave.SetDefault()
@@ -99,7 +100,7 @@ class PreferencesBaseDialog(wx.Dialog):
         self._layout()
         
     def _layout(self):
-        """!Layout window"""
+        """Layout window"""
         # sizers
         btnSizer = wx.BoxSizer(wx.HORIZONTAL)
         btnSizer.Add(item = self.btnDefault, proportion = 1,
@@ -119,21 +120,19 @@ class PreferencesBaseDialog(wx.Dialog):
         
         self.SetSizer(mainSizer)
         mainSizer.Fit(self)
-        
+
     def OnDefault(self, event):
-        """!Button 'Set to default' pressed"""
-        self.settings.userSettings = copy.deepcopy(self.settings.defaultSettings)
-        
+        """Button 'Set to default' pressed"""
         # update widgets
         for gks in self.winId.keys():
             try:
                 group, key, subkey = gks.split(':')
-                value = self.settings.Get(group, key, subkey)
+                value = self.settings.Get(group, key, subkey, settings_type='default')
             except ValueError:
                 group, key, subkey, subkey1 = gks.split(':')
-                value = self.settings.Get(group, key, [subkey, subkey1])
+                value = self.settings.Get(group, key, [subkey, subkey1], settings_type='default')
             win = self.FindWindowById(self.winId[gks])
-            
+
             if win.GetName() in ('GetValue', 'IsChecked'):
                 value = win.SetValue(value)
             elif win.GetName() == 'GetSelection':
@@ -144,9 +143,9 @@ class PreferencesBaseDialog(wx.Dialog):
                 value = win.SetLabel(value)
             else:
                 value = win.SetValue(value)
-        
+
     def OnApply(self, event):
-        """!Button 'Apply' pressed
+        """Button 'Apply' pressed
         Emits signal settingsChanged.
         """
         if self._updateSettings():
@@ -155,14 +154,15 @@ class PreferencesBaseDialog(wx.Dialog):
             self.Close()
 
     def OnCloseWindow(self, event):
-        self.Hide()
+        event.Skip()
+        self.Destroy()
         
     def OnCancel(self, event):
-        """!Button 'Cancel' pressed"""
+        """Button 'Cancel' pressed"""
         self.Close()
     
     def OnSave(self, event):
-        """!Button 'Save' pressed
+        """Button 'Save' pressed
         Emits signal settingsChanged.
         """
         if self._updateSettings():
@@ -181,7 +181,7 @@ class PreferencesBaseDialog(wx.Dialog):
             self.Close()
 
     def _updateSettings(self):
-        """!Update user settings"""
+        """Update user settings"""
         for item in self.winId.keys():
             try:
                 group, key, subkey = item.split(':')
@@ -221,7 +221,7 @@ class PreferencesBaseDialog(wx.Dialog):
 
 
 class PreferencesDialog(PreferencesBaseDialog):
-    """!User preferences dialog"""
+    """User preferences dialog"""
     def __init__(self, parent, giface, title = _("GUI Settings"),
                  settings = UserSettings):
         PreferencesBaseDialog.__init__(self, parent = parent, giface = giface, title = title,
@@ -240,7 +240,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         self.SetSize(self.size)
         
     def _createGeneralPage(self, notebook):
-        """!Create notebook page for general settings"""
+        """Create notebook page for general settings"""
         panel = SP.ScrolledPanel(parent = notebook, id = wx.ID_ANY)
         panel.SetupScrolling(scroll_x = False, scroll_y = True)
         notebook.AddPage(page = panel, text = _("General"))
@@ -366,7 +366,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         return panel
 
     def _createAppearancePage(self, notebook):
-        """!Create notebook page for display settings"""
+        """Create notebook page for display settings"""
         panel = SP.ScrolledPanel(parent = notebook, id = wx.ID_ANY)
         panel.SetupScrolling(scroll_x = False, scroll_y = True)
         notebook.AddPage(page = panel, text = _("Appearance"))
@@ -414,7 +414,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                       wx.ALIGN_CENTER_VERTICAL,
                       pos = (row, 0))
         locales = self.settings.Get(group = 'language', key = 'locale', 
-                                         subkey = 'choices', internal = True)
+                                         subkey = 'choices', settings_type='internal')
         loc = self.settings.Get(group = 'language', key = 'locale', subkey = 'lc_all')
         elementList = wx.Choice(parent = panel, id = wx.ID_ANY, size = (325, -1),
                                 choices = locales, name = "GetStringSelection")
@@ -450,7 +450,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                       pos = (row, 0))
         elementList = wx.Choice(parent = panel, id = wx.ID_ANY, size = (325, -1),
                                 choices = self.settings.Get(group = 'appearance', key = 'elementListExpand',
-                                                            subkey = 'choices', internal = True),
+                                                            subkey = 'choices', settings_type='internal'),
                                 name = "GetSelection")
         elementList.SetSelection(self.settings.Get(group = 'appearance', key = 'elementListExpand',
                                                    subkey = 'selection'))
@@ -471,7 +471,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                       wx.ALIGN_CENTER_VERTICAL,
                       pos = (row, 0))
         listOfStyles = self.settings.Get(group = 'appearance', key = 'menustyle',
-                                         subkey = 'choices', internal = True)
+                                         subkey='choices', settings_type='internal')
         
         menuItemText = wx.Choice(parent = panel, id = wx.ID_ANY, size = (325, -1),
                                  choices = listOfStyles,
@@ -494,8 +494,8 @@ class PreferencesDialog(PreferencesBaseDialog):
                       flag = wx.ALIGN_LEFT |
                       wx.ALIGN_CENTER_VERTICAL,
                       pos = (row, 0))
-        min = self.settings.Get(group = 'appearance', key = 'gSelectPopupHeight', subkey = 'min', internal = True)
-        max = self.settings.Get(group = 'appearance', key = 'gSelectPopupHeight', subkey = 'max', internal = True)
+        min = self.settings.Get(group = 'appearance', key = 'gSelectPopupHeight', subkey = 'min', settings_type='internal')
+        max = self.settings.Get(group = 'appearance', key = 'gSelectPopupHeight', subkey = 'max', settings_type='internal')
         value = self.settings.Get(group = 'appearance', key = 'gSelectPopupHeight', subkey = 'value')
         
         popupHeightSpin = wx.SpinCtrl(parent = panel, id = wx.ID_ANY, size = (100, -1))
@@ -520,7 +520,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                       pos = (row, 0))
         iconTheme = wx.Choice(parent = panel, id = wx.ID_ANY, size = (100, -1),
                               choices = self.settings.Get(group = 'appearance', key = 'iconTheme',
-                                                        subkey = 'choices', internal = True),
+                                                        subkey = 'choices', settings_type='internal'),
                               name = "GetStringSelection")
         iconTheme.SetStringSelection(self.settings.Get(group = 'appearance', key = 'iconTheme', subkey = 'type'))
         self.winId['appearance:iconTheme:type'] = iconTheme.GetId()
@@ -540,7 +540,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                       pos = (row, 0))
         styleList = wx.Choice(parent = panel, id = wx.ID_ANY, size = (325, -1),
                                 choices = self.settings.Get(group = 'appearance', key = 'commandNotebook',
-                                                            subkey = 'choices', internal = True),
+                                                            subkey = 'choices', settings_type='internal'),
                                 name = "GetSelection")
         styleList.SetSelection(self.settings.Get(group = 'appearance', key = 'commandNotebook',
                                                    subkey = 'selection'))
@@ -563,7 +563,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         return panel
     
     def _createDisplayPage(self, notebook):
-        """!Create notebook page for display settings"""
+        """Create notebook page for display settings"""
    
         panel = SP.ScrolledPanel(parent = notebook, id = wx.ID_ANY)
         panel.SetupScrolling(scroll_x = False, scroll_y = True)
@@ -613,7 +613,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                       flag = wx.ALIGN_LEFT |
                       wx.ALIGN_CENTER_VERTICAL,
                       pos = (row, 0))
-        listOfDrivers = self.settings.Get(group = 'display', key = 'driver', subkey = 'choices', internal = True)
+        listOfDrivers = self.settings.Get(group = 'display', key = 'driver', subkey = 'choices', settings_type='internal')
         driver = wx.Choice(parent = panel, id = wx.ID_ANY, size = (150, -1),
                            choices = listOfDrivers,
                            name = "GetStringSelection")
@@ -633,7 +633,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                       flag = wx.ALIGN_LEFT |
                       wx.ALIGN_CENTER_VERTICAL,
                       pos = (row, 0))
-        listOfModes = self.settings.Get(group = 'display', key = 'statusbarMode', subkey = 'choices', internal = True)
+        listOfModes = self.settings.Get(group = 'display', key = 'statusbarMode', subkey = 'choices', settings_type='internal')
         statusbarMode = wx.Choice(parent = panel, id = wx.ID_ANY, size = (150, -1),
                                   choices = listOfModes,
                                   name = "GetSelection")
@@ -724,7 +724,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                       flag = wx.ALIGN_LEFT |
                       wx.ALIGN_CENTER_VERTICAL,
                       pos = (row, 0))
-        listOfModes = self.settings.Get(group = 'display', key = 'mouseWheelZoom', subkey = 'choices', internal = True)
+        listOfModes = self.settings.Get(group = 'display', key = 'mouseWheelZoom', subkey = 'choices', settings_type='internal')
         zoomAction = wx.Choice(parent = panel, id = wx.ID_ANY, size = (200, -1),
                                choices = listOfModes,
                                name = "GetSelection")
@@ -739,7 +739,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                       flag = wx.ALIGN_LEFT |
                       wx.ALIGN_CENTER_VERTICAL,
                       pos = (row, 0))
-        listOfModes = self.settings.Get(group = 'display', key = 'scrollDirection', subkey = 'choices', internal = True)
+        listOfModes = self.settings.Get(group = 'display', key = 'scrollDirection', subkey = 'choices', settings_type='internal')
         scrollDir = wx.Choice(parent = panel, id = wx.ID_ANY, size = (200, -1),
                                choices = listOfModes,
                                name = "GetSelection")
@@ -796,7 +796,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         return panel
 
     def _createCmdPage(self, notebook):
-        """!Create notebook page for commad dialog settings"""
+        """Create notebook page for commad dialog settings"""
         panel = SP.ScrolledPanel(parent = notebook, id = wx.ID_ANY)
         panel.SetupScrolling(scroll_x = False, scroll_y = True)
         notebook.AddPage(page = panel, text = _("Modules"))
@@ -859,7 +859,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                       wx.ALIGN_CENTER_VERTICAL,
                       pos = (row, 0))
         verbosity = wx.Choice(parent = panel, id = wx.ID_ANY, size = (200, -1),
-                              choices = self.settings.Get(group = 'cmd', key = 'verbosity', subkey = 'choices', internal = True),
+                              choices = self.settings.Get(group = 'cmd', key = 'verbosity', subkey = 'choices', settings_type='internal'),
                               name = "GetStringSelection")
         verbosity.SetStringSelection(self.settings.Get(group = 'cmd', key = 'verbosity', subkey = 'selection'))
         self.winId['cmd:verbosity:selection'] = verbosity.GetId()
@@ -876,7 +876,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         return panel
 
     def _createLayersPage(self, notebook):
-        """!Create notebook page for layer settings"""
+        """Create notebook page for layer settings"""
         panel = SP.ScrolledPanel(parent = notebook, id = wx.ID_ANY)
         panel.SetupScrolling(scroll_x = False, scroll_y = True)
         notebook.AddPage(page = panel, text = _("Layers"))
@@ -1047,7 +1047,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         return panel
 
     def _createAttributeManagerPage(self, notebook):
-        """!Create notebook page for 'Attribute Table Manager' settings"""
+        """Create notebook page for 'Attribute Table Manager' settings"""
         panel = SP.ScrolledPanel(parent = notebook, id = wx.ID_ANY)
         panel.SetupScrolling(scroll_x = False, scroll_y = True)
         notebook.AddPage(page = panel, text = _("Attributes"))
@@ -1113,7 +1113,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         flexSizer.AddGrowableCol(0)
         label = wx.StaticText(parent = panel, id = wx.ID_ANY, label = _("Left mouse double click:"))
         leftDbClick = wx.Choice(parent = panel, id = wx.ID_ANY,
-                                choices = self.settings.Get(group = 'atm', key = 'leftDbClick', subkey = 'choices', internal = True),
+                                choices = self.settings.Get(group = 'atm', key = 'leftDbClick', subkey = 'choices', settings_type='internal'),
                                 name = "GetSelection")
         leftDbClick.SetSelection(self.settings.Get(group = 'atm', key = 'leftDbClick', subkey = 'selection'))
         self.winId['atm:leftDbClick:selection'] = leftDbClick.GetId()
@@ -1186,7 +1186,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         return panel
 
     def _createProjectionPage(self, notebook):
-        """!Create notebook page for workspace settings"""
+        """Create notebook page for workspace settings"""
         panel = SP.ScrolledPanel(parent = notebook, id = wx.ID_ANY)
         panel.SetupScrolling(scroll_x = False, scroll_y = True)
         notebook.AddPage(page = panel, text = _("Projection"))
@@ -1353,18 +1353,16 @@ class PreferencesDialog(PreferencesBaseDialog):
                 pos  = mapdisp.GetPosition()
                 size = mapdisp.GetSize()
 
-                # window size must be larger than zero
-                if size[0] > 0 and size[1] > 0:
+                # window size must be larger than zero, not minimized
+                if not mapdisp.IsIconized() and (size[0] > 0 and size[1] > 0):
                     dim += ',%d,%d,%d,%d' % (pos[0], pos[1], size[0], size[1])
 
             self.settings.Set(group = 'general', key = 'defWindowPos', subkey = 'dim', value = dim)
-        else:
-            self.settings.Set(group = 'general', key = 'defWindowPos', subkey = 'dim', value = '')
 
         return True
 
     def OnCheckColorTable(self, event):
-        """!Set/unset default color table"""
+        """Set/unset default color table"""
         win = self.FindWindowById(self.winId['rasterLayer:colorTable:selection'])
         if event.IsChecked():
             win.Enable()
@@ -1372,7 +1370,7 @@ class PreferencesDialog(PreferencesBaseDialog):
             win.Enable(False)
         
     def OnLoadEpsgCodes(self, event):
-        """!Load EPSG codes from the file"""
+        """Load EPSG codes from the file"""
         win = self.FindWindowById(self.winId['projection:statusbar:projFile'])
         path = win.GetValue()
         wx.BeginBusyCursor()
@@ -1405,7 +1403,7 @@ class PreferencesDialog(PreferencesBaseDialog):
             win.SetValue(self.epsgCodeDict[code][1].replace('<>', '').strip())
     
     def OnSetEpsgCode(self, event):
-        """!EPSG code selected"""
+        """EPSG code selected"""
         winCode = self.FindWindowById(event.GetId())
         win = self.FindWindowById(self.winId['projection:statusbar:proj4'])
         if not self.epsgCodeDict:
@@ -1443,9 +1441,16 @@ class PreferencesDialog(PreferencesBaseDialog):
         if dlg.ShowModal() == wx.ID_OK:
             # set default font and encoding environmental variables
             if dlg.font:
-                os.environ["GRASS_FONT"] = dlg.font
-                self.settings.Set(group = 'display', value = dlg.font,
-                                  key = 'font', subkey = 'type')
+                try:
+                    os.environ["GRASS_FONT"] = str(dlg.font)
+                    self.settings.Set(group='display', value=dlg.font,
+                                      key='font', subkey='type')
+                except UnicodeEncodeError:
+                    GError(parent=self, message=_("Failed to set default display font. "
+                                                  "Try different font."),
+                           showTraceback=True)
+                    dlg.Destroy()
+                    return
 
             if dlg.encoding and \
                     dlg.encoding != "ISO-8859-1":
@@ -1467,9 +1472,9 @@ class PreferencesDialog(PreferencesBaseDialog):
         if size == None or size == 0: size = 11
         size = float(size)
         if type == None or type == '': type = 'Courier'
-        
-        outfont = wx.Font(size, wx.FONTFAMILY_MODERN, wx.NORMAL, 0, faceName = type)
-        
+
+        outfont = wx.Font(size, wx.FONTFAMILY_MODERN, wx.NORMAL, wx.FONTWEIGHT_NORMAL, faceName=type)
+
         fontdata = wx.FontData()
         fontdata.EnableEffects(True)
         fontdata.SetColour('black')
@@ -1492,7 +1497,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         event.Skip()
 
     def OnSetSymbol(self, event):
-        """!Opens symbol dialog"""
+        """Opens symbol dialog"""
         winId = self.winId['vectorLayer:point:symbol']
         label = self.FindWindowById(winId)
         bb = self.FindWindowByName('symbolButton')
@@ -1504,7 +1509,7 @@ class PreferencesDialog(PreferencesBaseDialog):
             bb.SetBitmapLabel(wx.Bitmap(img + '.png'))
 
     def OnEnableWheelZoom(self, event):
-        """!Enable/disable wheel zoom mode control"""
+        """Enable/disable wheel zoom mode control"""
         choiceId = self.winId['display:mouseWheelZoom:selection']
         choice = self.FindWindowById(choiceId)
         if choice.GetSelection() == 2:
@@ -1647,12 +1652,19 @@ class DefaultFontDialog(wx.Dialog):
     
     def GetFonts(self):
         """
-        parses fonts directory or fretypecap file to get a list of fonts for the listbox
+        parses fonts directory or fretypecap file to get a list of fonts
+        for the listbox
         """
         fontlist = []
-        ret = RunCommand('d.font',
-                         read = True,
-                         flags = 'l')
+        env = os.environ.copy()
+        driver = UserSettings.Get(group='display', key='driver', subkey='type')
+        if driver == 'png':
+            env['GRASS_RENDER_IMMEDIATE'] = 'png'
+        else:
+            env['GRASS_RENDER_IMMEDIATE'] = 'cairo'
+        ret = RunCommand('d.fontlist',
+                         read=True,
+                         env=env)
         if not ret:
             return fontlist
 
@@ -1667,7 +1679,7 @@ class DefaultFontDialog(wx.Dialog):
         return fontlist
 
 class MapsetAccess(wx.Dialog):
-    """!Controls setting options and displaying/hiding map overlay
+    """Controls setting options and displaying/hiding map overlay
     decorations
     """
     def __init__(self, parent, id = wx.ID_ANY,
@@ -1732,7 +1744,7 @@ class MapsetAccess(wx.Dialog):
         self.SetMinSize(size)
         
     def GetMapsets(self):
-        """!Get list of checked mapsets"""
+        """Get list of checked mapsets"""
         ms = []
         i = 0
         for mset in self.all_mapsets_ordered:
@@ -1743,7 +1755,7 @@ class MapsetAccess(wx.Dialog):
         return ms
 
 class CheckListMapset(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin, listmix.CheckListCtrlMixin):
-    """!List of mapset/owner/group"""
+    """List of mapset/owner/group"""
     def __init__(self, parent, log = None):
         self.parent = parent
         
@@ -1756,7 +1768,7 @@ class CheckListMapset(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin, listmix.Check
         listmix.ListCtrlAutoWidthMixin.__init__(self)
 
     def LoadData(self):
-        """!Load data into list"""
+        """Load data into list"""
         self.InsertColumn(0, _('Mapset'))
         self.InsertColumn(1, _('Owner'))
         ### self.InsertColumn(2, _('Group'))
@@ -1769,7 +1781,10 @@ class CheckListMapset(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin, listmix.Check
                                       mapset)
             stat_info = os.stat(mapsetPath)
             if havePwd:
-                self.SetStringItem(index, 1, "%s" % pwd.getpwuid(stat_info.st_uid)[0])
+                try:
+                    self.SetStringItem(index, 1, "%s" % pwd.getpwuid(stat_info.st_uid)[0])
+                except KeyError:
+                    self.SetStringItem(index, 1, "nobody")
                 # FIXME: get group name
                 ### self.SetStringItem(index, 2, "%-8s" % stat_info.st_gid) 
             else:
@@ -1781,7 +1796,7 @@ class CheckListMapset(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin, listmix.Check
         ### self.SetColumnWidth(col = 1, width = wx.LIST_AUTOSIZE)
         
     def OnCheckItem(self, index, flag):
-        """!Mapset checked/unchecked"""
+        """Mapset checked/unchecked"""
         mapset = self.parent.all_mapsets_ordered[index]
         if mapset == self.parent.curr_mapset:
             self.CheckItem(index, True)

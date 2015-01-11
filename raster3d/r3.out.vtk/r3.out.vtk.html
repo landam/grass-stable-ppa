@@ -103,7 +103,7 @@ r.in.onearth -l output=Sat tmband=Red
 r.in.onearth -l output=Sat tmband=IR1
 r.in.onearth -l output=Sat tmband=IR2
 
-#Convert the 2d maps to 3d raster maps with r.to.rast3
+#Convert the 2D maps to 3D raster maps with r.to.rast3
 r.to.rast3 input=SatLandsatTM_Red output=SatLandsatTM_Red
 r.to.rast3 input=SatLandsatTM_IR1 output=SatLandsatTM_IR1
 r.to.rast3 input=SatLandsatTM_IR2 output=SatLandsatTM_IR2
@@ -173,4 +173,4 @@ paraview --data=/tmp/slovakia3d.vtk
 <h2>AUTHOR</h2>
 S&ouml;ren Gebbert
 
-<p><i>Last changed: $Date: 2011-11-08 13:24:20 -0800 (Tue, 08 Nov 2011) $</i>
+<p><i>Last changed: $Date: 2014-11-23 23:39:42 +0100 (Sun, 23 Nov 2014) $</i>
