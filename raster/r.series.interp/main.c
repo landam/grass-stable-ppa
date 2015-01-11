@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
 
     parm.infile = G_define_standard_option(G_OPT_F_INPUT);
     parm.infile->key = "infile";
-    parm.infile->description = _("Input file with an input raster map name and data point position per line,"
+    parm.infile->description = _("Input file with one input raster map name and data point position per line,"
                                " field separator between name and sample point is |");
     parm.infile->required = NO;
 
@@ -92,11 +92,12 @@ int main(int argc, char *argv[])
     parm.samplingpos->key = "samplingpos";
     parm.samplingpos->type = TYPE_DOUBLE;
     parm.samplingpos->required = NO;
+    parm.samplingpos->multiple = YES;
     parm.samplingpos->description = _("Sampling point position for each output map");
 
     parm.outfile = G_define_standard_option(G_OPT_F_INPUT);
     parm.outfile->key = "outfile";
-    parm.outfile->description = _("Input infile with an output raster map name and sample point position per line,"
+    parm.outfile->description = _("Input file with one output raster map name and sample point position per line,"
                              " field separator between name and sample point is |");
     parm.outfile->required = NO;
 

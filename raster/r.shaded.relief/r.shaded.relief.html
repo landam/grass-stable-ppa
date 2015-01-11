@@ -16,7 +16,7 @@ however, any raster map layer can be named.
 (a value between 0 and 90 degrees).
 
 <li>The <b>azimuth</b> of the sun in degrees to the east of north
-(a value between 0 and 360 degrees).
+(a value between 0 and 360 degrees; clockwise from north).
 
 <li>The scaling parameter, which compensates for a different 
 horizontal <b>scale</b> than vertical scale. If <b>scale</b> is a 
@@ -57,6 +57,12 @@ g.region rast=elevation -p
 r.shaded.relief input=elevation output=elevation.shaded
 </pre></div>
 
+<center>
+<img src="r_shaded_relief.png" alt="GRASS r.shaded.relief result (subset)" border=0>
+<br>
+<i>r.shaded.relief: shaded elevation map (subset)</i>
+</center>
+
 <p>In Latitude-Longitude locations (or other non-metric locations), the
 <em>scale</em> factor has to be used:
 
@@ -85,4 +91,4 @@ Jim Westervelt, U.S. Army Construction Engineering Research Laboratory
 <br>
 Markus Metz: GRASS GIS 7- enhanced fast C version of r.shaded.relief
 
-<p><i>Last changed: $Date: 2014-02-06 19:18:40 +0100 (Thu, 06 Feb 2014) $</i>
+<p><i>Last changed: $Date: 2014-07-21 15:17:24 +0200 (Mon, 21 Jul 2014) $</i>

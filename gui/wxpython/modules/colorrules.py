@@ -286,7 +286,7 @@ class RulesPanel:
                 if self.attributeType == 'color':
                     try:
                         r, g, b = map(int, self.ruleslines[item][self.attributeType].split(':'))
-                    except ValueError, e:
+                    except ValueError as e:
                         message =  _("Bad color format. Use color format '0:0:0'")
                     self.mainPanel.FindWindowById(item + 2000).SetValue((r, g, b))
                 else:
@@ -327,7 +327,7 @@ class ColorTable(wx.Frame):
         
         wx.Frame.__init__(self, parent, id, title, style = style, **kwargs)
         
-        self.SetIcon(wx.Icon(os.path.join(globalvar.ETCICONDIR, 'grass.ico'), wx.BITMAP_TYPE_ICO))
+        self.SetIcon(wx.Icon(os.path.join(globalvar.ICONDIR, 'grass.ico'), wx.BITMAP_TYPE_ICO))
         
         self.panel = wx.Panel(parent = self, id = wx.ID_ANY)
         

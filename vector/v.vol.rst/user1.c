@@ -1,7 +1,7 @@
 /*
  ****************************************************************************
  *
- * MODULE:       s/v.vol.rst: program for 3D(volume) interpolation and geometry
+ * MODULE:       v.vol.rst: program for 3D (volume) interpolation and geometry
  *               analysis from scattered point data using regularized spline
  *               with tension
  *
@@ -11,9 +11,9 @@
  *               GRASS 4.2, GRASS 5.0 version and modifications:
  *               H. Mitasova,  I. Kosinovsky, D. Gerdes, J. Hofierka
  *
- * PURPOSE:      s/v.vol.rst interpolates the values to 3-dimensional grid from
+ * PURPOSE:      v.vol.rst interpolates the values to 3-dimensional grid from
  *               point data (climatic stations, drill holes etc.) given in a
- *               sites file named input. Output grid3 file is elev. 
+ *               3D vector point input. Output grid3 file is elev. 
  *               Regularized spline with tension is used for the
  *               interpolation.
  *
@@ -21,8 +21,8 @@
  *               I. Kosinovsky, D. Gerdes, J. Hofierka
  *
  *               This program is free software under the GNU General Public
- *              License (>=v2). Read the file COPYING that comes with GRASS
- *              for details.
+ *               License (>=v2). Read the file COPYING that comes with GRASS
+ *               for details.
  *
  *****************************************************************************/
 
@@ -467,7 +467,8 @@ int OUTGR()
 	if (Rast3d_close(cf1) == 0) {
 	    sprintf(buff, "Error closing output file %s ", outz);
 	    clean_fatal_error(buff);
-	}
+	} else
+            G_message(_("3D raster map <%s> created"), outz);
     }
 
   /*** Write out the gradient results ***/
@@ -517,7 +518,8 @@ int OUTGR()
 	if (Rast3d_close(cf2) == 0) {
 	    sprintf(buff, "Error closing output file %s ", gradient);
 	    clean_fatal_error(buff);
-	}
+	} else
+            G_message(_("3D raster map <%s> created"), gradient);
     }
 
   /*** Write out aspect1 results ***/
@@ -547,7 +549,7 @@ int OUTGR()
 			bmask = BM_get(bitmask, x, nsizr - y - 1);
 		    else
 			bmask = 1;
-		    value = data[cnt];
+		    value = data[cnt] * 180 / M_PI;
 		    if (!bmask)
 			Rast3d_set_null_value(&value, 1, FCELL_TYPE);
 		    if (Rast3d_put_float(cf3, x, y, iarc, value) == 0) {
@@ -567,7 +569,8 @@ int OUTGR()
 	if (Rast3d_close(cf3) == 0) {
 	    sprintf(buff, "Error closing output file %s ", aspect1);
 	    clean_fatal_error(buff);
-	}
+	} else
+            G_message(_("3D raster map <%s> created"), aspect1);
     }
 
   /*** Write out aspect2 results ***/
@@ -597,7 +600,7 @@ int OUTGR()
 			bmask = BM_get(bitmask, x, nsizr - y - 1);
 		    else
 			bmask = 1;
-		    value = data[cnt];
+		    value = data[cnt] * 180 / M_PI;
 		    if (!bmask)
 			Rast3d_set_null_value(&value, 1, FCELL_TYPE);
 		    if (Rast3d_put_float(cf4, x, y, iarc, value) == 0) {
@@ -617,7 +620,8 @@ int OUTGR()
 	if (Rast3d_close(cf4) == 0) {
 	    sprintf(buff, "Error closing output file %s ", aspect2);
 	    clean_fatal_error(buff);
-	}
+	} else
+            G_message(_("3D raster map <%s> created"), aspect2);
     }
 
   /*** Write out ncurv results ***/
@@ -667,7 +671,8 @@ int OUTGR()
 	if (Rast3d_close(cf5) == 0) {
 	    sprintf(buff, "Error closing output file %s ", ncurv);
 	    clean_fatal_error(buff);
-	}
+	} else
+            G_message(_("3D raster map <%s> created"), ncurv);
     }
 
   /*** Write out gcurv results ***/
@@ -717,7 +722,8 @@ int OUTGR()
 	if (Rast3d_close(cf6) == 0) {
 	    sprintf(buff, "Error closing output file %s ", gcurv);
 	    clean_fatal_error(buff);
-	}
+	} else
+            G_message(_("3D raster map <%s> created"), gcurv);
     }
 
   /*** Write mcurv results ***/
@@ -767,7 +773,8 @@ int OUTGR()
 	if (Rast3d_close(cf7) == 0) {
 	    sprintf(buff, "Error closing output file %s ", mcurv);
 	    clean_fatal_error(buff);
-	}
+	} else
+            G_message(_("3D raster map <%s> created"), mcurv);
     }
 
     G_free(data);

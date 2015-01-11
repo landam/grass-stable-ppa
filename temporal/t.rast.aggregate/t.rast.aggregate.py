@@ -15,7 +15,7 @@
 #############################################################################
 
 #%module
-#% description: Temporally aggregates the maps of a space time raster dataset by a user defined granularity.
+#% description: Aggregates temporally the maps of a space time raster dataset by a user defined granularity.
 #% keywords: temporal
 #% keywords: aggregation
 #%end
@@ -29,7 +29,7 @@
 #%option
 #% key: basename
 #% type: string
-#% label: Base name of the new generated output maps"
+#% label: Basename of the new generated output maps
 #% description: A numerical suffix separated by an underscore will be attached to create a unique identifier
 #% required: yes
 #% multiple: no
@@ -52,6 +52,15 @@
 #% multiple: no
 #% options: average,count,median,mode,minimum,min_raster,maximum,max_raster,stddev,range,sum,variance,diversity,slope,offset,detcoeff,quart1,quart3,perc90,quantile,skewness,kurtosis
 #% answer: average
+#%end
+
+#%option
+#% key: offset
+#% type: integer
+#% description: Offset that is used to create the output map ids, output map id is generated as: basename_ (count + offset)
+#% required: no
+#% multiple: no
+#% answer: 0
 #%end
 
 #%option G_OPT_T_SAMPLE
@@ -82,6 +91,7 @@ def main():
     register_null = flags["n"]
     method = options["method"]
     sampling = options["sampling"]
+    offset = options["offset"]
 
     # Make sure the temporal database exists
     tgis.init()
@@ -143,7 +153,7 @@ def main():
         if input_map_names:
             new_map = tgis.aggregate_raster_maps(
                 input_map_names, base, start, end,
-                count, method, register_null, dbif)
+                count, method, register_null, dbif,  offset)
 
             if new_map:
                 # Set the time stamp and write it to the raster map

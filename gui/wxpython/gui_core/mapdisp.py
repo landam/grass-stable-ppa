@@ -83,7 +83,7 @@ class MapFrameBase(wx.Frame):
         self.SetClientSize(self.GetSize())
         self.iconsize = (16, 16)
 
-        self.SetIcon(wx.Icon(os.path.join(globalvar.ETCICONDIR, 'grass_map.ico'), wx.BITMAP_TYPE_ICO))
+        self.SetIcon(wx.Icon(os.path.join(globalvar.ICONDIR, 'grass_map.ico'), wx.BITMAP_TYPE_ICO))
         
         # toolbars
         self.toolbars = {}
@@ -99,6 +99,12 @@ class MapFrameBase(wx.Frame):
         # handles switching between tools in different toolbars
         self._toolSwitcher = ToolSwitcher()
         self._toolSwitcher.toggleToolChanged.connect(self._onToggleTool)
+
+        # set accelerator table for fullscreen
+        fullScreenId = wx.NewId()
+        self.Bind(wx.EVT_MENU, self.OnFullScreen, id=fullScreenId)
+        accelTable = wx.AcceleratorTable([(wx.ACCEL_NORMAL, wx.WXK_F11, fullScreenId)])
+        self.SetAcceleratorTable(accelTable)
 
     def _initMap(self, Map):
         """!Initialize map display, set dimensions and map region
@@ -122,6 +128,14 @@ class MapFrameBase(wx.Frame):
         
         # update statusbar
         self.StatusbarUpdate()
+
+    def OnFullScreen(self, event):
+        """!Switch fullscreen mode, hides also toolbars"""
+        for toolbar in self.toolbars.keys():
+            self._mgr.GetPane(self.toolbars[toolbar]).Show(self.IsFullScreen())
+        self._mgr.Update()
+        self.ShowFullScreen(not self.IsFullScreen())
+        event.Skip()
 
     def GetToolSwitcher(self):
         return self._toolSwitcher
@@ -586,6 +600,11 @@ class DoubleMapFrame(MapFrameBase):
         """!Set pointer mode (dragging overlays)"""
         self.GetFirstWindow().SetModePointer()
         self.GetSecondWindow().SetModePointer()
+
+    def OnQuery(self, event):
+        """!Set query mode"""
+        self.GetFirstWindow().SetModeQuery()
+        self.GetSecondWindow().SetModeQuery()
 
     def OnRender(self, event):
         """!Re-render map composition (each map layer)

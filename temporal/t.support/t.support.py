@@ -56,7 +56,8 @@
 
 #%flag
 #% key: m
-#% description: Update the metadata information and spatial extent of registered maps from the grass spatial database. Check for removed maps and delete them from the temporal database and all effected space time datasets.
+#% label: Update the metadata information and spatial extent of registered maps from the GRASS spatial database
+#% description: Check for removed maps and delete them from the temporal database and all effected space time datasets
 #%end
 
 #%flag
@@ -130,7 +131,7 @@ def main():
             else:
                 # Delete the map from the temporal database
                 # We need to update all effected space time datasets
-                datasets = map.get_registered_datasets(dbif)
+                datasets = map.get_registered_stds(dbif)
                 if datasets:
                     for dataset in datasets:
                         dataset_dict[dataset] = dataset

@@ -15,7 +15,7 @@
 #############################################################################
 
 #%module
-#% description: Detect accumulation pattern in temporally accumulated space time raster datasets created by t.rast.accumulate.
+#% description: Detects accumulation patterns in temporally accumulated space time raster datasets created by t.rast.accumulate.
 #% keywords: temporal
 #% keywords: accumulation
 #%end
@@ -82,7 +82,7 @@
 #%option
 #% key: basename
 #% type: string
-#% label: Base name of the new generated output maps"
+#% label: Basename of the new generated output maps
 #% description: A numerical suffix separated by an underscore will be attached to create a unique identifier
 #% required: yes
 #% multiple: no

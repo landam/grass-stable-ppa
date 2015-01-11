@@ -89,8 +89,9 @@ struct misc
     int ncells;
     /* Number of topographic index classes */
     int ntopidxclasses;
-    int ndelays;
-    int nreaches;
+    int delay;
+    int tc;
+    int tcsub;
     double lnTe;
     double vch;
     double vr;
@@ -103,7 +104,7 @@ struct misc
     int tt_peak;
     /* params.nch's */
     double *tch;
-    /* misc.nreach's */
+    /* misc.tcsub's */
     double *Ad;
     /* input.ntimestep's */
     double *Qt;

@@ -27,6 +27,8 @@
 
 #include "local_proto.h"
 
+#include "ogr_srs_api.h"
+
 int main(int argc, char *argv[])
 {
     int i, otype, ftype, donocat;
@@ -40,7 +42,6 @@ int main(int argc, char *argv[])
 
     char buf[SQL_BUFFER_SIZE];
     char key1[SQL_BUFFER_SIZE], key2[SQL_BUFFER_SIZE];
-    struct Key_Value *projinfo, *projunits;
     struct Cell_head cellhd;
     char **tokens;
 
@@ -57,8 +58,8 @@ int main(int argc, char *argv[])
     dbString dbstring;
     dbColumn *Column;
 
-    int n_feat;                        /* number of written features */
-    int n_nocat, n_noatt, n_nocatskip; /* number of features without cats/atts written/skip */
+    int n_feat;           /* number of written features */
+    int n_nocat, n_noatt; /* number of features without cats/atts written/skip */
 
     /* OGR */
     int drn;
@@ -248,12 +249,25 @@ int main(int argc, char *argv[])
 
     /* fetch PROJ info */
     G_get_default_window(&cellhd);
-    if (cellhd.proj == PROJECTION_XY)
-	Ogr_projection = NULL;
-    else {
-	projinfo = G_get_projinfo();
-	projunits = G_get_projunits();
-	Ogr_projection = GPJ_grass_to_osr(projinfo, projunits);
+    Ogr_projection = NULL;
+    if (cellhd.proj != PROJECTION_XY) {
+        const char *epsg;
+
+        Ogr_projection = NULL;
+        /* try EPSG code first */
+        epsg = G_database_epsg_code();
+        if (!epsg) {
+            struct Key_Value *projinfo, *projunits;
+            
+            projinfo = G_get_projinfo();
+            projunits = G_get_projunits();
+            Ogr_projection = GPJ_grass_to_osr(projinfo, projunits);
+        }
+        else {
+            Ogr_projection = OSRNewSpatialReference(NULL);
+            if (OSRImportFromEPSG(Ogr_projection, atoi(epsg)) != OGRERR_NONE)
+                G_fatal_error(_("Unknown EPSG code %s"), epsg);
+        }
 	if (flags.esristyle->answer &&
 	    (strcmp(options.format->answer, "ESRI_Shapefile") == 0))
 	    OSRMorphToESRI(Ogr_projection);
@@ -469,7 +483,7 @@ int main(int argc, char *argv[])
     for (i = 0; i < OGR_DS_GetLayerCount(Ogr_ds); i++) {
 	Ogr_layer = OGR_DS_GetLayer(Ogr_ds, i);
 	Ogr_field = OGR_L_GetLayerDefn(Ogr_layer);
-	if (strcmp(OGR_FD_GetName(Ogr_field), options.layer->answer))
+	if (G_strcasecmp(OGR_FD_GetName(Ogr_field), options.layer->answer))
 	    continue;
 	
 	found = TRUE;
@@ -681,7 +695,7 @@ int main(int argc, char *argv[])
     
     Ogr_featuredefn = OGR_L_GetLayerDefn(Ogr_layer);
 
-    n_feat = n_nocat = n_noatt = n_nocatskip = 0;
+    n_feat = n_nocat = n_noatt = 0;
 
     if (OGR_L_TestCapability(Ogr_layer, OLCTransactions))
 	OGR_L_StartTransaction(Ogr_layer);
@@ -698,7 +712,7 @@ int main(int argc, char *argv[])
                                Ogr_featuredefn, Ogr_layer,
                                Fi, Driver, ncol, colctype, 
                                colname, doatt, flags.nocat->answer ? TRUE : FALSE,
-                               &n_noatt, &n_nocatskip);
+                               &n_noatt, &n_nocat);
     }
 
     /* Areas (run always to count features of different type) */
@@ -712,7 +726,7 @@ int main(int argc, char *argv[])
                                Ogr_featuredefn, Ogr_layer,
                                Fi, Driver, ncol, colctype, 
                                colname, doatt, flags.nocat->answer ? TRUE : FALSE,
-                               &n_noatt, &n_nocatskip);
+                               &n_noatt, &n_nocat);
     }
 
     /*
@@ -742,22 +756,23 @@ int main(int argc, char *argv[])
     }
 
     /* Summary */
-    if (n_nocat > 0)
-	G_important_message(_n("%d feature without category was written",
-                               "%d features without category were written",
-                               n_nocat), n_nocat);
     if (n_noatt > 0)
 	G_important_message(_n("%d feature without attributes was written",
                                "%d features without attributes were written",
                                n_noatt), n_noatt);
 
-    if (n_nocatskip > 0)
-	G_warning(_n("%d feature without category was skipped. "
-                     "Features without category are written only when -%c flag is given.",
-                     "%d features without category were skipped. "
-                     "Features without category are written only when -%c flag is given.",
-                     n_nocatskip),
-		  n_nocatskip, flags.cat->key);
+    if (n_nocat > 0) {
+	if (donocat)
+	    G_important_message(_n("%d feature without category was written",
+				   "%d features without category were written",
+				   n_nocat), n_nocat);
+	else
+	    G_warning(_n("%d feature without category was skipped. "
+                         "Features without category are written only when -%c flag is given.",
+                         "%d features without category were skipped. "
+                         "Features without category are written only when -%c flag is given.",
+                         n_nocat), n_nocat, flags.cat->key);
+    }
 
     /* Enable this? May be confusing that for area type are not
      * reported all boundaries/centroids. OTOH why should be

@@ -116,17 +116,17 @@ def extract_dataset(input, output, type, where, expression, base, nprocs=1,
 
                 # Add process to the process list
                 if type == "raster":
-                    msgr.verbose(_("Apply r.mapcalc expression: \"%s\"")
+                    msgr.verbose(_("Applying r.mapcalc expression: \"%s\"")
                                  % expr)
                     proc_list.append(Process(target=run_mapcalc2d,
                                              args=(expr,)))
                 elif type == "raster3d":
-                    msgr.verbose(_("Apply r3.mapcalc expression: \"%s\"")
+                    msgr.verbose(_("Applying r3.mapcalc expression: \"%s\"")
                                  % expr)
                     proc_list.append(Process(target=run_mapcalc3d,
                                              args=(expr,)))
                 elif type == "vector":
-                    msgr.verbose(_("Apply v.extract where statement: \"%s\"")
+                    msgr.verbose(_("Applying v.extract where statement: \"%s\"")
                                  % expression)
                     if row["layer"]:
                         proc_list.append(Process(target=run_vector_extraction,
@@ -146,16 +146,15 @@ def extract_dataset(input, output, type, where, expression, base, nprocs=1,
 
                 # Join processes if the maximum number of processes are
                 # reached or the end of the loop is reached
-                if proc_count == nprocs or proc_count == num_rows:
+                if proc_count == nprocs or count == num_rows:
                     proc_count = 0
                     exitcodes = 0
                     for proc in proc_list:
                         proc.join()
                         exitcodes += proc.exitcode
-
                     if exitcodes != 0:
                         dbif.close()
-                        msgr.fatal(_("Error while computation"))
+                        msgr.fatal(_("Error in computation process"))
 
                     # Empty process list
                     proc_list = []
@@ -248,18 +247,18 @@ def extract_dataset(input, output, type, where, expression, base, nprocs=1,
 
 def run_mapcalc2d(expr):
     """Helper function to run r.mapcalc in parallel"""
-    return core.run_command("r.mapcalc", expression=expr,
-                            overwrite=core.overwrite(), quiet=True)
+    exit(core.run_command("r.mapcalc", expression=expr,
+                            overwrite=core.overwrite(), quiet=True))
 
 
 def run_mapcalc3d(expr):
     """Helper function to run r3.mapcalc in parallel"""
-    return core.run_command("r3.mapcalc", expression=expr,
-                            overwrite=core.overwrite(), quiet=True)
+    exit(core.run_command("r3.mapcalc", expression=expr,
+                            overwrite=core.overwrite(), quiet=True))
 
 
 def run_vector_extraction(input, output, layer, type, where):
     """Helper function to run r.mapcalc in parallel"""
-    return core.run_command("v.extract", input=input, output=output,
+    exit(core.run_command("v.extract", input=input, output=output,
                             layer=layer, type=type, where=where,
-                            overwrite=core.overwrite(), quiet=True)
+                            overwrite=core.overwrite(), quiet=True))

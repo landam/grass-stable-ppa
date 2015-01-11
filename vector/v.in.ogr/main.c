@@ -9,7 +9,7 @@
  *
  * PURPOSE:      Import OGR vectors
  *
- * COPYRIGHT:    (C) 2003, 2011-2013 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2003-2014 by the GRASS Development Team
  *
  *               This program is free software under the GNU General
  *               Public License (>=v2).  Read the file COPYING that
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     struct _param {
 	struct Option *dsn, *out, *layer, *spat, *where,
 	    *min_area;
-	struct Option *snap, *type, *outloc, *cnames, *encoding;
+        struct Option *snap, *type, *outloc, *cnames, *encoding, *key;
     } param;
     struct _flag {
 	struct Flag *list, *no_clean, *force2d, *notab,
@@ -84,6 +84,8 @@ int main(int argc, char *argv[])
     dbDriver *driver = NULL;
     dbString sql, strval;
     int with_z, input3d;
+    const char *key_column;
+    int key_idx = -2; /* -1 for fid column */
 
     /* OGR */
     OGRDataSourceH Ogr_ds;
@@ -100,6 +102,9 @@ int main(int argc, char *argv[])
 
     int OFTIntegerListlength;
 
+    char *dsn;
+    const char *driver_name;
+    const char *datetime_type;
     char *output;
     char **layer_names;		/* names of layers to be imported */
     int *layers;		/* layer indexes */
@@ -120,6 +125,7 @@ int main(int argc, char *argv[])
     OFTIntegerListlength = 40;	/* hack due to limitation in OGR */
     area_size = 0.0;
     use_tmp_vect = FALSE;
+    key_column = GV_KEY_COLUMN;
 
     G_gisinit(argv[0]);
 
@@ -228,6 +234,16 @@ int main(int argc, char *argv[])
         _("Overrides encoding interpretation, useful when importing ESRI Shapefile");
     param.encoding->guisection = _("Attributes");
 
+    param.key = G_define_option();
+    param.key->key = "key";
+    param.key->type = TYPE_STRING;
+    param.key->required = NO;
+    param.key->label =
+        _("Name of column used for categories");
+    param.key->description = 
+        _("If not given, categories are generated as unique values and stored in 'cat' column");
+    param.key->guisection = _("Attributes");
+
     flag.formats = G_define_flag();
     flag.formats->key = 'f';
     flag.formats->description = _("List supported OGR formats and exit");
@@ -300,7 +316,7 @@ int main(int argc, char *argv[])
     if (flag.formats->answer) {
 	int iDriver;
 
-	G_message(_("Available OGR Drivers:"));
+	G_message(_("Supported formats:"));
 
 	for (iDriver = 0; iDriver < OGRGetDriverCount(); iDriver++) {
 	    OGRSFDriverH poDriver = OGRGetDriver(iDriver);
@@ -322,6 +338,54 @@ int main(int argc, char *argv[])
 	G_fatal_error(_("Required parameter <%s> not set"), param.dsn->key);
     }
 
+    driver_name = db_get_default_driver_name();
+
+    if (strcmp(driver_name, "pg") == 0)
+	datetime_type = "timestamp";
+    else if (strcmp(driver_name, "dbf") == 0)
+	datetime_type = "varchar(22)";
+    else
+	datetime_type = "datetime";
+
+    /* dsn is 'PG:', check default connection settings */
+    dsn = NULL;
+    if (strcmp(driver_name, "pg") == 0 &&
+        G_strcasecmp(param.dsn->answer, "PG:") == 0) {
+        const char *dbname;
+        dbConnection conn;
+        
+        dbname = db_get_default_database_name();
+        if (!dbname)
+            G_fatal_error(_("Database not defined, please check default "
+                            " connection settings by db.connect"));
+
+        dsn = (char *) G_malloc(GPATH_MAX);
+        /* -> dbname */
+        sprintf(dsn, "PG:dbname=%s", dbname);
+        
+        /* -> user/passwd */
+        if (DB_OK == db_get_connection(&conn) &&
+            strcmp(conn.driverName, "pg") == 0 &&
+            strcmp(conn.databaseName, dbname) == 0) {
+            if (conn.user) {
+                strcat(dsn, " user=");
+                strcat(dsn, conn.user);
+            }
+            if (conn.password) {
+                strcat(dsn, " passwd=");
+                strcat(dsn, conn.password);
+            }
+            /* TODO: host/port... */
+        }
+        else {
+            G_debug(1, "unable to get connection");
+        }
+        G_debug(1, "Using dsn=%s", dsn);
+    }
+    else if (param.dsn->answer) {
+        dsn = G_store(param.dsn->answer);
+    }
+    
     min_area = atof(param.min_area->answer);
     snap = atof(param.snap->answer);
     type = Vect_option_to_types(param.type);
@@ -358,10 +422,10 @@ int main(int argc, char *argv[])
 
     /* open OGR DSN */
     Ogr_ds = NULL;
-    if (strlen(param.dsn->answer) > 0)
-	Ogr_ds = OGROpen(param.dsn->answer, FALSE, NULL);
+    if (strlen(dsn) > 0)
+	Ogr_ds = OGROpen(dsn, FALSE, NULL);
     if (Ogr_ds == NULL)
-	G_fatal_error(_("Unable to open data source <%s>"), param.dsn->answer);
+	G_fatal_error(_("Unable to open data source <%s>"), dsn);
 
     /* check encoding for given driver */
     if (param.encoding->answer) {
@@ -380,7 +444,7 @@ int main(int argc, char *argv[])
 
     if (flag.list->answer)
 	G_message(_("Data source <%s> (format '%s') contains %d layers:"),
-		  param.dsn->answer,
+		  dsn,
 		  OGR_Dr_GetName(OGR_DS_GetDriver(Ogr_ds)), navailable_layers);
     for (i = 0; i < navailable_layers; i++) {
 	Ogr_layer = OGR_DS_GetLayer(Ogr_ds, i);
@@ -802,7 +866,10 @@ int main(int argc, char *argv[])
     /* open output vector */
     /* strip any @mapset from vector output name */
     G_find_vector(output, G_mapset());
-    Vect_open_new(&Map, output, with_z);
+
+    if (Vect_open_new(&Map, output, with_z) < 0)
+	G_fatal_error(_("Unable to create vector map <%s>"), output);
+
     Out = &Map;
 
     if (!flag.no_clean->answer) {
@@ -811,7 +878,9 @@ int main(int argc, char *argv[])
 	     * at the end copy alive lines to output vector
 	     * in case of polygons this reduces the coor file size by a factor of 2 to 5
 	     * only needed when cleaning polygons */
-	    Vect_open_tmp_new(&Tmp, NULL, with_z);
+	    if (Vect_open_tmp_new(&Tmp, NULL, with_z) < 0)
+		G_fatal_error(_("Unable to create temporary vector map"));
+
 	    G_verbose_message(_("Using temporary vector <%s>"), Vect_get_name(&Tmp));
 	    Out = &Tmp;
 	}
@@ -832,10 +901,31 @@ int main(int argc, char *argv[])
 	Ogr_layer = OGR_DS_GetLayer(Ogr_ds, layer_id);
 	Ogr_featuredefn = OGR_L_GetLayerDefn(Ogr_layer);
 
+        if (param.key->answer) {
+            const char *fid_column;
+            fid_column = OGR_L_GetFIDColumn(Ogr_layer);
+            if (fid_column) {
+                key_column = G_store(fid_column);
+                key_idx = -1;
+            }
+            if (!fid_column || strcmp(fid_column, param.key->answer) != 0) {
+                key_idx = OGR_FD_GetFieldIndex(Ogr_featuredefn, param.key->answer);
+                if (key_idx == -1)
+                    G_fatal_error(_("Key column '%s' not found"), param.key->answer);
+            }
+
+            if (key_idx > -1) {
+                /* check if the field is integer */
+                Ogr_field = OGR_FD_GetFieldDefn(Ogr_featuredefn, key_idx);
+                Ogr_ftype = OGR_Fld_GetType(Ogr_field);
+                if (Ogr_ftype != OFTInteger)
+                    G_fatal_error(_("Key column '%s' is not integer"), param.key->answer);
+                key_column = G_store(OGR_Fld_GetNameRef(Ogr_field));
+            }
+        }
+
 	/* Add DB link */
 	if (!flag.notab->answer) {
-	    char *cat_col_name = GV_KEY_COLUMN;
-
 	    if (nlayers == 1) {	/* one layer only */
 		Fi = Vect_default_field_info(&Map, layer + 1, NULL,
 					     GV_1TABLE);
@@ -846,20 +936,23 @@ int main(int argc, char *argv[])
 	    }
 
 	    if (ncnames > 0) {
-		cat_col_name = param.cnames->answers[0];
+		key_column = param.cnames->answers[0];
 	    }
 	    Vect_map_add_dblink(&Map, layer + 1, layer_names[layer], Fi->table,
-				cat_col_name, Fi->database, Fi->driver);
+				key_column, Fi->database, Fi->driver);
 
 	    ncols = OGR_FD_GetFieldCount(Ogr_featuredefn);
 	    G_debug(2, "%d columns", ncols);
 
 	    /* Create table */
 	    sprintf(buf, "create table %s (%s integer", Fi->table,
-		    cat_col_name);
+		    key_column);
 	    db_set_string(&sql, buf);
 	    for (i = 0; i < ncols; i++) {
 
+                if (key_idx > -1 && key_idx == i)
+                    continue; /* skip defined key (FID column) */
+                
 		Ogr_field = OGR_FD_GetFieldDefn(Ogr_featuredefn, i);
 		Ogr_ftype = OGR_Fld_GetType(Ogr_field);
 
@@ -928,7 +1021,7 @@ int main(int argc, char *argv[])
 		    sprintf(buf, ", %s time", Ogr_fieldname);
 		}
 		else if (Ogr_ftype == OFTDateTime) {
-		    sprintf(buf, ", %s datetime", Ogr_fieldname);
+		    sprintf(buf, ", %s %s", Ogr_fieldname, datetime_type);
 #endif
 		}
 		else if (Ogr_ftype == OFTString) {
@@ -968,7 +1061,7 @@ int main(int argc, char *argv[])
 					      Vect_subst_var(Fi->database,
 							     &Map));
 	    if (driver == NULL) {
-		G_fatal_error(_("Unable open database <%s> by driver <%s>"),
+		G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 			      Vect_subst_var(Fi->database, &Map), Fi->driver);
 	    }
 
@@ -978,10 +1071,6 @@ int main(int argc, char *argv[])
 		G_fatal_error(_("Unable to create table: '%s'"),
 			      db_get_string(&sql));
 	    }
-
-	    if (db_create_index2(driver, Fi->table, cat_col_name) != DB_OK)
-		G_warning(_("Unable to create index for table <%s>, key <%s>"),
-			  Fi->table, cat_col_name);
 
 	    if (db_grant_on_table
 		(driver, Fi->table, DB_PRIV_SELECT,
@@ -1002,6 +1091,7 @@ int main(int argc, char *argv[])
 
 	G_important_message(_("Importing %d features (OGR layer <%s>)..."),
 			    n_features, layer_names[layer]);
+
 	while ((Ogr_feature = OGR_L_GetNextFeature(Ogr_layer)) != NULL) {
 	    G_percent(feature_count++, n_features, 1);	/* show something happens */
 	    /* Geometry */
@@ -1010,6 +1100,11 @@ int main(int argc, char *argv[])
 		nogeom++;
 	    }
 	    else {
+                if (key_idx > -1)
+                    cat = OGR_F_GetFieldAsInteger(Ogr_feature, key_idx);
+                else if (key_idx == -1)
+                    cat = OGR_F_GetFID(Ogr_feature);
+                
 		geom(Ogr_geometry, Out, layer + 1, cat, min_area, type,
 		     flag.no_clean->answer);
 	    }
@@ -1019,6 +1114,10 @@ int main(int argc, char *argv[])
 		sprintf(buf, "insert into %s values ( %d", Fi->table, cat);
 		db_set_string(&sql, buf);
 		for (i = 0; i < ncols; i++) {
+
+                    if (key_idx > -1 && key_idx == i)
+                        continue; /* skip defined key (FID column) */
+
 		    Ogr_field = OGR_FD_GetFieldDefn(Ogr_featuredefn, i);
 		    Ogr_ftype = OGR_Fld_GetType(Ogr_field);
 		    if (OGR_F_IsFieldSet(Ogr_feature, i)) {
@@ -1369,9 +1468,9 @@ int main(int argc, char *argv[])
 	    else
 		xmax = abs(box.W);
 	    if (abs(box.N) > abs(box.S))
-		xmax = abs(box.N);
+		ymax = abs(box.N);
 	    else
-		xmax = abs(box.S);
+		ymax = abs(box.S);
 
 	    if (xmax < ymax)
 		xmax = ymax;
@@ -1402,6 +1501,7 @@ int main(int argc, char *argv[])
 
 	    G_important_message("%s", separator);
 	    G_warning(_("Errors were encountered during the import"));
+	    G_important_message(_("Estimated range of snapping threshold: [%g, %g]"), min_snap, max_snap);
 
 	    if (snap < min_snap) {
 		G_important_message(_("Try to import again, snapping with at least %g: 'snap=%g'"), min_snap, min_snap);
@@ -1410,12 +1510,21 @@ int main(int argc, char *argv[])
 		min_snap = snap * 10;
 		G_important_message(_("Try to import again, snapping with %g: 'snap=%g'"), min_snap, min_snap);
 	    }
-	    /* else assume manual cleaning is required */
+	    else
+		/* assume manual cleaning is required */
+		G_important_message(_("Manual cleaning may be needed"));
 	}
     }
 
     delete_table = Vect_maptype(&Map) != GV_FORMAT_NATIVE;
-    Vect_close(&Map);
+    if (0 != Vect_close(&Map))
+        G_fatal_error(_("Import failed"));
+
+    /* create index - may fail on non-unique categories */
+    if (db_create_index2(driver, Fi->table, key_column) != DB_OK)
+        G_warning(_("Unable to create index for table <%s>, key <%s>"),
+                  Fi->table, key_column);
+    
     if (delete_table) {
         sprintf(buf, "drop table %s", Fi->table);
         db_set_string(&sql, buf);

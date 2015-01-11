@@ -84,7 +84,13 @@ The aggregate functions <em>median, percentile, skewness</em> and
 for use with arbitrarily large input files<!-- without a small value for percent= -->.
 <!-- explained: memory use for regular stats will be based solely on region size,
  but for the aggregate fns it will also depend on the number of data points. (?) -->
-
+<p>
+A LiDAR pulse can have multiple returns. The first return values can be 
+used to obtain a digital surface model (DSM) where e.g. canopy cover is 
+represented. The last return values can be used to obtain a digital 
+terrain model (DTM) where e.g. the forest floor instead of canopy 
+cover is represented. The <b>filter</b> option allows to select one of 
+first, mid, or last returns.
 <p>
 The default map <b>type</b>=<tt>FCELL</tt> is intended as compromise between
 preserving data precision and limiting system resource consumption.
@@ -280,4 +286,4 @@ Markus Metz<br>
 based on r.in.xyz by Hamish Bowman and Volker Wichmann<br>
 
 <br>
-<p><i>Last changed: $Date: 2013-10-06 23:02:48 +0200 (Sun, 06 Oct 2013) $</i>
+<p><i>Last changed: $Date: 2014-05-15 15:57:29 +0200 (Thu, 15 May 2014) $</i>

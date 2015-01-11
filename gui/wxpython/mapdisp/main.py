@@ -29,11 +29,6 @@ This program is free software under the GNU General Public License
 import os
 import sys
 
-if __name__ == "__main__":
-    gui_wx_path = os.path.join(os.getenv('GISBASE'), 'etc', 'gui', 'wxpython')
-    if gui_wx_path not in sys.path:
-        sys.path.append(gui_wx_path)
-
 from core          import globalvar
 import wx
 
@@ -184,7 +179,7 @@ class DMonMap(Map):
 
             self.SetLayers(reorderedLayers)
 
-        except IOError, e:
+        except IOError as e:
             grass.warning(_("Unable to read cmdfile '%(cmd)s'. Details: %(det)s") % \
                               { 'cmd' : self.cmdfile, 'det' : e })
             return
@@ -199,16 +194,8 @@ class DMonMap(Map):
 
         For input params and returned data see overridden method in Map class.
         """
-        currMon = grass.gisenv()['MONITOR']
-
-        RunCommand('g.gisenv',
-                   unset = 'MONITOR') # GRASS_RENDER_IMMEDIATE doesn't like monitors
-
         ret = Map.Render(self, *args, **kwargs)
 
-        RunCommand('g.gisenv',
-                    set = 'MONITOR=%s' % currMon)
-        
         return ret
     
     def AddLayer(self, *args, **kwargs):
@@ -216,11 +203,6 @@ class DMonMap(Map):
 
         For input params and returned data see overridden method in Map class.
         """
-        currMon = grass.gisenv()['MONITOR']
-
-        RunCommand('g.gisenv',
-                   unset = 'MONITOR') # GRASS_RENDER_IMMEDIATE doesn't like monitors
-
         driver = UserSettings.Get(group = 'display', key = 'driver', subkey = 'type')
     
         if driver == 'png':
@@ -231,9 +213,6 @@ class DMonMap(Map):
         layer = Map.AddLayer(self, *args, **kwargs)
 
         del os.environ["GRASS_RENDER_IMMEDIATE"]
-
-        RunCommand('g.gisenv',
-                   set='MONITOR=%s' % currMon)
 
         return layer
 
@@ -406,7 +385,7 @@ class MapApp(wx.App):
                 self.cmdTimeStamp = currentCmdFileTime
                 self.mapFrm.GetMap().GetLayersFromCmdFile()
                 self.timer.Start(mtime)
-        except OSError, e:
+        except OSError as e:
             grass.warning("%s" % e)
             self.timer.Stop()
 
@@ -441,7 +420,7 @@ if __name__ == "__main__":
     grass.verbose(_("Starting map display <%s>...") % (monName))
 
     RunCommand('g.gisenv',
-               set = 'MONITOR_%s_PID=%d' % (monName, os.getpid()))
+               set = 'MONITOR_%s_PID=%d' % (monName.upper(), os.getpid()))
     
     gmMap = MapApp(0)
     # set title
@@ -453,7 +432,7 @@ if __name__ == "__main__":
 
     # clean up GRASS env variables
     env = grass.gisenv()
-    env_name = 'MONITOR_%s' % monName
+    env_name = 'MONITOR_%s' % monName.upper()
     for key in env.keys():
         if key.find(env_name) == 0:
             RunCommand('g.gisenv',

@@ -8,7 +8,7 @@ Classes:
  - frame::TimelineFrame
  - frame::LookUp
 
-(C) 2012-13 by the GRASS Development Team
+(C) 2012-2014 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -16,12 +16,12 @@ This program is free software under the GNU General Public License
 @author Anna Kratochvilova <kratochanna gmail.com>
 """
 import os
-import sys
-import wx
 import signal
 from math import ceil
 from itertools import cycle
 import numpy as np
+
+import wx
 
 try:
     import matplotlib
@@ -35,10 +35,7 @@ try:
     import matplotlib.dates as mdates
     from matplotlib import cbook
 except ImportError:
-    raise ImportError(_('The Timeline Tool needs "Matplotlib" package to be installed.'))
-
-if __name__ == '__main__':
-    sys.path.append(os.path.join(os.environ['GISBASE'], "etc", "gui", "wxpython"))
+    raise ImportError(_('The Timeline Tool needs the "matplotlib" (python-matplotlib) package to be installed.'))
 
 import grass.script as grass
 from core.utils import _
@@ -70,7 +67,7 @@ def check_version(*version):
 class TimelineFrame(wx.Frame):
     """!The main frame of the application"""
     def __init__(self, parent):
-        wx.Frame.__init__(self, parent, id=wx.ID_ANY, title=_("Timeline Tool"))
+        wx.Frame.__init__(self, parent, id=wx.ID_ANY, title=_("GRASS GIS Timeline Tool"))
 
         tgis.init(True)
         self.datasets = []
@@ -396,7 +393,8 @@ class TimelineFrame(wx.Frame):
                      for etype, maps in etypesDict.iteritems()]
                     for mapset, etypesDict in tDict.iteritems()]
         # flatten this list
-        allDatasets = reduce(lambda x, y: x + y, reduce(lambda x, y: x + y, allDatasets))
+        if allDatasets:
+            allDatasets = reduce(lambda x, y: x + y, reduce(lambda x, y: x + y, allDatasets))
 
         for dataset in datasets:
             errorMsg = _("Space time dataset <%s> not found.") % dataset

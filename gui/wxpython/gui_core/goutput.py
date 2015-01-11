@@ -20,12 +20,7 @@ This program is free software under the GNU General Public License
 """
 
 import os
-import sys
 import textwrap
-
-gui_wx_path = os.path.join(os.getenv('GISBASE'), 'etc', 'gui', 'wxpython')
-if gui_wx_path not in sys.path:
-    sys.path.append(gui_wx_path)
 
 import wx
 from   wx import stc
@@ -388,7 +383,7 @@ class GConsoleWindow(wx.SplitterWindow):
             try:
                 output = open(path, "w")
                 output.write(text)
-            except IOError, e:
+            except IOError as e:
                 GError(_("Unable to write file '%(path)s'.\n\nDetails: %(error)s") % {'path': path, 'error': e})
             finally:
                 output.close()
@@ -441,7 +436,7 @@ class GConsoleWindow(wx.SplitterWindow):
             output.write('\n'.join(cmds))
             if len(cmds) > 0:
                 output.write('\n')
-        except IOError, e:
+        except IOError as e:
             GError(_("Unable to write file '%(filePath)s'.\n\nDetails: %(error)s") % 
                     {'filePath': self.cmdFileProtocol, 'error': e})
         finally:

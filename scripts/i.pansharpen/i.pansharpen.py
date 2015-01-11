@@ -300,7 +300,7 @@ def main():
 
         
         # Cleanup
-        grass.run_command('g.mremove', flags='f', quiet=True, rast='tmp%s*,%s' % (pid,panmatch))
+        grass.run_command('g.mremove', flags='f', quiet=True, type="rast", pattern='tmp%s*,%s' % (pid,panmatch))
         
     #Could add other sharpening algorithms here, e.g. wavelet transformation
 
@@ -334,14 +334,14 @@ def main():
     grass.message(_("d.rgb r=%s_red g=%s_green b=%s_blue" % (out, out, out)))
     grass.message('\n ')
     grass.message(_("If desired, combine channels into a single RGB map with 'r.composite'."))
-    grass.message(_("Channel colors can be rebalanced using i.landsat.rgb."))
+    grass.message(_("Channel colors can be rebalanced using i.colors.enhance."))
 
     # write cmd history:
     for ch in ['red', 'green', 'blue']:
         grass.raster_history("%s_%s" % (out, ch))
 
     # Cleanup        
-    grass.run_command('g.mremove', flags="f", rast="tmp%s*" % pid, quiet=True)
+    grass.run_command('g.mremove', flags="f", type="rast", pattern="tmp%s*" % pid, quiet=True)
 
         
 def matchhist(original, target, matched):

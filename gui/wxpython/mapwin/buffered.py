@@ -41,7 +41,7 @@ from mapwin.base import MapWindowBase
 from core.utils         import GetGEventAttribsForHandler, _
 import core.utils as utils
 from mapwin.graphics import GraphicsSet
-from iscatt.controllers import gThread
+from core.gthread import gThread
 
 try:
     import grass.lib.gis as gislib
@@ -95,7 +95,7 @@ class BufferedMapWindow(MapWindowBase, wx.Window):
         # into one UpdateMap process 
 
         # thread where timer for measuring delay limit
-        self.renderTimingThr = gThread();
+        self.renderTimingThr = gThread()
         # relevant timer id given by the thread
         self.timerRunId = None
         # time, of last updateMap request
@@ -324,33 +324,44 @@ class BufferedMapWindow(MapWindowBase, wx.Window):
                 pdc.SetPen(pen)
                 pdc.DrawLinePoint(wx.Point(coords[0], coords[1]),wx.Point(coords[2], coords[3]))
                 pdc.SetIdBounds(drawid, wx.Rect(coords[0], coords[1], coords[2], coords[3]))
-        
-        elif pdctype == 'polyline': # draw a polyline on top of the map
+
+        # polyline is a series of connected lines defined as sequence of points
+        # lines are individual, not connected lines which must be drawn as 1 object (e.g. cross)
+        elif pdctype in ('polyline', 'lines'):
             if pen:
                 pdc.SetBrush(wx.Brush(wx.CYAN, wx.TRANSPARENT))
                 pdc.SetPen(pen)
                 if (len(coords) < 2):
                     return
-                i = 1
-                while i < len(coords):
-                    pdc.DrawLinePoint(wx.Point(coords[i-1][0], coords[i-1][1]),
-                                      wx.Point(coords[i][0], coords[i][1]))
-                    i += 1
-                
-                # get bounding rectangle for polyline
+                if pdctype == 'polyline':
+                    i = 1
+                    while i < len(coords):
+                        pdc.DrawLinePoint(wx.Point(coords[i - 1][0], coords[i - 1][1]),
+                                          wx.Point(coords[i][0], coords[i][1]))
+                        i += 1
+                else:
+                    for line in coords:
+                        pdc.DrawLine(line[0], line[1], line[2], line[3])
+
+                # get bounding rectangle for polyline/lines
                 xlist = []
                 ylist = []
                 if len(coords) > 0:
-                    for point in coords:
-                        x,y = point
-                        xlist.append(x)
-                        ylist.append(y)
+                    if pdctype == 'polyline':
+                        for point in coords:
+                            x, y = point
+                            xlist.append(x)
+                            ylist.append(y)
+                    else:
+                        for line in coords:
+                            x1, y1, x2, y2 = line
+                            xlist.extend([x1, x2])
+                            ylist.extend([y1, y2])
                     x1 = min(xlist)
                     x2 = max(xlist)
                     y1 = min(ylist)
                     y2 = max(ylist)
-                    pdc.SetIdBounds(drawid, wx.Rect(x1,y1,x2,y2))
-                    # self.ovlcoords[drawid] = [x1,y1,x2,y2]
+                    pdc.SetIdBounds(drawid, wx.Rect(x1, y1, x2, y2))
 
         elif pdctype == 'polygon':
             if pen:
@@ -495,7 +506,7 @@ class BufferedMapWindow(MapWindowBase, wx.Window):
                 try:
                     gcdc = wx.GCDC(dc)
                     self.pdcVector.DrawToDCClipped(gcdc, rgn)
-                except NotImplementedError, e:
+                except NotImplementedError as e:
                     print >> sys.stderr, e
                     self.pdcVector.DrawToDCClipped(dc, rgn)
             
@@ -510,7 +521,7 @@ class BufferedMapWindow(MapWindowBase, wx.Window):
                     try:
                         gcdc = wx.GCDC(dc)
                         self.pdcVector.DrawToDC(gcdc)
-                    except NotImplementedError, e:
+                    except NotImplementedError as e:
                         print >> sys.stderr, e
                         self.pdcVector.DrawToDC(dc)
                 
@@ -525,7 +536,7 @@ class BufferedMapWindow(MapWindowBase, wx.Window):
         try:
             gcdc = wx.GCDC(dc)
             self.pdcDec.DrawToDC(gcdc)
-        except NotImplementedError, e:
+        except NotImplementedError as e:
             print >> sys.stderr, e
             self.pdcDec.DrawToDC(dc)
         
@@ -800,7 +811,7 @@ class BufferedMapWindow(MapWindowBase, wx.Window):
             else:
                 self.mapfile = self.Map.Render(force = False)
             
-        except GException, e:
+        except GException as e:
             GError(message = e.value)
             self.mapfile = None
         
@@ -1083,11 +1094,10 @@ class BufferedMapWindow(MapWindowBase, wx.Window):
         """
         Debug.msg(4, "BufferedWindow.DrawCross(): pdc=%s, coords=%s, size=%d" % \
                   (pdc, coords, size))
-        coordsCross = ((coords[0] - size, coords[1], coords[0] + size, coords[1]),
-                       (coords[0], coords[1] - size, coords[0], coords[1] + size))
+        coordsCross = ((coords[0], coords[1] - size, coords[0], coords[1] + size),
+                       (coords[0] - size, coords[1], coords[0] + size, coords[1]))
 
-        for lineCoords in coordsCross:
-            self.lineid = self.Draw(pdc, drawid=drawid, pdctype='line', coords=lineCoords, pen=pen)
+        self.lineid = self.Draw(pdc, drawid=drawid, pdctype='lines', coords=coordsCross, pen=pen)
 
         if not text:
             return self.lineid
@@ -1380,7 +1390,32 @@ class BufferedMapWindow(MapWindowBase, wx.Window):
             self.dragid = None
 
             self.mouseLeftUpPointer.emit(x=coordinates[0], y=coordinates[1])
+        
+        elif self.mouse['use'] == 'drawRegion':
+            coordinatesBegin = self.Pixel2Cell(self.mouse['begin'])
+            
+            if coordinatesBegin[0] < coordinates[0]:
+                west = coordinatesBegin[0]
+                east = coordinates[0]
+            else:
+                west = coordinates[0]
+                east = coordinatesBegin[0]
+            if coordinatesBegin[1] < coordinates[1]:
+                south = coordinatesBegin[1]
+                north = coordinates[1]
+            else:
+                south = coordinates[1]
+                north = coordinatesBegin[1]
 
+            region = self.Map.GetRegion()
+            RunCommand('g.region',
+                       parent=self,
+                       flags='a', nsres=region['nsres'], ewres=region['ewres'],
+                       n=north, s=south, e=east, w=west)
+
+            # redraw map
+            self.UpdateMap(render = False)
+        
        # TODO: decide which coordinates to send (e, n, mouse['begin'], mouse['end'])
         self.mouseLeftUp.emit(x=coordinates[0], y=coordinates[1])
 
@@ -1820,6 +1855,8 @@ class BufferedMapWindow(MapWindowBase, wx.Window):
         
         if tmpreg:
             os.environ["GRASS_REGION"] = tmpreg
+        
+        self.UpdateMap(render = False)
         
     def SetRegion(self, zoomOnly=True):
         """!Set display extents/compulational region from named region

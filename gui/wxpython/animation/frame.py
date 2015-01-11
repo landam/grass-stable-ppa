@@ -23,8 +23,6 @@ import wx
 import wx.aui
 import tempfile
 
-if __name__ == '__main__':
-    sys.path.append(os.path.join(os.environ['GISBASE'], "etc", "gui", "wxpython"))
 import grass.script as gcore
 import grass.temporal as tgis
 from core import globalvar
@@ -49,7 +47,7 @@ gcore.set_raise_on_error(True)
 
 
 class AnimationFrame(wx.Frame):
-    def __init__(self, parent, giface, title=_("Animation tool"),
+    def __init__(self, parent, giface, title=_("GRASS GIS Animation tool"),
                  rasters=None, timeseries=None):
         wx.Frame.__init__(self, parent, title=title,
                           style=wx.DEFAULT_FRAME_STYLE, size=(800, 600))
@@ -57,22 +55,20 @@ class AnimationFrame(wx.Frame):
         self.SetClientSize(self.GetSize())
         self.iconsize = (16, 16)
 
-        self.SetIcon(wx.Icon(os.path.join(globalvar.ETCICONDIR, 'grass_map.ico'), wx.BITMAP_TYPE_ICO))
+        self.SetIcon(wx.Icon(os.path.join(globalvar.ICONDIR, 'grass_map.ico'), wx.BITMAP_TYPE_ICO))
 
         # Make sure the temporal database exists
         tgis.init()
 
+        # create temporal directory and ensure it's deleted after programs ends (stored in MAPSET/.tmp/)
         global TMP_DIR
-        TMP_DIR = tempfile.mkdtemp()
+        TMP_DIR = gcore.tempdir()
 
         self.animations = [Animation() for i in range(MAX_COUNT)]
         self.windows = []
         self.animationPanel = AnimationsPanel(self, self.windows, initialCount=MAX_COUNT)
         bitmapPool = BitmapPool()
         mapFilesPool = MapFilesPool()
-        # create temporal directory and ensure it's deleted after programs ends
-#        tempDir = tempfile.mkdtemp()
-#        self.cleanUp = CleanUp(tempDir)
 
         self._progressDlg = None
         self._progressDlgMax = None
@@ -300,6 +296,7 @@ class AnimationFrame(wx.Frame):
         if not self.dialogs['preferences']:
             dlg = PreferencesDialog(parent=self, giface=self._giface)
             self.dialogs['preferences'] = dlg
+            dlg.formatChanged.connect(lambda: self.controller.UpdateAnimations())
             dlg.CenterOnParent()
 
         self.dialogs['preferences'].ShowModal()

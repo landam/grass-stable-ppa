@@ -60,7 +60,7 @@ class PsMapFrame(wx.Frame):
         self.parent = parent
 
         wx.Frame.__init__(self, parent = parent, id = id, title = title, name = "PsMap", **kwargs)
-        self.SetIcon(wx.Icon(os.path.join(globalvar.ETCICONDIR, 'grass.ico'), wx.BITMAP_TYPE_ICO))
+        self.SetIcon(wx.Icon(os.path.join(globalvar.ICONDIR, 'grass.ico'), wx.BITMAP_TYPE_ICO))
         #menubar
         self.menubar = Menu(parent = self, model = PsMapMenuData().GetModel(separators=True))
         self.SetMenuBar(self.menubar)
@@ -68,7 +68,9 @@ class PsMapFrame(wx.Frame):
 
         self._toolSwitcher = ToolSwitcher()
         self.toolbar = PsMapToolbar(parent=self, toolSwitcher=self._toolSwitcher)
-        self.SetToolBar(self.toolbar)
+        # workaround for http://trac.wxwidgets.org/ticket/13888
+        if sys.platform != 'darwin':
+            self.SetToolBar(self.toolbar)
         
         self.iconsize = (16, 16)
         #satusbar
@@ -166,7 +168,9 @@ class PsMapFrame(wx.Frame):
         
         self._layout()
         self.SetMinSize(wx.Size(775, 600))
-        
+        # workaround for http://trac.wxwidgets.org/ticket/13628
+        self.SetSize(self.GetBestSize())
+
         self.Bind(fnb.EVT_FLATNOTEBOOK_PAGE_CHANGING, self.OnPageChanging)
         self.Bind(fnb.EVT_FLATNOTEBOOK_PAGE_CHANGED, self.OnPageChanged)
         self.Bind(wx.EVT_CLOSE, self.OnCloseWindow)
@@ -323,7 +327,7 @@ class PsMapFrame(wx.Frame):
                                                                                         'code': ret})
                 else:
                     self.SetStatusText(_('PDF generated'), 0)
-            except OSError, e:
+            except OSError as e:
                 GError(parent = self,
                        message = _("Program ps2pdf is not available. Please install it to create PDF.\n\n %s") % e)
 
@@ -346,7 +350,7 @@ class PsMapFrame(wx.Frame):
                     import types
                     im.load = types.MethodType(loadPSForWindows, im)
                 im.save(self.imgName, format = 'PNG')
-            except IOError, e:
+            except IOError as e:
                 del busy
                 dlg = HyperlinkDialog(self, title=_("Preview not available"),
                                       message=_("Preview is not available probably due to missing Ghostscript."),

@@ -211,7 +211,7 @@ class LegendController(OverlayController):
         self._id = 0
         self._name = 'legend'
         # TODO: synchronize with d.legend?
-        self._defaultAt = 'at=5,50,2,5'
+        self._defaultAt = 'at=5,50,7,10'
         self._cmd = ['d.legend', self._defaultAt]
 
     def GetPlacement(self, screensize):
@@ -229,9 +229,14 @@ class LegendController(OverlayController):
             return x, y
 
     def CmdIsValid(self):
+        inputs = 0
         for param in self._cmd:
             param = param.split('=')
-            if param[0] == 'map' and len(param) == 2:
+            if param[0] == 'rast' and len(param) == 2:
+                inputs += 1
+            elif param[0] == 'rast3d' and len(param) == 2:
+                inputs += 1
+            if inputs == 1:
                 return True
         return False
 

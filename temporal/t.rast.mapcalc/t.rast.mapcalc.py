@@ -15,7 +15,7 @@
 #############################################################################
 
 #%module
-#% description: Perform spatio-temporal mapcalc expressions on temporal sampled maps of space time raster datasets.
+#% description: Performs spatio-temporal mapcalc expressions on temporally sampled maps of space time raster datasets.
 #% keywords: temporal
 #% keywords: algebra
 #%end
@@ -42,7 +42,7 @@
 #%option
 #% key: basename
 #% type: string
-#% label: Base name of the new generated output maps"
+#% label: Basename of the new generated output maps
 #% description: A numerical suffix separated by an underscore will be attached to create a unique identifier
 #% required: yes
 #% multiple: no

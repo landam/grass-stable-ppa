@@ -402,8 +402,9 @@ def CreateNewVector(parent, cmd, title = _('Create new vector map'),
     if showType:
         cmd[1]['type'] = dlg.GetFeatureType()
         
+    curMapset = grass.gisenv()['MAPSET']
     if isNative:
-        listOfVectors = grass.list_grouped('vect')[grass.gisenv()['MAPSET']]
+        listOfVectors = grass.list_grouped('vect')[curMapset]
     else:
         listOfVectors = RunCommand('v.external',
                                    quiet = True,
@@ -438,7 +439,8 @@ def CreateNewVector(parent, cmd, title = _('Create new vector map'),
         dlg.Destroy()
         return None
     
-    if not isNative:
+    if not isNative and \
+            not grass.find_file(outmap, element = 'vector', mapset = curMapset)['fullname']:
         # create link for OGR layers
         RunCommand('v.external',
                    overwrite = overwrite,
@@ -498,16 +500,17 @@ class SavedRegion(wx.Dialog):
         box.Add(item = label, proportion = 0, flag = wx.ALIGN_CENTRE | wx.ALL, border = 5)
         if loadsave == 'load':
             label.SetLabel(_("Load region:"))
-            selection = Select(parent = self, id = wx.ID_ANY, size = globalvar.DIALOG_GSELECT_SIZE,
-                               type = 'windows')
+            self._selection = Select(parent=self, size=globalvar.DIALOG_GSELECT_SIZE,
+                                     type='windows')
         elif loadsave == 'save':
             label.SetLabel(_("Save region:"))
-            selection = Select(parent = self, id = wx.ID_ANY, size = globalvar.DIALOG_GSELECT_SIZE,
-                               type = 'windows', mapsets = [grass.gisenv()['MAPSET']], fullyQualified = False)
+            self._selection = Select(parent=self, size=globalvar.DIALOG_GSELECT_SIZE,
+                                     type='windows', mapsets=[grass.gisenv()['MAPSET']], fullyQualified = False)
         
-        box.Add(item = selection, proportion = 0, flag = wx.ALIGN_CENTRE | wx.ALL, border = 5)
-        selection.SetFocus()
-        selection.Bind(wx.EVT_TEXT, self.OnRegion)
+        box.Add(item=self._selection, proportion=0, flag=wx.ALIGN_CENTRE | wx.ALL, border=5)
+        self._selection.SetFocus()
+        if self.loadsave == 'save':
+            self._selection.Bind(wx.EVT_TEXT, self.OnRegion)
         
         sizer.Add(item = box, proportion = 0, flag = wx.GROW | wx.ALIGN_CENTER_VERTICAL | wx.ALL,
                   border = 5)
@@ -531,9 +534,17 @@ class SavedRegion(wx.Dialog):
         self.SetSizer(sizer)
         sizer.Fit(self)
         self.Layout()
-        
+
     def OnRegion(self, event):
-        self.wind = event.GetString()
+        value = self._selection.GetValue()
+        if not grass.legal_name(value):
+            GMessage(parent=self,
+                     message=_("Name cannot begin with '.' "
+                               "and must not contain space, quotes, "
+                               "'/', '\'', '@', ',', '=', '*', "
+                               "and all other non-alphanumeric characters."))
+        else:
+            self.wind = value
 
     def GetName(self):
         """!Return region name"""
@@ -1792,6 +1803,11 @@ class ImportDialog(wx.Dialog):
         """
         pass
 
+    def OnCmdDone(self, cmd, returncode):
+        """!Do what has to be done after importing"""
+        pass
+
+
 class GdalImportDialog(ImportDialog):
     def __init__(self, parent, giface, ogr = False, link = False):
         """!Dialog for bulk import of various raster/vector data
@@ -1855,12 +1871,12 @@ class GdalImportDialog(ImportDialog):
         ext  = self.dsnInput.GetFormatExt()
         
         # determine data driver for PostGIS links
-        popOGR = False
+        self.popOGR = False
         if self.importType == 'ogr' and \
                 self.dsnInput.GetType() == 'db' and \
                 self.dsnInput.GetFormat() == 'PostgreSQL' and \
                 'GRASS_VECTOR_OGR' not in os.environ:
-            popOGR = True
+            self.popOGR = True
             os.environ['GRASS_VECTOR_OGR'] = '1'
         
         for layer, output in data:
@@ -1904,14 +1920,21 @@ class GdalImportDialog(ImportDialog):
                 cmd.append('--overwrite')
             
             # run in Layer Manager
-            self._giface.RunCmd(cmd, onDone=self.AddLayers)
-        
-        if popOGR:
+            self._giface.RunCmd(cmd, onDone=self.OnCmdDone)
+
+    def OnCmdDone(self, cmd, returncode):
+        """!Load layers and close if required"""
+        if not hasattr(self, 'AddLayers'):
+            return
+
+        self.AddLayers(cmd, returncode)
+
+        if self.popOGR:
             os.environ.pop('GRASS_VECTOR_OGR')
 
-        if self.closeOnFinish.IsChecked():
+        if returncode == 0 and self.closeOnFinish.IsChecked():
             self.Close()
-        
+
     def _getCommand(self):
         """!Get command"""
         if self.link:
@@ -2066,9 +2089,17 @@ class DxfImportDialog(ImportDialog):
                 cmd.append('--overwrite')
             
             # run in Layer Manager
-            self._giface.RunCmd(cmd, onDone=self.AddLayers)
-        
-        self.Close()
+            self._giface.RunCmd(cmd, onDone=self.OnCmdDone)
+
+    def OnCmdDone(self, cmd, returncode):
+        """!Load layers and close if required"""
+        if not hasattr(self, 'AddLayers'):
+            return
+
+        self.AddLayers(cmd, returncode)
+
+        if self.closeOnFinish.IsChecked():
+            self.Close()
 
     def OnSetDsn(self, event):
         """!Input DXF file defined, update list of layer widget"""
@@ -2126,7 +2157,7 @@ class LayersList(GListCtrl, listmix.TextEditMixin):
         for item in data:
             index = self.InsertStringItem(sys.maxint, str(item[0]))
             for i in range(1, len(item)):
-                self.SetStringItem(index, i, "%s" % str(item[i]))
+                self.SetStringItem(index, i, item[i])
         
         # check by default only on one item
         if len(data) == 1:
@@ -2397,7 +2428,7 @@ class SqlQueryFrame(wx.Frame):
         self.parent = parent
 
         wx.Frame.__init__(self, parent = parent, id = id, title = title, *kwargs)
-        self.SetIcon(wx.Icon(os.path.join(globalvar.ETCICONDIR, 'grass_sql.ico'), wx.BITMAP_TYPE_ICO))
+        self.SetIcon(wx.Icon(os.path.join(globalvar.ICONDIR, 'grass_sql.ico'), wx.BITMAP_TYPE_ICO))
         self.panel = wx.Panel(parent = self, id = wx.ID_ANY)
         
         self.sqlBox = wx.StaticBox(parent = self.panel, id = wx.ID_ANY,

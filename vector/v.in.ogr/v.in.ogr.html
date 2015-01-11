@@ -143,6 +143,12 @@ support is new for GDAL/OGR 1.9.0.
 Value for <b>encoding</b> also affects text recoding when importing
 DXF files. For other formats has encoding value no effect.
 
+<p>
+Option <b>key</b> specifies column name used for feature
+categories. This column must be integer. If not specified, categories
+numbers are generated starting with 1 and stored in the column named
+&quot;cat&quot;.
+
 <h2>EXAMPLES</h2>
 
 The command imports various vector formats:
@@ -271,6 +277,13 @@ smaller value so that all areas are imported. Otherwise tiny areas are
 filtered out during import (useful to polish digitization errors or
 non-topological data).
 
+<p>
+If a message like &quot;Try to import again, snapping with at least
+1e-008: 'snap=1e-008'&quot; appears, then the map to be imported
+contains topological errors. The message suggests a value for the
+<em>snap</em> parameter to be tried. For more details, see above in
+<em><a href="v.in.ogr.html#topology-cleaning">Topology Cleaning</a></em>.
+
 <h2>ERROR MESSAGES</h2>
 
 <dl>
@@ -317,4 +330,4 @@ Location and spatial extent support by Markus Neteler and Paul Kelly
 Markus Metz
 
 <p>
-<i>Last changed: $Date: 2014-04-07 13:16:13 +0200 (Mon, 07 Apr 2014) $</i>
+<i>Last changed: $Date: 2014-05-18 15:59:59 +0200 (Sun, 18 May 2014) $</i>

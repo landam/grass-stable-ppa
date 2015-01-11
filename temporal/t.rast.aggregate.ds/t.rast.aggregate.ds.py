@@ -5,7 +5,7 @@
 # MODULE:	t.rast.aggregate.ds
 # AUTHOR(S):	Soeren Gebbert
 #
-# PURPOSE:	Aggregated data of an existing space time raster dataset using the time intervals of a second space time dataset
+# PURPOSE:	Aggregates data of an existing space time raster dataset using the time intervals of a second space time dataset
 # COPYRIGHT:	(C) 2011 by the GRASS Development Team
 #
 #		This program is free software under the GNU General Public
@@ -15,7 +15,7 @@
 #############################################################################
 
 #%module
-#% description: Aggregated data of an existing space time raster dataset using the time intervals of a second space time dataset.
+#% description: Aggregates data of an existing space time raster dataset using the time intervals of a second space time dataset.
 #% keywords: temporal
 #% keywords: aggregation
 #%end
@@ -38,7 +38,7 @@
 #%option
 #% key: basename
 #% type: string
-#% label: Base name of the new generated output maps"
+#% label: Basename of the new generated output maps
 #% description: A numerical suffix separated by an underscore will be attached to create a unique identifier
 #% required: yes
 #% multiple: no
@@ -53,6 +53,15 @@
 #% multiple: no
 #% options: average,count,median,mode,minimum,min_raster,maximum,max_raster,stddev,range,sum,variance,diversity,slope,offset,detcoeff,quart1,quart3,perc90,quantile,skewness,kurtosis
 #% answer: average
+#%end
+
+#%option
+#% key: offset
+#% type: integer
+#% description: Offset that is used to create the output map ids, output map id is generated as: basename_ (count + offset)
+#% required: no
+#% multiple: no
+#% answer: 0
 #%end
 
 #%option G_OPT_T_SAMPLE
@@ -80,6 +89,7 @@ def main():
     method = options["method"]
     type = options["type"]
     sampling = options["sampling"]
+    offset = options["offset"]
 
     # Make sure the temporal database exists
     tgis.init()
@@ -125,7 +135,7 @@ def main():
         if input_map_names:
             new_map = tgis.aggregate_raster_maps(input_map_names, base,
                                                  start, end, count, method,
-                                                 register_null, dbif)
+                                                 register_null, dbif,  offset)
 
             if new_map:
                 # Set the time stamp and write it to the raster map

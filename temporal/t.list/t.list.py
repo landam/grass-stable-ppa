@@ -6,7 +6,7 @@
 # AUTHOR(S):	Soeren Gebbert
 #
 # PURPOSE:	List space time datasets and maps registered in the temporal database
-# COPYRIGHT:	(C) 2011 by the GRASS Development Team
+# COPYRIGHT:	(C) 2011-2014, Soeren Gebbert and the GRASS Development Team
 #
 #		This program is free software under the GNU General Public
 #		License (version 2). Read the file COPYING that comes with GRASS
@@ -15,7 +15,7 @@
 #############################################################################
 
 #%module
-#% description: List space time datasets and maps registered in the temporal database.
+#% description: Lists space time datasets and maps registered in the temporal database.
 #% keywords: temporal
 #% keywords: map management
 #% keywords: list
@@ -45,7 +45,7 @@
 #% guisection: Formatting
 #% required: no
 #% multiple: yes
-#% options: id, name, creator, mapset, number_of_maps, creation_time, start_time, end_time, interval, north, south, west, east, granularity
+#% options: id,name,creator,mapset,number_of_maps,creation_time,start_time,end_time,interval,north,south,west,east,granularity
 #% answer: id
 #%end
 
@@ -57,7 +57,7 @@
 #% guisection: Selection
 #% required: no
 #% multiple: yes
-#% options: id, name, creator, mapset, number_of_maps, creation_time, start_time, end_time, north, south, west, east, granularity, all
+#% options: id,name,creator,mapset,number_of_maps,creation_time,start_time,end_time,north,south,west,east,granularity,all
 #% answer: id
 #%end
 
@@ -65,22 +65,20 @@
 #% guisection: Selection
 #%end
 
-#%option
-#% key: separator
-#% type: string
-#% description: Separator character between the columns, default is tabular "\t"
+#%option G_OPT_F_SEP
+#% description: Field separator character between the output columns
 #% guisection: Formatting
-#% required: no
 #%end
 
 #%flag
-#% key: c
+#% key: h
 #% description: Print the column names as first row
 #% guisection: Formatting
 #%end
 
 import grass.script as grass
 import grass.temporal as tgis
+import sys
 
 ############################################################################
 
@@ -89,79 +87,71 @@ def main():
 
     # Get the options
     type = options["type"]
-    temporaltype = options["temporaltype"]
+    temporal_type = options["temporaltype"]
     columns = options["columns"]
     order = options["order"]
     where = options["where"]
-    separator = options["separator"]
-    colhead = flags['c']
+    separator = grass.separator(options["separator"])
+    colhead = flags['h']
 
     # Make sure the temporal database exists
     tgis.init()
 
-    id = None
-    sp = tgis.dataset_factory(type, id)
-
-    dbif = tgis.SQLDatabaseInterfaceConnection()
-    dbif.connect()
-    
+    sp = tgis.dataset_factory(type, None)
     first = True
     
-    for ttype in temporaltype.split(","):
-    
-        # Create the sql selection statement
-        # Table name
-        if ttype == "absolute":
-            table = sp.get_type() + "_view_abs_time"
-        else:
-            table = sp.get_type() + "_view_rel_time"
-    
-        if columns.find("all") == -1:
-            sql = "SELECT " + str(columns) + " FROM " + table
-        else:
-            sql = "SELECT * FROM " + table
-    
-        if where:
-            sql += " WHERE " + where
-    
-        if order:
-            sql += " ORDER BY " + order
-    
-        dbif.cursor.execute(sql)
-        rows = dbif.cursor.fetchall()
-    
-        # Print the query result to stout
-        if rows:
-            if separator is None or separator == "":
-                separator = "\t"
-    
-            # Print the column names if requested
-            if colhead == True and first == True:
-                output = ""
-                count = 0
-                for key in rows[0].keys():
-                    if count > 0:
-                        output += separator + str(key)
-                    else:
-                        output += str(key)
-                    count += 1
-                print output
-                first = False
-    
-            for row in rows:
-                output = ""
-                count = 0
-                for col in row:
-                    if count > 0:
-                        output += separator + str(col)
-                    else:
-                        output += str(col)
-                    count += 1
-    
-                print output
+    sys.stderr.write("----------------------------------------------\n")
 
-    dbif.close()
-        
+    for ttype in temporal_type.split(","):
+        if ttype == "absolute":
+            time = "absolute time"
+        else:
+            time = "relative time"
+
+        stds_list = tgis.get_dataset_list(type,  ttype,  columns,  where,  order)
+
+        # Use the correct order of the mapsets, hence first the current mapset, then
+        # alphabetic ordering
+        mapsets = tgis.get_tgis_c_library_interface().available_mapsets()
+
+        # Print for each mapset separately
+        for key in mapsets:
+            if key in stds_list.keys():
+                rows = stds_list[key]
+
+                if rows:
+                    if issubclass(sp.__class__,  tgis.AbstractMapDataset):
+                        sys.stderr.write(_("Time stamped %s maps with %s available in mapset <%s>:\n")%\
+                                                 (sp.get_type(),  time,  key))
+                    else:
+                        sys.stderr.write(_("Space time %s datasets with %s available in mapset <%s>:\n")%\
+                                                 (sp.get_new_map_instance(None).get_type(),  time,  key))
+
+                    # Print the column names if requested
+                    if colhead == True and first == True:
+                        output = ""
+                        count = 0
+                        for key in rows[0].keys():
+                            if count > 0:
+                                output += separator + str(key)
+                            else:
+                                output += str(key)
+                            count += 1
+                        print output
+                        first = False
+            
+                    for row in rows:
+                        output = ""
+                        count = 0
+                        for col in row:
+                            if count > 0:
+                                output += separator + str(col)
+                            else:
+                                output += str(col)
+                            count += 1
+            
+                        print output
+
 if __name__ == "__main__":
     options, flags = grass.parser()
     main()

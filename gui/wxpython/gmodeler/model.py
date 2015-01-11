@@ -289,12 +289,12 @@ class Model(object):
         
         Raise exception on error.
         """
-        dtdFilename = os.path.join(globalvar.ETCWXDIR, "xml", "grass-gxm.dtd")
+        dtdFilename = os.path.join(globalvar.WXGUIDIR, "xml", "grass-gxm.dtd")
         
         # parse workspace file
         try:
             gxmXml = ProcessModelFile(etree.parse(filename))
-        except StandardError, e:
+        except StandardError as e:
             raise GException(e)
         
         if self.canvas:

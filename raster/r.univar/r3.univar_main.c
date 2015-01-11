@@ -126,15 +126,7 @@ int main(int argc, char *argv[])
     }
 
     /* table field separator */
-    zone_info.sep = param.separator->answer;
-    if (strcmp(zone_info.sep, "\\t") == 0)
-	zone_info.sep = "\t";
-    if (strcmp(zone_info.sep, "tab") == 0)
-	zone_info.sep = "\t";
-    if (strcmp(zone_info.sep, "space") == 0)
-	zone_info.sep = " ";
-    if (strcmp(zone_info.sep, "comma") == 0)
-	zone_info.sep = ",";
+    zone_info.sep = G_option_to_separator(param.separator);
 
     dmin = 0.0 / 0.0;	/* set to nan as default */
     dmax = 0.0 / 0.0;	/* set to nan as default */
@@ -213,7 +205,7 @@ int main(int argc, char *argv[])
 
     for (z = 0; z < depths; z++) {	/* From the bottom to the top */
 	if (!(param.shell_style->answer))
-	    G_percent(z, depths - 1, 10);
+	    G_percent(z, depths - 1, 2);
 	for (y = 0; y < rows; y++) {
 	    for (x = 0; x < cols; x++) {
 		zone = 0;

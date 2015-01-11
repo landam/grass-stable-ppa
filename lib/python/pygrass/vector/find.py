@@ -8,13 +8,16 @@ import grass.lib.vector as libvect
 
 from grass.pygrass.errors import must_be_open
 
-from .basic import Ilist, BoxList
-from .geometry import read_line, Isle, Area, Point
+from grass.pygrass.vector.basic import Ilist, BoxList
+from grass.pygrass.vector.geometry import read_line, Isle, Area, Point
 
 
 class AbstractFinder(object):
     def __init__(self, c_mapinfo, table=None, writable=False):
-        """Find geometry feature around a point.
+        """AbstractFinder
+        -----------------
+        
+        Find geometry feature around a point.
         """
         self.c_mapinfo = c_mapinfo
         self.table = table
@@ -32,7 +35,9 @@ class AbstractFinder(object):
 
 
 class PointFinder(AbstractFinder):
-    """Find the geomtry features of a vector map that are close to a point. ::
+    """PointFinder
+    ------------------
+    Find the geomtry features of a vector map that are close to a point. ::
 
         >>> from grass.pygrass.vector import VectorTopo
         >>> zipcodes = VectorTopo('zipcodes', 'PERMANENT')
