@@ -94,7 +94,7 @@ Suggests: grass-doc,
 # used by r.in.wms
           xml2
 Breaks: grass (<< 6.4.2-1~)
-Provides: grass644
+Provides: grass700
 Replaces: grass (<< 6.4.2-1~)
 Description: GRASS GIS core components
  Commonly referred to as GRASS, this is a Geographic Information
@@ -179,7 +179,7 @@ Depends: grass-core (= ${binary:Version}),
 Recommends: subversion
 Suggests: grass-dev-doc,
           pkg-config
-Provides: grass64-dev
+Provides: grass70-dev
 Description: GRASS GIS development files
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
