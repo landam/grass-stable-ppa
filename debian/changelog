@@ -4,6 +4,8 @@ grass (7.0.0~beta4-1) UNRELEASED; urgency=medium
   * Add upstream metadata.
   * Update gbp.conf and Vcs-Git URL to use the experimental branch.
   * Update watch file for GRASS 7.0.
+  * Drop build dependencies for Tcl/Tk, add build dependencies:
+    python-numpy, libnetcdf-dev, netcdf-bin, libblas-dev, liblapack-dev
 
  -- Bas Couwenberg <sebastic@xs4all.nl>  Sun, 11 Jan 2015 01:21:40 +0100
 

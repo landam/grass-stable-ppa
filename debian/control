@@ -37,8 +37,11 @@ Build-Depends: autoconf2.13,
                python,
                python-wxgtk3.0,
                python-dev,
-               tcl-dev (>= 8.5),
-               tk-dev (>= 8.5),
+               python-numpy,
+               libnetcdf-dev,
+               netcdf-bin,
+               libblas-dev,
+               liblapack-dev,
                unixodbc-dev
 Standards-Version: 3.9.5
 Vcs-Browser: http://anonscm.debian.org/gitweb/?p=pkg-grass/grass.git
@@ -88,11 +91,7 @@ Suggests: grass-doc,
 # used by NVIZ, d.out.gpsdrive, r.out.mpeg
           netpbm,
 # used by v.kridge
-          python-rpy2,
-# used by r.in.wms, v.in.wfs, g.extension
-          wget | curl,
-# used by r.in.wms
-          xml2
+          python-rpy2
 Breaks: grass (<< 6.4.2-1~)
 Provides: grass700
 Replaces: grass (<< 6.4.2-1~)
