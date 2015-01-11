@@ -11,7 +11,7 @@ Classes:
  - gis_set::GListBox
  - gis_set::StartUp
 
-(C) 2006-2013 by the GRASS Development Team
+(C) 2006-2014 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -27,11 +27,6 @@ import copy
 import platform
 import codecs
 import getpass
-
-if __name__ == "__main__":
-    gui_wx_path = os.path.join(os.getenv('GISBASE'), 'etc', 'gui', 'wxpython')
-    if gui_wx_path not in sys.path:
-        sys.path.append(gui_wx_path)
 
 from core import globalvar
 from core.utils import _
@@ -82,9 +77,9 @@ class GRASSStartup(wx.Frame):
         # image
         try:
             if os.getenv('ISISROOT'):
-                name = os.path.join(globalvar.ETCDIR, "gui", "images", "startup_banner_isis.png")
+                name = os.path.join(globalvar.GUIDIR, "images", "startup_banner_isis.png")
             else:
-                name = os.path.join(globalvar.ETCDIR, "gui", "images", "startup_banner.png")
+                name = os.path.join(globalvar.GUIDIR, "images", "startup_banner.png")
             self.hbitmap = wx.StaticBitmap(self.panel, wx.ID_ANY,
                                            wx.Bitmap(name = name,
                                                      type = wx.BITMAP_TYPE_PNG))
@@ -93,9 +88,19 @@ class GRASSStartup(wx.Frame):
 
         # labels
         ### crashes when LOCATION doesn't exist
+        # get version & revision
         versionFile = open(os.path.join(globalvar.ETCDIR, "VERSIONNUMBER"))
-        grassVersion = versionFile.readline().split(' ')[0].rstrip('\n')
+        versionLine = versionFile.readline().rstrip('\n')
         versionFile.close()
+        try:
+            grassVersion, grassRevision = versionLine.split(' ', 1)
+            if grassVersion.endswith('svn'):
+                grassRevisionStr = ' (%s)' % grassRevision
+            else:
+                grassRevisionStr = ''
+        except ValueError:
+            grassVersion = versionLine
+            grassRevisionStr = ''
         
         self.select_box = wx.StaticBox (parent = self.panel, id = wx.ID_ANY,
                                         label = " %s " % _("Choose project location and mapset"))
@@ -103,8 +108,8 @@ class GRASSStartup(wx.Frame):
         self.manage_box = wx.StaticBox (parent = self.panel, id = wx.ID_ANY,
                                         label = " %s " % _("Manage"))
         self.lwelcome = wx.StaticText(parent = self.panel, id = wx.ID_ANY,
-                                      label = _("Welcome to GRASS GIS %s\n"
-                                              "The world's leading open source GIS") % grassVersion,
+                                      label = _("Welcome to GRASS GIS %s%s\n"
+                                              "The world's leading open source GIS") % (grassVersion, grassRevisionStr),
                                       style = wx.ALIGN_CENTRE)
         self.ltitle = wx.StaticText(parent = self.panel, id = wx.ID_ANY,
                                     label = _("Select an existing project location and mapset\n"
@@ -200,7 +205,7 @@ class GRASSStartup(wx.Frame):
     def _set_properties(self):
         """!Set frame properties"""
         self.SetTitle(_("Welcome to GRASS GIS"))
-        self.SetIcon(wx.Icon(os.path.join(globalvar.ETCICONDIR, "grass.ico"),
+        self.SetIcon(wx.Icon(os.path.join(globalvar.ICONDIR, "grass.ico"),
                              wx.BITMAP_TYPE_ICO))
 
         self.lwelcome.SetForegroundColour(wx.Colour(35, 142, 35))
@@ -401,7 +406,7 @@ class GRASSStartup(wx.Frame):
                 for line in rc.readlines():
                     try:
                         key, val = line.split(":", 1)
-                    except ValueError, e:
+                    except ValueError as e:
                         sys.stderr.write(_('Invalid line in GISRC file (%s):%s\n' % \
                                                (e, line)))
                     grassrc[key.strip()] = DecodeString(val.strip())
@@ -588,7 +593,7 @@ class GRASSStartup(wx.Frame):
                               os.path.join(self.gisdbase, location, newmapset))
                     self.OnSelectLocation(None)
                     self.lbmapsets.SetSelection(self.listOfMapsets.index(newmapset))
-                except StandardError, e:
+                except StandardError as e:
                     wx.MessageBox(parent = self,
                                   caption = _('Error'),
                                   message = _('Unable to rename mapset.\n\n%s') % e,
@@ -625,7 +630,7 @@ class GRASSStartup(wx.Frame):
                     self.UpdateLocations(self.gisdbase)
                     self.lblocations.SetSelection(self.listOfLocations.index(newlocation))
                     self.UpdateMapsets(newlocation)
-                except StandardError, e:
+                except StandardError as e:
                     wx.MessageBox(parent = self,
                                   caption = _('Error'),
                                   message = _('Unable to rename location.\n\n%s') % e,
@@ -882,7 +887,7 @@ class GRASSStartup(wx.Frame):
             self.lbmapsets.SetSelection(self.listOfMapsets.index(mapset))
             self.bstart.SetFocus()
             return True
-        except StandardError, e:
+        except StandardError as e:
             GError(parent = self,
                    message = _("Unable to create new mapset: %s") % e,
                    showTraceback = False)
@@ -925,7 +930,7 @@ class GRASSStartup(wx.Frame):
                 if ret == wx.ID_YES:
                     try:
                         os.remove(lockfile)
-                    except IOError, e:
+                    except IOError as e:
                         GError(_("Unable to remove '%(lock)s'.\n\n"
                                  "Details: %(reason)s") % { 'lock' : lockfile, 'reason' : e})
                 else:

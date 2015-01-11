@@ -58,18 +58,11 @@ import codecs
 
 from threading import Thread
 
-gisbase = os.getenv("GISBASE")
-if gisbase is None:
-    print >>sys.stderr, "We don't seem to be properly installed, or we are being run outside GRASS. Expect glitches."
+if not os.getenv("GISBASE"):
+    sys.write("We don't seem to be properly installed, or we are being run "
+              "outside GRASS. Expect glitches.\n")
     gisbase = os.path.join(os.path.dirname(sys.argv[0]), os.path.pardir)
-    wxbase = gisbase
-else:
-    wxbase = os.path.join(gisbase, 'etc', 'gui', 'wxpython')
 
-if wxbase not in sys.path:
-    sys.path.append(wxbase)
-
-from core import globalvar
 import wx
 try:
     import wx.lib.agw.flatnotebook as FN
@@ -89,6 +82,7 @@ from grass.pydispatch.signal import Signal
 from grass.script import core as grass
 from grass.script import task as gtask
 
+from core import globalvar
 from gui_core.widgets import StaticWrapText, ScrolledPanel, ColorTablesComboBox, \
                              BarscalesComboBox, NArrowsComboBox
 from gui_core.ghelp   import HelpPanel
@@ -417,7 +411,7 @@ class TaskFrame(wx.Frame):
         self.CreateStatusBar()
         
         # icon
-        self.SetIcon(wx.Icon(os.path.join(globalvar.ETCICONDIR, 'grass_dialog.ico'), wx.BITMAP_TYPE_ICO))
+        self.SetIcon(wx.Icon(os.path.join(globalvar.ICONDIR, 'grass_dialog.ico'), wx.BITMAP_TYPE_ICO))
         
         guisizer = wx.BoxSizer(wx.VERTICAL)
         
@@ -432,7 +426,7 @@ class TaskFrame(wx.Frame):
         
         # GRASS logo
         self.logo = wx.StaticBitmap(parent = self.panel,
-                                    bitmap = wx.Bitmap(name = os.path.join(globalvar.ETCIMGDIR,
+                                    bitmap = wx.Bitmap(name = os.path.join(globalvar.IMGDIR,
                                                                            'grass_form.png'),
                                                      type = wx.BITMAP_TYPE_PNG))
         topsizer.Add(item = self.logo, proportion = 0, border = 3,
@@ -443,8 +437,9 @@ class TaskFrame(wx.Frame):
             module_desc = self.task.label + ' ' + self.task.description
         else:
             module_desc = self.task.description
-        self.description = StaticWrapText(parent = self.panel,
-                                          label = module_desc)
+        
+        self.description = StaticWrapText(parent=self.panel,
+                                          label=module_desc)
         topsizer.Add(item = self.description, proportion = 1, border = 5,
                      flag = wx.ALL | wx.ALIGN_CENTER_VERTICAL | wx.EXPAND)
         
@@ -703,7 +698,7 @@ class TaskFrame(wx.Frame):
                     cmd[0] = self.task.path # full path
                 
                 ret = self._gconsole.RunCmd(cmd, onDone = self.OnDone)
-            except AttributeError, e:
+            except AttributeError as e:
                 print >> sys.stderr, "%s: Probably not running in wxgui.py session?" % (e)
                 print >> sys.stderr, "parent window is: %s" % (str(self.parent))
         else:
@@ -734,7 +729,7 @@ class TaskFrame(wx.Frame):
         # TODO: better protect whitespace with quotes
         for i in range(1, len(cmdlist)):
             if ' ' in cmdlist[i]:
-                optname, val =  cmdlist[i].split("=")
+                optname, val =  cmdlist[i].split("=", 1)
                 cmdlist[i] = '%s="%s"' % (optname, val)
         cmdstring = ' '.join(cmdlist)
         cmddata.SetText(cmdstring)
@@ -1054,7 +1049,7 @@ class CmdPanel(wx.Panel):
                         value = self._getValue(p)
                         
                         if p['name'] == 'icon': # symbols
-                            bitmap = wx.Bitmap(os.path.join(globalvar.ETCSYMBOLDIR, value) + '.png')
+                            bitmap = wx.Bitmap(os.path.join(globalvar.SYMBDIR, value) + '.png')
                             bb = wx.BitmapButton(parent = which_panel, id = wx.ID_ANY,
                                                  bitmap = bitmap)
                             iconLabel = wx.StaticText(parent = which_panel, id = wx.ID_ANY)
@@ -1140,6 +1135,7 @@ class CmdPanel(wx.Panel):
                 if p.get('prompt','') not in ('color',
                                               'subgroup',
                                               'sigfile',
+                                              'separator',
                                               'dbdriver',
                                               'dbname',
                                               'dbtable',
@@ -1268,7 +1264,7 @@ class CmdPanel(wx.Panel):
                             showButton = False
                         if showButton:
                             iconTheme = UserSettings.Get(group='appearance', key='iconTheme', subkey='type')
-                            bitmap = wx.Bitmap(os.path.join(globalvar.ETCICONDIR, iconTheme, 'map-info.png'))
+                            bitmap = wx.Bitmap(os.path.join(globalvar.ICONDIR, iconTheme, 'map-info.png'))
                             bb = wx.BitmapButton(parent=which_panel, bitmap=bitmap)
                             bb.Bind(wx.EVT_BUTTON, self.OnTimelineTool)
                             bb.SetToolTipString(_("Show graphical representation of temporal extent of dataset(s) ."))
@@ -1303,6 +1299,17 @@ class CmdPanel(wx.Panel):
                     p['wxId'] = [ selection.GetId() ]
                     selection.Bind(wx.EVT_TEXT, self.OnSetValue)
                     which_sizer.Add(item = selection, proportion = 0,
+                                    flag = wx.ADJUST_MINSIZE | wx.BOTTOM | wx.LEFT | wx.RIGHT | wx.TOP | wx.ALIGN_CENTER_VERTICAL,
+                                    border = 5)
+
+                # separator
+                elif prompt == 'separator':
+                    win = gselect.SeparatorSelect(parent = which_panel)
+                    value = self._getValue(p)
+                    win.SetValue(value)
+                    p['wxId'] = [ win.GetId() ]
+                    win.Bind(wx.EVT_TEXT, self.OnSetValue)
+                    which_sizer.Add(item = win, proportion = 0,
                                     flag = wx.ADJUST_MINSIZE | wx.BOTTOM | wx.LEFT | wx.RIGHT | wx.TOP | wx.ALIGN_CENTER_VERTICAL,
                                     border = 5)
                 
@@ -1600,7 +1607,7 @@ class CmdPanel(wx.Panel):
                     cb.GetTextCtrl().Bind(wx.EVT_TEXT, self.OnSetValue)
                     if p.get('guidependency', ''):
                         cb.Bind(wx.EVT_COMBOBOX, self.OnUpdateSelection)
-                
+
             if self.parent.GetName() == 'MainFrame' and (self._giface and hasattr(self._giface, "_model")):
                 parChk = wx.CheckBox(parent = which_panel, id = wx.ID_ANY,
                                      label = _("Parameterized in model"))
@@ -1835,7 +1842,7 @@ class CmdPanel(wx.Panel):
         data = ''
         try:
             f = open(path, "r")
-        except IOError, e:
+        except IOError as e:
             gcmd.GError(parent = self, showTraceback = False,
                         message = _("Unable to load file.\n\nReason: %s") % e)
             return
@@ -2147,7 +2154,7 @@ class CmdPanel(wx.Panel):
         for p in self.task.params:
             if 'wxId' in p and myId in p['wxId']:
                 from gui_core.dialogs import SymbolDialog
-                dlg = SymbolDialog(self, symbolPath = globalvar.ETCSYMBOLDIR,
+                dlg = SymbolDialog(self, symbolPath = globalvar.SYMBDIR,
                                    currentSymbol = p['value'])
                 if dlg.ShowModal() == wx.ID_OK:
                     img = dlg.GetSelectedSymbolPath()
@@ -2210,7 +2217,7 @@ class CmdPanel(wx.Panel):
         try:
             cmd = self.task.get_cmd(ignoreErrors = ignoreErrors,
                                    ignoreRequired = ignoreRequired)
-        except ValueError, err:
+        except ValueError as err:
             dlg = wx.MessageDialog(parent = self,
                                    message = unicode(err),
                                    caption = _("Error in %s") % self.task.name,
@@ -2236,7 +2243,7 @@ class CmdPanel(wx.Panel):
         
     def AddBitmapToImageList(self, section, imageList):
         iconTheme = UserSettings.Get(group = 'appearance', key = 'iconTheme', subkey = 'type')
-        iconSectionDict = {'manual': os.path.join(globalvar.ETCICONDIR, iconTheme, 'help.png')}
+        iconSectionDict = {'manual': os.path.join(globalvar.ICONDIR, iconTheme, 'help.png')}
         if section in iconSectionDict.keys():
             image = wx.Image(iconSectionDict[section]).Scale(16, 16, wx.IMAGE_QUALITY_HIGH)
             idx = imageList.Add(wx.BitmapFromImage(image))
@@ -2296,7 +2303,7 @@ class GUI:
             global _blackList
             self.grass_task = gtask.parse_interface(gcmd.GetRealCmd(cmd[0]),
                                                     blackList = _blackList)
-        except (grass.ScriptError, ValueError), e:
+        except (grass.ScriptError, ValueError) as e:
             raise gcmd.GException(e.value)
         
         # if layer parameters previously set, re-insert them into dialog

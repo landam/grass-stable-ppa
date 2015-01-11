@@ -25,6 +25,7 @@ Classes:
  - gselect::OgrTypeSelect
  - gselect::CoordinatesSelect
  - gselect::SignatureSelect
+ - gselect::SeparatorSelect
 
 (C) 2007-2014 by the GRASS Development Team 
 
@@ -53,7 +54,7 @@ import grass.script as grass
 from   grass.script import task as gtask
 try:
     from grass.pygrass import messages
-except ImportError, e:
+except ImportError as e:
     print >> sys.stderr, _("Unable to import pyGRASS: %s\n"
                            "Some functionality will be not accessible") % e
 
@@ -511,7 +512,7 @@ class TreeCtrlComboPopup(ListCtrlComboPopup):
                     elem_list = filesdict[mapset]
                     self._addItems(elist = elem_list, elements = elements,
                                    mapset = mapset, exclude = exclude, node = node)
-            except StandardError, e:
+            except StandardError as e:
                 sys.stderr.write(_("GSelect: invalid item: %s") % e)
                 continue
             
@@ -690,7 +691,7 @@ class TreeCtrlComboPopup(ListCtrlComboPopup):
                 import grass.temporal as tgis
                 try:
                     tgis.init(True)
-                except messages.FatalError, e:
+                except messages.FatalError as e:
                     sys.stderr.write("Temporal GIS error:\n%s" % e)
                     self.tgis_error = True
         if 'mapsets' in kargs:
@@ -1366,7 +1367,8 @@ class GdalSelect(wx.Panel):
         fileMask += '%s (*.gz;*.GZ)|*.gz;*.GZ|' % _('GZIP files')
         fileMask += '%s (*.tar;*.TAR)|*.tar;*.TAR|' % _('TAR files')
         fileMask += '%s (*.tar.gz;*.TAR.GZ;*.tgz;*.TGZ)|*.tar.gz;*.TAR.GZ;*.tgz;*.TGZ|' % _('TARGZ files')
-        fileMask += '%(all)s (*.*)|*.*|' % {'all': _('All files')}
+        # don't include last '|' - windows and mac throw error
+        fileMask += '%(all)s (*.*)|*.*' % {'all': _('All files')}
         # only contains formats with extensions hardcoded    
 
         self.filePanel = wx.Panel(parent=self)
@@ -1859,7 +1861,7 @@ class GdalSelect(wx.Panel):
         self.dbWidgets['featType'].Enable(enableFeatType)
         if showChoice:
             # try to get list of PG databases
-            dbNames = RunCommand('db.databases', quiet=True, read=True,
+            dbNames = RunCommand('db.databases', parent=self, quiet=True, read=True,
                                  driver='pg').splitlines()
             if dbNames is not None:
                 self.dbWidgets['choice'].SetItems(sorted(dbNames))
@@ -2147,7 +2149,7 @@ class CoordinatesSelect(wx.Panel):
                                        size=globalvar.DIALOG_TEXTCTRL_SIZE,
                                        validator=CoordinatesValidator())
         
-        icon = wx.Bitmap(os.path.join(globalvar.ETCICONDIR, "grass", "pointer.png"))
+        icon = wx.Bitmap(os.path.join(globalvar.ICONDIR, "grass", "pointer.png"))
         self.buttonInsCoords = buttons.ThemedGenBitmapToggleButton(parent=self, id=wx.ID_ANY,
                                                                    bitmap=icon,
                                                                    size=globalvar.DIALOG_COLOR_SIZE)
@@ -2300,3 +2302,12 @@ class SignatureSelect(wx.ComboBox):
         except OSError:
             self.SetItems([])
         self.SetValue('')
+
+class SeparatorSelect(wx.ComboBox):
+    """!Widget for selecting seperator"""
+    def __init__(self, parent, id = wx.ID_ANY, size = globalvar.DIALOG_GSELECT_SIZE, 
+                 **kwargs):
+        super(SeparatorSelect, self).__init__(parent, id, size = size, 
+                                              **kwargs)
+        self.SetName("SeparatorSelect")
+        self.SetItems(['pipe', 'comma', 'space', 'tab', 'newline'])

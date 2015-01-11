@@ -3,7 +3,7 @@
 
 @brief Global variables used by wxGUI
 
-(C) 2007-2011 by the GRASS Development Team
+(C) 2007-2014 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -19,11 +19,12 @@ if not os.getenv("GISBASE"):
     sys.exit("GRASS is not running. Exiting...")
 
 # path to python scripts
-ETCDIR = os.path.join(os.getenv("GISBASE"), "etc")
-ETCICONDIR = os.path.join(os.getenv("GISBASE"), "etc", "gui", "icons")
-ETCWXDIR = os.path.join(ETCDIR, "gui", "wxpython")
-ETCIMGDIR = os.path.join(ETCDIR, "gui", "images")
-ETCSYMBOLDIR = os.path.join(ETCDIR, "gui", "images", "symbols")
+ETCDIR   = os.path.join(os.getenv("GISBASE"), "etc")
+GUIDIR   = os.path.join(os.getenv("GISBASE"), "gui")
+WXGUIDIR = os.path.join(GUIDIR, "wxpython")
+ICONDIR  = os.path.join(GUIDIR, "icons")
+IMGDIR   = os.path.join(GUIDIR, "images")
+SYMBDIR  = os.path.join(IMGDIR, "symbols")
 
 from core.debug import Debug
 
@@ -38,11 +39,7 @@ except IOError:
         return string
     _ = null_gettext
 
-if os.path.join(ETCDIR, "python") not in sys.path:
-    sys.path.append(os.path.join(ETCDIR, "python"))
-
 from grass.script.core import get_commands
-
 
 def CheckWxVersion(version = [2, 8, 11, 0]):
     """!Check wx version"""
@@ -61,7 +58,7 @@ def CheckForWx():
     try:
         try:
             import wxversion
-        except ImportError, e:
+        except ImportError as e:
             raise ImportError(e)
         # wxversion.select(str(minVersion[0]) + '.' + str(minVersion[1]))
         wxversion.ensureMinimal(str(minVersion[0]) + '.' + str(minVersion[1]))
@@ -71,14 +68,14 @@ def CheckForWx():
         if map(int, version.split('.')) < minVersion:
             raise ValueError('Your wxPython version is %s.%s.%s.%s' % tuple(version.split('.')))
 
-    except ImportError, e:
+    except ImportError as e:
         print >> sys.stderr, 'ERROR: wxGUI requires wxPython. %s' % str(e)
         sys.exit(1)
-    except (ValueError, wxversion.VersionError), e:
+    except (ValueError, wxversion.VersionError) as e:
         print >> sys.stderr, 'ERROR: wxGUI requires wxPython >= %d.%d.%d.%d. ' % tuple(minVersion) + \
             '%s.' % (str(e))
         sys.exit(1)
-    except locale.Error, e:
+    except locale.Error as e:
         print >> sys.stderr, "Unable to set locale:", e
         os.environ['LC_ALL'] = ''
 
@@ -211,3 +208,6 @@ else:
 
 """@Check version of wxPython, use agwStyle for 2.8.11+"""
 hasAgw = CheckWxVersion()
+
+"""@Add GUIDIR/scripts into path"""
+os.environ['PATH'] = os.path.join(GUIDIR, 'scripts') + os.pathsep + os.environ['PATH']

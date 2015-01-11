@@ -30,7 +30,7 @@ from threading import Thread
 import wx
 from   wx.lib.newevent import NewEvent
 from   wx              import glcanvas
-from wx.glcanvas       import WX_GL_DEPTH_SIZE
+from wx.glcanvas       import WX_GL_RGBA, WX_GL_DOUBLEBUFFER, WX_GL_DEPTH_SIZE
 
 import grass.script as grass
 from grass.pydispatch.signal import Signal
@@ -86,7 +86,7 @@ class GLWindow(MapWindowBase, glcanvas.GLCanvas):
         if CheckWxVersion(version=[2, 8, 11]) and \
            sys.platform not in ('win32', 'darwin'):
             depthBuffer = int(UserSettings.Get(group='display', key='nvizDepthBuffer', subkey='value'))
-            attribs=[WX_GL_DEPTH_SIZE, depthBuffer, 0]
+            attribs = [WX_GL_RGBA, WX_GL_DOUBLEBUFFER, WX_GL_DEPTH_SIZE, depthBuffer, 0]
             glcanvas.GLCanvas.__init__(self, parent, id, attribList=attribs)
         else:
             glcanvas.GLCanvas.__init__(self, parent, id)
@@ -1348,7 +1348,7 @@ class GLWindow(MapWindowBase, glcanvas.GLCanvas):
                     if vInfo['map3d'] and (vInfo['kernels'] + vInfo['faces']) > 0:
                         self.LoadVector(item, points=None)
                     
-            except GException, e:
+            except GException as e:
                 GError(parent = self,
                        message = e.value)
         
@@ -1390,7 +1390,7 @@ class GLWindow(MapWindowBase, glcanvas.GLCanvas):
                     if (vInfo['lines'] + vInfo['boundaries']) > 0 or vInfo['map3d']:
                         self.UnloadVector(layer, points = False)
                         
-            except GException, e:
+            except GException as e:
                 GError(parent = self,
                        message = e.value)
         

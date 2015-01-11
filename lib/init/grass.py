@@ -17,7 +17,7 @@
 #               command line options for setting the GISDBASE, LOCATION,
 #               and/or MAPSET. Finally it starts GRASS with the appropriate
 #               user interface and cleans up after it is finished.
-# COPYRIGHT:    (C) 2000-2013 by the GRASS Development Team
+# COPYRIGHT:    (C) 2000-2014 by the GRASS Development Team
 #
 #               This program is free software under the GNU General
 #               Public License (>=v2). Read the file COPYING that
@@ -68,7 +68,7 @@ remove_lockfile = True
 location = None
 create_new = None
 grass_gui = None
-
+exit_grass = None
 
 def warning(text):
     sys.stderr.write(_("WARNING") + ': ' + text + os.linesep)
@@ -168,13 +168,14 @@ Geographic Resources Analysis Support System (GRASS GIS).
 
 %s:
   $CMD_NAME [-h | -help | --help] [-v | --version] [-c | -c geofile | -c EPSG:code]
-          [-text | -gui] [--config param]
+          [-e] [-text | -gui] [--config param]
           [[[<GISDBASE>/]<LOCATION_NAME>/]<MAPSET>]
 
 %s:
   -h or -help or --help          %s
   -v or --version                %s
   -c                             %s
+  -e                             %s
   -text                          %s
                                    %s
   -gtext                         %s
@@ -204,6 +205,7 @@ Geographic Resources Analysis Support System (GRASS GIS).
        _("print this help message"),
        _("show version information and exit"),
        _("create given database, location or mapset if it doesn't exist"),
+       _("exit after creation of location or mapset. Only with -c flag"),
        _("use text based interface (skip welcome screen)"),
        _("and set as default"),
        _("use text based interface (show welcome screen)"),
@@ -381,13 +383,16 @@ def set_paths():
         os.environ['GRASS_ADDON_BASE'] = addon_base
     path_prepend(os.path.join(addon_base, 'scripts'), 'PATH')
     path_prepend(os.path.join(addon_base, 'bin'), 'PATH')
-
+    
     # standard installation
     path_prepend(gfile('scripts'), 'PATH')
     path_prepend(gfile('bin'), 'PATH')
 
     # Set PYTHONPATH to find GRASS Python modules
-    path_prepend(gfile('etc', 'python'), 'PYTHONPATH')
+    if os.path.exists(gfile('gui', 'wxpython')):
+        path_prepend(gfile('gui', 'wxpython'), 'PYTHONPATH')
+    if os.path.exists(gfile('etc', 'python')):
+        path_prepend(gfile('etc', 'python'), 'PYTHONPATH')
 
     # set path for the GRASS man pages
     grass_man_path = os.path.join(gisbase, 'docs', 'man')
@@ -539,7 +544,7 @@ def check_gui():
             p.wait()
             if p.returncode == 0:
                 # Set the wxpython base directory
-                wxpython_base = gfile("etc", "gui", "wxpython")
+                wxpython_base = gfile("gui", "wxpython")
             else:
                 # Python was not found - switch to text interface mode
                 warning(_("The python command does not work as expected!\n"
@@ -645,7 +650,7 @@ def non_interactive(arg, geofile=None):
                             # create location using georeferenced file
                             grass.create_location(gisdbase, location_name,
                                                   filename=geofile)
-                    except grass.ScriptError, e:
+                    except grass.ScriptError as e:
                         fatal(e.value.strip('"').strip("'").replace('\\n',
                                                                    os.linesep))
                 else:
@@ -689,8 +694,7 @@ def set_data():
 
 def gui_startup(wscreen_only = False):
     if grass_gui in ('wxpython', 'gtext'):
-        ret = call([os.getenv('GRASS_PYTHON'),
-                        gfile(wxpython_base, "gis_set.py")])
+        ret = call([os.getenv('GRASS_PYTHON'), gfile(wxpython_base, "gis_set.py")])
 
     if ret == 0:
         pass
@@ -742,7 +746,17 @@ def load_env():
             k, v = map(lambda x: x.strip(), line.strip().split(' ', 1)[1].split('=', 1))
         except:
             continue
-        os.environ[k] = v
+        
+        evalue = os.getenv(k)
+        if evalue:
+            if k == 'GRASS_ADDON_PATH':
+                os.environ[k] = evalue + os.pathsep + v
+            else:
+                warning(_("Environmental variable '%s' already set, ignoring value '%s'") % \
+                            (k, v))
+        else:
+            os.environ[k] = v
+    
     # Allow for mixed ISIS-GRASS Environment
     if os.getenv('ISISROOT'):
         isis = os.getenv('ISISROOT')
@@ -808,7 +822,7 @@ def set_language():
     
     try:
         locale.setlocale(locale.LC_ALL, language)
-    except locale.Error, e:
+    except locale.Error as e:
         try:
             # Locale lang.encoding might be missing. Let's try
             # UTF-8 encoding before giving up as on Linux systems
@@ -816,12 +830,12 @@ def set_language():
             # ISO-8859 ones.
             language = locale.normalize('%s.UTF-8' % (language))
             locale.setlocale(locale.LC_ALL, language)
-        except locale.Error, e:
+        except locale.Error as e:
             # The last attempt...
             try:
                 language = locale.normalize('%s.%s' % (language, locale.getpreferredencoding()))
                 locale.setlocale(locale.LC_ALL, language)
-            except locale.Error, e:
+            except locale.Error as e:
                 # If we got so far, attempts to set up language and locale have failed
                 # on this system
                 sys.stderr.write("Failed to enforce user specified language '%s' with error: '%s'\n" % (language, e))
@@ -865,9 +879,7 @@ def check_lock():
 
     if msg:
         if grass_gui == "wxpython":
-            call([os.getenv('GRASS_PYTHON'),
-                  os.path.join(wxpython_base, "gis_set_error.py"),
-                  msg])
+            call([os.getenv('GRASS_PYTHON'), gfile(wxpython_base, "gis_set_error.py"), msg])
         else:
             global remove_lockfile
             remove_lockfile = False
@@ -969,7 +981,7 @@ def clear_screen():
     # TODO: uncomment when PDCurses works.
     #   cls
     else:
-        if not os.getenv('GRASS_BATCH_JOB') and not grass_debug:
+        if not os.getenv('GRASS_BATCH_JOB') and not grass_debug and not exit_grass:
             call(["tput", "clear"])
 
 
@@ -986,8 +998,17 @@ def show_banner():
 
 def say_hello():
     sys.stderr.write(_("Welcome to GRASS %s") % grass_version)
-
-
+    if grass_version.endswith('svn'):
+        try:
+            filerev = open(os.path.join(gisbase, 'etc', 'VERSIONNUMBER'))
+            linerev = filerev.readline().rstrip('\n')
+            filerev.close()
+            
+            revision = linerev.split(' ')[1]
+            sys.stderr.write(' (' + revision + ')')
+        except:
+            pass
+    
 def show_info():
     sys.stderr.write(
 r"""
@@ -1086,15 +1107,33 @@ def bash_startup():
     else:
         f.write("PS1='GRASS %s (%s):\w > '\n" % (grass_version, location_name))
     
-    f.write("PROMPT_COMMAND=\"'%s'\"\n" % os.path.join(gisbase, 'etc',
-                                                       'prompt.py'))
+    f.write("""grass_prompt() {
+	LOCATION="`g.gisenv GISDBASE`/`g.gisenv LOCATION_NAME`/`g.gisenv MAPSET`"
+	if test -d "$LOCATION/grid3/G3D_MASK" && test -f "$LOCATION/cell/MASK" ; then
+		echo [%s]
+	elif test -f "$LOCATION/cell/MASK" ; then
+		echo [%s]
+	elif test -d "$LOCATION/grid3/G3D_MASK" ; then
+		echo [%s]
+	fi
+}
+PROMPT_COMMAND=grass_prompt\n""" % (_("2D and 3D raster MASKs present"),
+                                    _("Raster MASK present"),
+                                    _("3D raster MASK present")))
 
     # read environmental variables
     path = os.path.join(userhome, ".grass.bashrc") # left for backward compatibility
     if os.access(path, os.R_OK):
         f.write(readfile(path) + '\n')
-    if os.access(grass_env_file, os.R_OK):
-        f.write(readfile(grass_env_file) + '\n')
+    for env in os.environ.keys():
+        if env.startswith('GRASS'):
+            val = os.environ[env]
+            if ' ' in val:
+                val = '"%s"' % val
+            f.write('export %s=%s\n' % (env, val))
+    ### Replaced by code above (do not override already set up environment variables)
+    ###    if os.access(grass_env_file, os.R_OK):
+    ###        f.write(readfile(grass_env_file) + '\n')
 
     f.write("export PATH=\"%s\"\n" % os.getenv('PATH'))
     f.write("export HOME=\"%s\"\n" % userhome) # restore user home path
@@ -1205,7 +1244,7 @@ def get_username():
 
 
 def parse_cmdline():
-    global args, grass_gui, create_new
+    global args, grass_gui, create_new, exit_grass
     args = []
     for i in sys.argv[1:]:
         # Check if the user asked for the version
@@ -1231,6 +1270,8 @@ def parse_cmdline():
         # Check if the user wants to create a new mapset
         elif i == "-c":
             create_new = True
+        elif i == "-e":
+            exit_grass = True
         elif i == "--config":
             print_params()
             sys.exit()
@@ -1298,6 +1339,8 @@ get_username()
 # Parse the command-line options
 parse_cmdline()
 
+if exit_grass and not create_new:
+    fatal(_("Flag -e required also flag -c"))
 # Set language
 # This has to be called before any _() function call!
 # Subsequent functions are using _() calls and
@@ -1349,7 +1392,10 @@ if not os.access(gisrc, os.F_OK):
 else:
     clean_temp()
 
-message(_("Starting GRASS GIS..."))
+if create_new:
+    message(_("Creating new GRASS GIS location/mapset..."))
+else:
+    message(_("Starting GRASS GIS..."))
 
 # Check that the GUI works
 check_gui()
@@ -1386,7 +1432,7 @@ if not os.access(os.path.join(location, "VAR"), os.F_OK):
 
 check_batch_job()
 
-if not batch_job:       
+if not batch_job and not exit_grass:       
     start_gui()
 
 clear_screen()
@@ -1395,6 +1441,10 @@ clear_screen()
 if batch_job:
     grass_gui = 'text'
     clear_screen()
+    clean_temp()
+    try_remove(lockfile)
+    sys.exit(0)
+elif exit_grass:
     clean_temp()
     try_remove(lockfile)
     sys.exit(0)

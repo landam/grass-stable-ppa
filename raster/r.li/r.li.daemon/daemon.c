@@ -15,7 +15,6 @@
  * \include
  * 
  */
-#include <grass/config.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <fcntl.h>
@@ -35,11 +34,6 @@
 #include <grass/raster.h>
 #include <grass/glocale.h>
 #include "daemon.h"
-
-#ifdef __MINGW32__
-#define srandom srand
-#define random rand
-#endif
 
 int calculateIndex(char *file, rli_func *f,
 		   char **parameters, char *raster, char *output)
@@ -70,15 +64,19 @@ int calculateIndex(char *file, rli_func *f,
        ######################################################### */
 
     /* strip off leading path if present */
+    char rlipath[GPATH_MAX];
     char testpath[GPATH_MAX];
 
-    sprintf(testpath, "%s%s", G_home(), "/.grass7/r.li/");
+	/* conf files go into ~/.grass7/r.li/ */
+    sprintf(rlipath, "%s%c%s%c", G_config_path(), HOST_DIRSEP, "r.li", HOST_DIRSEP);
+
+    sprintf(testpath, "%s%c%s%c", G_config_path(), HOST_DIRSEP, "r.li", HOST_DIRSEP);
     if (strncmp(file, testpath, strlen(testpath)) == 0)
 	file += strlen(testpath);
 
     /* TODO: check if this path is portable */
     /* TODO: use G_rc_path() */
-    sprintf(pathSetup, "%s/.grass7/r.li/%s", G_home(), file);
+    sprintf(pathSetup, "%s%s", rlipath, file);
     G_debug(1, "r.li.daemon pathSetup: [%s]", pathSetup);
     parsed = parseSetup(pathSetup, l, g, raster);
 
@@ -101,25 +99,23 @@ int calculateIndex(char *file, rli_func *f,
     else {
 	/* text file output */
 	/* check if ~/.grass7/ exists */
-	sprintf(out, "%s/.grass7/", G_home());
+        sprintf(out, "%s", G_config_path());
 	doneDir = G_mkdir(out);
 	if (doneDir == -1 && errno != EEXIST)
-	    G_fatal_error(_("Cannot create %s/.grass7/ directory"), G_home());
+	    G_fatal_error(_("Cannot create %s directory"), out);
 
 	/* check if ~/.grass7/r.li/ exists */
-	sprintf(out, "%s/.grass7/r.li/", G_home());
+	sprintf(out, "%s", rlipath);
 	doneDir = G_mkdir(out);
 	if (doneDir == -1 && errno != EEXIST)
-	    G_fatal_error(_("Cannot create %s/.grass7/r.li/ directory"),
-			  G_home());
+	    G_fatal_error(_("Cannot create %s directory"), out);
 
 	/* check if ~/.grass7/r.li/output exists */
-	sprintf(out, "%s/.grass7/r.li/output", G_home());
+	sprintf(out, "%s%s", rlipath, "output");
 	doneDir = G_mkdir(out);
 	if (doneDir == -1 && errno != EEXIST)
-	    G_fatal_error(_("Cannot create %s/.grass7/r.li/output/ directory"),
-			  G_home());
-	sprintf(out, "%s/.grass7/r.li/output/%s", G_home(), output);
+	    G_fatal_error(_("Cannot create %s directory"), out);
+	sprintf(out, "%s%s%c%s", rlipath, "output", HOST_DIRSEP, output);
 	res = open(out, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     }
     i = 0;
@@ -175,10 +171,10 @@ int calculateIndex(char *file, rli_func *f,
 	Rast_short_history(output, "raster", &history);
 	Rast_command_history(&history);
 	Rast_write_history(output, &history);
-	G_message(_("Raster map <%s> created."), output);
+	G_done_msg(_("Raster map <%s> created."), output);
     } else {
 	/* text file output */
-	G_message("Result written to ASCII file <%s>", out);
+	G_done_msg("Result written to text file <%s>", out);
     }
 
     return 1;
@@ -522,11 +518,11 @@ int disposeAreas(struct list *l, struct g_area *g, char *def)
 	    G_fatal_error(_("Too many units to place"));
 	assigned = G_malloc(units * sizeof(int));
 	i = 0;
-	srandom(0);
+	G_srand48(0);
 	while (i < units) {
 	    int j, position, found = FALSE;
 
-	    position = random() % max_units;
+	    position = G_lrand48() % max_units;
 	    for (j = 0; j < i; j++) {
 		if (assigned[j] == position)
 		    found = TRUE;
@@ -590,7 +586,7 @@ int disposeAreas(struct list *l, struct g_area *g, char *def)
 	if (r_strat_len < g->rl || c_strat_len < g->cl)
 	    G_fatal_error(_("Too many stratified random sample for raster map"));
 	loop = r_strat * c_strat;
-	srandom(0);
+	G_srand48(0);
 	for (i = 0; i < loop; i++) {
 	    msg m;
 
@@ -598,9 +594,9 @@ int disposeAreas(struct list *l, struct g_area *g, char *def)
 		m.type = AREA;
 		m.f.f_a.aid = i;
 		m.f.f_a.x = (int)g->sf_x + ((i % c_strat) * c_strat_len) +
-		    (random() % (c_strat_len - g->cl));
+		    (G_lrand48() % (c_strat_len - g->cl));
 		m.f.f_a.y = (int)g->sf_y + (rint(i / c_strat) * r_strat_len) +
-		    (random() % (r_strat_len - g->rl));
+		    (G_lrand48() % (r_strat_len - g->rl));
 		m.f.f_a.rl = g->rl;
 		m.f.f_a.cl = g->cl;
 		insertNode(l, m);
@@ -609,10 +605,10 @@ int disposeAreas(struct list *l, struct g_area *g, char *def)
 		m.type = MASKEDAREA;
 		m.f.f_ma.aid = i;
 		m.f.f_ma.x = (int)g->sf_x + ((i % c_strat) * c_strat_len) +
-		    (random() % (c_strat_len - g->cl));
+		    (G_lrand48() % (c_strat_len - g->cl));
 		m.f.f_ma.y =
 		    (int)g->sf_y + (rint(i / c_strat) * r_strat_len) +
-		    (random() % (r_strat_len - g->rl));
+		    (G_lrand48() % (r_strat_len - g->rl));
 		m.f.f_ma.rl = g->rl;
 		m.f.f_ma.cl = g->cl;
 		strcpy(m.f.f_ma.mask, g->maskname);

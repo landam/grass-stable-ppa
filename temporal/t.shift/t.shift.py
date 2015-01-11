@@ -15,7 +15,7 @@
 #############################################################################
 
 #%module
-#% description: Temporally shift the maps of a space time dataset.
+#% description: Shifts temporally the maps of a space time dataset.
 #% keywords: temporal
 #% keywords: shift
 #%end
@@ -38,7 +38,8 @@
 #%option
 #% key: granularity
 #% type: string
-#% description: Shift granularity, format absolute time "x years, x months, x weeks, x days, x hours, x minutes, x seconds" or an integer value for relative time
+#% label: Shift granularity
+#% description: Format absolute time: "x years, x months, x weeks, x days, x hours, x minutes, x seconds", relative time is of type integer
 #% required: yes
 #% multiple: no
 #%end

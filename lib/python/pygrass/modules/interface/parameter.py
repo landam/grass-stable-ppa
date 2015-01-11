@@ -9,11 +9,15 @@ from __future__ import (nested_scopes, generators, division, absolute_import,
 import re
 
 
-from .read import GETTYPE, element2dict, DOC
+from grass.pygrass.modules.interface.read import GETTYPE, element2dict, DOC
 
 
+# TODO add documentation
 class Parameter(object):
+    """The Parameter object store all information about a parameter of module.
 
+    It is possible to set parameter of command using this object.
+    """
     def __init__(self, xparameter=None, diz=None):
         self._value = None
         diz = element2dict(xparameter) if xparameter is not None else diz
@@ -38,7 +42,7 @@ class Parameter(object):
         if 'values' in diz:
             try:
                 # Check for integer ranges: "3-30"
-                isrange = re.match("(?P<min>\d+)-(?P<max>\d+)",
+                isrange = re.match("(?P<min>-*\d+)-(?P<max>\d+)",
                                    diz['values'][0])
                 if isrange:
                     range_min, range_max = isrange.groups()
@@ -46,7 +50,7 @@ class Parameter(object):
                     self.isrange = diz['values'][0]
                 # Check for float ranges: "0.0-1.0"
                 if not isrange:
-                    isrange = re.match("(?P<min>\d+.\d+)-(?P<max>\d+.\d+)",
+                    isrange = re.match("(?P<min>-*\d+.\d+)-(?P<max>\d+.\d+)",
                                        diz['values'][0])
                     if isrange:
                         # We are not able to create range values from
@@ -79,7 +83,7 @@ class Parameter(object):
         # gisprompt
         #
         if 'gisprompt' in diz:
-            self.typedesc = diz['gisprompt']['prompt']
+            self.typedesc = diz['gisprompt'].get('prompt', '')
             self.input = False if diz['gisprompt']['age'] == 'new' else True
         else:
             self.input = True
@@ -116,7 +120,14 @@ class Parameter(object):
                     raise ValueError(values_error % (self.name, self.values))
             else:
                 self._value = value
-        # was: elif self.type is str and isinstance(value, unicode):
+        elif self.type is str and isinstance(value, unicode):
+            if hasattr(self, 'values'):
+                if value in self.values:
+                    self._value = str(value)
+                else:
+                    raise ValueError(values_error % (self.name, self.values))
+            else:
+                self._value = str(value)
         elif self.type is str and isinstance(value, str):
             if hasattr(self, 'values'):
                 if value in self.values:
@@ -131,9 +142,11 @@ class Parameter(object):
 
     # here the property function is used to transform value in an attribute
     # in this case we define which function must be use to get/set the value
-    value = property(fget=_get_value, fset=_set_value)
+    value = property(fget=_get_value, fset=_set_value,
+                     doc="Set or obtain value")
 
     def get_bash(self):
+        """Prova"""
         if isinstance(self._value, list) or isinstance(self._value, tuple):
             value = ','.join([str(v) for v in self._value])
         else:
@@ -141,6 +154,7 @@ class Parameter(object):
         return """%s=%s""" % (self.name, value)
 
     def get_python(self):
+        """Prova"""
         if not self.value:
             return ''
         return """%s=%r""" % (self.name, self._value)

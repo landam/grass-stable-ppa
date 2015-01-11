@@ -363,7 +363,7 @@ def import_stds(input, output, extrdir, title=None, descr=None, location=None,
             for row in maplist:
                 filename = row["filename"] + ".tif"
                 if not os.path.exists(filename):
-                    core.fatal(_("Unable to find geotiff raster file "
+                    core.fatal(_("Unable to find GeoTIFF raster file "
                                  "<%s> in archive.") % filename)
         elif format_ == "AAIGrid":
             for row in maplist:
@@ -442,7 +442,8 @@ def import_stds(input, output, extrdir, title=None, descr=None, location=None,
         register_maps_in_space_time_dataset(
             type=sp.get_new_map_instance(None).get_type(),
             name=output, file=new_list_file_name, start="file",
-            end="file", unit=relative_time_unit, dbif=None, fs=fs)
+            end="file", unit=relative_time_unit, dbif=None, fs=fs,
+            update_cmd_list=False)
 
         os.chdir(old_cwd)
     except:

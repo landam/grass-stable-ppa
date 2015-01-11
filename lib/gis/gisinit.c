@@ -48,8 +48,10 @@ void G__gisinit(const char *version, const char *pgm)
     G_set_program_name(pgm);
 
     if (strcmp(version, GIS_H_VERSION) != 0)
-	G_fatal_error(_("Incompatible library version for module. "
-			"You need to rebuild GRASS or untangle multiple installations."));
+	G_fatal_error(_("Module built against version %s but "
+			"trying to use version %s. "
+			"You need to rebuild GRASS GIS or untangle multiple installations."),
+                        version, GIS_H_VERSION);
 
     /* Make sure location and mapset are set */
     G_location_path();
@@ -80,9 +82,10 @@ void G__no_gisinit(const char *version)
 	return;
 
     if (strcmp(version, GIS_H_VERSION) != 0)
-	G_fatal_error(_("Incompatible library version for module. "
-			"You need to rebuild GRASS or untangle multiple installations."));
-
+	G_fatal_error(_("Module built against version %s but "
+			"trying to use version %s. "
+			"You need to rebuild GRASS GIS or untangle multiple installations."),
+                        version, GIS_H_VERSION);
     gisinit();
 }
 
@@ -131,7 +134,7 @@ void G_init_all(void)
     G_init_debug();
     G_verbose();
     G_init_tempfile();
-    G_get_list_of_mapsets();
+    G__get_list_of_mapsets();
     G__home();
     G__machine_name();
     G_whoami();

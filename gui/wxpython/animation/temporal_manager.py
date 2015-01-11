@@ -18,11 +18,7 @@ This program is free software under the GNU General Public License
 """
 
 import os
-import sys
 import datetime
-
-if __name__ == '__main__':
-    sys.path.append(os.path.join(os.environ['GISBASE'], "etc", "gui", "wxpython"))
 
 import grass.script as grass
 import grass.temporal as tgis
@@ -217,7 +213,7 @@ class TemporalManager(object):
                           if end is not None else None, unit) for (st, end, unit) in timestamps]
         else:
             # ('15', '16', u'years'),
-            timestamps = [(str(st), str(end), unit) for st, end, unit in timestamps]
+            timestamps = [(str(st), end if end is None else str(end), unit) for st, end, unit in timestamps]
         return timestamps, mapDict
 
     def _getLabelsAndMaps(self, timeseries):
@@ -358,7 +354,7 @@ def test():
     try:
         warn = temp.EvaluateInputData()
         print warn
-    except GException, e:
+    except GException as e:
         print e
         return
 

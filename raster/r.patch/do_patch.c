@@ -9,7 +9,7 @@
  *          0 the result contains no zero nulls
  */
 
-int G_is_zero_value(void *rast, RASTER_MAP_TYPE data_type)
+int is_zero_value(void *rast, RASTER_MAP_TYPE data_type)
 {
 
     /* insert 0 check here */
@@ -21,21 +21,21 @@ int G_is_zero_value(void *rast, RASTER_MAP_TYPE data_type)
 
 int do_patch(void *result, void *patch,
 	     struct Cell_stats *statf, int ncols,
-	     RASTER_MAP_TYPE out_type, int ZEROFLAG)
+	     RASTER_MAP_TYPE out_type, int use_zero)
 {
     int more;
 
     more = 0;
     while (ncols-- > 0) {
-	if (ZEROFLAG) {		/* use 0 for transparency instead of NULL */
-	    if (G_is_zero_value(result, out_type) ||
+	if (use_zero) {		/* use 0 for transparency instead of NULL */
+	    if (is_zero_value(result, out_type) ||
 		Rast_is_null_value(result, out_type)) {
 		/* Don't patch hole with a null, just mark as more */
 		if (Rast_is_null_value(patch, out_type))
 		    more = 1;
 		else {
 		    /* Mark that there is more to be done if we patch with 0 */
-		    if (G_is_zero_value(patch, out_type))
+		    if (is_zero_value(patch, out_type))
 			more = 1;
 		    Rast_raster_cpy(result, patch, 1, out_type);
 		    if (out_type == CELL_TYPE)

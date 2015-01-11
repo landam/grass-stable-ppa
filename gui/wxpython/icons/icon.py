@@ -6,7 +6,7 @@
 Classes:
  - MetaIcon
 
-(C) 2007-2008, 2010-2011 by the GRASS Development Team
+(C) 2007-2014 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -47,7 +47,7 @@ try:
             iconSet[key] = img
         
         iconSet[key] = os.path.join(iconPath, iconSet[key])
-except StandardError, e:
+except StandardError as e:
     sys.exit(_("Unable to load icon theme. Reason: %s. Quiting wxGUI...") % e)
     
 class MetaIcon:

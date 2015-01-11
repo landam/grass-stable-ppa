@@ -158,8 +158,8 @@ int main(int argc, char *argv[])
     if (opt.dialog->answer) {
         if (opt.mapset->answer)
             G_warning(_("Option <%s> ignored"), opt.mapset->key);
-        sprintf(path_buf, "%s/etc/gui/scripts/g.mapsets_picker.py", G_gisbase());
-        G_spawn(getenv("GRASS_PYTHON"), "g.mapsets_picker.py", path_buf, NULL);
+        sprintf(path_buf, "%s/gui/wxpython/modules/mapsets_picker.py", G_gisbase());
+        G_spawn(getenv("GRASS_PYTHON"), "mapsets_picker.py", path_buf, NULL);
         exit(EXIT_SUCCESS);
     }
 
@@ -193,7 +193,7 @@ int main(int argc, char *argv[])
         }
 
         /* read existing mapsets from SEARCH_PATH */
-        for (n = 0; (oldname = G__mapset_name(n)); n++)
+        for (n = 0; (oldname = G_get_mapset_name(n)); n++)
             append_mapset(&path, oldname);
 
         /* fetch and add new mapsets from param list */
@@ -227,7 +227,7 @@ int main(int argc, char *argv[])
         }
         
         /* read existing mapsets from SEARCH_PATH */
-        for (n = 0; (oldname = G__mapset_name(n)); n++) {
+        for (n = 0; (oldname = G_get_mapset_name(n)); n++) {
             found = FALSE;
             
             for (ptr = opt.mapset->answers; *ptr && !found; ptr++)

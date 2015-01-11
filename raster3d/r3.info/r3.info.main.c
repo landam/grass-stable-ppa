@@ -418,6 +418,10 @@ int main(int argc, char *argv[])
 
 	    fprintf(out, "tbres=%g\n", cellhd.tb_res);
 
+	    fprintf(out, "rows=%d\n", cellhd.rows);
+	    fprintf(out, "cols=%d\n", cellhd.cols);
+	    fprintf(out, "depths=%d\n", cellhd.depths);
+
 	    fprintf(out, "datatype=\"%s\"\n",
 		    data_type == FCELL_TYPE ? "FCELL" :
 		    data_type == DCELL_TYPE ? "DCELL" :
@@ -486,7 +490,7 @@ int main(int argc, char *argv[])
 int format_double(double value, char *buf)
 {
 
-    sprintf(buf, "%.8lf", value);
+    sprintf(buf, "%.8f", value);
     G_trim_decimal(buf);
     return 0;
 }

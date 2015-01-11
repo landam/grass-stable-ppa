@@ -61,11 +61,11 @@ int main(int argc, char *argv[])
 
     in_stm_opt = G_define_standard_option(G_OPT_R_INPUT);
     in_stm_opt->key = "stream_rast";
-    in_stm_opt->description = _("Name for input raster map with stream network");
+    in_stm_opt->description = _("Name of input raster map with stream network");
 
     in_dir_opt = G_define_standard_option(G_OPT_R_INPUT);
     in_dir_opt->key = "direction";
-    in_dir_opt->description = _("Name for input raster map with flow direction");
+    in_dir_opt->description = _("Name of input raster map with flow direction");
 
     in_elev_opt = G_define_standard_option(G_OPT_R_ELEV);
 
@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
     opt_swapsize->key = "memory";
     opt_swapsize->type = TYPE_INTEGER;
     opt_swapsize->answer = "300";
-    opt_swapsize->description = _("Max memory used in memory swap mode (MB)");
+    opt_swapsize->description = _("Maximum memory used in memory swap mode (MB)");
     opt_swapsize->guisection = _("Memory settings");
 
     flag_downstream = G_define_flag();

@@ -60,6 +60,7 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <setjmp.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -209,14 +210,15 @@ void G__setenv2(const char *, const char *, int);
 void G_unsetenv(const char *);
 void G_unsetenv2(const char *, int);
 void G__write_env(void);
-const char *G__env_name(int);
+const char *G_get_env_name(int);
 void G__read_env(void);
 void G_set_gisrc_mode(int);
 int G_get_gisrc_mode(void);
-void G__create_alt_env(void);
-void G__switch_env(void);
+void G_create_alt_env(void);
+void G_switch_env(void);
 
 /* error.c */
+jmp_buf *G_fatal_longjmp(int);
 int G_info_format(void);
 void G_message(const char *, ...) __attribute__ ((format(printf, 1, 2)));
 void G_verbose_message(const char *, ...)
@@ -287,6 +289,7 @@ int G_read_ellipsoid_table(int);
 /* get_projinfo.c */
 struct Key_Value *G_get_projunits(void);
 struct Key_Value *G_get_projinfo(void);
+struct Key_Value *G_get_projepsg(void);
 
 /* get_window.c */
 void G_get_window(struct Cell_head *);
@@ -388,6 +391,13 @@ int G_llres_scan(const char *, double *);
 const char *G_location(void);
 char *G_location_path(void);
 
+/* lrand48.c */
+void G_srand48(long);
+long G_srand48_auto(void);
+long G_lrand48(void);
+long G_mrand48(void);
+double G_drand48(void);
+
 /* ls.c */
 void G_set_ls_filter(int (*)(const char *, void *), void *);
 void G_set_ls_exclude_filter(int (*)(const char *, void *), void *);
@@ -429,12 +439,12 @@ int G__mapset_permissions(const char *);
 int G__mapset_permissions2(const char *, const char *, const char *);
 
 /* mapset_nme.c */
-const char *G__mapset_name(int);
-void G_get_list_of_mapsets(void);
-void G__create_alt_search_path(void);
-void G__switch_search_path(void);
+const char *G_get_mapset_name(int);
+void G__get_list_of_mapsets(void);
+void G_create_alt_search_path(void);
+void G_switch_search_path(void);
 void G_reset_mapsets(void);
-char **G_available_mapsets(void);
+char **G_get_available_mapsets(void);
 void G_add_mapset_to_search_path(const char *);
 int G_is_mapset_in_search_path(const char *);
 
@@ -494,7 +504,9 @@ char *G_recreate_command(void);
 void G_add_keyword(const char *);
 void G_set_keywords(const char *);
 int G_get_overwrite();
-char* G_option_to_separator(const struct Option *);
+char *G_option_to_separator(const struct Option *);
+FILE *G_open_option_file(const struct Option *);
+void G_close_option_file(FILE *);
 
 /* paths.c */
 int G_mkdir(const char *);
@@ -552,6 +564,7 @@ const char *G_database_projection_name(void);
 const char *G_database_datum_name(void);
 const char *G_database_ellipse_name(void);
 double G_database_units_to_meters_factor(void);
+const char *G_database_epsg_code(void);
 
 /* put_window.c */
 int G_put_window(const struct Cell_head *);
@@ -608,6 +621,8 @@ int G_snprintf(char *, size_t, const char *, ...)
 int G_strcasecmp(const char *, const char *);
 int G_strncasecmp(const char *, const char *, int);
 char *G_store(const char *);
+char *G_store_upper(const char *);
+char *G_store_lower(const char *);
 char *G_strchg(char *, char, char);
 char *G_str_replace(const char *, const char *, const char *);
 void G_strip(char *);
@@ -662,8 +677,8 @@ void G_free_tokens(char **);
 void G_trim_decimal(char *);
 
 /* units.c */
-double G_units_to_meters_factor(int);
-double G_units_to_meters_factor_sq(int);
+double G_meters_to_units_factor(int);
+double G_meters_to_units_factor_sq(int);
 const char *G_get_units_name(int, int, int);
 int G_units(const char *);
 int G_is_units_type_spatial(int);

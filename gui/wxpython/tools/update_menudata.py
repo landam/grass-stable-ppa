@@ -30,8 +30,6 @@ except ImportError:
 from grass.script import core as grass
 from grass.script import task as gtask
 
-if __name__ == "__main__":
-    sys.path.append(os.path.join(os.getenv('GISBASE'), 'etc', 'gui', 'wxpython'))
 from lmgr.menudata  import LayerManagerMenuData
 from core.globalvar import grassCmd
 
@@ -55,7 +53,7 @@ def parseModules():
             continue
         try:
             interface = gtask.parse_interface(module)
-        except Exception, e:
+        except Exception as e:
             grass.error(module + ': ' + str(e))
             continue
         modules[interface.name] = { 'label'   : interface.label,

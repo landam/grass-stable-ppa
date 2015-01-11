@@ -52,7 +52,7 @@
 #%option
 #% key: basename
 #% type: string
-#% label: Base name of the new generated output maps"
+#% label: Basename of the new generated output maps
 #% description: A numerical suffix separated by an underscore will be attached to create a unique identifier
 #% required: yes
 #% multiple: no
@@ -135,7 +135,7 @@ def main():
         new_maps.append(new_map)
 
         mod = copy.deepcopy(neighbor_module)
-        mod(input=map.get_id(), output=new_map.get_id())
+        mod(input=str(map.get_id()), output=str(new_map.get_id()))
         print(mod.get_bash())
         process_queue.put(mod)
 

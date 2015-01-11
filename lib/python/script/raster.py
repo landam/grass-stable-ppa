@@ -25,6 +25,7 @@ for details.
 import os
 import string
 import types
+import time
 
 from core import *
 
@@ -86,26 +87,37 @@ def raster_info(map):
 
 # interface to r.mapcalc
 
-def mapcalc(exp, quiet = False, verbose = False, overwrite = False, **kwargs):
+def mapcalc(exp, quiet = False, verbose = False, overwrite = False,
+            seed = None, env = None, **kwargs):
     """!Interface to r.mapcalc.
 
     @param exp expression
     @param quiet True to run quietly (<tt>--q</tt>)
     @param verbose True to run verbosely (<tt>--v</tt>)
     @param overwrite True to enable overwriting the output (<tt>--o</tt>)
+    @param seed an integer used to seed the random-number generator for the rand() function,
+    or 'auto' to generate a random seed
+    @param env dictionary of environment variables for child process
     @param kwargs
     """
+
+    if seed == 'auto':
+        seed = hash((os.getpid(), time.time())) % (2**32)
+
     t = string.Template(exp)
     e = t.substitute(**kwargs)
 
-    if run_command('r.mapcalc', expression = e,
-                   quiet = quiet,
-                   verbose = verbose,
-                   overwrite = overwrite) != 0:
+    if write_command('r.mapcalc', file = '-', stdin = e,
+                     env = env,
+                     seed = seed,
+                     quiet = quiet,
+                     verbose = verbose,
+                     overwrite = overwrite) != 0:
         fatal(_("An error occurred while running r.mapcalc"))
 
 
-def mapcalc_start(exp, quiet = False, verbose = False, overwrite = False, **kwargs):
+def mapcalc_start(exp, quiet = False, verbose = False, overwrite = False,
+                  seed = None, env = None, **kwargs):
     """!Interface to r.mapcalc, doesn't wait for it to finish, returns Popen object.
 
     \code
@@ -124,20 +136,32 @@ def mapcalc_start(exp, quiet = False, verbose = False, overwrite = False, **kwar
     @param quiet True to run quietly (<tt>--q</tt>)
     @param verbose True to run verbosely (<tt>--v</tt>)
     @param overwrite True to enable overwriting the output (<tt>--o</tt>)
+    @param seed an integer used to seed the random-number generator for the rand() function,
+    or 'auto' to generate a random seed
+    @param env dictionary of environment variables for child process
     @param kwargs
     
     @return Popen object
     """
+
+    if seed == 'auto':
+        seed = hash((os.getpid(), time.time())) % (2**32)
+
     t = string.Template(exp)
     e = t.substitute(**kwargs)
 
-    return start_command('r.mapcalc', expression = e,
-                        quiet = quiet,
-                        verbose = verbose,
-                        overwrite = overwrite)
+    p = feed_command('r.mapcalc', file = '-',
+                     env = env,
+                     seed = seed,
+                     quiet = quiet,
+                     verbose = verbose,
+                     overwrite = overwrite)
+    p.stdin.write(e)
+    p.stdin.close()
+    return p
 
 # interface to r.what
-def raster_what(map, coord):
+def raster_what(map, coord, env = None):
     """!TODO"""
     if type(map) in (types.StringType, types.UnicodeType):
         map_list = [map]
@@ -155,14 +179,13 @@ def raster_what(map, coord):
     # separator '|' not included in command
     # because | is causing problems on Windows
     # change separator?
-    cmdParams = dict(quiet = True,
-                     flags = 'rf',
-                     map = ','.join(map_list),
-                     coordinates = ','.join(coord_list),
-                     null = _("No data"))
-    
     ret = read_command('r.what',
-                       **cmdParams)
+                       flags = 'rf',
+                       map = ','.join(map_list),
+                       coordinates = ','.join(coord_list),
+                       null = _("No data"),
+                       quiet = True,
+                       env = env)
     data = list()
     if not ret:
         return data

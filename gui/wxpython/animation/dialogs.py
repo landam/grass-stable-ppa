@@ -20,16 +20,12 @@ This program is free software under the GNU General Public License
 @author Anna Petrasova <kratochanna gmail.com>
 """
 import os
-import sys
 import wx
 import copy
 import datetime
 import wx.lib.filebrowsebutton as filebrowse
 import wx.lib.scrolledpanel as SP
 import wx.lib.colourselect as csel
-
-if __name__ == '__main__':
-    sys.path.append(os.path.join(os.environ['GISBASE'], "etc", "gui", "wxpython"))
 
 from core.gcmd import GMessage, GError, GException
 from core import globalvar
@@ -41,7 +37,7 @@ from core.utils import _
 from gui_core.gselect import Select
 from gui_core.widgets import FloatValidator
 
-from animation.utils import TemporalMode, getRegisteredMaps
+from animation.utils import TemporalMode, getRegisteredMaps, getNameAndLayer
 from animation.data import AnimationData, AnimLayer
 from animation.toolbars import AnimSimpleLmgrToolbar, SIMPLE_LMGR_STDS
 from gui_core.simplelmgr import SimpleLayerManager, \
@@ -731,7 +727,7 @@ class EditDialog(wx.Dialog):
             return
         try:
             temporalMode, tempManager = self.eval(self.animationData)
-        except GException, e:
+        except GException as e:
             GError(parent=self, message=e.value, showTraceback=False)
             return
         self.result = (self.animationData, temporalMode, tempManager)
@@ -1274,7 +1270,7 @@ class AddTemporalLayerDialog(wx.Dialog):
 
         self.tselect = Select(parent=self, type='strds')
         iconTheme = UserSettings.Get(group='appearance', key='iconTheme', subkey='type')
-        bitmapPath = os.path.join(globalvar.ETCICONDIR, iconTheme, 'layer-open.png')
+        bitmapPath = os.path.join(globalvar.ICONDIR, iconTheme, 'layer-open.png')
         if os.path.isfile(bitmapPath) and os.path.getsize(bitmapPath):
             bitmap = wx.Bitmap(name=bitmapPath)
         else:
@@ -1394,8 +1390,9 @@ class AddTemporalLayerDialog(wx.Dialog):
                 try:
                     maps = getRegisteredMaps(self._name, etype=self._mapType)
                     if maps:
-                        cmd.append('map={name}'.format(name=maps[0]))
-                except gcore.ScriptError, e:
+                        mapName, mapLayer = getNameAndLayer(maps[0])
+                        cmd.append('map={name}'.format(name=mapName))
+                except gcore.ScriptError as e:
                     GError(parent=self, message=str(e), showTraceback=False)
                     return None
         return cmd
@@ -1447,7 +1444,7 @@ class AddTemporalLayerDialog(wx.Dialog):
                 self.layer.name = self._name
                 self.layer.cmd = self._cmd
                 event.Skip()
-            except (GException, gcore.ScriptError), e:
+            except (GException, gcore.ScriptError) as e:
                 GError(parent=self, message=str(e))
 
     def GetLayer(self):
@@ -1460,6 +1457,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                  settings=UserSettings):
         PreferencesBaseDialog.__init__(self, parent=parent, giface=giface, title=title,
                                        settings=settings, size=(-1, 270))
+        self.formatChanged = Signal('PreferencesDialog.formatChanged')
 
         self._timeFormats = ['%Y-%m-%d %H:%M:%S',  # 2013-12-29 11:16:26
                              '%Y-%m-%d',  # 2013-12-29
@@ -1473,6 +1471,8 @@ class PreferencesDialog(PreferencesBaseDialog):
                              '%I %p',  # 11 AM
                              ]
         self._format = None
+        self._initFormat = self.settings.Get(group='animation', key='temporal',
+                                             subkey='format')
         # create notebook pages
         self._createGeneralPage(self.notebook)
         self._createTemporalPage(self.notebook)
@@ -1526,8 +1526,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                       flag=wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL, pos=(row, 0))
         self.tempFormat = wx.ComboBox(parent=panel, name='GetValue')
         self.tempFormat.SetItems(self._timeFormats)
-        self.tempFormat.SetValue(self.settings.Get(group='animation', key='temporal',
-                                                   subkey='format'))
+        self.tempFormat.SetValue(self._initFormat)
         self.winId['animation:temporal:format'] = self.tempFormat.GetId()
         gridSizer.Add(item=self.tempFormat, pos=(row, 1), flag=wx.ALIGN_RIGHT)
         self.infoTimeLabel = wx.StaticText(parent=panel)
@@ -1580,7 +1579,10 @@ class PreferencesDialog(PreferencesBaseDialog):
 
     def _updateSettings(self):
         self.tempFormat.SetValue(self._format)
-        return PreferencesBaseDialog._updateSettings(self)
+        PreferencesBaseDialog._updateSettings(self)
+        if self._format != self._initFormat:
+            self.formatChanged.emit()
+        return True
 
 
 def test():

@@ -18,6 +18,7 @@ This program is free software under the GNU General Public License
 """
 
 import os
+import sys
 
 import wx
 
@@ -270,7 +271,7 @@ class HistogramFrame(wx.Frame):
                  size = wx.Size(500, 350),
                  style = wx.DEFAULT_FRAME_STYLE, **kwargs):
         wx.Frame.__init__(self, parent, id, title, size = size, style = style, **kwargs)
-        self.SetIcon(wx.Icon(os.path.join(globalvar.ETCICONDIR, 'grass.ico'), wx.BITMAP_TYPE_ICO))
+        self.SetIcon(wx.Icon(os.path.join(globalvar.ICONDIR, 'grass.ico'), wx.BITMAP_TYPE_ICO))
 
         self._giface = giface
         self.Map   = Map()         # instance of render.Map to be associated with display
@@ -284,7 +285,9 @@ class HistogramFrame(wx.Frame):
         self.encoding = 'ISO-8859-1' # default encoding for display fonts
         
         self.toolbar = HistogramToolbar(parent = self)
-        self.SetToolBar(self.toolbar)
+        # workaround for http://trac.wxwidgets.org/ticket/13888
+        if sys.platform != 'darwin':
+            self.SetToolBar(self.toolbar)
 
         # find selected map
         # might by moved outside this class
@@ -482,7 +485,11 @@ class HistogramToolbar(BaseToolbar):
     """
     def __init__(self, parent):
         BaseToolbar.__init__(self, parent)
-        
+
+        # workaround for http://trac.wxwidgets.org/ticket/13888
+        if sys.platform == 'darwin':
+            parent.SetToolBar(self)
+
         self.InitToolbar(self._toolbarData())
         
         # realize the toolbar

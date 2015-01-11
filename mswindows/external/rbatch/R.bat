@@ -32,6 +32,7 @@ SetLocal EnableExtensions EnableDelayedExpansion
 
 set args=%*
 set cmd=
+if /i "%~1"=="registry" goto:Rregistry
 if /i "%~1"=="cd" set cmd=Rcd
 if /i "%~1"=="CMD" set cmd=Rcmd
 if /i "%~1"=="dir" set cmd=Rdir
@@ -53,7 +54,8 @@ call set args=%%args:xxx%1=%%
 :R_CMD_cont
 if defined cmd set R_CMD=%cmd%
 if not defined R_CMD set R_CMD=%0
-set R_CMD=%R_CMD:.bat=%
+:: set "R_CMD=%R_CMD:.bat=%"
+for %%i in ("%R_CMD%") do set R_CMD=%%~ni
 if /i "%R_CMD%"=="#Rscript" set R_CMD=Rscript
 rem echo R_CMD:%R_CMD% args=[%args%]
 
@@ -101,6 +103,7 @@ if exist bin\i386\Rgui.exe set R_PATH=%CD%\bin\i386
 :R_exe_end
 
 :: 3
+
 if defined R_HOME (
     pushd
     cd %R_HOME%
@@ -136,8 +139,7 @@ if not defined R_HOME for /f "tokens=2*" %%a in (
 
 if defined R_HOME (
     if not defined R_ROOT (
-	pushd
-	cd %R_HOME%
+	pushd %R_HOME%
 	cd ..
 	set R_ROOT=!CD!
         popd
@@ -149,6 +151,7 @@ if defined R_HOME (
 
 	
 :: 5
+
 if defined R_ROOT goto:R_ROOT_end
 if exist "%ProgramFiles%\R" set R_ROOT=%ProgramFiles%\R
 if defined R_ROOT goto:R_ROOT_end
@@ -299,8 +302,7 @@ if not defined R_MIKTEX_PATH for /f "delims=" %%a in (
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 if not defined R_CMD (set R_CMD=%0)
-for %%i in (%R_CMD%) do set R_CMD=%%~ni
-
+for %%i in ("%R_CMD%") do set R_CMD=%%~ni
 if /i "%R_CMD%"=="dir" goto:Rdir
 if /i "%R_CMD%"=="cd" goto:Rcd
 if /i "%R_CMD%"=="touch" goto:Rtouch
@@ -465,7 +467,7 @@ goto:eof
 
    :extract_string
 
-   setlocal
+   SetLocal EnableExtensions EnableDelayedExpansion 
 
    Set "string=%1" 
    Set "file=%2"

@@ -17,16 +17,10 @@ This program is free software under the GNU General Public License
 """
 
 import os
-import sys
 import re
 
 import wx
 import grass.script as grass
-
-if __name__ == "__main__":
-    gui_wx_path = os.path.join(os.getenv('GISBASE'), 'etc', 'gui', 'wxpython')
-    if gui_wx_path not in sys.path:
-        sys.path.append(gui_wx_path)
 
 from core             import globalvar
 from core.gcmd        import GError, RunCommand
@@ -34,6 +28,7 @@ from core.giface      import StandaloneGrassInterface
 from core.utils import _
 from gui_core.gselect import Select
 from gui_core.forms   import GUI
+from gui_core.widgets import IntegerValidator
 from core.settings    import UserSettings
 
 class MapCalcFrame(wx.Frame):
@@ -61,7 +56,7 @@ class MapCalcFrame(wx.Frame):
             title = _('GRASS GIS 3D Raster Map Calculator')
             
         wx.Frame.__init__(self, parent, id = id, title = title, **kwargs)
-        self.SetIcon(wx.Icon(os.path.join(globalvar.ETCICONDIR, 'grass.ico'), wx.BITMAP_TYPE_ICO))
+        self.SetIcon(wx.Icon(os.path.join(globalvar.ICONDIR, 'grass.ico'), wx.BITMAP_TYPE_ICO))
         
         self.panel = wx.Panel(parent = self, id = wx.ID_ANY)
         self.CreateStatusBar()
@@ -147,6 +142,8 @@ class MapCalcFrame(wx.Frame):
         self.btn_load = wx.Button(parent = self.panel, id = wx.ID_ANY,
                                   label = _("&Load"))
         self.btn_load.SetToolTipString(_('Load expression from file'))
+        self.btn_copy = wx.Button(parent=self.panel, id=wx.ID_COPY)
+        self.btn_copy.SetToolTipString(_("Copy the current command string to the clipboard"))
         
         self.btn = dict()        
         self.btn['pow'] = wx.Button(parent = self.panel, id = wx.ID_ANY, label = "^")
@@ -234,7 +231,18 @@ class MapCalcFrame(wx.Frame):
         self.overwrite = wx.CheckBox(parent = self.panel, id = wx.ID_ANY,
                                      label=_("Allow output files to overwrite existing files"))
         self.overwrite.SetValue(UserSettings.Get(group='cmd', key='overwrite', subkey='enabled'))
+
+        self.randomSeed = wx.CheckBox(parent=self.panel,
+                                      label=_("Generate random seed for rand()"))
+        self.randomSeedStaticText = wx.StaticText(parent=self.panel, label=_("Seed:"))
+        self.randomSeedText = wx.TextCtrl(parent=self.panel, size=(100, -1),
+                                          validator=IntegerValidator())
+        self.randomSeedText.SetToolTipString(_("Integer seed for rand() function"))
+        self.randomSeed.SetValue(True)
+        self.randomSeedStaticText.Disable()
+        self.randomSeedText.Disable()
         
+
         self.addbox = wx.CheckBox(parent=self.panel,
                                   label=_('Add created raster map into layer tree'), style = wx.NO_BORDER)
         self.addbox.SetValue(UserSettings.Get(group='cmd', key='addNewLayer', subkey='enabled'))
@@ -253,21 +261,33 @@ class MapCalcFrame(wx.Frame):
         self.btn_help.Bind(wx.EVT_BUTTON, self.OnHelp)
         self.btn_save.Bind(wx.EVT_BUTTON, self.OnSaveExpression)
         self.btn_load.Bind(wx.EVT_BUTTON, self.OnLoadExpression)
+        self.btn_copy.Bind(wx.EVT_BUTTON, self.OnCopy)
         
-        self.mapselect.Bind(wx.EVT_TEXT, self.OnSelectTextEvt)
+        # self.mapselect.Bind(wx.EVT_TEXT, self.OnSelectTextEvt)
+        self.mapselect.Bind(wx.EVT_TEXT, self.OnSelect)
         self.function.Bind(wx.EVT_COMBOBOX, self._return_funct)
         self.function.Bind(wx.EVT_TEXT_ENTER, self.OnSelect)
         self.newmaptxt.Bind(wx.EVT_TEXT, self.OnUpdateStatusBar)
         self.text_mcalc.Bind(wx.EVT_TEXT, self.OnUpdateStatusBar)
+        self.overwrite.Bind(wx.EVT_CHECKBOX, self.OnUpdateStatusBar)
+        self.randomSeed.Bind(wx.EVT_CHECKBOX, self.OnUpdateStatusBar)
+        self.randomSeed.Bind(wx.EVT_CHECKBOX, self.OnSeedFlag)
+        self.randomSeedText.Bind(wx.EVT_TEXT, self.OnUpdateStatusBar)
 
         self._layout()
 
         self.SetMinSize(self.GetBestSize())
-    
+        # workaround for http://trac.wxwidgets.org/ticket/13628
+        self.SetSize(self.GetBestSize())
+
     def _return_funct(self,event):
         i = event.GetString()
         self._addSomething(self.funct_dict[i])
-    
+        
+        # reset
+        win = self.FindWindowById(event.GetId())
+        win.SetValue('')
+        
     def _layout(self):
         sizer = wx.BoxSizer(wx.VERTICAL)
         
@@ -335,6 +355,8 @@ class MapCalcFrame(wx.Frame):
                          flag = wx.ALL, border = 5)
         buttonSizer4.Add(item = self.btn_save,
                          flag = wx.ALL, border = 5)                         
+        buttonSizer4.Add(item = self.btn_copy,
+                         flag = wx.ALL, border = 5)                         
         buttonSizer4.AddSpacer(30)
         buttonSizer4.Add(item = self.btn_help,
                          flag = wx.ALL, border = 5)
@@ -372,7 +394,17 @@ class MapCalcFrame(wx.Frame):
                   border = 5)
         sizer.Add(item = buttonSizer4, proportion = 0,
                   flag = wx.ALIGN_RIGHT | wx.ALL, border = 3)
-        
+
+        randomSizer = wx.BoxSizer(wx.HORIZONTAL)
+        randomSizer.Add(item=self.randomSeed, proportion=0,
+                        flag=wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, border=20)
+        randomSizer.Add(item=self.randomSeedStaticText, proportion=0,
+                        flag=wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, border=5)
+        randomSizer.Add(item=self.randomSeedText, proportion=0)
+        sizer.Add(item=randomSizer, proportion=0,
+                  flag=wx.LEFT | wx.RIGHT,
+                  border=5)
+
         sizer.Add(item = self.overwrite, proportion = 0,
                   flag = wx.LEFT | wx.RIGHT,
                   border = 5)
@@ -418,15 +450,17 @@ class MapCalcFrame(wx.Frame):
         elif event.GetId() == self.btn['parenr'].GetId(): mark = ")"
         self._addSomething(mark)
         
-    def OnSelectTextEvt(self, event):
-        """!Checks if user is typing or the event was emited by map selection.
-        Prevents from changing focus.
-        """
-        item = self.mapselect.GetValue().strip()
-        if not (abs(len(item) - len(self.lastMapName)) == 1  and \
-            self.lastMapName in item or item in self.lastMapName):
-            self.OnSelect(event)
-        self.lastMapName = item
+    ### unused
+    # def OnSelectTextEvt(self, event):
+    #     """!Checks if user is typing or the event was emited by map selection.
+    #     Prevents from changing focus.
+    #     """
+    #     item = self.mapselect.GetValue().strip()
+    #     if not (abs(len(item) - len(self.lastMapName)) == 1 and \
+    #         self.lastMapName in item or item in self.lastMapName):
+    #         self.OnSelect(event)
+        
+    #     self.lastMapName = item
 
     def OnSelect(self, event):
         """!Gets raster map or function selection and send it to
@@ -435,21 +469,47 @@ class MapCalcFrame(wx.Frame):
         Checks for characters which can be in raster map name but 
         the raster map name must be then quoted.
         """
-        item = self.FindWindowById(event.GetId()).GetValue().strip()
+        win = self.FindWindowById(event.GetId())
+        item = win.GetValue().strip()
         if any((char in item) for char in self.charactersToQuote):
             item = '"' + item + '"'
         self._addSomething(item)
 
+        win.ChangeValue('')  # reset
+
     def OnUpdateStatusBar(self, event):
-        """!Update statusbar text"""
+        """Update statusbar text"""
+        command = self._getCommand()
+        self.SetStatusText(command)
+        event.Skip()
+
+    def OnSeedFlag(self, event):
+        checked = self.randomSeed.IsChecked()
+        self.randomSeedText.Enable(not checked)
+        self.randomSeedStaticText.Enable(not checked)
+
+        event.Skip()
+
+    def _getCommand(self):
+        """Returns entire command as string."""
         expr = self.text_mcalc.GetValue().strip().replace("\n", " ")
         cmd = 'r.mapcalc'
         if self.rast3d:
             cmd = 'r3.mapcalc'
-        self.SetStatusText("{cmd} '{new} = {expr}'".format(cmd=cmd, expr=expr,
-                                                           new=self.newmaptxt.GetValue()))
-        event.Skip()
-        
+        overwrite = ''
+        if self.overwrite.IsChecked():
+            overwrite = ' --overwrite'
+        seed_flag = seed = ''
+        if re.search(pattern="rand *\(.+\)", string=expr):
+            if self.randomSeed.IsChecked():
+                seed_flag = ' -s'
+            else:
+                seed = " seed={val}".format(val=self.randomSeedText.GetValue().strip())
+
+        return ('{cmd} "{new} = {expr}"{seed}{seed_flag}{overwrite}'
+                .format(cmd=cmd, expr=expr, new=self.newmaptxt.GetValue(),
+                        seed_flag=seed_flag, seed=seed, overwrite=overwrite))
+
     def _addSomething(self, what):
         """!Inserts operators, map names, and functions into text area
         """
@@ -499,11 +559,23 @@ class MapCalcFrame(wx.Frame):
                    message = _("You must enter an expression "
                                "to create a new raster map."))
             return
-        
+
+        seed_flag = seed = None
+        if re.search(pattern="rand *\(.+\)", string=expr):
+            if self.randomSeed.IsChecked():
+                seed_flag = '-s'
+            else:
+                seed = self.randomSeedText.GetValue().strip()
         if self.log:
-            cmd = [self.cmd, str('expression=%s = %s' % (name, expr))]
+            cmd = [self.cmd]
+            if seed_flag:
+                cmd.append('-s')
+            if seed:
+                cmd.append("seed={val}".format(val=seed))
             if self.overwrite.IsChecked():
                 cmd.append('--overwrite')
+            cmd.append(str('expression=%s = %s' % (name, expr)))
+
             self.log.RunCmd(cmd, onDone = self.OnDone)
             self.parent.Raise()
         else:
@@ -511,10 +583,16 @@ class MapCalcFrame(wx.Frame):
                 overwrite = True
             else:
                 overwrite = False
+            params = dict(expression="%s=%s" % (name, expr),
+                          overwrite=overwrite)
+            if seed_flag:
+                params['flags'] = 's'
+            if seed:
+                params['seed'] = seed
+
             RunCommand(self.cmd,
-                       expression = "%s=%s" % (name, expr),
-                       overwrite = overwrite)
-        
+                       **params)
+
     def OnDone(self, cmd, returncode):
         """!Add create map to the layer tree
 
@@ -583,7 +661,16 @@ class MapCalcFrame(wx.Frame):
             self.text_mcalc.SetInsertionPointEnd()
         
         dlg.Destroy()
-                
+
+    def OnCopy(self, event):
+        command = self._getCommand()
+        cmddata = wx.TextDataObject()
+        cmddata.SetText(command)
+        if wx.TheClipboard.Open():
+            wx.TheClipboard.SetData(cmddata)
+            wx.TheClipboard.Close()
+            self.SetStatusText(_("'{cmd}' copied to clipboard").format(cmd=command))
+
     def OnClear(self, event):
         """!Clears text area
         """

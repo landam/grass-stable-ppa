@@ -38,8 +38,8 @@
 static const char *GRASS_copyright __attribute__ ((unused))
     = "GRASS GNU GPL licensed Software";
 
-#define GIS_H_VERSION "$Revision: 59317 $"
-#define GIS_H_DATE    "$Date: 2014-03-24 20:38:32 +0100 (Mon, 24 Mar 2014) $"
+#define GIS_H_VERSION "$Revision: 60642 $"
+#define GIS_H_DATE    "$Date: 2014-05-31 17:20:13 +0200 (Sat, 31 May 2014) $"
 
 #define G_gisinit(pgm) G__gisinit(GIS_H_VERSION, (pgm))
 #define G_no_gisinit() G__no_gisinit(GIS_H_VERSION)
@@ -95,6 +95,7 @@ static const char *GRASS_copyright __attribute__ ((unused))
 
 #define PROJECTION_FILE "PROJ_INFO"
 #define UNIT_FILE       "PROJ_UNITS"
+#define EPSG_FILE       "PROJ_EPSG"
 
 #ifdef __MINGW32__
 #define CONFIG_DIR "GRASS7"

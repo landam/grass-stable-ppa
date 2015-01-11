@@ -8,7 +8,7 @@
  * PURPOSE:      Make GRASS write vector maps utilizing the OGR library.
  *               (Partly based on r.external.out code)
  *               
- * COPYRIGHT:    (C) 2010-2013 by Martin Landa and the GRASS Development Team
+ * COPYRIGHT:    (C) 2010-2014 by Martin Landa and the GRASS Development Team
  *
  *               This program is free software under the GNU General
  *               Public License (>=v2).  Read the file COPYING that
@@ -66,6 +66,7 @@ int main(int argc, char *argv[])
             if (G_remove("", "PG") == 1)
                 G_verbose_message(_("Switched from PostGIS to native format"));
         }
+        G_message(_("Current output format for vectors: %s"), "GRASS");
         exit(EXIT_SUCCESS);
     }
 
@@ -79,10 +80,20 @@ int main(int argc, char *argv[])
 	make_link(options.dsn->answer, format,
 		  options.opts->answer, options.opts->answers);
     }
+    else if (options.input->answer) {
+	read_status_file(options.input);
+    }
     
     if (flags.p->answer || flags.g->answer) {
 	print_status(flags.g->answer ? TRUE : FALSE);
     }
 
+    if (options.output->answer) {
+        save_status_file(options.output);
+    }
+
+    if (options.dsn->answer || options.input->answer)
+        G_message(_("Current output format for vectors: %s"), format);
+    
     exit(EXIT_SUCCESS);
 }

@@ -27,9 +27,6 @@ import math
 if __name__ == '__main__':
     import os
     import sys
-    gui_wx_path = os.path.join(os.getenv('GISBASE'), 'etc', 'gui', 'wxpython')
-    if gui_wx_path not in sys.path:
-        sys.path.append(gui_wx_path)
 
 from core.utils import _
 
@@ -147,12 +144,12 @@ def formatDist(distance, mapunits):
         >>> formatDist(20.2546, 'degrees')
         (20.25, 'deg')
         >>> formatDist(82.146, 'unknown')
-        (82.15, 'meters')
+        (82.15, 'units')
 
         @endcode
 
-        Accepted map units are 'meters', 'metres', 'feet', 'degree'. Any
-        other units will be considered as meters (output 'meters').
+        Accepted map units are 'meters', 'metres', 'feet', 'degree'.
+        Returns 'units' instead of unrecognized units.
 
         @param distance map units
         @param mapunits map units
@@ -186,11 +183,11 @@ def formatDist(distance, mapunits):
             # was: 'degree' in mapunits and not haveCtypes (for unknown reason)
             if distance < 1:
                 outunits = 'min'
-                divisor = (1/60.0)
+                divisor = (1 / 60.0)
             else:
                 outunits = 'deg'
         else:
-            outunits = 'meters'
+            return (distance, 'units')
 
         # format numbers in a nice way
         if (distance / divisor) >= 2500.0:

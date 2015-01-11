@@ -1,0 +1,645 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pygrass.vector &mdash; PyGrass beta documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     'beta',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="PyGrass beta documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="../../index.html">PyGrass beta documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for pygrass.vector</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Tue Jul 17 08:51:53 2012</span>
+
+<span class="sd">@author: pietro</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">grass.lib.vector</span> <span class="kn">as</span> <span class="nn">libvect</span>
+<span class="kn">from</span> <span class="nn">.vector_type</span> <span class="kn">import</span> <span class="n">VTYPE</span>
+<span class="kn">from</span> <span class="nn">os.path</span> <span class="kn">import</span> <span class="n">join</span><span class="p">,</span> <span class="n">exists</span>
+
+<span class="c">#</span>
+<span class="c"># import pygrass modules</span>
+<span class="c">#</span>
+<span class="kn">from</span> <span class="nn">grass.pygrass.errors</span> <span class="kn">import</span> <span class="n">GrassError</span><span class="p">,</span> <span class="n">must_be_open</span>
+<span class="kn">from</span> <span class="nn">grass.pygrass.gis</span> <span class="kn">import</span> <span class="n">Location</span>
+
+<span class="kn">from</span> <span class="nn">.geometry</span> <span class="kn">import</span> <span class="n">GEOOBJ</span> <span class="k">as</span> <span class="n">_GEOOBJ</span>
+<span class="kn">from</span> <span class="nn">.geometry</span> <span class="kn">import</span> <span class="n">read_line</span><span class="p">,</span> <span class="n">read_next_line</span>
+<span class="kn">from</span> <span class="nn">.geometry</span> <span class="kn">import</span> <span class="n">Area</span> <span class="k">as</span> <span class="n">_Area</span>
+<span class="kn">from</span> <span class="nn">.abstract</span> <span class="kn">import</span> <span class="n">Info</span>
+<span class="kn">from</span> <span class="nn">.basic</span> <span class="kn">import</span> <span class="n">Bbox</span><span class="p">,</span> <span class="n">Cats</span><span class="p">,</span> <span class="n">Ilist</span>
+
+
+<span class="n">_NUMOF</span> <span class="o">=</span> <span class="p">{</span><span class="s">&quot;areas&quot;</span><span class="p">:</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_num_areas</span><span class="p">,</span>
+          <span class="s">&quot;dblinks&quot;</span><span class="p">:</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_num_dblinks</span><span class="p">,</span>
+          <span class="s">&quot;faces&quot;</span><span class="p">:</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_num_faces</span><span class="p">,</span>
+          <span class="s">&quot;holes&quot;</span><span class="p">:</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_num_holes</span><span class="p">,</span>
+          <span class="s">&quot;islands&quot;</span><span class="p">:</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_num_islands</span><span class="p">,</span>
+          <span class="s">&quot;kernels&quot;</span><span class="p">:</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_num_kernels</span><span class="p">,</span>
+          <span class="s">&quot;lines&quot;</span><span class="p">:</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_num_line_points</span><span class="p">,</span>
+          <span class="s">&quot;points&quot;</span><span class="p">:</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_num_lines</span><span class="p">,</span>
+          <span class="s">&quot;nodes&quot;</span><span class="p">:</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_num_nodes</span><span class="p">,</span>
+          <span class="s">&quot;updated_lines&quot;</span><span class="p">:</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_num_updated_lines</span><span class="p">,</span>
+          <span class="s">&quot;updated_nodes&quot;</span><span class="p">:</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_num_updated_nodes</span><span class="p">,</span>
+          <span class="s">&quot;volumes&quot;</span><span class="p">:</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_num_volumes</span><span class="p">}</span>
+
+
+<span class="c">#=============================================</span>
+<span class="c"># VECTOR</span>
+<span class="c">#=============================================</span>
+
+<div class="viewcode-block" id="Vector"><a class="viewcode-back" href="../../vector.html#pygrass.vector.Vector">[docs]</a><span class="k">class</span> <span class="nc">Vector</span><span class="p">(</span><span class="n">Info</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; ::</span>
+
+<span class="sd">        &gt;&gt;&gt; from grass.pygrass.vector import Vector</span>
+<span class="sd">        &gt;&gt;&gt; cens = Vector(&#39;census&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; cens.is_open()</span>
+<span class="sd">        False</span>
+<span class="sd">        &gt;&gt;&gt; cens.mapset</span>
+<span class="sd">        &#39;&#39;</span>
+<span class="sd">        &gt;&gt;&gt; cens.exist()</span>
+<span class="sd">        True</span>
+<span class="sd">        &gt;&gt;&gt; cens.mapset</span>
+<span class="sd">        &#39;PERMANENT&#39;</span>
+<span class="sd">        &gt;&gt;&gt; cens.overwrite</span>
+<span class="sd">        False</span>
+
+<span class="sd">    ..</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">mapset</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c"># Set map name and mapset</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Vector</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">mapset</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_topo_level</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_class_name</span> <span class="o">=</span> <span class="s">&#39;Vector&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">overwrite</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exist</span><span class="p">():</span>
+            <span class="k">return</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">(</span><span class="si">%r</span><span class="s">, </span><span class="si">%r</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_class_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapset</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">(</span><span class="si">%r</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_class_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;::</span>
+
+<span class="sd">            &gt;&gt;&gt; mun = Vector(&#39;census&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; mun.open()</span>
+<span class="sd">            &gt;&gt;&gt; features = [feature for feature in mun]</span>
+<span class="sd">            &gt;&gt;&gt; features[:3]</span>
+<span class="sd">            [Boundary(v_id=None), Boundary(v_id=None), Boundary(v_id=None)]</span>
+<span class="sd">            &gt;&gt;&gt; mun.close()</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c">#return (self.read(f_id) for f_id in xrange(self.num_of_features()))</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="nd">@must_be_open</span>
+<div class="viewcode-block" id="Vector.next"><a class="viewcode-back" href="../../vector.html#pygrass.vector.Vector.next">[docs]</a>    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;::</span>
+
+<span class="sd">            &gt;&gt;&gt; mun = Vector(&#39;census&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; mun.open()</span>
+<span class="sd">            &gt;&gt;&gt; mun.next()</span>
+<span class="sd">            Boundary(v_id=None)</span>
+<span class="sd">            &gt;&gt;&gt; mun.next()</span>
+<span class="sd">            Boundary(v_id=None)</span>
+<span class="sd">            &gt;&gt;&gt; mun.close()</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">read_next_line</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">writable</span><span class="p">)</span>
+</div>
+    <span class="nd">@must_be_open</span>
+    <span class="k">def</span> <span class="nf">rewind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_rewind</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GrassError</span><span class="p">(</span><span class="s">&quot;Vect_rewind raise an error.&quot;</span><span class="p">)</span>
+
+    <span class="nd">@must_be_open</span>
+<div class="viewcode-block" id="Vector.write"><a class="viewcode-back" href="../../vector.html#pygrass.vector.Vector.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geo_obj</span><span class="p">,</span> <span class="n">attrs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">set_cats</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Write geometry features and attributes.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+
+<span class="sd">        geo_obj : geometry GRASS object</span>
+<span class="sd">            A geometry grass object define in grass.pygrass.vector.geometry.</span>
+<span class="sd">        attrs: list, optional</span>
+<span class="sd">            A list with the values that will be insert in the attribute table.</span>
+<span class="sd">        set_cats, bool, optional</span>
+<span class="sd">            If True, the category of the geometry feature is set using the</span>
+<span class="sd">            default layer of the vector map and a progressive category value</span>
+<span class="sd">            (default), otherwise the c_cats attribute of the geometry object</span>
+<span class="sd">            will be used.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+
+<span class="sd">        Open a new vector map ::</span>
+
+<span class="sd">            &gt;&gt;&gt; new = VectorTopo(&#39;newvect&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; new.exist()</span>
+<span class="sd">            False</span>
+
+<span class="sd">        define the new columns of the attribute table ::</span>
+
+<span class="sd">            &gt;&gt;&gt; cols = [(u&#39;cat&#39;,       &#39;INTEGER PRIMARY KEY&#39;),</span>
+<span class="sd">            ...         (u&#39;name&#39;,      &#39;TEXT&#39;)]</span>
+
+<span class="sd">        open the vector map in write mode</span>
+
+<span class="sd">            &gt;&gt;&gt; new.open(&#39;w&#39;, tab_name=&#39;newvect&#39;, tab_cols=cols)</span>
+
+<span class="sd">        import a geometry feature ::</span>
+
+<span class="sd">            &gt;&gt;&gt; from grass.pygrass.vector.geometry import Point</span>
+
+<span class="sd">        create two points ::</span>
+
+<span class="sd">            &gt;&gt;&gt; point0 = Point(636981.336043, 256517.602235)</span>
+<span class="sd">            &gt;&gt;&gt; point1 = Point(637209.083058, 257970.129540)</span>
+
+<span class="sd">        then write the two points on the map, with ::</span>
+
+<span class="sd">            &gt;&gt;&gt; new.write(point0, (&#39;pub&#39;, ))</span>
+<span class="sd">            &gt;&gt;&gt; new.write(point1, (&#39;resturnat&#39;, ))</span>
+
+<span class="sd">        close the vector map ::</span>
+
+<span class="sd">            &gt;&gt;&gt; new.close()</span>
+<span class="sd">            &gt;&gt;&gt; new.exist()</span>
+<span class="sd">            True</span>
+
+<span class="sd">        then play with the map ::</span>
+
+<span class="sd">            &gt;&gt;&gt; new.open()</span>
+<span class="sd">            &gt;&gt;&gt; new.read(1)</span>
+<span class="sd">            Point(636981.336043, 256517.602235)</span>
+<span class="sd">            &gt;&gt;&gt; new.read(2)</span>
+<span class="sd">            Point(637209.083058, 257970.129540)</span>
+<span class="sd">            &gt;&gt;&gt; new.read(1).attrs[&#39;name&#39;]</span>
+<span class="sd">            u&#39;pub&#39;</span>
+<span class="sd">            &gt;&gt;&gt; new.read(2).attrs[&#39;cat&#39;, &#39;name&#39;]</span>
+<span class="sd">            (2, u&#39;resturnat&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; new.close()</span>
+<span class="sd">            &gt;&gt;&gt; new.remove()</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_lines</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">attrs</span><span class="p">:</span>
+            <span class="n">attr</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n_lines</span><span class="p">,</span> <span class="p">]</span>
+            <span class="n">attr</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">attrs</span><span class="p">)</span>
+            <span class="n">cur</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+            <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">insert_str</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+            <span class="n">cur</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">set_cats</span><span class="p">:</span>
+            <span class="n">cats</span> <span class="o">=</span> <span class="n">Cats</span><span class="p">(</span><span class="n">geo_obj</span><span class="o">.</span><span class="n">c_cats</span><span class="p">)</span>
+            <span class="n">cats</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+            <span class="n">cats</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_lines</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">geo_obj</span><span class="o">.</span><span class="n">gtype</span> <span class="o">==</span> <span class="n">_Area</span><span class="o">.</span><span class="n">gtype</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_write_area</span><span class="p">(</span><span class="n">geo_obj</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_write_line</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="n">geo_obj</span><span class="o">.</span><span class="n">gtype</span><span class="p">,</span>
+                                         <span class="n">geo_obj</span><span class="o">.</span><span class="n">c_points</span><span class="p">,</span> <span class="n">geo_obj</span><span class="o">.</span><span class="n">c_cats</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GrassError</span><span class="p">(</span><span class="s">&quot;Not able to write the vector feature.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_topo_level</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c"># return new feature id (on level 2)</span>
+            <span class="n">geo_obj</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">result</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># return offset into file where the feature starts (on level 1)</span>
+            <span class="n">geo_obj</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="n">result</span>
+</div>
+    <span class="nd">@must_be_open</span>
+<div class="viewcode-block" id="Vector.has_color_table"><a class="viewcode-back" href="../../vector.html#pygrass.vector.Vector.has_color_table">[docs]</a>    <span class="k">def</span> <span class="nf">has_color_table</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return if vector has color table associated in file system;</span>
+<span class="sd">        Color table stored in the vector&#39;s attribute table well be not checked</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; cens = Vector(&#39;census&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; cens.open()</span>
+<span class="sd">        &gt;&gt;&gt; cens.has_color_table()</span>
+<span class="sd">        False</span>
+
+<span class="sd">        &gt;&gt;&gt; cens.close()</span>
+<span class="sd">        &gt;&gt;&gt; from grass.pygrass.functions import copy, remove</span>
+<span class="sd">        &gt;&gt;&gt; copy(&#39;census&#39;,&#39;mycensus&#39;,&#39;vect&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; from grass.pygrass.modules.shortcuts import vector as v</span>
+<span class="sd">        &gt;&gt;&gt; v.colors(map=&#39;mycensus&#39;, color=&#39;population&#39;, column=&#39;TOTAL_POP&#39;)</span>
+
+<span class="sd">        &gt;&gt;&gt; mycens = Vector(&#39;mycensus&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; mycens.open()</span>
+<span class="sd">        &gt;&gt;&gt; mycens.has_color_table()</span>
+<span class="sd">        True</span>
+<span class="sd">        &gt;&gt;&gt; mycens.close()</span>
+<span class="sd">        &gt;&gt;&gt; remove(&#39;mycensus&#39;, &#39;vect&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">loc</span> <span class="o">=</span> <span class="n">Location</span><span class="p">()</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">join</span><span class="p">(</span><span class="n">loc</span><span class="o">.</span><span class="n">path</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapset</span><span class="p">,</span> <span class="s">&#39;vector&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s">&#39;colr&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">True</span> <span class="k">if</span> <span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">else</span> <span class="bp">False</span>
+
+
+<span class="c">#=============================================</span>
+<span class="c"># VECTOR WITH TOPOLOGY</span>
+<span class="c">#=============================================</span>
+</div></div>
+<div class="viewcode-block" id="VectorTopo"><a class="viewcode-back" href="../../vector.html#pygrass.vector.VectorTopo">[docs]</a><span class="k">class</span> <span class="nc">VectorTopo</span><span class="p">(</span><span class="n">Vector</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Vector class with the support of the GRASS topology.</span>
+
+<span class="sd">    Open a vector map using the *with statement*: ::</span>
+
+<span class="sd">        &gt;&gt;&gt; with VectorTopo(&#39;schools&#39;) as schools:</span>
+<span class="sd">        ...     for school in schools[:3]:</span>
+<span class="sd">        ...         print school.attrs[&#39;NAMESHORT&#39;]</span>
+<span class="sd">        ...</span>
+<span class="sd">        SWIFT CREEK</span>
+<span class="sd">        BRIARCLIFF</span>
+<span class="sd">        FARMINGTON WOODS</span>
+<span class="sd">        &gt;&gt;&gt; schools.is_open()</span>
+<span class="sd">        False</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">mapset</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">VectorTopo</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">mapset</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_topo_level</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_class_name</span> <span class="o">=</span> <span class="s">&#39;VectorTopo&#39;</span>
+
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_num_lines</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;::</span>
+
+<span class="sd">            &gt;&gt;&gt; mun = VectorTopo(&#39;census&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; mun.open()</span>
+<span class="sd">            &gt;&gt;&gt; mun[:3]</span>
+<span class="sd">            [Boundary(v_id=1), Boundary(v_id=2), Boundary(v_id=3)]</span>
+<span class="sd">            &gt;&gt;&gt; mun.close()</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">slice</span><span class="p">):</span>
+            <span class="c">#import pdb; pdb.set_trace()</span>
+            <span class="c">#Get the start, stop, and step from the slice</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">indx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">indx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">*</span><span class="n">key</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)))]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Invalid argument type: </span><span class="si">%r</span><span class="s">.&quot;</span> <span class="o">%</span> <span class="n">key</span><span class="p">)</span>
+
+    <span class="nd">@must_be_open</span>
+<div class="viewcode-block" id="VectorTopo.num_primitive_of"><a class="viewcode-back" href="../../vector.html#pygrass.vector.VectorTopo.num_primitive_of">[docs]</a>    <span class="k">def</span> <span class="nf">num_primitive_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">primitive</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Primitive are:</span>
+
+<span class="sd">            * &quot;boundary&quot;,</span>
+<span class="sd">            * &quot;centroid&quot;,</span>
+<span class="sd">            * &quot;face&quot;,</span>
+<span class="sd">            * &quot;kernel&quot;,</span>
+<span class="sd">            * &quot;line&quot;,</span>
+<span class="sd">            * &quot;point&quot;</span>
+<span class="sd">            * &quot;area&quot;</span>
+<span class="sd">            * &quot;volume&quot;</span>
+
+<span class="sd">        ::</span>
+
+<span class="sd">            &gt;&gt;&gt; cens = VectorTopo(&#39;boundary_municp_sqlite&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; cens.open()</span>
+<span class="sd">            &gt;&gt;&gt; cens.num_primitive_of(&#39;point&#39;)</span>
+<span class="sd">            0</span>
+<span class="sd">            &gt;&gt;&gt; cens.num_primitive_of(&#39;line&#39;)</span>
+<span class="sd">            0</span>
+<span class="sd">            &gt;&gt;&gt; cens.num_primitive_of(&#39;centroid&#39;)</span>
+<span class="sd">            3579</span>
+<span class="sd">            &gt;&gt;&gt; cens.num_primitive_of(&#39;boundary&#39;)</span>
+<span class="sd">            5128</span>
+<span class="sd">            &gt;&gt;&gt; cens.close()</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_num_primitives</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span>
+                                               <span class="n">VTYPE</span><span class="p">[</span><span class="n">primitive</span><span class="p">])</span>
+</div>
+    <span class="nd">@must_be_open</span>
+<div class="viewcode-block" id="VectorTopo.number_of"><a class="viewcode-back" href="../../vector.html#pygrass.vector.VectorTopo.number_of">[docs]</a>    <span class="k">def</span> <span class="nf">number_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vtype</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        vtype in [&quot;areas&quot;, &quot;dblinks&quot;, &quot;faces&quot;, &quot;holes&quot;, &quot;islands&quot;, &quot;kernels&quot;,</span>
+<span class="sd">                  &quot;line_points&quot;, &quot;lines&quot;, &quot;nodes&quot;, &quot;update_lines&quot;,</span>
+<span class="sd">                  &quot;update_nodes&quot;, &quot;volumes&quot;]</span>
+
+<span class="sd">            &gt;&gt;&gt; cens = VectorTopo(&#39;boundary_municp_sqlite&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; cens.open()</span>
+<span class="sd">            &gt;&gt;&gt; cens.number_of(&quot;areas&quot;)</span>
+<span class="sd">            3579</span>
+<span class="sd">            &gt;&gt;&gt; cens.number_of(&quot;islands&quot;)</span>
+<span class="sd">            2629</span>
+<span class="sd">            &gt;&gt;&gt; cens.number_of(&quot;holes&quot;)</span>
+<span class="sd">            0</span>
+<span class="sd">            &gt;&gt;&gt; cens.number_of(&quot;lines&quot;)</span>
+<span class="sd">            8707</span>
+<span class="sd">            &gt;&gt;&gt; cens.number_of(&quot;nodes&quot;)</span>
+<span class="sd">            4178</span>
+<span class="sd">            &gt;&gt;&gt; cens.number_of(&quot;pizza&quot;)</span>
+<span class="sd">            ...                     # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE</span>
+<span class="sd">            Traceback (most recent call last):</span>
+<span class="sd">                ...</span>
+<span class="sd">            ValueError: vtype not supported, use one of:</span>
+<span class="sd">            &#39;areas&#39;, &#39;dblinks&#39;, &#39;faces&#39;, &#39;holes&#39;, &#39;islands&#39;, &#39;kernels&#39;,</span>
+<span class="sd">            &#39;line_points&#39;, &#39;lines&#39;, &#39;nodes&#39;, &#39;updated_lines&#39;, &#39;updated_nodes&#39;,</span>
+<span class="sd">            &#39;volumes&#39;</span>
+<span class="sd">            &gt;&gt;&gt; cens.close()</span>
+
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">vtype</span> <span class="ow">in</span> <span class="n">_NUMOF</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">_NUMOF</span><span class="p">[</span><span class="n">vtype</span><span class="p">](</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="s">&quot;&#39;, &#39;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">_NUMOF</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;vtype not supported, use one of: &#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> <span class="o">%</span> <span class="n">keys</span><span class="p">)</span>
+</div>
+    <span class="nd">@must_be_open</span>
+<div class="viewcode-block" id="VectorTopo.num_primitives"><a class="viewcode-back" href="../../vector.html#pygrass.vector.VectorTopo.num_primitives">[docs]</a>    <span class="k">def</span> <span class="nf">num_primitives</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return dictionary with the number of all primitives</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">prim</span> <span class="ow">in</span> <span class="n">VTYPE</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">output</span><span class="p">[</span><span class="n">prim</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_primitive_of</span><span class="p">(</span><span class="n">prim</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">output</span>
+</div>
+    <span class="nd">@must_be_open</span>
+<div class="viewcode-block" id="VectorTopo.viter"><a class="viewcode-back" href="../../vector.html#pygrass.vector.VectorTopo.viter">[docs]</a>    <span class="k">def</span> <span class="nf">viter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vtype</span><span class="p">,</span> <span class="n">idonly</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return an iterator of vector features</span>
+
+<span class="sd">        ::</span>
+<span class="sd">            &gt;&gt;&gt; cens = VectorTopo(&#39;census&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; cens.open()</span>
+<span class="sd">            &gt;&gt;&gt; big = [area for area in cens.viter(&#39;areas&#39;)</span>
+<span class="sd">            ...        if area.alive() and area.area &gt;= 10000]</span>
+<span class="sd">            &gt;&gt;&gt; big[:3]</span>
+<span class="sd">            [Area(1), Area(2), Area(3)]</span>
+
+
+<span class="sd">        to sort the result in a efficient way, use: ::</span>
+
+<span class="sd">            &gt;&gt;&gt; from operator import methodcaller as method</span>
+<span class="sd">            &gt;&gt;&gt; big.sort(key = method(&#39;area&#39;), reverse = True)  # sort the list</span>
+<span class="sd">            &gt;&gt;&gt; for area in big[:3]:</span>
+<span class="sd">            ...     print area, area.area()</span>
+<span class="sd">            Area(3102) 697521857.848</span>
+<span class="sd">            Area(2682) 320224369.66</span>
+<span class="sd">            Area(2552) 298356117.948</span>
+<span class="sd">            &gt;&gt;&gt; cens.close()</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">vtype</span> <span class="ow">in</span> <span class="n">_GEOOBJ</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">_GEOOBJ</span><span class="p">[</span><span class="n">vtype</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">ids</span> <span class="o">=</span> <span class="p">(</span><span class="n">indx</span> <span class="k">for</span> <span class="n">indx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">number_of</span><span class="p">(</span><span class="n">vtype</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">idonly</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">ids</span>
+                <span class="k">return</span> <span class="p">(</span><span class="n">_GEOOBJ</span><span class="p">[</span><span class="n">vtype</span><span class="p">](</span><span class="n">v_id</span><span class="o">=</span><span class="n">indx</span><span class="p">,</span> <span class="n">c_mapinfo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span>
+                                       <span class="n">table</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">,</span>
+                                       <span class="n">writable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">writable</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">indx</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="s">&quot;&#39;, &#39;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">_GEOOBJ</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;vtype not supported, use one of: &#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> <span class="o">%</span> <span class="n">keys</span><span class="p">)</span>
+</div>
+    <span class="nd">@must_be_open</span>
+<div class="viewcode-block" id="VectorTopo.rewind"><a class="viewcode-back" href="../../vector.html#pygrass.vector.VectorTopo.rewind">[docs]</a>    <span class="k">def</span> <span class="nf">rewind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Rewind vector map to cause reads to start at beginning. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; mun = VectorTopo(&#39;boundary_municp_sqlite&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; mun.open()</span>
+<span class="sd">            &gt;&gt;&gt; mun.next()</span>
+<span class="sd">            Boundary(v_id=1)</span>
+<span class="sd">            &gt;&gt;&gt; mun.next()</span>
+<span class="sd">            Boundary(v_id=2)</span>
+<span class="sd">            &gt;&gt;&gt; mun.next()</span>
+<span class="sd">            Boundary(v_id=3)</span>
+<span class="sd">            &gt;&gt;&gt; mun.rewind()</span>
+<span class="sd">            &gt;&gt;&gt; mun.next()</span>
+<span class="sd">            Boundary(v_id=1)</span>
+<span class="sd">            &gt;&gt;&gt; mun.close()</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_rewind</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">)</span>
+</div>
+    <span class="nd">@must_be_open</span>
+<div class="viewcode-block" id="VectorTopo.cat"><a class="viewcode-back" href="../../vector.html#pygrass.vector.VectorTopo.cat">[docs]</a>    <span class="k">def</span> <span class="nf">cat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cat_id</span><span class="p">,</span> <span class="n">vtype</span><span class="p">,</span> <span class="n">layer</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">generator</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">geo</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the geometry features with category == cat_id.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        cat_id : integer</span>
+<span class="sd">            Integer with the category number.</span>
+<span class="sd">        vtype : string</span>
+<span class="sd">            String of the type of geometry feature that we are looking for.</span>
+<span class="sd">        layer : integer, optional</span>
+<span class="sd">            Integer of the layer that will be used.</span>
+<span class="sd">        generator : bool, optional</span>
+<span class="sd">            If True return a generator otherwise it return a list of features.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">geo</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">vtype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_GEOOBJ</span><span class="p">:</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="s">&quot;&#39;, &#39;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">_GEOOBJ</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;vtype not supported, use one of: &#39;</span><span class="si">%s</span><span class="s">&#39;&quot;</span> <span class="o">%</span> <span class="n">keys</span><span class="p">)</span>
+        <span class="n">Obj</span> <span class="o">=</span> <span class="n">_GEOOBJ</span><span class="p">[</span><span class="n">vtype</span><span class="p">]</span> <span class="k">if</span> <span class="n">geo</span> <span class="ow">is</span> <span class="bp">None</span> <span class="k">else</span> <span class="n">geo</span>
+        <span class="n">ilist</span> <span class="o">=</span> <span class="n">Ilist</span><span class="p">()</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_cidx_find_all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span>
+                                   <span class="n">layer</span> <span class="k">if</span> <span class="n">layer</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer</span><span class="p">,</span>
+                                   <span class="n">Obj</span><span class="o">.</span><span class="n">gtype</span><span class="p">,</span> <span class="n">cat_id</span><span class="p">,</span> <span class="n">ilist</span><span class="o">.</span><span class="n">c_ilist</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">generator</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">read_line</span><span class="p">(</span><span class="n">feature_id</span><span class="o">=</span><span class="n">v_id</span><span class="p">,</span> <span class="n">c_mapinfo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span>
+                              <span class="n">table</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">,</span> <span class="n">writable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">writable</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">v_id</span> <span class="ow">in</span> <span class="n">ilist</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">read_line</span><span class="p">(</span><span class="n">feature_id</span><span class="o">=</span><span class="n">v_id</span><span class="p">,</span> <span class="n">c_mapinfo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span>
+                              <span class="n">table</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">,</span> <span class="n">writable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">writable</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">v_id</span> <span class="ow">in</span> <span class="n">ilist</span><span class="p">]</span>
+</div>
+    <span class="nd">@must_be_open</span>
+<div class="viewcode-block" id="VectorTopo.read"><a class="viewcode-back" href="../../vector.html#pygrass.vector.VectorTopo.read">[docs]</a>    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feature_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a geometry object given the feature id. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; mun = VectorTopo(&#39;boundary_municp_sqlite&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; mun.open()</span>
+<span class="sd">            &gt;&gt;&gt; feature1 = mun.read(0)                     #doctest: +ELLIPSIS</span>
+<span class="sd">            Traceback (most recent call last):</span>
+<span class="sd">                ...</span>
+<span class="sd">            ValueError: The index must be &gt;0, 0 given.</span>
+<span class="sd">            &gt;&gt;&gt; feature1 = mun.read(1)</span>
+<span class="sd">            &gt;&gt;&gt; feature1</span>
+<span class="sd">            Boundary(v_id=1)</span>
+<span class="sd">            &gt;&gt;&gt; feature1.length()</span>
+<span class="sd">            1415.3348048582038</span>
+<span class="sd">            &gt;&gt;&gt; mun.read(-1)</span>
+<span class="sd">            Centoid(649102.382010, 15945.714502)</span>
+<span class="sd">            &gt;&gt;&gt; len(mun)</span>
+<span class="sd">            8707</span>
+<span class="sd">            &gt;&gt;&gt; mun.read(8707)</span>
+<span class="sd">            Centoid(649102.382010, 15945.714502)</span>
+<span class="sd">            &gt;&gt;&gt; mun.read(8708)                             #doctest: +ELLIPSIS</span>
+<span class="sd">            Traceback (most recent call last):</span>
+<span class="sd">              ...</span>
+<span class="sd">            IndexError: Index out of range</span>
+<span class="sd">            &gt;&gt;&gt; mun.close()</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">read_line</span><span class="p">(</span><span class="n">feature_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">writable</span><span class="p">)</span>
+</div>
+    <span class="nd">@must_be_open</span>
+<div class="viewcode-block" id="VectorTopo.is_empty"><a class="viewcode-back" href="../../vector.html#pygrass.vector.VectorTopo.is_empty">[docs]</a>    <span class="k">def</span> <span class="nf">is_empty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return if a vector map is empty or not</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">primitives</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_primitives</span><span class="p">()</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">primitives</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">v</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">output</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="k">break</span>
+        <span class="k">return</span> <span class="n">output</span>
+</div>
+    <span class="nd">@must_be_open</span>
+<div class="viewcode-block" id="VectorTopo.rewrite"><a class="viewcode-back" href="../../vector.html#pygrass.vector.VectorTopo.rewrite">[docs]</a>    <span class="k">def</span> <span class="nf">rewrite</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">geo_obj</span><span class="p">,</span> <span class="n">attrs</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Rewrite a geometry features</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">attrs</span><span class="p">:</span>
+            <span class="n">attr</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="p">,</span> <span class="p">]</span>
+            <span class="n">attr</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">attrs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">line</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">attr</span><span class="p">)</span>
+
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_cat_set</span><span class="p">(</span><span class="n">geo_obj</span><span class="o">.</span><span class="n">c_cats</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_rewrite_line</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span>
+                                           <span class="n">line</span><span class="p">,</span> <span class="n">geo_obj</span><span class="o">.</span><span class="n">gtype</span><span class="p">,</span>
+                                           <span class="n">geo_obj</span><span class="o">.</span><span class="n">c_points</span><span class="p">,</span>
+                                           <span class="n">geo_obj</span><span class="o">.</span><span class="n">c_cats</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">result</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GrassError</span><span class="p">(</span><span class="s">&quot;Not able to write the vector feature.&quot;</span><span class="p">)</span>
+
+        <span class="c"># return offset into file where the feature starts</span>
+        <span class="n">geo_obj</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="n">result</span>
+</div>
+    <span class="nd">@must_be_open</span>
+    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feature_id</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_rewrite_line</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="n">feature_id</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GrassError</span><span class="p">(</span><span class="s">&quot;C funtion: Vect_rewrite_line.&quot;</span><span class="p">)</span>
+
+    <span class="nd">@must_be_open</span>
+    <span class="k">def</span> <span class="nf">restore</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geo_obj</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">geo_obj</span><span class="p">,</span> <span class="s">&#39;offset&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_restore_line</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="n">geo_obj</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                         <span class="n">geo_obj</span><span class="o">.</span><span class="n">offset</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">GrassError</span><span class="p">(</span><span class="s">&quot;C funtion: Vect_restore_line.&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;The value have not an offset attribute.&quot;</span><span class="p">)</span>
+
+    <span class="nd">@must_be_open</span>
+<div class="viewcode-block" id="VectorTopo.bbox"><a class="viewcode-back" href="../../vector.html#pygrass.vector.VectorTopo.bbox">[docs]</a>    <span class="k">def</span> <span class="nf">bbox</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the BBox of the vecor map</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">bbox</span> <span class="o">=</span> <span class="n">Bbox</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_map_box</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="n">bbox</span><span class="o">.</span><span class="n">c_bbox</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GrassError</span><span class="p">(</span><span class="s">&quot;I can not find the Bbox.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">bbox</span>
+</div>
+    <span class="nd">@must_be_open</span>
+<div class="viewcode-block" id="VectorTopo.select_by_bbox"><a class="viewcode-back" href="../../vector.html#pygrass.vector.VectorTopo.select_by_bbox">[docs]</a>    <span class="k">def</span> <span class="nf">select_by_bbox</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bbox</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the BBox of the vecor map</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">bbox</span> <span class="o">=</span> <span class="n">Bbox</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_map_box</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="n">bbox</span><span class="o">.</span><span class="n">c_bbox</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GrassError</span><span class="p">(</span><span class="s">&quot;I can not find the Bbox.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">bbox</span>
+</div>
+<div class="viewcode-block" id="VectorTopo.close"><a class="viewcode-back" href="../../vector.html#pygrass.vector.VectorTopo.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">build</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">release</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Close the VectorTopo map, if release is True, the memory</span>
+<span class="sd">        occupied by spatial index is released&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">release</span><span class="p">:</span>
+            <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_set_release_support</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">VectorTopo</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">build</span><span class="o">=</span><span class="n">build</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="../../index.html">PyGrass beta documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012-2014, Pietro Zambelli.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

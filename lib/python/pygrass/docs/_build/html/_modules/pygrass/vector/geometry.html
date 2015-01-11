@@ -1,0 +1,1624 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pygrass.vector.geometry &mdash; PyGrass beta documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     'beta',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="PyGrass beta documentation" href="../../../index.html" />
+    <link rel="up" title="pygrass.vector" href="../vector.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="../../../index.html">PyGrass beta documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../vector.html" accesskey="U">pygrass.vector</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for pygrass.vector.geometry</h1><div class="highlight"><pre>
+<span class="c"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Created on Wed Jul 18 10:46:25 2012</span>
+
+<span class="sd">@author: pietro</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">ctypes</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">grass.lib.gis</span> <span class="kn">as</span> <span class="nn">libgis</span>
+<span class="kn">import</span> <span class="nn">grass.lib.vector</span> <span class="kn">as</span> <span class="nn">libvect</span>
+
+<span class="kn">from</span> <span class="nn">grass.pygrass.errors</span> <span class="kn">import</span> <span class="n">GrassError</span>
+
+<span class="kn">from</span> <span class="nn">.basic</span> <span class="kn">import</span> <span class="n">Ilist</span><span class="p">,</span> <span class="n">Bbox</span><span class="p">,</span> <span class="n">Cats</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">sql</span>
+
+
+<span class="n">WKT</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;POINT\((.*)\)&#39;</span><span class="p">:</span> <span class="s">&#39;point&#39;</span><span class="p">,</span>  <span class="c"># &#39;POINT\(\s*([+-]*\d+\.*\d*)+\s*\)&#39;</span>
+       <span class="s">&#39;LINESTRING\((.*)\)&#39;</span><span class="p">:</span> <span class="s">&#39;line&#39;</span><span class="p">}</span>
+
+
+<span class="k">def</span> <span class="nf">read_WKT</span><span class="p">(</span><span class="n">string</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Read the string and return a geometry object</span>
+
+<span class="sd">    WKT:</span>
+<span class="sd">    POINT(0 0)</span>
+<span class="sd">    LINESTRING(0 0,1 1,1 2)</span>
+<span class="sd">    POLYGON((0 0,4 0,4 4,0 4,0 0),(1 1, 2 1, 2 2, 1 2,1 1))</span>
+<span class="sd">    MULTIPOINT(0 0,1 2)</span>
+<span class="sd">    MULTILINESTRING((0 0,1 1,1 2),(2 3,3 2,5 4))</span>
+<span class="sd">    MULTIPOLYGON(((0 0,4 0,4 4,0 4,0 0),(1 1,2 1,2 2,1 2,1 1)),</span>
+<span class="sd">                 ((-1 -1,-1 -2,-2 -2,-2 -1,-1 -1)))</span>
+<span class="sd">    GEOMETRYCOLLECTION(POINT(2 3),LINESTRING(2 3,3 4))</span>
+
+
+<span class="sd">    EWKT:</span>
+<span class="sd">    POINT(0 0 0) -- XYZ</span>
+<span class="sd">    SRID=32632;POINT(0 0) -- XY with SRID</span>
+<span class="sd">    POINTM(0 0 0) -- XYM</span>
+<span class="sd">    POINT(0 0 0 0) -- XYZM</span>
+<span class="sd">    SRID=4326;MULTIPOINTM(0 0 0,1 2 1) -- XYM with SRID</span>
+<span class="sd">    MULTILINESTRING((0 0 0,1 1 0,1 2 1),(2 3 1,3 2 1,5 4 1))</span>
+<span class="sd">    POLYGON((0 0 0,4 0 0,4 4 0,0 4 0,0 0 0),(1 1 0,2 1 0,2 2 0,1 2 0,1 1 0))</span>
+<span class="sd">    MULTIPOLYGON(((0 0 0,4 0 0,4 4 0,0 4 0,0 0 0),</span>
+<span class="sd">                  (1 1 0,2 1 0,2 2 0,1 2 0,1 1 0)),</span>
+<span class="sd">                 ((-1 -1 0,-1 -2 0,-2 -2 0,-2 -1 0,-1 -1 0)))</span>
+<span class="sd">    GEOMETRYCOLLECTIONM( POINTM(2 3 9), LINESTRINGM(2 3 4, 3 4 5) )</span>
+<span class="sd">    MULTICURVE( (0 0, 5 5), CIRCULARSTRING(4 0, 4 4, 8 4) )</span>
+<span class="sd">    POLYHEDRALSURFACE( ((0 0 0, 0 0 1, 0 1 1, 0 1 0, 0 0 0)),</span>
+<span class="sd">                       ((0 0 0, 0 1 0, 1 1 0, 1 0 0, 0 0 0)),</span>
+<span class="sd">                       ((0 0 0, 1 0 0, 1 0 1, 0 0 1, 0 0 0)),</span>
+<span class="sd">                       ((1 1 0, 1 1 1, 1 0 1, 1 0 0, 1 1 0)),</span>
+<span class="sd">                       ((0 1 0, 0 1 1, 1 1 1, 1 1 0, 0 1 0)),</span>
+<span class="sd">                       ((0 0 1, 1 0 1, 1 1 1, 0 1 1, 0 0 1)) )</span>
+<span class="sd">    TRIANGLE ((0 0, 0 9, 9 0, 0 0))</span>
+<span class="sd">    TIN( ((0 0 0, 0 0 1, 0 1 0, 0 0 0)), ((0 0 0, 0 1 0, 1 1 0, 0 0 0)) )</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">regexp</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">WKT</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">regexp</span><span class="p">,</span> <span class="n">string</span><span class="p">):</span>
+            <span class="n">geo</span> <span class="o">=</span> <span class="mi">10</span>
+            <span class="k">return</span> <span class="n">obj</span><span class="p">(</span><span class="n">geo</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">read_WKB</span><span class="p">(</span><span class="n">buff</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Read the binary buffer and return a geometry object&quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+
+
+<span class="k">def</span> <span class="nf">intersects</span><span class="p">(</span><span class="n">lineA</span><span class="p">,</span> <span class="n">lineB</span><span class="p">,</span> <span class="n">with_z</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return a list of points ::</span>
+
+<span class="sd">        &gt;&gt;&gt; lineA = Line([(0, 0), (4, 0)])</span>
+<span class="sd">        &gt;&gt;&gt; lineB = Line([(2, 2), (2, -2)])</span>
+<span class="sd">        &gt;&gt;&gt; intersects(lineA, lineB)</span>
+<span class="sd">        Line([Point(2.000000, 0.000000)])</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">line</span> <span class="o">=</span> <span class="n">Line</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_line_get_intersections</span><span class="p">(</span><span class="n">lineA</span><span class="o">.</span><span class="n">c_points</span><span class="p">,</span> <span class="n">lineB</span><span class="o">.</span><span class="n">c_points</span><span class="p">,</span>
+                                           <span class="n">line</span><span class="o">.</span><span class="n">c_points</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">with_z</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">line</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+<span class="c">#=============================================</span>
+<span class="c"># GEOMETRY</span>
+<span class="c">#=============================================</span>
+
+
+<span class="k">def</span> <span class="nf">get_xyz</span><span class="p">(</span><span class="n">pnt</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return a tuple with: x, y, z. ::</span>
+
+<span class="sd">        &gt;&gt;&gt; pnt = Point(0, 0)</span>
+<span class="sd">        &gt;&gt;&gt; get_xyz(pnt)</span>
+<span class="sd">        (0.0, 0.0, 0.0)</span>
+<span class="sd">        &gt;&gt;&gt; get_xyz((1, 1))</span>
+<span class="sd">        (1, 1, 0.0)</span>
+<span class="sd">        &gt;&gt;&gt; get_xyz((1, 1, 2))</span>
+<span class="sd">        (1, 1, 2)</span>
+<span class="sd">        &gt;&gt;&gt; get_xyz((1, 1, 2, 2))                          #doctest: +ELLIPSIS</span>
+<span class="sd">        Traceback (most recent call last):</span>
+<span class="sd">            ...</span>
+<span class="sd">        ValueError: The the format of the point is not supported: (1, 1, 2, 2)</span>
+
+<span class="sd">    ..</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pnt</span><span class="p">,</span> <span class="n">Point</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">pnt</span><span class="o">.</span><span class="n">is2D</span><span class="p">:</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">pnt</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">pnt</span><span class="o">.</span><span class="n">y</span>
+            <span class="n">z</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">pnt</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">pnt</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">pnt</span><span class="o">.</span><span class="n">z</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pnt</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">pnt</span>
+            <span class="n">z</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">pnt</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">pnt</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">str_error</span> <span class="o">=</span> <span class="s">&quot;The the format of the point is not supported: {0!r}&quot;</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">str_error</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pnt</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span>
+
+
+<span class="k">class</span> <span class="nc">Attrs</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cat</span><span class="p">,</span> <span class="n">table</span><span class="p">,</span> <span class="n">writable</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cat</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="o">=</span> <span class="n">table</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cat</span> <span class="o">=</span> <span class="n">cat</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">writable</span> <span class="o">=</span> <span class="n">writable</span>
+
+    <span class="k">def</span> <span class="nf">_get_cat</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cat</span>
+
+    <span class="k">def</span> <span class="nf">_set_cat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cat</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">if</span> <span class="n">value</span><span class="p">:</span>
+            <span class="c"># update condition</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cond</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">=</span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="n">cat</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">fget</span><span class="o">=</span><span class="n">_get_cat</span><span class="p">,</span> <span class="n">fset</span><span class="o">=</span><span class="n">_set_cat</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the value stored in the attribute table. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; from grass.pygrass.vector import VectorTopo</span>
+<span class="sd">            &gt;&gt;&gt; schools = VectorTopo(&#39;schools&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; schools.open(&#39;r&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; school = schools[1]</span>
+<span class="sd">            &gt;&gt;&gt; attrs = Attrs(school.cat, schools.table)</span>
+<span class="sd">            &gt;&gt;&gt; attrs[&#39;TAG&#39;]</span>
+<span class="sd">            u&#39;568&#39;</span>
+
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c">#SELECT {cols} FROM {tname} WHERE {condition};</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">cur</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="o">.</span><span class="n">SELECT_WHERE</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cols</span><span class="o">=</span><span class="n">key</span><span class="p">,</span>
+                                                         <span class="n">tname</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                                                         <span class="n">condition</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cond</span><span class="p">))</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">ipdb</span><span class="p">;</span> <span class="n">ipdb</span><span class="o">.</span><span class="n">set_trace</span><span class="p">()</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">results</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">results</span>
+
+    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set value of a given column of a table attribute. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; from grass.pygrass.vector import VectorTopo</span>
+<span class="sd">            &gt;&gt;&gt; from grass.pygrass.functions import copy, remove</span>
+<span class="sd">            &gt;&gt;&gt; copy(&#39;schools&#39;, &#39;myschools&#39;, &#39;vect&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; schools = VectorTopo(&#39;myschools&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; schools.open(&#39;r&#39;)</span>
+<span class="sd">            &gt;&gt;&gt; school = schools[1]</span>
+<span class="sd">            &gt;&gt;&gt; attrs = Attrs(school.cat, schools.table, True)</span>
+<span class="sd">            &gt;&gt;&gt; attrs[&#39;TAG&#39;] = &#39;New Label&#39;</span>
+<span class="sd">            &gt;&gt;&gt; attrs[&#39;TAG&#39;]</span>
+<span class="sd">            u&#39;New Label&#39;</span>
+<span class="sd">            &gt;&gt;&gt; attrs.table.conn.close()</span>
+<span class="sd">            &gt;&gt;&gt; remove(&#39;myschools&#39;,&#39;vect&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">writable</span><span class="p">:</span>
+            <span class="c">#UPDATE {tname} SET {new_col} = {old_col} WHERE {condition}</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">=</span><span class="si">%r</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="o">.</span><span class="n">UPDATE_WHERE</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tname</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                                                       <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span>
+                                                       <span class="n">condition</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cond</span><span class="p">))</span>
+            <span class="c">#self.table.conn.commit()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">str_err</span> <span class="o">=</span> <span class="s">&quot;You can only read the attributes if the map is </span><span class="se">\</span>
+<span class="s">in another mapset&quot;</span>
+            <span class="k">raise</span> <span class="n">GrassError</span><span class="p">(</span><span class="n">str_err</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__dict__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a dict of the attribute table row.&quot;&quot;&quot;</span>
+        <span class="n">dic</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="n">dic</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+        <span class="k">return</span> <span class="n">dic</span>
+
+    <span class="k">def</span> <span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the values of the attribute table row.</span>
+<span class="sd">           &gt;&gt;&gt; from grass.pygrass.vector import VectorTopo</span>
+<span class="sd">           &gt;&gt;&gt; schools = VectorTopo(&#39;schools&#39;)</span>
+<span class="sd">           &gt;&gt;&gt; schools.open(&#39;r&#39;)</span>
+<span class="sd">           &gt;&gt;&gt; school = schools[1]</span>
+<span class="sd">           &gt;&gt;&gt; attrs = Attrs(school.cat, schools.table)</span>
+<span class="sd">           &gt;&gt;&gt; attrs.values()                             # doctest: +ELLIPSIS</span>
+<span class="sd">           (1,</span>
+<span class="sd">           ...</span>
+<span class="sd">           None)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c">#SELECT {cols} FROM {tname} WHERE {condition}</span>
+        <span class="n">cur</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="o">.</span><span class="n">SELECT_WHERE</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cols</span><span class="o">=</span><span class="s">&#39;*&#39;</span><span class="p">,</span>
+                                                         <span class="n">tname</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                                                         <span class="n">condition</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cond</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the column name of the attribute table.</span>
+<span class="sd">           &gt;&gt;&gt; from grass.pygrass.vector import VectorTopo</span>
+<span class="sd">           &gt;&gt;&gt; schools = VectorTopo(&#39;schools&#39;)</span>
+<span class="sd">           &gt;&gt;&gt; schools.open(&#39;r&#39;)</span>
+<span class="sd">           &gt;&gt;&gt; school = schools[1]</span>
+<span class="sd">           &gt;&gt;&gt; attrs = Attrs(school.cat, schools.table)</span>
+<span class="sd">           &gt;&gt;&gt; attrs.keys()                             # doctest: +ELLIPSIS</span>
+<span class="sd">           (u&#39;cat&#39;,</span>
+<span class="sd">           ...</span>
+<span class="sd">           u&#39;NOTES&#39;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">commit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Save the changes&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">Geo</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    &gt;&gt;&gt; geo0 = Geo()</span>
+<span class="sd">    &gt;&gt;&gt; points = ctypes.pointer(libvect.line_pnts())</span>
+<span class="sd">    &gt;&gt;&gt; cats = ctypes.pointer(libvect.line_cats())</span>
+<span class="sd">    &gt;&gt;&gt; geo1 = Geo(c_points=points, c_cats=cats)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">gtype</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v_id</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">c_mapinfo</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">c_points</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">c_cats</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="n">table</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">writable</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">is2D</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">v_id</span>  <span class="c"># vector id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span> <span class="o">=</span> <span class="n">c_mapinfo</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is2D</span> <span class="o">=</span> <span class="n">is2D</span>
+
+        <span class="n">read</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="c"># set c_points</span>
+        <span class="k">if</span> <span class="n">c_points</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">pointer</span><span class="p">(</span><span class="n">libvect</span><span class="o">.</span><span class="n">line_pnts</span><span class="p">())</span>
+            <span class="n">read</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span> <span class="o">=</span> <span class="n">c_points</span>
+
+        <span class="c"># set c_cats</span>
+        <span class="k">if</span> <span class="n">c_cats</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">c_cats</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">pointer</span><span class="p">(</span><span class="n">libvect</span><span class="o">.</span><span class="n">line_cats</span><span class="p">())</span>
+            <span class="n">read</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">c_cats</span> <span class="o">=</span> <span class="n">c_cats</span>
+
+        <span class="c"># set the attributes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">table</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="n">Attrs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="p">,</span> <span class="n">table</span><span class="p">,</span> <span class="n">writable</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">read</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">cat</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_cats</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">cat</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_cats</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">cat</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">is_with_topology</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">level</span> <span class="o">==</span> <span class="mi">2</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Read and set the coordinates of the centroid from the vector map,</span>
+<span class="sd">        using the centroid_id and calling the Vect_read_line C function&quot;&quot;&quot;</span>
+        <span class="n">ftype</span><span class="p">,</span> <span class="n">c_points</span><span class="p">,</span> <span class="n">c_cats</span> <span class="o">=</span> <span class="n">c_read_line</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span>
+                                              <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_cats</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Point"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Point">[docs]</a><span class="k">class</span> <span class="nc">Point</span><span class="p">(</span><span class="n">Geo</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Instantiate a Point object that could be 2 or 3D, default</span>
+<span class="sd">    parameters are 0.</span>
+
+<span class="sd">    ::</span>
+
+<span class="sd">        &gt;&gt;&gt; pnt = Point()</span>
+<span class="sd">        &gt;&gt;&gt; pnt.x</span>
+<span class="sd">        0.0</span>
+<span class="sd">        &gt;&gt;&gt; pnt.y</span>
+<span class="sd">        0.0</span>
+<span class="sd">        &gt;&gt;&gt; pnt.z</span>
+<span class="sd">        &gt;&gt;&gt; pnt.is2D</span>
+<span class="sd">        True</span>
+<span class="sd">        &gt;&gt;&gt; pnt</span>
+<span class="sd">        Point(0.000000, 0.000000)</span>
+<span class="sd">        &gt;&gt;&gt; pnt.z = 0</span>
+<span class="sd">        &gt;&gt;&gt; pnt.is2D</span>
+<span class="sd">        False</span>
+<span class="sd">        &gt;&gt;&gt; pnt</span>
+<span class="sd">        Point(0.000000, 0.000000, 0.000000)</span>
+<span class="sd">        &gt;&gt;&gt; print(pnt)</span>
+<span class="sd">        POINT(0.000000, 0.000000, 0.000000)</span>
+
+<span class="sd">    ..</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># geometry type</span>
+    <span class="n">gtype</span> <span class="o">=</span> <span class="n">libvect</span><span class="o">.</span><span class="n">GV_POINT</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Point</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is2D</span> <span class="o">=</span> <span class="bp">True</span> <span class="k">if</span> <span class="n">z</span> <span class="ow">is</span> <span class="bp">None</span> <span class="k">else</span> <span class="bp">False</span>
+            <span class="n">z</span> <span class="o">=</span> <span class="n">z</span> <span class="k">if</span> <span class="n">z</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="k">else</span> <span class="mi">0</span>
+            <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_append_point</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_x</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_set_x</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">fget</span><span class="o">=</span><span class="n">_get_x</span><span class="p">,</span> <span class="n">fset</span><span class="o">=</span><span class="n">_set_x</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_y</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_set_y</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="n">y</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">fget</span><span class="o">=</span><span class="n">_get_y</span><span class="p">,</span> <span class="n">fset</span><span class="o">=</span><span class="n">_set_y</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_z</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is2D</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_set_z</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is2D</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is2D</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="n">z</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">fget</span><span class="o">=</span><span class="n">_get_z</span><span class="p">,</span> <span class="n">fset</span><span class="o">=</span><span class="n">_set_z</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_wkt</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&quot;Point(</span><span class="si">%s</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;</span><span class="si">%f</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">coor</span> <span class="k">for</span> <span class="n">coor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">coords</span><span class="p">()])</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pnt</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pnt</span><span class="p">,</span> <span class="n">Point</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">pnt</span><span class="o">.</span><span class="n">coords</span><span class="p">()</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">coords</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">Point</span><span class="p">(</span><span class="o">*</span><span class="n">pnt</span><span class="p">)</span><span class="o">.</span><span class="n">coords</span><span class="p">()</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">coords</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Point.coords"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Point.coords">[docs]</a>    <span class="k">def</span> <span class="nf">coords</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a tuple with the point coordinates. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; pnt = Point(10, 100)</span>
+<span class="sd">            &gt;&gt;&gt; pnt.coords()</span>
+<span class="sd">            (10.0, 100.0)</span>
+
+<span class="sd">        If the point is 2D return a x, y tuple. But if we change the ``z``</span>
+<span class="sd">        the Point object become a 3D point, therefore the method return a</span>
+<span class="sd">        x, y, z tuple. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; pnt.z = 1000.</span>
+<span class="sd">            &gt;&gt;&gt; pnt.coords()</span>
+<span class="sd">            (10.0, 100.0, 1000.0)</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is2D</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">z</span>
+</div>
+<div class="viewcode-block" id="Point.get_wkt"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Point.get_wkt">[docs]</a>    <span class="k">def</span> <span class="nf">get_wkt</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a &quot;well know text&quot; (WKT) geometry string. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; pnt = Point(10, 100)</span>
+<span class="sd">            &gt;&gt;&gt; pnt.get_wkt()</span>
+<span class="sd">            &#39;POINT(10.000000 100.000000)&#39;</span>
+
+<span class="sd">        .. warning::</span>
+
+<span class="sd">            Only ``POINT`` (2/3D) are supported, ``POINTM`` and ``POINT`` with:</span>
+<span class="sd">            ``XYZM`` are not supported yet.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s">&quot;POINT(</span><span class="si">%s</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;</span><span class="si">%f</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">coord</span>
+                                      <span class="k">for</span> <span class="n">coord</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">coords</span><span class="p">()])</span>
+</div>
+<div class="viewcode-block" id="Point.get_wkb"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Point.get_wkb">[docs]</a>    <span class="k">def</span> <span class="nf">get_wkb</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a &quot;well know binary&quot; (WKB) geometry buffer</span>
+
+<span class="sd">        .. warning::</span>
+
+<span class="sd">            Not implemented yet.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="Point.distance"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Point.distance">[docs]</a>    <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pnt</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calculate distance of 2 points, using the Vect_points_distance</span>
+<span class="sd">        C function, If one of the point have z == None, return the 2D distance.</span>
+<span class="sd">        ::</span>
+
+<span class="sd">            &gt;&gt;&gt; pnt0 = Point(0, 0, 0)</span>
+<span class="sd">            &gt;&gt;&gt; pnt1 = Point(1, 0)</span>
+<span class="sd">            &gt;&gt;&gt; pnt0.distance(pnt1)</span>
+<span class="sd">            1.0</span>
+<span class="sd">            &gt;&gt;&gt; pnt1.z = 1</span>
+<span class="sd">            &gt;&gt;&gt; pnt1</span>
+<span class="sd">            Point(1.000000, 0.000000, 1.000000)</span>
+<span class="sd">            &gt;&gt;&gt; pnt0.distance(pnt1)</span>
+<span class="sd">            1.4142135623730951</span>
+
+<span class="sd">        The distance method require a :class:Point or a tuple with</span>
+<span class="sd">        the coordinates.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is2D</span> <span class="ow">or</span> <span class="n">pnt</span><span class="o">.</span><span class="n">is2D</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_points_distance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span>
+                                                <span class="n">pnt</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">pnt</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_points_distance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">,</span>
+                                                <span class="n">pnt</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">pnt</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">pnt</span><span class="o">.</span><span class="n">z</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Point.buffer"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Point.buffer">[docs]</a>    <span class="k">def</span> <span class="nf">buffer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dist</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">dist_x</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">dist_y</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">angle</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+               <span class="n">round_</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the buffer area around the point, using the</span>
+<span class="sd">        ``Vect_point_buffer2`` C function.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dist : numeric</span>
+<span class="sd">            The distance around the line.</span>
+<span class="sd">        dist_x: numeric, optional</span>
+<span class="sd">            The distance along x</span>
+<span class="sd">        dist_y: numeric, optional</span>
+<span class="sd">            The distance along y</span>
+<span class="sd">        angle: numeric, optional</span>
+<span class="sd">            The angle between 0x and major axis</span>
+<span class="sd">        round_: bool, optional</span>
+<span class="sd">            To make corners round</span>
+<span class="sd">        tol: float, optional</span>
+<span class="sd">            Fix the maximum distance between theoretical arc</span>
+<span class="sd">            and output segments</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        buffer : Area</span>
+<span class="sd">            The buffer area around the line.</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        ---------</span>
+
+<span class="sd">        ::</span>
+<span class="sd">            &gt;&gt;&gt; pnt = Point(0, 0)</span>
+<span class="sd">            &gt;&gt;&gt; area = pnt.buffer(10)</span>
+<span class="sd">            &gt;&gt;&gt; area.boundary                              #doctest: +ELLIPSIS</span>
+<span class="sd">            Line([Point(10.000000, 0.000000),...Point(10.000000, 0.000000)])</span>
+<span class="sd">            &gt;&gt;&gt; area.centroid</span>
+<span class="sd">            Point(0.000000, 0.000000)</span>
+<span class="sd">            &gt;&gt;&gt; area.isles</span>
+<span class="sd">            []</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">dist</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">dist_x</span> <span class="o">=</span> <span class="n">dist</span>
+            <span class="n">dist_y</span> <span class="o">=</span> <span class="n">dist</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">dist_x</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">dist_y</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;TypeError: buffer expected 1 arguments, got 0&#39;</span><span class="p">)</span>
+        <span class="n">bound</span> <span class="o">=</span> <span class="n">Line</span><span class="p">()</span>
+        <span class="n">p_points</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">pointer</span><span class="p">(</span><span class="n">bound</span><span class="o">.</span><span class="n">c_points</span><span class="p">)</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_point_buffer2</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+                                   <span class="n">dist_x</span><span class="p">,</span> <span class="n">dist_y</span><span class="p">,</span>
+                                   <span class="n">angle</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">round_</span><span class="p">),</span> <span class="n">tol</span><span class="p">,</span>
+                                   <span class="n">p_points</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Area</span><span class="p">(</span><span class="n">boundary</span><span class="o">=</span><span class="n">bound</span><span class="p">,</span> <span class="n">centroid</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+
+</div></div>
+<div class="viewcode-block" id="Line"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line">[docs]</a><span class="k">class</span> <span class="nc">Line</span><span class="p">(</span><span class="n">Geo</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Instantiate a new Line with a list of tuple, or with a list of Point. ::</span>
+
+<span class="sd">        &gt;&gt;&gt; line = Line([(0, 0), (1, 1), (2, 0), (1, -1)])</span>
+<span class="sd">        &gt;&gt;&gt; line                               #doctest: +NORMALIZE_WHITESPACE</span>
+<span class="sd">        Line([Point(0.000000, 0.000000),</span>
+<span class="sd">              Point(1.000000, 1.000000),</span>
+<span class="sd">              Point(2.000000, 0.000000),</span>
+<span class="sd">              Point(1.000000, -1.000000)])</span>
+
+<span class="sd">    ..</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># geometry type</span>
+    <span class="n">gtype</span> <span class="o">=</span> <span class="n">libvect</span><span class="o">.</span><span class="n">GV_LINE</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Line</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">points</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">pnt</span> <span class="ow">in</span> <span class="n">points</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pnt</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get line point of given index,  slice allowed. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; line = Line([(0, 0), (1, 1), (2, 2), (3, 3)])</span>
+<span class="sd">            &gt;&gt;&gt; line[1]</span>
+<span class="sd">            Point(1.000000, 1.000000)</span>
+<span class="sd">            &gt;&gt;&gt; line[-1]</span>
+<span class="sd">            Point(3.000000, 3.000000)</span>
+<span class="sd">            &gt;&gt;&gt; line[:2]</span>
+<span class="sd">            [Point(0.000000, 0.000000), Point(1.000000, 1.000000)]</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c">#TODO:</span>
+        <span class="c"># line[0].x = 10 is not working</span>
+        <span class="c">#pnt.c_px = ctypes.pointer(self.c_points.contents.x[indx])</span>
+        <span class="c"># pnt.c_px = ctypes.cast(id(self.c_points.contents.x[indx]),</span>
+        <span class="c"># ctypes.POINTER(ctypes.c_double))</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">slice</span><span class="p">):</span>
+            <span class="c">#import pdb; pdb.set_trace()</span>
+            <span class="c">#Get the start, stop, and step from the slice</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">Point</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">indx</span><span class="p">],</span>
+                    <span class="bp">None</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is2D</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">indx</span><span class="p">])</span>
+                    <span class="k">for</span> <span class="n">indx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">*</span><span class="n">key</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)))]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c"># Handle negative indices</span>
+                <span class="n">key</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">n_points</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">n_points</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s">&#39;Index out of range&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">Point</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">key</span><span class="p">],</span>
+                         <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">key</span><span class="p">],</span>
+                         <span class="bp">None</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is2D</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Invalid argument type: </span><span class="si">%r</span><span class="s">.&quot;</span> <span class="o">%</span> <span class="n">key</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indx</span><span class="p">,</span> <span class="n">pnt</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Change the coordinate of point. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; line = Line([(0, 0), (1, 1)])</span>
+<span class="sd">            &gt;&gt;&gt; line[0] = (2, 2)</span>
+<span class="sd">            &gt;&gt;&gt; line</span>
+<span class="sd">            Line([Point(2.000000, 2.000000), Point(1.000000, 1.000000)])</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">get_xyz</span><span class="p">(</span><span class="n">pnt</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">z</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span> <span class="o">=</span> <span class="n">z</span>
+
+    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a Point generator of the Line&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__getitem__</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__len__</span><span class="p">()))</span>
+
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the number of points of the line.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">n_points</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_wkt</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&quot;Line([</span><span class="si">%s</span><span class="s">])&quot;</span> <span class="o">%</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="nb">repr</span><span class="p">(</span><span class="n">pnt</span><span class="p">)</span> <span class="k">for</span> <span class="n">pnt</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__iter__</span><span class="p">()])</span>
+
+<div class="viewcode-block" id="Line.get_pnt"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.get_pnt">[docs]</a>    <span class="k">def</span> <span class="nf">get_pnt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">angle</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">slope</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a Point object on line in the specified distance, using the</span>
+<span class="sd">        `Vect_point_on_line` C function.</span>
+<span class="sd">        Raise a ValueError If the distance exceed the Line length. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; line = Line([(0, 0), (1, 1)])</span>
+<span class="sd">            &gt;&gt;&gt; line.get_pnt(5)      #doctest: +ELLIPSIS +NORMALIZE_WHITESPACE</span>
+<span class="sd">            Traceback (most recent call last):</span>
+<span class="sd">                ...</span>
+<span class="sd">            ValueError: The distance exceed the lenght of the line,</span>
+<span class="sd">            that is: 1.414214</span>
+<span class="sd">            &gt;&gt;&gt; line.get_pnt(1)</span>
+<span class="sd">            Point(0.707107, 0.707107)</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># instantiate an empty Point object</span>
+        <span class="n">maxdist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">distance</span> <span class="o">&gt;</span> <span class="n">maxdist</span><span class="p">:</span>
+            <span class="n">str_err</span> <span class="o">=</span> <span class="s">&quot;The distance exceed the lenght of the line, that is: </span><span class="si">%f</span><span class="s">&quot;</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">str_err</span> <span class="o">%</span> <span class="n">maxdist</span><span class="p">)</span>
+        <span class="n">pnt</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">9999</span><span class="p">)</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_point_on_line</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span>
+                                   <span class="n">pnt</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
+                                   <span class="n">pnt</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+                                   <span class="n">pnt</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">z</span><span class="p">,</span>
+                                   <span class="n">angle</span><span class="p">,</span> <span class="n">slope</span><span class="p">)</span>
+        <span class="n">pnt</span><span class="o">.</span><span class="n">is2D</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">is2D</span>
+        <span class="k">return</span> <span class="n">pnt</span>
+</div>
+<div class="viewcode-block" id="Line.append"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.append">[docs]</a>    <span class="k">def</span> <span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pnt</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Appends one point to the end of a line, using the</span>
+<span class="sd">        ``Vect_append_point`` C function. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; line = Line()</span>
+<span class="sd">            &gt;&gt;&gt; line.append((10, 100))</span>
+<span class="sd">            &gt;&gt;&gt; line</span>
+<span class="sd">            Line([Point(10.000000, 100.000000)])</span>
+<span class="sd">            &gt;&gt;&gt; line.append((20, 200))</span>
+<span class="sd">            &gt;&gt;&gt; line</span>
+<span class="sd">            Line([Point(10.000000, 100.000000), Point(20.000000, 200.000000)])</span>
+
+<span class="sd">        Like python list.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">get_xyz</span><span class="p">(</span><span class="n">pnt</span><span class="p">)</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_append_point</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Line.bbox"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.bbox">[docs]</a>    <span class="k">def</span> <span class="nf">bbox</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bbox</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the bounding box of the line, using ``Vect_line_box``</span>
+<span class="sd">        C function. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; line = Line([(0, 0), (0, 1), (2, 1), (2, 0)])</span>
+<span class="sd">            &gt;&gt;&gt; bbox = line.bbox()</span>
+<span class="sd">            &gt;&gt;&gt; bbox</span>
+<span class="sd">            Bbox(1.0, 0.0, 2.0, 0.0)</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">bbox</span> <span class="o">=</span> <span class="n">bbox</span> <span class="k">if</span> <span class="n">bbox</span> <span class="k">else</span> <span class="n">Bbox</span><span class="p">()</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_line_box</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="p">,</span> <span class="n">bbox</span><span class="o">.</span><span class="n">c_bbox</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">bbox</span>
+</div>
+<div class="viewcode-block" id="Line.extend"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.extend">[docs]</a>    <span class="k">def</span> <span class="nf">extend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">forward</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Appends points to the end of a line.</span>
+
+<span class="sd">        It is possible to extend a line, give a list of points, or directly</span>
+<span class="sd">        with a line_pnts struct.</span>
+
+<span class="sd">        If forward is True the line is extend forward otherwise is extend</span>
+<span class="sd">        backward. The method use the `Vect_append_points` C function. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; line = Line([(0, 0), (1, 1)])</span>
+<span class="sd">            &gt;&gt;&gt; line.extend( Line([(2, 2), (3, 3)]) )</span>
+<span class="sd">            &gt;&gt;&gt; line                           #doctest: +NORMALIZE_WHITESPACE</span>
+<span class="sd">            Line([Point(0.000000, 0.000000),</span>
+<span class="sd">                  Point(1.000000, 1.000000),</span>
+<span class="sd">                  Point(2.000000, 2.000000),</span>
+<span class="sd">                  Point(3.000000, 3.000000)])</span>
+
+<span class="sd">        Like python list, it is possible to extend a line, with another line</span>
+<span class="sd">        or with a list of points.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># set direction</span>
+        <span class="k">if</span> <span class="n">forward</span><span class="p">:</span>
+            <span class="n">direction</span> <span class="o">=</span> <span class="n">libvect</span><span class="o">.</span><span class="n">GV_FORWARD</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">direction</span> <span class="o">=</span> <span class="n">libvect</span><span class="o">.</span><span class="n">GV_BACKWARD</span>
+        <span class="c"># check if is a Line object</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">Line</span><span class="p">):</span>
+            <span class="n">c_points</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">c_points</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># instantiate a Line object</span>
+            <span class="n">lin</span> <span class="o">=</span> <span class="n">Line</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">pnt</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                <span class="c"># add the points to the line</span>
+                <span class="n">lin</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pnt</span><span class="p">)</span>
+            <span class="n">c_points</span> <span class="o">=</span> <span class="n">lin</span><span class="o">.</span><span class="n">c_points</span>
+
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_append_points</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="p">,</span> <span class="n">c_points</span><span class="p">,</span> <span class="n">direction</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Line.insert"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.insert">[docs]</a>    <span class="k">def</span> <span class="nf">insert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indx</span><span class="p">,</span> <span class="n">pnt</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Insert new point at index position and move all old points at</span>
+<span class="sd">        that position and above up, using ``Vect_line_insert_point``</span>
+<span class="sd">        C function. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; line = Line([(0, 0), (1, 1)])</span>
+<span class="sd">            &gt;&gt;&gt; line.insert(0, Point(1.000000, -1.000000) )</span>
+<span class="sd">            &gt;&gt;&gt; line                           #doctest: +NORMALIZE_WHITESPACE</span>
+<span class="sd">            Line([Point(1.000000, -1.000000),</span>
+<span class="sd">                  Point(0.000000, 0.000000),</span>
+<span class="sd">                  Point(1.000000, 1.000000)])</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">indx</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c"># Handle negative indices</span>
+            <span class="n">indx</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">n_points</span>
+        <span class="k">if</span> <span class="n">indx</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">n_points</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s">&#39;Index out of range&#39;</span><span class="p">)</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="n">get_xyz</span><span class="p">(</span><span class="n">pnt</span><span class="p">)</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_line_insert_point</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="p">,</span> <span class="n">indx</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Line.length"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.length">[docs]</a>    <span class="k">def</span> <span class="nf">length</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calculate line length, 3D-length in case of 3D vector line, using</span>
+<span class="sd">        `Vect_line_length` C function.  ::</span>
+
+<span class="sd">            &gt;&gt;&gt; line = Line([(0, 0), (1, 1), (0, 1)])</span>
+<span class="sd">            &gt;&gt;&gt; line.length()</span>
+<span class="sd">            2.414213562373095</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_line_length</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Line.length_geodesic"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.length_geodesic">[docs]</a>    <span class="k">def</span> <span class="nf">length_geodesic</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calculate line length, usig `Vect_line_geodesic_length` C function.</span>
+<span class="sd">        ::</span>
+
+<span class="sd">            &gt;&gt;&gt; line = Line([(0, 0), (1, 1), (0, 1)])</span>
+<span class="sd">            &gt;&gt;&gt; line.length_geodesic()</span>
+<span class="sd">            2.414213562373095</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_line_geodesic_length</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Line.distance"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.distance">[docs]</a>    <span class="k">def</span> <span class="nf">distance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pnt</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a tuple with:</span>
+
+<span class="sd">            * the closest point on the line,</span>
+<span class="sd">            * the distance between these two points,</span>
+<span class="sd">            * distance of point from segment beginning</span>
+<span class="sd">            * distance of point from line</span>
+
+<span class="sd">        The distance is compute using the ``Vect_line_distance`` C function.</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        ---------</span>
+
+<span class="sd">        ::</span>
+<span class="sd">            &gt;&gt;&gt; line = Line([(0, 0), (0, 2)])</span>
+<span class="sd">            &gt;&gt;&gt; line.distance(Point(1, 1))</span>
+<span class="sd">            (Point(0.000000, 1.000000), 1.0, 1.0, 1.0)</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># instantite outputs</span>
+        <span class="n">cx</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_double</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">cy</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_double</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">cz</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_double</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">dist</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_double</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">sp_dist</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_double</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">lp_dist</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_double</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_line_distance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="p">,</span>
+                                   <span class="n">pnt</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">pnt</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">pnt</span><span class="o">.</span><span class="n">is2D</span> <span class="k">else</span> <span class="n">pnt</span><span class="o">.</span><span class="n">z</span><span class="p">,</span>
+                                   <span class="mi">0</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is2D</span> <span class="k">else</span> <span class="mi">1</span><span class="p">,</span>
+                                   <span class="n">ctypes</span><span class="o">.</span><span class="n">byref</span><span class="p">(</span><span class="n">cx</span><span class="p">),</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">byref</span><span class="p">(</span><span class="n">cy</span><span class="p">),</span>
+                                   <span class="n">ctypes</span><span class="o">.</span><span class="n">byref</span><span class="p">(</span><span class="n">cz</span><span class="p">),</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">byref</span><span class="p">(</span><span class="n">dist</span><span class="p">),</span>
+                                   <span class="n">ctypes</span><span class="o">.</span><span class="n">byref</span><span class="p">(</span><span class="n">sp_dist</span><span class="p">),</span>
+                                   <span class="n">ctypes</span><span class="o">.</span><span class="n">byref</span><span class="p">(</span><span class="n">lp_dist</span><span class="p">))</span>
+        <span class="c"># instantiate the Point class</span>
+        <span class="n">point</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="n">cx</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">cy</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">cz</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">point</span><span class="o">.</span><span class="n">is2D</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">is2D</span>
+        <span class="k">return</span> <span class="n">point</span><span class="p">,</span> <span class="n">dist</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">sp_dist</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">lp_dist</span><span class="o">.</span><span class="n">value</span>
+</div>
+<div class="viewcode-block" id="Line.get_first_cat"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.get_first_cat">[docs]</a>    <span class="k">def</span> <span class="nf">get_first_cat</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Fetches FIRST category number for given vector line and field, using</span>
+<span class="sd">        the ``Vect_get_line_cat`` C function.</span>
+
+<span class="sd">        .. warning::</span>
+
+<span class="sd">            Not implemented yet.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># TODO: add this method.</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_line_cat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="p">)</span>
+        <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="Line.pop"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.pop">[docs]</a>    <span class="k">def</span> <span class="nf">pop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the point in the index position and remove from the Line. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; line = Line([(0, 0), (1, 1), (2, 2)])</span>
+<span class="sd">            &gt;&gt;&gt; midle_pnt = line.pop(1)</span>
+<span class="sd">            &gt;&gt;&gt; midle_pnt</span>
+<span class="sd">            Point(1.000000, 1.000000)</span>
+<span class="sd">            &gt;&gt;&gt; line</span>
+<span class="sd">            Line([Point(0.000000, 0.000000), Point(2.000000, 2.000000)])</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">indx</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c"># Handle negative indices</span>
+            <span class="n">indx</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">n_points</span>
+        <span class="k">if</span> <span class="n">indx</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">n_points</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s">&#39;Index out of range&#39;</span><span class="p">)</span>
+        <span class="n">pnt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__getitem__</span><span class="p">(</span><span class="n">indx</span><span class="p">)</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_line_delete_point</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="p">,</span> <span class="n">indx</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pnt</span>
+</div>
+<div class="viewcode-block" id="Line.delete"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.delete">[docs]</a>    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Remove the point in the index position. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; line = Line([(0, 0), (1, 1), (2, 2)])</span>
+<span class="sd">            &gt;&gt;&gt; line.delete(-1)</span>
+<span class="sd">            &gt;&gt;&gt; line</span>
+<span class="sd">            Line([Point(0.000000, 0.000000), Point(1.000000, 1.000000)])</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">indx</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c"># Handle negative indices</span>
+            <span class="n">indx</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">n_points</span>
+        <span class="k">if</span> <span class="n">indx</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">n_points</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s">&#39;Index out of range&#39;</span><span class="p">)</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_line_delete_point</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="p">,</span> <span class="n">indx</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Line.prune"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.prune">[docs]</a>    <span class="k">def</span> <span class="nf">prune</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Remove duplicate points, i.e. zero length segments, using</span>
+<span class="sd">        `Vect_line_prune` C function. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; line = Line([(0, 0), (1, 1), (1, 1), (2, 2)])</span>
+<span class="sd">            &gt;&gt;&gt; line.prune()</span>
+<span class="sd">            &gt;&gt;&gt; line                           #doctest: +NORMALIZE_WHITESPACE</span>
+<span class="sd">            Line([Point(0.000000, 0.000000),</span>
+<span class="sd">                  Point(1.000000, 1.000000),</span>
+<span class="sd">                  Point(2.000000, 2.000000)])</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_line_prune</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Line.prune_thresh"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.prune_thresh">[docs]</a>    <span class="k">def</span> <span class="nf">prune_thresh</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">threshold</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Remove points in threshold, using the ``Vect_line_prune_thresh``</span>
+<span class="sd">        C funtion. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; line = Line([(0, 0), (1.0, 1.0), (1.2, 0.9), (2, 2)])</span>
+<span class="sd">            &gt;&gt;&gt; line.prune_thresh(0.5)</span>
+<span class="sd">            &gt;&gt;&gt; line                     #doctest: +SKIP +NORMALIZE_WHITESPACE</span>
+<span class="sd">            Line([Point(0.000000, 0.000000),</span>
+<span class="sd">                  Point(1.000000, 1.000000),</span>
+<span class="sd">                  Point(2.000000, 2.000000)])</span>
+
+<span class="sd">        .. warning ::</span>
+
+<span class="sd">            prune_thresh is not working yet.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_line_prune</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="p">,</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_double</span><span class="p">(</span><span class="n">threshold</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="Line.remove"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.remove">[docs]</a>    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pnt</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Delete point at given index and move all points above down, using</span>
+<span class="sd">        `Vect_line_delete_point` C function. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; line = Line([(0, 0), (1, 1), (2, 2)])</span>
+<span class="sd">            &gt;&gt;&gt; line.remove((2, 2))</span>
+<span class="sd">            &gt;&gt;&gt; line[-1]</span>
+<span class="sd">            Point(1.000000, 1.000000)</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">indx</span><span class="p">,</span> <span class="n">point</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__iter__</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="n">pnt</span> <span class="o">==</span> <span class="n">point</span><span class="p">:</span>
+                <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_line_delete_point</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="p">,</span> <span class="n">indx</span><span class="p">)</span>
+                <span class="k">return</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;list.remove(x): x not in list&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Line.reverse"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.reverse">[docs]</a>    <span class="k">def</span> <span class="nf">reverse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Reverse the order of vertices, using `Vect_line_reverse`</span>
+<span class="sd">        C function. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; line = Line([(0, 0), (1, 1), (2, 2)])</span>
+<span class="sd">            &gt;&gt;&gt; line.reverse()</span>
+<span class="sd">            &gt;&gt;&gt; line                           #doctest: +NORMALIZE_WHITESPACE</span>
+<span class="sd">            Line([Point(2.000000, 2.000000),</span>
+<span class="sd">                  Point(1.000000, 1.000000),</span>
+<span class="sd">                  Point(0.000000, 0.000000)])</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_line_reverse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Line.segment"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.segment">[docs]</a>    <span class="k">def</span> <span class="nf">segment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create line segment. using the ``Vect_line_segment`` C function.&quot;&quot;&quot;</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">Line</span><span class="p">()</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_line_segment</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">line</span><span class="o">.</span><span class="n">c_points</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">line</span>
+</div>
+<div class="viewcode-block" id="Line.tolist"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.tolist">[docs]</a>    <span class="k">def</span> <span class="nf">tolist</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a list of tuple. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; line = Line([(0, 0), (1, 1), (2, 0), (1, -1)])</span>
+<span class="sd">            &gt;&gt;&gt; line.tolist()</span>
+<span class="sd">            [(0.0, 0.0), (1.0, 1.0), (2.0, 0.0), (1.0, -1.0)]</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">pnt</span><span class="o">.</span><span class="n">coords</span><span class="p">()</span> <span class="k">for</span> <span class="n">pnt</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__iter__</span><span class="p">()]</span>
+</div>
+<div class="viewcode-block" id="Line.toarray"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.toarray">[docs]</a>    <span class="k">def</span> <span class="nf">toarray</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return an array of coordinates. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; line = Line([(0, 0), (1, 1), (2, 0), (1, -1)])</span>
+<span class="sd">            &gt;&gt;&gt; line.toarray()                 #doctest: +NORMALIZE_WHITESPACE</span>
+<span class="sd">            array([[ 0.,  0.],</span>
+<span class="sd">                   [ 1.,  1.],</span>
+<span class="sd">                   [ 2.,  0.],</span>
+<span class="sd">                   [ 1., -1.]])</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+</div>
+<div class="viewcode-block" id="Line.get_wkt"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.get_wkt">[docs]</a>    <span class="k">def</span> <span class="nf">get_wkt</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a Well Known Text string of the line. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; line = Line([(0, 0), (1, 1), (1, 2)])</span>
+<span class="sd">            &gt;&gt;&gt; line.get_wkt()                 #doctest: +ELLIPSIS</span>
+<span class="sd">            &#39;LINESTRING(0.000000 0.000000, ..., 1.000000 2.000000)&#39;</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s">&quot;LINESTRING(</span><span class="si">%s</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
+               <span class="s">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;</span><span class="si">%f</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">coord</span> <span class="k">for</span> <span class="n">coord</span> <span class="ow">in</span> <span class="n">pnt</span><span class="o">.</span><span class="n">coords</span><span class="p">()])</span>
+               <span class="k">for</span> <span class="n">pnt</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__iter__</span><span class="p">()])</span>
+</div>
+<div class="viewcode-block" id="Line.from_wkt"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.from_wkt">[docs]</a>    <span class="k">def</span> <span class="nf">from_wkt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wkt</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Read a WKT string. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; line = Line()</span>
+<span class="sd">            &gt;&gt;&gt; line.from_wkt(&quot;LINESTRING(0 0,1 1,1 2)&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; line                           #doctest: +NORMALIZE_WHITESPACE</span>
+<span class="sd">            Line([Point(0.000000, 0.000000),</span>
+<span class="sd">                  Point(1.000000, 1.000000),</span>
+<span class="sd">                  Point(1.000000, 2.000000)])</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s">&#39;LINESTRING\((.*)\)&#39;</span><span class="p">,</span> <span class="n">wkt</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">coord</span> <span class="ow">in</span> <span class="n">match</span><span class="o">.</span><span class="n">groups</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;,&#39;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">tuple</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">coord</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">)]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+</div>
+<div class="viewcode-block" id="Line.get_wkb"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.get_wkb">[docs]</a>    <span class="k">def</span> <span class="nf">get_wkb</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a WKB buffer.</span>
+
+<span class="sd">        .. warning::</span>
+
+<span class="sd">            Not implemented yet.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="Line.buffer"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.buffer">[docs]</a>    <span class="k">def</span> <span class="nf">buffer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dist</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">dist_x</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">dist_y</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+               <span class="n">angle</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">round_</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">caps</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the buffer area around the line, using the</span>
+<span class="sd">        ``Vect_line_buffer2`` C function.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dist : numeric</span>
+<span class="sd">            The distance around the line.</span>
+<span class="sd">        dist_x: numeric, optional</span>
+<span class="sd">            The distance along x</span>
+<span class="sd">        dist_y: numeric, optional</span>
+<span class="sd">            The distance along y</span>
+<span class="sd">        angle: numeric, optional</span>
+<span class="sd">            The angle between 0x and major axis</span>
+<span class="sd">        round_: bool, optional</span>
+<span class="sd">            To make corners round</span>
+<span class="sd">        caps: bool, optional</span>
+<span class="sd">            To add caps at line ends</span>
+<span class="sd">        tol: float, optional</span>
+<span class="sd">            Fix the maximum distance between theoretical arc</span>
+<span class="sd">            and output segments</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        buffer : Area</span>
+<span class="sd">            The buffer area around the line.</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        ---------</span>
+
+<span class="sd">        ::</span>
+<span class="sd">            &gt;&gt;&gt; line = Line([(0, 0), (0, 2)])</span>
+<span class="sd">            &gt;&gt;&gt; area = line.buffer(10)</span>
+<span class="sd">            &gt;&gt;&gt; area.boundary                              #doctest: +ELLIPSIS</span>
+<span class="sd">            Line([Point(-10.000000, 0.000000),...Point(-10.000000, 0.000000)])</span>
+<span class="sd">            &gt;&gt;&gt; area.centroid</span>
+<span class="sd">            Point(0.000000, 0.000000)</span>
+<span class="sd">            &gt;&gt;&gt; area.isles</span>
+<span class="sd">            []</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">dist</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">dist_x</span> <span class="o">=</span> <span class="n">dist</span>
+            <span class="n">dist_y</span> <span class="o">=</span> <span class="n">dist</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">dist_x</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">dist_y</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;TypeError: buffer expected 1 arguments, got 0&#39;</span><span class="p">)</span>
+        <span class="n">p_bound</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">pointer</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">pointer</span><span class="p">(</span><span class="n">libvect</span><span class="o">.</span><span class="n">line_pnts</span><span class="p">()))</span>
+        <span class="n">pp_isle</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">pointer</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">pointer</span><span class="p">(</span>
+                                 <span class="n">ctypes</span><span class="o">.</span><span class="n">pointer</span><span class="p">(</span><span class="n">libvect</span><span class="o">.</span><span class="n">line_pnts</span><span class="p">())))</span>
+        <span class="n">n_isles</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">pointer</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">())</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_line_buffer2</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="p">,</span>
+                                  <span class="n">dist_x</span><span class="p">,</span> <span class="n">dist_y</span><span class="p">,</span> <span class="n">angle</span><span class="p">,</span>
+                                  <span class="nb">int</span><span class="p">(</span><span class="n">round_</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">caps</span><span class="p">),</span> <span class="n">tol</span><span class="p">,</span>
+                                  <span class="n">p_bound</span><span class="p">,</span> <span class="n">pp_isle</span><span class="p">,</span> <span class="n">n_isles</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Area</span><span class="p">(</span><span class="n">boundary</span><span class="o">=</span><span class="n">Line</span><span class="p">(</span><span class="n">c_points</span><span class="o">=</span><span class="n">p_bound</span><span class="o">.</span><span class="n">contents</span><span class="p">),</span>
+                    <span class="n">centroid</span><span class="o">=</span><span class="bp">self</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="n">isles</span><span class="o">=</span><span class="p">[</span><span class="n">Line</span><span class="p">(</span><span class="n">c_points</span><span class="o">=</span><span class="n">pp_isle</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">contents</span><span class="p">)</span>
+                           <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_isles</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">value</span><span class="p">)])</span>
+</div>
+<div class="viewcode-block" id="Line.reset"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Line.reset">[docs]</a>    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Reset line, using `Vect_reset_line` C function. ::</span>
+
+<span class="sd">            &gt;&gt;&gt; line = Line([(0, 0), (1, 1), (2, 0), (1, -1)])</span>
+<span class="sd">            &gt;&gt;&gt; len(line)</span>
+<span class="sd">            4</span>
+<span class="sd">            &gt;&gt;&gt; line.reset()</span>
+<span class="sd">            &gt;&gt;&gt; len(line)</span>
+<span class="sd">            0</span>
+<span class="sd">            &gt;&gt;&gt; line</span>
+<span class="sd">            Line([])</span>
+
+<span class="sd">        ..</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_reset_line</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="p">)</span>
+
+</div></div>
+<span class="k">class</span> <span class="nc">Node</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<div class="viewcode-block" id="Boundary"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Boundary">[docs]</a><span class="k">class</span> <span class="nc">Boundary</span><span class="p">(</span><span class="n">Line</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># geometry type</span>
+    <span class="n">gtype</span> <span class="o">=</span> <span class="n">libvect</span><span class="o">.</span><span class="n">GV_BOUNDARY</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lines</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">left</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+        <span class="n">v_id</span> <span class="o">=</span> <span class="n">kargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;v_id&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dir</span> <span class="o">=</span> <span class="n">libvect</span><span class="o">.</span><span class="n">GV_FORWARD</span> <span class="k">if</span> <span class="n">v_id</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">libvect</span><span class="o">.</span><span class="n">GV_BACKWARD</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Boundary</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c_left</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">pointer</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c_right</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">pointer</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">())</span>
+        <span class="c">#self.get_left_right()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">left_id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_left</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">right_id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_right</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&quot;Boundary(v_id=</span><span class="si">%r</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
+
+    <span class="k">def</span> <span class="nf">_get_centroid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">side</span><span class="p">,</span> <span class="n">idonly</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">side</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">v_id</span> <span class="o">=</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_area_centroid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="n">side</span><span class="p">)</span>
+            <span class="n">v_id</span> <span class="o">=</span> <span class="n">v_id</span> <span class="k">if</span> <span class="n">v_id</span> <span class="k">else</span> <span class="bp">None</span>
+            <span class="k">if</span> <span class="n">idonly</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">v_id</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">cntr</span> <span class="o">=</span> <span class="n">Centroid</span><span class="p">(</span><span class="n">v_id</span><span class="o">=</span><span class="n">v_id</span><span class="p">,</span> <span class="n">c_mapinfo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">cntr</span>
+
+    <span class="k">def</span> <span class="nf">get_left_centroid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idonly</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_centroid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left_id</span><span class="p">,</span> <span class="n">idonly</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_right_centroid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idonly</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_centroid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left_id</span><span class="p">,</span> <span class="n">idonly</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Boundary.get_left_right"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Boundary.get_left_right">[docs]</a>    <span class="k">def</span> <span class="nf">get_left_right</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return left and right value&quot;&quot;&quot;</span>
+
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_line_areas</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">c_left</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_right</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_left</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_right</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">value</span>
+</div>
+<div class="viewcode-block" id="Boundary.area"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Boundary.area">[docs]</a>    <span class="k">def</span> <span class="nf">area</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the area of the polygon.</span>
+<span class="sd">        ::</span>
+<span class="sd">            &gt;&gt;&gt; bound = Boundary(points=[(0, 0), (0, 2), (2, 2), (2, 0),</span>
+<span class="sd">            ...                          (0, 0)])</span>
+<span class="sd">            &gt;&gt;&gt; bound.area()</span>
+<span class="sd">            4.0</span>
+
+<span class="sd">        ..&quot;&quot;&quot;</span>
+        <span class="n">libgis</span><span class="o">.</span><span class="n">G_begin_polygon_area_calculations</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">libgis</span><span class="o">.</span><span class="n">G_area_of_polygon</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
+                                        <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+                                        <span class="bp">self</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">n_points</span><span class="p">)</span>
+
+</div></div>
+<span class="k">class</span> <span class="nc">Centroid</span><span class="p">(</span><span class="n">Point</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The Centroid class inherit from the Point class.</span>
+<span class="sd">    Centroid contains an attribute with the C Map_info struct, and attributes</span>
+<span class="sd">    with the id of the Area. ::</span>
+
+<span class="sd">        &gt;&gt;&gt; centroid = Centroid(x=0, y=10)</span>
+<span class="sd">        &gt;&gt;&gt; centroid</span>
+<span class="sd">        Centoid(0.000000, 10.000000)</span>
+<span class="sd">        &gt;&gt;&gt; from grass.pygrass.vector import VectorTopo</span>
+<span class="sd">        &gt;&gt;&gt; geo = VectorTopo(&#39;geology&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; geo.open()</span>
+<span class="sd">        &gt;&gt;&gt; centroid = Centroid(v_id=1, c_mapinfo=geo.c_mapinfo)</span>
+<span class="sd">        &gt;&gt;&gt; centroid</span>
+<span class="sd">        Centoid(893202.874416, 297339.312795)</span>
+
+<span class="sd">    ..</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># geometry type</span>
+    <span class="n">gtype</span> <span class="o">=</span> <span class="n">libvect</span><span class="o">.</span><span class="n">GV_CENTROID</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">area_id</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Centroid</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">area_id</span> <span class="o">=</span> <span class="n">area_id</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">area_id</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">area_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_area_id</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">area_id</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_centroid_id</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">area_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+        <span class="c">#self.c_pline = ctypes.pointer(libvect.P_line()) if topology else None</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&quot;Centoid(</span><span class="si">%s</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="s">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&#39;</span><span class="si">%f</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">co</span> <span class="k">for</span> <span class="n">co</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">coords</span><span class="p">()])</span>
+
+    <span class="k">def</span> <span class="nf">get_centroid_id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the centroid_id, using the c_mapinfo and an area_id</span>
+<span class="sd">        attributes of the class, and calling the Vect_get_area_centroid</span>
+<span class="sd">        C function, if no centroid_id were found return None&quot;&quot;&quot;</span>
+        <span class="n">centroid_id</span> <span class="o">=</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_area_centroid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span>
+                                                     <span class="bp">self</span><span class="o">.</span><span class="n">area_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">centroid_id</span> <span class="k">if</span> <span class="n">centroid_id</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">else</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">get_area_id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the area_id, using the c_mapinfo and an centroid_id</span>
+<span class="sd">        attributes of the class, and calling the Vect_get_centroid_area</span>
+<span class="sd">        C function, if no area_id were found return None&quot;&quot;&quot;</span>
+        <span class="n">area_id</span> <span class="o">=</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_centroid_area</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span>
+                                                 <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">area_id</span> <span class="k">if</span> <span class="n">area_id</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">else</span> <span class="bp">None</span>
+
+
+<div class="viewcode-block" id="Isle"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Isle">[docs]</a><span class="k">class</span> <span class="nc">Isle</span><span class="p">(</span><span class="n">Geo</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;An Isle is an area contained by another area.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Isle</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kargs</span><span class="p">)</span>
+        <span class="c">#self.area_id = area_id</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&quot;Isle(</span><span class="si">%d</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">boundaries</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ilist</span> <span class="o">=</span> <span class="n">Ilist</span><span class="p">()</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_isle_boundaries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                         <span class="n">ilist</span><span class="o">.</span><span class="n">c_ilist</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ilist</span>
+
+    <span class="k">def</span> <span class="nf">bbox</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bbox</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">bbox</span> <span class="o">=</span> <span class="n">bbox</span> <span class="k">if</span> <span class="n">bbox</span> <span class="k">else</span> <span class="n">Bbox</span><span class="p">()</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_isle_box</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">bbox</span><span class="o">.</span><span class="n">c_bbox</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">bbox</span>
+
+<div class="viewcode-block" id="Isle.points"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Isle.points">[docs]</a>    <span class="k">def</span> <span class="nf">points</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a Line object with the outer ring points&quot;&quot;&quot;</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">Line</span><span class="p">()</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_isle_points</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">line</span><span class="o">.</span><span class="n">c_points</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">line</span>
+</div>
+<div class="viewcode-block" id="Isle.points_geos"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Isle.points_geos">[docs]</a>    <span class="k">def</span> <span class="nf">points_geos</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a Line object with the outer ring points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_isle_points_geos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Isle.area_id"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Isle.area_id">[docs]</a>    <span class="k">def</span> <span class="nf">area_id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns area id for isle.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_isle_area</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Isle.alive"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Isle.alive">[docs]</a>    <span class="k">def</span> <span class="nf">alive</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check if isle is alive or dead (topology required)&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">libvect</span><span class="o">.</span><span class="n">Vect_isle_alive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="Isle.contain_pnt"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Isle.contain_pnt">[docs]</a>    <span class="k">def</span> <span class="nf">contain_pnt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pnt</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check if point is in area.&quot;&quot;&quot;</span>
+        <span class="n">bbox</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bbox</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">libvect</span><span class="o">.</span><span class="n">Vect_point_in_island</span><span class="p">(</span><span class="n">pnt</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">pnt</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+                                                 <span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                                 <span class="n">bbox</span><span class="o">.</span><span class="n">c_bbox</span><span class="o">.</span><span class="n">contents</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="Isle.area"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Isle.area">[docs]</a>    <span class="k">def</span> <span class="nf">area</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the area value of an Isle&quot;&quot;&quot;</span>
+        <span class="n">border</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">libgis</span><span class="o">.</span><span class="n">G_area_of_polygon</span><span class="p">(</span><span class="n">border</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
+                                        <span class="n">border</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+                                        <span class="n">border</span><span class="o">.</span><span class="n">c_points</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">n_points</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="Isle.perimeter"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Isle.perimeter">[docs]</a>    <span class="k">def</span> <span class="nf">perimeter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the perimeter value of an Isle.</span>
+<span class="sd">        ::</span>
+<span class="sd">            double Vect_area_perimeter()</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">border</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_area_perimeter</span><span class="p">(</span><span class="n">border</span><span class="o">.</span><span class="n">c_points</span><span class="p">)</span>
+
+</div></div>
+<div class="viewcode-block" id="Isles"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Isles">[docs]</a><span class="k">class</span> <span class="nc">Isles</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c_mapinfo</span><span class="p">,</span> <span class="n">area_id</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span> <span class="o">=</span> <span class="n">c_mapinfo</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">area_id</span> <span class="o">=</span> <span class="n">area_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_isles_id</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_isles</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">area_id</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_isles_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_isles_id</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_isles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_isles</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_area_num_isles</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">area_id</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&quot;Isles(</span><span class="si">%r</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">area_id</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isles</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_isles</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isles</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">get_isles_id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_area_isle</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">area_id</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__len__</span><span class="p">())]</span>
+
+    <span class="k">def</span> <span class="nf">get_isles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">Isle</span><span class="p">(</span><span class="n">v_id</span><span class="o">=</span><span class="n">isle_id</span><span class="p">,</span> <span class="n">c_mapinfo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">isle_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isles_id</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Isles.select_by_bbox"><a class="viewcode-back" href="../../../vector.html#pygrass.vector.geometry.Isles.select_by_bbox">[docs]</a>    <span class="k">def</span> <span class="nf">select_by_bbox</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bbox</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Vect_select_isles_by_box&quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+</div></div>
+<span class="k">class</span> <span class="nc">Area</span><span class="p">(</span><span class="n">Geo</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">     &#39;Vect_build_line_area&#39;,</span>
+<span class="sd">     &#39;Vect_find_area&#39;,</span>
+<span class="sd">     &#39;Vect_get_area_box&#39;,</span>
+<span class="sd">     &#39;Vect_get_area_points_geos&#39;,</span>
+<span class="sd">     &#39;Vect_get_centroid_area&#39;,</span>
+
+<span class="sd">     &#39;Vect_get_isle_area&#39;,</span>
+<span class="sd">     &#39;Vect_get_line_areas&#39;,</span>
+<span class="sd">     &#39;Vect_get_num_areas&#39;,</span>
+<span class="sd">     &#39;Vect_get_point_in_area&#39;,</span>
+<span class="sd">     &#39;Vect_isle_find_area&#39;,</span>
+<span class="sd">     &#39;Vect_point_in_area&#39;,</span>
+<span class="sd">     &#39;Vect_point_in_area_outer_ring&#39;,</span>
+
+<span class="sd">     &#39;Vect_read_area_geos&#39;,</span>
+<span class="sd">     &#39;Vect_remove_small_areas&#39;,</span>
+<span class="sd">     &#39;Vect_select_areas_by_box&#39;,</span>
+<span class="sd">     &#39;Vect_select_areas_by_polygon&#39;]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># geometry type</span>
+    <span class="n">gtype</span> <span class="o">=</span> <span class="n">libvect</span><span class="o">.</span><span class="n">GV_AREA</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">boundary</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">centroid</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">isles</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Area</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">boundary</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">centroid</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">isles</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">boundary</span> <span class="ow">and</span> <span class="n">centroid</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">boundary</span> <span class="o">=</span> <span class="n">boundary</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">centroid</span> <span class="o">=</span> <span class="n">centroid</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">isles</span> <span class="o">=</span> <span class="n">isles</span> <span class="k">if</span> <span class="n">isles</span> <span class="k">else</span> <span class="p">[]</span>
+
+        <span class="c"># set the attributes</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">attrs</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">cat</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">cat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cat</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&quot;Area(</span><span class="si">%d</span><span class="s">)&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="k">else</span> <span class="s">&quot;Area( )&quot;</span>
+
+    <span class="k">def</span> <span class="nf">init_from_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">area_id</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return an Area object&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">area_id</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;You need to give or set the area_id&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">area_id</span> <span class="k">if</span> <span class="n">area_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
+        <span class="c"># get boundary</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_points</span><span class="p">()</span>
+        <span class="c"># get isles</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_isles</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">get_points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a Line object with the outer ring&quot;&quot;&quot;</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">Line</span><span class="p">()</span> <span class="k">if</span> <span class="n">line</span> <span class="ow">is</span> <span class="bp">None</span> <span class="k">else</span> <span class="n">line</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_area_points</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">line</span><span class="o">.</span><span class="n">c_points</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">line</span>
+
+    <span class="k">def</span> <span class="nf">get_centroid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">centroid</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="n">centroid_id</span> <span class="o">=</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_area_centroid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">centroid</span><span class="p">:</span>
+            <span class="n">centroid</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">centroid_id</span>
+            <span class="n">centroid</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">centroid</span>
+        <span class="k">return</span> <span class="n">Centroid</span><span class="p">(</span><span class="n">v_id</span><span class="o">=</span><span class="n">centroid_id</span><span class="p">,</span> <span class="n">c_mapinfo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span>
+                        <span class="n">area_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">num_isles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_area_num_isles</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_isles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">isles</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Instantiate the boundary attribute reading area_id&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">isles</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">isles</span><span class="o">.</span><span class="n">area_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
+            <span class="k">return</span> <span class="n">isles</span>
+        <span class="k">return</span> <span class="n">Isles</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">area</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns area of area without areas of isles.</span>
+<span class="sd">        double Vect_get_area_area (const struct Map_info *Map, int area)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_area_area</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">alive</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check if area is alive or dead (topology required)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">libvect</span><span class="o">.</span><span class="n">Vect_area_alive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">bbox</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bbox</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Vect_get_area_box</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">bbox</span> <span class="o">=</span> <span class="n">bbox</span> <span class="k">if</span> <span class="n">bbox</span> <span class="k">else</span> <span class="n">Bbox</span><span class="p">()</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_area_box</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">bbox</span><span class="o">.</span><span class="n">c_bbox</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">bbox</span>
+
+    <span class="k">def</span> <span class="nf">buffer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dist</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">dist_x</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">dist_y</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+               <span class="n">angle</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">round_</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">caps</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the buffer area around the area, using the</span>
+<span class="sd">        ``Vect_area_buffer2`` C function.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dist : numeric</span>
+<span class="sd">            The distance around the line.</span>
+<span class="sd">        dist_x: numeric, optional</span>
+<span class="sd">            The distance along x</span>
+<span class="sd">        dist_y: numeric, optional</span>
+<span class="sd">            The distance along y</span>
+<span class="sd">        angle: numeric, optional</span>
+<span class="sd">            The angle between 0x and major axis</span>
+<span class="sd">        round_: bool, optional</span>
+<span class="sd">            To make corners round</span>
+<span class="sd">        caps: bool, optional</span>
+<span class="sd">            To add caps at line ends</span>
+<span class="sd">        tol: float, optional</span>
+<span class="sd">            Fix the maximum distance between theoretical arc</span>
+<span class="sd">            and output segments</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        buffer : Area</span>
+<span class="sd">            The buffer area around the line.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">dist</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">dist_x</span> <span class="o">=</span> <span class="n">dist</span>
+            <span class="n">dist_y</span> <span class="o">=</span> <span class="n">dist</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">dist_x</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">dist_y</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;TypeError: buffer expected 1 arguments, got 0&#39;</span><span class="p">)</span>
+        <span class="n">p_bound</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">pointer</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">pointer</span><span class="p">(</span><span class="n">libvect</span><span class="o">.</span><span class="n">line_pnts</span><span class="p">()))</span>
+        <span class="n">pp_isle</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">pointer</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">pointer</span><span class="p">(</span>
+                                 <span class="n">ctypes</span><span class="o">.</span><span class="n">pointer</span><span class="p">(</span><span class="n">libvect</span><span class="o">.</span><span class="n">line_pnts</span><span class="p">())))</span>
+        <span class="n">n_isles</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">pointer</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_int</span><span class="p">())</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_area_buffer2</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                  <span class="n">dist_x</span><span class="p">,</span> <span class="n">dist_y</span><span class="p">,</span> <span class="n">angle</span><span class="p">,</span>
+                                  <span class="nb">int</span><span class="p">(</span><span class="n">round_</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">caps</span><span class="p">),</span> <span class="n">tol</span><span class="p">,</span>
+                                  <span class="n">p_bound</span><span class="p">,</span> <span class="n">pp_isle</span><span class="p">,</span> <span class="n">n_isles</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Area</span><span class="p">(</span><span class="n">boundary</span><span class="o">=</span><span class="n">Line</span><span class="p">(</span><span class="n">c_points</span><span class="o">=</span><span class="n">p_bound</span><span class="o">.</span><span class="n">contents</span><span class="p">),</span>
+                    <span class="n">centroid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">centroid</span><span class="p">,</span>
+                    <span class="n">isles</span><span class="o">=</span><span class="p">[</span><span class="n">Line</span><span class="p">(</span><span class="n">c_points</span><span class="o">=</span><span class="n">pp_isle</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">contents</span><span class="p">)</span>
+                           <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_isles</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">value</span><span class="p">)])</span>
+
+    <span class="k">def</span> <span class="nf">boundaries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ilist</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates list of boundaries for given area.</span>
+
+<span class="sd">        int Vect_get_area_boundaries(const struct Map_info *Map,</span>
+<span class="sd">                                     int area, struct ilist *List)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ilst</span> <span class="o">=</span> <span class="n">Ilist</span><span class="p">()</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_area_boundaries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                         <span class="n">ilst</span><span class="o">.</span><span class="n">c_ilist</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ilist</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ilist</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">Boundary</span><span class="p">(</span><span class="n">v_id</span><span class="p">,</span> <span class="n">c_mapinfo</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">)</span> <span class="k">for</span> <span class="n">v_id</span> <span class="ow">in</span> <span class="n">ilst</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">cats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cats</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get area categories.</span>
+<span class="sd">        int Vect_get_area_cats (const struct Map_info *Map,</span>
+<span class="sd">                                int area, struct line_cats *Cats)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cats</span> <span class="o">=</span> <span class="n">cats</span> <span class="k">if</span> <span class="n">cats</span> <span class="k">else</span> <span class="n">Cats</span><span class="p">()</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_area_cats</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">cats</span><span class="o">.</span><span class="n">c_cats</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cats</span>
+
+    <span class="k">def</span> <span class="nf">get_first_cat</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Find FIRST category of given field and area.</span>
+
+<span class="sd">        int Vect_get_area_cat(const struct Map_info *Map, int area, int field)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">contain_pnt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pnt</span><span class="p">,</span> <span class="n">bbox</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check if point is in area.</span>
+<span class="sd">        int Vect_point_in_area(double x, double y,</span>
+<span class="sd">                               const struct Map_info *Map,</span>
+<span class="sd">                               int area, struct bound_box box)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">bbox</span> <span class="o">=</span> <span class="n">bbox</span> <span class="k">if</span> <span class="n">bbox</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">bbox</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">libvect</span><span class="o">.</span><span class="n">Vect_point_in_area</span><span class="p">(</span><span class="n">pnt</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">pnt</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+                                               <span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                               <span class="n">bbox</span><span class="o">.</span><span class="n">c_bbox</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">perimeter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calculate area perimeter.</span>
+
+<span class="sd">        double Vect_area_perimeter (const struct line_pnts *Points)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">border</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_points</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_area_perimeter</span><span class="p">(</span><span class="n">border</span><span class="o">.</span><span class="n">c_points</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">centroid</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">isles</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">boundary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_points</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">centroid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_centroid</span><span class="p">(</span><span class="n">centroid</span><span class="p">)</span>
+        <span class="c">#self.isles = self.get_isles(isles)</span>
+        <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_read_line</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">c_cats</span><span class="p">,</span>
+                               <span class="bp">self</span><span class="o">.</span><span class="n">centroid</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+
+<span class="c">#</span>
+<span class="c"># Define a dictionary to convert the feature type to name and or object</span>
+<span class="c">#</span>
+
+<span class="n">GV_TYPE</span> <span class="o">=</span> <span class="p">{</span><span class="n">libvect</span><span class="o">.</span><span class="n">GV_POINT</span><span class="p">:</span>    <span class="p">{</span><span class="s">&#39;label&#39;</span><span class="p">:</span> <span class="s">&#39;point&#39;</span><span class="p">,</span>    <span class="s">&#39;obj&#39;</span><span class="p">:</span> <span class="n">Point</span><span class="p">},</span>
+           <span class="n">libvect</span><span class="o">.</span><span class="n">GV_LINE</span><span class="p">:</span>     <span class="p">{</span><span class="s">&#39;label&#39;</span><span class="p">:</span> <span class="s">&#39;line&#39;</span><span class="p">,</span>     <span class="s">&#39;obj&#39;</span><span class="p">:</span> <span class="n">Line</span><span class="p">},</span>
+           <span class="n">libvect</span><span class="o">.</span><span class="n">GV_BOUNDARY</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;label&#39;</span><span class="p">:</span> <span class="s">&#39;boundary&#39;</span><span class="p">,</span> <span class="s">&#39;obj&#39;</span><span class="p">:</span> <span class="n">Boundary</span><span class="p">},</span>
+           <span class="n">libvect</span><span class="o">.</span><span class="n">GV_CENTROID</span><span class="p">:</span> <span class="p">{</span><span class="s">&#39;label&#39;</span><span class="p">:</span> <span class="s">&#39;centroid&#39;</span><span class="p">,</span> <span class="s">&#39;obj&#39;</span><span class="p">:</span> <span class="n">Centroid</span><span class="p">},</span>
+           <span class="n">libvect</span><span class="o">.</span><span class="n">GV_FACE</span><span class="p">:</span>     <span class="p">{</span><span class="s">&#39;label&#39;</span><span class="p">:</span> <span class="s">&#39;face&#39;</span><span class="p">,</span>     <span class="s">&#39;obj&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">},</span>
+           <span class="n">libvect</span><span class="o">.</span><span class="n">GV_KERNEL</span><span class="p">:</span>   <span class="p">{</span><span class="s">&#39;label&#39;</span><span class="p">:</span> <span class="s">&#39;kernel&#39;</span><span class="p">,</span>   <span class="s">&#39;obj&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">},</span>
+           <span class="n">libvect</span><span class="o">.</span><span class="n">GV_AREA</span><span class="p">:</span>     <span class="p">{</span><span class="s">&#39;label&#39;</span><span class="p">:</span> <span class="s">&#39;area&#39;</span><span class="p">,</span>     <span class="s">&#39;obj&#39;</span><span class="p">:</span> <span class="n">Area</span><span class="p">},</span>
+           <span class="n">libvect</span><span class="o">.</span><span class="n">GV_VOLUME</span><span class="p">:</span>   <span class="p">{</span><span class="s">&#39;label&#39;</span><span class="p">:</span> <span class="s">&#39;volume&#39;</span><span class="p">,</span>   <span class="s">&#39;obj&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">},</span> <span class="p">}</span>
+
+<span class="n">GEOOBJ</span> <span class="o">=</span> <span class="p">{</span><span class="s">&quot;areas&quot;</span><span class="p">:</span> <span class="n">Area</span><span class="p">,</span>
+          <span class="s">&quot;dblinks&quot;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+          <span class="s">&quot;faces&quot;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+          <span class="s">&quot;holes&quot;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+          <span class="s">&quot;islands&quot;</span><span class="p">:</span> <span class="n">Isle</span><span class="p">,</span>
+          <span class="s">&quot;kernels&quot;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+          <span class="s">&quot;line_points&quot;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+          <span class="s">&quot;points&quot;</span><span class="p">:</span> <span class="n">Point</span><span class="p">,</span>
+          <span class="s">&quot;lines&quot;</span><span class="p">:</span> <span class="n">Line</span><span class="p">,</span>
+          <span class="s">&quot;nodes&quot;</span><span class="p">:</span> <span class="n">Node</span><span class="p">,</span>
+          <span class="s">&quot;volumes&quot;</span><span class="p">:</span> <span class="bp">None</span><span class="p">}</span>
+
+
+<span class="k">def</span> <span class="nf">c_read_next_line</span><span class="p">(</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="n">c_points</span><span class="p">,</span> <span class="n">c_cats</span><span class="p">):</span>
+    <span class="n">v_id</span> <span class="o">=</span> <span class="n">c_mapinfo</span><span class="o">.</span><span class="n">contents</span><span class="o">.</span><span class="n">next_line</span>
+    <span class="n">v_id</span> <span class="o">=</span> <span class="n">v_id</span> <span class="k">if</span> <span class="n">v_id</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">else</span> <span class="bp">None</span>
+    <span class="n">ftype</span> <span class="o">=</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_read_next_line</span><span class="p">(</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="n">c_points</span><span class="p">,</span> <span class="n">c_cats</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ftype</span> <span class="o">==</span> <span class="o">-</span><span class="mi">2</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">StopIteration</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">ftype</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span>
+    <span class="k">return</span> <span class="n">ftype</span><span class="p">,</span> <span class="n">v_id</span><span class="p">,</span> <span class="n">c_points</span><span class="p">,</span> <span class="n">c_cats</span>
+
+
+<span class="k">def</span> <span class="nf">read_next_line</span><span class="p">(</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">writable</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                   <span class="n">c_points</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">c_cats</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the next geometry feature of a vector map.&quot;&quot;&quot;</span>
+    <span class="n">c_points</span> <span class="o">=</span> <span class="n">c_points</span> <span class="k">if</span> <span class="n">c_points</span> <span class="k">else</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">pointer</span><span class="p">(</span><span class="n">libvect</span><span class="o">.</span><span class="n">line_pnts</span><span class="p">())</span>
+    <span class="n">c_cats</span> <span class="o">=</span> <span class="n">c_cats</span> <span class="k">if</span> <span class="n">c_cats</span> <span class="k">else</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">pointer</span><span class="p">(</span><span class="n">libvect</span><span class="o">.</span><span class="n">line_cats</span><span class="p">())</span>
+    <span class="n">ftype</span><span class="p">,</span> <span class="n">v_id</span><span class="p">,</span> <span class="n">c_points</span><span class="p">,</span> <span class="n">c_cats</span> <span class="o">=</span> <span class="n">c_read_next_line</span><span class="p">(</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="n">c_points</span><span class="p">,</span>
+                                                     <span class="n">c_cats</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">GV_TYPE</span><span class="p">[</span><span class="n">ftype</span><span class="p">][</span><span class="s">&#39;obj&#39;</span><span class="p">](</span><span class="n">v_id</span><span class="o">=</span><span class="n">v_id</span><span class="p">,</span> <span class="n">c_mapinfo</span><span class="o">=</span><span class="n">c_mapinfo</span><span class="p">,</span>
+                                 <span class="n">c_points</span><span class="o">=</span><span class="n">c_points</span><span class="p">,</span> <span class="n">c_cats</span><span class="o">=</span><span class="n">c_cats</span><span class="p">,</span>
+                                 <span class="n">table</span><span class="o">=</span><span class="n">table</span><span class="p">,</span> <span class="n">writable</span><span class="o">=</span><span class="n">writable</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">c_read_line</span><span class="p">(</span><span class="n">feature_id</span><span class="p">,</span> <span class="n">c_mapinfo</span><span class="p">,</span> <span class="n">c_points</span><span class="p">,</span> <span class="n">c_cats</span><span class="p">):</span>
+    <span class="n">nmax</span> <span class="o">=</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_get_num_lines</span><span class="p">(</span><span class="n">c_mapinfo</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">feature_id</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c"># Handle negative indices</span>
+        <span class="n">feature_id</span> <span class="o">+=</span> <span class="n">nmax</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">if</span> <span class="n">feature_id</span> <span class="o">&gt;</span> <span class="n">nmax</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s">&#39;Index out of range&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">feature_id</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">ftype</span> <span class="o">=</span> <span class="n">libvect</span><span class="o">.</span><span class="n">Vect_read_line</span><span class="p">(</span><span class="n">c_mapinfo</span><span class="p">,</span> <span class="n">c_points</span><span class="p">,</span> <span class="n">c_cats</span><span class="p">,</span> <span class="n">feature_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ftype</span><span class="p">,</span> <span class="n">c_points</span><span class="p">,</span> <span class="n">c_cats</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;The index must be &gt;0, </span><span class="si">%r</span><span class="s"> given.&#39;</span> <span class="o">%</span> <span class="n">feature_id</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">read_line</span><span class="p">(</span><span class="n">feature_id</span><span class="p">,</span> <span class="n">c_mapinfo</span><span class="p">,</span> <span class="n">table</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">writable</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+              <span class="n">c_points</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">c_cats</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return a geometry object given the feature id and the c_mapinfo.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">c_points</span> <span class="o">=</span> <span class="n">c_points</span> <span class="k">if</span> <span class="n">c_points</span> <span class="k">else</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">pointer</span><span class="p">(</span><span class="n">libvect</span><span class="o">.</span><span class="n">line_pnts</span><span class="p">())</span>
+    <span class="n">c_cats</span> <span class="o">=</span> <span class="n">c_cats</span> <span class="k">if</span> <span class="n">c_cats</span> <span class="k">else</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">pointer</span><span class="p">(</span><span class="n">libvect</span><span class="o">.</span><span class="n">line_cats</span><span class="p">())</span>
+    <span class="n">ftype</span><span class="p">,</span> <span class="n">c_points</span><span class="p">,</span> <span class="n">c_cats</span> <span class="o">=</span> <span class="n">c_read_line</span><span class="p">(</span><span class="n">feature_id</span><span class="p">,</span> <span class="n">c_mapinfo</span><span class="p">,</span>
+                                          <span class="n">c_points</span><span class="p">,</span> <span class="n">c_cats</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">GV_TYPE</span><span class="p">[</span><span class="n">ftype</span><span class="p">][</span><span class="s">&#39;obj&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">GV_TYPE</span><span class="p">[</span><span class="n">ftype</span><span class="p">][</span><span class="s">&#39;obj&#39;</span><span class="p">](</span><span class="n">v_id</span><span class="o">=</span><span class="n">feature_id</span><span class="p">,</span> <span class="n">c_mapinfo</span><span class="o">=</span><span class="n">c_mapinfo</span><span class="p">,</span>
+                                     <span class="n">c_points</span><span class="o">=</span><span class="n">c_points</span><span class="p">,</span> <span class="n">c_cats</span><span class="o">=</span><span class="n">c_cats</span><span class="p">,</span>
+                                     <span class="n">table</span><span class="o">=</span><span class="n">table</span><span class="p">,</span> <span class="n">writable</span><span class="o">=</span><span class="n">writable</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="../../../index.html">PyGrass beta documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../vector.html" >pygrass.vector</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012-2014, Pietro Zambelli.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

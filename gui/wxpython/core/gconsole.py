@@ -466,7 +466,7 @@ class GConsole(wx.EvtHandler):
                 # other GRASS commands (r|v|g|...)
                 try:
                     task = GUI(show=None).ParseCommand(command)
-                except GException, e:
+                except GException as e:
                     GError(parent=self._guiparent,
                            message=unicode(e),
                            showTraceback=False)
@@ -494,7 +494,7 @@ class GConsole(wx.EvtHandler):
                     # no arguments given
                     try:
                         GUI(parent=self._guiparent, giface=self._giface).ParseCommand(command)
-                    except GException, e:
+                    except GException as e:
                         print >> sys.stderr, e
                     return
 
@@ -643,7 +643,7 @@ class GConsole(wx.EvtHandler):
         # find which maps were created
         try:
             task = GUI(show=None).ParseCommand(event.cmd)
-        except GException, e:
+        except GException as e:
             print >> sys.stderr, e
             task = None
             return
@@ -654,10 +654,19 @@ class GConsole(wx.EvtHandler):
             if prompt in ('raster', 'vector', '3d-raster') and p.get('value', None):
                 if p.get('age', 'old') == 'new' or \
                         name in ('r.colors', 'r3.colors', 'v.colors', 'v.proj', 'r.proj'):
-                    lname = p.get('value')
-                    if '@' not in lname:
-                        lname += '@' + grass.gisenv()['MAPSET']
-                    self.mapCreated.emit(name=lname, ltype=prompt)
+                    # if multiple maps (e.g. r.series.interp), we need add each
+                    if p.get('multiple', False):
+                        lnames = p.get('value').split(',')
+                        # in case multiple input (old) maps in r.colors
+                        # we don't want to rerender it multiple times! just once
+                        if p.get('age', 'old') == 'old':
+                            lnames = lnames[0:1]
+                    else:
+                        lnames = [p.get('value')]
+                    for lname in lnames:
+                        if '@' not in lname:
+                            lname += '@' + grass.gisenv()['MAPSET']
+                        self.mapCreated.emit(name=lname, ltype=prompt)
         if name == 'r.mask':
             self.updateMap.emit()
         
@@ -678,7 +687,7 @@ class GConsole(wx.EvtHandler):
                                     env['MAPSET'],
                                     '.bash_history')
             fileHistory = codecs.open(filePath, encoding='utf-8', mode='a')
-        except IOError, e:
+        except IOError as e:
             GError(_("Unable to write file '%(filePath)s'.\n\nDetails: %(error)s") % 
                     {'filePath': filePath, 'error': e},
                    parent=self._guiparent)

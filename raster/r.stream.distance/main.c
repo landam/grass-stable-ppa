@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->label = _("Calculates distance to and elevation above streams and outlets.");
+    module->label = _("Calculates distance to and elevation above streams and outlet.");
     module->description =
       _("The module can work in stream mode where target are streams and "
         "outlets mode where targets are outlets.");
@@ -57,11 +57,12 @@ int main(int argc, char *argv[])
 
     in_stm_opt = G_define_standard_option(G_OPT_R_INPUT);
     in_stm_opt->key = "stream_rast";
-    in_stm_opt->description = _("Name for input raster map with stream network");
+    in_stm_opt->description = _("Name of input raster map with stream network "
+                                "(in outlet mode is the name for outlet raster map)");
 
     in_dir_opt = G_define_standard_option(G_OPT_R_INPUT);
     in_dir_opt->key = "direction";
-    in_dir_opt->description = _("Name for input raster map with flow direction");
+    in_dir_opt->description = _("Name of input raster map with flow direction");
 
     in_elev_opt = G_define_standard_option(G_OPT_R_ELEV);
     in_elev_opt->required = NO;
@@ -118,7 +119,7 @@ int main(int argc, char *argv[])
 	exit(EXIT_FAILURE);
 
     if (!out_diff_opt->answer && !out_dist_opt->answer)
-	G_fatal_error(_("You must select at least one output raster maps"));
+	G_fatal_error(_("You must select at least one output raster map"));
     if (out_diff_opt->answer && !in_elev_opt->answer)
 	G_fatal_error(_("Output elevation difference raster map requires "
                         "input elevation raster map to be specified"));

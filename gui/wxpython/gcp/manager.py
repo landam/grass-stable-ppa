@@ -65,7 +65,7 @@ tgt_map = { 'raster' : '',
 maptype = 'raster'
 
 def getSmallUpArrowImage():
-    stream = open(os.path.join(globalvar.ETCIMGDIR, 'small_up_arrow.png'), 'rb')
+    stream = open(os.path.join(globalvar.IMGDIR, 'small_up_arrow.png'), 'rb')
     try:
         img = wx.ImageFromStream(stream)
     finally:
@@ -73,7 +73,7 @@ def getSmallUpArrowImage():
     return img
 
 def getSmallDnArrowImage():
-    stream = open(os.path.join(globalvar.ETCIMGDIR, 'small_down_arrow.png'), 'rb')
+    stream = open(os.path.join(globalvar.IMGDIR, 'small_down_arrow.png'), 'rb')
     try:
         img = wx.ImageFromStream(stream)
     finally:
@@ -1238,7 +1238,7 @@ class GCP(MapFrame, ColumnSorterMixin):
                 coord3 = self.list.GetItem(index, 4).GetText()
                 f.write(coord0 + ' ' + coord1 + '     ' + coord2 + ' ' + coord3 + '     ' + check + '\n')
 
-        except IOError, err:
+        except IOError as err:
             GError(parent = self,
                    message="%s <%s>. %s%s" % (_("Writing POINTS file failed"),
                                               self.file['points'], os.linesep, err))
@@ -1295,7 +1295,7 @@ class GCP(MapFrame, ColumnSorterMixin):
                     self.list.CheckItem(index, check)
                 GCPcnt += 1
 
-        except IOError, err:
+        except IOError as err:
             GError(parent = self,
                    message = "%s <%s>. %s%s" % (_("Reading POINTS file failed"),
                                                 self.file['points'], os.linesep, err))
@@ -1380,10 +1380,10 @@ class GCP(MapFrame, ColumnSorterMixin):
             if msg:
                 GWarning(parent = self,
                          message=_('Insufficient points defined and active (checked) '
-                                   'for selected rectification method.\n'
+                                   'for selected rectification method (order: %d).\n'
                                    '3+ points needed for 1st order,\n'
                                    '6+ points for 2nd order, and\n'
-                                   '10+ points for 3rd order.'))
+                                   '10+ points for 3rd order.') % self.gr_order)
                 return False
         else:
             return True

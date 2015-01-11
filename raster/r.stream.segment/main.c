@@ -61,11 +61,11 @@ int main(int argc, char *argv[])
 
     in_stm_opt = G_define_standard_option(G_OPT_R_INPUT);
     in_stm_opt->key = "stream_rast";
-    in_stm_opt->description = _("Name for input raster map with stream network");
+    in_stm_opt->description = _("Name of input raster map with stream network");
 
     in_dir_opt = G_define_standard_option(G_OPT_R_INPUT);
     in_dir_opt->key = "direction";
-    in_dir_opt->description = _("Name for input raster map with flow direction");
+    in_dir_opt->description = _("Name of input raster map with flow direction");
 
     in_elev_opt = G_define_standard_option(G_OPT_R_ELEV);
 
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
     out_sector_opt = G_define_standard_option(G_OPT_V_OUTPUT);
     out_sector_opt->key = "sectors";
     out_sector_opt->description =
-	_("Name for output vector map to write segment attributes");
+	_("Name for output vector map to write sector attributes");
 
     opt_length = G_define_option();
     opt_length->key = "length";

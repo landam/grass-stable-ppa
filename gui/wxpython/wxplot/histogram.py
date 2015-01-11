@@ -20,7 +20,7 @@ import sys
 import wx
 try:
     import wx.lib.plot as plot
-except ImportError, e:
+except ImportError as e:
     print >> sys.stderr, e
 
 import grass.script as grass
@@ -39,7 +39,9 @@ class HistogramPlotFrame(BasePlotFrame):
         BasePlotFrame.__init__(self, parent, size = size, **kwargs)
         
         self.toolbar = HistogramPlotToolbar(parent = self)
-        self.SetToolBar(self.toolbar)
+        # workaround for http://trac.wxwidgets.org/ticket/13888
+        if sys.platform != 'darwin':
+            self.SetToolBar(self.toolbar)
         self.SetTitle(_("GRASS GIS Histogramming Tool"))
         
         #
@@ -182,7 +184,7 @@ class HistogramPlotFrame(BasePlotFrame):
                 datalist.append((cellval,histval))
 
             return datalist
-        except GException, e:
+        except GException as e:
             GError(parent = self,
                    message = e.value)
             return None
@@ -243,7 +245,11 @@ class HistogramPlotToolbar(BaseToolbar):
     """ 
     def __init__(self, parent):
         BaseToolbar.__init__(self, parent)
-        
+
+        # workaround for http://trac.wxwidgets.org/ticket/13888
+        if sys.platform == 'darwin':
+            parent.SetToolBar(self)
+
         self.InitToolbar(self._toolbarData())
         
         # realize the toolbar

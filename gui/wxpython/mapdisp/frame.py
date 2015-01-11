@@ -30,11 +30,6 @@ from core import globalvar
 import wx
 import wx.aui
 
-if os.path.join(globalvar.ETCWXDIR, "icons") not in sys.path:
-    sys.path.append(os.path.join(globalvar.ETCWXDIR, "icons"))
-if os.path.join(globalvar.ETCDIR, "python") not in sys.path:
-    sys.path.append(os.path.join(globalvar.ETCDIR, "python"))
-
 from core               import globalvar
 from core.render        import Map
 from vdigit.toolbars    import VDigitToolbar
@@ -1076,16 +1071,19 @@ class MapFrame(SingleMapFrame):
                     # replace map
                     for i, legendParam in enumerate(self.legend.cmd[1:]):
                         idx = i + 1
-                        param, val = legendParam.split('=')
-                        if param == 'map':
-                            self.legend.cmd[idx] = 'map={rast}'.format(rast=layer.maplayer.name)
+                        param_val = legendParam.split('=')
+                        if len(param_val) != 2:
+                            continue
+                        param, val = param_val
+                        if param == 'rast':
+                            self.legend.cmd[idx] = 'rast={rast}'.format(rast=layer.maplayer.name)
                             isMap = True
                         elif param in ('use', 'range'):
                             # clear range or use to avoid problems
                             del self.legend.cmd[idx]
 
                     if not isMap:  # for the first time
-                        self.legend.cmd.append('map=%s' % layer.maplayer.name)
+                        self.legend.cmd.append('rast=%s' % layer.maplayer.name)
                     break
 
         if not showDialog and self.legend.CmdIsValid():
@@ -1236,6 +1234,10 @@ class MapFrame(SingleMapFrame):
         """
         self.MapWindow.SetRegion(zoomOnly=False)
  
+    def OnSetExtentToWind(self, event):
+        """!Set compulational region extent interactively"""
+        self.MapWindow.SetModeDrawRegion()
+
     def OnSaveDisplayRegion(self, event):
         """!Save display extents to named region file.
         """
@@ -1254,8 +1256,9 @@ class MapFrame(SingleMapFrame):
         for label, handler in ((_('Zoom to default region'), self.OnZoomToDefault),
                                (_('Zoom to saved region'), self.OnZoomToSaved),
                                (None, None),
-                               (_('Set computational region from display extent'), self.OnSetDisplayToWind),
-                               (_('Set computational region from named region'), self.OnSetWindToRegion),
+                               (_('Set computational region extent from display'), self.OnSetDisplayToWind),
+                               (_('Set computational region extent interactively'), self.OnSetExtentToWind),
+                               (_('Set computational region from named region'),   self.OnSetWindToRegion),
                                (None, None),
                                (_('Save display geometry to named region'), self.OnSaveDisplayRegion),
                                (_('Save computational region to named region'), self.OnSaveWindRegion)):

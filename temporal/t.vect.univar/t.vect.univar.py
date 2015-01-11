@@ -32,10 +32,12 @@
 #%end
 
 #%option G_OPT_T_WHERE
+#% guisection: Selection
 #% key: twhere
 #%end
 
 #%option G_OPT_DB_WHERE
+#% guisection: Selection
 #%end
 
 #%option G_OPT_V_TYPE
@@ -44,12 +46,9 @@
 #% answer: point
 #%end
 
-#%option
-#% key: separator
-#% type: string
-#% description: Separator character between the output columns
-#% required: no
-#% answer: |
+#%option G_OPT_F_SEP
+#% description: Field separator character between the output columns
+#% guisection: Formatting
 #%end
 
 #%flag
@@ -59,7 +58,8 @@
 
 #%flag
 #% key: h
-#% description: Print column names
+#% description: Print the column names as first row
+#% guisection: Formatting
 #%end
 
 import grass.script as grass
@@ -79,7 +79,7 @@ def main():
     where = options["where"]
     extended = flags["e"]
     header = flags["h"]
-    separator = options["separator"]
+    separator = grass.separator(options["separator"])
 
     # Make sure the temporal database exists
     tgis.init()

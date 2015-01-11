@@ -22,11 +22,6 @@ import os
 import sys
 import getopt
 
-if __name__ == "__main__":
-    gui_wx_path = os.path.join(os.getenv('GISBASE'), 'etc', 'gui', 'wxpython')
-    if gui_wx_path not in sys.path:
-        sys.path.append(gui_wx_path)
-
 from core import globalvar
 from core.utils import _
 
@@ -60,7 +55,7 @@ class GMApp(wx.App):
             wx.InitAllImageHandlers()
         
         # create splash screen
-        introImagePath = os.path.join(globalvar.ETCIMGDIR, "silesia_splash.png")
+        introImagePath = os.path.join(globalvar.IMGDIR, "silesia_splash.png")
         introImage     = wx.Image(introImagePath, wx.BITMAP_TYPE_PNG)
         introBmp       = introImage.ConvertToBitmap()
         if SC and sys.platform != 'darwin':
@@ -123,10 +118,10 @@ def main(argv = None):
         try:
             opts, args = getopt.getopt(argv[1:], "hw:",
                                        ["help", "workspace"])
-        except getopt.error, msg:
+        except getopt.error as msg:
             raise Usage(msg)
     
-    except Usage, err:
+    except Usage as err:
         print >> sys.stderr, err.msg
         print >> sys.stderr, "for help use --help"
         printHelp()

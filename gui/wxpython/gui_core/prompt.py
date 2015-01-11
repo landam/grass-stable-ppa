@@ -177,7 +177,8 @@ class GPromptSTC(GPrompt, wx.stc.StyledTextCtrl):
         self.Bind(wx.EVT_KEY_DOWN, self.OnKeyPressed)
         self.Bind(wx.stc.EVT_STC_AUTOCOMP_SELECTION, self.OnItemSelected)
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemChanged)
-        self.Bind(wx.EVT_KILL_FOCUS, self.OnKillFocus)
+        if sys.platform != 'darwin':  # unstable on Mac with wxPython 3
+            self.Bind(wx.EVT_KILL_FOCUS, self.OnKillFocus)
 
         # signal which requests showing of a notification
         self.showNotification = Signal('GPromptSTC.showNotification')
@@ -415,7 +416,8 @@ class GPromptSTC(GPrompt, wx.stc.StyledTextCtrl):
                 self.cmdindex = len(self.cmdbuffer) - 1
 
             try:
-                txt = self.cmdbuffer[self.cmdindex]
+                # without strip causes problem on windows
+                txt = self.cmdbuffer[self.cmdindex].strip()
             except KeyError:
                 txt = ''
 
@@ -451,7 +453,7 @@ class GPromptSTC(GPrompt, wx.stc.StyledTextCtrl):
                             if command.find(self.toComplete['cmd']) == 0:
                                 dotNumber = list(self.toComplete['cmd']).count('.') 
                                 self.autoCompList.append(command.split('.',dotNumber)[-1])
-                        except UnicodeDecodeError, e: # TODO: fix it
+                        except UnicodeDecodeError as e: # TODO: fix it
                             sys.stderr.write(DecodeString(command) + ": " + unicode(e))
                             
             except (KeyError, TypeError):

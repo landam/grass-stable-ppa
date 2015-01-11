@@ -1,0 +1,802 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Raster &mdash; PyGrass beta documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     'beta',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="PyGrass beta documentation" href="index.html" />
+    <link rel="next" title="Vector" href="vector.html" />
+    <link rel="prev" title="Introduction" href="intro.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="vector.html" title="Vector"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="Introduction"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">PyGrass beta documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="raster">
+<span id="raster-label"></span><h1>Raster<a class="headerlink" href="#raster" title="Permalink to this headline">¶</a></h1>
+<p>PyGRASS uses 4 different Raster classes, that respect the 4 different approaches
+of GRASS-C API.
+The read access is row wise for <a class="reference internal" href="#rasterrow-label"><em>RastRow</em></a> and
+<a class="reference internal" href="#rasterrowio-label"><em>RasterRowIO</em></a> and additionally
+cached in the RowIO class. Both classes write sequentially.
+RowIO is row cached, <a class="reference internal" href="#rastersegment-label"><em>RastSegment</em></a> and <a class="reference internal" href="#rasternumpy-label"><em>RasterNumpy</em></a>
+are tile cached for reading and writing therefore a randomly access is possible.
+Hence RasterRow and RasterRowIO should be used in case for fast (cached)
+row read access and RasterRow for fast sequential writing.
+Segment and Numpy should be used for random access, but Numpy only for files
+not larger than 2GB.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="38%" />
+<col width="33%" />
+<col width="12%" />
+<col width="17%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Class Name</th>
+<th class="head">C library</th>
+<th class="head">Read</th>
+<th class="head">Write</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><a class="reference internal" href="#rasterrow-label"><em>RastRow</em></a></td>
+<td><a class="reference external" href="http://grass.osgeo.org/programming7/rasterlib.html">Raster library</a></td>
+<td>randomly</td>
+<td>sequentially</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#rasterrowio-label"><em>RasterRowIO</em></a></td>
+<td><a class="reference external" href="http://grass.osgeo.org/programming7/rowiolib.html">RowIO library</a></td>
+<td>cached</td>
+<td>no</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="#rastersegment-label"><em>RastSegment</em></a></td>
+<td><a class="reference external" href="http://grass.osgeo.org/programming7/segmentlib.html">Segmentation library</a></td>
+<td>cached</td>
+<td>randomly</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="#rasternumpy-label"><em>RasterNumpy</em></a></td>
+<td><a class="reference external" href="http://docs.scipy.org/doc/numpy/reference/generated/numpy.memmap.html">numpy.memmap</a></td>
+<td>cached</td>
+<td>randomly</td>
+</tr>
+</tbody>
+</table>
+<p>All these classes share common methods and attributes, necessary to address
+common tasks as rename, remove, open, close, exist, is_open.
+In the next examples we instantiate a RasterRow object.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pygrass</span> <span class="kn">import</span> <span class="n">raster</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev</span> <span class="o">=</span> <span class="n">raster</span><span class="o">.</span><span class="n">RasterRow</span><span class="p">(</span><span class="s">&#39;elevation&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev</span><span class="o">.</span><span class="n">name</span>
+<span class="go">&#39;elevation&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span><span class="p">(</span><span class="n">elev</span><span class="p">)</span>
+<span class="go">elevation@PERMANENT</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev</span><span class="o">.</span><span class="n">exist</span><span class="p">()</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev</span><span class="o">.</span><span class="n">is_open</span><span class="p">()</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span> <span class="o">=</span> <span class="n">raster</span><span class="o">.</span><span class="n">RasterRow</span><span class="p">(</span><span class="s">&#39;new&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span><span class="o">.</span><span class="n">exist</span><span class="p">()</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span><span class="o">.</span><span class="n">is_open</span><span class="p">()</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+<p>We can rename the map:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># setting the attribute</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s">&#39;new_map&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span><span class="p">(</span><span class="n">new</span><span class="p">)</span>
+<span class="go">new_map</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># or using the rename methods</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s">&#39;new&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span><span class="p">(</span><span class="n">new</span><span class="p">)</span>
+<span class="go">new</span>
+</pre></div>
+</div>
+<div class="section" id="categories">
+<span id="rastercategory-label"></span><h2>Categories<a class="headerlink" href="#categories" title="Permalink to this headline">¶</a></h2>
+<p>All the raster classes support raster categories and share commons methods
+to modify the raster category.
+It is possible to check if the map has or not the categories with the
+<tt class="docutils literal"><span class="pre">has_cats</span></tt> method.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">elev</span><span class="o">.</span><span class="n">has_cats</span><span class="p">()</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+<p>Opening a map that has category, for example the &#8220;landcove_1m&#8221; raster map
+from the North Carolina mapset. The <tt class="docutils literal"><span class="pre">has_cats</span></tt> method return True.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">land</span> <span class="o">=</span> <span class="n">raster</span><span class="o">.</span><span class="n">RasterRow</span><span class="p">(</span><span class="s">&#39;landcover_1m&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">land</span><span class="o">.</span><span class="n">has_cats</span><span class="p">()</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<p>Get and set the categories title, with:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">land</span><span class="o">.</span><span class="n">cats_title</span>
+<span class="go">&#39;Rural area: Landcover&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">land</span><span class="o">.</span><span class="n">cats_title</span> <span class="o">=</span> <span class="s">&#39;Rural area: Landcover2&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">land</span><span class="o">.</span><span class="n">cats_title</span>
+<span class="go">&#39;Rural area: Landcover2&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">land</span><span class="o">.</span><span class="n">cats_title</span> <span class="o">=</span> <span class="s">&#39;Rural area: Landcover&#39;</span>
+</pre></div>
+</div>
+<p>Get the number of categories of the map with:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">land</span><span class="o">.</span><span class="n">num_cats</span><span class="p">()</span>
+<span class="go">11</span>
+</pre></div>
+</div>
+<p>See all the categories with:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">land</span><span class="o">.</span><span class="n">cats</span>
+<span class="go">[(&#39;pond&#39;, 1, None),</span>
+<span class="go"> (&#39;forest&#39;, 2, None),</span>
+<span class="go"> (&#39;developed&#39;, 3, None),</span>
+<span class="go"> (&#39;bare&#39;, 4, None),</span>
+<span class="go"> (&#39;paved road&#39;, 5, None),</span>
+<span class="go"> (&#39;dirt road&#39;, 6, None),</span>
+<span class="go"> (&#39;vineyard&#39;, 7, None),</span>
+<span class="go"> (&#39;agriculture&#39;, 8, None),</span>
+<span class="go"> (&#39;wetland&#39;, 9, None),</span>
+<span class="go"> (&#39;bare ground path&#39;, 10, None),</span>
+<span class="go"> (&#39;grass&#39;, 11, None)]</span>
+</pre></div>
+</div>
+<p>Access a single category, using Rast_get_ith_cat(), with:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">land</span><span class="o">.</span><span class="n">cats</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="go">(&#39;pond&#39;, 1, None)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">land</span><span class="o">.</span><span class="n">cats</span><span class="p">[</span><span class="s">&#39;pond&#39;</span><span class="p">]</span>
+<span class="go">(&#39;pond&#39;, 1, None)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">land</span><span class="o">.</span><span class="n">get_cat</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="go">(&#39;pond&#39;, 1, None)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">land</span><span class="o">.</span><span class="n">get_cat</span><span class="p">(</span><span class="s">&#39;pond&#39;</span><span class="p">)</span>
+<span class="go">(&#39;pond&#39;, 1, None)</span>
+</pre></div>
+</div>
+<p>Add new or change existing categories:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">land</span><span class="o">.</span><span class="n">set_cat</span><span class="p">(</span><span class="s">&#39;label&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">land</span><span class="o">.</span><span class="n">get_cat</span><span class="p">(</span><span class="s">&#39;label&#39;</span><span class="p">)</span>
+<span class="go">(&#39;label&#39;, 1, None)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">land</span><span class="o">.</span><span class="n">set_cat</span><span class="p">(</span><span class="s">&#39;pond&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Sort categories, with:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">land</span><span class="o">.</span><span class="n">sort_cats</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Copy categories from another raster map with:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">land</span><span class="o">.</span><span class="n">copy_cats</span><span class="p">(</span><span class="n">elev</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Read and Write:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">land</span><span class="o">.</span><span class="n">read_cats</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c">#land.write_cats()</span>
+</pre></div>
+</div>
+<p>Get a Category object or set from a Category object:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">cats</span> <span class="o">=</span> <span class="n">land</span><span class="o">.</span><span class="n">get_cats</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">land</span><span class="o">.</span><span class="n">set_cats</span><span class="p">(</span><span class="n">cats</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Export and import from a file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">land</span><span class="o">.</span><span class="n">write_cats_rules</span><span class="p">(</span><span class="s">&#39;land_rules.csv&#39;</span><span class="p">,</span> <span class="s">&#39;;&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">land</span><span class="o">.</span><span class="n">read_cats_rules</span><span class="p">(</span><span class="s">&#39;land_rules.csv&#39;</span><span class="p">,</span> <span class="s">&#39;;&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="rastrow">
+<span id="rasterrow-label"></span><h2>RastRow<a class="headerlink" href="#rastrow" title="Permalink to this headline">¶</a></h2>
+<p>PyGrass allow user to open the maps, in read and write mode,
+row by row using the <a class="reference external" href="http://grass.osgeo.org/programming7/rasterlib.html">Raster library</a>, there is not support to read and write
+to the same map at the same time, for this functionality, please see the
+<a class="reference internal" href="#rastersegment-label"><em>RastSegment</em></a> and <a class="reference internal" href="#rasternumpy-label"><em>RasterNumpy</em></a> classes.
+The RasterRow class allow to read in a randomly order the row from a map, but
+it is only possible to write the map using only a sequence order, therefore every
+time you are writing a new map, the row is add to the file as the last row.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">raster</span> <span class="o">=</span> <span class="nb">reload</span><span class="p">(</span><span class="n">raster</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev</span> <span class="o">=</span> <span class="n">raster</span><span class="o">.</span><span class="n">RasterRow</span><span class="p">(</span><span class="s">&#39;elevation&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># the cols attribute is set from the current region only when the map is open</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev</span><span class="o">.</span><span class="n">cols</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev</span><span class="o">.</span><span class="n">is_open</span><span class="p">()</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev</span><span class="o">.</span><span class="n">cols</span>
+<span class="go">1500</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># we can read the elevation map, row by row</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">elev</span><span class="p">[:</span><span class="mi">5</span><span class="p">]:</span> <span class="k">print</span><span class="p">(</span><span class="n">row</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
+<span class="go">[ 141.99613953  141.27848816  141.37904358]</span>
+<span class="go">[ 142.90461731  142.39450073  142.68611145]</span>
+<span class="go">[ 143.81854248  143.54707336  143.83972168]</span>
+<span class="go">[ 144.56524658  144.58493042  144.86477661]</span>
+<span class="go">[ 144.99488831  145.22894287  145.57142639]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># we can open a new map in write mode</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span> <span class="o">=</span> <span class="n">raster</span><span class="o">.</span><span class="n">RasterRow</span><span class="p">(</span><span class="s">&#39;new&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s">&#39;w&#39;</span><span class="p">,</span> <span class="s">&#39;CELL&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># for each elev row we can perform computation, and write the result into</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># the new map</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">elev</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">new</span><span class="o">.</span><span class="n">put_row</span><span class="p">(</span><span class="n">row</span> <span class="o">&lt;</span> <span class="mi">144</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># close the maps</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># check if the map exist</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span><span class="o">.</span><span class="n">exist</span><span class="p">()</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># we can open the map in read mode</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s">&#39;r&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">new</span><span class="p">[:</span><span class="mi">5</span><span class="p">]:</span> <span class="k">print</span><span class="p">(</span><span class="n">row</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
+<span class="go">[1 1 1]</span>
+<span class="go">[1 1 1]</span>
+<span class="go">[1 1 1]</span>
+<span class="go">[0 0 0]</span>
+<span class="go">[0 0 0]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span><span class="o">.</span><span class="n">exist</span><span class="p">()</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="rasterrowio">
+<span id="rasterrowio-label"></span><h2>RasterRowIO<a class="headerlink" href="#rasterrowio" title="Permalink to this headline">¶</a></h2>
+<p>The RasterRowIO class use the grass <a class="reference external" href="http://grass.osgeo.org/programming7/rowiolib.html">RowIO library</a>, and implement a row
+cache. The RasterRowIO class support only reading the raster, because the
+raster rows can only be written in sequential order, writing by row id is not
+supported by design. Hence, we should use the rowio lib only for caching rows
+for reading and use the default row write access as in the RasterRow class.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">raster</span> <span class="o">=</span> <span class="nb">reload</span><span class="p">(</span><span class="n">raster</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev</span> <span class="o">=</span> <span class="n">raster</span><span class="o">.</span><span class="n">RasterRowIO</span><span class="p">(</span><span class="s">&#39;elevation&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s">&#39;r&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">elev</span><span class="p">[:</span><span class="mi">5</span><span class="p">]:</span> <span class="k">print</span><span class="p">(</span><span class="n">row</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
+<span class="go">[ 141.99613953  141.27848816  141.37904358]</span>
+<span class="go">[ 142.90461731  142.39450073  142.68611145]</span>
+<span class="go">[ 143.81854248  143.54707336  143.83972168]</span>
+<span class="go">[ 144.56524658  144.58493042  144.86477661]</span>
+<span class="go">[ 144.99488831  145.22894287  145.57142639]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="rastsegment">
+<span id="rastersegment-label"></span><h2>RastSegment<a class="headerlink" href="#rastsegment" title="Permalink to this headline">¶</a></h2>
+<p>The RasterSegment class use the grass <a class="reference external" href="http://grass.osgeo.org/programming7/segmentlib.html">Segmentation library</a>, it work dividing
+the raster map into small different files, that grass read load into the memory
+and write to the hardisk.
+The segment library allow to open a map in a read-write mode.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">raster</span> <span class="o">=</span> <span class="nb">reload</span><span class="p">(</span><span class="n">raster</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev</span> <span class="o">=</span> <span class="n">raster</span><span class="o">.</span><span class="n">RasterSegment</span><span class="p">(</span><span class="s">&#39;elevation&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">elev</span><span class="p">[:</span><span class="mi">5</span><span class="p">]:</span> <span class="k">print</span><span class="p">(</span><span class="n">row</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
+<span class="go">[ 141.99613953  141.27848816  141.37904358]</span>
+<span class="go">[ 142.90461731  142.39450073  142.68611145]</span>
+<span class="go">[ 143.81854248  143.54707336  143.83972168]</span>
+<span class="go">[ 144.56524658  144.58493042  144.86477661]</span>
+<span class="go">[ 144.99488831  145.22894287  145.57142639]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span> <span class="o">=</span> <span class="n">raster</span><span class="o">.</span><span class="n">RasterSegment</span><span class="p">(</span><span class="s">&#39;new&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s">&#39;w&#39;</span><span class="p">,</span> <span class="s">&#39;CELL&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">irow</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">elev</span><span class="o">.</span><span class="n">rows</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">new</span><span class="p">[</span><span class="n">irow</span><span class="p">]</span> <span class="o">=</span> <span class="n">elev</span><span class="p">[</span><span class="n">irow</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">144</span>
+<span class="gp">...</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">new</span><span class="p">[:</span><span class="mi">5</span><span class="p">]:</span> <span class="k">print</span><span class="p">(</span><span class="n">row</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
+<span class="go">[1 1 1]</span>
+<span class="go">[1 1 1]</span>
+<span class="go">[1 1 1]</span>
+<span class="go">[0 0 0]</span>
+<span class="go">[0 0 0]</span>
+</pre></div>
+</div>
+<p>The RasterSegment class define two methods to read and write the map:</p>
+<blockquote>
+<div><ul>
+<li><p class="first"><tt class="docutils literal"><span class="pre">get_row</span></tt> that return the buffer object with the row that call the
+C function <tt class="docutils literal"><span class="pre">segment_get_row</span></tt>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># call explicity the method</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev_row0</span> <span class="o">=</span> <span class="n">elev</span><span class="o">.</span><span class="n">get_row</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># call implicity the method</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev_row0</span> <span class="o">=</span> <span class="n">elev</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first"><tt class="docutils literal"><span class="pre">get</span></tt> that return the value of the call map that call the
+C function <tt class="docutils literal"><span class="pre">segment_get</span></tt>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># call explicity the method</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev_val_0_0</span> <span class="o">=</span> <span class="n">elev</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># call implicity the method</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev_val_0_0</span> <span class="o">=</span> <span class="n">elev</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div></blockquote>
+<p>Similarly to write the map, with <tt class="docutils literal"><span class="pre">put_row</span></tt>, to write a row and with <tt class="docutils literal"><span class="pre">put</span></tt>
+to write a single value to the map.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="c"># compare the cell value get using the ``get`` method, and take the first</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># value of the row with the ``get_row`` method</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">elev</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># write a new value to a cell,</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+<span class="go">10</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span><span class="o">.</span><span class="n">exist</span><span class="p">()</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="rasternumpy">
+<span id="rasternumpy-label"></span><h2>RasterNumpy<a class="headerlink" href="#rasternumpy" title="Permalink to this headline">¶</a></h2>
+<p>The RasterNumpy class, is based on the <a class="reference external" href="http://docs.scipy.org/doc/numpy/reference/generated/numpy.memmap.html">numpy.memmap</a> class If you open an
+existing map, the map will be copied on a binary format, and read to avoid
+to load all the map in memory.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">raster</span> <span class="o">=</span> <span class="nb">reload</span><span class="p">(</span><span class="n">raster</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev</span> <span class="o">=</span> <span class="n">raster</span><span class="o">.</span><span class="n">RasterNumpy</span><span class="p">(</span><span class="s">&#39;elevation&#39;</span><span class="p">,</span> <span class="s">&#39;PERMANENT&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s">&#39;r&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># in this case RasterNumpy is an extention of the numpy class</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># therefore you may use all the fancy things of numpy.</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">elev</span><span class="p">[:</span><span class="mi">5</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+<span class="go">RasterNumpy([[ 141.99613953,  141.27848816,  141.37904358],</span>
+<span class="go">       [ 142.90461731,  142.39450073,  142.68611145],</span>
+<span class="go">       [ 143.81854248,  143.54707336,  143.83972168],</span>
+<span class="go">       [ 144.56524658,  144.58493042,  144.86477661],</span>
+<span class="go">       [ 144.99488831,  145.22894287,  145.57142639]], dtype=float32)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">el</span> <span class="o">=</span> <span class="n">elev</span> <span class="o">&lt;</span> <span class="mi">144</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">el</span><span class="p">[:</span><span class="mi">5</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+<span class="go">RasterNumpy([[1, 1, 1],</span>
+<span class="go">       [1, 1, 1],</span>
+<span class="go">       [1, 1, 1],</span>
+<span class="go">       [0, 0, 0],</span>
+<span class="go">       [0, 0, 0]], dtype=int32)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">el</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="bp">None</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c"># give a name to the new map</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">el</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s">&#39;new&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">el</span><span class="o">.</span><span class="n">exist</span><span class="p">()</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">el</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">el</span><span class="o">.</span><span class="n">exist</span><span class="p">()</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">el</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="buffer">
+<span id="buffer-label"></span><h2>Buffer<a class="headerlink" href="#buffer" title="Permalink to this headline">¶</a></h2>
+<p>The buffer class is used to interact with a memory buffer of a map like a
+raster row. The buffer class is based on the <a class="reference external" href="http://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html">numpy.ndarray</a> class. Therefore
+all the nice feature of the ndarray are allowed.</p>
+<dl class="class">
+<dt id="pygrass.raster.buffer.Buffer">
+<em class="property">class </em><tt class="descclassname">pygrass.raster.buffer.</tt><tt class="descname">Buffer</tt><a class="reference internal" href="_modules/pygrass/raster/buffer.html#Buffer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.buffer.Buffer" title="Permalink to this definition">¶</a></dt>
+<dd><p>shape, mtype=&#8217;FCELL&#8217;, buffer=None, offset=0,
+strides=None, order=None</p>
+</dd></dl>
+
+</div>
+<div class="section" id="rowio">
+<span id="rowio-label"></span><h2>RowIO<a class="headerlink" href="#rowio" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pygrass.raster.rowio.RowIO">
+<em class="property">class </em><tt class="descclassname">pygrass.raster.rowio.</tt><tt class="descname">RowIO</tt><a class="reference internal" href="_modules/pygrass/raster/rowio.html#RowIO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.rowio.RowIO" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="segment">
+<span id="segment-label"></span><h2>Segment<a class="headerlink" href="#segment" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pygrass.raster.segment.Segment">
+<em class="property">class </em><tt class="descclassname">pygrass.raster.segment.</tt><tt class="descname">Segment</tt><big>(</big><em>srows=64</em>, <em>scols=64</em>, <em>maxmem=100</em><big>)</big><a class="reference internal" href="_modules/pygrass/raster/segment.html#Segment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.segment.Segment" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="pygrass.raster.segment.Segment.close">
+<tt class="descname">close</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pygrass/raster/segment.html#Segment.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.segment.Segment.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Free memory allocated to segment and delete temp file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.segment.Segment.flush">
+<tt class="descname">flush</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pygrass/raster/segment.html#Segment.flush"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.segment.Segment.flush" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flush pending updates to disk.
+Forces all pending updates generated by segment_put() to be written to
+the segment file seg. Must be called after the final segment_put()
+to force all pending updates to disk. Must also be called before the
+first call to segment_get_row.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.segment.Segment.format">
+<tt class="descname">format</tt><big>(</big><em>mapobj</em>, <em>file_name=''</em>, <em>fill=True</em><big>)</big><a class="reference internal" href="_modules/pygrass/raster/segment.html#Segment.format"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.segment.Segment.format" title="Permalink to this definition">¶</a></dt>
+<dd><p>The segmentation routines require a disk file to be used for paging
+segments in and out of memory. This routine formats the file open for
+write on file descriptor fd for use as a segment file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.segment.Segment.get">
+<tt class="descname">get</tt><big>(</big><em>row_index</em>, <em>col_index</em><big>)</big><a class="reference internal" href="_modules/pygrass/raster/segment.html#Segment.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.segment.Segment.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the value of the map</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.segment.Segment.get_row">
+<tt class="descname">get_row</tt><big>(</big><em>row_index</em>, <em>buf</em><big>)</big><a class="reference internal" href="_modules/pygrass/raster/segment.html#Segment.get_row"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.segment.Segment.get_row" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the row using, the <cite>segment</cite> method</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.segment.Segment.get_seg_number">
+<tt class="descname">get_seg_number</tt><big>(</big><em>row_index</em>, <em>col_index</em><big>)</big><a class="reference internal" href="_modules/pygrass/raster/segment.html#Segment.get_seg_number"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.segment.Segment.get_seg_number" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the segment number</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.segment.Segment.open">
+<tt class="descname">open</tt><big>(</big><em>mapobj</em><big>)</big><a class="reference internal" href="_modules/pygrass/raster/segment.html#Segment.open"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.segment.Segment.open" title="Permalink to this definition">¶</a></dt>
+<dd><p>Open a segment it is necessary to pass a RasterSegment object.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.segment.Segment.put">
+<tt class="descname">put</tt><big>(</big><em>row_index</em>, <em>col_index</em><big>)</big><a class="reference internal" href="_modules/pygrass/raster/segment.html#Segment.put"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.segment.Segment.put" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the value to the map</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.segment.Segment.put_row">
+<tt class="descname">put_row</tt><big>(</big><em>row_index</em>, <em>buf</em><big>)</big><a class="reference internal" href="_modules/pygrass/raster/segment.html#Segment.put_row"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.segment.Segment.put_row" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the row using the <cite>segment</cite> method</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.segment.Segment.release">
+<tt class="descname">release</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pygrass/raster/segment.html#Segment.release"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.segment.Segment.release" title="Permalink to this definition">¶</a></dt>
+<dd><p>Free memory allocated to segment.
+Releases the allocated memory associated with the segment file seg.
+Note: Does not close the file. Does not flush the data which may be
+pending from previous segment_put() calls.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="history">
+<span id="history-label"></span><h2>History<a class="headerlink" href="#history" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pygrass.raster.history.History">
+<em class="property">class </em><tt class="descclassname">pygrass.raster.history.</tt><tt class="descname">History</tt><big>(</big><em>name</em>, <em>mapset=''</em>, <em>mtype=''</em>, <em>creator=''</em>, <em>src1=''</em>, <em>src2=''</em>, <em>keyword=''</em>, <em>date=''</em>, <em>title=''</em><big>)</big><a class="reference internal" href="_modules/pygrass/raster/history.html#History"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.history.History" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>Examples</em></p>
+<dl class="docutils">
+<dt>::</dt>
+<dd><div class="first last highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">grass.lib.gis</span> <span class="kn">as</span> <span class="nn">libgis</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">libgis</span><span class="o">.</span><span class="n">G_gisinit</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hist</span> <span class="o">=</span> <span class="n">History</span><span class="p">(</span><span class="s">&#39;elevation&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hist</span><span class="o">.</span><span class="n">creator</span>
+<span class="go">&#39;helena&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hist</span><span class="o">.</span><span class="n">src1</span>
+<span class="go">&#39;&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hist</span><span class="o">.</span><span class="n">src2</span>
+<span class="go">&#39;&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hist</span><span class="o">.</span><span class="n">keyword</span>
+<span class="go">&#39;generated by r.proj&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hist</span><span class="o">.</span><span class="n">date</span>
+<span class="go">datetime.datetime(2006, 11, 7, 1, 9, 51)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hist</span><span class="o">.</span><span class="n">mapset</span>
+<span class="go">&#39;PERMANENT&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hist</span><span class="o">.</span><span class="n">maptype</span>
+<span class="go">&#39;raster&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hist</span><span class="o">.</span><span class="n">title</span>
+<span class="go">&#39;elev_ned10m&#39;</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<dl class="method">
+<dt id="pygrass.raster.history.History.append">
+<tt class="descname">append</tt><big>(</big><em>obj</em><big>)</big><a class="reference internal" href="_modules/pygrass/raster/history.html#History.append"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.history.History.append" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rast_append_history</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.history.History.append_fmt">
+<tt class="descname">append_fmt</tt><big>(</big><em>fmt</em>, <em>*args</em><big>)</big><a class="reference internal" href="_modules/pygrass/raster/history.html#History.append_fmt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.history.History.append_fmt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rast_append_format_history</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.history.History.clear">
+<tt class="descname">clear</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pygrass/raster/history.html#History.clear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.history.History.clear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rast_clear_history</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.history.History.command">
+<tt class="descname">command</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pygrass/raster/history.html#History.command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.history.History.command" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rast_command_history</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.history.History.format">
+<tt class="descname">format</tt><big>(</big><em>field</em>, <em>fmt</em>, <em>*args</em><big>)</big><a class="reference internal" href="_modules/pygrass/raster/history.html#History.format"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.history.History.format" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rast_format_history</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.history.History.length">
+<tt class="descname">length</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pygrass/raster/history.html#History.length"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.history.History.length" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rast_history_length</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.history.History.line">
+<tt class="descname">line</tt><big>(</big><em>line</em><big>)</big><a class="reference internal" href="_modules/pygrass/raster/history.html#History.line"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.history.History.line" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rast_history_line</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.history.History.read">
+<tt class="descname">read</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pygrass/raster/history.html#History.read"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.history.History.read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rast_read_history.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">grass.lib.gis</span> <span class="kn">as</span> <span class="nn">libgis</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">libgis</span><span class="o">.</span><span class="n">G_gisinit</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">ctypes</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">grass.lib.raster</span> <span class="kn">as</span> <span class="nn">libraster</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hist</span> <span class="o">=</span> <span class="n">libraster</span><span class="o">.</span><span class="n">History</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">libraster</span><span class="o">.</span><span class="n">Rast_read_history</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_char_p</span><span class="p">(</span><span class="s">&#39;elevation&#39;</span><span class="p">),</span>
+<span class="gp">... </span>                            <span class="n">ctypes</span><span class="o">.</span><span class="n">c_char_p</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">),</span>
+<span class="gp">... </span>                            <span class="n">ctypes</span><span class="o">.</span><span class="n">byref</span><span class="p">(</span><span class="n">hist</span><span class="p">))</span>
+<span class="go">0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">libraster</span><span class="o">.</span><span class="n">Rast_get_history</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">byref</span><span class="p">(</span><span class="n">hist</span><span class="p">),</span>
+<span class="gp">... </span>                           <span class="n">libraster</span><span class="o">.</span><span class="n">HIST_MAPID</span><span class="p">)</span>
+<span class="go">&#39;Tue Nov  7 01:09:51 2006&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.history.History.short">
+<tt class="descname">short</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pygrass/raster/history.html#History.short"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.history.History.short" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rast_short_history</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.history.History.write">
+<tt class="descname">write</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pygrass/raster/history.html#History.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.history.History.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rast_write_history</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="category">
+<span id="category-label"></span><h2>Category<a class="headerlink" href="#category" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pygrass.raster.category.Category">
+<em class="property">class </em><tt class="descclassname">pygrass.raster.category.</tt><tt class="descname">Category</tt><big>(</big><em>name</em>, <em>mapset=''</em>, <em>mtype=None</em>, <em>*args</em>, <em>**kargs</em><big>)</big><a class="reference internal" href="_modules/pygrass/raster/category.html#Category"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.category.Category" title="Permalink to this definition">¶</a></dt>
+<dd><p>I would like to add the following functions:</p>
+<p>Getting the umber of cats:
+Rast_number_of_cats() &lt;- Important for ith access</p>
+<p>Getting and setting the title:
+Rast_get_cats_title()
+Rast_set_cats_title()</p>
+<p>Do not use these functions for category access:
+Rast_get_cat()
+and the specialized types for CELL, FCELL and DCELL.
+Since these functions are working on hidden static buffer.</p>
+<p>Use the ith-get methods:
+Rast_get_ith_c_cat()
+Rast_get_ith_f_cat()
+Rast_get_ith_d_cat()</p>
+<p>This can be implemented using an iterator too. So that the category object
+provides the [] access operator to the categories, returning a tuple
+(label, min, max).
+Using this, the category object must be aware of its raster map type.</p>
+<p>Set categories using:
+Rast_set_c_cat()
+Rast_set_f_cat()
+Rast_set_d_cat()</p>
+<p>Misc:
+Rast_sort_cats()
+Rast_copy_cats() &lt;- This should be wrapped so that categories from an
+existing Python category class are copied.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">grass.lib.raster</span> <span class="kn">as</span> <span class="nn">libraster</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">ctypes</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">grass.pygrass</span> <span class="kn">as</span> <span class="nn">pygrass</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">land</span> <span class="o">=</span> <span class="n">pygrass</span><span class="o">.</span><span class="n">raster</span><span class="o">.</span><span class="n">RasterRow</span><span class="p">(</span><span class="s">&#39;landcover_1m&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cats</span> <span class="o">=</span> <span class="n">pygrass</span><span class="o">.</span><span class="n">raster</span><span class="o">.</span><span class="n">Category</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cats</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">land</span><span class="p">)</span> <span class="c"># or with cats.read(land.name, land.mapset, land.mtype)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cats</span><span class="o">.</span><span class="n">labels</span><span class="p">()</span>
+<span class="go">[&#39;pond&#39;, &#39;forest&#39;, &#39;developed&#39;, &#39;bare&#39;, &#39;paved road&#39;, &#39;dirt road&#39;,</span>
+<span class="go">    &#39;vineyard&#39;, &#39;agriculture&#39;, &#39;wetland&#39;, &#39;bare ground path&#39;, &#39;grass&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">min_cat</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_void_p</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">max_cat</span> <span class="o">=</span> <span class="n">ctypes</span><span class="o">.</span><span class="n">c_void_p</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">libraster</span><span class="o">.</span><span class="n">Rast_get_ith_c_cat</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">byref</span><span class="p">(</span><span class="n">cats</span><span class="o">.</span><span class="n">cats</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span>
+<span class="gp">... </span>                             <span class="n">min_cat</span><span class="p">,</span> <span class="n">max_cat</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="pygrass.raster.category.Category.copy">
+<tt class="descname">copy</tt><big>(</big><em>category</em><big>)</big><a class="reference internal" href="_modules/pygrass/raster/category.html#Category.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.category.Category.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy from another Category class</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.category.Category.read">
+<tt class="descname">read</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pygrass/raster/category.html#Category.read"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.category.Category.read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read categories from a raster map</p>
+<p>The category file for raster map name in mapset is read into the
+cats structure. If there is an error reading the category file,
+a diagnostic message is printed.</p>
+<dl class="docutils">
+<dt>int Rast_read_cats(const char *         name,</dt>
+<dd>const char *         mapset,
+struct Categories *  pcats
+)</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.category.Category.read_rules">
+<tt class="descname">read_rules</tt><big>(</big><em>filename</em>, <em>sep=':'</em><big>)</big><a class="reference internal" href="_modules/pygrass/raster/category.html#Category.read_rules"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.category.Category.read_rules" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy categories from a rules file, default separetor is &#8216;:&#8217;, the
+columns must be: min and/or max and label.</p>
+<div class="highlight-python"><pre>1:forest
+2:road
+3:urban
+
+0.:0.5:forest
+0.5:1.0:road
+1.0:1.5:urban</pre>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.category.Category.set_cats_fmt">
+<tt class="descname">set_cats_fmt</tt><big>(</big><em>fmt</em>, <em>m1</em>, <em>a1</em>, <em>m2</em>, <em>a2</em><big>)</big><a class="reference internal" href="_modules/pygrass/raster/category.html#Category.set_cats_fmt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.category.Category.set_cats_fmt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Not implemented yet.
+void Rast_set_cats_fmt()</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.category.Category.write">
+<tt class="descname">write</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/pygrass/raster/category.html#Category.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.category.Category.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the category file for the raster map name in the current
+mapset from the cats structure.</p>
+<dl class="docutils">
+<dt>void Rast_write_cats(const char *       name,</dt>
+<dd>struct Categories *        cats
+)</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pygrass.raster.category.Category.write_rules">
+<tt class="descname">write_rules</tt><big>(</big><em>filename</em>, <em>sep=':'</em><big>)</big><a class="reference internal" href="_modules/pygrass/raster/category.html#Category.write_rules"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pygrass.raster.category.Category.write_rules" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copy categories from a rules file, default separetor is &#8216;:&#8217;, the
+columns must be: min and/or max and label.</p>
+<div class="highlight-python"><pre>1:forest
+2:road
+3:urban
+
+0.:0.5:forest
+0.5:1.0:road
+1.0:1.5:urban</pre>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Raster</a><ul>
+<li><a class="reference internal" href="#categories">Categories</a></li>
+<li><a class="reference internal" href="#rastrow">RastRow</a></li>
+<li><a class="reference internal" href="#rasterrowio">RasterRowIO</a></li>
+<li><a class="reference internal" href="#rastsegment">RastSegment</a></li>
+<li><a class="reference internal" href="#rasternumpy">RasterNumpy</a></li>
+<li><a class="reference internal" href="#buffer">Buffer</a></li>
+<li><a class="reference internal" href="#rowio">RowIO</a></li>
+<li><a class="reference internal" href="#segment">Segment</a></li>
+<li><a class="reference internal" href="#history">History</a></li>
+<li><a class="reference internal" href="#category">Category</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="intro.html"
+                        title="previous chapter">Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="vector.html"
+                        title="next chapter">Vector</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/raster.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="vector.html" title="Vector"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="Introduction"
+             >previous</a> |</li>
+        <li><a href="index.html">PyGrass beta documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012-2014, Pietro Zambelli.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

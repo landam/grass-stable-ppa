@@ -15,7 +15,7 @@
 #############################################################################
 
 #%module
-#% description: Import a space time vector dataset archive file
+#% description: Imports a space time vector dataset from a GRASS GIS specific archive file.
 #% keywords: temporal
 #% keywords: import
 #%end
@@ -50,7 +50,7 @@
 #%option
 #% key: location
 #% type: string
-#% description: Create a new location and import the data into it. Please do not run this module in parallel or interrupt it when a new location should be created.
+#% description: Create a new location and import the data into it. Do not run this module in parallel or interrupt it when a new location should be created
 #% required: no
 #% multiple: no
 #%end
