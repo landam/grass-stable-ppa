@@ -8,6 +8,8 @@ grass (7.0.0~beta4-1) UNRELEASED; urgency=medium
     python-numpy, libnetcdf-dev, netcdf-bin, libblas-dev, liblapack-dev
   * Update Vcs-Browser URL to use cgit instead of gitweb.
   * Update paths to use grass70.
+  * Add configure options: --with-netcdf, --with-blas, --with-lapack,
+    remove --with-tcltk-includes.
 
  -- Bas Couwenberg <sebastic@xs4all.nl>  Sun, 11 Jan 2015 01:21:40 +0100
 

@@ -34,8 +34,6 @@ else
 	STRIP = strip
 endif
 
-TCLINC = /usr/include/tcl
-
 versions: 
 	@echo "Version: $(VERSION)"
 	@echo "ABI: $(ABI)"
@@ -70,15 +68,17 @@ config.status:
                     --with-readline \
                     --with-nls \
                     --with-odbc \
+                    --with-netcdf \
+                    --with-blas \
+                    --with-lapack \
 		    --with-sqlite \
 		    --enable-largefile \
                     --with-freetype-includes=/usr/include/freetype2 \
-                    --with-tcltk-includes=$(TCLINC) \
                     --with-postgres-includes=$(shell pg_config --includedir) \
                     --with-mysql-includes=$(shell mysql_config --include | sed -e 's/-I//') \
 		    --with-proj-share=/usr/share/proj \
 		    --with-wxwidgets=/usr/bin/wx-config \
-		    --with-python=/usr/bin/python-config \
+		    --with-python \
 		    --with-cairo
 
 	touch $@
