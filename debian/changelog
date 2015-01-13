@@ -10,6 +10,7 @@ grass (7.0.0~beta4-1) UNRELEASED; urgency=medium
   * Update paths to use grass70.
   * Add configure options: --with-netcdf, --with-blas, --with-lapack,
     remove --with-tcltk-includes.
+  * Update patches for GRASS 7.
 
  -- Bas Couwenberg <sebastic@xs4all.nl>  Sun, 11 Jan 2015 01:21:40 +0100
 
