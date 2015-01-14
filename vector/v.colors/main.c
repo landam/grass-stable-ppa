@@ -7,7 +7,7 @@
  *               
  * PURPOSE:      Manage color tables for vector maps
  *               
- * COPYRIGHT:    (C) 2011 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2011-2014 by the GRASS Development Team
  *
  *               This program is free software under the GNU General
  *               Public License (>=v2). Read the file COPYING that
@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
     opt.rast->guisection = _("Define");
 
     opt.volume = G_define_standard_option(G_OPT_R3_INPUT);
-    opt.volume->key = "volume";
+    opt.volume->key = "raster_3d";
     opt.volume->required = NO;
     opt.volume->description =
         _("3D raster map from which to copy color table");
@@ -260,7 +260,9 @@ int main(int argc, char *argv[])
 
     /* open map and get min/max values */
     Vect_set_open_level(1); /* no topology required */
-    Vect_open_old2(&Map, name, mapset, opt.field->answer);
+    if (Vect_open_old2(&Map, name, mapset, opt.field->answer) < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), name);
+
     Vect_set_error_handler_io(&Map, NULL);
     if (use == USE_Z && !Vect_is_3d(&Map))
         G_fatal_error(_("Vector map <%s> is not 3D"), Vect_get_full_name(&Map));

@@ -429,43 +429,14 @@ class TreeCtrlComboPopup(ListCtrlComboPopup):
         """
         # get current mapset
         curr_mapset = grass.gisenv()['MAPSET']
-
+        
         # map element types to g.list types
         elementdict = {'cell':'raster',
-                       'raster': 'raster',
-                       'raster files':'raster',
                        'grid3':'raster_3d',
-                       '3draster':'raster_3d',
-                       '3d-raster':'raster_3d',
-                       'raster3D':'raster_3d',
-                       'raster3D files':'raster_3d',
                        'vector' : 'vector',
-                       'binary vector files':'vector',
-                       'dig':'oldvect',
-                       'oldvect':'oldvector',
-                       'old vector':'oldvector',
-                       'dig_ascii':'asciivector',
-                       'asciivect':'asciivector',
-                       'asciivector':'asciivector',
-                       'ascii vector files':'asciivector',
-                       'icons':'icon',
-                       'icon':'icon',
-                       'paint icon files':'icon',
-                       'paint/labels':'labels',
-                       'labels':'labels',
-                       'label':'labels',
-                       'paint label files':'labels',
+                       'paint/labels':'label',
                        'windows':'region',
-                       'region':'region',
-                       'region definition':'region',
-                       'region definition files':'region',
-                       'windows3d':'region3d',
-                       'region3d':'region3d',
-                       'region3D definition':'region3d',
-                       'region3D definition files':'region3d',
                        'group':'group',
-                       'imagery group':'group',
-                       'imagery group files':'group',
                        'stds':'stds',
                        'strds':'strds',
                        'str3ds':'str3ds',
@@ -1946,12 +1917,14 @@ class GdalSelect(wx.Panel):
 
             layerId = 1
             for line in ret.splitlines():
-                layerName, featureType, projection = map(lambda x: x.strip(), line.split(','))
+                layerName, featureType, projection, geometryColumn = map(lambda x: x.strip(), line.split(','))
                 if projection == '0':
                     projectionMatch = _("No")
                 else:
                     projectionMatch = _("Yes")
                 grassName = GetValidLayerName(layerName)
+                if geometryColumn:
+                    featureType = geometryColumn + '/' + featureType
                 data.append((layerId, layerName, featureType, projectionMatch, grassName))
                 layerId += 1
         else:

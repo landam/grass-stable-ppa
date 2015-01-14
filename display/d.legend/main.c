@@ -156,7 +156,7 @@ int main(int argc, char **argv)
 	_("Use a subset of the map range for the legend (min,max)");
     opt_range->guisection = _("Subset");
 
-    opt_color = G_define_standard_option(G_OPT_C_FG);
+    opt_color = G_define_standard_option(G_OPT_C);
     opt_color->label = _("Text color");
     opt_color->guisection = _("Font settings");
 
@@ -314,9 +314,7 @@ int main(int argc, char **argv)
 	flip = !flip;
     }
 
-    if (D_open_driver() != 0)
-	G_fatal_error(_("No graphics device selected. "
-			"Use d.mon to select graphics device."));
+    D_open_driver();
 
     white = D_translate_color(DEFAULT_FG_COLOR);
     black = D_translate_color(DEFAULT_BG_COLOR);

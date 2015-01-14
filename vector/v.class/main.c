@@ -98,7 +98,8 @@ int main(int argc, char *argv[])
     
     /* open input vector */
     Vect_set_open_level(2);
-    Vect_open_old2(&Map, map_opt->answer, "", field_opt->answer);
+    if (Vect_open_old2(&Map, map_opt->answer, "", field_opt->answer) < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), map_opt->answer);
 
     ofield = Vect_get_field_number(&Map, field_opt->answer);
 
@@ -163,9 +164,10 @@ int main(int argc, char *argv[])
      * finfo takes any info coming from the classification algorithms
      * equ algorithm can alter number of class breaks */
     finfo =
-	class_apply_algorithm(algo_opt->answer, data, nrec, &nbreaks,
-			      classbreaks);
-
+        AS_class_apply_algorithm(AS_option_to_algorithm(algo_opt),
+                                 data, nrec, &nbreaks,
+                                 classbreaks);
+    
 
     if (G_strcasecmp(algo_opt->answer, "dis") == 0 && finfo < 3.84148)
 	G_warning(_("The discontinuities algorithm indicates that some "
@@ -187,9 +189,8 @@ int main(int argc, char *argv[])
 	for (i = 0; i < nbreaks + 1; i++)
 	    frequencies[i] = 0;
 
-	ret =
-	    class_frequencies(data, nrec, nbreaks, classbreaks, frequencies);
-	basic_stats(data, nrec, &stats);
+	ret = AS_class_frequencies(data, nrec, nbreaks, classbreaks, frequencies);
+	AS_basic_stats(data, nrec, &stats);
 
 	min = data[0];
 	max = data[nrec - 1];

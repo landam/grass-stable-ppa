@@ -1273,7 +1273,9 @@ class CmdPanel(wx.Panel):
                                         flag = wx.ADJUST_MINSIZE | wx.BOTTOM | wx.LEFT | wx.RIGHT | wx.TOP | wx.ALIGN_CENTER_VERTICAL,
                                         border = 5)
                     elif prompt == 'group':
-                        selection.Bind(wx.EVT_TEXT, self.OnUpdateSelection)
+                        win = self.FindWindowById(p['wxId'][0])
+                        win.Bind(wx.EVT_TEXT, self.OnUpdateSelection)
+                        win.Bind(wx.EVT_TEXT, self.OnSetValue)
                         which_sizer.Add(item = selection, proportion = 0,
                                         flag = wx.ADJUST_MINSIZE | wx.BOTTOM | wx.LEFT | wx.RIGHT | wx.TOP | wx.ALIGN_CENTER_VERTICAL,
                                         border = 5)
@@ -1477,7 +1479,7 @@ class CmdPanel(wx.Panel):
 
                     btn_colour = csel.ColourSelect(parent = which_panel, id = wx.ID_ANY,
                                                    label = label_color, colour = default_color,
-                                                   pos = wx.DefaultPosition, size = (colorSize,-1))
+                                                   pos = wx.DefaultPosition, size = (colorSize, 32))
                     this_sizer.Add(item = btn_colour, proportion = 0,
                                    flag = wx.ADJUST_MINSIZE | wx.BOTTOM | wx.LEFT, border = 5)
                     btn_colour.Bind(csel.EVT_COLOURSELECT,  self.OnColorChange)

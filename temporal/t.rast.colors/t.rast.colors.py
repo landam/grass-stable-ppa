@@ -16,9 +16,9 @@
 
 #%module
 #% description: Creates/modifies the color table associated with each raster map of the space time raster dataset.
-#% keywords: temporal
-#% keywords: color table
-#% keywords: raster
+#% keyword: temporal
+#% keyword: color table
+#% keyword: raster
 #%end
 
 #%option G_OPT_STRDS_INPUT
@@ -41,7 +41,7 @@
 #%end
 
 #%option G_OPT_R3_INPUT
-#% key: volume
+#% key: raster_3d
 #% description: 3D raster map from which to copy color table
 #% required: no
 #% guisection: Define
@@ -108,7 +108,7 @@ def main():
     input = options["input"]
     color = options["color"]
     raster = options["raster"]
-    volume = options["volume"]
+    volume = options["raster_3d"]
     rules = options["rules"]
     remove = flags["r"]
     write = flags["w"]

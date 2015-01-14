@@ -1,5 +1,5 @@
 /*!
- * \file raster/close.c
+ * \file lib/raster/close.c
  * 
  * \brief Raster Library - Close raster file
  *
@@ -280,7 +280,7 @@ static int close_new_gdal(int fd, int ok)
 	remove(path);
 
 	/* write 0-length cell file */
-	G__make_mapset_element("cell");
+	G_make_mapset_element("cell");
 	G_file_name(path, "cell", fcb->name, fcb->mapset);
 	cell_fd = creat(path, 0666);
 	close(cell_fd);
@@ -289,7 +289,7 @@ static int close_new_gdal(int fd, int ok)
 	    write_fp_format(fd);
 
 	    /* write 0-length fcell file */
-	    G__make_mapset_element("fcell");
+	    G_make_mapset_element("fcell");
 	    G_file_name(path, "fcell", fcb->name, fcb->mapset);
 	    cell_fd = creat(path, 0666);
 	    close(cell_fd);
@@ -375,13 +375,14 @@ static int close_new(int fd, int ok)
 			  fcb->null_temp_name, path, strerror(errno));
 		stat = -1;
 	    }
+	    /* if rename() was successful what is left to remove() ? */
 	    else {
 		remove(fcb->null_temp_name);
 	    }
 	}
 	else {
 	    remove(fcb->null_temp_name);
-	    remove(path);
+	    remove(path); /* again ? */
 	}			/* null_cur_row > 0 */
 
 	if (fcb->open_mode == OPEN_NEW_COMPRESSED) {	/* auto compression */
@@ -395,7 +396,7 @@ static int close_new(int fd, int ok)
 	    write_fp_format(fd);
 
 	    /* now write 0-length cell file */
-	    G__make_mapset_element("cell");
+	    G_make_mapset_element("cell");
 	    cell_fd =
 		creat(G_file_name(path, "cell", fcb->name, fcb->mapset),
 		      0666);
@@ -440,6 +441,7 @@ static int close_new(int fd, int ok)
 		      fcb->temp_name, path, strerror(errno));
 	    stat = -1;
 	}
+	/* if rename() was successful what is left to remove() ? */
 	else {
 	    remove(fcb->temp_name);
 	}

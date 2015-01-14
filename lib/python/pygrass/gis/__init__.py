@@ -18,15 +18,9 @@ from grass.pygrass.errors import GrassError
 ETYPE = {'raster': libgis.G_ELEMENT_RASTER,
          'raster_3d': libgis.G_ELEMENT_RASTER3D,
          'vector': libgis.G_ELEMENT_VECTOR,
-         'old_vector': libgis.G_ELEMENT_OLDVECTOR,
-         'ascii_vector': libgis.G_ELEMENT_ASCIIVECTOR,
-         'icon': libgis.G_ELEMENT_ICON,
-         'labels': libgis.G_ELEMENT_LABEL,
-         'sites': libgis.G_ELEMENT_SITE,
+         'label': libgis.G_ELEMENT_LABEL,
          'region': libgis.G_ELEMENT_REGION,
-         'region3d': libgis.G_ELEMENT_REGION3D,
-         'group': libgis.G_ELEMENT_GROUP,
-         'view3d': libgis.G_ELEMENT_3DVIEW}
+         'group': libgis.G_ELEMENT_GROUP}
 
 
 CHECK_IS = {"GISBASE": libgis.G_is_gisbase,
@@ -150,7 +144,7 @@ class Gisdbase(object):
 
     # TODO remove or complete this function
     def new_location(self):
-        if libgis.G__make_location() != 0:
+        if libgis.G_make_location() != 0:
             raise GrassError("Cannot create new location")
 
     def locations(self):
@@ -242,7 +236,7 @@ class Location(object):
         mapsets = [mapset for mapset in self]
         if permissions:
             mapsets = [mapset for mapset in mapsets
-                       if libgis.G__mapset_permissions(mapset)]
+                       if libgis.G_mapset_permissions(mapset)]
         if pattern:
             return fnmatch.filter(mapsets, pattern)
         return mapsets
@@ -309,18 +303,12 @@ class Mapset(object):
     def glist(self, type, pattern=None):
         """Return a list of grass types like:
 
-            * 'ascii_vector',
             * 'group',
-            * 'icon',
-            * 'labels',
-            * 'old_vector',
+            * 'label',
             * 'raster',
             * 'raster_3d',
             * 'region',
-            * 'region3d',
-            * 'sites',
             * 'vector',
-            * 'view3d'
 
         :param type: the type of element to query
         :type type: str

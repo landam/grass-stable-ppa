@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
     opt8->guisection = _("Stop");
 
     opt9 = G_define_standard_option(G_OPT_R_INPUT);
-    opt9->key = "start_rast";
+    opt9->key = "start_raster";
     opt9->required = NO;
     opt9->description = _("Name of starting raster points map");
     opt9->guisection = _("Start");
@@ -254,7 +254,7 @@ int main(int argc, char *argv[])
     opt6->guisection = _("NULL cells");
 
     opt10 = G_define_option();
-    opt10->key = "percent_memory";
+    opt10->key = "memory";
     opt10->type = TYPE_INTEGER;
     opt10->key_desc = "value";
     opt10->required = NO;

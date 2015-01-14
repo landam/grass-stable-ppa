@@ -32,7 +32,7 @@
    \return 0 ?
    \return ?
  */
-int G__make_mapset_element(const char *p_element)
+int G_make_mapset_element(const char *p_element)
 {
     char path[GPATH_MAX];
     char *p;
@@ -85,7 +85,7 @@ int G__make_mapset_element_misc(const char *dir, const char *name)
     char buf[GNAME_MAX * 2 + 1];
 
     sprintf(buf, "%s/%s", dir, name);
-    return G__make_mapset_element(buf);
+    return G_make_mapset_element(buf);
 }
 
 static int check_owner(const struct stat *info)
@@ -113,7 +113,7 @@ static int check_owner(const struct stat *info)
    \return 0 mapset exists, BUT user denied permission
    \return -1 mapset does not exist
  */
-int G__mapset_permissions(const char *mapset)
+int G_mapset_permissions(const char *mapset)
 {
     char path[GPATH_MAX];
     struct stat info;
@@ -142,7 +142,7 @@ int G__mapset_permissions(const char *mapset)
    \return 0 mapset exists, BUT user denied permission
    \return -1 mapset does not exist
  */
-int G__mapset_permissions2(const char *gisdbase, const char *location,
+int G_mapset_permissions2(const char *gisdbase, const char *location,
 			   const char *mapset)
 {
     char path[GPATH_MAX];

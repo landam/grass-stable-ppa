@@ -123,11 +123,12 @@ def GetLayerNameFromCmd(dcmd, fullyQualified = False, param = None,
             if p == param:
                 params = [(idx, p, v)]
                 break
-            
+
+            # this does not use types, just some (incomplete subset of?) names
             if p in ('map', 'input', 'layer',
                      'red', 'blue', 'green',
-                     'h_map', 's_map', 'i_map',
-                     'reliefmap', 'labels'):
+                     'hue', 'saturation', 'intensity',
+                     'shade', 'labels'):
                 params.append((idx, p, v))
 
         if len(params) < 1:
@@ -197,7 +198,7 @@ def GetValidLayerName(name):
     .. todo::
         Better use directly Ctypes to reuse venerable libgis C fns...
     """
-    retName = str(name).strip()
+    retName = name.strip()
     
     # check if name is fully qualified
     if '@' in retName:
@@ -1005,7 +1006,7 @@ command2ltype = {'d.rast'         : 'raster',
                  'd.rast.num'     : 'rastnum',
                  'd.rast.leg'     : 'maplegend',
                  'd.vect'         : 'vector',
-                 'd.thematic.area': 'thememap',
+                 'd.vect.thematic': 'thememap',
                  'd.vect.chart'   : 'themechart',
                  'd.grid'         : 'grid',
                  'd.geodesic'     : 'geodesic',
@@ -1062,13 +1063,8 @@ def GetGEventAttribsForHandler(method, event):
 
 def GuiModuleMain(mainfn):
     """Main function for g.gui.* modules
-    
-    Note: os.fork() is supported only on Unix platforms
-    
-    .. todo::
-        Replace os.fork() by multiprocessing (?)
-    
-    :param mainfn: main function
+
+    os.fork removed in r62649 as fragile
     """
     mainfn()
 

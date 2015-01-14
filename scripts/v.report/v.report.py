@@ -16,9 +16,9 @@
 
 #%module
 #% description: Reports geometry statistics for vector maps.
-#% keywords: vector
-#% keywords: geometry
-#% keywords: statistics
+#% keyword: vector
+#% keyword: geometry
+#% keyword: statistics
 #%end
 #%option G_OPT_V_MAP
 #%end
@@ -67,8 +67,11 @@ def main():
     if not grass.find_file(mapname, 'vector')['file']:
         grass.fatal(_("Vector map <%s> not found") % mapname)
 
-    colnames = grass.vector_columns(mapname, layer, getDict = False, stderr = nuldev)
-    if not colnames:
+    if int(layer) in grass.vector_db(mapname):
+        colnames = grass.vector_columns(mapname, layer, getDict=False, stderr=nuldev)
+        isConnection = True
+    else:
+        isConnection = False
         colnames = ['cat']
 
     if option == 'coor':
@@ -86,7 +89,7 @@ def main():
         unitsp = None
 
     # NOTE: we suppress -1 cat and 0 cat
-    if colnames:
+    if isConnection:
         p = grass.pipe_command('v.db.select', quiet = True, flags='c', map = mapname, layer = layer)
         records1 = []
         for line in p.stdout:

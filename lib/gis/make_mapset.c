@@ -74,16 +74,16 @@ int G_make_mapset(const char *gisdbase_name, const char *location_name,
     G_create_alt_env();
 
     /* Get PERMANENT default window */
-    G__setenv("GISDBASE", gisdbase_name);
-    G__setenv("LOCATION", location_name);
-    G__setenv("MAPSET", "PERMANENT");
+    G_setenv_nogisrc("GISDBASE", gisdbase_name);
+    G_setenv_nogisrc("LOCATION", location_name);
+    G_setenv_nogisrc("MAPSET", "PERMANENT");
     G_get_default_window(&default_window);
 
     /* Change to the new mapset */
-    G__setenv("MAPSET", mapset_name);
+    G_setenv_nogisrc("MAPSET", mapset_name);
 
     /* Copy default window/regions to new mapset */
-    G__put_window(&default_window, "", "WIND");
+    G_put_element_window(&default_window, "", "WIND");
 
     /* And switch back to original environment */
     G_switch_env();

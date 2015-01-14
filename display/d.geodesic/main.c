@@ -11,7 +11,7 @@
  *               Jan-Oliver Wagner <jan intevation.de>
  * PURPOSE:      displays a geodesic line in the active frame on the user's 
  *               graphics monitor
- * COPYRIGHT:    (C) 1999-2006 by the GRASS Development Team
+ * COPYRIGHT:    (C) 1999-2014 by the GRASS Development Team
  *
  *               This program is free software under the GNU General Public
  *               License (>=v2). Read the file COPYING that comes with GRASS
@@ -31,10 +31,13 @@ int main(int argc, char *argv[])
     int text_color;
     double lon1, lat1, lon2, lat2;
     char *deftcolor;
+    const char *unit;
+    int unit_id;
+    double factor;
     struct GModule *module;
     struct
     {
-	struct Option *lcolor, *tcolor, *coor;
+	struct Option *lcolor, *tcolor, *coor, *units;
     } parm;
 
     G_gisinit(argv[0]);
@@ -42,6 +45,8 @@ int main(int argc, char *argv[])
     module = G_define_module();
     G_add_keyword(_("display"));
     G_add_keyword(_("distance"));
+    G_add_keyword(_("great circle"));
+    G_add_keyword(_("shortest path"));
     module->description =
 	_("Displays a geodesic line, tracing the shortest distance "
 	"between two geographic points along a great circle, in "
@@ -52,21 +57,31 @@ int main(int argc, char *argv[])
     parm.coor->required = YES;
     parm.coor->description = _("Starting and ending coordinates");
 
-    parm.lcolor = G_define_standard_option(G_OPT_C_FG);
+    parm.lcolor = G_define_standard_option(G_OPT_C);
     parm.lcolor->key = "line_color";
     parm.lcolor->label = _("Line color");
 
-    parm.tcolor = G_define_standard_option(G_OPT_C_FG);
+    parm.tcolor = G_define_standard_option(G_OPT_C);
     parm.tcolor->key = "text_color";
-    parm.tcolor->label = _("Text color or \"none\"");
+    parm.tcolor->label = _("Text color");
     parm.tcolor->answer = NULL;
-    
+
+    parm.units = G_define_standard_option(G_OPT_M_UNITS);
+    parm.units->options = "meters,kilometers,feet,miles";
+    parm.units->label = parm.units->description;
+    parm.units->answer = "meters";
+
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-
     if (G_projection() != PROJECTION_LL)
-	G_fatal_error(_("Location is not %s"), G__projection_name(PROJECTION_LL));
+	G_fatal_error(_("Location is not %s"),
+		      G_projection_name(PROJECTION_LL));
+
+    /* get conversion factor and unit name */
+    unit_id = G_units(parm.units->answer);
+    factor = 1. / G_meters_to_units_factor(unit_id);
+    unit = G_get_units_name(unit_id, 1, 0);
 
     if (parm.coor->answers[0] == NULL)
 	G_fatal_error(_("No coordinates given"));
@@ -84,9 +99,7 @@ int main(int argc, char *argv[])
 	G_fatal_error(_("%s - illegal longitude"), parm.coor->answers[3]);
 
 
-    if (D_open_driver() != 0)
-      	G_fatal_error(_("No graphics device selected. "
-			"Use d.mon to select graphics device."));
+    D_open_driver();
     
     line_color = D_translate_color(parm.lcolor->answer);
     if (!line_color)
@@ -105,8 +118,8 @@ int main(int argc, char *argv[])
     else
 	text_color = D_translate_color(parm.tcolor->answer);
 
-    plot(lon1, lat1, lon2, lat2, line_color, text_color);
-    
+    plot(lon1, lat1, lon2, lat2, line_color, text_color, factor, unit);
+
     D_save_command(G_recreate_command());
     D_close_driver();
 

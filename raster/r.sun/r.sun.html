@@ -73,7 +73,7 @@ with positive values for northern hemisphere and negative for southern one.
 In similar principle the Linke turbidity factor (<i>linke</i>, <i>lin</i>
 ) and ground albedo (<i>albedo</i>, <i>alb</i>) can be set. 
 <p>Besides clear-sky radiations, the user can compute a real-sky radiation (beam,
-diffuse) using <i>coef_bh</i> and <i>coef_dh</i> input raster maps defining
+diffuse) using <i>coeff_bh</i> and <i>coeff_dh</i> input raster maps defining
 the fraction of the respective clear-sky radiations reduced by atmospheric
 factors (e.g. cloudiness). The value is between 0-1. Usually these
 coefficients can be obtained from a long-terms meteorological measurements
@@ -230,11 +230,11 @@ if the <em>-p</em> flag has been used.
 
 With a large number or columns and rows, <b>r.sun</b> can consume
 significant amount of memory. While output raster maps are not
-partitionable, the input raster maps are using the <em>num_partitions</em>
+partitionable, the input raster maps are using the <em>npartitions</em>
 parameter.
 
 In case of out of memory error (<tt>ERROR: G_malloc: out of memory</tt>), the
-<em>num_partitions</em> parameter can be used to run a segmented calculation
+<em>npartitions</em> parameter can be used to run a segmented calculation
 which consumes less memory during the computations.
 
 The amount of memory by <b>r.sun</b> is estimated as follows:
@@ -248,7 +248,7 @@ The amount of memory by <b>r.sun</b> is estimated as follows:
 memory_bytes = rows*cols*(IR*4 + horizon_steps + OR*4)
 
 # with input raster map partitioning:
-memory_bytes = rows*cols*((IR*4+horizon_steps)/num_partitions  + OR*4)
+memory_bytes = rows*cols*((IR*4+horizon_steps)/npartitions  + OR*4)
 </pre></div>
 
 <h2>EXAMPLES</h2>
@@ -380,4 +380,4 @@ Thomas Huld, JRC, Italy <br>
 </address>
 
 <p>
-<i>Last changed: $Date: 2014-12-19 22:55:37 +0100 (Fri, 19 Dec 2014) $</i> 
+<i>Last changed: $Date: 2015-01-11 15:16:24 +0100 (Sun, 11 Jan 2015) $</i> 

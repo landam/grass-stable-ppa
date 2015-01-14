@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
 
     /* get the output projection parameters, if existing */
     /* Check for ownership here */
-    stat = G__mapset_permissions(set_name);
+    stat = G_mapset_permissions(set_name);
     if (stat == 0) {
 	G_fatal_error(_("PERMANENT: permission denied"));
     }
@@ -161,19 +161,19 @@ int main(int argc, char *argv[])
 	}
     case PROJECTION_UTM:
 	if (!exist) {
-	    sprintf(proj_name, "%s", G__projection_name(PROJECTION_UTM));
+	    sprintf(proj_name, "%s", G_projection_name(PROJECTION_UTM));
 	    sprintf(proj_out, "utm");
 	    break;
 	}
     case PROJECTION_SP:
 	if (!exist) {
-	    sprintf(proj_name, "%s", G__projection_name(PROJECTION_SP));
+	    sprintf(proj_name, "%s", G_projection_name(PROJECTION_SP));
 	    sprintf(proj_out, "stp");
 	    break;
 	}
     case PROJECTION_LL:
 	if (!exist) {
-	    sprintf(proj_name, "%s", G__projection_name(PROJECTION_LL));
+	    sprintf(proj_name, "%s", G_projection_name(PROJECTION_LL));
 	    sprintf(proj_out, "ll");
 	    break;
 	}
@@ -639,7 +639,7 @@ int main(int argc, char *argv[])
 	G_free_key_value(in_unit_keys);
     }				/* if */
 
-    if (G__put_window(&cellhd, "", "DEFAULT_WIND") < 0)
+    if (G_put_element_window(&cellhd, "", "DEFAULT_WIND") < 0)
 	G_fatal_error(_("Unable to write to DEFAULT_WIND region file"));
     fprintf(stderr,
 	    _("\nProjection information has been recorded for this location\n\n"));

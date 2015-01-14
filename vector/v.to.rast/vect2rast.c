@@ -35,7 +35,9 @@ int vect_to_rast(const char *vector_map, const char *raster_map, const char *fie
 
     G_verbose_message(_("Loading data..."));
     Vect_set_open_level(2);
-    Vect_open_old2(&Map, vector_map, "", field_name);
+    if (Vect_open_old2(&Map, vector_map, "", field_name) < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), vector_map);
+
     field = Vect_get_field_number(&Map, field_name);
 
     if (field > 0)
@@ -93,10 +95,10 @@ int vect_to_rast(const char *vector_map, const char *raster_map, const char *fie
 	
 	switch (ctype) {
 	case DB_C_TYPE_INT:
-	    format = USE_CELL;
+	    format = CELL_TYPE;
 	    break;
 	case DB_C_TYPE_DOUBLE:
-	    format = USE_DCELL;
+	    format = DCELL_TYPE;
 	    break;
 	default:
 	    G_fatal_error(_("Unable to use column <%s>"), column);
@@ -104,33 +106,23 @@ int vect_to_rast(const char *vector_map, const char *raster_map, const char *fie
 	}
 	break;
     case USE_CAT:
-	format = USE_CELL;
+	format = CELL_TYPE;
 	break;
     case USE_VAL:
 	format = value_type;
 	break;
     case USE_Z:
-	format = USE_DCELL;
+	format = DCELL_TYPE;
 	is_fp = 1;
 	break;
     case USE_D:
-	format = USE_DCELL;
+	format = DCELL_TYPE;
 	break;
     default:
 	G_fatal_error(_("Unknown use type: %d"), use);
     }
 
-    switch (format) {
-    case USE_CELL:
-	fd = Rast_open_c_new(raster_map);
-	break;
-    case USE_DCELL:
-	fd = Rast_open_new(raster_map, DCELL_TYPE);
-	break;
-    default:
-	G_fatal_error(_("Unknown raster map type"));
-	break;
-    }
+    fd = Rast_open_new(raster_map, format);
 
     Points = Vect_new_line_struct();
 

@@ -101,7 +101,6 @@ int main(int argc, char *argv[])
 {
     int ii;
     int ret_val;
-    double x_orig, y_orig;
     static int rand1 = 12345;
 
     G_gisinit(argv[0]);
@@ -168,7 +167,7 @@ int main(int argc, char *argv[])
     parm.observation->guisection = _("Input");
 
     parm.tc = G_define_standard_option(G_OPT_R_OUTPUT);
-    parm.tc->key = "sedflow_capacity";
+    parm.tc->key = "transport_capacity";
     parm.tc->required = NO;
     parm.tc->description = _("Name for output transport capacity raster map [kg/ms]");
     parm.tc->guisection = _("Output");
@@ -181,14 +180,14 @@ int main(int argc, char *argv[])
     parm.et->guisection = _("Output");
 
     parm.conc = G_define_standard_option(G_OPT_R_OUTPUT);
-    parm.conc->key = "concentration";
+    parm.conc->key = "sediment_concentration";
     parm.conc->required = NO;
     parm.conc->description =
 	_("Name for output sediment concentration raster map [particle/m3]");
     parm.conc->guisection = _("Output");
 
     parm.flux = G_define_standard_option(G_OPT_R_OUTPUT);
-    parm.flux->key = "flux";
+    parm.flux->key = "sediment_flux";
     parm.flux->required = NO;
     parm.flux->description = _("Name for output sediment flux raster map [kg/ms]");
     parm.flux->guisection = _("Output");
@@ -274,8 +273,6 @@ int main(int argc, char *argv[])
     step = (stepx + stepy) / 2.;
     mx = cellhd.cols;
     my = cellhd.rows;
-    x_orig = cellhd.west * conv;
-    y_orig = cellhd.south * conv;	/* do we need this? */
     xmin = 0.;
     ymin = 0.;
     xp0 = xmin + stepx / 2.;
@@ -330,9 +327,9 @@ int main(int argc, char *argv[])
 
     /* Recompute timesec from user input in minutes
      * to real timesec in seconds */
-    timesec = timesec * 60.0;
-    iterout = iterout * 60.0;
-    if ((timesec / iterout) > 100.0)
+    timesec = timesec * 60;
+    iterout = iterout * 60;
+    if ((timesec / iterout) > 100)
 	G_message(_("More than 100 files are going to be created !!!!!"));
 
     /* compute how big the raster is and set this to appr 2 walkers per cell */

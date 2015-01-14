@@ -86,17 +86,17 @@ int main(int argc, char **argv)
     lwidth->required = NO;
     lwidth->description = _("Grid line width");
 
-    opt1 = G_define_standard_option(G_OPT_C_FG);
+    opt1 = G_define_standard_option(G_OPT_C);
     opt1->answer = "gray";
     opt1->label = _("Grid color");
     opt1->guisection = _("Color");
 
-    opt4 = G_define_standard_option(G_OPT_C_FG);
+    opt4 = G_define_standard_option(G_OPT_C);
     opt4->key = "border_color";
     opt4->label = _("Border color");
     opt4->guisection = _("Color");
 
-    tcolor = G_define_standard_option(G_OPT_C_FG);
+    tcolor = G_define_standard_option(G_OPT_C);
     tcolor->key = "text_color";
     tcolor->answer = "gray";
     tcolor->label = _("Text color");
@@ -167,9 +167,9 @@ int main(int argc, char **argv)
     if (wgs84->answer)
 	geogrid->answer = 1;	/* -w implies -g */
     if (geogrid->answer && G_projection() == PROJECTION_LL)
-	G_fatal_error(_("Geo-Grid option is not available for LL projection"));
+	G_fatal_error(_("Geo-grid option not available for LL projection, use without -g/-w"));
     if (geogrid->answer && G_projection() == PROJECTION_XY)
-	G_fatal_error(_("Geo-Grid option is not available for XY projection"));
+	G_fatal_error(_("Geo-grid option not available for XY projection, use without -g/-w"));
 
     if (notext->answer)
 	do_text = FALSE;
@@ -179,7 +179,7 @@ int main(int argc, char **argv)
     if (lwidth->answer) {
 	line_width = atoi(lwidth->answer);
 	if(line_width < 0 || line_width > 1e3)
-	    G_fatal_error("Invalid line width.");
+	    G_fatal_error("Invalid line width");
     }
     else
 	line_width = 0;
@@ -206,7 +206,7 @@ int main(int argc, char **argv)
 	G_fatal_error("Invalid direction: %s", direction->answer);
 
     if (align->answer || strcmp(opt2->answer, "0") == 0)
-	G__get_window(&wind, "", "WIND", G_mapset());
+	G_get_element_window(&wind, "", "WIND", G_mapset());
 
     if (strcmp(opt2->answer, "0") == 0) {
 	if (geogrid->answer)
@@ -249,9 +249,7 @@ int main(int argc, char **argv)
     }
 
     /* Setup driver and check important information */
-    if (D_open_driver() != 0)
-	G_fatal_error(_("No graphics device selected. "
-			"Use d.mon to select graphics device."));
+    D_open_driver();
     
     /* Parse and select grid color */
     colorg = D_parse_color(opt1->answer, FALSE);

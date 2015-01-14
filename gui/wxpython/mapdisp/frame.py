@@ -140,6 +140,8 @@ class MapFrame(SingleMapFrame):
         
         # create statusbar and its manager
         statusbar = self.CreateStatusBar(number = 4, style = 0)
+        if globalvar.wxPython3:
+            statusbar.SetMinHeight(24)
         statusbar.SetStatusWidths([-5, -2, -1, -1])
         self.statusbarManager = sb.SbManager(mapframe = self, statusbar = statusbar)
         
@@ -1172,14 +1174,14 @@ class MapFrame(SingleMapFrame):
                             continue
                         param, val = param_val
                         if param == 'raster':
-                            self.legend.cmd[idx] = 'rast={rast}'.format(rast=layer.maplayer.name)
+                            self.legend.cmd[idx] = 'raster={rast}'.format(rast=layer.maplayer.name)
                             isMap = True
                         elif param in ('use', 'range'):
                             # clear range or use to avoid problems
                             del self.legend.cmd[idx]
 
                     if not isMap:  # for the first time
-                        self.legend.cmd.append('rast=%s' % layer.maplayer.name)
+                        self.legend.cmd.append('raster=%s' % layer.maplayer.name)
                     break
 
         if not showDialog and self.legend.CmdIsValid():

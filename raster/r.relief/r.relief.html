@@ -65,7 +65,7 @@ r.relief input=elevation output=elevation_shade
 
 Color can be added later using <em><a href="r.shade.html">r.shade</a></em>:
 <div class="code"><pre>
-r.shade reliefmap=elevation_shade drapemap=elevation output=elevation_shaded
+r.shade shade=elevation_shade color=elevation output=elevation_shaded
 </pre></div>
 
 <p>In Latitude-Longitude locations (or other non-metric locations), the
@@ -103,4 +103,4 @@ Jim Westervelt, U.S. Army Construction Engineering Research Laboratory
 <br>
 Markus Metz: Enhanced fast C version of r.relief for GRASS GIS 7
 
-<p><i>Last changed: $Date: 2014-12-20 05:56:06 +0100 (Sat, 20 Dec 2014) $</i>
+<p><i>Last changed: $Date: 2014-12-25 15:50:03 +0100 (Thu, 25 Dec 2014) $</i>

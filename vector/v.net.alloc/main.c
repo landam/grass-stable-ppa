@@ -72,44 +72,45 @@ int main(int argc, char **argv)
     map = G_define_standard_option(G_OPT_V_INPUT);
     output = G_define_standard_option(G_OPT_V_OUTPUT);
 
+    afield_opt = G_define_standard_option(G_OPT_V_FIELD);
+    afield_opt->key = "arc_layer";
+    afield_opt->answer = "1";
+    afield_opt->label = _("Arc layer");
+
     type_opt = G_define_standard_option(G_OPT_V_TYPE);
+    type_opt->key = "arc_type";
     type_opt->options = "line,boundary";
     type_opt->answer = "line,boundary";
     type_opt->description = _("Arc type");
 
-    afield_opt = G_define_standard_option(G_OPT_V_FIELD);
-    afield_opt->key = "alayer";
-    afield_opt->answer = "1";
-    afield_opt->label = _("Arc layer");
-
     nfield_opt = G_define_standard_option(G_OPT_V_FIELD);
-    nfield_opt->key = "nlayer";
+    nfield_opt->key = "node_layer";
     nfield_opt->answer = "2";
     nfield_opt->label = _("Node layer");
 
     afcol = G_define_option();
-    afcol->key = "afcolumn";
+    afcol->key = "arc_column";
     afcol->type = TYPE_STRING;
     afcol->required = NO;
     afcol->description = _("Arc forward/both direction(s) cost column (number)");
     afcol->guisection = _("Cost");
 
     abcol = G_define_option();
-    abcol->key = "abcolumn";
+    abcol->key = "arc_backward_column";
     abcol->type = TYPE_STRING;
     abcol->required = NO;
     abcol->description = _("Arc backward direction cost column (number)");
     abcol->guisection = _("Cost");
 
     ncol = G_define_option();
-    ncol->key = "ncolumn";
+    ncol->key = "node_column";
     ncol->type = TYPE_STRING;
     ncol->required = NO;
     ncol->description = _("Node cost column (number)");
     ncol->guisection = _("Cost");
 
     term_opt = G_define_standard_option(G_OPT_V_CATS);
-    term_opt->key = "ccats";
+    term_opt->key = "center_cats";
     term_opt->required = YES;
     term_opt->description =
 	_("Categories of centers (points on nodes) to which net "
@@ -141,7 +142,8 @@ int main(int argc, char **argv)
 	geo = 0;
 
     Vect_set_open_level(2);
-    Vect_open_old(&Map, map->answer, "");
+    if (Vect_open_old(&Map, map->answer, "") < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), map->answer);
 
     afield = Vect_get_field_number(&Map, afield_opt->answer);
     nfield = Vect_get_field_number(&Map, nfield_opt->answer);
@@ -242,7 +244,9 @@ int main(int argc, char **argv)
     G_percent(1, 1, 1);
 
     /* Write arcs to new map */
-    Vect_open_new(&Out, output->answer, Vect_is_3d(&Map));
+    if (Vect_open_new(&Out, output->answer, Vect_is_3d(&Map)) < 0)
+	G_fatal_error(_("Unable to create vector map <%s>"), output->answer);
+
     Vect_hist_command(&Out);
 
     nlines = Vect_get_num_lines(&Map);

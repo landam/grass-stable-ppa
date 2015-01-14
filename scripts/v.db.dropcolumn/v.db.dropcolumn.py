@@ -20,9 +20,9 @@
 
 #%module
 #% description: Drops a column from the attribute table connected to a given vector map.
-#% keywords: vector
-#% keywords: attribute table
-#% keywords: database
+#% keyword: vector
+#% keyword: attribute table
+#% keyword: database
 #%end
 
 #%option G_OPT_V_MAP
@@ -52,7 +52,7 @@ def main():
     mapset = grass.gisenv()['MAPSET']
     
     # does map exist in CURRENT mapset?
-    if not grass.find_file(map, element = 'vector', mapset = mapset):
+    if not grass.find_file(map, element = 'vector', mapset = mapset)['file']:
         grass.fatal(_("Vector map <%s> not found in current mapset") % map)
     
     f = grass.vector_layer_db(map, layer)

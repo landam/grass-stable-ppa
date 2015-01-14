@@ -124,9 +124,10 @@ int main(int argc, char *argv[])
 
     /* Open vector */
     Vect_set_open_level(2);
-    Vect_open_old2(&Map, opt.vect->answer,
+    if (Vect_open_old2(&Map, opt.vect->answer,
 		   print_flag->answer ? "" : G_mapset(),
-		   opt.field->answer);
+		   opt.field->answer) < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), opt.vect->answer);
 
     field = Vect_get_field_number(&Map, opt.field->answer);
 
@@ -219,6 +220,8 @@ int main(int argc, char *argv[])
 	/* Add point to cache */
 	row = Rast_northing_to_row(Points->y[0], &window);
 	col = Rast_easting_to_col(Points->x[0], &window);
+	if (col < 0 || col >= window.cols || row < 0 || row >= window.rows)
+	   continue;
 
 	cache[point_cnt].row = row;
 	cache[point_cnt].col = col;

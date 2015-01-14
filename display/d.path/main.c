@@ -54,41 +54,40 @@ int main(int argc, char **argv)
     map = G_define_standard_option(G_OPT_V_MAP);
 
     type_opt = G_define_standard_option(G_OPT_V_TYPE);
+    type_opt->key = "arc_type";
     type_opt->options = "line,boundary";
     type_opt->answer = "line,boundary";
     type_opt->description = _("Arc type");
 
-    coor_opt = G_define_option();
-    coor_opt->key = "coordinates";
+    coor_opt = G_define_standard_option(G_OPT_M_COORDS);
     coor_opt->key_desc = "x1,y1,x2,y2";
-    coor_opt->type = TYPE_STRING;
     coor_opt->required = YES;
     coor_opt->description = _("Starting and ending coordinates");
 
     afield_opt = G_define_standard_option(G_OPT_V_FIELD);
-    afield_opt->key = "alayer";
+    afield_opt->key = "arc_layer";
     afield_opt->answer = "1";
     afield_opt->label = _("Arc layer");
 
     nfield_opt = G_define_standard_option(G_OPT_V_FIELD);
-    nfield_opt->key = "nlayer";
+    nfield_opt->key = "node_layer";
     nfield_opt->answer = "2";
     nfield_opt->label = _("Node layer");
 
     afcol = G_define_option();
-    afcol->key = "afcolumn";
+    afcol->key = "arc_column";
     afcol->type = TYPE_STRING;
     afcol->required = NO;
     afcol->description = _("Arc forward/both direction(s) cost column (number)");
 
     abcol = G_define_option();
-    abcol->key = "abcolumn";
+    abcol->key = "arc_backward_column";
     abcol->type = TYPE_STRING;
     abcol->required = NO;
     abcol->description = _("Arc backward direction cost column (number)");
 
     ncol = G_define_option();
-    ncol->key = "ncolumn";
+    ncol->key = "node_column";
     ncol->type = TYPE_STRING;
     ncol->required = NO;
     ncol->description = _("Node cost column");
@@ -102,7 +101,7 @@ int main(int argc, char **argv)
     color_opt->guisection = _("Rendering");
 
     hcolor_opt = G_define_option();
-    hcolor_opt->key = "hcolor";
+    hcolor_opt->key = "highlight_color";
     hcolor_opt->type = TYPE_STRING;
     hcolor_opt->answer = "red";
     hcolor_opt->description = _("Highlight color");
@@ -150,9 +149,7 @@ int main(int argc, char **argv)
 	G_fatal_error(_("%s - illegal y value"), coor_opt->answers[3]);
 
 
-    if (D_open_driver() != 0)
-      	G_fatal_error(_("No graphics device selected. "
-			"Use d.mon to select graphics device."));
+    D_open_driver();
     
     color = G_standard_color_rgb(BLACK);
     if (G_str_to_color(color_opt->answer, &r, &g, &b)) {
@@ -184,7 +181,8 @@ int main(int argc, char **argv)
 	geo = 0;
 
     Vect_set_open_level(2);
-    Vect_open_old(&Map, map->answer, "");
+    if (Vect_open_old(&Map, map->answer, "") < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), map->answer);
 
     D_setup(0);
 

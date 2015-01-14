@@ -94,6 +94,8 @@ enum opt_error {
 
 #define KEYLENGTH 64
 
+#define MAX_MATCHES 50
+
 /* initialize the global struct */
 struct state state;
 struct state *st = &state;
@@ -467,13 +469,13 @@ int G_parser(int argc, char **argv)
 	    G__usage_html();
 	    exit(EXIT_SUCCESS);
 	}
-	
-	/* If first arg is "--rest-description" then print out
-        * a ReST description of the task */
-	if (strcmp(argv[1], "--rest-description") == 0) {
+
+	/* If first arg is "--rst-description" then print out
+	 * a reStructuredText description of the task */
+	if (strcmp(argv[1], "--rst-description") == 0) {
 	    G__usage_rest();
 	    exit(EXIT_SUCCESS);
-	}	
+	}
 
 	/* If first arg is "--wps-process-description" then print out
 	 * the wps process description of the task */
@@ -941,11 +943,11 @@ void set_option(const char *string)
 {
     struct Option *at_opt = NULL;
     struct Option *opt = NULL;
-    int found;
-    int prefix;
     size_t key_len;
     char the_key[KEYLENGTH];
     char *ptr, *err;
+    struct Option *matches[MAX_MATCHES];
+    int found = 0;
 
     err = NULL;
 
@@ -955,36 +957,57 @@ void set_option(const char *string)
     string++;
 
     /* Find option with best keyword match */
-    found = 0;
-    prefix = 0;
     key_len = strlen(the_key);
     for (at_opt = &st->first_option; at_opt; at_opt = at_opt->next_opt) {
 	if (!at_opt->key)
 	    continue;
 
         if (strcmp(the_key, at_opt->key) == 0) {
-	    opt = at_opt;
+	    matches[0] = at_opt;
 	    found = 1;
 	    break; 
 	}
 
-        if (strncmp(the_key, at_opt->key, key_len) == 0) {
-	    opt = at_opt;
-	    found++;
-	    prefix++;
-	}
-	else if (match_option(the_key, at_opt->key)) {
-	    if (!found)
-		opt = at_opt;
-	    found++;
+        if (strncmp(the_key, at_opt->key, key_len) == 0 ||
+	    match_option(the_key, at_opt->key)) {
+	    if (found >= MAX_MATCHES)
+		G_fatal_error("Too many matches (limit %d)", MAX_MATCHES);
+	    matches[found++] = at_opt;
 	}
     }
 
-    if (found > 1 && prefix > 1) {
-	G_asprintf(&err, _("%s: Sorry, <%s=> is ambiguous"), G_program_name(), the_key);
-	append_error(err);
-	return;
+    if (found > 1) {
+	int shortest = 0;
+	int length = strlen(matches[0]->key);
+	int prefix = 1;
+	int i;
+	for (i = 1; i < found; i++) {
+	    int len = strlen(matches[i]->key);
+	    if (len < length) {
+		length = len;
+		shortest = i;
+	    }
+	}
+	for (i = 0; prefix && i < found; i++)
+	    if (strncmp(matches[i]->key, matches[shortest]->key, length) != 0)
+		prefix = 0;
+	if (prefix) {
+	    matches[0] = matches[shortest];
+	    found = 1;
+	}
+	else {
+	    G_asprintf(&err, _("%s: Sorry, <%s=> is ambiguous"), G_program_name(), the_key);
+	    append_error(err);
+	    for (i = 0; i < found; i++) {
+		G_asprintf(&err, _("Option <%s=> matches"), matches[i]->key);
+		append_error(err);
+	    }
+	    return;
+	}
     }
+
+    if (found)
+	opt = matches[0];
 
     /* First, check if key has been renamed in GRASS 7 */
     if (found == 0) {
@@ -1011,6 +1034,9 @@ void set_option(const char *string)
         append_error(err);
         return;
     }
+
+    if (getenv("GRASS_FULL_OPTION_NAMES") && strcmp(the_key, opt->key) != 0)
+	G_warning(_("<%s> is an abbreviation for <%s>"), the_key, opt->key);
     
     /* Allocate memory where answer is stored */
     if (opt->count++) {
@@ -1214,7 +1240,7 @@ int check_string(const char *ans, const char **opts, int *result)
 {
     int len = strlen(ans);
     int found = 0;
-    int prefix = 0;
+    int matches[MAX_MATCHES];
     int i;
 
     if (!opts)
@@ -1223,26 +1249,44 @@ int check_string(const char *ans, const char **opts, int *result)
     for (i = 0; opts[i]; i++) {
 	if (strcmp(ans, opts[i]) == 0)
 	    return 0;
-	if (strncmp(ans, opts[i], len) == 0) {
-	    *result = i;
-	    found++;
-	    prefix++;
-	}
-	else if (match_option(ans, opts[i])) {
-	    if (!found)
-		*result = i;
-	    found++;
+	if (strncmp(ans, opts[i], len) == 0 || match_option(ans, opts[i])) {
+	    if (found >= MAX_MATCHES)
+		G_fatal_error("too many matches (limit %d)", MAX_MATCHES);
+	    matches[found++] = i;
 	}
     }
+
+    if (found > 1) {
+	int shortest = 0;
+	int length = strlen(opts[matches[0]]);
+	int prefix = 1;
+	int i;
+	for (i = 1; i < found; i++) {
+	    int len = strlen(opts[matches[i]]);
+	    if (len < length) {
+		length = len;
+		shortest = i;
+	    }
+	}
+	for (i = 0; prefix && i < found; i++)
+	    if (strncmp(opts[matches[i]], opts[matches[shortest]], length) != 0)
+		prefix = 0;
+	if (prefix) {
+	    matches[0] = matches[shortest];
+	    found = 1;
+	}
+    }
+
+    if (found == 1)
+	*result = matches[0];
+
+    if (found > 0 && getenv("GRASS_FULL_OPTION_NAMES") && strcmp(ans, opts[matches[0]]) != 0)
+	G_warning(_("<%s> is an abbreviation for <%s>"), ans, opts[matches[0]]);
 
     switch (found) {
     case 0: return OUT_OF_RANGE;
     case 1: return REPLACED;
-    default:
-	switch (prefix) {
-	case 1: return REPLACED;
-	default: return AMBIGUOUS;
-	}
+    default: return AMBIGUOUS;
     }
 }
 
@@ -1380,7 +1424,7 @@ int check_overwrite(void)
 
     over = 0;
     /* Check the GRASS OVERWRITE variable */
-    if ((overstr = G__getenv("OVERWRITE"))) {
+    if ((overstr = G_getenv_nofatal("OVERWRITE"))) {
 	over = atoi(overstr);
     }
 

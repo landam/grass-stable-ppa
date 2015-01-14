@@ -159,6 +159,7 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
         else:
             super(LayerTree, self).__init__(parent, id, style = ctstyle, **kwargs)
         self.SetName("LayerTree")
+        self.SetBackgroundColour("white")
         
         ### SetAutoLayout() causes that no vertical scrollbar is displayed
         ### when some layers are not visible in layer tree
@@ -1251,10 +1252,6 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
             elif ltype == 'vector':
                 cmd += GetDisplayVectSettings()
             
-            # ltype == 'thememap':
-            # -s flag requested, otherwise only first thematic category is displayed
-            # should be fixed by C-based d.thematic.* modules
-        
         if cmd:
             GUI(parent = self, centreOnParent = False).ParseCommand(cmd,
                                                                     completed = (self.GetOptData,layer,params))
