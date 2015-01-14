@@ -49,11 +49,9 @@ struct Option* M_define_option(int n, const char *desc, int multiple)
     p->description = str;
     if (strcmp(p->key, "raster") == 0 || strcmp(p->key, "raster_3d") == 0)
 	p->guisection = _("Raster");
-    else if (strcmp(p->key, "vector") == 0 ||
-             strcmp(p->key, "old_vector") == 0 ||
-	     strcmp(p->key, "ascii_vector") == 0)
+    else if (strcmp(p->key, "vector") == 0)
 	p->guisection = _("Vector");
-    else if (strcmp(p->key, "region") == 0 || strcmp(p->key, "region3d") == 0)
+    else if (strcmp(p->key, "region") == 0)
 	p->guisection = _("Region");
     else if (strcmp(p->key, "group") == 0)
 	p->guisection = _("Group");

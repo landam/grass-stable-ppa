@@ -135,28 +135,29 @@ int main(int argc, char **argv)
     map = G_define_standard_option(G_OPT_V_INPUT);
     output = G_define_standard_option(G_OPT_V_OUTPUT);
 
+    afield_opt = G_define_standard_option(G_OPT_V_FIELD);
+    afield_opt->key = "arc_layer";
+    afield_opt->label = _("Arc layer");
+
     type_opt = G_define_standard_option(G_OPT_V_TYPE);
+    type_opt->key = "arc_type";
     type_opt->options = "line,boundary";
     type_opt->answer = "line,boundary";
     type_opt->description = _("Arc type");
 
-    afield_opt = G_define_standard_option(G_OPT_V_FIELD);
-    afield_opt->key = "alayer";
-    afield_opt->label = _("Arc layer");
-
     tfield_opt = G_define_standard_option(G_OPT_V_FIELD);
-    tfield_opt->key = "nlayer";
+    tfield_opt->key = "node_layer";
     tfield_opt->answer = "2";
     tfield_opt->label = _("Node layer (used for cities)");
 
     afcol = G_define_option();
-    afcol->key = "afcolumn";
+    afcol->key = "arc_column";
     afcol->type = TYPE_STRING;
     afcol->required = NO;
     afcol->description = _("Arc forward/both direction(s) cost column (number)");
 
     abcol = G_define_option();
-    abcol->key = "abcolumn";
+    abcol->key = "arc_backward_column";
     abcol->type = TYPE_STRING;
     abcol->required = NO;
     abcol->description = _("EXPERIMENTAL: Arc backward direction cost column (number)");
@@ -168,7 +169,7 @@ int main(int argc, char **argv)
     seq->description = _("Name for output file holding node sequence (\"-\" for stdout)");
 
     term_opt = G_define_standard_option(G_OPT_V_CATS);
-    term_opt->key = "ccats";
+    term_opt->key = "center_cats";
     term_opt->required = YES;
     term_opt->description = _("Categories of points ('cities') on nodes "
 			      "(layer is specified by nlayer)");
@@ -196,7 +197,7 @@ int main(int argc, char **argv)
     tfield = atoi(tfield_opt->answer);
     Vect_str_to_cat_list(term_opt->answer, Clist);
 
-    dstr = G__getenv("DEBUG");
+    dstr = G_getenv_nofatal("DEBUG");
 
     if (dstr != NULL)
 	debug_level = atoi(dstr);
@@ -218,7 +219,10 @@ int main(int argc, char **argv)
     Vect_check_input_output_name(map->answer, output->answer, G_FATAL_EXIT);
 
     Vect_set_open_level(2);
-    Vect_open_old(&Map, map->answer, "");
+
+    if (Vect_open_old(&Map, map->answer, "") < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), map->answer);
+
     nnodes = Vect_get_num_nodes(&Map);
     nlines = Vect_get_num_lines(&Map);
 
@@ -484,7 +488,9 @@ int main(int argc, char **argv)
     }
 
     /* Write arcs to new map */
-    Vect_open_new(&Out, output->answer, Vect_is_3d(&Map));
+    if (Vect_open_new(&Out, output->answer, Vect_is_3d(&Map)) < 0)
+	G_fatal_error(_("Unable to create vector map <%s>"), output->answer);
+
     Vect_hist_command(&Out);
 
     G_verbose_message(_("Cycle with total cost %.3f"), cost);

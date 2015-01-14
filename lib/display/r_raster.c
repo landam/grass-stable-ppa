@@ -3,7 +3,7 @@
 
   \brief Display Library - Raster graphics subroutines
 
-  (C) 2001-2009, 2011 by the GRASS Development Team
+  (C) 2001-2014 by the GRASS Development Team
 
   This program is free software under the GNU General Public License
   (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -36,6 +36,10 @@ extern const struct driver *Cairo_Driver(void);
 
 static int read_env_file(const char *);
 
+static struct {
+    double t, b, l, r;
+} screen;
+
 static void init(void)
 {
     const char *fenc = getenv("GRASS_ENCODING");
@@ -60,10 +64,11 @@ static void init(void)
     D_text_rotation(0);
 
     if (frame) {
-	double t, b, l, r;
-	sscanf(frame, "%lf,%lf,%lf,%lf", &t, &b, &l, &r);
-	COM_Set_window(t, b, l, r);
+	sscanf(frame, "%lf,%lf,%lf,%lf", &screen.t, &screen.b, &screen.l, &screen.r);
+	COM_Set_window(screen.t, screen.b, screen.l, screen.r);
     }
+    else
+	COM_Get_window(&screen.t, &screen.b, &screen.l, &screen.r);
 }
 
 int read_env_file(const char *path)
@@ -71,6 +76,8 @@ int read_env_file(const char *path)
     FILE *fd;
     char buf[1024];
     char **token;
+
+    G_debug(1, "read_env_file(): %s", path);
     
     fd = fopen(path, "r");
     if (!fd)
@@ -101,15 +108,17 @@ int read_env_file(const char *path)
 int D_open_driver(void)
 {
     const char *p, *m;
+    const struct driver *drv;
     
     G_debug(1, "D_open_driver():");
     p = getenv("GRASS_RENDER_IMMEDIATE");
-    m = G__getenv("MONITOR");
+    m = G_getenv_nofatal("MONITOR");
     
     if (m && G_strncasecmp(m, "wx", 2) == 0) {
 	/* wx monitors always use GRASS_RENDER_IMMEDIATE. */
 	p = NULL; /* use default display driver */
-    } else if (m) {
+    }
+    else if (m) {
 	char *env;
 	const char *v;
 	char *u_m;
@@ -122,19 +131,25 @@ int D_open_driver(void)
 
 	env = NULL;
 	G_asprintf(&env, "MONITOR_%s_MAPFILE", u_m);
-	v = G__getenv(env);
+	v = G_getenv_nofatal(env);
 	p = m;
 
 	if (v)
             G_putenv("GRASS_RENDER_FILE", v);
         
 	G_asprintf(&env, "MONITOR_%s_ENVFILE", u_m);
-	v = G__getenv(env);
+	v = G_getenv_nofatal(env);
 	if (v) 
 	    read_env_file(v);
     }
+    else if (!p)
+	G_fatal_error(_("Neither %s (managed by d.mon command) nor %s (used for direct rendering) defined"),
+		      "MONITOR", "GRASS_RENDER_IMMEDIATE");
+
+    if (p && G_strcasecmp(p, "default") == 0)
+	p = NULL;
     
-    const struct driver *drv =
+    drv =
 	(p && G_strcasecmp(p, "png")   == 0) ? PNG_Driver() :
 	(p && G_strcasecmp(p, "ps")    == 0) ? PS_Driver() :
 	(p && G_strcasecmp(p, "html")  == 0) ? HTML_Driver() :
@@ -151,9 +166,6 @@ int D_open_driver(void)
     LIB_init(drv);
 
     init();
-
-    if (!getenv("GRASS_RENDER_IMMEDIATE") && !m)
-	return 1;
 
     return 0;
 }
@@ -197,7 +209,7 @@ int D_save_command(const char *cmd)
 
     G_debug(1, "D_save_command(): %s", cmd);
 
-    mon_name = G__getenv("MONITOR");
+    mon_name = G_getenv_nofatal("MONITOR");
     if (!mon_name || /* if no monitor selected */
 	/* or wx monitor selected and display commands called by the monitor */
 	(G_strncasecmp(mon_name, "wx", 2) == 0 &&
@@ -209,7 +221,7 @@ int D_save_command(const char *cmd)
 
     env = NULL;
     G_asprintf(&env, "MONITOR_%s_CMDFILE", u_mon_name);
-    mon_cmd = G__getenv(env);
+    mon_cmd = G_getenv_nofatal(env);
     if (!mon_cmd)
 	return 0;
 
@@ -259,19 +271,6 @@ void D_text_size(double width, double height)
 void D_text_rotation(double rotation)
 {
     COM_Text_rotation(rotation);
-}
-
-/*!
-  \brief Get clipping frame
-  
-  \param[out] t top
-  \param[out] b bottom
-  \param[out] l left
-  \param[out] r right
-*/
-void D_get_window(double *t, double *b, double *l, double *r)
-{
-    return COM_Get_window(t, b, l, r);
 }
 
 /*!
@@ -330,3 +329,96 @@ void D_font_info(char ***list, int *count)
 {
     COM_Font_info(list, count);
 }
+
+/*!
+ * \brief get graphical clipping window
+ *
+ * Queries the graphical clipping window (origin is top right)
+ *
+ *  \param[out] t top edge of clip window
+ *  \param[out] b bottom edge of clip window
+ *  \param[out] l left edge of clip window
+ *  \param[out] r right edge of clip window
+ *  \return ~
+ */
+
+void D_get_clip_window(double *t, double *b, double *l, double *r)
+{
+    COM_Get_window(t, b, l, r);
+}
+
+/*!
+ * \brief set graphical clipping window
+ *
+ * Sets the graphical clipping window to the specified rectangle
+ *  (origin is top right)
+ *
+ *  \param t top edge of clip window
+ *  \param b bottom edge of clip window
+ *  \param l left edge of clip window
+ *  \param r right edge of clip window
+ *  \return ~
+ */
+
+void D_set_clip_window(double t, double b, double l, double r)
+{
+    if (t < screen.t) t = screen.t;
+    if (b > screen.b) b = screen.b;
+    if (l < screen.l) l = screen.l;
+    if (r > screen.r) r = screen.r;
+
+    COM_Set_window(t, b, l, r);
+}
+
+/*!
+ * \brief get graphical window (frame)
+ *
+ * Queries the graphical frame (origin is top right)
+ *
+ *  \param[out] t top edge of frame
+ *  \param[out] b bottom edge of frame
+ *  \param[out] l left edge of frame
+ *  \param[out] r right edge of frame
+ *  \return ~
+ */
+
+void D_get_frame(double *t, double *b, double *l, double *r)
+{
+    *t = screen.t;
+    *b = screen.b;
+    *l = screen.l;
+    *r = screen.r;
+}
+
+/*!
+ * \brief set graphical clipping window to map window
+ *
+ * Sets the graphical clipping window to the pixel window that corresponds
+ * to the current database region.
+ *
+ *  \param ~
+ *  \return ~
+ */
+
+void D_set_clip_window_to_map_window(void)
+{
+    D_set_clip_window(
+	D_get_d_north(), D_get_d_south(),
+	D_get_d_west(), D_get_d_east());
+}
+
+/*!
+ * \brief set clipping window to screen window
+ *
+ * Sets the clipping window to the pixel window that corresponds to the
+ * full screen window. Off screen rendering is still clipped.
+ *
+ *  \param ~
+ *  \return ~
+ */
+
+void D_set_clip_window_to_screen_window(void)
+{
+    COM_Set_window(screen.t, screen.b, screen.l, screen.r);
+}
+

@@ -61,11 +61,11 @@ int main(int argc, char **argv)
 	_("Screen coordinates of the rectangle's top-left corner");
     coords->description = _("(0,0) is lower-left of the display frame");
 
-    fg_color_opt = G_define_standard_option(G_OPT_C_FG);
+    fg_color_opt = G_define_standard_option(G_OPT_C);
     fg_color_opt->label = _("Line color");
     fg_color_opt->guisection = _("Colors");
 
-    bg_color_opt = G_define_standard_option(G_OPT_C_BG);
+    bg_color_opt = G_define_standard_option(G_OPT_CN);
     bg_color_opt->key = "fill_color";
     bg_color_opt->label = _("Fill color");
     bg_color_opt->answer = _("black");
@@ -126,14 +126,11 @@ int main(int argc, char **argv)
         line_width = 72;
 
 
-    if (D_open_driver() != 0)
-	G_fatal_error(_("No graphics device selected. "
-			"Use d.mon to select graphics device."));
+    D_open_driver();
+
     D_setup(0);
 
-
     draw_n_arrow(east, north, fontsize, n_arrow->answer, line_width);
-
 
     D_save_command(G_recreate_command());
     D_close_driver();

@@ -37,7 +37,7 @@ int open_files(struct globals *globals)
     /* ****** open the input rasters ******* */
 
     if (!I_get_group_ref(globals->image_group, &Ref))
-	G_fatal_error(_("Unable to read REF file for group <%s>"),
+	G_fatal_error(_("Group <%s> not found in the current mapset"),
 		      globals->image_group);
 
     if (Ref.nfiles <= 0)
@@ -319,7 +319,7 @@ static int load_seeds(struct globals *globals, int srows, int scols, int nseg)
 
     G_debug(1, "load_seeds()");
     
-    G_message(_("Loading seeds from '%s'"), globals->seeds);
+    G_message(_("Loading seeds from raster map <%s>..."), globals->seeds);
 
     if (Segment_open
 	(&seeds_seg, G_tempfile(), globals->nrows, globals->ncols,

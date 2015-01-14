@@ -40,7 +40,6 @@
 
 #define DATA(map, r, c)		(map)[(r) * ncols + (c)]
 
-CELL range_min, range_max;
 CELL *cell;
 CELL *x_cell;
 CELL *y_cell;
@@ -70,7 +69,6 @@ int nrows, ncols;
 long heap_len;
 
 struct Cell_head window;
-struct Range range;
 
 struct costHa *heap;
 
@@ -78,6 +76,11 @@ struct costHa *heap;
 int main(int argc, char *argv[])
 {
     int col, row;
+
+    /* to menage start (source) raster map */
+    struct Range start_range;
+    CELL start_range_min, start_range_max;
+    int start_is_time;  /* 0 or 1 */
 
     struct
     {
@@ -88,8 +91,8 @@ int main(int argc, char *argv[])
     } parm;
     struct
     {
-	/* please, remove before GRASS 7 released */
-	struct Flag *display, *spotting;
+	/* please, remove display before GRASS 7 released */
+	struct Flag *display, *spotting, *start_is_time;
     } flag;
     struct GModule *module;
 
@@ -113,33 +116,8 @@ int main(int argc, char *argv[])
 	  "coordinates for tracing spread paths. "
 	  "Usable for fire spread simulations.");
 
-    parm.max = G_define_option();
-    parm.max->key = "max";
-    parm.max->type = TYPE_STRING;
-    parm.max->required = YES;
-    parm.max->gisprompt = "old,cell,raster";
-    parm.max->guisection = _("Input");
-    parm.max->label =
-	_("Raster map containing maximal ROS (cm/min)");
-	parm.max->description =
-	_("Name of an existing raster map layer in the user's current "
-	  "mapset search path containing the maximum ROS values (cm/minute).");
-
-    parm.dir = G_define_option();
-    parm.dir->key = "dir";
-    parm.dir->type = TYPE_STRING;
-    parm.dir->required = YES;
-    parm.dir->gisprompt = "old,cell,raster";
-    parm.dir->guisection = _("Input");
-    parm.dir->label =
-	_("Raster map containing directions of maximal ROS (degree)");
-    parm.dir->description =
-	_("Name of an existing raster map layer in the user's "
-	  "current mapset search path containing directions of the maximum ROSes, "
-	  "clockwise from north (degree)."); /* TODO: clockwise from north? see r.ros */
-
     parm.base = G_define_option();
-    parm.base->key = "base";
+    parm.base->key = "base_ros";
     parm.base->type = TYPE_STRING;
     parm.base->required = YES;
     parm.base->gisprompt = "old,cell,raster";
@@ -151,6 +129,31 @@ int main(int argc, char *argv[])
 	  "current mapset search path containing the ROS values in the directions "
 	  "perpendicular to maximum ROSes' (cm/minute). These ROSes are also the ones "
 	  "without the effect of directional factors.");
+    
+    parm.max = G_define_option();
+    parm.max->key = "max_ros";
+    parm.max->type = TYPE_STRING;
+    parm.max->required = YES;
+    parm.max->gisprompt = "old,cell,raster";
+    parm.max->guisection = _("Input");
+    parm.max->label =
+	_("Raster map containing maximal ROS (cm/min)");
+	parm.max->description =
+	_("Name of an existing raster map layer in the user's current "
+	  "mapset search path containing the maximum ROS values (cm/minute).");
+
+    parm.dir = G_define_option();
+    parm.dir->key = "direction_ros";
+    parm.dir->type = TYPE_STRING;
+    parm.dir->required = YES;
+    parm.dir->gisprompt = "old,cell,raster";
+    parm.dir->guisection = _("Input");
+    parm.dir->label =
+	_("Raster map containing directions of maximal ROS (degree)");
+    parm.dir->description =
+	_("Name of an existing raster map layer in the user's "
+	  "current mapset search path containing directions of the maximum ROSes, "
+	  "clockwise from north (degree)."); /* TODO: clockwise from north? see r.ros */
 
     parm.start = G_define_option();
     parm.start->key = "start";
@@ -167,7 +170,7 @@ int main(int argc, char *argv[])
 	  "starting sources (seeds).");
 
     parm.spotdist = G_define_option();
-    parm.spotdist->key = "spot_dist";
+    parm.spotdist->key = "spotting_distance";
     parm.spotdist->type = TYPE_STRING;
     parm.spotdist->gisprompt = "old,cell,raster";
     parm.spotdist->guisection = _("Input");
@@ -179,7 +182,7 @@ int main(int argc, char *argv[])
 	  "spotting distances (meters).");
 
     parm.velocity = G_define_option();
-    parm.velocity->key = "w_speed";
+    parm.velocity->key = "wind_speed";
     parm.velocity->type = TYPE_STRING;
     parm.velocity->gisprompt = "old,cell,raster";
     parm.velocity->guisection = _("Input");
@@ -191,7 +194,7 @@ int main(int argc, char *argv[])
 	  "the average flame height (feet/minute).");
 
     parm.mois = G_define_option();
-    parm.mois->key = "f_mois";
+    parm.mois->key = "fuel_moisture";
     parm.mois->type = TYPE_STRING;
     parm.mois->gisprompt = "old,cell,raster";
     parm.mois->guisection = _("Input");
@@ -307,13 +310,24 @@ int main(int argc, char *argv[])
     flag.display->key = 'd';
     flag.display->label = _("DISPLAY 'live' spread process on screen");
     flag.display->description =
-	_("Display the "live" simulation on screen. A graphics window "
+	_("Display the 'live' simulation on screen. A graphics window "
 	  "must be opened and selected before using this option.");
 #endif
 
     flag.spotting = G_define_flag();
     flag.spotting->key = 's';
     flag.spotting->description = _("Consider spotting effect (for wildfires)");
+
+    flag.start_is_time = G_define_flag();
+    flag.start_is_time->key = 'i';
+    flag.start_is_time->label = _("Use start raster map values in"
+	" output spread time raster map");
+    flag.start_is_time->description = _("Designed to be used with output"
+	" of previous run of r.spread when computing spread iteratively."
+	" The values in start raster map are considered as time."
+	" Allowed values in raster map are from zero"
+	" to the value of init_time option."
+	" If not enabled, init_time is used in the area of start raster map");
 
     /*   Parse command line */
     if (G_parser(argc, argv))
@@ -518,8 +532,19 @@ int main(int argc, char *argv[])
 
     start_fd = Rast_open_old(start_layer, G_find_raster2(start_layer, ""));
 
-    Rast_read_range(start_layer, G_find_file("cell", start_layer, ""), &range);
-    Rast_get_range_min_max(&range, &range_min, &range_max);
+    Rast_read_range(start_layer, G_find_file("cell", start_layer, ""),
+		    &start_range);
+    Rast_get_range_min_max(&start_range, &start_range_min, &start_range_max);
+
+    start_is_time = flag.start_is_time->answer;
+    /* values higher than init_time are unexpected and may cause segfaults */
+    if (start_is_time && start_range_max > init_time)
+	G_fatal_error(_("Maximum of start raster map is grater than init_time"
+			" (%d > %d)"), start_range_max, init_time);
+    /* values lower then zero does not make sense for time */
+    if (start_is_time && start_range_min < 0)
+	G_fatal_error(_("Minimum of start raster map is less than zero"
+			" (%d < 0)"), start_range_min, init_time);
 
     /*  Initialize the heap  */
     heap =
@@ -528,7 +553,7 @@ int main(int argc, char *argv[])
 
     G_message(_("Reading %s..."), start_layer);
     G_debug(1, "Collecting origins...");
-    collect_ori(start_fd);
+    collect_ori(start_fd, start_is_time);
     G_debug(1, "Done");
 
 

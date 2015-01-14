@@ -78,7 +78,7 @@ t.create type=strds temporaltype=absolute output=A \
 t.create type=stvds temporaltype=absolute output=P \
     title="A test with vector input files" descr="A test with vector input files"
 
-t.register type=rast -i input=A file="${n1}" start="2001-01-01" increment="1 months"
+t.register type=raster -i input=A file="${n1}" start="2001-01-01" increment="1 months"
 
 # Raster map layer in A
 t.rast.list A
@@ -92,7 +92,7 @@ a5|PERMANENT|2001-05-01 00:00:00|2001-06-01 00:00:00
 a6|PERMANENT|2001-06-01 00:00:00|2001-07-01 00:00:00
 
 
-t.register type=vect input=P file="${n2}"
+t.register type=vector input=P file="${n2}"
 
 # Vector map layer in P
 t.vect.list P
@@ -119,7 +119,7 @@ None|a3@PERMANENT,a4@PERMANENT|2001-03-01 00:00:00|2001-05-01 00:00:00|61.0|59.0
 pnts2@PERMANENT|a5@PERMANENT,a6@PERMANENT|2001-05-01 00:00:00|2001-07-01 00:00:00|61.0|120.0
 
 
-# A druing P
+# A during P
 t.sample method=during intype=stvds input=P samtype=strds sample=A -c
 
 A@PERMANENT|P@PERMANENT|start_time|end_time|interval_length|distance_from_begin
@@ -175,5 +175,5 @@ pnts2@PERMANENT|a4@PERMANENT|2001-05-01 00:00:00|2001-07-01 00:00:00|61.0|120.0
 
 S&ouml;ren Gebbert, Th&uuml;nen Institute of Climate-Smart Agriculture
 
-<p><i>Last changed: $Date: 2014-11-26 14:30:48 +0100 (Wed, 26 Nov 2014) $</i>
+<p><i>Last changed: $Date: 2014-12-29 09:56:42 +0100 (Mon, 29 Dec 2014) $</i>
 

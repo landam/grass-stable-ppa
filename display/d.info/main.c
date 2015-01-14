@@ -66,12 +66,10 @@ int main(int argc, char *argv[])
 	G_fatal_error(_("No flag given"));
     }
 
-    if (D_open_driver() != 0)
-	G_fatal_error(_("No graphics device selected. "
-			"Use d.mon to select graphics device."));
+    D_open_driver();
     
     if (rflag->answer || dflag->answer || fflag->answer)
-	D_get_window(&t, &b, &l, &r);
+	D_get_frame(&t, &b, &l, &r);
 
 
     if (rflag->answer)

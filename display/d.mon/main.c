@@ -85,7 +85,10 @@ int main(int argc, char *argv[])
     res_opt->key_desc = "value";
     res_opt->guisection = _("Settings");
 
-    bgcolor_opt = G_define_standard_option(G_OPT_C_BG);
+    bgcolor_opt = G_define_standard_option(G_OPT_CN);
+    bgcolor_opt->key = "bgcolor";
+    bgcolor_opt->label = _("Background color");
+    bgcolor_opt->answer = DEFAULT_BG_COLOR;
     bgcolor_opt->guisection = _("Settings");
 
     output_opt = G_define_standard_option(G_OPT_F_OUTPUT);
@@ -127,7 +130,7 @@ int main(int argc, char *argv[])
     update_flag = G_define_flag();
     update_flag->key = 'u';
     update_flag->label = _("Open output file in update mode");
-    update_flag->description = _("Requires --overwrite flag. If not given the output file is overwritten.");
+    update_flag->description = _("Requires --overwrite flag");
     update_flag->guisection = _("Settings");
 
     if (G_parser(argc, argv))
@@ -136,7 +139,7 @@ int main(int argc, char *argv[])
     if (selected_flag->answer || release_flag->answer || cmd_flag->answer) {
 	if (list_flag->answer)
 	    G_warning(_("Flag -%c ignored"), list_flag->key);
-	mon = G__getenv("MONITOR");
+	mon = G_getenv_nofatal("MONITOR");
 	if (mon) {
 	    if (selected_flag->answer) {
 		G_verbose_message(_("Currently selected monitor:"));
@@ -194,11 +197,9 @@ int main(int argc, char *argv[])
 
 	ret = start_mon(start_opt->answer, output_opt->answer, !select_flag->answer,
 			width, height, bgcolor_opt->answer,
-			!truecolor_flag->answer);
+			!truecolor_flag->answer, update_flag->answer);
         if (output_opt->answer && !update_flag->answer) {
-            if (D_open_driver() != 0)
-                G_fatal_error(_("No graphics device selected. "
-                                "Use d.mon to select graphics device."));
+            D_open_driver();
             D_setup_unity(0);
             D_erase(bgcolor_opt->answer);
             D_close_driver();

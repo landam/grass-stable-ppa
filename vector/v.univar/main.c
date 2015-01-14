@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
     G_add_keyword(_("attribute table"));
     G_add_keyword(_("geometry"));
     module->label =
-	_("Calculates univariate statistics for attribute.");
+	_("Calculates univariate statistics of vector map features.");
     module->description = _("Variance and standard "
 			    "deviation is calculated only for points if specified.");
 
@@ -154,7 +154,9 @@ int main(int argc, char *argv[])
 
     /* open input vector */
     Vect_set_open_level(2);
-    Vect_open_old2(&Map, map_opt->answer, "", field_opt->answer);
+    if (Vect_open_old2(&Map, map_opt->answer, "", field_opt->answer) < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), map_opt->answer);
+
     ofield = Vect_get_field_number(&Map, field_opt->answer);
     
     if ((otype & GV_POINT) && Vect_get_num_primitives(&Map, GV_POINT) == 0) {
@@ -347,17 +349,19 @@ void select_from_database(void)
 		      Fi->database, Fi->driver);
     db_set_error_handler_driver(Driver);
 
+    /* check if column exists */
+    ctype = db_column_Ctype(Driver, Fi->table, col_opt->answer);
+    if (ctype == -1)
+        G_fatal_error(_("Column <%s> not found in table <%s>"),
+                      col_opt->answer, Fi->table);
+    if (ctype != DB_C_TYPE_INT && ctype != DB_C_TYPE_DOUBLE)
+	G_fatal_error(_("Only numeric column type is supported"));
+    
     /* Note do not check if the column exists in the table because it may be an expression */
     db_CatValArray_init(&Cvarr);
-    nrec =
-	db_select_CatValArray(Driver, Fi->table, Fi->key, col_opt->answer,
-			      where_opt->answer, &Cvarr);
+    nrec = db_select_CatValArray(Driver, Fi->table, Fi->key, col_opt->answer,
+                                 where_opt->answer, &Cvarr);
     G_debug(2, "db_select_CatValArray() nrec = %d", nrec);
-
-    ctype = Cvarr.ctype;
-    if (ctype != DB_C_TYPE_INT && ctype != DB_C_TYPE_DOUBLE)
-	G_fatal_error(_("Column type not supported"));
-
     if (nrec < 0)
 	G_fatal_error(_("Unable to select data from table"));
 

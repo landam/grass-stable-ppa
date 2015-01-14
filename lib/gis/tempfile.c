@@ -16,6 +16,8 @@
 #include <sys/stat.h>
 #include <grass/gis.h>
 
+#include "local_proto.h"
+
 static struct Counter unique;
 static int initialized;
 
@@ -57,7 +59,7 @@ void G_init_tempfile(void)
  */
 char *G_tempfile(void)
 {
-    return G__tempfile(getpid());
+    return G_tempfile_pid(getpid());
 }
 
 /*!
@@ -68,7 +70,7 @@ char *G_tempfile(void)
  * \param pid
  * \return pointer to string path
  */
-char *G__tempfile(int pid)
+char *G_tempfile_pid(int pid)
 {
     char path[GPATH_MAX];
     char name[GNAME_MAX];
@@ -76,7 +78,7 @@ char *G__tempfile(int pid)
 
     if (pid <= 0)
 	pid = getpid();
-    G__temp_element(element);
+    G_temp_element(element);
     G_init_tempfile();
     do {
 	int uniq = G_counter_next(&unique);
@@ -93,7 +95,7 @@ char *G__tempfile(int pid)
  *
  * \param[out] element element name
  */
-void G__temp_element(char *element)
+void G_temp_element(char *element)
 {
     const char *machine;
 
@@ -103,5 +105,5 @@ void G__temp_element(char *element)
 	strcat(element, "/");
 	strcat(element, machine);
     }
-    G__make_mapset_element(element);
+    G_make_mapset_element(element);
 }

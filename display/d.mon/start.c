@@ -7,13 +7,13 @@
 
 #include "proto.h"
 
-static void start(const char *, const char *);
+static void start(const char *, const char *, int);
 static void start_wx(const char *, const char *, const char *,
 		     const char *, int, int);
 static void error_handler(void *);
 
 /* start file-based monitor */
-void start(const char *name, const char *output)
+void start(const char *name, const char *output, int update)
 {
     char *env_name, output_path[GPATH_MAX];
     const char *output_name;
@@ -22,15 +22,16 @@ void start(const char *name, const char *output)
     G_add_error_handler(error_handler, (char *)name);
     
     if (!output) {
-        if (D_open_driver() != 0)
-            G_fatal_error(_("No graphics device selected. "
-                            "Use d.mon to select graphics device."));
+        D_open_driver();
+        
         output_name = D_get_file();
         if (!output_name) 
             return;
-        if (access(output_name, F_OK) == 0) {
+        if (!update && access(output_name, F_OK) == 0) {
             if (G_get_overwrite()) {
                 G_warning(_("File '%s' already exists and will be overwritten"), output_name);
+                D_setup_unity(0);
+                D_erase("white");
             }
             else {
                 D_close_driver();
@@ -101,7 +102,7 @@ void start_wx(const char *name, const char *tempfile,
 
 int start_mon(const char *name, const char *output, int select,
 	      int width, int height, const char *bgcolor,
-	      int truecolor)
+	      int truecolor, int update)
 {
     char *u_name;
     char *env_name, *env_value, *cmd_value;
@@ -111,7 +112,7 @@ int start_mon(const char *name, const char *output, int select,
     if (check_mon(name)) {
         const char *curr_mon;
 
-        curr_mon = G__getenv("MONITOR");
+        curr_mon = G_getenv_nofatal("MONITOR");
 	if (select && (!curr_mon || strcmp(curr_mon, name) != 0))
 	    G_setenv("MONITOR", name);
 
@@ -181,7 +182,7 @@ int start_mon(const char *name, const char *output, int select,
 	start_wx(name, tempfile, env_value, cmd_value, 
 		 width, height);
     else
-	start(name, output);
+      start(name, output, update);
     
     return 0;
 }

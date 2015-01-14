@@ -69,11 +69,11 @@ int main(int argc, char **argv)
     vallist->description = _("List of categories or values to be displayed");
     vallist->guisection = _("Selection");
 
-    bg = G_define_standard_option(G_OPT_C_BG);
+    bg = G_define_standard_option(G_OPT_C);
+    bg->key = "bgcolor";
     bg->key_desc = "color";
-    bg->gisprompt = "old_color,color,color";
+    bg->answer = DEFAULT_BG_COLOR;
     bg->label = _("Background color (for null)");
-    bg->description = _("Either a standard color name or R:G:B triplet");
     bg->guisection = _("Null cells");
 
     flag_n = G_define_flag();
@@ -93,9 +93,7 @@ int main(int argc, char **argv)
     overlay = !flag_n->answer;
     invert = flag_i->answer;
 
-    if (D_open_driver() != 0)
-	G_fatal_error(_("No graphics device selected. "
-			"Use d.mon to select graphics device."));
+    D_open_driver();
 
     fp = Rast_map_is_fp(name, "");
     if (vallist->answer) {

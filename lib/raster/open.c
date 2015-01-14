@@ -1,5 +1,5 @@
 /*!
- * \file raster/open.c
+ * \file lib/raster/open.c
  * 
  * \brief Raster Library - Open raster file
  *
@@ -219,8 +219,8 @@ int Rast__open_old(const char *name, const char *mapset)
 	G_fatal_error(_("Raster map <%s> is in different projection than current region. "
 			"Found <%s>, should be <%s>."),
 		      G_fully_qualified_name(name, mapset),
-		      G__projection_name(cellhd.proj),
-		      G__projection_name(R__.rd_window.proj));
+		      G_projection_name(cellhd.proj),
+		      G_projection_name(R__.rd_window.proj));
 
     if (cellhd.zone != R__.rd_window.zone)
 	G_fatal_error(_("Raster map <%s> is in different zone (%d) than current region (%d)"),
@@ -603,7 +603,7 @@ static int open_raster_new(const char *name, int open_mode,
      * since we are bypassing the normal open logic
      * must create the cell element 
      */
-    G__make_mapset_element(cell_dir);
+    G_make_mapset_element(cell_dir);
 
     /* mark closed */
     fcb->map_type = map_type;

@@ -349,7 +349,7 @@ int main(int argc, char *argv[])
     parm.longin->guisection = _("Input");
 
     parm.coefbh = G_define_option();
-    parm.coefbh->key = "coef_bh";
+    parm.coefbh->key = "coeff_bh";
     parm.coefbh->type = TYPE_STRING;
     parm.coefbh->required = NO;
     parm.coefbh->gisprompt = "old,cell,raster";
@@ -358,7 +358,7 @@ int main(int argc, char *argv[])
     parm.coefbh->guisection = _("Input");
 
     parm.coefdh = G_define_option();
-    parm.coefdh->key = "coef_dh";
+    parm.coefdh->key = "coeff_dh";
     parm.coefdh->type = TYPE_STRING;
     parm.coefdh->required = NO;
     parm.coefdh->gisprompt = "old,cell,raster";
@@ -492,7 +492,7 @@ int main(int argc, char *argv[])
 	_("Sampling distance step coefficient (0.5-1.5)");
 
     parm.numPartitions = G_define_option();
-    parm.numPartitions->key = "num_partitions";
+    parm.numPartitions->key = "npartitions";
     parm.numPartitions->type = TYPE_INTEGER;
     parm.numPartitions->answer = NUM_PARTITIONS;
     parm.numPartitions->required = NO;

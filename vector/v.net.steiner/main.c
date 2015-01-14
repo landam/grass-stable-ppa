@@ -356,17 +356,18 @@ int main(int argc, char **argv)
     output = G_define_standard_option(G_OPT_V_OUTPUT);
 
     type_opt = G_define_standard_option(G_OPT_V_TYPE);
+    type_opt->key = "arc_type";
     type_opt->options = "line,boundary";
     type_opt->answer = "line,boundary";
     type_opt->label = _("Arc type");
 
     afield_opt = G_define_standard_option(G_OPT_V_FIELD);
-    afield_opt->key = "alayer";
+    afield_opt->key = "arc_layer";
     afield_opt->answer = "1";
     afield_opt->label = _("Arc layer");
 
     tfield_opt = G_define_standard_option(G_OPT_V_FIELD);
-    tfield_opt->key = "nlayer";
+    tfield_opt->key = "node_layer";
     tfield_opt->answer = "2";
     tfield_opt->label = _("Node layer (used for terminals)");
 
@@ -377,13 +378,13 @@ int main(int argc, char **argv)
     afcol->description = _("Arcs' cost column (for both directions)");
 
     term_opt = G_define_standard_option(G_OPT_V_CATS);
-    term_opt->key = "tcats";
+    term_opt->key = "terminal_cats";
     term_opt->required = YES;
     term_opt->description =
 	_("Categories of points on terminals (layer is specified by nlayer)");
 
     nsp_opt = G_define_option();
-    nsp_opt->key = "nsp";
+    nsp_opt->key = "npoints";
     nsp_opt->type = TYPE_INTEGER;
     nsp_opt->required = NO;
     nsp_opt->multiple = NO;
@@ -425,7 +426,10 @@ int main(int argc, char **argv)
     Vect_check_input_output_name(map->answer, output->answer, G_FATAL_EXIT);
 
     Vect_set_open_level(2);
-    Vect_open_old(&Map, map->answer, "");
+
+    if (Vect_open_old(&Map, map->answer, "") < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), map->answer);
+
     nnodes = Vect_get_num_nodes(&Map);
     nlines = Vect_get_num_lines(&Map);
 
@@ -594,7 +598,9 @@ int main(int argc, char **argv)
 	fprintf(stdout, "\nSteiner tree costs = %f\n", cost);
 
     /* Write arcs to new map */
-    Vect_open_new(&Out, output->answer, Vect_is_3d(&Map));
+    if (Vect_open_new(&Out, output->answer, Vect_is_3d(&Map)) < 0)
+	G_fatal_error(_("Unable to create vector map <%s>"), output->answer);
+
     Vect_hist_command(&Out);
 
     fprintf(stdout, "\nSteiner tree:\n");

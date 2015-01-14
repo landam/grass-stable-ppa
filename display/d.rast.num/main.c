@@ -82,18 +82,15 @@ int main(int argc, char **argv)
 
     opt.map = G_define_standard_option(G_OPT_R_MAP);
 
-    opt.text_color = G_define_standard_option(G_OPT_C_FG);
+    opt.text_color = G_define_standard_option(G_OPT_C);
     opt.text_color->key = "text_color";
     opt.text_color->label = _("Text color");
-    opt.text_color->description = _("Color in GRASS format for drawing text");
     opt.text_color->guisection = _("Colors");
 
-    /* using G_OPT_C_BG because it gives none but semantically it is not BG */
-    opt.grid_color = G_define_standard_option(G_OPT_C_BG);
+    opt.grid_color = G_define_standard_option(G_OPT_CN);
     opt.grid_color->key = "grid_color";
     opt.grid_color->answer = "gray";
     opt.grid_color->label = _("Grid color");
-    opt.grid_color->description = _("Color in GRASS format for drawing grid, or \"none\"");
     opt.grid_color->guisection = _("Colors");
 
     opt.prec = G_define_option();
@@ -194,9 +191,7 @@ int main(int argc, char **argv)
 
     /* Setup driver and check important information */
 
-    if (D_open_driver() != 0)
-      	G_fatal_error(_("No graphics device selected. "
-			"Use d.mon to select graphics device."));
+    D_open_driver();
     
     D_setup2(0, 0, t, b, l, r);
 

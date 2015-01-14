@@ -401,7 +401,7 @@ int main(int argc, char *argv[])
 	mapset = G_find_file2("windows", name, "");
 	if (!mapset)
 	    G_fatal_error(_("Region <%s> not found"), name);
-	G__get_window(&window, "windows", name, mapset);
+	G_get_element_window(&window, "windows", name, mapset);
     }
 
     /* raster= */
@@ -756,7 +756,7 @@ int main(int argc, char *argv[])
     if ((name = parm.save->answer)) {
 	temp_window = window;
 	G_adjust_Cell_head3(&temp_window, 0, 0, 0);
-	if (G__put_window(&temp_window, "windows", name) < 0)
+	if (G_put_element_window(&temp_window, "windows", name) < 0)
 	    G_fatal_error(_("Unable to set region <%s>"), name);
     }
 
@@ -768,7 +768,7 @@ int main(int argc, char *argv[])
 
     if (flag.savedefault->answer) {
 	if (strcmp(G_mapset(), "PERMANENT") == 0) {
-	    G__put_window(&window, "", "DEFAULT_WIND");
+	    G_put_element_window(&window, "", "DEFAULT_WIND");
 	}
 	else {
 	    G_fatal_error(_("Unable to change default region. "

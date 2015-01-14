@@ -189,14 +189,8 @@ int main(int argc, char **argv)
     Size->answer = "100";
     Size->options = "1-1000";
 
-    Color = G_define_option();
-    Color->key = "color";
-    Color->description = _("Text color");
-    Color->type = TYPE_STRING;
-    Color->answer = "black";
-    Color->options =
-	"aqua,black,blue,brown,cyan,gray,green,grey,indigo,magenta,"
-	"orange,purple,red,violet,white,yellow";
+    Color = G_define_standard_option(G_OPT_C);
+    Color->label = _("Text color");
 
     Width = G_define_option();
     Width->key = "width";
@@ -206,38 +200,28 @@ int main(int argc, char **argv)
     Width->answer = "1";
     Width->options = "1-100";
 
-    Hcolor = G_define_option();
-    Hcolor->key = "hcolor";
+    Hcolor = G_define_standard_option(G_OPT_CN);
+    Hcolor->key = "highlight_color";
     Hcolor->label = _("Highlight color for text");
-    Hcolor->description = _("Only for d.label output");
-    Hcolor->type = TYPE_STRING;
     Hcolor->answer = "none";
-    Hcolor->options =
-	"none,aqua,black,blue,brown,cyan,gray,green,grey,indigo,magenta,"
-	"orange,purple,red,violet,white,yellow";
 
     Hwidth = G_define_option();
-    Hwidth->key = "hwidth";
+    Hwidth->key = "highlight_width";
     Hwidth->label = _("Line width of highlight color");
     Hwidth->description = _("Only for d.label output");
     Hwidth->type = TYPE_INTEGER;
     Hwidth->answer = "0";
     Hwidth->options = "0-100";
 
-    Bcolor = G_define_standard_option(G_OPT_C_BG);
+    Bcolor = G_define_standard_option(G_OPT_CN);
+    Bcolor->key = "bgcolor";
+    Bcolor->label = _("Background color");
     Bcolor->answer = "none";
-    Bcolor->options =
-	"none,aqua,black,blue,brown,cyan,gray,green,grey,indigo,magenta,"
-	"orange,purple,red,violet,white,yellow";
 
-    Border = G_define_option();
+    Border = G_define_standard_option(G_OPT_CN);
     Border->key = "border";
-    Border->description = _("Border color");
-    Border->type = TYPE_STRING;
+    Border->label = _("Border color");
     Border->answer = "none";
-    Border->options =
-	"none,aqua,black,blue,brown,cyan,gray,green,grey,indigo,magenta,"
-	"orange,purple,red,violet,white,yellow";
 
     Opaque = G_define_option();
     Opaque->key = "opaque";
@@ -284,10 +268,12 @@ int main(int argc, char **argv)
 	G_fatal_error(_("Vector map <%s> not found"), in_opt->answer);
 
     Vect_set_open_level(2);
-    Vect_open_old(&In, in_opt->answer, mapset);
+    if (Vect_open_old(&In, in_opt->answer, mapset) < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), in_opt->answer);
 
     /* Open output segments */
-    Vect_open_new(&Out, out_opt->answer, Vect_is_3d(&In));
+    if (Vect_open_new(&Out, out_opt->answer, Vect_is_3d(&In)) < 0)
+	G_fatal_error(_("Unable to create vector map <%s>"), out_opt->answer);
 
     /* open labels */
     labels = NULL;

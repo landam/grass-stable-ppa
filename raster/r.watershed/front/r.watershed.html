@@ -422,7 +422,7 @@ cut-off value. This only works with SFD, not with MFD.
        abs(rwater.accum), \
        null() )"
   r.colors -g rwater.course col=bcyr
-  g.remove -f type=rast name=MASK
+  g.remove -f type=raster name=MASK
 
   # <i>Thinning is required before converting raster lines to vector</i>
   r.thin in=rwater.course out=rwater.course.Thin
@@ -450,7 +450,7 @@ cut-off value. This only works with SFD, not with MFD.
 Display output in a nice way
 <div class="code"><pre>
   r.relief map=elevation.dem
-  d.shade rel=elevation.dem.shade drape=rwater.basin bright=40
+  d.shade shade=elevation.dem.shade color=rwater.basin bright=40
   d.vect rwater_course color=orange
 </pre></div>
 
@@ -526,4 +526,4 @@ Faster sorting algorithm and MFD support:
 Markus Metz &lt;markus.metz.giswork at gmail.com&gt;
 
 <p>
-<i>Last changed: $Date: 2014-12-20 05:56:06 +0100 (Sat, 20 Dec 2014) $</i>
+<i>Last changed: $Date: 2014-12-27 00:50:11 +0100 (Sat, 27 Dec 2014) $</i>

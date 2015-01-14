@@ -180,9 +180,9 @@ int main(int argc, char *argv[])
     /* Change the location here and then come back */
 
     select_target_env();
-    G__setenv("GISDBASE", gbase);
-    G__setenv("LOCATION_NAME", iloc_name);
-    stat = G__mapset_permissions(iset_name);
+    G_setenv_nogisrc("GISDBASE", gbase);
+    G_setenv_nogisrc("LOCATION_NAME", iloc_name);
+    stat = G_mapset_permissions(iset_name);
     
     if (stat >= 0) {		/* yes, we can access the mapset */
 	/* if requested, list the vector maps in source location - MN 5/2001 */
@@ -191,8 +191,8 @@ int main(int argc, char *argv[])
 	    char **list;
 	    G_verbose_message(_("Checking location <%s> mapset <%s>"),
 			      iloc_name, iset_name);
-	    list = G_list(G_ELEMENT_VECTOR, G__getenv("GISDBASE"),
-			  G__getenv("LOCATION_NAME"), iset_name);
+	    list = G_list(G_ELEMENT_VECTOR, G_getenv_nofatal("GISDBASE"),
+			  G_getenv_nofatal("LOCATION_NAME"), iset_name);
 	    if (list[0]) {
 		for (i = 0; list[i]; i++) {
 		    fprintf(stdout, "%s\n", list[i]);
@@ -209,7 +209,7 @@ int main(int argc, char *argv[])
 	    G_fatal_error(_("Required parameter <%s> not set"), mapopt->key);
 	}
 
-	G__setenv("MAPSET", iset_name);
+	G_setenv_nogisrc("MAPSET", iset_name);
 	/* Make sure map is available */
 	mapset = G_find_vector2(map_name, iset_name);
 	if (mapset == NULL)
@@ -236,7 +236,8 @@ int main(int argc, char *argv[])
 	Vect_set_open_level(1);
 	G_debug(1, "Open old: location: %s mapset : %s", G_location_path(),
 		G_mapset());
-	Vect_open_old(&Map, map_name, mapset);
+	if (Vect_open_old(&Map, map_name, mapset) < 0)
+	    G_fatal_error(_("Unable to open vector map <%s>"), map_name);
     }
     else if (stat < 0)
     {				/* allow 0 (i.e. denied permission) */
@@ -377,7 +378,10 @@ int main(int argc, char *argv[])
 
     G_debug(1, "Open new: location: %s mapset : %s", G_location_path(),
 	    G_mapset());
-    Vect_open_new(&Out_Map, omap_name, Vect_is_3d(&Map));
+
+    if (Vect_open_new(&Out_Map, omap_name, Vect_is_3d(&Map)) < 0)
+	G_fatal_error(_("Unable to create vector map <%s>"), omap_name);
+
     Vect_set_error_handler_io(NULL, &Out_Map); /* register standard i/o error handler */
     
     Vect_copy_head_data(&Map, &Out_Map);

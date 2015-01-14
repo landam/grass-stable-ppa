@@ -149,7 +149,7 @@ v.distance from=bugs to=archsites to_type=point upload=to_attr \
 # we need to give the lines category numbers, create a table, and create
 #  a column in that table to hold the distance data.
 v.category vdistance_vectors_raw out=vdistance_vectors type=line op=add
-g.remove -f type=vect name=vdistance_vectors_raw
+g.remove -f type=vector name=vdistance_vectors_raw
 
 v.db.addtable map=vdistance_vectors column="length DOUBLE"
 v.to.db map=vdistance_vectors option=length column=length
@@ -218,4 +218,4 @@ Improved processing speed: Markus Metz<br>
 Distance from any feature to any feature: Markus Metz
 
 <p>
-<i>Last changed: $Date: 2014-10-27 17:31:30 +0100 (Mon, 27 Oct 2014) $</i>
+<i>Last changed: $Date: 2014-12-27 00:50:11 +0100 (Sat, 27 Dec 2014) $</i>

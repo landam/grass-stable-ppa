@@ -38,8 +38,8 @@
 static const char *GRASS_copyright __attribute__ ((unused))
     = "GRASS GNU GPL licensed Software";
 
-#define GIS_H_VERSION "$Revision: 63222 $"
-#define GIS_H_DATE    "$Date: 2014-11-28 10:04:17 +0100 (Fri, 28 Nov 2014) $"
+#define GIS_H_VERSION "$Revision: 64007 $"
+#define GIS_H_DATE    "$Date: 2015-01-08 20:08:36 +0100 (Thu, 08 Jan 2015) $"
 
 #define G_gisinit(pgm) G__gisinit(GIS_H_VERSION, (pgm))
 #define G_no_gisinit() G__no_gisinit(GIS_H_VERSION)
@@ -258,8 +258,8 @@ typedef enum
     G_OPT_F_OUTPUT,		/*!< new output file */
     G_OPT_F_SEP,		/*!< data field separator */
 
-    G_OPT_C_FG,			/*!< foreground color */
-    G_OPT_C_BG,			/*!< background color */
+    G_OPT_C,			/*!< color */
+    G_OPT_CN,			/*!< color or none */
 
     G_OPT_M_UNITS,              /*!< units */
     G_OPT_M_DATATYPE,           /*!< datatype */
@@ -357,18 +357,13 @@ enum rule_type {
 */
 enum
 {				/* Dir */
-    G_ELEMENT_RASTER = 1,	/*!< cell */
-    G_ELEMENT_RASTER3D = 2,	/*!< 3dcell */
+    G_ELEMENT_RASTER = 1,	/*!< raster */
+    G_ELEMENT_RASTER3D = 2,	/*!< 3d raster */
     G_ELEMENT_VECTOR = 3,	/*!< vector */
-    G_ELEMENT_OLDVECTOR = 4,	/*!< GRASS < 5.7 vector */
-    G_ELEMENT_ASCIIVECTOR = 5,	/*!< ASCII vector */
-    G_ELEMENT_ICON = 6,		/*!< icon */
-    G_ELEMENT_LABEL = 7,	/*!< labels */
-    G_ELEMENT_SITE = 8,		/*!< sites */
-    G_ELEMENT_REGION = 9,	/*!< region */
-    G_ELEMENT_REGION3D = 10,	/*!< 3dregion */
-    G_ELEMENT_GROUP = 11,	/*!< group */
-    G_ELEMENT_3DVIEW = 12	/*!< 3dview */
+    G_ELEMENT_ASCIIVECTOR = 4,	/*!< ASCII vector */
+    G_ELEMENT_LABEL = 5,	/*!< labels */
+    G_ELEMENT_REGION = 6,	/*!< region */
+    G_ELEMENT_GROUP = 7,	/*!< group */
 };
 
 /*=========================== Typedefs/Structures ==========================*/

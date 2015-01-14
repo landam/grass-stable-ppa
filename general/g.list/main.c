@@ -263,9 +263,9 @@ int main(int argc, char *argv[])
 	    char name[GNAME_MAX], mapset[GMAPSET_MAX];
 
 	    if (G_name_is_fully_qualified(opt.region->answer, name, mapset))
-		G__get_window(&window, "windows", name, mapset);
+		G_get_element_window(&window, "windows", name, mapset);
 	    else
-		G__get_window(&window, "windows", opt.region->answer, "");
+		G_get_element_window(&window, "windows", opt.region->answer, "");
 	}
     }
     else
@@ -300,7 +300,7 @@ int main(int argc, char *argv[])
 	    }
 	    else if (strcmp(mapset, ".") == 0)
 		mapset = G_mapset();
-	    else if (G__mapset_permissions(mapset) == -1)
+	    else if (G_mapset_permissions(mapset) == -1)
 		G_fatal_error(_("Mapset <%s> does not exist"), mapset);
 	    G_add_mapset_to_search_path(mapset);
 	}
@@ -404,7 +404,7 @@ static void make_list(struct elist **el, int *lcount, int *lalloc,
     if (access(path, 0) != 0)
 	return;
 
-    if ((list = G__ls(path, &count)) == NULL)
+    if ((list = G_ls2(path, &count)) == NULL)
 	return;
 
     if (strcmp(alias, "raster") == 0)

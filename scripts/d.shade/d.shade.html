@@ -32,7 +32,7 @@ dataset location is used to hillshade the <tt>elevation</tt> map:
 <div class="code"><pre>
 g.region raster=aspect -p
 d.mon wx0
-d.shade reliefmap=aspect drapemap=elevation
+d.shade shade=aspect color=elevation
 </pre></div>
 
 <!--
@@ -42,7 +42,7 @@ d.out.file dshade.png
 optipng -o5 dshade.png
 -->
 <center>
-<img src="dshadedmap.png" alt="Elevation with aspect shades">
+<img src="dshade.png" alt="Elevation with aspect shades">
 <p>
 Figure: A detail of raster created by applying shading effect of aspect
 to elevation raster map from North Carolina dataset elevation map
@@ -62,7 +62,7 @@ g.region raster=elevation
 r.relief input=elevation output=elevation_shaded_relief
 
 d.mon wx1
-d.shade reliefmap=elevation_shaded_relief drapemap=elevation
+d.shade shade=elevation_shaded_relief color=elevation
 </pre></div>
 
 Interesting visualizations can be created using different color tables for
@@ -86,4 +86,4 @@ elevation raster map, for example using <tt>haxby</tt> color table.
 Unknown; updated to GRASS 5.7 by Michael Barton
 
 <p>
-<i>Last changed: $Date: 2014-12-20 05:56:06 +0100 (Sat, 20 Dec 2014) $</i>
+<i>Last changed: $Date: 2014-12-25 15:50:03 +0100 (Thu, 25 Dec 2014) $</i>

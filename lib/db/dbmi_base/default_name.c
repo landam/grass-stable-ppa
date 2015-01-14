@@ -28,7 +28,7 @@ const char *db_get_default_driver_name(void)
 {
     const char *drv;
 
-    if ((drv = G__getenv2("DB_DRIVER", G_VAR_MAPSET)))
+    if ((drv = G_getenv_nofatal2("DB_DRIVER", G_VAR_MAPSET)))
 	return G_store(drv);
 
     return NULL;
@@ -44,7 +44,7 @@ const char *db_get_default_database_name(void)
 {
     const char *drv;
 
-    if ((drv = G__getenv2("DB_DATABASE", G_VAR_MAPSET)))
+    if ((drv = G_getenv_nofatal2("DB_DATABASE", G_VAR_MAPSET)))
 	return G_store(drv);
 
     return NULL;
@@ -60,7 +60,7 @@ const char *db_get_default_schema_name(void)
 {
     const char *sch;
 
-    if ((sch = G__getenv2("DB_SCHEMA", G_VAR_MAPSET)))
+    if ((sch = G_getenv_nofatal2("DB_SCHEMA", G_VAR_MAPSET)))
 	return G_store(sch);
 
     return NULL;
@@ -76,7 +76,7 @@ const char *db_get_default_group_name(void)
 {
     const char *gr;
 
-    if ((gr = G__getenv2("DB_GROUP", G_VAR_MAPSET)))
+    if ((gr = G_getenv_nofatal2("DB_GROUP", G_VAR_MAPSET)))
 	return G_store(gr);
 
     return NULL;
@@ -108,7 +108,7 @@ int db_set_default_connection(void)
 	db_set_connection(&connection);
 
 	sprintf(buf, "%s/%s/dbf", G_location_path(), G_mapset());
-	G__make_mapset_element("dbf");
+	G_make_mapset_element("dbf");
     }
     else if (strcmp(DB_DEFAULT_DRIVER, "sqlite") == 0) {
 	/* Set default values and create sqlite db dir */
@@ -129,7 +129,7 @@ int db_set_default_connection(void)
 	  */
 	connection.databaseName =
 	    "$GISDBASE/$LOCATION_NAME/$MAPSET/sqlite/sqlite.db";
-	G__make_mapset_element("sqlite");
+	G_make_mapset_element("sqlite");
 	db_set_connection(&connection);
     }
     else

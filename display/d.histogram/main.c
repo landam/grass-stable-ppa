@@ -100,10 +100,13 @@ int main(int argc, char **argv)
 
     /* The color option specifies the color for the labels, tic-marks,
      * and borders of the chart. */
-    opt2 = G_define_standard_option(G_OPT_C_FG);
+    opt2 = G_define_standard_option(G_OPT_C);
     opt2->label = _("Color for text and axes");
 
-    bg_opt = G_define_standard_option(G_OPT_C_BG);
+    bg_opt = G_define_standard_option(G_OPT_CN);
+    bg_opt->key = "bgcolor";
+    bg_opt->label = _("Background color");
+    bg_opt->answer = DEFAULT_BG_COLOR;
 
 #ifdef CAN_DO_AREAS
     opt3 = G_define_option();
@@ -180,9 +183,7 @@ int main(int argc, char **argv)
 
     /* set up the graphics driver and initialize its color-table */
 
-    if (D_open_driver() != 0)
-	G_fatal_error(_("No graphics device selected. "
-			"Use d.mon to select graphics device."));
+    D_open_driver();
     
     D_setup_unity(0);			/* 0 = don't clear frame */
     D_get_src(&t, &b, &l, &r);

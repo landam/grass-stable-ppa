@@ -51,11 +51,11 @@
 #   include <alloca.h>
 #  endif
 # endif
-# define G__alloca(n) alloca(n)
-# define G__freea(p)
+# define G_alloca(n) alloca(n)
+# define G_freea(p)
 #else
-# define G__alloca(n) G_malloc(n)
-# define G__freea(p) G_free(p)
+# define G_alloca(n) G_malloc(n)
+# define G_freea(p) G_free(p)
 #endif
 
 #include <stdarg.h>
@@ -210,17 +210,15 @@ int G_is_little_endian(void);
 void G_init_env(void);
 const char *G_getenv(const char *);
 const char *G_getenv2(const char *, int);
-const char *G__getenv(const char *);
-const char *G__getenv2(const char *, int);
+const char *G_getenv_nofatal(const char *);
+const char *G_getenv_nofatal2(const char *, int);
 void G_setenv(const char *, const char *);
 void G_setenv2(const char *, const char *, int);
-void G__setenv(const char *, const char *);
-void G__setenv2(const char *, const char *, int);
+void G_setenv_nogisrc(const char *, const char *);
+void G_setenv_nogisrc2(const char *, const char *, int);
 void G_unsetenv(const char *);
 void G_unsetenv2(const char *, int);
-void G__write_env(void);
 const char *G_get_env_name(int);
-void G__read_env(void);
 void G_set_gisrc_mode(int);
 int G_get_gisrc_mode(void);
 void G_create_alt_env(void);
@@ -305,8 +303,8 @@ struct Key_Value *G_get_projepsg(void);
 /* get_window.c */
 void G_get_window(struct Cell_head *);
 void G_get_default_window(struct Cell_head *);
-void G__get_window(struct Cell_head *, const char *, const char *,
-		   const char *);
+void G_get_element_window(struct Cell_head *, const char *, const char *,
+                          const char *);
 
 /* getl.c */
 int G_getl(char *, int, FILE *);
@@ -321,17 +319,14 @@ const char *G_gisdbase(void);
 /* gisinit.c */
 void G__gisinit(const char *, const char *);
 void G__no_gisinit(const char *);
-void G__check_gisinit(void);
 void G_init_all(void);
 
 /* handler.c */
 void G_add_error_handler(void (*)(void *), void *);
 void G_remove_error_handler(void (*)(void *), void *);
-void G__call_error_handlers(void);
 
 /* home.c */
 const char *G_home(void);
-const char *G__home(void);
 const char *G_config_path(void);
 
 /* ilist.c */
@@ -412,7 +407,7 @@ double G_drand48(void);
 /* ls.c */
 void G_set_ls_filter(int (*)(const char *, void *), void *);
 void G_set_ls_exclude_filter(int (*)(const char *, void *), void *);
-char **G__ls(const char *, int *);
+char **G_ls2(const char *, int *);
 void G_ls(const char *, FILE *);
 void G_ls_format(char **, int, int, FILE *);
 
@@ -422,9 +417,6 @@ void *G_ls_regex_filter(const char *, int, int, int);
 void *G_ls_glob_filter(const char *, int, int);
 void G_free_ls_filter(void *);
 #endif
-
-/* mach_name.c */
-const char *G__machine_name(void);
 
 /* make_loc.c */
 int G_make_location(const char *, struct Cell_head *, const struct Key_Value *,
@@ -444,14 +436,13 @@ const char *G_mapset(void);
 char *G_mapset_path(void);
 
 /* mapset_msc.c */
-int G__make_mapset_element(const char *);
+int G_make_mapset_element(const char *);
 int G__make_mapset_element_misc(const char *, const char *);
-int G__mapset_permissions(const char *);
-int G__mapset_permissions2(const char *, const char *, const char *);
+int G_mapset_permissions(const char *);
+int G_mapset_permissions2(const char *, const char *, const char *);
 
 /* mapset_nme.c */
 const char *G_get_mapset_name(int);
-void G__get_list_of_mapsets(void);
 void G_create_alt_search_path(void);
 void G_switch_search_path(void);
 void G_reset_mapsets(void);
@@ -520,7 +511,7 @@ FILE *G_open_option_file(const struct Option *);
 void G_close_option_file(FILE *);
 
 /* parser_dependencies.c */
-void G__option_rule(int, int, void **);
+void G_option_rule(int, int, void **);
 void G_option_exclusive(void *, ...);
 void G_option_required(void *, ...);
 void G_option_requires(void *, ...);
@@ -575,8 +566,8 @@ void G_set_program_name(const char *);
 int G_projection(void);
 
 /* proj2.c */
-int G__projection_units(int);
-const char *G__projection_name(int);
+int G_projection_units(int);
+const char *G_projection_name(int);
 
 /* proj3.c */
 const char *G_database_unit_name(int);
@@ -588,7 +579,7 @@ const char *G_database_epsg_code(void);
 
 /* put_window.c */
 int G_put_window(const struct Cell_head *);
-int G__put_window(const struct Cell_head *, const char *, const char *);
+int G_put_element_window(const struct Cell_head *, const char *, const char *);
 
 /* putenv.c */
 void G_putenv(const char *, const char *);
@@ -656,8 +647,8 @@ char *G_strcasestr(const char *, const char *);
 /* tempfile.c */
 void G_init_tempfile(void);
 char *G_tempfile(void);
-char *G__tempfile(int);
-void G__temp_element(char *);
+char *G_tempfile_pid(int);
+void G_temp_element(char *);
 
 /* mkstemp.c */
 char *G_mktemp(char *);
@@ -669,8 +660,7 @@ void G_init_timestamp(struct TimeStamp *);
 void G_set_timestamp(struct TimeStamp *, const struct DateTime *);
 void G_set_timestamp_range(struct TimeStamp *, const struct DateTime *,
 			   const struct DateTime *);
-int G__read_timestamp(FILE *, struct TimeStamp *);
-int G__write_timestamp(FILE *, const struct TimeStamp *);
+int G_write_timestamp(FILE *, const struct TimeStamp *);
 void G_get_timestamps(const struct TimeStamp *, struct DateTime *, struct DateTime *, int *);
 int G_format_timestamp(const struct TimeStamp *, char *);
 int G_scan_timestamp(struct TimeStamp *, const char *);

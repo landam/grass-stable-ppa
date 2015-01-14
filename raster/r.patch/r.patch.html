@@ -103,7 +103,7 @@ all, and patch them together to create a mosaic. Overlapping maps will be
 used in the order listed.
 
 <div class="code"><pre>
-MAPS=`g.list type=rast sep=, pat="map_*"`
+MAPS=`g.list type=raster sep=, pat="map_*"`
 g.region raster=$MAPS
 r.patch in=$MAPS out=mosaic
 </pre></div>
@@ -130,4 +130,4 @@ U.S. Army Construction Engineering Research Laboratory
 <br>
 -z flag and performance improvement by Huidae Cho
 
-<p><i>Last changed: $Date: 2014-12-19 22:55:37 +0100 (Fri, 19 Dec 2014) $</i>
+<p><i>Last changed: $Date: 2014-12-27 00:50:11 +0100 (Sat, 27 Dec 2014) $</i>

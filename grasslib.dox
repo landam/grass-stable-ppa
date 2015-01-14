@@ -23,7 +23,7 @@ Team</a>, an international team of programmers, GRASS module authors
 are cited within their module's source code and the contributed manual
 pages.
 
-&copy; 2000-2014 by the GRASS Development Team
+&copy; 2000-2015 by the GRASS Development Team
 
 This manual is published under <a
 href="http://www.fsf.org/copyleft/fdl.html">GNU Free Documentation
@@ -120,7 +120,7 @@ href="http://grass.osgeo.org">http://grass.osgeo.org</a>
 \subsection misclibs Misc Libraries
 
  - datetime:	\ref datetime (DateTime library) 
- - external:	\ref external (External libraries from other projects such as shapelib)
+ - external:	\ref external (External libraries from other projects such as shapelib and \ref ccmathlib)
  - fonts:	\ref fonts (GRASS fonts library)
  - init:	\ref init (GRASS initialization code + scripts)
  - iostream:	\ref iostream (fast I/O library)

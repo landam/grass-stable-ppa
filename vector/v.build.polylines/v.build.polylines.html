@@ -42,12 +42,13 @@ a new polyline, i.e. lines and boundaries are kept separate.
   polyline. Also attributes tables linked to the input vector map are
   not copied to the output vector map.</li>
   <li><b>cats=first</b> - Assign to a polyline category number of the
-first line. All linked attributes tables are copied to the output
-vector map.</li>
+  first line. All linked attributes tables are copied to the output
+  vector map without filtering, but the categories are processed according 
+  to the cats option.</li>
   <li><b>cats=multi</b> - If the lines that make up a polyline have
-    different category numbers then <em>v.build.polylines</em> will
-    set the multiple catetory numbers to a polyline.  Also all linked
-    attributes tables are copied to the output vector map.</li>
+  different category numbers then <em>v.build.polylines</em> will
+  set the multiple category numbers to a polyline.  Also all linked
+  attributes tables are copied to the output vector map.</li>
 </ul>
 
 <em>v.build.polylines</em> correctly handles <b>input</b> vector maps
@@ -80,4 +81,4 @@ Major rewrite by Radim Blazek, October 2002<br>
 Category mode added by Martin Landa, FBK-irst, Trento, Italy, October 2007<br>
 Support for categories, attributes, and different line types by Markus Metz
 
-<p><i>Last changed: $Date: 2014-04-11 17:48:44 +0200 (Fri, 11 Apr 2014) $</i>
+<p><i>Last changed: $Date: 2014-12-27 22:28:54 +0100 (Sat, 27 Dec 2014) $</i>
