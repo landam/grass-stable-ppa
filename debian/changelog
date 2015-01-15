@@ -1,6 +1,6 @@
-grass (7.0.0~beta4-1) UNRELEASED; urgency=medium
+grass (7.0.0~rc1-1) UNRELEASED; urgency=medium
 
-  * New upstream beta release.
+  * New upstream release candidate.
   * Add upstream metadata.
   * Update gbp.conf and Vcs-Git URL to use the experimental branch.
   * Update watch file for GRASS 7.0.
@@ -12,7 +12,7 @@ grass (7.0.0~beta4-1) UNRELEASED; urgency=medium
     remove --with-tcltk-includes.
   * Update patches for GRASS 7.
 
- -- Bas Couwenberg <sebastic@xs4all.nl>  Sun, 11 Jan 2015 01:21:40 +0100
+ -- Bas Couwenberg <sebastic@xs4all.nl>  Thu, 15 Jan 2015 01:15:41 +0100
 
 grass (6.4.4-1) unstable; urgency=medium
 
