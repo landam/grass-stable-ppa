@@ -229,6 +229,8 @@ install-arch: build-arch
 	install -m 644 gui/icons/grass.desktop \
 		debian/tmp/usr/share/applications/$(BASE_NAME).desktop
 	# n.b. 6.4.1 shipped with "grass65" as the Exec target
+	sed -i -e 's+Exec=grass7+Exec=$(BASE_NAME)+' \
+		debian/tmp/usr/share/applications/$(BASE_NAME).desktop
 	sed -i -e 's+Icon=grass+Icon=$(BASE_NAME)+' \
 		debian/tmp/usr/share/applications/$(BASE_NAME).desktop
 
@@ -239,7 +241,8 @@ install-arch: build-arch
 	sed -i -e 's+<id type="desktop">grass.desktop</id>+<id type="desktop">$(BASE_NAME).desktop</id>+' \
 		debian/tmp/usr/share/appdata/$(BASE_NAME).appdata.xml
 
-	# install x-grass wrapper script
+	# install grass wrapper scripts
+	install -m 755 debian/grass7 debian/tmp/usr/bin/$(BASE_NAME)
 	install -m 755 debian/x-grass debian/tmp/usr/bin/x-grass
 
 	ln -fs /usr/lib/$(shell objdump -p /usr/lib/`gdal-config --libs | cut -d' ' -f2 | sed -e 's/-l/lib/'`.so | grep SONAME | cut -d' ' -f18) \
