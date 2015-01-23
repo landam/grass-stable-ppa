@@ -118,7 +118,6 @@ true-clean:
 	
 	rm -f lib/proj/nad2bin
 	rm -f tools/timer/main.o
-	rm -f raster/r.le/r.le.setup/polytocell/*.o
 	rm -f raster/r.terraflow/IOStream/lib/src/libiostream.a
 	rm -f debian/$(BASE_NAME).1
 	rm -f error.log
@@ -163,13 +162,10 @@ install-arch: build-arch
 
 	# fix links
 	debian/fixpaths.sh $(CURDIR)/debian/tmp debian/tmp
-	
-	# delete extra license files
-	rm -f debian/tmp/usr/lib/$(BASE_NAME)/bwidget/LICENSE.txt
-	rm -f debian/tmp/usr/lib/$(BASE_NAME)/bwidget/LGPL-2.1.txt
-	rm -f debian/tmp/usr/lib/$(BASE_NAME)/etc/gem/skeleton/license
-	rm -f debian/tmp/usr/lib/$(BASE_NAME)/etc/license
 
+	# delete extra license files
+	rm -f debian/tmp/usr/lib/$(BASE_NAME)/etc/license
+	
 	# delete python compiled bytecode files (maybe dh_python2 takes care of this for us?)
 	for DIR in python/grass \
 		python/grass/lib \
@@ -231,16 +227,26 @@ install-arch: build-arch
 	# is there a better way to make these exist?
 	mkdir -p debian/tmp/usr/share/icons/hicolor/32x32/apps
 	mkdir -p debian/tmp/usr/share/icons/hicolor/48x48/apps
+	mkdir -p debian/tmp/usr/share/icons/hicolor/64x64/apps
 	mkdir -p debian/tmp/usr/share/applications
 	install -m 644 debian/grass.xpm \
 		debian/tmp/usr/share/icons/hicolor/32x32/apps/$(BASE_NAME).xpm
 	install -m 644 gui/icons/grass-48x48.png \
 		debian/tmp/usr/share/icons/hicolor/48x48/apps/$(BASE_NAME).png
+	install -m 644 gui/icons/grass-64x64.png \
+		debian/tmp/usr/share/icons/hicolor/64x64/apps/$(BASE_NAME).png
 	install -m 644 gui/icons/grass.desktop \
 		debian/tmp/usr/share/applications/$(BASE_NAME).desktop
 	# n.b. 6.4.1 shipped with "grass65" as the Exec target
 	sed -i -e 's+Icon=grass+Icon=$(BASE_NAME)+' \
 		debian/tmp/usr/share/applications/$(BASE_NAME).desktop
+
+	# install AppStream metadata
+	mkdir -p debian/tmp/usr/share/appdata/
+	install -m 644 gui/icons/grass.appdata.xml \
+		debian/tmp/usr/share/appdata/$(BASE_NAME).appdata.xml
+	sed -i -e 's+<id type="desktop">grass.desktop</id>+<id type="desktop">$(BASE_NAME).desktop</id>+' \
+		debian/tmp/usr/share/appdata/$(BASE_NAME).appdata.xml
 
 	# install x-grass wrapper script
 	install -m 755 debian/x-grass debian/tmp/usr/bin/x-grass
@@ -249,31 +255,17 @@ install-arch: build-arch
 		debian/tmp/usr/lib/$(BASE_NAME)/lib/libgdal.so
 
 	# Move image files from /usr/lib/$(BASE_NAME) to /usr/share/$(BASE_NAME)
-	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/bwidget
-	mv debian/tmp/usr/lib/$(BASE_NAME)/bwidget/images/ debian/tmp/usr/share/$(BASE_NAME)/bwidget/
-
-	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/etc/dm
-	mv debian/tmp/usr/lib/$(BASE_NAME)/etc/dm/*.gif debian/tmp/usr/share/$(BASE_NAME)/etc/dm/
-
-	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/etc/gm
-	mv debian/tmp/usr/lib/$(BASE_NAME)/etc/gm/intro.gif debian/tmp/usr/share/$(BASE_NAME)/etc/gm/
-
-	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/etc/gui
-	mv debian/tmp/usr/lib/$(BASE_NAME)/etc/gui/icons/ debian/tmp/usr/share/$(BASE_NAME)/etc/gui/
-	mv debian/tmp/usr/lib/$(BASE_NAME)/etc/gui/images/ debian/tmp/usr/share/$(BASE_NAME)/etc/gui/
-
-	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/etc/nviz2.2/bitmaps
-	mv debian/tmp/usr/lib/$(BASE_NAME)/etc/nviz2.2/bitmaps/flythrough/ debian/tmp/usr/share/$(BASE_NAME)/etc/nviz2.2/bitmaps/
-	mv debian/tmp/usr/lib/$(BASE_NAME)/etc/nviz2.2/bitmaps/trash.gif debian/tmp/usr/share/$(BASE_NAME)/etc/nviz2.2/bitmaps/
+	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/icons/ debian/tmp/usr/share/$(BASE_NAME)/gui/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/images/ debian/tmp/usr/share/$(BASE_NAME)/gui/
 
 install-indep: build-indep
 	dh_testdir -i
 	dh_testroot -i
 	install -m 644 -d debian/tmp
-	-install -m 644 -d debian/tmp/programming-manual/html/search
-	-install -m 644 ./html/* debian/tmp/programming-manual/html
-	-install -m 644 ./html/search/* debian/tmp/programming-manual/html/search
-	-rm -f debian/tmp/programming-manual/html/jquery.js
+	install -m 644 -d debian/tmp/programming-manual/html
+	cp -r debian/tmp/usr/lib/$(BASE_NAME)/docs/html/* debian/tmp/programming-manual/html/
+	rm -f debian/tmp/programming-manual/html/jquery.js
 
 # Build architecture-independent files here.
 binary-indep: install-arch install-indep 
@@ -301,16 +293,7 @@ binary-arch: install-arch
 	dh_installexamples  -a
 	dh_install -a
 	# delete duplicated grass-gui stuff from grass-core package
-	for COMPONENT in bwidget \
-			etc/dm \
-			etc/form \
-			etc/gm \
-			etc/gui \
-			etc/nviz2.2 \
-			etc/v.digit \
-			etc/wxpython \
-			bin/v.digit \
-			bin/xganim ; do \
+	for COMPONENT in gui wxpython; do \
 		rm -rf debian/$(PKG_NAME)-core/usr/lib/$(BASE_NAME)/$$COMPONENT; \
 	done
 	dh_installmenu -a
@@ -318,13 +301,13 @@ binary-arch: install-arch
 	dh_lintian -a
 	dh_link -a
 	dh_python2
-	dh_python2 /usr/lib/$(BASE_NAME)/etc
+	dh_python2 /usr/lib/$(BASE_NAME)/gui/
 	dh_strip -a
 	dh_compress -a -XAUTHORS
 	dh_fixperms -a
 	dh_makeshlibs -a -a
 	dh_installdeb -a
-	dh_shlibdeps -a -l$(CURDIR)/debian/$(PKG_NAME)/usr/lib/$(BASE_NAME)/lib
+	dh_shlibdeps -a -l$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME)/lib
 	dh_gencontrol -a
 	dh_md5sums -a
 	dh_builddeb -a

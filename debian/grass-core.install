@@ -8,4 +8,5 @@ usr/lib/grass70/lib
 usr/lib/grass70/locale
 usr/share/icons/hicolor
 usr/share/applications
+usr/share/appdata
 usr/bin/x-grass
