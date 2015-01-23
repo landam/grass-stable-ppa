@@ -155,7 +155,7 @@ install-arch: build-arch
 	$(MAKE) install \
 		INST_DIR=$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME) \
 		prefix=$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME) \
-		BINDIR=$(CURDIR)/debian/tmp/usr/bin
+		BINDIR=$(CURDIR)/debian/tmp/usr/lib
 
 	# make all the self-bootstrapping tcl/tk scripts executable and fully pathed
 	#debian/fixscripts.sh
