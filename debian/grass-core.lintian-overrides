@@ -1,4 +1,5 @@
 # False positive, file is an executable not an image
+grass-core: image-file-in-usr-lib usr/lib/grass*/bin/r.in.png
 grass-core: image-file-in-usr-lib usr/lib/grass*/bin/r.out.png
 grass-core: image-file-in-usr-lib usr/lib/grass*/bin/r.out.tiff
 grass-core: image-file-in-usr-lib usr/lib/grass*/scripts/d.out.png
