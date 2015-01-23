@@ -183,14 +183,14 @@ install-arch: build-arch
 	done
 
 	# change section from 1 to .1grass 
-	mv debian/tmp/usr/lib/$(BASE_NAME)/man/man1/grass7.1 debian/$(BASE_NAME).1
-	for m in debian/tmp/usr/lib/$(BASE_NAME)/man/man1/*.1; do \
-		n=`basename $$m .1`; mv $$m debian/tmp/usr/lib/$(BASE_NAME)/man/man1/$$n.1grass; done
-	for m in debian/tmp/usr/lib/$(BASE_NAME)/man/man1/*.1grass; do \
+	mv debian/tmp/usr/lib/$(BASE_NAME)/docs/man/man1/grass7.1 debian/$(BASE_NAME).1
+	for m in debian/tmp/usr/lib/$(BASE_NAME)/docs/man/man1/*.1; do \
+		n=`basename $$m .1`; mv $$m debian/tmp/usr/lib/$(BASE_NAME)/docs/man/man1/$$n.1grass; done
+	for m in debian/tmp/usr/lib/$(BASE_NAME)/docs/man/man1/*.1grass; do \
 		sed -i -e 's/^.TH \(.*\) 1/.TH \1 1grass/' "$$m"; done
 
 	# escape minus signs which are command line options not hyphens
-	for m in debian/tmp/usr/lib/$(BASE_NAME)/man/man1/*.1grass; do \
+	for m in debian/tmp/usr/lib/$(BASE_NAME)/docs/man/man1/*.1grass; do \
 		sed -i -e 's/\([ ([]\)-\([a-z]\)/\1\\-\2/g' \
 			-e 's/\([ []\)--\([a-z]\)/\1\\-\\-\2/g' \
 			-e 's/\[-\\fB/[\\-\\fB/' \
