@@ -192,22 +192,6 @@ install-arch: build-arch
 		-e "s+^\(RUN_GISBASE[ ]*=\) .*+\1 /usr/lib/$(BASE_NAME)+" \
 		debian/tmp/usr/lib/$(BASE_NAME)/include/Make/Platform.make
 
-	# install helper scripts for building addon man pages
-	install -m 755 tools/mkhtml.py \
-		debian/$(PKG_NAME)-dev/usr/lib/$(BASE_NAME)/tools/mkhtml.py
-	install -m 755 tools/mkrest.py \
-		debian/$(PKG_NAME)-dev/usr/lib/$(BASE_NAME)/tools/mkrest.py
-	install -m 755 tools/thumbnails.py \
-		debian/$(PKG_NAME)-dev/usr/lib/$(BASE_NAME)/tools/thumbnails.py
-	install -m 755 tools/g.html2man/g.html2man.py \
-		debian/$(PKG_NAME)-dev/usr/lib/$(BASE_NAME)/tools/g.html2man.py
-	install -m 644 tools/g.html2man/groff.py \
-		debian/$(PKG_NAME)-dev/usr/lib/$(BASE_NAME)/tools/groff.py
-	install -m 644 tools/g.html2man/html.py \
-		debian/$(PKG_NAME)-dev/usr/lib/$(BASE_NAME)/tools/html.py
-	install -m 644 tools/g.html2man/rest.py \
-		debian/$(PKG_NAME)-dev/usr/lib/$(BASE_NAME)/tools/rest.py
-
 	# install pkg-config file
 	install -m 644 grass.pc debian/$(PKG_NAME)-dev/usr/share/pkgconfig/$(BASE_NAME).pc
 
