@@ -167,16 +167,7 @@ install-arch: build-arch
 	rm -f debian/tmp/usr/lib/$(BASE_NAME)/etc/license
 	
 	# delete python compiled bytecode files (maybe dh_python2 takes care of this for us?)
-	for DIR in python/grass \
-		python/grass/lib \
-		python/grass/script \
-		wxpython \
-		wxpython/compat \
-		wxpython/gui_modules \
-		wxpython/icons ; \
-	     do \
-		rm -f debian/tmp/usr/lib/$(BASE_NAME)/etc/$$DIR/*.pyc ; \
-	done
+	find debian/tmp/ -type f -name "*.pyc" -delete
 
 	# change section from 1 to .1grass 
 	mv debian/tmp/usr/lib/$(BASE_NAME)/docs/man/man1/grass7.1 debian/$(BASE_NAME).1
