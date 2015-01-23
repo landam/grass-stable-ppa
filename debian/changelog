@@ -11,6 +11,10 @@ grass (7.0.0~rc1-1) UNRELEASED; urgency=medium
   * Add configure options: --with-netcdf, --with-blas, --with-lapack,
     remove --with-tcltk-includes.
   * Update patches for GRASS 7.
+  * Update copyright file, changes:
+    - Update copyright years
+    - Group files by license
+    - Remove unused license sections
 
  -- Bas Couwenberg <sebastic@xs4all.nl>  Thu, 15 Jan 2015 01:15:41 +0100
 
