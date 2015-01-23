@@ -1,12 +1,12 @@
 usr/bin/grass70
+usr/bin/x-grass
 usr/lib/grass70/bin
 usr/lib/grass70/driver
 usr/lib/grass70/etc
 usr/lib/grass70/fonts
-usr/lib/grass70/scripts
 usr/lib/grass70/lib
 usr/lib/grass70/locale
-usr/share/icons/hicolor
-usr/share/applications
+usr/lib/grass70/scripts
 usr/share/appdata
-usr/bin/x-grass
+usr/share/applications
+usr/share/icons/hicolor
