@@ -7,6 +7,7 @@ Priority: optional
 Build-Depends: autoconf2.13,
                autotools-dev,
                debhelper (>= 9),
+               dh-python,
                doxygen,
                fakeroot,
                flex,
@@ -107,8 +108,7 @@ Description: GRASS GIS core components
 
 Package: grass-gui
 Architecture: any
-Depends: ${shlibs:Depends},
-         grass-core,
+Depends: grass-core,
          ${python:Depends},
          python-wxgtk3.0,
 # pyGL needed for wxNviz

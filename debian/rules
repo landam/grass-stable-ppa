@@ -315,7 +315,7 @@ binary-arch: install-arch
 	dh_lintian -a
 	dh_link -a
 	dh_python2
-	dh_python2 /usr/lib/$(BASE_NAME)/gui/
+	dh_python2 /usr/lib/$(BASE_NAME)/gui/ /usr/lib/$(BASE_NAME)/tools/
 	dh_strip -a
 	dh_compress -a -XAUTHORS
 	dh_fixperms -a
