@@ -143,6 +143,11 @@ License: chull
  redistributed in its entirety provided that this copyright notice is 
  not removed.
 
+Files: debian/*
+Copyright: 2006-2014, Francesco Paolo Lovergine <frankie@debian.org>
+           2012-2014, M. Hamish Bowman <hamish_b@yahoo.com>
+License: GPL-2+
+
 License: GPL-1+
  This program is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
