@@ -212,11 +212,6 @@ install-arch: build-arch
 		debian/tmp/usr/share/icons/hicolor/64x64/apps/$(BASE_NAME).png
 	install -m 644 gui/icons/grass.desktop \
 		debian/tmp/usr/share/applications/$(BASE_NAME).desktop
-	# n.b. 6.4.1 shipped with "grass65" as the Exec target
-	sed -i -e 's+Exec=grass7+Exec=$(BASE_NAME)+' \
-		debian/tmp/usr/share/applications/$(BASE_NAME).desktop
-	sed -i -e 's+Icon=grass+Icon=$(BASE_NAME)+' \
-		debian/tmp/usr/share/applications/$(BASE_NAME).desktop
 
 	# install AppStream metadata
 	mkdir -p debian/tmp/usr/share/appdata/

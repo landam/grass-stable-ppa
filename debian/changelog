@@ -16,6 +16,7 @@ grass (7.0.0~rc1-1) UNRELEASED; urgency=medium
     - Group files by license
     - Remove unused license sections
   * Add patches for various typos.
+  * Fix desktop file with patch instead of d/rules.
 
  -- Bas Couwenberg <sebastic@xs4all.nl>  Thu, 15 Jan 2015 01:15:41 +0100
 

@@ -16,3 +16,4 @@ default-typo.patch
 extension-typo.patch
 preferred-typo.patch
 transferred-typo.patch
+desktop.patch
