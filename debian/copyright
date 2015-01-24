@@ -56,7 +56,7 @@ Files: imagery/i.landsat.toar/earth_sun.c
  imagery/i.landsat.toar/earth_sun.h
 Copyright: 2006, E. Jorge Tizado
       2000-2005, Liam Girdwood
-License: LGPL-2+
+License: LGPL-2.0+
 
 Files: lib/external/ccmath/*
 Copyright: 2000, Daniel A. Atkinson
