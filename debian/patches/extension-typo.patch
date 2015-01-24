@@ -1,0 +1,47 @@
+Description: Fix 'extention' typo, replace with 'extension'.
+Author: Bas Couwenberg <sebastic@xs4all.nl>
+
+--- a/lib/python/docs/src/pygrass_raster.rst
++++ b/lib/python/docs/src/pygrass_raster.rst
+@@ -226,7 +226,7 @@ array operations. ::
+     >>> raster = reload(raster)
+     >>> elev = raster.RasterNumpy('elevation', 'PERMANENT')
+     >>> elev.open('r')
+-    >>> # in this case RasterNumpy is an extention of the numpy class
++    >>> # in this case RasterNumpy is an extension of the numpy class
+     >>> # therefore you may use all the fancy things of numpy.
+     >>> elev[:5, :3]
+     RasterNumpy([[ 141.99613953,  141.27848816,  141.37904358],
+--- a/lib/python/imaging/images2gif.py
++++ b/lib/python/imaging/images2gif.py
+@@ -201,7 +201,7 @@ class GifWriter:
+         return bb
+ 
+     def getAppExt(self, loops=float('inf')):
+-        """Application extention. This part specifies the amount of loops.
++        """Application extension. This part specifies the amount of loops.
+         If loops is 0 or inf, it goes on infinitely.
+ 
+         :param float loops:
+--- a/temporal/t.select/t.select.html
++++ b/temporal/t.select/t.select.html
+@@ -270,7 +270,7 @@ compared by logical operators and evalua
+ the related maps.
+ For complex relations the comparison operator can be used to combine conditions: 
+ <br>
+-The structure is similar to the select operator with the extention of an aggregation operator: 
++The structure is similar to the select operator with the extension of an aggregation operator: 
+ {"comparison operator", "topological relations", aggregation operator, "temporal operator"}
+ <br>
+ This aggregation operator (| or &) define the behaviour if a map is related the more 
+--- a/temporal/t.vect.algebra/t.vect.algebra.html
++++ b/temporal/t.vect.algebra/t.vect.algebra.html
+@@ -277,7 +277,7 @@ the related maps.
+ For complex relations the comparison operator can be used to combine conditions: 
+ <br>
+ 
+-The structure is similar to the select operator with the extention of an aggregation operator:
++The structure is similar to the select operator with the extension of an aggregation operator:
+ 
+ <div class="code"><pre>
+ {"comparison operator", "topological relations", aggregation operator, "temporal operator"}

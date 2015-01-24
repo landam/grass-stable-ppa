@@ -1,0 +1,34 @@
+Description: Fix 'specifing' typo, replace with 'specifying'.
+Author: Bas Couwenberg <sebastic@xs4all.nl>
+
+--- a/raster/r.what/r.what.html
++++ b/raster/r.what/r.what.html
+@@ -43,7 +43,7 @@ r.what map=landuse96_28m,aspect coordina
+ <h3>Input coordinates given as a vector points map</h3>
+ 
+ Coordinates can be read from exising vector points map by
+-specifing <b>points</b> option. Other features than points or
++specifying <b>points</b> option. Other features than points or
+ centroids are ignored. Example: query North Carolina county number for
+ each community college:
+ 
+@@ -60,7 +60,7 @@ r.what map=boundary_county_500m points=c
+ <h3>Input coordinates given as a vector points map, output into CSV file</h3>
+ 
+ Coordinates can be read from exising vector points map by
+-specifing <b>points</b> option. Other features than points or
++specifying <b>points</b> option. Other features than points or
+ centroids are ignored. The output is stored in a CSV file including header
+ row. Example: query North Carolina county number for each community college:
+ 
+--- a/vector/v.out.postgis/v.out.postgis.html
++++ b/vector/v.out.postgis/v.out.postgis.html
+@@ -219,7 +219,7 @@ by <em><a href="v.info.html">v.info</a><
+ <h3>Export data without attributes</h3>
+ 
+ <em>v.out.postgis</em> allows to ignore attributes when exporting
+-vector features by specifing <b>-t</b> flag.
++vector features by specifying <b>-t</b> flag.
+ 
+ Command bellow exports vector features without attributes. The feature
+ will contain only two columns, the fid and geometry column.

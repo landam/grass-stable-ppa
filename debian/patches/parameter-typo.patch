@@ -1,0 +1,69 @@
+Description: Fix 'paramter' typo, replace with 'parameter'.
+Author: Bas Couwenberg <sebastic@xs4all.nl>
+
+--- a/imagery/i.eb.eta/i.eb.eta.html
++++ b/imagery/i.eb.eta/i.eb.eta.html
+@@ -29,7 +29,7 @@ Full ETa processing will need those:
+ <h2>REFERENCES</h2>
+ 
+ <p>[1] Bastiaanssen, W.G.M., 1995.
+-Estimation of Land surface paramters by remote sensing under clear-sky
++Estimation of Land surface parameters by remote sensing under clear-sky
+ conditions. PhD thesis, Wageningen University, Wageningen, The Netherlands.
+ (<a href="http://edepot.wur.nl/206553">PDF</a>)
+ 
+--- a/imagery/i.eb.evapfr/i.eb.evapfr.html
++++ b/imagery/i.eb.evapfr/i.eb.evapfr.html
+@@ -18,7 +18,7 @@ Makin, Molden and Bastiaanssen (2001).
+ <h2>REFERENCES</h2>
+ 
+ <p>[1] Bastiaanssen, W.G.M., 1995.
+-Estimation of Land surface paramters by remote sensing under clear-sky
++Estimation of Land surface parameters by remote sensing under clear-sky
+ conditions. PhD thesis, Wageningen University, Wageningen, The Netherlands.
+ (<a href="http://edepot.wur.nl/206553">PDF</a>)
+ 
+--- a/imagery/i.eb.hsebal01/i.eb.hsebal01.html
++++ b/imagery/i.eb.hsebal01/i.eb.hsebal01.html
+@@ -43,7 +43,7 @@ in this code in [3].
+ <h2>REFERENCES</h2>
+ 
+ <p>[1] Bastiaanssen, W.G.M., 1995.
+-  Estimation of Land surface paramters by remote sensing under clear-sky
++  Estimation of Land surface parameters by remote sensing under clear-sky
+ conditions. PhD thesis, Wageningen University, Wageningen, The Netherlands.
+ (<a href="http://edepot.wur.nl/206553">PDF</a>)
+ 
+--- a/imagery/i.ortho.photo/README
++++ b/imagery/i.ortho.photo/README
+@@ -75,7 +75,7 @@ The following GRASS 6 directories contai
+ 				parameters
+ 
+ 	./photo.2target:	computes photo to target location
+-				transformation paramters
++				transformation parameters
+ 
+ 	./photo.rectify:	does the actual image rectification
+ 	
+--- a/lib/python/pygrass/modules/interface/module.py
++++ b/lib/python/pygrass/modules/interface/module.py
+@@ -557,7 +557,7 @@ class Module(object):
+         self.__call__.__func__.__doc__ = self.__doc__
+ 
+     def __call__(self, *args, **kargs):
+-        """Set module paramters to the class and, if run_ is True execute the
++        """Set module parameters to the class and, if run_ is True execute the
+         module, therefore valid parameters are all the module parameters
+         plus some extra parameters that are: run_, stdin_, stdout_, stderr_,
+         env_ and finish_.
+--- a/lib/python/temporal/temporal_operator.py
++++ b/lib/python/temporal/temporal_operator.py
+@@ -253,7 +253,7 @@ class TemporalOperatorParser(object):
+     def parse(self, expression,  optype = 'relation'):
+         self.optype = optype        
+         self.parser.parse(expression)
+-        # The paramter optype can be of type: select {:, during, r}, boolean{&&, contains, |}, 
++        # The parameter optype can be of type: select {:, during, r}, boolean{&&, contains, |}, 
+         #                                                            raster{*, equal, |}, vector {|, starts, &},
+         #                                                            hash{#, during, l} or relation {during}.
+     

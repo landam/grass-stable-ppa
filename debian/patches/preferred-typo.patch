@@ -1,0 +1,14 @@
+Description: Fix 'prefered' typo, replace with 'preferred'.
+Author: Bas Couwenberg <sebastic@xs4all.nl>
+
+--- a/vector/v.colors/v.colors.html
++++ b/vector/v.colors/v.colors.html
+@@ -83,7 +83,7 @@ v.colors -c map=soils_general rgb_column
+ Note that in this case the vector map has a proper color table
+ assigned (check
+ by <em><a href="v.colors.out.html">v.colors.out</a></em>) together
+-with GRASSRGB attribute column. Also note that color table is prefered
++with GRASSRGB attribute column. Also note that color table is preferred
+ over RGB values stored in attribute table.
+ 
+ <h3>Remove existing color table</h3>

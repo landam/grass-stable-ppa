@@ -1,0 +1,25 @@
+Description: Fix 'Aditionally' typo, replace with 'Additionally'.
+Author: Bas Couwenberg <sebastic@xs4all.nl>
+
+--- a/raster/r.solute.transport/r.solute.transport.html
++++ b/raster/r.solute.transport/r.solute.transport.html
+@@ -77,7 +77,7 @@ module rapidely grow with the size of th
+ The resulting linear equation system <i>Ax = b</i> can be solved with several solvers.
+ Several iterative solvers with unsymmetric sparse and quadratic matrices support are implemented.
+ The jacobi method, the Gauss-Seidel method and the biconjugate gradients-stabilized (bicgstab) method. 
+-Aditionally a direct Gauss solver and LU solver are available. Those direct solvers
++Additionally a direct Gauss solver and LU solver are available. Those direct solvers
+ only work with quadratic matrices, so be careful using them with large maps 
+ (maps of size 10.000 cells will need more than one gigabyte of ram).
+ Always prefer a sparse matrix solver.
+--- a/raster3d/r3.gwflow/r3.gwflow.html
++++ b/raster3d/r3.gwflow/r3.gwflow.html
+@@ -63,7 +63,7 @@ this module rapidely grow with the size
+ several solvers. An iterative solvers with sparse and quadratic matrices
+ support is implemented.
+ The conjugate gradients method with (pcg) and without (cg) precondition.
+-Aditionally a direct Cholesky solver is available. This direct solver
++Additionally a direct Cholesky solver is available. This direct solver
+ only work with normal quadratic matrices, so be careful using them with
+ large maps (maps of size 10.000 cells will need more than one Gigabyte
+ of RAM). The user should always prefer to use a sparse matrix solver.
