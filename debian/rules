@@ -3,58 +3,66 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-
-# These are used for cross-compiling and for saving the configure script
-# from having to guess our platform (since we know it already)
-DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
-DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
-
 VERSION=$(shell echo `head -2 $(CURDIR)/include/VERSION` | sed -e 's/ //')
 ABI=$(shell echo `head -3 $(CURDIR)/include/VERSION` | sed -e 's/ //g' -e 's/RC/-/')
 BASE_NAME=grass$(VERSION)
 PKG_NAME=grass
-
-CFLAGS=$(shell dpkg-buildflags --get CFLAGS)
-LDFLAGS=$(shell dpkg-buildflags --get LDFLAGS)
-CPPFLAGS=$(shell dpkg-buildflags --get CPPFLAGS)
 
 # TODO: fix these
 CFLAGS+=-Wno-error=format-security
 
 CFLAGS+=-Wall
 
-ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
-	CFLAGS += -O0
-else
-	CFLAGS += -O
-endif
-ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
-	STRIP = 
-else
-	STRIP = strip
-endif
+TEMPLATES=$(wildcard debian/*.in)
 
 versions: 
 	@echo "Version: $(VERSION)"
 	@echo "ABI: $(ABI)"
 
-templates: $(patsubst %.in,%,$(wildcard debian/*.in))
+%:
+	dh $@ --with autotools_dev,python2
 
-debian/% :: debian/%.in
-	sed -e 's/@VERSION@/$(VERSION)/g' -e 's/@ABI@/$(ABI)/g' $< >$@
+override_dh_clean:
+	dh_clean
 
-configure: config.status
-config.status: 
-	dh_testdir
-	
-	dh_autotools-dev_updateconfig
-	# Add here commands to configure the package.
-	CFLAGS="$(CFLAGS)" CPPFLAGS="$(CPPFLAGS)" LDFLAGS="$(LDFLAGS)" ./configure \
-                    --host=$(DEB_HOST_GNU_TYPE) \
-                    --build=$(DEB_BUILD_GNU_TYPE) \
+	$(RM) lib/proj/nad2bin
+	$(RM) tools/timer/main.o
+	$(RM) raster/r.terraflow/IOStream/lib/src/libiostream.a
+	$(RM) debian/$(BASE_NAME).1
+	$(RM) error.log
+
+	# clean doxygen documentation (programming man)
+	$(RM) -r \
+		doxygenhtml \
+		html latex \
+		rfc/html rfc/latex \
+		gui/wxpython/html gui/wxpython/latex
+	for LIBRARY in \
+		db \
+		g3d \
+		gis \
+		gmath \
+		gpde \
+		ogsf \
+		proj \
+		python \
+		segment \
+		vector \
+		vector/dglib ; \
+	do \
+		$(RM) -r lib/$$LIBRARY/html lib/$$LIBRARY/latex ; \
+	done
+
+override_dh_auto_clean:
+	[ ! -f $(CURDIR)/include/Make/Platform.make ] || $(MAKE) distclean
+
+override_dh_auto_configure:
+	for TEMPLATE in $(TEMPLATES) ; do \
+	    sed -e 's/@VERSION@/$(VERSION)/g' -e 's/@ABI@/$(ABI)/g' $$TEMPLATE > `echo $$TEMPLATE | sed 's/.in$$//'` ; \
+	done
+
+	dh_auto_configure -- \
                     --prefix=/usr/lib \
-                    --sysconfdir=/etc \
-                    --sharedstatedir=/var \
                     --enable-socket \
                     --enable-shared \
                     --with-postgres \
@@ -81,78 +89,25 @@ config.status:
                     --with-python \
                     --with-cairo
 
-	touch $@
-
-build: build-arch build-indep
 
 # This target generates arch-dep stuff, unfortunately most doc requires working bins to 
 # be properly generated...
-build-arch: configure build-arch-stamp
-build-arch-stamp:  
-	dh_testdir
-	$(MAKE) 
+override_dh_auto_build-arch:
+	dh_auto_build
 	chmod 755 debian/fixpaths.sh debian/fixscripts.sh
-	touch $@
 
-# This target generates truly arch-indep stuff
-build-indep: configure build-indep-stamp
-build-indep-stamp: 
-	dh_testdir
+override_dh_auto_build-indep:
 	# generate the Programmers' manual (in HTML)
 	$(MAKE) htmldocs-single
+
 	# save ~7mb of disk space by compressing PNG images (but takes a long time)
 	##for file in `find debian/tmp/programming-manual/ -iname \*.png` ; do \
 	##	optipng -o5 $$file ; \
 	##done
-	touch $@
 
-clean: templates true-clean 
-true-clean:
-	dh_testdir
-	dh_testroot
-	dh_autotools-dev_restoreconfig
-	
-	# Add here commands to clean up after the build process.
-	[ ! -f $(CURDIR)/include/Make/Platform.make ] || $(MAKE) distclean
-	dh_clean 
-	
-	rm -f lib/proj/nad2bin
-	rm -f tools/timer/main.o
-	rm -f raster/r.terraflow/IOStream/lib/src/libiostream.a
-	rm -f debian/$(BASE_NAME).1
-	rm -f error.log
-	# clean doxygen documentation (programming man)
-	rm -rf doxygenhtml \
-		html latex \
-		rfc/html rfc/latex \
-		gui/wxpython/html gui/wxpython/latex
-	for LIBRARY in \
-		db \
-		g3d \
-		gis \
-		gmath \
-		gpde \
-		ogsf \
-		proj \
-		python \
-		segment \
-		vector \
-		vector/dglib ; \
-	    do \
-		rm -rf lib/$$LIBRARY/html lib/$$LIBRARY/latex ; \
-	done
-
-install: install-arch install-indep
-
-install-arch: build-arch
-	dh_testdir
-	dh_testroot
-	dh_prep
-	dh_installdirs
-
+override_dh_auto_install-arch:
 	# install grass core into debian/tmp
-	$(MAKE) $(STRIP)
-	$(MAKE) install \
+	dh_auto_install -- \
 		INST_DIR=$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME) \
 		prefix=$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME) \
 		BINDIR=$(CURDIR)/debian/tmp/usr/lib
@@ -164,7 +119,7 @@ install-arch: build-arch
 	debian/fixpaths.sh $(CURDIR)/debian/tmp debian/tmp
 
 	# delete extra license files
-	rm -f debian/tmp/usr/lib/$(BASE_NAME)/etc/license
+	$(RM) debian/tmp/usr/lib/$(BASE_NAME)/etc/license
 	
 	# delete python compiled bytecode files (maybe dh_python2 takes care of this for us?)
 	find debian/tmp/ -type f -name "*.pyc" -delete
@@ -267,59 +222,36 @@ install-arch: build-arch
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/vdigit
 	mv debian/tmp/usr/lib/grass70/gui/wxpython/vdigit/vdigit_toolbar.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/vdigit/
 
-
-install-indep: build-indep
-	dh_testdir -i
-	dh_testroot -i
+override_dh_auto_install-indep:
 	install -m 644 -d debian/tmp
 	install -m 644 -d debian/tmp/programming-manual/html
 	cp -r debian/tmp/usr/lib/$(BASE_NAME)/docs/html/* debian/tmp/programming-manual/html/
 	rm -f debian/tmp/programming-manual/html/jquery.js
 
-# Build architecture-independent files here.
-binary-indep: install-arch install-indep 
-	dh_testdir -i
-	dh_testroot -i
-	dh_installchangelogs -i CHANGES
-	dh_installdocs -i
-	dh_install -i
-	dh_lintian -i
-	dh_link -i
-	dh_strip -i
-	dh_compress -i
-	dh_fixperms -i
-	dh_installdeb -i
-	dh_gencontrol -i
-	dh_md5sums -i
-	dh_builddeb -i
+override_dh_install-arch:
+	dh_install --arch
 
-# Build architecture-dependent files here.
-binary-arch: install-arch
-	dh_testdir -a
-	dh_testroot  -a
-	dh_installchangelogs -a CHANGES
-	dh_installdocs  -a
-	dh_installexamples  -a
-	dh_install -a
 	# delete duplicated grass-gui stuff from grass-core package
 	for COMPONENT in gui wxpython; do \
 		rm -rf debian/$(PKG_NAME)-core/usr/lib/$(BASE_NAME)/$$COMPONENT; \
 	done
-	dh_installmenu -a
-	dh_installman -p$(PKG_NAME) debian/$(BASE_NAME).1 -a
-	dh_lintian -a
-	dh_link -a
+
+override_dh_install-indep:
+	dh_install --indep
+
+override_dh_installchangelogs:
+	dh_installchangelogs CHANGES
+
+override_dh_installman:
+	dh_installman -p$(PKG_NAME)-core debian/$(BASE_NAME).1
+
+override_dh_python2:
 	dh_python2
 	dh_python2 /usr/lib/$(BASE_NAME)/gui/ /usr/lib/$(BASE_NAME)/tools/
-	dh_strip -a
-	dh_compress -a -XAUTHORS
-	dh_fixperms -a
-	dh_makeshlibs -a -a
-	dh_installdeb -a
-	dh_shlibdeps -a -l$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME)/lib
-	dh_gencontrol -a
-	dh_md5sums -a
-	dh_builddeb -a
 
-binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary install configure true-clean versions
+override_dh_shlibdeps:
+	dh_shlibdeps -l$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME)/lib
+
+override_dh_compress:
+	dh_compress -XAUTHORS
+
