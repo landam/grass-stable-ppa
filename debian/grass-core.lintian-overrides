@@ -26,6 +26,8 @@ grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.richness
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.shannon
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.shape
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.simpson
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.thin
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/wximgview
 grass-core: hardening-no-fortify-functions usr/lib/grass*/etc/lock
 
 # Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
@@ -33,6 +35,7 @@ grass-core: hardening-no-fortify-functions usr/lib/grass*/etc/lock
 #         unprotected: fread
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.in.arc
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.in.bin
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r3.in.bin
 
 # Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
 #  Fortify Source functions: no, only unprotected functions found!
@@ -59,8 +62,10 @@ grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/v.segment
 # Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
 #  Fortify Source functions: no, only unprotected functions found!
 #         unprotected: strncpy
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/i.gensig
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.topidx
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r3.in.ascii
+grass-core: hardening-no-fortify-functions usr/lib/grass*/driver/db/ogr
 grass-core: hardening-no-fortify-functions usr/lib/grass*/etc/modcats
 grass-core: hardening-no-fortify-functions usr/lib/grass*/etc/modcolr
 
