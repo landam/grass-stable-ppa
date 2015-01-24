@@ -173,8 +173,8 @@ Depends: grass-core (= ${binary:Version}),
          libproj-dev,
          libgdal-dev,
          libfreetype6-dev,
+         python,
          ${shlibs:Depends},
-         ${python:Depends},
          ${misc:Depends}
 # Subversion is needed by g.extension, a primary motivator for installing the grass-dev pkg
 Recommends: subversion
