@@ -112,9 +112,6 @@ override_dh_auto_install-arch:
 		prefix=$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME) \
 		BINDIR=$(CURDIR)/debian/tmp/usr/lib
 
-	# make all the self-bootstrapping tcl/tk scripts executable and fully pathed
-	#debian/fixscripts.sh
-
 	# fix links
 	debian/fixpaths.sh $(CURDIR)/debian/tmp debian/tmp
 
