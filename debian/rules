@@ -94,7 +94,7 @@ override_dh_auto_configure:
 # be properly generated...
 override_dh_auto_build-arch:
 	dh_auto_build
-	chmod 755 debian/fixpaths.sh debian/fixscripts.sh
+	chmod 755 debian/fixpaths.sh
 
 override_dh_auto_build-indep:
 	# generate the Programmers' manual (in HTML)
