@@ -180,6 +180,21 @@ override_dh_auto_install-arch:
 	# Remove empty directory
 	rmdir debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/scripts/
 
+	# Remove files not installed or installed by debhelper
+	$(RM) -r debian/tmp/usr/lib/$(BASE_NAME)/AUTHORS \
+	         debian/tmp/usr/lib/$(BASE_NAME)/CHANGES \
+	         debian/tmp/usr/lib/$(BASE_NAME)/COPYING \
+	         debian/tmp/usr/lib/$(BASE_NAME)/GPL.TXT \
+	         debian/tmp/usr/lib/$(BASE_NAME)/REQUIREMENTS.html \
+	         debian/tmp/usr/lib/$(BASE_NAME)/config.status \
+	         debian/tmp/usr/lib/$(BASE_NAME)/contributors.csv \
+	         debian/tmp/usr/lib/$(BASE_NAME)/contributors_extra.csv \
+	         debian/tmp/usr/lib/$(BASE_NAME)/translation_status.json \
+	         debian/tmp/usr/lib/$(BASE_NAME)/translators.csv \
+	         debian/tmp/usr/lib/$(BASE_NAME)/share/appdata/grass.appdata.xml \
+	         debian/tmp/usr/lib/$(BASE_NAME)/share/applications/grass.desktop \
+	         debian/tmp/usr/lib/$(BASE_NAME)/demolocation/
+
 	# Move image files from /usr/lib/$(BASE_NAME) to /usr/share/$(BASE_NAME)
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui
 	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/icons/ debian/tmp/usr/share/$(BASE_NAME)/gui/
