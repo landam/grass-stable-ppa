@@ -1,5 +1,6 @@
 Description: Fix 'specifing' typo, replace with 'specifying'.
 Author: Bas Couwenberg <sebastic@xs4all.nl>
+Forwarded: http://trac.osgeo.org/grass/ticket/2560
 
 --- a/raster/r.what/r.what.html
 +++ b/raster/r.what/r.what.html

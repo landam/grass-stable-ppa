@@ -1,4 +1,6 @@
 Description: Fix 'deafult' typo, replace with 'default'.
+Author: Bas Couwenberg <sebastic@xs4all.nl>
+Forwarded: http://trac.osgeo.org/grass/ticket/2560
 
 --- a/temporal/t.rast.list/t.rast.list.html
 +++ b/temporal/t.rast.list/t.rast.list.html

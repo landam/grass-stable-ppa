@@ -1,5 +1,6 @@
 Description: Fix 'extention' typo, replace with 'extension'.
 Author: Bas Couwenberg <sebastic@xs4all.nl>
+Forwarded: http://trac.osgeo.org/grass/ticket/2560
 
 --- a/lib/python/docs/src/pygrass_raster.rst
 +++ b/lib/python/docs/src/pygrass_raster.rst

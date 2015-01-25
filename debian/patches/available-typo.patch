@@ -1,5 +1,6 @@
 Description: Fix 'avaiable' typo, replace with 'available'.
 Author: Bas Couwenberg <sebastic@xs4all.nl>
+Forwarded: http://trac.osgeo.org/grass/ticket/2560
 
 --- a/scripts/r3.in.xyz/r3.in.xyz.html
 +++ b/scripts/r3.in.xyz/r3.in.xyz.html

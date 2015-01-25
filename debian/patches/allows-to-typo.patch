@@ -1,5 +1,6 @@
 Description: Fix 'allows to' typo, replace with 'allows <word>ing'.
 Author: Bas Couwenberg <sebastic@xs4all.nl>
+Forwarded: http://trac.osgeo.org/grass/ticket/2560
 
 --- a/general/g.parser/g.parser.html
 +++ b/general/g.parser/g.parser.html

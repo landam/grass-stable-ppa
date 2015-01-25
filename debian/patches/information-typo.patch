@@ -1,5 +1,6 @@
 Description: Fix 'informations' typo, replace with 'information'.
 Author: Bas Couwenberg <sebastic@xs4all.nl>
+Forwarded: http://trac.osgeo.org/grass/ticket/2560
 
 --- a/lib/python/docs/src/temporal_framework.rst
 +++ b/lib/python/docs/src/temporal_framework.rst
