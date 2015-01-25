@@ -1,7 +1,7 @@
 www-browser
 pager
 instdir
-#check4dev
+check4dev
 wxpy3.0-compat.patch
 parameter-typo.patch
 additionally-typo.patch
