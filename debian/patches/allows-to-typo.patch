@@ -1,0 +1,369 @@
+Description: Fix 'allows to' typo, replace with 'allows <word>ing'.
+Author: Bas Couwenberg <sebastic@xs4all.nl>
+
+--- a/general/g.parser/g.parser.html
++++ b/general/g.parser/g.parser.html
+@@ -78,7 +78,7 @@ With <tt>{NULL}</tt> it is possible to s
+ or <tt>label</tt>.
+ 
+ <p>
+-The parsers allows to use predefined <em>standardized options and
++The parsers allow using predefined <em>standardized options and
+ flags</em>, see the list
+ of <a href="http://grass.osgeo.org/programming7/parser__standard__options_8c.html#a1a5da9db1229a9bbc59d16ae84540bb8">options</a> and <a href="http://grass.osgeo.org/programming7/parser__standard__options_8c.html#ad081e95e5d4dc3daab9c820d962e6902">flags</a>
+ in the programmer manual. Eg. the option
+@@ -101,7 +101,7 @@ can be easily defined as
+ #%end
+ </pre></div>
+ 
+-The parser allows to define predefined <em>rules</em>
++The parser allows defining predefined <em>rules</em>
+ for used options.
+ 
+ The syntax of the rules section is following:
+@@ -112,7 +112,7 @@ The syntax of the rules section is follo
+ #%end
+ </pre></div>
+ 
+-The parser also allows to define "OR" conditions, e.g. requiring raster
++The parser also allows defining "OR" conditions, e.g. requiring raster
+ OR vector (for details, see below):
+ 
+ <div class="code"><pre>
+--- a/gui/wxpython/animation/data.py
++++ b/gui/wxpython/animation/data.py
+@@ -270,7 +270,7 @@ class AnimationData(object):
+ 
+ 
+ class AnimLayer(Layer):
+-    """Animation layer allows to add either space-time dataset
++    """Animation layer allows adding either space-time dataset
+     or series of maps."""
+     def __init__(self):
+         Layer.__init__(self)
+--- a/gui/wxpython/animation/dialogs.py
++++ b/gui/wxpython/animation/dialogs.py
+@@ -1204,7 +1204,7 @@ class ExportDialog(wx.Dialog):
+ 
+ class AnimSimpleLayerManager(SimpleLayerManager):
+     """Simple layer manager for animation tool.
+-    Allows to add space-time dataset or series of maps.
++    Allows adding space-time dataset or series of maps.
+     """
+     def __init__(self, parent, layerList,
+                  lmgrStyle=SIMPLE_LMGR_RASTER | SIMPLE_LMGR_VECTOR |
+--- a/gui/wxpython/animation/toolbars.py
++++ b/gui/wxpython/animation/toolbars.py
+@@ -226,7 +226,7 @@ class MiscToolbar(BaseToolbar):
+ 
+ class AnimSimpleLmgrToolbar(SimpleLmgrToolbar):
+     """Simple layer manager toolbar for animation tool.
+-    Allows to add space-time dataset or series of maps.
++    Allows adding space-time dataset or series of maps.
+     """
+     def __init__(self, parent, lmgrStyle):
+         SimpleLmgrToolbar.__init__(self, parent, lmgrStyle)
+--- a/gui/wxpython/docs/wxGUI.iscatt.html
++++ b/gui/wxpython/docs/wxGUI.iscatt.html
+@@ -3,7 +3,7 @@
+ 
+ <h2>DESCRIPTION</h2>
+ 
+-<b>Interactive Scatter Plot Tool</b> allows to analyze group of raster
++<b>Interactive Scatter Plot Tool</b> allows analyzing group of raster
+ maps. The tool is integrated into <em><a href="wxGUI.iclass.html">
+ Supervised Classification Tool</a></em> (see the screen shot bellow).
+ Also it is possible to launch it from Map Display Window (<tt>Analyze map
+--- a/gui/wxpython/gcp/g.gui.gcp.py
++++ b/gui/wxpython/gcp/g.gui.gcp.py
+@@ -20,7 +20,7 @@
+ ############################################################################
+ 
+ #%module
+-#% description: Georectifies a map and allows to manage Ground Control Points.
++#% description: Georectifies a map and allows managing Ground Control Points.
+ #% keyword: general
+ #% keyword: GUI
+ #% keyword: georectification
+--- a/gui/wxpython/gmodeler/g.gui.gmodeler.py
++++ b/gui/wxpython/gmodeler/g.gui.gmodeler.py
+@@ -20,7 +20,7 @@
+ 
+ #%module
+ #% label: Graphical Modeler.
+-#% description: Allows to interactively create, edit and manage models.
++#% description: Allows interactively creating, editing and managing models.
+ #% keyword: general
+ #% keyword: GUI
+ #% keyword: graphical modeler
+--- a/gui/wxpython/mapdisp/test_mapdisp.py
++++ b/gui/wxpython/mapdisp/test_mapdisp.py
+@@ -20,7 +20,7 @@
+ ############################################################################
+ 
+ #%module
+-#% description: Georectifies a map and allows to manage Ground Control Points.
++#% description: Georectifies a map and allows managing Ground Control Points.
+ #% keyword: general
+ #% keyword: GUI
+ #% keyword: georectification
+--- a/gui/wxpython/timeline/g.gui.timeline.py
++++ b/gui/wxpython/timeline/g.gui.timeline.py
+@@ -20,7 +20,7 @@
+ ############################################################################
+ 
+ #%module
+-#% description: Allows to compare temporal datasets by displaying their temporal extents in a plot.
++#% description: Allows comparing temporal datasets by displaying their temporal extents in a plot.
+ #% keyword: general
+ #% keyword: GUI
+ #% keyword: temporal
+--- a/include/vect/dig_structs.h
++++ b/include/vect/dig_structs.h
+@@ -502,7 +502,7 @@ struct Format_info_cache {
+     /*! 
+       \brief Cache type
+ 
+-      Currenly used only by PostGIS Topology which allows to cache the
++      Currenly used only by PostGIS Topology which allows caching the
+       whole map (CACHE_MAP) */
+     int ctype;
+ };
+--- a/lib/arraystats/arraystatslib.dox
++++ b/lib/arraystats/arraystatslib.dox
+@@ -30,7 +30,7 @@ The algorithm described above creates cl
+ identical to a specific observation. It is thus necessary to decide to
+ which class these observations should be attributed. It seems logical to
+ prefer the densest, i.e. the one with the strongest slope. The
+-automatisation of this method allows to distinguish classes with high
++automatisation of this method allows distinguishing classes with high
+ frequencies from those with low frequencies, but also to introduce
+ subtleties and to delimit transition classes.
+ 
+--- a/lib/init/variables.html
++++ b/lib/init/variables.html
+@@ -91,7 +91,7 @@ PERMANENT
+     modules extra to the standard distribution.</dd>
+ 
+   <dt>GRASS_ADDON_BASE</dt>
+-  <dd>[grass startup script]<br> allows to specify additional GISBASE
++  <dd>[grass startup script]<br> allows specifying additional GISBASE
+     for local GRASS modules (normally installed as GRASS Addons
+     by <tt>g.extension</tt> module) extra to standard
+     distribution. The default on GNU/Linux
+--- a/lib/python/pydispatch/signal.py
++++ b/lib/python/pydispatch/signal.py
+@@ -230,9 +230,9 @@ class Signal(object):
+ 
+     # TODO: remove args?
+     def __call__(self, *args, **kwargs):
+-        """Allows to emit signal with function call syntax.
++        """Allows emitting signal with function call syntax.
+ 
+-        It allows to handle signal as a function or other callable object.
++        It allows handling signal as a function or other callable object.
+         So, the signal can be in the list of fuctions or can be connected as
+         a handler for another signal.
+         However, it is strongly recommended to use emit method for direct
+--- a/raster/r.horizon/r.horizon.html
++++ b/raster/r.horizon/r.horizon.html
+@@ -100,7 +100,7 @@ raster will be constructed as <i>basenam
+ is the angle in degrees with the direction. If you use <b>r.horizon</b>
+ in the single point mode this option will be ignored. 
+ 
+-<p>The <i>output</i> parameter allows to save the resulting horizon
++<p>The <i>output</i> parameter allows saving the resulting horizon
+ angles in a comma separated ASCII file (single point mode only). If
+ you use <b>r.horizon</b> in the raster map mode this option will be ignored.
+ 
+--- a/raster/r.in.lidar/r.in.lidar.html
++++ b/raster/r.in.lidar/r.in.lidar.html
+@@ -89,12 +89,12 @@ A LiDAR pulse can have multiple returns.
+ used to obtain a digital surface model (DSM) where e.g. canopy cover is 
+ represented. The last return values can be used to obtain a digital 
+ terrain model (DTM) where e.g. the forest floor instead of canopy 
+-cover is represented. The <b>return_filter</b> option allows to select one of 
++cover is represented. The <b>return_filter</b> option allows selecting one of 
+ first, mid, or last returns.
+ <p>
+ LiDAR points can be already classified into standardized classes. For example,
+ class number 2 represents ground (for other classes see LAS format specification
+-in references). The <b>class_filter</b> option allows to select one or more 
++in references). The <b>class_filter</b> option allows selecting one or more 
+ classes, as numbers (integers) separated by comma.
+ <p>
+ The default map <b>type</b>=<tt>FCELL</tt> is intended as compromise between
+--- a/raster/r.li/r.li.html
++++ b/raster/r.li/r.li.html
+@@ -32,7 +32,7 @@ The general procedure to calculate an in
+ 
+ <ol>
+ <li>run <em>g.gui.rlisetup</em>: create a configuration file selecting
+-    the parts of raster map to be analyzed. This file allows to re-run
++    the parts of raster map to be analyzed. This file allows re-running
+     an analysis easily. It is stored on Windows in the directory <tt>C:\Users\userxy\AppData\Roaming\GRASS7\r.li\</tt>, on GNU/Linux in
+     <tt>$HOME/.grass7/r.li/</tt>. <!-- TODO: and Mac OSX? -->
+ 
+--- a/raster/r.regression.multi/r.regression.multi.html
++++ b/raster/r.regression.multi/r.regression.multi.html
+@@ -47,7 +47,7 @@ excluding this variable, that is, this a
+ by the current explaining variable after taking into consideration all
+ the other explaining variables.
+ <p>
+-The F score for each explaining variable allows to test if the inclusion
++The F score for each explaining variable allows testing if the inclusion
+ of this variable significantly increases the explaining power of the
+ model, relative to the global model excluding this explaining variable.
+ That means that the F value for a given explaining variable is only
+--- a/scripts/d.shade/d.shade.html
++++ b/scripts/d.shade/d.shade.html
+@@ -7,7 +7,7 @@ table (as opposed to gray scale color ta
+ used including categorical raster maps.
+ 
+ <p>
+-The advantage of this module is that it allows to visualize the shaded map
++The advantage of this module is that it allows visualizing the shaded map
+ without a need to create a new raster which would combine both.
+ Comparing to creating shaded relief as semi-transparent overlay on
+ the color raster map, this module gives result with more saturated colors.
+--- a/scripts/db.droptable/db.droptable.html
++++ b/scripts/db.droptable/db.droptable.html
+@@ -31,7 +31,7 @@ db.droptable -f table=sometable
+ 
+ <h3>Removing an attribute table from given database</h3>
+ 
+-<em>db.droptable</em> allows to define optionally <b>driver</b>
++<em>db.droptable</em> allows defining optionally <b>driver</b>
+ and <b>database</b> options different from default connection settings
+ (<tt>db.connect -p</tt>).
+ 
+--- a/scripts/r.in.wms/wms_drv.py
++++ b/scripts/r.in.wms/wms_drv.py
+@@ -585,7 +585,7 @@ class WMTSRequestMgr(BaseRequestMgr):
+         return best_t_mat
+ 
+     def _getMetersPerUnit(self):
+-        """!Get coefficient which allows to convert units of request projection into meters.
++        """!Get coefficient which allows converting units of request projection into meters.
+         """  
+         if self.meters_per_unit:
+             return self.meters_per_unit
+--- a/scripts/r.unpack/r.unpack.html
++++ b/scripts/r.unpack/r.unpack.html
+@@ -1,6 +1,6 @@
+ <h2>DESCRIPTION</h2>
+ 
+-<em>r.unpack</em> allows to unpack raster maps packed by <em><a href="r.pack.html">r.pack</a></em>.
++<em>r.unpack</em> allows unpacking raster maps packed by <em><a href="r.pack.html">r.pack</a></em>.
+ 
+ <h2>NOTES</h2>
+ 
+--- a/scripts/v.krige/v.krige.html
++++ b/scripts/v.krige/v.krige.html
+@@ -1,6 +1,6 @@
+ <h2>DESCRIPTION</h2>
+ 
+-<em>v.krige</em> allows to perform kriging operations in GRASS
++<em>v.krige</em> allows performing kriging operations in GRASS
+ environment, using R software functions in background.
+ 
+ 
+--- a/scripts/v.unpack/v.unpack.html
++++ b/scripts/v.unpack/v.unpack.html
+@@ -1,6 +1,6 @@
+ <h2>DESCRIPTION</h2>
+ 
+-<em>v.unpack</em> allows to unpack vector maps packed by <em><a href="v.pack.html">v.pack</a></em>.
++<em>v.unpack</em> allows unpacking vector maps packed by <em><a href="v.pack.html">v.pack</a></em>.
+ 
+ <h2>NOTES</h2>
+ 
+--- a/temporal/t.support/t.support.html
++++ b/temporal/t.support/t.support.html
+@@ -4,7 +4,7 @@ This module is dedicated to modify and u
+ <p>
+ The title, description and the semantic type can be modified.
+ <p>
+-The flag <em>-u</em> allows to update the STDS metadata from registered
++The flag <em>-u</em> allows updating the STDS metadata from registered
+ map layers. This is useful in case the map layers have been modified
+ without using temporal commands.
+ <p>
+--- a/vector/v.colors/v.colors.html
++++ b/vector/v.colors/v.colors.html
+@@ -1,6 +1,6 @@
+ <h2>DESCRIPTION</h2>
+ 
+-<em>v.colors</em> allows to create or modify color table associated
++<em>v.colors</em> allows creating or modifying color table associated
+ with a vector map similarly
+ to <em><a href="r.colors.html">r.colors</a></em> for raster maps.
+ 
+--- a/vector/v.in.db/v.in.db.html
++++ b/vector/v.in.db/v.in.db.html
+@@ -6,7 +6,7 @@ containing coordinates.
+ <h2>NOTES</h2>
+ 
+ If GRASS comes with <a href="grass-ogr.html">OGR</a> support
+-than <em>v.in.db</em> allows to import data from different input
++than <em>v.in.db</em> allows importing data from different input
+ files, eg. CSV or MS Excel (assuming that GDAL/OGR library is compiled
+ with this support).
+ 
+--- a/vector/v.in.lidar/v.in.lidar.html
++++ b/vector/v.in.lidar/v.in.lidar.html
+@@ -19,12 +19,12 @@ A LiDAR pulse can have multiple returns.
+ used to obtain a digital surface model (DSM) where e.g. canopy cover is 
+ represented. The last return values can be used to obtain a digital 
+ terrain model (DTM) where e.g. the forest floor instead of canopy 
+-cover is represented. The <b>return_filter</b> option allows to select one of 
++cover is represented. The <b>return_filter</b> option allows selecting one of 
+ first, mid, or last returns.
+ <p>
+ LiDAR points can be already classified into standardized classes. For example,
+ class number 2 represents ground (for other classes see LAS format specification
+-in references). The <b>class_filter</b> option allows to select one or more 
++in references). The <b>class_filter</b> option allows selecting one or more 
+ classes, as numbers (integers) separated by comma.
+ 
+ <h2>Location Creation</h2>
+--- a/vector/v.out.postgis/v.out.postgis.html
++++ b/vector/v.out.postgis/v.out.postgis.html
+@@ -93,7 +93,7 @@ Multigeometries are not currently suppor
+ category are exported as multiple singe features.
+ 
+ <p>
+-<em>v.out.postgis</em> also allows to export vector features as
++<em>v.out.postgis</em> also allows exporting vector features as
+ <em>topological elements</em>
+ in <a href="http://postgis.refractions.net/docs/Topology.html">PostGIS
+ Topology</a> schema. PostGIS Topology extension uses three tables to
+@@ -218,7 +218,7 @@ by <em><a href="v.info.html">v.info</a><
+ 
+ <h3>Export data without attributes</h3>
+ 
+-<em>v.out.postgis</em> allows to ignore attributes when exporting
++<em>v.out.postgis</em> allows ignoring attributes when exporting
+ vector features by specifying <b>-t</b> flag.
+ 
+ Command bellow exports vector features without attributes. The feature
+@@ -231,7 +231,7 @@ v.out.postgis -t input=railroads output=
+ <h3>Export topological data</h3>
+ 
+ By default <em>v.out.postgis</em> exports data as simple
+-features. Flag <b>-l</b> allows to export data as topological elements
++features. Flag <b>-l</b> allows exporting data as topological elements
+ instead of simple features. Export topological elements is stored in
+ <a href="http://postgis.refractions.net/docs/Topology.html">PostGIS
+ Topology</a> schema.
+--- a/vector/v.vol.rst/README
++++ b/vector/v.vol.rst/README
+@@ -22,7 +22,7 @@ HISTORY:
+ including 3D topo parameters, and 2nd RST derivatives
+ 
+ 12/07/00 (MN) - added field selection parameter for sites lists
+-                (allows to select column in site_lists)
++                (allows selecting column in site_lists)
+ 
+ copied from Mark 15.may.1996,
+ just a beta version, not fully tested
