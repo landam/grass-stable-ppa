@@ -179,6 +179,9 @@ override_dh_auto_install-arch:
 	ln -fs /usr/lib/$(shell objdump -p /usr/lib/`gdal-config --libs | cut -d' ' -f2 | sed -e 's/-l/lib/'`.so | grep SONAME | cut -d' ' -f18) \
 		debian/tmp/usr/lib/$(BASE_NAME)/lib/libgdal.so
 
+	# Remove empty directory
+	rmdir debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/scripts/
+
 	# Move image files from /usr/lib/$(BASE_NAME) to /usr/share/$(BASE_NAME)
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui
 	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/icons/ debian/tmp/usr/share/$(BASE_NAME)/gui/
