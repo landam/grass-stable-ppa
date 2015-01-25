@@ -1,0 +1,14 @@
+Description: Fix desktop filename.
+Author: Bas Couwenberg <sebastic@xs4all.nl>
+
+--- a/gui/icons/grass.appdata.xml
++++ b/gui/icons/grass.appdata.xml
+@@ -1,7 +1,7 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <!-- Copyright 2014 Richard Hughes <richard@hughsie.com> -->
+ <application>
+-  <id type="desktop">grass.desktop</id>
++  <id type="desktop">grass70.desktop</id>
+   <metadata_license>CC0-1.0</metadata_license>
+   <project_license>GPL-2.0+</project_license>
+   <summary>GRASS GIS, the Open Source Geographic Information System</summary>

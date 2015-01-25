@@ -169,8 +169,6 @@ override_dh_auto_install-arch:
 	mkdir -p debian/tmp/usr/share/appdata/
 	install -m 644 gui/icons/grass.appdata.xml \
 		debian/tmp/usr/share/appdata/$(BASE_NAME).appdata.xml
-	sed -i -e 's+<id type="desktop">grass.desktop</id>+<id type="desktop">$(BASE_NAME).desktop</id>+' \
-		debian/tmp/usr/share/appdata/$(BASE_NAME).appdata.xml
 
 	# install grass wrapper scripts
 	install -m 755 debian/grass7 debian/tmp/usr/bin/$(BASE_NAME)
