@@ -18,6 +18,7 @@ grass (7.0.0~rc1-1) UNRELEASED; urgency=medium
   * Add patches for various typos.
   * Fix desktop file with patch instead of d/rules.
   * Use minimal dh rules.
+  * Bump Standards-Version to 3.9.6, no changes.
 
  -- Bas Couwenberg <sebastic@xs4all.nl>  Thu, 15 Jan 2015 01:15:41 +0100
 
