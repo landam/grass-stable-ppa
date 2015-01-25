@@ -1,7 +1,6 @@
 #htmlgen-fakeroot
 www-browser
 pager
-#xterm
 instdir
 #check4dev
 wxpy3.0-compat.patch
