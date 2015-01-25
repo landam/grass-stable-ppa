@@ -227,7 +227,7 @@ override_dh_auto_install-indep:
 	rm -f debian/tmp/programming-manual/html/jquery.js
 
 override_dh_install-arch:
-	dh_install --arch
+	dh_install --arch --list-missing
 
 	# delete duplicated grass-gui stuff from grass-core package
 	for COMPONENT in gui wxpython; do \
