@@ -1,6 +1,7 @@
 Description: Fix 'Aditionally' typo, replace with 'Additionally'.
 Author: Bas Couwenberg <sebastic@xs4all.nl>
 Forwarded: http://trac.osgeo.org/grass/ticket/2560
+Applied-Upstream: r64321, https://trac.osgeo.org/grass/changeset/64321
 
 --- a/raster/r.solute.transport/r.solute.transport.html
 +++ b/raster/r.solute.transport/r.solute.transport.html

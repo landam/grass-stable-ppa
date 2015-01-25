@@ -1,6 +1,7 @@
 Description: Fix 'paramter' & 'paramater' typos, replace with 'parameter'.
 Author: Bas Couwenberg <sebastic@xs4all.nl>
 Forwarded: http://trac.osgeo.org/grass/ticket/2560
+Applied-Upstream: r64321, https://trac.osgeo.org/grass/changeset/64321
 
 --- a/imagery/i.eb.eta/i.eb.eta.html
 +++ b/imagery/i.eb.eta/i.eb.eta.html
