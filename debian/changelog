@@ -1,3 +1,10 @@
+grass (6.4.4-1+deb8u1) UNRELEASED; urgency=medium
+
+  * Use dpkg-maintscript-helper to replace directories with symlinks.
+    (closes: #776349)
+
+ -- Bas Couwenberg <sebastic@xs4all.nl>  Fri, 28 Nov 2014 23:25:44 +0100
+
 grass (6.4.4-1) unstable; urgency=medium
 
   [ M. Hamish Bowman ]
