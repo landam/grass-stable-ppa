@@ -1,4 +1,4 @@
-grass (7.0.0~rc1+ds1-1) UNRELEASED; urgency=medium
+grass (7.0.0~rc1+ds1-1~exp1) experimental; urgency=medium
 
   * New upstream release candidate.
   * Repack upstream tarball, remove precompiled Python objects.
@@ -24,7 +24,7 @@ grass (7.0.0~rc1+ds1-1) UNRELEASED; urgency=medium
     (closes: #776349)
   * Update my email to use @debian.org address.
 
- -- Bas Couwenberg <sebastic@debian.org>  Fri, 06 Feb 2015 18:48:17 +0100
+ -- Bas Couwenberg <sebastic@debian.org>  Fri, 06 Feb 2015 18:51:17 +0100
 
 grass (6.4.4-1) unstable; urgency=medium
 
