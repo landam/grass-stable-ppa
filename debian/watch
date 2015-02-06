@@ -1,4 +1,5 @@
 version=3
-opts=uversionmangle=s/(\d)[_\.\-\+]?((RC|rc|pre|dev|beta|alpha)\d*)$/$1~$2/;s/RC/rc/ \
+opts=uversionmangle=s/(\d)[_\.\-\+]?((RC|rc|pre|dev|beta|alpha)\d*)$/$1~$2/;s/RC/rc/,\
+repacksuffix=+ds1 \
 http://grass.osgeo.org/grass70/source/ \
 grass-([\d\.]*(?:(?:RC|rc|pre|dev|beta|alpha)?\d*)).tar.gz
