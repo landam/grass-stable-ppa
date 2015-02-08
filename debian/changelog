@@ -1,5 +1,6 @@
-grass (7.0.0~rc1+ds1-1~exp3) UNRELEASED; urgency=medium
+grass (7.0.0~rc2-1~exp1) UNRELEASED; urgency=medium
 
+  * New upstream release candidate.
   * Remove additional Doxygen files on clean.
   * Drop upstream tarball repacking, fixed upstream.
 
