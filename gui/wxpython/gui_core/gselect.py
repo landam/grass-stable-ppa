@@ -95,7 +95,11 @@ class Select(wx.combo.ComboCtrl):
         :param validator: validator for TextCtrl
         """
         wx.combo.ComboCtrl.__init__(self, parent=parent, id=id, size=size, validator=validator)
-        self.GetChildren()[0].SetName("Select")
+        if globalvar.CheckWxVersion([3]):
+            self.SetName("Select")
+        else:
+            self.GetChildren()[0].SetName("Select")
+            
         self.GetChildren()[0].type = type
 
         self.tcp = TreeCtrlComboPopup()
@@ -431,16 +435,20 @@ class TreeCtrlComboPopup(ListCtrlComboPopup):
         curr_mapset = grass.gisenv()['MAPSET']
         
         # map element types to g.list types
-        elementdict = {'cell':'raster',
-                       'grid3':'raster_3d',
-                       'vector' : 'vector',
-                       'paint/labels':'label',
-                       'windows':'region',
-                       'group':'group',
-                       'stds':'stds',
-                       'strds':'strds',
-                       'str3ds':'str3ds',
-                       'stvds':'stvds'}
+        elementdict = {'cell': 'raster',
+                       'raster': 'raster',
+                       'grid3': 'raster_3d',
+                       'raster_3d': 'raster_3d',
+                       'vector': 'vector',
+                       'paint/labels': 'label',
+                       'label': 'label',
+                       'windows': 'region',
+                       'region': 'region',
+                       'group': 'group',
+                       'stds': 'stds',
+                       'strds': 'strds',
+                       'str3ds': 'str3ds',
+                       'stvds': 'stvds'}
 
         # to support multiple elements
         element_list = element.split(',')
