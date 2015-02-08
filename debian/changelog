@@ -5,6 +5,7 @@ grass (7.0.0~rc2-1~exp1) UNRELEASED; urgency=medium
   * Drop upstream tarball repacking, fixed upstream.
   * Drop patches applied upstream, refresh remaining patches.
   * Add build dependencies on: zlib1g-dev, python-ply, python-pil.
+  * Update copyright file, update copyright years.
 
  -- Bas Couwenberg <sebastic@debian.org>  Sun, 08 Feb 2015 20:13:24 +0100
 
