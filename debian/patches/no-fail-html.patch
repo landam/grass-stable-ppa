@@ -1,0 +1,21 @@
+Description: Don't fail the build if HTML generation fails.
+ Generating the HTML description for r.viewshed failed on GNU/Hurd reporting:
+ .
+  ERROR: Field <projection> missing
+ .
+ This single documentation error fails the entire build, to prevent this HTML
+ description errors are ignored.
+Author: Bas Couwenberg <sebastic@xs4all.nl>
+Forwarded: not-needed
+
+--- a/include/Make/Html.make
++++ b/include/Make/Html.make
+@@ -11,7 +11,7 @@ $(MANDIR)/%.$(MANSECT): $(HTMLDIR)/%.htm
+ 	$(HTML2MAN) $< $@
+ 
+ %.tmp.html: $(HTMLSRC)
+-	if [ "$(HTMLSRC)" != "" ] ; then $(call htmldesc,$<,$@) ; fi
++	if [ "$(HTMLSRC)" != "" ] ; then $(call htmldesc,$<,$@) || true; fi
+ 
+ ifdef CROSS_COMPILING
+ 
