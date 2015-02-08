@@ -1,0 +1,35 @@
+Description: Enclose Python ternary in parenthesis.
+ This fixes an issue with the C to Python conversion of the stat & stat64
+ structs on GNU/Hurd. The structs define the final member conditionally:
+ .
+  #define _SPARE_SIZE     ((sizeof (__fsid_t) == sizeof (int)) ? 9 : 8)
+      int st_spare[_SPARE_SIZE];  /* Room for future expansion.  */
+  #undef _SPARE_SIZE
+ .
+ This gets converted by ctypesgen to:
+ .
+  ('st_spare', c_int * (sizeof(__fsid_t) == sizeof(c_int)) and 9 or 8),
+ .
+ Which causes a TypeError:
+ .
+  TypeError: second item in _fields_ tuple (index 17) must be a C type
+ .
+ Enclosing the Python expression in parenthesis to become:
+ .
+  ('st_spare', c_int * ((sizeof(__fsid_t) == sizeof(c_int)) and 9 or 8)),
+ .
+ fixes the TypeError.
+Author: Bas Couwenberg <sebastic@xs4all.nl>
+Forwarded: https://trac.osgeo.org/grass/ticket/2581
+
+--- a/lib/python/ctypes/ctypesgencore/expressions.py
++++ b/lib/python/ctypes/ctypesgencore/expressions.py
+@@ -208,7 +208,7 @@ class ConditionalExpressionNode(Expressi
+             return self.no.evaluate(context)
+ 
+     def py_string(self, can_be_ctype):
+-        return "%s and %s or %s" % \
++        return "(%s and %s or %s)" % \
+             (self.cond.py_string(True),
+              self.yes.py_string(can_be_ctype),
+              self.no.py_string(can_be_ctype))

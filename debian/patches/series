@@ -3,6 +3,7 @@ pager
 instdir
 check4dev
 sc-config-cflags.patch
+python-ctypes-ternary.patch
 wxpy3.0-compat.patch
 parameter-typo.patch
 additionally-typo.patch
