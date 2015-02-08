@@ -39,11 +39,14 @@ Build-Depends: autoconf2.13,
                python-wxgtk3.0,
                python-dev,
                python-numpy,
+               python-ply,
+               python-pil,
                libnetcdf-dev,
                netcdf-bin,
                libblas-dev,
                liblapack-dev,
-               unixodbc-dev
+               unixodbc-dev,
+               zlib1g-dev
 Standards-Version: 3.9.6
 Vcs-Browser: http://anonscm.debian.org/cgit/pkg-grass/grass.git
 Vcs-Git: git://anonscm.debian.org/pkg-grass/grass.git -b experimental
