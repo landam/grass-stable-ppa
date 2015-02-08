@@ -145,7 +145,7 @@ Bug: http://trac.osgeo.org/grass/ticket/2167
              path = dlg.GetPath()
 --- a/gui/wxpython/mapdisp/frame.py
 +++ b/gui/wxpython/mapdisp/frame.py
-@@ -587,7 +587,7 @@ class MapFrame(SingleMapFrame):
+@@ -592,7 +592,7 @@ class MapFrame(SingleMapFrame):
                              message = _("Choose a file name to save the image "
                                          "(no need to add extension)"),
                              wildcard = filetype,
@@ -176,7 +176,7 @@ Bug: http://trac.osgeo.org/grass/ticket/2167
              else:
 --- a/gui/wxpython/gui_core/forms.py
 +++ b/gui/wxpython/gui_core/forms.py
-@@ -1501,9 +1501,9 @@ class CmdPanel(wx.Panel):
+@@ -1504,9 +1504,9 @@ class CmdPanel(wx.Panel):
                  # file selector
                  elif p.get('prompt','') !=  'color' and p.get('prompt', '') == 'file':
                      if p.get('age', 'new') == 'new':
@@ -188,7 +188,7 @@ Bug: http://trac.osgeo.org/grass/ticket/2167
                      # check wildcard
                      try:
                          fExt = os.path.splitext(p.get('key_desc', ['*.*'])[0])[1]
-@@ -1912,7 +1912,7 @@ class CmdPanel(wx.Panel):
+@@ -1915,7 +1915,7 @@ class CmdPanel(wx.Panel):
          dlg = wx.FileDialog(parent = self,
                              message = _("Save input as..."),
                              defaultDir = os.getcwd(),
