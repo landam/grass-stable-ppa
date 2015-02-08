@@ -1,6 +1,7 @@
 grass (7.0.0~rc1+ds1-1~exp3) UNRELEASED; urgency=medium
 
   * Remove additional Doxygen files on clean.
+  * Drop upstream tarball repacking, fixed upstream.
 
  -- Bas Couwenberg <sebastic@debian.org>  Sun, 08 Feb 2015 20:13:24 +0100
 
