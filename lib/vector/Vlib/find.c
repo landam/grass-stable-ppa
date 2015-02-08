@@ -263,11 +263,13 @@ Vect_find_line_list(struct Map_info *map,
  */
 int Vect_find_area(struct Map_info *Map, double x, double y)
 {
-    int i, ret, area;
+    int i, j, ret, area, isle;
     struct bound_box box;
     static struct boxlist *List = NULL;
     static BOX_SIZE *size_list;
     static int alloc_size_list = 0;
+    const struct Plus_head *Plus;
+    struct P_area *Area;
 
     G_debug(3, "Vect_find_area() x = %f y = %f", x, y);
 
@@ -276,6 +278,8 @@ int Vect_find_area(struct Map_info *Map, double x, double y)
 	alloc_size_list = 10;
 	size_list = G_malloc(alloc_size_list * sizeof(BOX_SIZE));
     }
+
+    Plus = &(Map->plus);
 
     /* select areas by box */
     box.E = x;
@@ -287,7 +291,13 @@ int Vect_find_area(struct Map_info *Map, double x, double y)
     Vect_select_areas_by_box(Map, &box, List);
     G_debug(3, "  %d areas selected by box", List->n_values);
 
-    /* sort areas by size, the smallest is likely to be the nearest */
+    /* sort areas by bbox size
+     * get the smallest area that contains the point
+     * using the bbox size is working because if 2 areas both contain
+     * the point, one of these areas must be inside the other area
+     * which means that the bbox of the outer area must be larger than
+     * the bbox of the inner area, and equal bbox sizes are not possible */
+
     if (alloc_size_list < List->n_values) {
 	alloc_size_list = List->n_values;
 	size_list = G_realloc(size_list, alloc_size_list * sizeof(BOX_SIZE));
@@ -314,12 +324,31 @@ int Vect_find_area(struct Map_info *Map, double x, double y)
 
     for (i = 0; i < List->n_values; i++) {
 	area = size_list[i].i;
-	ret = Vect_point_in_area(x, y, Map, area, &size_list[i].box);
+	/* outer ring */
+	ret = Vect_point_in_area_outer_ring(x, y, Map, area, &size_list[i].box);
 
-	G_debug(3, "    area = %d Vect_point_in_area() = %d", area, ret);
+	G_debug(3, "    area = %d Vect_point_in_area_outer_ring() = %d", area, ret);
 
-	if (ret >= 1)
+	if (ret >= 1) {
+	    /* check if in islands */
+	    Area = Plus->Area[area];
+	    for (j = 0; j < Area->n_isles; j++) {
+		isle = Area->isles[j];
+		Vect_get_isle_box(Map, isle, &box);
+		ret = Vect_point_in_island(x, y, Map, isle, &box);
+
+		G_debug(3, "    area = %d Vect_point_in_island() = %d", area, ret);
+
+		if (ret >= 1) {
+		    /* point is not in area
+		     * point is also not in any inner area, those have 
+		     * been tested before (sorted list) 
+		     * -> area inside island could not be built */
+		    return 0;
+		}
+	    }
 	    return (area);
+	}
     }
 
     return 0;
@@ -341,6 +370,8 @@ int Vect_find_island(struct Map_info *Map, double x, double y)
     struct bound_box box;
     static struct boxlist *List;
     static struct line_pnts *Points;
+
+    /* TODO: sync to Vect_find_area() */
 
     G_debug(3, "Vect_find_island() x = %f y = %f", x, y);
 

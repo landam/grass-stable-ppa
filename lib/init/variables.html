@@ -259,7 +259,7 @@ PERMANENT
     non-native, vector features are written to output external
     datasource immediately. By default, the vector library writes
     output data to a temporary vector map in native format and when
-    closing the map, the features are transfered to output external
+    closing the map, the features are transferred to output external
     datasource. Note: if output vector format is topological PostGIS
     format, then the vector library writes features immediately to output
     database (in this case GRASS_VECTOR_EXTERNAL_IMMEDIATE is ignored).</dd>
@@ -351,6 +351,9 @@ PERMANENT
   <dt>GRASS_RENDER_HEIGHT</dt>
   <dd>defines the height of output image (default is 480).</dd>
   
+  <dt>GRASS_RENDER_FILE</dt>
+  <dd>the name of the resulting image file.</dd>
+
   <dt>GRASS_RENDER_FRAME</dt>
   <dd>contains 4 coordinates, <em>top,bottom,left,right</em> (pixel
   values) with respect to the top left corner of the output image,
@@ -518,4 +521,4 @@ Note: On MS Windows the files are stored in <tt>%APPDATA%</tt>.
 </em>
 
 <p>
-<i>Last changed: $Date: 2014-12-27 00:19:42 +0100 (Sat, 27 Dec 2014) $</i>
+<i>Last changed: $Date: 2015-02-01 10:45:00 +0100 (Sun, 01 Feb 2015) $</i>

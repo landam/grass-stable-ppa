@@ -1917,9 +1917,11 @@ class GLWindow(MapWindowBase, glcanvas.GLCanvas):
                 elif attrb ==  'transp':
                     self._display.UnsetSurfaceTransp(id) 
             else:
-                if type(value) == types.StringType and \
-                        len(value) <=  0: # ignore empty values (TODO: warning)
-                    continue
+                if type(value) == types.StringType:
+                    if len(value) == 0:  # ignore empty values (TODO: warning)
+                        continue
+                    if map and not grass.find_file(value, element='cell')['fullname']:
+                        continue
                 if attrb ==  'color':
                     self._display.SetSurfaceColor(id, map, str(value))
                 elif attrb ==  'mask':
@@ -2025,9 +2027,11 @@ class GLWindow(MapWindowBase, glcanvas.GLCanvas):
                     elif attrb ==  'transp':
                         self._display.UnsetIsosurfaceTransp(id, isosurfId) 
                 else:
-                    if type(value) == types.StringType and \
-                            len(value) <=  0: # ignore empty values (TODO: warning)
-                        continue
+                    if type(value) == types.StringType:
+                        if len(value) == 0:  # ignore empty values (TODO: warning)
+                            continue
+                        if map and not grass.find_file(value, element='grid3')['fullname']:
+                            continue
                     elif attrb ==  'color':
                         self._display.SetIsosurfaceColor(id, isosurfId, map, str(value))
                     elif attrb ==  'mask':
@@ -2085,15 +2089,15 @@ class GLWindow(MapWindowBase, glcanvas.GLCanvas):
                 'update' in data['mode']:
             width = data['width']['value']
             color = data['color']['value']
-            if data['mode']['type'] ==  'flat':
-                flat = True
+            if data['mode']['type'] ==  '3d':
+                use_3D = True
                 if 'surface' in data['mode']:
                     data['mode'].pop('surface')
             else:
-                flat = False
+                use_3D = False
             
             self._display.SetVectorLineMode(id, color,
-                                            width, flat)
+                                            width, use_3D)
             
             if 'update' in data['color']:
                 data['color'].pop('update')

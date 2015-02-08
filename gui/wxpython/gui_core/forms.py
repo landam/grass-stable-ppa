@@ -200,7 +200,10 @@ class UpdateThread(Thread):
                 else:
                     etype = type_param.get('value')
 
-                self.data[win.GetParent().SetElementList] = {'type': etype}
+                if globalvar.CheckWxVersion([3]):
+                    self.data[win.SetElementList] = {'type': etype}
+                else:
+                    self.data[win.GetParent().SetElementList] = {'type': etype}
 
                 # t.(un)register has one type for 'input', 'maps'
                 maps_param = self.task.get_param('maps', element='name', raiseError=False)
@@ -2376,16 +2379,18 @@ class GUI:
                         else:
                             continue
                     
-                    element = self.grass_task.get_param(key, raiseError = False)
-                    if not element:
+                    task = self.grass_task.get_param(key, raiseError = False)
+                    if not task:
                         err.append(_("%(cmd)s: parameter '%(key)s' not available") % \
                                        { 'cmd' : cmd[0],
                                          'key' : key })
                         continue
-                    multiple = element['multiple']
-                    element = element['element']
+                    multiple = task['multiple']
+                    element = task['element']
+                    # to filter out g.copy, g.rename
+                    key_desc = task['key_desc']
                     # do we need to find mapset for each of multiple maps?
-                    if element in ['cell', 'vector'] and not multiple:
+                    if element in ['cell', 'vector'] and not multiple and len(key_desc) != 2:
                         # mapname -> mapname@mapset
                         try:
                             name, mapset = value.split('@')
