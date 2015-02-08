@@ -32,10 +32,12 @@ override_dh_clean:
 	$(RM) error.log
 
 	# clean doxygen documentation (programming man)
+	$(RM) doxygen_sqlite3.db lib/doxygen_sqlite3.db
 	$(RM) -r \
 		doxygenhtml \
 		html latex \
 		rfc/html rfc/latex \
+		lib/html lib/latex \
 		gui/wxpython/html gui/wxpython/latex
 	for LIBRARY in \
 		db \

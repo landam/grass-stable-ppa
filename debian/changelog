@@ -1,3 +1,9 @@
+grass (7.0.0~rc1+ds1-1~exp3) UNRELEASED; urgency=medium
+
+  * Remove additional Doxygen files on clean.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Sun, 08 Feb 2015 20:13:24 +0100
+
 grass (7.0.0~rc1+ds1-1~exp2) experimental; urgency=medium
 
   * Add patch to treat GNU/{Hurd,kFreeBSD} like Linux in SC_CONFIG_CFLAGS.
