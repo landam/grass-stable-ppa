@@ -1,4 +1,4 @@
-grass (7.0.0~rc2-1~exp1) UNRELEASED; urgency=medium
+grass (7.0.0~rc2-1~exp1) experimental; urgency=medium
 
   * New upstream release candidate.
   * Remove additional Doxygen files on clean.
@@ -7,7 +7,7 @@ grass (7.0.0~rc2-1~exp1) UNRELEASED; urgency=medium
   * Add build dependencies on: zlib1g-dev, python-ply, python-pil.
   * Update copyright file, update copyright years.
 
- -- Bas Couwenberg <sebastic@debian.org>  Sun, 08 Feb 2015 20:13:24 +0100
+ -- Bas Couwenberg <sebastic@debian.org>  Mon, 09 Feb 2015 08:53:56 +0100
 
 grass (7.0.0~rc1+ds1-1~exp2) experimental; urgency=medium
 
