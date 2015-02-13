@@ -2,6 +2,7 @@ Description: Fix to work with wxPython 3.0
 Author: Olly Betts <olly@survex.com>
 Last-Update: 2014-08-16
 Bug: http://trac.osgeo.org/grass/ticket/2167
+Applied-Upstream: r64611, https://trac.osgeo.org/grass/changeset/64611
 
 --- a/gui/wxpython/wxplot/profile.py
 +++ b/gui/wxpython/wxplot/profile.py
