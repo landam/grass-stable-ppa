@@ -1,7 +1,6 @@
 www-browser
 pager
 instdir
-check4dev
 python-ctypes-ternary.patch
 no-fail-html.patch
 wxpy3.0-compat.patch
