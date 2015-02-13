@@ -6,6 +6,7 @@ Description: Check if we have the grass include and Make files
  and ported to Python by Bas Couwenberg.
 Author: M. Hamish Bowman <hamish.webmail@gmail.com>
 Author: Bas Couwenberg <sebastic@xs4all.nl>
+Forwarded: not-needed
 
 --- a/scripts/g.extension/g.extension.py
 +++ b/scripts/g.extension/g.extension.py
