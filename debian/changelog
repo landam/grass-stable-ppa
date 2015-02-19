@@ -2,6 +2,7 @@ grass (7.0.0~rc2-1~exp2) UNRELEASED; urgency=medium
 
   * Update python-ctypes-ternary.patch to use if/else instead of and/or.
   * Drop check4dev patch, rely on upstream check.
+  * Add build dependency on libpq-dev to grass-dev for libpq-fe.h.
 
  -- Bas Couwenberg <sebastic@debian.org>  Tue, 10 Feb 2015 22:55:48 +0100
 

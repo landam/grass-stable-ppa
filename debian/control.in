@@ -176,6 +176,7 @@ Depends: grass-core (= ${binary:Version}),
          libproj-dev,
          libgdal-dev,
          libfreetype6-dev,
+         libpq-dev,
          python,
          ${shlibs:Depends},
          ${misc:Depends}
