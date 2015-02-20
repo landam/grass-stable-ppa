@@ -3,7 +3,7 @@ Author: Bas Couwenberg <sebastic@xs4all.nl>
 
 --- a/gui/icons/grass.desktop
 +++ b/gui/icons/grass.desktop
-@@ -47,6 +47,7 @@ Comment[tr]=Coğrafi bilgi sistemi
+@@ -47,7 +47,7 @@ Comment[tr]=Coğrafi bilgi sistemi
  Comment[uk]=Геоінформаційна система
  Comment[uz]=Geografik axborot tizimi
  Categories=Education;Science;Geoscience;Geography;
@@ -12,4 +12,4 @@ Author: Bas Couwenberg <sebastic@xs4all.nl>
 +Exec=grass70
 +Icon=grass70
  Terminal=true
-+Keywords=wms;wfs;ogc;osgeo
+ Keywords=wms;wfs;ogc;osgeo

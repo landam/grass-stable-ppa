@@ -1,9 +1,6 @@
-www-browser
 pager
 instdir
 python-ctypes-ternary.patch
 no-fail-html.patch
-wxpy3.0-compat.patch
-allows-to-typo.patch
 desktop.patch
 appstream.patch
