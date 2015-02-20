@@ -5,6 +5,7 @@ grass (7.0.0-1) UNRELEASED; urgency=medium
   * Drop check4dev patch, rely on upstream check.
   * Add build dependency on libpq-dev to grass-dev for libpq-fe.h.
   * Drop patches applied upstream, refresh remaining patches.
+  * Update symlinks for images switched from jpg to png.
 
  -- Bas Couwenberg <sebastic@debian.org>  Fri, 20 Feb 2015 22:11:58 +0100
 

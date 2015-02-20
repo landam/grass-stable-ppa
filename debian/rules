@@ -209,7 +209,7 @@ override_dh_auto_install-arch:
 	mv debian/tmp/usr/lib/grass70/gui/wxpython/dbmgr/dbmgr_frame.jpg  debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/dbmgr/
 
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler
-	mv debian/tmp/usr/lib/grass70/gui/wxpython/gmodeler/gmodeler_frame.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/grass70/gui/wxpython/gmodeler/gmodeler_frame.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
 
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/iclass
 	mv debian/tmp/usr/lib/grass70/gui/wxpython/iclass/iclass_frame.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/iclass/
@@ -229,7 +229,7 @@ override_dh_auto_install-arch:
 	mv debian/tmp/usr/lib/grass70/gui/wxpython/rlisetup/g_gui_rlisetup_6.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
 	mv debian/tmp/usr/lib/grass70/gui/wxpython/rlisetup/g_gui_rlisetup_7.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
 	mv debian/tmp/usr/lib/grass70/gui/wxpython/rlisetup/g_gui_rlisetup_8.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
-	mv debian/tmp/usr/lib/grass70/gui/wxpython/rlisetup/g_gui_rlisetup_sampleAreas.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
+	mv debian/tmp/usr/lib/grass70/gui/wxpython/rlisetup/g_gui_rlisetup_sampleAreas.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
 
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/timeline
 	mv debian/tmp/usr/lib/grass70/gui/wxpython/timeline/timeline_2D.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/timeline/
