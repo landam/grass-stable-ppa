@@ -110,18 +110,7 @@ class GRASSStartup(wx.Frame):
         self.mapset_box = wx.StaticBox(parent=self.panel, id=wx.ID_ANY,
                                          label=" %s " % _("3. Select GRASS Mapset"))
 
-        # no message at the beginning but a dummy text is needed to do
-        # the layout right (the lenght should be similar to maximal message)
-        self.lmessage = StaticWrapText(
-            parent=self.panel, id=wx.ID_ANY,
-            label=("This is a placeholer text to workaround layout issues."
-                   " Without this (long) text the widgets will not align"
-                   " when a message is shown."
-                   " This text is not translatable and users should never"
-                   " see it because it will be replaced by nothing or a real"
-                   " message after initial checks. If you are an user"
-                   " and you see this text, it is probably some minor issue."
-                   " Please, contact GRASS developers to tell them about it."))
+        self.lmessage = wx.StaticText(parent=self.panel)
         # It is not clear if all wx versions supports color, so try-except.
         # The color itself may not be correct for all platforms/system settings
         # but in http://xoomer.virgilio.it/infinity77/wxPython/Widgets/wx.SystemSettings.html
@@ -199,14 +188,14 @@ class GRASSStartup(wx.Frame):
 
         # Locations
         self.lblocations = GListBox(parent = self.location_panel,
-                                    id=wx.ID_ANY, size=(180, 120),
+                                    id=wx.ID_ANY, size=(180, 200),
                                     choices = self.listOfLocations)
         self.lblocations.SetColumnWidth(0, 180)
 
         # TODO: sort; but keep PERMANENT on top of list
         # Mapsets
         self.lbmapsets = GListBox(parent = self.mapset_panel,
-                                  id=wx.ID_ANY, size=(180, 120),
+                                  id=wx.ID_ANY, size=(180, 200),
                                   choices = self.listOfMapsets)
         self.lbmapsets.SetColumnWidth(0, 180)
 
@@ -316,22 +305,22 @@ class GRASSStartup(wx.Frame):
         # gis data directory
         
         gisdbase_boxsizer.Add(item=self.gisdbase_panel, proportion=1,
-                         flag=wx.EXPAND | wx.ALL,
-                         border=3)
+                              flag=wx.EXPAND | wx.ALL,
+                              border=1)
         
         gisdbase_panel_sizer.Add(item=dbase_sizer, proportion=1,
-                         flag=wx.EXPAND | wx.ALL,
-                         border=3)
+                                 flag=wx.EXPAND | wx.ALL,
+                                 border=1)
         gisdbase_panel_sizer.Add(item=self.ldbase, proportion=0,
-                         flag=wx.EXPAND | wx.ALL,
-                         border=3)
+                                 flag=wx.EXPAND | wx.ALL,
+                                 border=1)
 
         dbase_sizer.Add(item = self.tgisdbase, proportion = 1,
                         flag = wx.ALIGN_CENTER_VERTICAL | wx.ALL,
-                        border = 3)
+                        border = 1)
         dbase_sizer.Add(item = self.bbrowse, proportion = 0,
                         flag = wx.ALIGN_CENTER_VERTICAL | wx.ALL,
-                        border = 3)
+                        border = 1)
 
         gisdbase_panel_sizer.Fit(self.gisdbase_panel)
 
@@ -348,23 +337,23 @@ class GRASSStartup(wx.Frame):
 
             main_sizer.Add(item=list_box, proportion=1,
                            flag=wx.EXPAND | wx.ALL,
-                           border=3)
+                           border=1)
             main_sizer.Add(item=buttons_sizer, proportion=0,
                            flag=wx.ALIGN_CENTER_HORIZONTAL | wx.ALL,
-                           border=3)
+                           border=1)
             for button in buttons:
                 buttons_sizer.Add(item=button, proportion=0,
-                                  flag=wx.EXPAND | wx.ALL,
+                                  flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM,
                                   border=3)
             box_sizer.Add(item=panel, proportion=1,
                           flag=wx.EXPAND | wx.ALL,
-                          border=3)
+                          border=1)
             panel_sizer.Add(item=main_sizer, proportion=1,
                             flag=wx.EXPAND | wx.ALL,
-                            border=3)
+                            border=1)
             panel_sizer.Add(item=description, proportion=0,
                             flag=wx.EXPAND | wx.ALL,
-                            border=3)
+                            border=1)
             return box_sizer
 
         location_boxsizer = layout_list_box(
@@ -417,13 +406,13 @@ class GRASSStartup(wx.Frame):
         sizer.Add(item=gisdbase_boxsizer, proportion=0,
                   flag = wx.ALIGN_CENTER_HORIZONTAL |
                   wx.RIGHT | wx.LEFT | wx.TOP | wx.EXPAND,
-                  border=3) # GISDBASE setting
+                  border = 3) # GISDBASE setting
 
         # warning/error message
         sizer.Add(item=self.lmessage,
                   proportion=0,
                   flag=wx.ALIGN_CENTER_VERTICAL |
-                  wx.ALIGN_LEFT | wx.ALL | wx.EXPAND, border=8)
+                  wx.ALIGN_LEFT | wx.ALL | wx.EXPAND, border=5)
         sizer.Add(item=location_mapset_sizer, proportion=1,
                   flag = wx.RIGHT | wx.LEFT | wx.EXPAND,
                   border = 1)
@@ -431,7 +420,7 @@ class GRASSStartup(wx.Frame):
                   flag = wx.ALIGN_CENTER_VERTICAL |
                   wx.ALIGN_CENTER_HORIZONTAL |
                   wx.RIGHT | wx.LEFT,
-                  border = 1)
+                  border = 3)
 
         self.panel.SetAutoLayout(True)
         self.panel.SetSizer(sizer)
@@ -472,6 +461,7 @@ class GRASSStartup(wx.Frame):
             you know that there is everything correct now.
         """
         self.lmessage.SetLabel(text)
+        self.lmessage.Wrap(self.GetClientSize()[0])
         self.sizer.Layout()
 
     def _showError(self, text):
@@ -485,6 +475,7 @@ class GRASSStartup(wx.Frame):
             you know that there is everything correct now.
         """
         self.lmessage.SetLabel(_("Error: {text}").format(text=text))
+        self.lmessage.Wrap(self.GetClientSize()[0])
         self.sizer.Layout()
 
     def _hideMessage(self):
@@ -515,9 +506,8 @@ class GRASSStartup(wx.Frame):
             self.lbmapsets.SetSelection(0)
             self.SetLocation(self.gisdbase, gWizard.location, 'PERMANENT')
             if gWizard.georeffile:
-                message = _("Do you want to import <%(name)s> to the newly created location? "
-                            "The location's default region will be set from this imported "
-                            "map.") % {'name': gWizard.georeffile}
+                message = _("Do you want to import <%(name)s> to the newly created location?") % \
+                    {'name': gWizard.georeffile}
                 dlg = wx.MessageDialog(parent = self,
                                        message = message,
                                        caption = _("Import data?"),
@@ -577,11 +567,11 @@ class GRASSStartup(wx.Frame):
         wx.Yield()
         if mapName in vectors:
             # vector detected
-            returncode, error = RunCommand('v.in.ogr', input = filePath, output = mapName,
-                                           getErrorMsg = True)
+            returncode, error = RunCommand('v.in.ogr', input=filePath, output=mapName, flags='e',
+                                           getErrorMsg=True)
         else:
-            returncode, error = RunCommand('r.in.gdal', input = filePath, output = mapName,
-                                           getErrorMsg = True)
+            returncode, error = RunCommand('r.in.gdal', input=filePath, output=mapName, flags='e',
+                                           getErrorMsg=True)
         wx.EndBusyCursor()
 
         if returncode != 0:
@@ -589,18 +579,10 @@ class GRASSStartup(wx.Frame):
                    message = _("Import of <%(name)s> failed.\n"
                                "Reason: %(msg)s") % ({'name': filePath, 'msg': error}))
         else:
-            GMessage(message = _("Data file <%(name)s> imported successfully.") % {'name': filePath},
-                     parent = self)
-            if not grass.find_file(element = 'cell', name = mapName)['fullname'] and \
-                    not grass.find_file(element = 'vector', name = mapName)['fullname']:
-                GError(parent = self,
-                       message = _("Map <%s> not found.") % mapName)
-            else:
-                if mapName in vectors:
-                    args = {'vector' : mapName}
-                else:
-                    args = {'raster' : mapName}
-                RunCommand('g.region', flags = 's', parent = self, **args)
+            GMessage(message=_("Data file <%(name)s> imported successfully. "
+                               "The location's default region was set from this imported map.") %
+                               {'name': filePath},
+                     parent=self)
 
     # the event can be refactored out by using lambda in bind
     def RenameMapset(self, event):
