@@ -271,7 +271,13 @@ def expandAddons(tree):
     root = tree.getroot()
     _expandAddonsItem(root)
     # expanding and converting is done twice, so there is some overhead
-    _expandRuntimeModules(root)
+    # we don't load metadata by calling modules on Windows because when
+    # installed addons are not compatible, Windows show ugly crash dialog
+    # for every incompatible addon
+    if sys.platform == "win32":
+        _expandRuntimeModules(root, loadMetadata=False)
+    else:
+        _expandRuntimeModules(root, loadMetadata=True)
     _addHandlers(root)
     _convertTree(root)
 
@@ -487,9 +493,11 @@ def _expandItems(node, items, itemTag):
                 moduleItem.append(node)
 
 
-def _expandRuntimeModules(node):
+def _expandRuntimeModules(node, loadMetadata=True):
     """Add information to modules (desc, keywords)
     by running them with --interface-description.
+    If loadMetadata is False, modules are not called,
+    useful for incompatible addons.
 
     >>> tree = etree.fromstring('<items>'
     ...                         '<module-item name="g.region"></module-item>'
@@ -504,6 +512,7 @@ def _expandRuntimeModules(node):
     >>> etree.tostring(tree)
     '<items><module-item name="m.proj"><module>m.proj</module><description>Converts coordinates from one projection to another (cs2cs frontend).</description><keywords>miscellaneous,projection</keywords></module-item></items>'
     """
+    hasErrors = False
     modules = node.findall('.//module-item')
     for module in modules:
         name = module.get('name')
@@ -512,13 +521,21 @@ def _expandRuntimeModules(node):
             n.text = name
 
         if module.find('description') is None:
-            desc, keywords = _loadMetadata(name)
+            if loadMetadata:
+                desc, keywords = _loadMetadata(name)
+            else:
+                desc, keywords = '', ''
             n = etree.SubElement(parent=module, tag='description')
             n.text = _escapeXML(desc)
             n = etree.SubElement(parent=module, tag='keywords')
             n.text = _escapeXML(','.join(keywords))
-
-
+            if loadMetadata and not desc:
+                hasErrors = True
+    
+    if hasErrors:
+        sys.stderr.write(_("WARNING: Some addons failed when loading. "
+                           "Please consider to update your addons by running 'g.extension.all -f'.\n"))
+    
 def _escapeXML(text):
     """Helper function for correct escaping characters for XML.
 
@@ -539,7 +556,8 @@ def _loadMetadata(module):
     """
     try:
         task = gtask.parse_interface(module)
-    except ScriptError:
+    except (ScriptError, UnicodeDecodeError) as e:
+        sys.stderr.write("%s: %s\n" % (module, e))
         return '', ''
 
     return task.get_description(full=True), \

@@ -48,7 +48,6 @@ SUBDIRS = \
 	r3.in.xyz \
 	v.build.all \
 	v.centroids \
-	v.convert.all \
 	v.db.addcolumn \
 	v.db.addtable \
 	v.db.join \
@@ -67,17 +66,12 @@ SUBDIRS = \
 	v.in.wfs \
 	v.rast.stats \
 	v.report \
-	v.out.gps \
 	v.pack \
-        v.to.lines \
+	v.to.lines \
 	v.unpack \
 	v.what.vect \
 	wxpyimgview \
-	v.krige \
-
-#	r.mapcalculator \
-#	r3.mapcalculator \
-#	v.in.gps \
+	v.krige
 
 include $(MODULE_TOPDIR)/include/Make/Dir.make
 

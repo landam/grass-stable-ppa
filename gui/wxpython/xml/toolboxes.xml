@@ -305,12 +305,6 @@
       <module-item name="v.in.lines">
         <label>ASCII points as a vector lines</label>
       </module-item>
-      <module-item name="v.convert">
-        <label>Historical GRASS vector import</label>
-      </module-item>
-      <module-item name="v.convert.all">
-        <label>Historical GRASS vector import (all maps)</label>
-      </module-item>
       <separator/>
       <wxgui-item name="DXFImport"/>
       <separator/>
@@ -321,14 +315,8 @@
       <module-item name="v.in.e00">
         <label>ESRI e00 import</label>
       </module-item>
-      <module-item name="v.in.gps">
-        <label>GPS data import</label>
-      </module-item>
       <module-item name="v.in.geonames">
         <label>Geonames import</label>
-      </module-item>
-      <module-item name="v.in.gns">
-        <label>GEOnet import</label>
       </module-item>
       <module-item name="v.in.mapgen">
         <label>Matlab array or Mapgen format import</label>
@@ -432,9 +420,6 @@
       </module-item>
       <module-item name="v.out.dxf">
         <label>DXF export</label>
-      </module-item>
-      <module-item name="v.out.gps">
-        <label>Multiple GPS export formats using GPSBabel</label>
       </module-item>
       <module-item name="v.out.postgis">
         <label>PostGIS export</label>
@@ -1056,9 +1041,6 @@
       <module-item name="r.surf.idw">
         <label>IDW from raster points</label>
       </module-item>
-      <module-item name="r.surf.idw2">
-        <label>IDW from raster points (alternate method for sparse points)</label>
-      </module-item>
       <module-item name="v.surf.idw">
         <label>IDW from vector points</label>
       </module-item>
@@ -1163,9 +1145,6 @@
       <separator/>
       <module-item name="v.label">
         <label>Create labels</label>
-      </module-item>
-      <module-item name="v.label.sa">
-        <label>Create optimally placed labels</label>
       </module-item>
       <separator/>
       <module-item name="v.transform">
@@ -1633,9 +1612,6 @@
   <toolbox name="ImageryReportsAndStatistics">
     <label>Reports and statistics</label>
     <items>
-      <module-item name="r.bitpattern">
-        <label>Bit pattern comparison </label>
-      </module-item>
       <module-item name="r.kappa">
         <label>Kappa analysis</label>
       </module-item>

@@ -746,7 +746,7 @@ def install_extension_other(name):
              'docs'    : os.path.join(TMPDIR, name, 'docs'),
              'html'    : os.path.join(TMPDIR, name, 'docs', 'html'),
              'rest'    : os.path.join(TMPDIR, name, 'docs', 'rest'),
-             'man'     : os.path.join(TMPDIR, name, 'docs', 'man', 'man1'),
+             'man'     : os.path.join(TMPDIR, name, 'docs', 'man'),
              'script'  : os.path.join(TMPDIR, name, 'scripts'),
 ### TODO: handle locales also for addons
 #             'string'  : os.path.join(TMPDIR, name, 'locale'),
@@ -760,7 +760,7 @@ def install_extension_other(name):
                'BIN=%s' % dirs['bin'],
                'HTMLDIR=%s' % dirs['html'],
                'RESTDIR=%s' % dirs['rest'],
-               'MANDIR=%s' % dirs['man'],
+               'MANBASEDIR=%s' % dirs['man'],
                'SCRIPTDIR=%s' % dirs['script'],
                'STRINGDIR=%s' % dirs['string'],
                'ETC=%s' % os.path.join(dirs['etc'])
@@ -783,6 +783,10 @@ def install_extension_other(name):
     os.chdir(os.path.join(TMPDIR, name))
 
     grass.message(_("Compiling..."))
+    if not os.path.exists(os.path.join(gisbase, 'include',
+                                       'Make', 'Module.make')):
+        grass.fatal(_("Please install GRASS development package"))
+
     if 0 != grass.call(makeCmd,
                        stdout = outdev):
         grass.fatal(_('Compilation failed, sorry. Please check above error messages.'))
@@ -805,7 +809,7 @@ def remove_extension(force = False):
     if force:
         grass.verbose(_("List of removed files:"))
     else:
-        grass.info(_("Files to be removed (use flag 'f' to force removal):"))
+        grass.info(_("Files to be removed:"))
 
     remove_modules(mlist, force)
 
@@ -814,8 +818,8 @@ def remove_extension(force = False):
         remove_extension_xml(mlist)
         grass.message(_("Extension <%s> successfully uninstalled.") % options['extension'])
     else:
-        grass.warning(_("Extension <%s> not removed.\n"
-                        "Re-run '%s' with 'f' flag to force removal") % (options['extension'], 'g.extension'))
+        grass.warning(_("Extension <%s> not removed. "
+                        "Re-run '%s' with '-f' flag to force removal") % (options['extension'], 'g.extension'))
 
 # remove existing extension(s) (reading XML file)
 def remove_modules(mlist, force = False):
@@ -984,7 +988,7 @@ def update_manual_page(module):
     pattern = r'''<a href="([^"]+)">([^>]+)</a>'''
     addons = get_installed_extensions(force = True)
     for match in re.finditer(pattern, shtml):
-        if match.group(1)[:7] == 'http://':
+        if match.group(1)[:4] == 'http':
             continue
         if match.group(1).replace('.html', '') in addons:
             continue
