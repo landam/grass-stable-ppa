@@ -1,4 +1,4 @@
-grass (7.0.0-1) UNRELEASED; urgency=medium
+grass (7.0.0-1~exp1) experimental; urgency=medium
 
   * New upstream release.
   * Update python-ctypes-ternary.patch to use if/else instead of and/or.
@@ -7,7 +7,7 @@ grass (7.0.0-1) UNRELEASED; urgency=medium
   * Drop patches applied upstream, refresh remaining patches.
   * Update symlinks for images switched from jpg to png.
 
- -- Bas Couwenberg <sebastic@debian.org>  Fri, 20 Feb 2015 22:11:58 +0100
+ -- Bas Couwenberg <sebastic@debian.org>  Fri, 20 Feb 2015 23:12:08 +0100
 
 grass (7.0.0~rc2-1~exp1) experimental; urgency=medium
 
