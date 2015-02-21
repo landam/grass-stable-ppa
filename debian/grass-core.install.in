@@ -1,5 +1,5 @@
 usr/bin/grass@VERSION@
-usr/bin/x-grass
+usr/bin/x-grass@VERSION@
 usr/lib/grass@VERSION@/bin
 usr/lib/grass@VERSION@/driver
 usr/lib/grass@VERSION@/etc
