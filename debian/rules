@@ -172,7 +172,7 @@ override_dh_auto_install-arch:
 		debian/tmp/usr/share/appdata/$(BASE_NAME).appdata.xml
 
 	# install grass wrapper scripts
-	install -m 755 debian/x-grass7 debian/tmp/usr/bin/x-$(BASENAME)
+	install -m 755 debian/x-grass7 debian/tmp/usr/bin/x-$(BASE_NAME)
 
 	ln -fs /usr/lib/$(shell objdump -p /usr/lib/`gdal-config --libs | cut -d' ' -f2 | sed -e 's/-l/lib/'`.so | grep SONAME | cut -d' ' -f18) \
 		debian/tmp/usr/lib/$(BASE_NAME)/lib/libgdal.so
