@@ -60,6 +60,7 @@ Depends: grass-core,
          ${misc:Depends}
 Recommends: grass-doc
 Suggests: grass-dev
+Conflicts: grass@VERSION@
 Description: Geographic Resources Analysis Support System (GRASS GIS)
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
@@ -97,6 +98,7 @@ Suggests: grass-doc,
 # used by v.kridge
           python-rpy2
 Breaks: grass (<< 6.4.2-1~)
+Conflicts: grass@VERSION@-core
 Provides: grass@ABI@
 Replaces: grass (<< 6.4.2-1~)
 Description: GRASS GIS core components
@@ -124,6 +126,7 @@ Recommends:
 # PIL needed for wxPsmap preview
             python-imaging
 Breaks: grass (<< 6.4.2-1~)
+Conflicts: grass@VERSION@-gui
 Replaces: grass (<< 6.4.2-1~)
 Description: GRASS GIS graphical user interfaces
  Commonly referred to as GRASS, this is a Geographic Information
@@ -141,6 +144,7 @@ Architecture: all
 Depends: ${misc:Depends}
 Suggests: grass,
           grass-dev-doc
+Conflicts: grass@VERSION@-doc
 Description: GRASS GIS user documentation
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
@@ -157,6 +161,7 @@ Architecture: all
 Depends: ${misc:Depends},
          libjs-jquery
 Suggests: grass
+Conflicts: grass@VERSION@-dev-doc
 Description: GRASS GIS Programmers' Manual
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
