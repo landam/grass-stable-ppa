@@ -111,8 +111,7 @@ override_dh_auto_install-arch:
 	# install grass core into debian/tmp
 	dh_auto_install -- \
 		INST_DIR=$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME) \
-		prefix=$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME) \
-		BINDIR=$(CURDIR)/debian/tmp/usr/lib
+		UNIX_BIN=$(CURDIR)/debian/tmp/usr/bin
 
 	# fix links
 	debian/fixpaths.sh $(CURDIR)/debian/tmp debian/tmp
@@ -173,8 +172,7 @@ override_dh_auto_install-arch:
 		debian/tmp/usr/share/appdata/$(BASE_NAME).appdata.xml
 
 	# install grass wrapper scripts
-	install -m 755 debian/grass7 debian/tmp/usr/bin/$(BASE_NAME)
-	install -m 755 debian/x-grass debian/tmp/usr/bin/x-grass
+	install -m 755 debian/x-grass7 debian/tmp/usr/bin/x-$(BASENAME)
 
 	ln -fs /usr/lib/$(shell objdump -p /usr/lib/`gdal-config --libs | cut -d' ' -f2 | sed -e 's/-l/lib/'`.so | grep SONAME | cut -d' ' -f18) \
 		debian/tmp/usr/lib/$(BASE_NAME)/lib/libgdal.so

@@ -1,6 +1,4 @@
-usr/bin/grass70 usr/bin/grass
-usr/share/man/man1/grass70.1.gz usr/share/man/man1/grass.1.gz
-usr/share/man/man1/grass70.1.gz usr/share/man/man1/x-grass.1.gz
+usr/share/man/man1/grass70.1.gz usr/share/man/man1/x-grass70.1.gz
 usr/share/doc/grass-core/AUTHORS usr/lib/grass70/AUTHORS
 usr/share/doc/grass-core/COPYING usr/lib/grass70/COPYING
 usr/share/doc/grass-core/contributors.csv usr/lib/grass70/contributors.csv
