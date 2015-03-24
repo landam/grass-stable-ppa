@@ -36,7 +36,7 @@ Build-Depends: autoconf2.13,
 # install optipng if compressing the PNG images in the programmers' manual
 #              optipng,
                python,
-               python-wxgtk3.0,
+               python-wxgtk2.8,
                python-dev,
                python-numpy,
                python-ply,
@@ -119,7 +119,7 @@ Package: grass-gui
 Architecture: any
 Depends: grass-core,
          ${python:Depends},
-         python-wxgtk3.0,
+         python-wxgtk2.8,
 # pyGL needed for wxNviz
          python-opengl,
          xterm | x-terminal-emulator,

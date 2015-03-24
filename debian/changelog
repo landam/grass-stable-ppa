@@ -1,3 +1,15 @@
+grass (7.0.0-1~exp2~trusty3) trusty; urgency=medium
+
+  * Further fix
+
+ -- Johan Van de Wauw <johan.vandewauw@gmail.com>  Tue, 24 Mar 2015 20:10:05 +0100
+
+grass (7.0.0-1~exp2~trusty2) trusty; urgency=medium
+
+  * Fix wx2.8 usage 
+
+ -- Johan Van de Wauw <johan.vandewauw@gmail.com>  Mon, 23 Mar 2015 00:06:52 +0100
+
 grass (7.0.0-1~exp2~trusty) trusty; urgency=medium
 
   [ Bas Couwenberg ]
