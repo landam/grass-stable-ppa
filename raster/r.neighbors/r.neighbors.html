@@ -9,7 +9,7 @@ function of the values in that cell's neighborhood.  For
 example, each cell in the output layer might be assigned a
 value equal to the average of the values
 appearing in its 3 x 3 cell "neighborhood" in the input
-layer.
+layer. Note that the centre cell is also included in the calculation.
 
 <h3>OPTIONS</h3>
 
@@ -159,8 +159,9 @@ The result is rounded to the nearest integer (in this case 64).
 <em>Neighborhood Size:</em>
 The neighborhood <b>size</b> specifies which cells surrounding any given
 cell fall into the neighborhood for that cell.
-The <b>size</b> must be an odd integer.
-For example,
+The <b>size</b> must be an odd integer and represent the lenght of one of
+moving window edges in cells.
+For example, a size value of 3 will result in
 <div class="code"><pre>
                               _ _ _
                              |_|_|_| 
@@ -388,4 +389,4 @@ U.S.Army Construction Engineering Research Laboratory
 <br>
 Updates for GRASS GIS 7 by Glynn Clements and others
 
-<p><i>Last changed: $Date: 2014-12-12 00:16:30 +0100 (Fri, 12 Dec 2014) $</i>  
+<p><i>Last changed: $Date: 2015-03-23 22:59:44 +0100 (Mon, 23 Mar 2015) $</i>  

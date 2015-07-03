@@ -3,7 +3,7 @@
 ;GRASS GIS Installer for Windows
 ;Written by Marco Pasetti
 ;Updated for OSGeo4W by Colin Nielsen, Helmut Kudrnovsky, and Martin Landa
-;Last Update: $Id: GRASS-Installer.nsi.tmpl 62106 2014-09-27 07:57:05Z hellik $
+;Last Update: $Id: GRASS-Installer.nsi.tmpl 65463 2015-06-14 10:51:30Z martinl $
 ;Mail to: grass-dev@lists.osgeo.org 
 
 ;----------------------------------------------------------------------------------------------------------------------------
@@ -551,6 +551,9 @@ Section "GRASS" SecGRASS
 	FileWrite $0 'rem set dependecies path$\r$\n'
 	FileWrite $0 'set PATH=%FREETYPEBASE%;%PATH%$\r$\n'
 	FileWrite $0 '$\r$\n'
+	FileWrite $0 'rem GISRC must be set$\r$\n'
+	FileWrite $0 'set GISRC=dummy$\r$\n'
+	FileWrite $0 '$\r$\n'
 	FileWrite $0 'rem run g.mkfontcap outside a grass session$\r$\n'
 	FileWrite $0 '"%GISBASE%\bin\g.mkfontcap.exe" -o$\r$\n'
 	FileWrite $0 'exit$\r$\n'
@@ -961,7 +964,7 @@ Function DownloadInstallMSRuntime
 
 FunctionEnd
 
-Section /O "Important Microsoft Runtime DLLs" SecMSRuntime
+Section "Important Microsoft Runtime DLLs" SecMSRuntime
 
 	;Set the size (in KB)  of the archive file
 	StrCpy $ARCHIVE_SIZE_KB 12521
@@ -970,7 +973,7 @@ Section /O "Important Microsoft Runtime DLLs" SecMSRuntime
 	AddSize 13500
 	
 	StrCpy $HTTP_PATH "http://download.osgeo.org/osgeo4w/${PLATFORM}/release/msvcrt/"
-	StrCpy $ARCHIVE_NAME "msvcrt-1.0.1-11.tar.bz2"
+	StrCpy $ARCHIVE_NAME "msvcrt-1.0.1-12.tar.bz2"
 	StrCpy $EXTENDED_ARCHIVE_NAME "Microsoft Visual C++ Redistributable Packages"
 	StrCpy $ORIGINAL_UNTAR_FOLDER "install_msruntime"
 	

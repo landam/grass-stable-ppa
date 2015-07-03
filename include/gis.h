@@ -38,8 +38,8 @@
 static const char *GRASS_copyright __attribute__ ((unused))
     = "GRASS GNU GPL licensed Software";
 
-#define GIS_H_VERSION "$Revision: 64007 $"
-#define GIS_H_DATE    "$Date: 2015-01-08 20:08:36 +0100 (Thu, 08 Jan 2015) $"
+#define GIS_H_VERSION "$Revision: 64733 $"
+#define GIS_H_DATE    "$Date: 2015-02-25 01:56:29 +0100 (Wed, 25 Feb 2015) $"
 
 #define G_gisinit(pgm) G__gisinit(GIS_H_VERSION, (pgm))
 #define G_no_gisinit() G__no_gisinit(GIS_H_VERSION)
@@ -264,6 +264,8 @@ typedef enum
     G_OPT_M_UNITS,              /*!< units */
     G_OPT_M_DATATYPE,           /*!< datatype */
     G_OPT_M_MAPSET,             /*!< mapset */
+    G_OPT_M_LOCATION,           /*!< location */
+    G_OPT_M_DBASE,              /*!< dbase */
     G_OPT_M_COORDS,             /*!< coordinates */
     G_OPT_M_COLR,               /*!< color rules */
     G_OPT_M_DIR,                /*!< directory input */    

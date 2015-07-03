@@ -3,55 +3,23 @@ from __future__ import (nested_scopes, generators, division, absolute_import,
                         with_statement, print_function, unicode_literals)
 import sys
 from multiprocessing import cpu_count
-from functools import wraps
+import time
+from xml.etree.ElementTree import fromstring
+
+from grass.exceptions import CalledModuleError, GrassError, ParameterError
+from grass.script.core import Popen, PIPE
+from .docstring import docstring_property
+from .parameter import Parameter
+from .flag import Flag
+from .typedict import TypeDict
+from .read import GETFROMTAG, DOC
+from .env import G_debug
+
 
 if sys.version_info[0] == 2:
     from itertools import izip_longest as zip_longest
 else:
     from itertools import zip_longest
-from xml.etree.ElementTree import fromstring
-import time
-
-from grass.exceptions import CalledModuleError
-from grass.script.core import Popen, PIPE
-from grass.pygrass.errors import GrassError, ParameterError
-from grass.pygrass.utils import docstring_property
-from grass.pygrass.modules.interface.parameter import Parameter
-from grass.pygrass.modules.interface.flag import Flag
-from grass.pygrass.modules.interface.typedict import TypeDict
-from grass.pygrass.modules.interface.read import GETFROMTAG, DOC
-from grass.pygrass.messages import get_msgr
-
-
-def mdebug(level, msg='', extra=None):
-    """Debug decorators for class methods.
-
-    :param level: the debug level
-    :type level: int
-    :param msg: Debug message
-    :type msg: str
-    :param extra: Function that return a string
-    :type msg: func
-    """
-    msgr = get_msgr()
-
-    def decorator(method):
-
-        @wraps(method)
-        def wrapper(self, *args, **kargs):
-            sargs = ', ' + ' , '.join([repr(a) for a in args]) if args else ''
-            skargs = (' , '.join(['%s=%r' % (k, v) for k, v in kargs.items()])
-                      if kargs else '')
-            opts = "%s%s%s" % (sargs, ',' if sargs and skargs else '', skargs)
-            dmsg = "%s.%s(self%s): %s %s" % (self.__class__.__name__,
-                                             method.__name__,
-                                             opts, msg,
-                                             extra(self, *args, **kargs)
-                                             if extra else '')
-            msgr.debug(level, dmsg)
-            return method(self, *args, **kargs)
-        return wrapper
-    return decorator
 
 
 def _get_bash(self, *args, **kargs):
@@ -697,7 +665,6 @@ class Module(object):
                 args.append(str(self.flags[flg]))
         return args
 
-    # @mdebug(1, extra=_get_bash)
     def run(self):
         """Run the module
 
@@ -711,7 +678,7 @@ class Module(object):
         termination. The handling of stdout and stderr must then be done
         outside of this function.
         """
-        get_msgr().debug(1, self.get_bash())
+        G_debug(1, self.get_bash())
         if self.inputs['stdin'].value:
             self.stdin = self.inputs['stdin'].value
             self.stdin_ = PIPE
