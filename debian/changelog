@@ -4,6 +4,7 @@ grass (7.0.1~rc1-1) UNRELEASED; urgency=medium
   * Use upstream grass startup script, and install custom x-grass7 as x-grass70.
   * Add Conflicts/Provides/Replaces on the grass7* packages by upstream.
   * New upstream release candidate.
+  * Refresh patches and mark as Forwarded.
 
   [ Francesco Paolo Lovergine ]
   * Added liblas-dev b-d to support new Lidar modules.
