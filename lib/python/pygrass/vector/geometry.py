@@ -630,11 +630,12 @@ class Line(Geo):
             str_err = "The distance exceed the lenght of the line, that is: %f"
             raise ValueError(str_err % maxdist)
         pnt = Point(0, 0, -9999)
-        libvect.Vect_point_on_line(self.c_points, distance,
-                                   pnt.c_points.contents.x,
-                                   pnt.c_points.contents.y,
-                                   pnt.c_points.contents.z,
-                                   angle, slope)
+        if not libvect.Vect_point_on_line(self.c_points, distance,
+                                          pnt.c_points.contents.x,
+                                          pnt.c_points.contents.y,
+                                          pnt.c_points.contents.z,
+                                          angle, slope):
+            raise ValueError("Vect_point_on_line give an error.")
         pnt.is2D = self.is2D
         return pnt
 
@@ -1547,7 +1548,7 @@ class Area(Geo):
                                          ilst.c_ilist)
         if ilist:
             return ilist
-        return [Boundary(v_id, c_mapinfo=self.c_mapinfo) for v_id in ilst]
+        return [Boundary(v_id=abs(v_id), c_mapinfo=self.c_mapinfo) for v_id in ilst]
 
     def cats(self, cats=None):
         """Get area categories.

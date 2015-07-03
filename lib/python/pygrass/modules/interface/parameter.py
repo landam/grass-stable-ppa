@@ -8,7 +8,7 @@ from __future__ import (nested_scopes, generators, division, absolute_import,
                         with_statement, print_function, unicode_literals)
 import re
 
-from grass.pygrass.utils import docstring_property
+from grass.pygrass.modules.interface.docstring import docstring_property
 from grass.pygrass.modules.interface.read import GETTYPE, element2dict, DOC
 
 
@@ -22,9 +22,9 @@ def _check_value(param, value):
     def raiseexcpet(exc, param, ptype, value):
         """Function to modifa the error message"""
         msg = req % (param.name, param.typedesc, ptype, value, exc.message)
-        if exc is ValueError:
+        if isinstance(exc, ValueError):
             raise ValueError(msg)
-        elif exc is TypeError:
+        elif isinstance(exc, TypeError):
             raise TypeError(msg)
         else:
             exc.message = msg
@@ -138,11 +138,12 @@ class Parameter(object):
         if 'values' in diz:
             try:
                 # Check for integer ranges: "3-30" or float ranges: "0.0-1.0"
-                isrange = re.match("(?P<min>-*\d+.*\d*)-(?P<max>\d+.*\d*)",
+                isrange = re.match("(?P<min>-*\d+.*\d*)*-(?P<max>\d+.*\d*)*",
                                    diz['values'][0])
                 if isrange:
                     mn, mx = isrange.groups()
-                    self.min, self.max = float(mn), float(mx)
+                    self.min = None if mn is None else float(mn)
+                    self.max = None if mx is None else float(mx)
                     self.values = None
                     self.isrange = diz['values'][0]
                 # No range was found

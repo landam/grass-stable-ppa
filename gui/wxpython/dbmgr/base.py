@@ -1098,6 +1098,7 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
         sqlWhereCond = wx.Choice(parent = whereSimpleSqlPanel, id = wx.ID_ANY,
                                  size = (55,-1),
                                  choices = ['=', '!=', '<', '<=', '>', '>='])
+        sqlWhereCond.SetSelection(0)
         sqlWhereValue = wx.TextCtrl(parent = whereSimpleSqlPanel, id = wx.ID_ANY, value = "",
                                     style = wx.TE_PROCESS_ENTER)
         sqlWhereValue.SetToolTipString(_("Example: %s") % "MULTILANE = 'no' AND OBJECTID < 10")
@@ -1734,7 +1735,8 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
             if item == -1:
                 break
             tlist.SetItemState(item, 0, wx.LIST_STATE_SELECTED | wx.LIST_STATE_FOCUSED)
-
+        tlist.Focus(0)
+        
         event.Skip()
 
 
@@ -1832,7 +1834,18 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
             # simple sql statement
             whereCol = self.FindWindowById(self.layerPage[self.selLayer]['whereColumn']).GetStringSelection()
             whereOpe = self.FindWindowById(self.layerPage[self.selLayer]['whereOperator']).GetStringSelection()
-            whereVal = self.FindWindowById(self.layerPage[self.selLayer]['where']).GetValue().strip()
+            whereWin = self.FindWindowById(self.layerPage[self.selLayer]['where'])
+            whereVal = whereWin.GetValue().strip()
+            table    = self.dbMgrData['mapDBInfo'].layers[self.selLayer]["table"]
+            if self.dbMgrData['mapDBInfo'].tables[table][whereCol]['ctype'] == str:
+                # string attribute, check for quotes
+                whereVal = whereVal.replace('"', "'")
+                if not whereVal.startswith("'"):
+                    whereVal = "'" + whereVal
+                if not whereVal.endswith("'"):
+                    whereVal += "'"
+                whereWin.SetValue(whereVal)
+            
             try:
                 if len(whereVal) > 0:
                     showSelected = True
@@ -1977,6 +1990,22 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
             tlist = self.FindWindowById(self.layerPage[layer]['data'])
             tlist.Update(self.dbMgrData['mapDBInfo'])
 
+    def ResetPage(self, layer=None):
+        if not layer:
+            layer = self.selLayer
+        if layer not in self.layerPage.keys():
+            return
+        win = self.FindWindowById(self.layerPage[self.selLayer]['sqlNtb'])
+        if win.GetSelection() == 0:
+            self.FindWindowById(self.layerPage[layer]['whereColumn']).SetSelection(0)
+            self.FindWindowById(self.layerPage[layer]['whereOperator']).SetSelection(0)
+            self.FindWindowById(self.layerPage[layer]['where']).SetValue('')
+        else:
+            sqlWin = self.FindWindowById(self.layerPage[self.selLayer]['statement'])
+            sqlWin.SetValue("SELECT * FROM %s" % self.dbMgrData['mapDBInfo'].layers[layer]['table'])
+            
+        self.UpdatePage(layer)
+        
 class DbMgrTablesPage(DbMgrNotebookBase):   
     def __init__(self, parent, parentDbMgrBase, onlyLayer = -1):
         """Page for managing tables
@@ -2891,8 +2920,12 @@ class LayerBook(wx.Notebook):
                       proportion = 2,
                       flag = wx.TOP | wx.BOTTOM | wx.RIGHT | wx.EXPAND,
                       border = 3)
-        
-        layerSizer.SetVirtualSizeHints(self.addPanel)
+
+        # SetVirtualSizeHints is deprecated and is
+        # exactly the same as FitInside() in wxWidgets 2.9 and later
+        getattr(layerSizer, 'FitInside',
+                layerSizer.SetVirtualSizeHints)(self.addPanel)
+
         self.addPanel.SetAutoLayout(True)
         self.addPanel.SetSizer(pageSizer)
         pageSizer.Fit(self.addPanel)

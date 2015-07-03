@@ -295,7 +295,11 @@ def read_gisrc():
         return kv
 
     for line in f:
-        k, v = line.split(':', 1)
+        try:
+            k, v = line.split(':', 1)
+        except ValueError as e:
+            sys.stderr.write(_("ERROR: Invalid line in RC file: '%s' (%s)\n") % (line, e))
+            continue
         kv[k.strip()] = v.strip()
     f.close()
 
@@ -471,8 +475,9 @@ def set_browser():
             browser = gfile('etc', "html_browser_mac.sh")
             os.environ['GRASS_HTML_BROWSER_MACOSX'] = "-b com.apple.helpviewer"
 
-        if windows or cygwin:
-            # MinGW startup moved to into init.bat
+        if windows:
+            browser = "start"
+        elif cygwin:
             browser = "explorer"
         else:
             # the usual suspects
@@ -800,7 +805,8 @@ def set_language():
             return
     
     else:
-        message(_("A language override has been requested. Trying to switch GRASS into '%s'...") % language)
+        if grass_debug:
+            message(_("A language override has been requested. Trying to switch GRASS into '%s'...") % language)
         
         try:
             locale.setlocale(locale.LC_ALL, language)
@@ -1191,6 +1197,8 @@ def grep(string,list):
 
 def print_params():
     plat = gfile(gisbase, 'include', 'Make', 'Platform.make')
+    if not os.path.exists(plat):
+        fatal(_("Please install the GRASS GIS development package"))
     fileplat = open(plat)
     linesplat = fileplat.readlines()
     fileplat.close()

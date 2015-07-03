@@ -34,6 +34,8 @@ from grass.exceptions import ScriptError, CalledModuleError
 # i18N
 import gettext
 gettext.install('grasslibs', os.path.join(os.getenv("GISBASE"), 'locale'))
+import __builtin__
+__builtin__.__dict__['_'] = __builtin__.__dict__['_'].im_self.lgettext
 
 # subprocess wrapper that uses shell on Windows
 
@@ -322,7 +324,6 @@ def start_command(prog, flags="", overwrite=False, quiet=False,
     GISDBASE='/opt/grass-data';
     LOCATION_NAME='spearfish60';
     MAPSET='glynn';
-    GRASS_DB_ENCODING='ascii';
     GUI='text';
     MONITOR='x0';
 
@@ -386,7 +387,6 @@ def pipe_command(*args, **kwargs):
     GISDBASE='/opt/grass-data';
     LOCATION_NAME='spearfish60';
     MAPSET='glynn';
-    GRASS_DB_ENCODING='ascii';
     GUI='text';
     MONITOR='x0';
 
