@@ -5,6 +5,7 @@ grass (7.0.1~rc1-1) UNRELEASED; urgency=medium
   * Add Conflicts/Provides/Replaces on the grass7* packages by upstream.
   * New upstream release candidate.
   * Refresh patches and mark as Forwarded.
+  * Add patches for various typos.
 
   [ Francesco Paolo Lovergine ]
   * Added liblas-dev b-d to support new Lidar modules.

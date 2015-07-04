@@ -1,0 +1,438 @@
+Description: Fix 'lenght' typo, replace with 'length'.
+Author: Bas Couwenberg <sebastic@debian.org>
+Forwarded: https://trac.osgeo.org/grass/ticket/2704
+
+--- a/gui/wxpython/lmgr/frame.py
++++ b/gui/wxpython/lmgr/frame.py
+@@ -1007,7 +1007,7 @@ class GMFrame(wx.Frame):
+             # can be relaxed in future
+             # but keep it strict unless needed otherwise
+             raise ValueError("OnChangeCWD cmd parameter must be list of"
+-                             " lenght 1 or 2 and 'cd' as a first item")
++                             " length 1 or 2 and 'cd' as a first item")
+         if cmd and len(cmd) > 2:
+             # this might be a user error
+             write_beginning(command=cmd)
+--- a/gui/wxpython/rlisetup/wizard.py
++++ b/gui/wxpython/rlisetup/wizard.py
+@@ -671,9 +671,9 @@ class KeyboardPage(TitledPage):
+         self.sizer.Add(item=self.RowUpLefttxt, border=5, pos=(2, 2),
+                        flag=wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL | wx.ALL)
+ 
+-        #row lenght
++        #row length
+         self.RowLenlabel = wx.StaticText(parent=self, id=wx.ID_ANY,
+-                                         label=_('Row lenght of sampling frame'))
++                                         label=_('Row length of sampling frame'))
+ 
+         self.RowLentxt = wx.TextCtrl(parent=self, id=wx.ID_ANY, size=(250, -1))
+         wx.CallAfter(self.RowLenlabel.SetFocus)
+@@ -683,9 +683,9 @@ class KeyboardPage(TitledPage):
+         self.sizer.Add(item=self.RowLentxt, border=5, pos=(3, 2),
+                        flag=wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL | wx.ALL)
+ 
+-        #column lenght
++        #column length
+         self.ColLenlabel = wx.StaticText(parent=self, id=wx.ID_ANY,
+-                                         label=_('Row lenght of sampling frame'))
++                                         label=_('Row length of sampling frame'))
+ 
+         self.ColLentxt = wx.TextCtrl(parent=self, id=wx.ID_ANY, size=(250, -1))
+         wx.CallAfter(self.ColLenlabel.SetFocus)
+--- a/imagery/i.atcorr/6s.cpp
++++ b/imagery/i.atcorr/6s.cpp
+@@ -75,7 +75,7 @@ int init_6S(char* icnd_name)
+     iwave = IWave::Parse();
+    
+     /**********************************************************************c
+-	c here, we first compute an equivalent wavelenght which is the input   c
++	c here, we first compute an equivalent wavelength which is the input   c
+ 	c value for monochromatic conditions or the integrated value for a     c
+ 	c filter function (call equivwl) then, the atmospheric properties are  c
+ 	c computed for that wavelength (call discom then call specinterp)      c
+--- a/imagery/i.segment/create_isegs.c
++++ b/imagery/i.segment/create_isegs.c
+@@ -945,7 +945,7 @@ double calculate_shape(struct reg_stats
+      Wb is the weigh given to band B
+      SigmaB is the std dev of the object for band b
+      Ws is a user-defined weight giving the importance of compactedness vs smoothness
+-     PL is the perimeter lenght of the object
++     PL is the perimeter length of the object
+      Npx the number of pixels within the object
+      Pbbox the perimeter of the bounding box of the object.
+      */
+--- a/include/iostream/empq_impl.h
++++ b/include/iostream/empq_impl.h
+@@ -556,7 +556,7 @@ long em_pqueue<T,Key>::maxlen() {
+ //return the total nb of elements in the structure 
+ template<class T, class Key>
+ unsigned long em_pqueue<T,Key>::size() {
+-  //sum up the lenghts(nb of elements) of the external buffers 
++  //sum up the lengths(nb of elements) of the external buffers 
+   unsigned long elen = 0;
+   for (unsigned short i=0; i < crt_buf; i++) {
+     elen += buff[i]->get_buf_len();
+@@ -1538,7 +1538,7 @@ em_pqueue<T,Key>::print() {
+ //************************************************************/
+ template<class T, class Key>
+ void em_pqueue<T,Key>::print_size() {
+-  //sum up the lenghts(nb of elements) of the external buffers 
++  //sum up the lengths(nb of elements) of the external buffers 
+   long elen = 0;
+   cout << "EMPQ: pq=" << pq->size() <<",B0=" << buff_0->get_buf_len() << endl;
+   cout.flush();
+--- a/lib/python/pygrass/raster/category.py
++++ b/lib/python/pygrass/raster/category.py
+@@ -311,7 +311,7 @@ class Category(list):
+                 elif len(cat) == 3:
+                     label, min_cat, max_cat = cat
+                 else:
+-                    raise TypeError("Row lenght is greater than 3")
++                    raise TypeError("Row length is greater than 3")
+                 #import pdb; pdb.set_trace()
+                 self.append((label, min_cat, max_cat))
+ 
+--- a/lib/python/pygrass/utils.py
++++ b/lib/python/pygrass/utils.py
+@@ -302,7 +302,7 @@ def set_path(modulename, dirname, path='
+         sys.path.append(path)
+ 
+ 
+-def split_in_chunk(iterable, lenght=10):
++def split_in_chunk(iterable, length=10):
+     """Split a list in chunk.
+ 
+     >>> for chunk in split_in_chunk(range(25)): print chunk
+@@ -322,7 +322,7 @@ def split_in_chunk(iterable, lenght=10):
+     """
+     it = iter(iterable)
+     while True:
+-        chunk = tuple(itertools.islice(it, lenght))
++        chunk = tuple(itertools.islice(it, length))
+         if not chunk:
+             return
+         yield chunk
+--- a/lib/python/pygrass/vector/geometry.py
++++ b/lib/python/pygrass/vector/geometry.py
+@@ -617,7 +617,7 @@ class Line(Geo):
+             >>> line.get_pnt(5)      #doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+             Traceback (most recent call last):
+                 ...
+-            ValueError: The distance exceed the lenght of the line,
++            ValueError: The distance exceed the length of the line,
+             that is: 1.414214
+             >>> line.get_pnt(1)
+             Point(0.707107, 0.707107)
+@@ -627,7 +627,7 @@ class Line(Geo):
+         # instantiate an empty Point object
+         maxdist = self.length()
+         if distance > maxdist:
+-            str_err = "The distance exceed the lenght of the line, that is: %f"
++            str_err = "The distance exceed the length of the line, that is: %f"
+             raise ValueError(str_err % maxdist)
+         pnt = Point(0, 0, -9999)
+         if not libvect.Vect_point_on_line(self.c_points, distance,
+--- a/lib/vector/Vlib/net.c
++++ b/lib/vector/Vlib/net.c
+@@ -63,7 +63,7 @@ static int clipper(dglGraph_s * pgraph,
+    \brief Build network graph.
+ 
+    Internal format for edge costs is integer, costs are multiplied
+-   before conversion to int by 1000 and for lenghts LL without geo flag by 1000000.
++   before conversion to int by 1000 and for lengths LL without geo flag by 1000000.
+    The same multiplication factor is used for nodes.
+    Costs in database column may be 'integer' or 'double precision' number >= 0
+    or -1 for infinity i.e. arc or node is closed and cannot be traversed
+--- a/locale/po/grassmods_pt.po
++++ b/locale/po/grassmods_pt.po
+@@ -37836,7 +37836,7 @@ msgstr "Camada n�mero"
+ #, fuzzy
+ msgid "For coor valid point/centroid, for length valid line/boundary"
+ msgstr ""
+-"Tipo dos elementos (coor para ponto/centr�ide v�lido, lenght para linha/"
++"Tipo dos elementos (coor para ponto/centr�ide v�lido, length para linha/"
+ "contorno v�lido)"
+ 
+ #: ../vector/v.to.db/parse.c:54
+--- a/locale/po/grasswxpy_cs.po
++++ b/locale/po/grasswxpy_cs.po
+@@ -17611,7 +17611,7 @@ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:676
+ #: ../gui/wxpython/rlisetup/wizard.py:688
+-msgid "Row lenght of sampling frame"
++msgid "Row length of sampling frame"
+ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:751
+--- a/locale/po/grasswxpy_de.po
++++ b/locale/po/grasswxpy_de.po
+@@ -4006,7 +4006,7 @@ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:676
+ #: ../gui/wxpython/rlisetup/wizard.py:688
+-msgid "Row lenght of sampling frame"
++msgid "Row length of sampling frame"
+ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:802
+--- a/locale/po/grasswxpy_el.po
++++ b/locale/po/grasswxpy_el.po
+@@ -3841,7 +3841,7 @@ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:676
+ #: ../gui/wxpython/rlisetup/wizard.py:688
+-msgid "Row lenght of sampling frame"
++msgid "Row length of sampling frame"
+ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:802
+--- a/locale/po/grasswxpy_es.po
++++ b/locale/po/grasswxpy_es.po
+@@ -4064,7 +4064,7 @@ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:676
+ #: ../gui/wxpython/rlisetup/wizard.py:688
+-msgid "Row lenght of sampling frame"
++msgid "Row length of sampling frame"
+ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:802
+--- a/locale/po/grasswxpy_fr.po
++++ b/locale/po/grasswxpy_fr.po
+@@ -3778,7 +3778,7 @@ msgstr "Ligne du coin en haut à gauche"
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:676
+ #: ../gui/wxpython/rlisetup/wizard.py:688
+-msgid "Row lenght of sampling frame"
++msgid "Row length of sampling frame"
+ msgstr "Nombre de lignes du cadre d'échantillonage"
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:802
+--- a/locale/po/grasswxpy_id.po
++++ b/locale/po/grasswxpy_id.po
+@@ -4142,7 +4142,7 @@ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:676
+ #: ../gui/wxpython/rlisetup/wizard.py:688
+-msgid "Row lenght of sampling frame"
++msgid "Row length of sampling frame"
+ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:802
+--- a/locale/po/grasswxpy_it.po
++++ b/locale/po/grasswxpy_it.po
+@@ -3887,7 +3887,7 @@ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:676
+ #: ../gui/wxpython/rlisetup/wizard.py:688
+-msgid "Row lenght of sampling frame"
++msgid "Row length of sampling frame"
+ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:802
+--- a/locale/po/grasswxpy_ja.po
++++ b/locale/po/grasswxpy_ja.po
+@@ -4028,7 +4028,7 @@ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:676
+ #: ../gui/wxpython/rlisetup/wizard.py:688
+-msgid "Row lenght of sampling frame"
++msgid "Row length of sampling frame"
+ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:802
+--- a/locale/po/grasswxpy_ko.po
++++ b/locale/po/grasswxpy_ko.po
+@@ -3746,7 +3746,7 @@ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:676
+ #: ../gui/wxpython/rlisetup/wizard.py:688
+-msgid "Row lenght of sampling frame"
++msgid "Row length of sampling frame"
+ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:802
+--- a/locale/po/grasswxpy_lv.po
++++ b/locale/po/grasswxpy_lv.po
+@@ -3768,7 +3768,7 @@ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:676
+ #: ../gui/wxpython/rlisetup/wizard.py:688
+-msgid "Row lenght of sampling frame"
++msgid "Row length of sampling frame"
+ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:802
+--- a/locale/po/grasswxpy_ml.po
++++ b/locale/po/grasswxpy_ml.po
+@@ -3951,7 +3951,7 @@ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:676
+ #: ../gui/wxpython/rlisetup/wizard.py:688
+-msgid "Row lenght of sampling frame"
++msgid "Row length of sampling frame"
+ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:802
+--- a/locale/po/grasswxpy_pl.po
++++ b/locale/po/grasswxpy_pl.po
+@@ -3938,7 +3938,7 @@ msgstr "Wiersz górnego lewego rogu"
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:676
+ #: ../gui/wxpython/rlisetup/wizard.py:688
+-msgid "Row lenght of sampling frame"
++msgid "Row length of sampling frame"
+ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:802
+--- a/locale/po/grasswxpy_pt.po
++++ b/locale/po/grasswxpy_pt.po
+@@ -4137,7 +4137,7 @@ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:676
+ #: ../gui/wxpython/rlisetup/wizard.py:688
+-msgid "Row lenght of sampling frame"
++msgid "Row length of sampling frame"
+ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:802
+--- a/locale/po/grasswxpy_pt_br.po
++++ b/locale/po/grasswxpy_pt_br.po
+@@ -4271,7 +4271,7 @@ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:676
+ #: ../gui/wxpython/rlisetup/wizard.py:688
+-msgid "Row lenght of sampling frame"
++msgid "Row length of sampling frame"
+ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:802
+--- a/locale/po/grasswxpy_ro.po
++++ b/locale/po/grasswxpy_ro.po
+@@ -4018,7 +4018,7 @@ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:676
+ #: ../gui/wxpython/rlisetup/wizard.py:688
+-msgid "Row lenght of sampling frame"
++msgid "Row length of sampling frame"
+ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:802
+--- a/locale/po/grasswxpy_ru.po
++++ b/locale/po/grasswxpy_ru.po
+@@ -4111,7 +4111,7 @@ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:676
+ #: ../gui/wxpython/rlisetup/wizard.py:688
+-msgid "Row lenght of sampling frame"
++msgid "Row length of sampling frame"
+ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:802
+--- a/locale/po/grasswxpy_th.po
++++ b/locale/po/grasswxpy_th.po
+@@ -3949,7 +3949,7 @@ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:676
+ #: ../gui/wxpython/rlisetup/wizard.py:688
+-msgid "Row lenght of sampling frame"
++msgid "Row length of sampling frame"
+ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:802
+--- a/locale/po/grasswxpy_tr.po
++++ b/locale/po/grasswxpy_tr.po
+@@ -4103,7 +4103,7 @@ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:676
+ #: ../gui/wxpython/rlisetup/wizard.py:688
+-msgid "Row lenght of sampling frame"
++msgid "Row length of sampling frame"
+ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:802
+--- a/locale/po/grasswxpy_vi.po
++++ b/locale/po/grasswxpy_vi.po
+@@ -4097,7 +4097,7 @@ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:676
+ #: ../gui/wxpython/rlisetup/wizard.py:688
+-msgid "Row lenght of sampling frame"
++msgid "Row length of sampling frame"
+ msgstr ""
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:802
+--- a/locale/po/grasswxpy_zh.po
++++ b/locale/po/grasswxpy_zh.po
+@@ -3944,7 +3944,7 @@ msgstr "左上角行"
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:676
+ #: ../gui/wxpython/rlisetup/wizard.py:688
+-msgid "Row lenght of sampling frame"
++msgid "Row length of sampling frame"
+ msgstr "取样框架行长度"
+ 
+ #: ../gui/wxpython/rlisetup/wizard.py:802
+--- a/mswindows/GRASS-Installer.nsi.tmpl
++++ b/mswindows/GRASS-Installer.nsi.tmpl
+@@ -317,8 +317,8 @@ FunctionEnd
+ 
+ ;Function CheckInstDir
+ ;	Var /GLOBAL INSTDIR_TEST
+-;	Var /GLOBAL INSTDIR_LENGHT	
+-;	Var /GLOBAL INSTDIR_TEST_LENGHT
++;	Var /GLOBAL INSTDIR_LENGTH	
++;	Var /GLOBAL INSTDIR_TEST_LENGTH
+ ;	Var /GLOBAL MESSAGE_CHKINST_
+ ;	
+ ;	StrCpy $MESSAGE_CHKINST_ "WARNING: you are about to install GRASS into a directory that has spaces$\r$\n"
+@@ -330,10 +330,10 @@ FunctionEnd
+ ;	
+ ;	${StrReplace} "$INSTDIR_TEST" " " "" "$INSTDIR"
+ ;	
+-;	StrLen $INSTDIR_LENGHT "$INSTDIR"
+-;	StrLen $INSTDIR_TEST_LENGHT "$INSTDIR_TEST"
++;	StrLen $INSTDIR_LENGTH "$INSTDIR"
++;	StrLen $INSTDIR_TEST_LENGTH "$INSTDIR_TEST"
+ ;	
+-;	${If} $INSTDIR_TEST_LENGHT < $INSTDIR_LENGHT	
++;	${If} $INSTDIR_TEST_LENGTH < $INSTDIR_LENGTH	
+ ;		MessageBox MB_OK|MB_ICONEXCLAMATION "$MESSAGE_CHKINST_"
+ ;	${EndIf}
+ ;	
+--- a/raster/r.distance/defs.h
++++ b/raster/r.distance/defs.h
+@@ -30,7 +30,7 @@ struct EdgeList			/* keep track of edge
+ 	CELL cat;		/* category number */
+ 	int *row, *col;		/* arrays of pixels indexes */
+ 	int ncells;		/* count of edges cells with this cat */
+-	int nalloc;		/* lenght of allocation for row,col */
++	int nalloc;		/* length of allocation for row,col */
+     } *catlist;			/* array of cat:edgelists */
+     int ncats;			/* number of cats */
+     int nalloc;			/* length of allocation for catlist */
+--- a/raster/r.li/r.li.daemon/daemon.h
++++ b/raster/r.li/r.li.daemon/daemon.h
+@@ -223,8 +223,8 @@ void worker_end(void);
+   * \brief adapts the mask at current raster file
+   * \param mask name of mask raster file
+   * \param raster the name of current raster file
+-  * \param rl the lenght in rows of sample area
+-  * \param cl the lenght in cols of sample area
++  * \param rl the length in rows of sample area
++  * \param cl the length in cols of sample area
+   * \return the name of mask raster file to use
+   */
+ char *mask_preprocessing(char *mask, char *raster, struct area_entry *ad);
+--- a/raster/r.neighbors/r.neighbors.html
++++ b/raster/r.neighbors/r.neighbors.html
+@@ -159,7 +159,7 @@ The result is rounded to the nearest int
+ <em>Neighborhood Size:</em>
+ The neighborhood <b>size</b> specifies which cells surrounding any given
+ cell fall into the neighborhood for that cell.
+-The <b>size</b> must be an odd integer and represent the lenght of one of
++The <b>size</b> must be an odd integer and represent the length of one of
+ moving window edges in cells.
+ For example, a size value of 3 will result in
+ <div class="code"><pre>
