@@ -1,4 +1,4 @@
-grass (7.0.1~rc1-1) UNRELEASED; urgency=medium
+grass (7.0.1~rc1-1~exp1) experimental; urgency=medium
 
   [ Bas Couwenberg ]
   * Use upstream grass startup script, and install custom x-grass7 as x-grass70.
@@ -12,7 +12,7 @@ grass (7.0.1~rc1-1) UNRELEASED; urgency=medium
   * Introduced a separate tag in debian/rules to regenerate debian stuff from 
     templates.
 
- -- Bas Couwenberg <sebastic@debian.org>  Fri, 03 Jul 2015 19:47:27 +0200
+ -- Bas Couwenberg <sebastic@debian.org>  Sat, 04 Jul 2015 21:23:04 +0200
 
 grass (7.0.0-1~exp1) experimental; urgency=medium
 
