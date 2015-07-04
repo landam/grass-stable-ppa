@@ -47,7 +47,7 @@ Build-Depends: autoconf2.13,
                liblapack-dev,
                unixodbc-dev,
                zlib1g-dev,
-               liblas-dev (>= 1.8.0-3~)
+               liblas-c-dev (>= 1.8.0-3~)
 Standards-Version: 3.9.6
 Vcs-Browser: http://anonscm.debian.org/cgit/pkg-grass/grass.git
 Vcs-Git: git://anonscm.debian.org/pkg-grass/grass.git -b experimental
