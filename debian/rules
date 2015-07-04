@@ -88,6 +88,7 @@ override_dh_auto_configure: templates
                     --with-postgres-includes=$(shell pg_config --includedir) \
                     --with-mysql-includes=$(shell mysql_config --include | sed -e 's/-I//') \
                     --with-proj-share=/usr/share/proj \
+                    --with-liblas=/usr/bin/liblas-config \
                     --with-wxwidgets=/usr/bin/wx-config \
                     --with-python \
                     --with-cairo
