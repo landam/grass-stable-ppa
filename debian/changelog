@@ -4,6 +4,7 @@ grass (7.0.1~rc1-1~exp2) UNRELEASED; urgency=medium
     (closes: #781227)
   * Require at least liblas 1.8.0-3 for boost dependencies.
   * Change build dependency to liblas-c-dev for capi.
+  * Drop unused lintian overrides.
 
  -- Bas Couwenberg <sebastic@debian.org>  Sat, 04 Jul 2015 21:56:52 +0200
 
