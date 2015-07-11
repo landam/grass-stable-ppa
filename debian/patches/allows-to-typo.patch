@@ -1,6 +1,7 @@
 Description: Fix 'allows to' typo, replace with 'allows <verb>ing'.
 Author: Bas Couwenberg <sebastic@debian.org>
 Forwarded: https://trac.osgeo.org/grass/ticket/2704
+Applied-Upstream: https://trac.osgeo.org/grass/changeset/65576
 
 --- a/gui/wxpython/vdigit/g.gui.vdigit.html
 +++ b/gui/wxpython/vdigit/g.gui.vdigit.html
