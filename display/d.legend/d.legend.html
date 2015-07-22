@@ -74,6 +74,20 @@ If the histogram appears empty, check your region settings.
 If the raster map's <i>units</i> metadata has been set with the
 <em>r.support</em> module then it will be displayed along side the legend.
 
+<h2>EXAMPLE</h2>
+
+Displaying the legend along with a histogram (North Carolina Sample dataset):
+
+<div class="code"><pre>
+g.region raster=elevation -p
+d.rast elevation
+d.legend -d elevation
+</pre></div>
+
+<center>
+<img src="d_legend.png" alt="Elevation map with legend" border=1>
+</center>
+
 
 <h2>SEE ALSO</h2>
 
@@ -99,4 +113,4 @@ Bill Brown, U.S. Army Construction Engineering Research Laboratories
 <br>Additional improvements from various authors
 
 <p>
-<i>Last changed: $Date: 2014-08-05 02:12:19 +0200 (Tue, 05 Aug 2014) $</i>
+<i>Last changed: $Date: 2015-07-20 20:56:23 +0200 (Mon, 20 Jul 2015) $</i>
