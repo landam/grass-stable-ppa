@@ -22,7 +22,14 @@ The <b>aspect</b> output raster map indicates the direction that slopes are
 facing. The aspect categories represent the number degrees of east. Category
 and color table files are also generated for the aspect raster map. The aspect
 categories represent the number degrees of east and they increase
-counterclockwise: 90 degrees is North, 180 is West, 270 is South 360 is East.
+counterclockwise: 90 degrees is North, 180 is West, 270 is South 360 is East.<br>
+Note: These values can be transformed to azimuth (0 is North, 90 is East, etc)
+values using <a href="r.mapcalc.html">r.mapcalc</a>:
+
+<div class="code"><pre>
+# convert angles from CCW to north up
+r.mapcalc "azimuth_aspect = (450 - ccw_aspect) % 360"
+</pre></div>
 
 <p>
 The aspect is not defined for slope equal to zero.
@@ -161,7 +168,33 @@ of aspect categories is very uneven, with peaks at 0, 45,..., 360 categories.
 When working with floating point elevation models, no such aspect bias occurs.
 
 
-<h2>REFERENCE</h2>
+<h2>EXAMPLES</h2>
+
+In this example a slope, aspect, profile and tangential curvature map
+are computed from an elevation raster map (North Carolina sample
+dataset):
+
+<div class="code"><pre>
+g.region raster=elevation
+r.slope.aspect elevation=elevation slope=slope aspect=aspect pcurvature=pcurv tcurvature=tcurv
+
+# set nice color tables for output raster maps
+r.colors -n map=slope color=sepia
+r.colors map=aspect color=aspectcolr
+r.colors map=pcurv color=curvature
+r.colors map=tcurv color=curvature
+</pre></div>
+
+<center>
+  <img src="r_slope_aspect_slope.png" border="0">
+  <img src="r_slope_aspect_aspect.png" border="0">
+  <img src="r_slope_aspect_pcurv.png" border="0">
+  <img src="r_slope_aspect_tcurv.png" border="0">
+  <p>
+Figure: Slope, aspect, profile and tangential curvature raster map (North Carolina dataset)
+</center>
+
+<h2>REFERENCES</h2>
 
 <ul>
 <li> Horn, B. K. P. (1981). <i>Hill Shading and the Reflectance Map</i>, Proceedings
@@ -191,4 +224,4 @@ Michael Shapiro, U.S.Army Construction Engineering Research Laboratory<br>
 Olga Waupotitsch, U.S.Army Construction Engineering Research Laboratory
 
 <p>
-<i>Last changed: $Date: 2015-01-14 16:35:10 +0100 (Wed, 14 Jan 2015) $</i>
+<i>Last changed: $Date: 2015-07-20 21:16:36 +0200 (Mon, 20 Jul 2015) $</i>

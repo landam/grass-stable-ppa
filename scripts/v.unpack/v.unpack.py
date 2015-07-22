@@ -15,7 +15,7 @@
 #############################################################################
 
 #%module
-#% description: Unpacks a vector map packed with v.pack.
+#% description: Imports a vector map as GRASS GIS specific archive file (packed with v.pack)
 #% keyword: vector
 #% keyword: import
 #% keyword: copying
@@ -131,7 +131,10 @@ def main():
             if diff_result_2:
                 grass.warning(_("Difference between PROJ_UNITS file of packed map "
                                 "and of current location:\n{diff}").format(diff=''.join(diff_result_2)))
-            grass.fatal(_("Projection information does not match. Aborting."))
+            grass.fatal(_("Projection of dataset does not appear to match current location."
+                          " In case of no significant differences in the projection definitions,"
+                          " use the -o flag to ignore them and use"
+                          " current location definition."))
 
     # new db
     fromdb = os.path.join(tmp_dir, 'db.sqlite')
