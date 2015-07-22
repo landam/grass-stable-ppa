@@ -4,6 +4,3 @@ python-ctypes-ternary.patch
 no-fail-html.patch
 desktop.patch
 appstream.patch
-allows-to-typo.patch
-length-typo.patch
-permit-to-typo.patch
