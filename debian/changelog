@@ -1,8 +1,8 @@
-grass (7.0.1-1) UNRELEASED; urgency=medium
+grass (7.0.1-1~exp1) experimental; urgency=medium
 
   * New upstream release.
 
- -- Bas Couwenberg <sebastic@debian.org>  Thu, 30 Jul 2015 23:28:19 +0200
+ -- Bas Couwenberg <sebastic@debian.org>  Thu, 30 Jul 2015 23:45:54 +0200
 
 grass (7.0.1~rc2-1~exp1) experimental; urgency=medium
 
