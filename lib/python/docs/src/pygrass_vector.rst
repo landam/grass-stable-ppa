@@ -191,9 +191,9 @@ their attributes, and that a vector map's attribute table(s) should not be
 loaded unless explicitly specified, in case they are not needed.
 
 Accessing a vector map's table(s) requires finding any links to tables, then
-requesting the table from each of the returned links:
+requesting the table from each of the returned links: ::
 
-    from grass.pygrass.vector import VectorTopo
+    >>> from grass.pygrass.vector import VectorTopo
     >>> municip = VectorTopo('census')
     >>> municip.open(mode='r')
     >>> dblinks = DBlinks(municip.c_mapinfo)
@@ -207,7 +207,7 @@ Here, ``DBlinks()`` is a class (:class:`~pygrass.vector.table.DBlinks`) that
 contains all the links of a vector map. Each link is also a class
 (:class:`~pygrass.vector.table.Link`) that contains a specific link's
 parameters. The ``table()`` method of the link class return the linked table as
-a table object (`class:`~pygrass.vector.table.Table`).
+a table object (:class:`~pygrass.vector.table.Table`).
 
 Geometry Classes
 ----------------
@@ -309,7 +309,7 @@ Or can list only the areas containing isles: ::
 
 Of course is still possible work only with a specific area, with: ::
 
-    >>> from pygrass.vector.geometry import Area
+    >>> from grass.pygrass.vector.geometry import Area
     >>> area = Area(v_id=1859, c_mapinfo=municip.c_mapinfo)
     >>> area.area()
     39486.05401495844

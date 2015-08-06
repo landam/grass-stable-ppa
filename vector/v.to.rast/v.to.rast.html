@@ -9,10 +9,13 @@ labels.
 
 <em>v.to.rast</em> will only affect data in areas lying
 inside the boundaries of the current geographic region.
+A grid cell belongs to the area where the grid cell center falls into.
+<p>
 Before running <em>v.to.rast</em>, the user should
 therefore ensure that the current geographic region is
 correctly set and that the region resolution is at the
 desired level.
+
 <p>Either the <em><b>column</b></em> parameter or the <em><b>value</b></em>
 parameter must be specified.  The <em><b>use</b></em> option may be 
 specified alone when using the <em>dir</em> option.
@@ -51,10 +54,14 @@ resultant raster map.
 </ul>
 <p><p><b>Flow directions</b> are given in degrees counterclockwise from east.
 <p><p>Raster category labels are supported for all of <em>use=</em> except <em>use=z</em>.
+<p>
+The <b>-d</b> flag applies only to lines, the default is only those on the
+render path (thin line).
 
 <h2>EXAMPLES</h2>
 
-<em>1. Convert a vector map and use column SPEED from attribute table</em><br>
+<h3>Convert a vector map and use column SPEED from attribute table</h3>
+
 <div class="code"><pre>
 db.describe -c table=vect_map
 
@@ -65,26 +72,62 @@ Column 3: WIDTH
 </pre></div>
 
 <div class="code"><pre>
-v.to.rast in=vect_map out=raster_map col=SPEED
+v.to.rast input=vect_map output=raster_map attribute_column=SPEED
 </pre></div>
 
-<p><p><em>2. Calculate stream directions from a river vector map (Spearfish)</em><br>
+<h3>Calculate stream directions from a river vector map (Spearfish)</h3>
+
 <div class="code"><pre>
-v.to.rast in=streams out=streamsdir use=dir
+v.to.rast input=streams output=streamsdir use=dir
 </pre></div>
 
-<p><p><em>3. Convert a vector polygon map to raster including descriptive labels (Spearfish)</em><br>
+<h3>Convert a vector polygon map to raster including descriptive labels (Spearfish)</h3>
+
 <div class="code"><pre>
-v.to.rast in=fields out=myfields use=attr col=cat labelcol=label
+v.to.rast input=fields output=myfields use=attr attribute_column=cat label_column=label
 r.category myfields
 </pre></div>
+
+
+<h3>Convert vector points to raster with raster cell binning</h3>
+
+In this example, the number of schools per raster cell are counted
+(North Carolina sample dataset):
+
+<div class="code"><pre>
+g.copy vector=schools_wake,myschools_wake
+
+# set computation region for raster binning
+g.region vector=myschools_wake res=5000 -p -a
+
+# add new column for counting
+v.db.addcolumn myschools_wake column="value integer"
+v.db.update myschools_wake column=value value=1
+
+# verify attributes
+v.db.select myschools_wake column=cat,value
+v.out.ascii input=myschools_wake output=- column=value
+
+# export and import on the fly, use 4th column (value) as input
+v.out.ascii input=myschools_wake output=- column=value | r.in.xyz input=- \
+            z=4 output=schools_wake_aggreg method=sum
+
+d.mon wx0
+d.rast schools_wake_aggreg
+d.vect schools_wake 
+d.grid 5000
+</pre></div>
+
+<center>
+<img src="v_to_rast_binning.png" alt="Number of schools per raster cell" border=1><br>
+Number of schools per raster cell
+</center>
 
 <h2>SEE ALSO</h2>
 <em>
 <a href="db.describe.html">db.describe</a>,
 <a href="v.category.html">v.category</a>
 </em>
-<br>
 
 <h2>AUTHORS</h2>
 
@@ -95,6 +138,6 @@ GRASS 6.0 updates: Radim Blazek, ITC-irst, Trento, Italy
 Stream directions: Jaro Hofierka and Helena Mitasova
 <br>
 GRASS 6.3 code cleanup and label support: Brad Douglas
-<p><p><i>Last changed: $Date: 2011-11-08 13:24:20 -0800 (Tue, 08 Nov 2011) $</i>
+<p><p><i>Last changed: $Date: 2015-07-24 03:39:34 +0200 (Fri, 24 Jul 2015) $</i>
 
 

@@ -18,7 +18,7 @@ Usage:
 >>> # Write some data
 ... for y in range(map2d_1.shape[0]):
 ...     for x in range(map2d_1.shape[1]):
-...         map2d_1[y][x] = y + x
+...         map2d_1[y,x] = y + x
 ...
 >>> # Lets have a look at the array
 ... print map2d_1
@@ -29,7 +29,6 @@ Usage:
 >>> # This will write the numpy array as GRASS raster map
 ... # with name map2d_1
 ... map2d_1.write(mapname="map2d_1", overwrite=True)
- 100%
 0
 >>>
 >>> # We create a new array and read map2d_1 to modify it
@@ -47,7 +46,6 @@ Usage:
  [ 0.  1.  2.  0.  1.  2.]]
 >>> # Write the result as new raster map with name map2d_2
 ... map2d_2.write(mapname="map2d_2", overwrite=True)
- 100%
 0
 >>>
 >>> # Here we create a 3D raster map numpy array
@@ -59,7 +57,7 @@ Usage:
 ... for z in range(map3d_1.shape[0]):
 ...     for y in range(map3d_1.shape[1]):
 ...         for x in range(map3d_1.shape[2]):
-...             map3d_1[z][y][x] = z + y + x
+...             map3d_1[z,y,x] = z + y + x
 ...
 >>> # Lets have a look at the 3D array
 ... print map3d_1
@@ -67,10 +65,12 @@ Usage:
   [  1.   2.   3.   4.   5.   6.]
   [  2.   3.   4.   5.   6.   7.]
   [  3.   4.   5.   6.   7.   8.]]
+<BLANKLINE>
  [[  1.   2.   3.   4.   5.   6.]
   [  2.   3.   4.   5.   6.   7.]
   [  3.   4.   5.   6.   7.   8.]
   [  4.   5.   6.   7.   8.   9.]]
+<BLANKLINE>
  [[  2.   3.   4.   5.   6.   7.]
   [  3.   4.   5.   6.   7.   8.]
   [  4.   5.   6.   7.   8.   9.]
@@ -78,8 +78,6 @@ Usage:
 >>> # This will write the numpy array as GRASS 3D raster map
 ... # with name map3d_1
 ... map3d_1.write(mapname="map3d_1", overwrite=True)
-Loading floating point data with 8 bytes ... (6x4x3)
- 100%
 0
 >>> # We create a new 3D array and read map3d_1 to modify it
 ... map3d_2 = garray.array3d()
@@ -94,18 +92,18 @@ Loading floating point data with 8 bytes ... (6x4x3)
   [ 1.  2.  0.  1.  2.  0.]
   [ 2.  0.  1.  2.  0.  1.]
   [ 0.  1.  2.  0.  1.  2.]]
+<BLANKLINE>
  [[ 1.  2.  0.  1.  2.  0.]
   [ 2.  0.  1.  2.  0.  1.]
   [ 0.  1.  2.  0.  1.  2.]
   [ 1.  2.  0.  1.  2.  0.]]
+<BLANKLINE>
  [[ 2.  0.  1.  2.  0.  1.]
   [ 0.  1.  2.  0.  1.  2.]
   [ 1.  2.  0.  1.  2.  0.]
   [ 2.  0.  1.  2.  0.  1.]]]
 >>> # Write the result as new 3D raster map with name map3d_2
 ... map3d_2.write(mapname="map3d_2", overwrite=True)
-Loading floating point data with 8 bytes ... (6x4x3)
- 100%
 0
 
 (C) 2010-2012 by Glynn Clements and the GRASS Development Team
@@ -126,6 +124,15 @@ from grass.exceptions import CalledModuleError
 
 ###############################################################################
 
+class _tempfile(object):
+    def __init__(self):
+        self.filename = grass.tempfile()
+
+    def __del__(self):
+        try_remove(self.filename)
+
+###############################################################################
+
 class array(numpy.memmap):
     def __new__(cls, dtype=numpy.double):
         """Define new numpy array
@@ -138,21 +145,18 @@ class array(numpy.memmap):
         c = reg['cols']
         shape = (r, c)
 
-        filename = grass.tempfile()
+        tempfile = _tempfile()
 
         self = numpy.memmap.__new__(
             cls,
-            filename=filename,
+            filename=tempfile.filename,
             dtype=dtype,
             mode='w+',
             shape=shape)
 
-        self.filename = filename
+        self.tempfile = tempfile
+        self.filename = tempfile.filename
         return self
-
-    def __del__(self):
-        if isinstance(self, array):
-            try_remove(self.filename)
 
     def read(self, mapname, null=None):
         """Read raster map into array
@@ -259,22 +263,19 @@ class array3d(numpy.memmap):
         d = reg['depths']
         shape = (d, r, c)
 
-        filename = grass.tempfile()
+        tempfile = _tempfile()
 
         self = numpy.memmap.__new__(
             cls,
-            filename=filename,
+            filename=tempfile.filename,
             dtype=dtype,
             mode='w+',
             shape=shape)
 
-        self.filename = filename
+        self.tempfile = tempfile
+        self.filename = tempfile.filename
 
         return self
-
-    def __del__(self):
-        if isinstance(self, array3d):
-            try_remove(self.filename)
 
     def read(self, mapname, null=None):
         """Read 3D raster map into array
@@ -309,9 +310,9 @@ class array3d(numpy.memmap):
                 quiet=True,
                 overwrite=True)
         except CalledModuleError:
-            exit(1)
+            return 1
         else:
-            exit(0)
+            return 0
 
     def write(self, mapname, null=None, overwrite=None):
         """Write array into 3D raster map
@@ -359,6 +360,6 @@ class array3d(numpy.memmap):
                 cols=reg['cols3'])
 
         except CalledModuleError:
-            exit(1)
+            return 1
         else:
-            exit(0)
+            return 0

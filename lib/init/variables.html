@@ -107,6 +107,10 @@ PERMANENT
   <dd>defines the name (path) of a shell script to be processed as
   batch job.</dd>
 
+  <dt>GRASS_DB_ENCODING</dt>
+  <dd>[various modules, wxGUI]<br>
+    encoding for vector attribute data (utf-8, ascii, iso8859-1, koi8-r)</dd>
+  
   <dt>GIS_ERROR_LOG</dt>
   <dd>If set, GIS_ERROR_LOG should be the absolute path to the log
    file (a relative path will be interpreted relative to the process'
@@ -370,10 +374,10 @@ PERMANENT
 For specific driver-related variables see:
 
 <ul>
-  <li><em><a href="cairodriver.html">Cairo driver</a></em></li>
-  <li><em><a href="pngdriver.html">PNG driver</a></em></li>
-  <li><em><a href="psdriver.html">PS (Postscript) driver</a></em></li>
-  <li><em><a href="htmldriver.html">HTML driver</a></em></li>
+  <li><em><a href="cairodriver.html">Cairo display driver</a></em></li>
+  <li><em><a href="pngdriver.html">PNG display driver</a></em></li>
+  <li><em><a href="psdriver.html">PS (Postscript) display driver</a></em></li>
+  <li><em><a href="htmldriver.html">HTML display driver</a></em></li>
 </ul>
 
 <h3>List of selected internal GRASS environment variables</h3>
@@ -457,10 +461,6 @@ g.gisenv set=DEBUG=0
   <dd>lock ID to prevent parallel GRASS use,
     <br>process id of the start-up shell script</dd>
   
-  <dt>GRASS_DB_ENCODING</dt>
-  <dd>[d.what.vect/forms library]<br>
-    encoding of query form (utf-8, ascii, iso8859-1, koi8-r)</dd>
-  
   <dt>GUI</dt>
   <dd>See <tt>GRASS_GUI</tt> environmental variable for details.</dd>
   
@@ -521,4 +521,4 @@ Note: On MS Windows the files are stored in <tt>%APPDATA%</tt>.
 </em>
 
 <p>
-<i>Last changed: $Date: 2015-02-13 16:16:22 +0100 (Fri, 13 Feb 2015) $</i>
+<i>Last changed: $Date: 2015-06-08 10:03:27 +0200 (Mon, 08 Jun 2015) $</i>

@@ -41,8 +41,6 @@
 #define PAD 2
 #define MAX_ROW 7
 
-		       /*extern int errno; *//* included #include <errno.h> instead 1/2000 */
-extern char *error_prefix;
 static int n_rows, n_cols;
 static int work_file;
 static char *work_file_name;
@@ -101,9 +99,9 @@ int open_file(char *name)
     n_cols = Rast_window_cols();
     
     /* GTC Count of raster rows */
-    G_asprintf(&tmpstr1, _n("%d row", "%d rows", n_rows), n_rows);
+    G_asprintf(&tmpstr1, n_("%d row", "%d rows", n_rows), n_rows);
     /* GTC Count of raster columns */
-    G_asprintf(&tmpstr2, _n("%d column", "%d columns", n_cols), n_cols);
+    G_asprintf(&tmpstr2, n_("%d column", "%d columns", n_cols), n_cols);
     /* GTC First argument is the raster map name, second and third - a string representing number of rows and cols */
     G_message(_("Raster map <%s> - %s X %s"), name, tmpstr1, tmpstr2);
     G_free(tmpstr1);
@@ -118,8 +116,8 @@ int open_file(char *name)
     close(creat(work_file_name, 0666));
     if ((work_file = open(work_file_name, 2)) < 0) {
 	unlink(work_file_name);
-	G_fatal_error(_("%s: Unable to create temporary file <%s> -- errno = %d"),
-		      error_prefix, work_file_name, errno);
+	G_fatal_error(_("Unable to create temporary file <%s> -- errno = %d"),
+		      work_file_name, errno);
     }
     buf_len = n_cols * sizeof(CELL);
     buf = (CELL *) G_malloc(buf_len);
@@ -127,16 +125,14 @@ int open_file(char *name)
     for (i = 0; i < PAD; i++) {
 	if (write(work_file, buf, buf_len) != buf_len) {
 	    unlink(work_file_name);
-	    G_fatal_error(_("%s: Error writing temporary file"),
-			  error_prefix);
+	    G_fatal_error(_("Error writing temporary file <%s>"), work_file_name);
 	}
     }
     for (row = 0; row < n_rows; row++) {
 	Rast_get_c_row(cell_file, buf + PAD, row);
 	if (write(work_file, buf, buf_len) != buf_len) {
 	    unlink(work_file_name);
-	    G_fatal_error(_("%s: Error writing temporary file"),
-			  error_prefix);
+	    G_fatal_error(_("Error writing temporary file <%s>"), work_file_name);
 	}
     }
 
@@ -145,8 +141,7 @@ int open_file(char *name)
     for (i = 0; i < PAD; i++) {
 	if (write(work_file, buf, buf_len) != buf_len) {
 	    unlink(work_file_name);
-	    G_fatal_error(_("%s: Error writing temporary file"),
-			  error_prefix);
+	    G_fatal_error(_("Error writing temporary file <%s>"), work_file_name);
 	}
     }
     n_rows += (PAD << 1);
@@ -171,18 +166,18 @@ int close_file(char *name)
     col_count = n_cols - (PAD << 1);
     
     /* GTC Count of raster rows */
-    G_asprintf(&tmpstr1, _n("%d row", "%d rows", row_count), row_count);
+    G_asprintf(&tmpstr1, n_("%d row", "%d rows", row_count), row_count);
     /* GTC Count of raster columns */
-    G_asprintf(&tmpstr2, _n("%d column", "%d columns", col_count), col_count);
+    G_asprintf(&tmpstr2, n_("%d column", "%d columns", col_count), col_count);
     /* GTC %s will be replaced with number of rows and columns */
     G_message(_("Output map %s X %s"), tmpstr1, tmpstr2);
     G_free(tmpstr1);
     G_free(tmpstr2); 
     
     /* GTC Count of window rows */
-    G_asprintf(&tmpstr1, _n("%d row", "%d rows", Rast_window_rows()), Rast_window_rows());
+    G_asprintf(&tmpstr1, n_("%d row", "%d rows", Rast_window_rows()), Rast_window_rows());
     /* GTC Count of window columns */
-    G_asprintf(&tmpstr2, _n("%d column", "%d columns", Rast_window_cols()), Rast_window_cols());
+    G_asprintf(&tmpstr2, n_("%d column", "%d columns", Rast_window_cols()), Rast_window_cols());
     /* GTC %s will be replaced with number of rows and columns */
     G_message(_("Window %s X %s"), tmpstr1, tmpstr2);
     G_free(tmpstr1);

@@ -34,6 +34,8 @@ from grass.exceptions import ScriptError, CalledModuleError
 # i18N
 import gettext
 gettext.install('grasslibs', os.path.join(os.getenv("GISBASE"), 'locale'))
+import __builtin__
+__builtin__.__dict__['_'] = __builtin__.__dict__['_'].im_self.lgettext
 
 # subprocess wrapper that uses shell on Windows
 
@@ -322,7 +324,6 @@ def start_command(prog, flags="", overwrite=False, quiet=False,
     GISDBASE='/opt/grass-data';
     LOCATION_NAME='spearfish60';
     MAPSET='glynn';
-    GRASS_DB_ENCODING='ascii';
     GUI='text';
     MONITOR='x0';
 
@@ -361,14 +362,32 @@ def start_command(prog, flags="", overwrite=False, quiet=False,
 
 
 def run_command(*args, **kwargs):
-    """Passes all arguments to start_command(), then waits for the process to
-    complete, returning its exit code. Similar to subprocess.check_call(), but
-    with the make_command() interface.
+    """Execute a module synchronously
 
-    :param list args: list of unnamed arguments (see start_command() for details)
-    :param list kwargs: list of named arguments (see start_command() for details)
+    This function passes all arguments to ``start_command()``,
+    then waits for the process to complete. It is similar to
+    ``subprocess.check_call()``, but with the ``make_command()``
+    interface.
 
-    :return: exit code (0 for success)
+    For backward compatibility, the function returns exit code
+    by default but only if it is equal to zero. An exception is raised
+    in case of an non-zero return code.
+
+    >>> run_command('g.region', raster='elevation')
+    0
+
+    See :func:`start_command()` for details about parameters and usage.
+
+    ..note::
+        You should ignore the return value of this function unless, you
+        change the default behavior using *errors* parameter.
+
+    :param *args: unnamed arguments passed to ``start_command()``
+    :param **kwargs: named arguments passed to ``start_command()``
+
+    :returns: 0 with default parameters for backward compatibility only
+
+    :raises: ``CalledModuleError`` when module returns non-zero return code
     """
     ps = start_command(*args, **kwargs)
     returncode = ps.wait()
@@ -386,7 +405,6 @@ def pipe_command(*args, **kwargs):
     GISDBASE='/opt/grass-data';
     LOCATION_NAME='spearfish60';
     MAPSET='glynn';
-    GRASS_DB_ENCODING='ascii';
     GUI='text';
     MONITOR='x0';
 
@@ -470,14 +488,27 @@ def parse_command(*args, **kwargs):
 
 
 def write_command(*args, **kwargs):
-    """Passes all arguments to feed_command, with the string specified
-    by the 'stdin' argument fed to the process' stdin.
+    """Execute a module with standard input given by *stdin* parameter.
 
-    :param list args: list of unnamed arguments (see start_command() for details)
-    :param list kwargs: list of named arguments (see start_command() for details)
+    Passes all arguments to ``feed_command()``, with the string specified
+    by the *stdin* argument fed to the process' standard input.
 
-    :return: return code
+    >>> gscript.write_command(
+    ...    'v.in.ascii', input='-',
+    ...    stdin='%s|%s' % (635818.8, 221342.4),
+    ...    output='view_point')
+    0
+
+    See ``start_command()`` for details about parameters and usage.
+
+    :param *args: unnamed arguments passed to ``start_command()``
+    :param **kwargs: named arguments passed to ``start_command()``
+
+    :returns: 0 with default parameters for backward compatibility only
+
+    :raises: ``CalledModuleError`` when module returns non-zero return code
     """
+    # TODO: should we delete it from kwargs?
     stdin = kwargs['stdin']
     process = feed_command(*args, **kwargs)
     process.communicate(stdin)
@@ -523,6 +554,7 @@ def debug(msg, debug=1):
     :param str debug: debug level (0-5)
     """
     if debug_level() >= debug:
+        # TODO: quite a random hack here, do we need it somewhere else too?
         if sys.platform == "win32":
             msg = msg.replace('&', '^&')
 
@@ -575,7 +607,7 @@ def error(msg):
 
     This function does not end the execution of the program.
     The right action after the error is up to the caller.
-    For error handling using the standard mechanism use :func:`fatal`.
+    For error handling using the standard mechanism use :func:`fatal()`.
 
     :param str msg: error message to be displayed
     """
@@ -587,7 +619,7 @@ def fatal(msg):
 
     Raises exception when module global raise_on_error is 'True', abort
     (calls exit) otherwise.
-    Use func:`set_raise_on_error` to set the behavior.
+    Use :func:`set_raise_on_error()` to set the behavior.
 
     :param str msg: error message to be displayed
     """
@@ -960,7 +992,7 @@ def region_env(region3d=False, **kwargs):
     If no 'kwargs' are given then the current region is used. Note
     that this function doesn't modify the current region!
 
-    See also use_temp_region() for alternative method how to define
+    See also :func:`use_temp_region()` for alternative method how to define
     temporary region used for raster-based computation.
 
     :param bool region3d: True to get 3D region
@@ -1489,11 +1521,12 @@ def debug_level():
 def legal_name(s):
     """Checks if the string contains only allowed characters.
 
-    This is the Python implementation of G_legal_filename() function.
+    This is the Python implementation of :func:`G_legal_filename()` function.
 
     ..note::
 
-        It is not clear when to use this function.
+        It is not clear when exactly use this function, but it might be
+        useful anyway for checking map names and column names.
     """
     if not s or s[0] == '.':
         warning(_("Illegal filename <%s>. Cannot be 'NULL' or start with " \

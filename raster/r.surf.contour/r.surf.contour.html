@@ -81,7 +81,7 @@ r.contour input=elevation output=contours_5m step=5 minlevel=50
 
 # rasterize contour lines
 v.info -c contours_5m
-v.to.rast input=contours_5m output=contours_5m use=attr column=level
+v.to.rast input=contours_5m output=contours_5m use=attr attribute_column=level
 
 # generate DEM from rasterized contour lines
 r.surf.contour input=contours_5m output=elevation_from_cont5m
@@ -111,4 +111,4 @@ r.univar diff
 
 Chuck Ehlschlaeger, U.S. Army Construction Engineering Research Laboratory
 
-<p><i>Last changed: $Date: 2014-12-27 23:51:00 +0100 (Sat, 27 Dec 2014) $</i>
+<p><i>Last changed: $Date: 2015-05-25 21:03:44 +0200 (Mon, 25 May 2015) $</i>

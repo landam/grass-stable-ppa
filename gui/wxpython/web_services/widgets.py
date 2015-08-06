@@ -344,19 +344,20 @@ class WSPanel(wx.Panel):
 
         if self.params['urlparams']:
             gridSizer  =  wx.GridBagSizer (hgap = 3, vgap = 3)
-            gridSizer.AddGrowableCol(1)
-
+            
             row = 0
             gridSizer.Add(labels['urlparams'],
                           flag = wx.ALIGN_LEFT |
                           wx.ALIGN_CENTER_VERTICAL,
                           pos = (row, 0))
-
+            
             gridSizer.Add(item = self.params['urlparams'],
                           flag = wx.ALIGN_RIGHT |
                           wx.ALIGN_CENTER_VERTICAL | wx.EXPAND,
                           pos = (row, 1))
-
+            
+            gridSizer.AddGrowableCol(1)
+            
             border.Add(item = gridSizer,
                        flag = wx.LEFT | wx.RIGHT | wx.TOP | wx.EXPAND,
                        border = 5)
@@ -963,7 +964,7 @@ class LayersList(TreeListCtrl, listmix.ListCtrlAutoWidthMixin):
         return sel_layers_dict
 
     def OnListSelChanging(self, event):
-        """Do not allow to select items, which cannot be requested from server.
+        """Do not allow selecting items, which cannot be requested from server.
         """
         def _emitSelected(layer):
             title = layer.GetLayerData('title')

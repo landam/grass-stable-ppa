@@ -3,55 +3,23 @@ from __future__ import (nested_scopes, generators, division, absolute_import,
                         with_statement, print_function, unicode_literals)
 import sys
 from multiprocessing import cpu_count
-from functools import wraps
+import time
+from xml.etree.ElementTree import fromstring
+
+from grass.exceptions import CalledModuleError, GrassError, ParameterError
+from grass.script.core import Popen, PIPE
+from .docstring import docstring_property
+from .parameter import Parameter
+from .flag import Flag
+from .typedict import TypeDict
+from .read import GETFROMTAG, DOC
+from .env import G_debug
+
 
 if sys.version_info[0] == 2:
     from itertools import izip_longest as zip_longest
 else:
     from itertools import zip_longest
-from xml.etree.ElementTree import fromstring
-import time
-
-from grass.exceptions import CalledModuleError
-from grass.script.core import Popen, PIPE
-from grass.pygrass.errors import GrassError, ParameterError
-from grass.pygrass.utils import docstring_property
-from grass.pygrass.modules.interface.parameter import Parameter
-from grass.pygrass.modules.interface.flag import Flag
-from grass.pygrass.modules.interface.typedict import TypeDict
-from grass.pygrass.modules.interface.read import GETFROMTAG, DOC
-from grass.pygrass.messages import get_msgr
-
-
-def mdebug(level, msg='', extra=None):
-    """Debug decorators for class methods.
-
-    :param level: the debug level
-    :type level: int
-    :param msg: Debug message
-    :type msg: str
-    :param extra: Function that return a string
-    :type msg: func
-    """
-    msgr = get_msgr()
-
-    def decorator(method):
-
-        @wraps(method)
-        def wrapper(self, *args, **kargs):
-            sargs = ', ' + ' , '.join([repr(a) for a in args]) if args else ''
-            skargs = (' , '.join(['%s=%r' % (k, v) for k, v in kargs.items()])
-                      if kargs else '')
-            opts = "%s%s%s" % (sargs, ',' if sargs and skargs else '', skargs)
-            dmsg = "%s.%s(self%s): %s %s" % (self.__class__.__name__,
-                                             method.__name__,
-                                             opts, msg,
-                                             extra(self, *args, **kargs)
-                                             if extra else '')
-            msgr.debug(level, dmsg)
-            return method(self, *args, **kargs)
-        return wrapper
-    return decorator
 
 
 def _get_bash(self, *args, **kargs):
@@ -536,6 +504,7 @@ class Module(object):
         #
         self.run_ = True
         self.finish_ = True
+        self.check_ = True
         self.env_ = None
         self.stdin_ = None
         self.stdin = None
@@ -575,7 +544,7 @@ class Module(object):
             del(kargs['flags'])
 
         # set attributs
-        for key in ('run_', 'env_', 'finish_', 'stdout_', 'stderr_'):
+        for key in ('run_', 'env_', 'finish_', 'stdout_', 'stderr_', 'check_'):
             if key in kargs:
                 setattr(self, key, kargs.pop(key))
 
@@ -585,7 +554,7 @@ class Module(object):
                 self.inputs[key[:-1]].value = kargs.pop(key)
 
         #
-        # check args
+        # set/update args
         #
         for param, arg in zip(self.params_list, args):
             param.value = arg
@@ -608,11 +577,8 @@ class Module(object):
             #
             # check reqire parameters
             #
-            for k in self.required:
-                if ((k in self.inputs and self.inputs[k].value is None) or
-                        (k in self.outputs and self.outputs[k].value is None)):
-                    msg = "Required parameter <%s> not set."
-                    raise ParameterError(msg % k)
+            if self.check_:
+                self.check()
             return self.run()
         return self
 
@@ -666,6 +632,19 @@ class Module(object):
         flags = self.flags.__doc__
         return '\n'.join([head, params, DOC['flag_head'], flags, DOC['foot']])
 
+    def check(self):
+        """Check the correctness of the provide parameters"""
+        required = True
+        for flg in self.flags.values():
+            if flg and flg.suppress_required:
+                required = False
+        if required:
+            for k in self.required:
+                if ((k in self.inputs and self.inputs[k].value is None) or
+                        (k in self.outputs and self.outputs[k].value is None)):
+                    msg = "Required parameter <%s> not set."
+                    raise ParameterError(msg % k)
+
     def get_dict(self):
         """Return a dictionary that includes the name, all valid
         inputs, outputs and flags
@@ -687,17 +666,16 @@ class Module(object):
         skip = ['stdin', 'stdout', 'stderr']
         args = [self.name, ]
         for key in self.inputs:
-            if key not in skip and self.inputs[key].value:
+            if key not in skip and self.inputs[key].value is not None and self.inputs[key].value != '':
                 args.append(self.inputs[key].get_bash())
         for key in self.outputs:
-            if key not in skip and self.outputs[key].value:
+            if key not in skip and self.outputs[key].value is not None and self.outputs[key].value != '':
                 args.append(self.outputs[key].get_bash())
         for flg in self.flags:
             if self.flags[flg].value:
                 args.append(str(self.flags[flg]))
         return args
 
-    # @mdebug(1, extra=_get_bash)
     def run(self):
         """Run the module
 
@@ -711,7 +689,7 @@ class Module(object):
         termination. The handling of stdout and stderr must then be done
         outside of this function.
         """
-        get_msgr().debug(1, self.get_bash())
+        G_debug(1, self.get_bash())
         if self.inputs['stdin'].value:
             self.stdin = self.inputs['stdin'].value
             self.stdin_ = PIPE

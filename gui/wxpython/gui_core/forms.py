@@ -517,22 +517,22 @@ class TaskFrame(wx.Frame):
             self.btn_run.SetDefault()
             self.btn_run.SetForegroundColour(wx.Colour(35, 142, 35))
             
-            # copy
-            self.btn_clipboard = wx.Button(parent = self.panel, id = wx.ID_COPY)
-            self.btn_clipboard.SetToolTipString(_("Copy the current command string to the clipboard"))
-            
             btnsizer.Add(item = self.btn_run, proportion = 0,
                          flag = wx.ALL | wx.ALIGN_CENTER,
                          border = 10)
-            
-            btnsizer.Add(item = self.btn_clipboard, proportion = 0,
-                         flag = wx.ALL | wx.ALIGN_CENTER,
-                         border = 10)
-            
+
             self.btn_run.Bind(wx.EVT_BUTTON, self.OnRun)
             self.Bind(wx.EVT_MENU, self.OnRun, id=wx.ID_OK)
             accelTableList.append((wx.ACCEL_CTRL, ord('R'), wx.ID_OK))
-            self.btn_clipboard.Bind(wx.EVT_BUTTON, self.OnCopy)
+
+        # copy
+        self.btn_clipboard = wx.Button(parent=self.panel, id=wx.ID_COPY)
+        self.btn_clipboard.SetToolTipString(_("Copy the current command string to the clipboard"))
+        btnsizer.Add(item=self.btn_clipboard, proportion=0,
+                         flag=wx.ALL | wx.ALIGN_CENTER,
+                         border=10)
+        self.btn_clipboard.Bind(wx.EVT_BUTTON, self.OnCopy)
+
         # help
         self.btn_help = wx.Button(parent = self.panel, id = wx.ID_HELP)
         self.btn_help.SetToolTipString(_("Show manual page of the command (Ctrl+H)"))
@@ -625,7 +625,7 @@ class TaskFrame(wx.Frame):
         
     def updateValuesHook(self, event = None):
         """Update status bar data"""
-        self.SetStatusText(' '.join(self.notebookpanel.createCmd(ignoreErrors = True)))
+        self.SetStatusText(' '.join(map(gcmd.DecodeString, self.notebookpanel.createCmd(ignoreErrors = True))))
         if event:
             event.Skip()
 
@@ -1329,6 +1329,7 @@ class CmdPanel(wx.Panel):
                     selection = gselect.SignatureSelect(parent = which_panel, element = p.get('element', 'sig'))
                     p['wxId'] = [ selection.GetId() ]
                     selection.Bind(wx.EVT_TEXT, self.OnSetValue)
+                    selection.Bind(wx.EVT_COMBOBOX, self.OnSetValue)
                     which_sizer.Add(item = selection, proportion = 0,
                                     flag = wx.ADJUST_MINSIZE | wx.BOTTOM | wx.LEFT | wx.RIGHT | wx.TOP | wx.ALIGN_CENTER_VERTICAL,
                                     border = 5)
@@ -1340,6 +1341,7 @@ class CmdPanel(wx.Panel):
                     win.SetValue(value)
                     p['wxId'] = [ win.GetId() ]
                     win.Bind(wx.EVT_TEXT, self.OnSetValue)
+                    win.Bind(wx.EVT_COMBOBOX, self.OnSetValue)
                     which_sizer.Add(item = win, proportion = 0,
                                     flag = wx.ADJUST_MINSIZE | wx.BOTTOM | wx.LEFT | wx.RIGHT | wx.TOP | wx.ALIGN_CENTER_VERTICAL,
                                     border = 5)
@@ -1460,7 +1462,8 @@ class CmdPanel(wx.Panel):
                     if p.get('default','') !=  '':
                         default_color, label_color = utils.color_resolve(p['default'])
                     if p.get('value','') !=  '' and p.get('value','') != 'none': # parameter previously set
-                        default_color, label_color = utils.color_resolve(p['value'])
+                        if not p.get('multiple', False):
+                            default_color, label_color = utils.color_resolve(p['value'])
                     if p.get('element', '') == 'color_none' or p.get('multiple', False):
                         this_sizer = wx.BoxSizer(orient = wx.HORIZONTAL)
                     else:
@@ -1475,6 +1478,8 @@ class CmdPanel(wx.Panel):
                         this_sizer.Add(item = txt, proportion = 1,
                                        flag = wx.ADJUST_MINSIZE | wx.LEFT | wx.TOP, border = 5)
                         txt.Bind(wx.EVT_TEXT, self.OnSetValue)
+                        if p.get('value', ''):
+                            txt.SetValue(p['value'])
                         colorSize = 40
                         label_color = ''
                         p['wxId'][1] = txt.GetId()
@@ -2507,7 +2512,7 @@ if __name__ == "__main__":
         cmd = utils.split(sys.argv[1])
         task = gtask.grassTask(cmd[0])
         task.set_options(cmd[1:])
-        Debug.msg(1, "forms.py opening form for: %s" % task.get_cmd(ignoreErrors=True))
+        Debug.msg(1, "forms.py opening form for: %s" % task.get_cmd(ignoreErrors=True, ignoreRequired=True))
         app = GrassGUIApp(task)
         app.MainLoop()
     else: #Test

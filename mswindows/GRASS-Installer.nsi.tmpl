@@ -3,7 +3,7 @@
 ;GRASS GIS Installer for Windows
 ;Written by Marco Pasetti
 ;Updated for OSGeo4W by Colin Nielsen, Helmut Kudrnovsky, and Martin Landa
-;Last Update: $Id: GRASS-Installer.nsi.tmpl 62106 2014-09-27 07:57:05Z hellik $
+;Last Update: $Id: GRASS-Installer.nsi.tmpl 65576 2015-07-11 14:04:13Z neteler $
 ;Mail to: grass-dev@lists.osgeo.org 
 
 ;----------------------------------------------------------------------------------------------------------------------------
@@ -317,8 +317,8 @@ FunctionEnd
 
 ;Function CheckInstDir
 ;	Var /GLOBAL INSTDIR_TEST
-;	Var /GLOBAL INSTDIR_LENGHT	
-;	Var /GLOBAL INSTDIR_TEST_LENGHT
+;	Var /GLOBAL INSTDIR_LENGTH	
+;	Var /GLOBAL INSTDIR_TEST_LENGTH
 ;	Var /GLOBAL MESSAGE_CHKINST_
 ;	
 ;	StrCpy $MESSAGE_CHKINST_ "WARNING: you are about to install GRASS into a directory that has spaces$\r$\n"
@@ -330,10 +330,10 @@ FunctionEnd
 ;	
 ;	${StrReplace} "$INSTDIR_TEST" " " "" "$INSTDIR"
 ;	
-;	StrLen $INSTDIR_LENGHT "$INSTDIR"
-;	StrLen $INSTDIR_TEST_LENGHT "$INSTDIR_TEST"
+;	StrLen $INSTDIR_LENGTH "$INSTDIR"
+;	StrLen $INSTDIR_TEST_LENGTH "$INSTDIR_TEST"
 ;	
-;	${If} $INSTDIR_TEST_LENGHT < $INSTDIR_LENGHT	
+;	${If} $INSTDIR_TEST_LENGTH < $INSTDIR_LENGTH	
 ;		MessageBox MB_OK|MB_ICONEXCLAMATION "$MESSAGE_CHKINST_"
 ;	${EndIf}
 ;	
@@ -550,6 +550,9 @@ Section "GRASS" SecGRASS
 	FileWrite $0 '$\r$\n'
 	FileWrite $0 'rem set dependecies path$\r$\n'
 	FileWrite $0 'set PATH=%FREETYPEBASE%;%PATH%$\r$\n'
+	FileWrite $0 '$\r$\n'
+	FileWrite $0 'rem GISRC must be set$\r$\n'
+	FileWrite $0 'set GISRC=dummy$\r$\n'
 	FileWrite $0 '$\r$\n'
 	FileWrite $0 'rem run g.mkfontcap outside a grass session$\r$\n'
 	FileWrite $0 '"%GISBASE%\bin\g.mkfontcap.exe" -o$\r$\n'
@@ -961,7 +964,7 @@ Function DownloadInstallMSRuntime
 
 FunctionEnd
 
-Section /O "Important Microsoft Runtime DLLs" SecMSRuntime
+Section "Important Microsoft Runtime DLLs" SecMSRuntime
 
 	;Set the size (in KB)  of the archive file
 	StrCpy $ARCHIVE_SIZE_KB 12521
@@ -970,7 +973,7 @@ Section /O "Important Microsoft Runtime DLLs" SecMSRuntime
 	AddSize 13500
 	
 	StrCpy $HTTP_PATH "http://download.osgeo.org/osgeo4w/${PLATFORM}/release/msvcrt/"
-	StrCpy $ARCHIVE_NAME "msvcrt-1.0.1-11.tar.bz2"
+	StrCpy $ARCHIVE_NAME "msvcrt-1.0.1-12.tar.bz2"
 	StrCpy $EXTENDED_ARCHIVE_NAME "Microsoft Visual C++ Redistributable Packages"
 	StrCpy $ORIGINAL_UNTAR_FOLDER "install_msruntime"
 	

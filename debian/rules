@@ -55,14 +55,15 @@ override_dh_clean:
 		$(RM) -r lib/$$LIBRARY/html lib/$$LIBRARY/latex ; \
 	done
 
-override_dh_auto_clean:
-	[ ! -f $(CURDIR)/include/Make/Platform.make ] || $(MAKE) distclean
-
-override_dh_auto_configure:
+templates:
 	for TEMPLATE in $(TEMPLATES) ; do \
 	    sed -e 's/@VERSION@/$(VERSION)/g' -e 's/@ABI@/$(ABI)/g' $$TEMPLATE > `echo $$TEMPLATE | sed 's/.in$$//'` ; \
 	done
 
+override_dh_auto_clean:
+	[ ! -f $(CURDIR)/include/Make/Platform.make ] || $(MAKE) distclean
+
+override_dh_auto_configure: templates
 	dh_auto_configure -- \
                     --prefix=/usr/lib \
                     --enable-socket \
@@ -87,6 +88,7 @@ override_dh_auto_configure:
                     --with-postgres-includes=$(shell pg_config --includedir) \
                     --with-mysql-includes=$(shell mysql_config --include | sed -e 's/-I//') \
                     --with-proj-share=/usr/share/proj \
+                    --with-liblas=/usr/bin/liblas-config \
                     --with-wxwidgets=/usr/bin/wx-config \
                     --with-python \
                     --with-cairo
@@ -268,3 +270,4 @@ override_dh_shlibdeps:
 override_dh_compress:
 	dh_compress -XAUTHORS
 
+.PHONY: templates

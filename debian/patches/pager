@@ -6,10 +6,11 @@ Description: Perfer pager over more.
  ported to Python by Bas Couwenberg.
 Author: Francesco Paolo Lovergine <frankie@debian.org>
 Author: Bas Couwenberg <sebastic@xs4all.nl>
+Forwarded: not-needed
 
 --- a/lib/init/grass.py
 +++ b/lib/init/grass.py
-@@ -435,10 +435,12 @@ def find_exe(pgm):
+@@ -439,10 +439,12 @@ def find_exe(pgm):
  def set_defaults():
      # GRASS_PAGER
      if not os.getenv('GRASS_PAGER'):

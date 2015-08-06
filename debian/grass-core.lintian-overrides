@@ -1,8 +1,6 @@
 # False positive, file is an executable not an image
 grass-core: image-file-in-usr-lib usr/lib/grass*/bin/r.in.png
 grass-core: image-file-in-usr-lib usr/lib/grass*/bin/r.out.png
-grass-core: image-file-in-usr-lib usr/lib/grass*/bin/r.out.tiff
-grass-core: image-file-in-usr-lib usr/lib/grass*/scripts/d.out.png
 
 # html2man doesn't include NAME.
 grass-core: manpage-has-bad-whatis-entry *
@@ -33,8 +31,6 @@ grass-core: hardening-no-fortify-functions usr/lib/grass*/etc/lock
 # Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
 #  Fortify Source functions: no, only unprotected functions found!
 #         unprotected: fread
-grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.in.arc
-grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.in.bin
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r3.in.bin
 
 # Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
@@ -54,7 +50,6 @@ grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.cwed
 #  Fortify Source functions: no, only unprotected functions found!
 #         unprotected: fgets
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.null
-grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r3.mask
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/v.extract
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/v.lrs.segment
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/v.segment
@@ -63,18 +58,13 @@ grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/v.segment
 #  Fortify Source functions: no, only unprotected functions found!
 #         unprotected: strncpy
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/i.gensig
-grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.topidx
-grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r3.in.ascii
 grass-core: hardening-no-fortify-functions usr/lib/grass*/driver/db/ogr
-grass-core: hardening-no-fortify-functions usr/lib/grass*/etc/modcats
-grass-core: hardening-no-fortify-functions usr/lib/grass*/etc/modcolr
 
 # Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
 #  Fortify Source functions: no, only unprotected functions found!
 #         unprotected: strcpy
 grass-core: hardening-no-fortify-functions usr/lib/grass*/etc/lister/cell
 grass-core: hardening-no-fortify-functions usr/lib/grass*/etc/lister/vector
-grass-core: hardening-no-fortify-functions usr/lib/grass*/etc/modhist
 
 # Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
 #  Fortify Source functions: no, only unprotected functions found!

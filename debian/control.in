@@ -46,7 +46,8 @@ Build-Depends: autoconf2.13,
                libblas-dev,
                liblapack-dev,
                unixodbc-dev,
-               zlib1g-dev
+               zlib1g-dev,
+               liblas-c-dev (>= 1.8.0-3~)
 Standards-Version: 3.9.6
 Vcs-Browser: http://anonscm.debian.org/cgit/pkg-grass/grass.git
 Vcs-Git: git://anonscm.debian.org/pkg-grass/grass.git -b experimental
@@ -61,8 +62,11 @@ Depends: grass-core,
 Recommends: grass-doc
 Suggests: grass-dev
 Conflicts: grass@VERSION@,
-           grass7,
-           grass7-daily
+           grass7
+Provides: grass@VERSION@,
+          grass7
+Replaces: grass@VERSION@,
+          grass7
 Description: Geographic Resources Analysis Support System (GRASS GIS)
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
@@ -101,10 +105,13 @@ Suggests: grass-doc,
           python-rpy2
 Breaks: grass (<< 6.4.2-1~)
 Conflicts: grass@VERSION@-core,
-           grass7-core,
-           grass7-daily-core
-Provides: grass@ABI@
-Replaces: grass (<< 6.4.2-1~)
+           grass7-core
+Provides: grass@ABI@,
+          grass@VERSION@-core,
+          grass7-core
+Replaces: grass@VERSION@-core,
+          grass7-core,
+          grass (<< 6.4.2-1~)
 Description: GRASS GIS core components
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
@@ -131,9 +138,12 @@ Recommends:
             python-imaging
 Breaks: grass (<< 6.4.2-1~)
 Conflicts: grass@VERSION@-gui,
-           grass7-gui,
-           grass7-daily-gui
-Replaces: grass (<< 6.4.2-1~)
+           grass7-gui
+Provides: grass@VERSION@-gui,
+          grass7-gui
+Replaces: grass (<< 6.4.2-1~),
+          grass@VERSION@-gui,
+          grass7-gui
 Description: GRASS GIS graphical user interfaces
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
@@ -151,8 +161,11 @@ Depends: ${misc:Depends}
 Suggests: grass,
           grass-dev-doc
 Conflicts: grass@VERSION@-doc,
-           grass7-doc,
-           grass7-daily-doc
+           grass7-doc
+Provides: grass@VERSION@-doc,
+          grass7-doc
+Replaces: grass@VERSION@-doc,
+          grass7-doc
 Description: GRASS GIS user documentation
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
@@ -170,8 +183,11 @@ Depends: ${misc:Depends},
          libjs-jquery
 Suggests: grass
 Conflicts: grass@VERSION@-dev-doc,
-           grass7-dev-doc,
-           grass7-daily-dev-doc
+           grass7-dev-doc
+Provides: grass@VERSION@-dev-doc,
+          grass7-dev-doc
+Replaces: grass@VERSION@-dev-doc,
+          grass7-dev-doc
 Description: GRASS GIS Programmers' Manual
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
@@ -199,9 +215,12 @@ Depends: grass-core (= ${binary:Version}),
 Recommends: subversion
 Suggests: grass-dev-doc,
           pkg-config
-Conflicts: grass7-dev,
-           grass7-daily-dev
-Provides: grass@VERSION@-dev
+Conflicts: grass@VERSION@-dev,
+           grass7-dev
+Provides: grass@VERSION@-dev,
+          grass7-dev
+Replaces: grass@VERSION@-dev,
+          grass7-dev
 Description: GRASS GIS development files
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,

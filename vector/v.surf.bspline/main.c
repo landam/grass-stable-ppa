@@ -110,6 +110,14 @@ int main(int argc, char *argv[])
     in_opt->label = _("Name of input vector point map");
     
     dfield_opt = G_define_standard_option(G_OPT_V_FIELD);
+    dfield_opt->guisection = _("Settings");
+
+    col_opt = G_define_standard_option(G_OPT_DB_COLUMN);
+    col_opt->required = NO;
+    col_opt->label =
+	_("Name of the attribute column with values to be used for approximation");
+    col_opt->description = _("If not given and input is 3D vector map then z-coordinates are used.");
+    col_opt->guisection = _("Settings");
 
     in_ext_opt = G_define_standard_option(G_OPT_V_INPUT);
     in_ext_opt->key = "sparse_input";
@@ -119,17 +127,19 @@ int main(int argc, char *argv[])
 
     out_opt = G_define_standard_option(G_OPT_V_OUTPUT);
     out_opt->required = NO;
-
+    out_opt->guisection = _("Outputs");
+    
     out_map_opt = G_define_standard_option(G_OPT_R_OUTPUT);
     out_map_opt->key = "raster_output";
     out_map_opt->required = NO;
-
+    out_map_opt->guisection = _("Outputs");
+ 
     mask_opt = G_define_standard_option(G_OPT_R_INPUT);
     mask_opt->key = "mask";
     mask_opt->label = _("Raster map to use for masking (applies to raster output only)");
     mask_opt->description = _("Only cells that are not NULL and not zero are interpolated");
     mask_opt->required = NO;
-
+ 
     stepE_opt = G_define_option();
     stepE_opt->key = "ew_step";
     stepE_opt->type = TYPE_DOUBLE;
@@ -167,13 +177,6 @@ int main(int argc, char *argv[])
     lambda_f_opt->description = _("Tykhonov regularization parameter (affects smoothing)");
     lambda_f_opt->answer = "0.01";
     lambda_f_opt->guisection = _("Settings");
-
-    col_opt = G_define_standard_option(G_OPT_DB_COLUMN);
-    col_opt->required = NO;
-    col_opt->label =
-	_("Name of the attribute column with values to be used for approximation");
-    col_opt->description = _("If not given and input is 3D vector map then z-coordinates are used.");
-    col_opt->guisection = _("Settings");
 
     solver = N_define_standard_option(N_OPT_SOLVER_SYMM);
     solver->options = "cholesky,cg";
@@ -218,8 +221,11 @@ int main(int argc, char *argv[])
     flag_auxiliar = FALSE;
 
     drv = db_get_default_driver_name();
-    if (!drv)
-        G_fatal_error(_("No default DB driver defined"));
+    if (!drv) {
+        if (db_set_default_connection() != DB_OK)
+            G_fatal_error(_("Unable to set default DB connection"));
+        drv = db_get_default_driver_name();
+    }
     db = db_get_default_database_name();
     if (!db)
         G_fatal_error(_("No default DB defined"));

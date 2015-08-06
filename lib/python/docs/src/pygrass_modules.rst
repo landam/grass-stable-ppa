@@ -5,7 +5,7 @@ In "modules", GRASS GIS modules are represented as objects. These objects
 are generated based on the XML module description that is used also for
 the generation of the graphical user interface (GUI). ::
 
-    >>> from pygrass.modules import Module
+    >>> from grass.pygrass.modules import Module
     >>> slope_aspect = Module("r.slope.aspect", elevation='elevation',
     ...                        slope='slp',  aspect='asp',
     ...                        format='percent', overwrite=True)
@@ -195,9 +195,10 @@ attributes of the class: ::
 
 Another example of use: ::
 
-    >>> info = Module("r.info", map="elevation", flags="r", finish_=True)
-    >>> from pygrass.modules import stdout2dict
-    >>> stdout2dict(info.stdout)
+    >>> from subprocess import PIPE
+    >>> info = Module("r.info", map="elevation", flags="r", stdout_=PIPE)
+    >>> from grass.script.utils import parse_key_val
+    >>> parse_key_val(info.outputs.stdout)
     {'max': '156.3299', 'min': '55.57879'}
     >>> info = Module("r.info", map="elevation", flags="r", finish_=False)
     >>> category = Module("r.category", map="elevation",

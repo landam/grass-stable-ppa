@@ -1,5 +1,6 @@
 Description: Don't include GRASS_VERSION_RELEASE in path.
 Author: Francesco Paolo Lovergine <frankie@debian.org>
+Forwarded: not-needed
 
 --- a/configure
 +++ b/configure

@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 {
     struct Map_info In, Out;
     static struct line_pnts *Points;
-    struct line_cats *Cats, *TCats;
+    struct line_cats *Cats;
     struct field_info *Fi;
     struct cat_list *Clist;
     int i, j, ret, option, otype, type, with_z, step, id;
@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
 	Clist->field = atoi(field_opt->answer);
 	ret = Vect_str_to_cat_list(id_opt->answer, Clist);
 	if (ret > 0) {
-	    G_warning(_n("%d error in id option",
+	    G_warning(n_("%d error in id option",
                          "%d errors in id option",
                          ret), ret);
 	}
@@ -375,18 +375,15 @@ int main(int argc, char *argv[])
 		new_centr++;
 	    }
 	    if (new_centr > 0) 
-		G_message(_n("%d new centroid placed in output map",
+		G_message(n_("%d new centroid placed in output map",
                              "%d new centroids placed in output map",
                              new_centr), new_centr);
 	}
 	break;
 
     case (O_TRANS):
-	TCats = Vect_new_cats_struct();
-
 	/* Lines */
 	while ((type = Vect_read_next_line(&In, Points, Cats)) > 0) {
-	    Vect_reset_cats(TCats);
 	    id++;
 	    if (type & otype && (!Clist ||
 				 (Clist &&
@@ -397,25 +394,18 @@ int main(int argc, char *argv[])
 		for (i = 0; i < n; i++) {
 		    if (Cats->field[i] == fields[0]) {
 			scat = Cats->cat[i];
-			Vect_cat_set(TCats, 1, scat);
-		    }
-		}
-		if (scat > -1) {
-		    n = TCats->n_cats;
-		    for (i = 0; i < n; i++) {
-			scat = TCats->cat[i];
-			for (i = 1; i < nfields; i++) {
-			    if (Vect_cat_set(Cats, fields[i], scat) > 0) {
-				G_debug(4, "Copy cat %i of field %i to into field %i", scat, fields[0], fields[i]);
+			for (j = 1; j < nfields; j++) {
+			    if (Vect_cat_set(Cats, fields[j], scat) > 0) {
+				G_debug(4, "Copy cat %i of field %i to field %i", scat, fields[0], fields[j]);
 			    }
 			}
 		    }
-		    nmodified++;
 		}
+		if (scat != -1)
+		    nmodified++;
 	    }
 	    Vect_write_line(&Out, type, Points, Cats);
 	}
-	Vect_destroy_cats_struct(TCats);
 	break;
 
     case (O_DEL):
@@ -780,7 +770,7 @@ int main(int argc, char *argv[])
 		                  fields[0], fields[i]);
 
     if (option != O_REP && option != O_PRN) 
-        G_done_msg(_n("%d feature modified.",
+        G_done_msg(n_("%d feature modified.",
                       "%d features modified.",
                       nmodified), nmodified);
     
