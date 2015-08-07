@@ -1,3 +1,9 @@
+grass (7.0.1-1~exp1~vivid1) vivid; urgency=medium
+
+  * vivid build
+
+ -- Johan Van de Wauw <johan.vandewauw@gmail.com>  Fri, 07 Aug 2015 11:36:22 +0200
+
 grass (7.0.1-1~exp1) experimental; urgency=medium
 
   * New upstream release.
