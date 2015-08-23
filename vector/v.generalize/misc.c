@@ -17,10 +17,9 @@
  *
  ****************************************************************/
 
-#include <math.h>
 #include <stdlib.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 #include "misc.h"
@@ -88,12 +87,10 @@ int copy_tables_by_cats(struct Map_info *In, struct Map_info *Out)
     int ttype, ntabs = 0;
     struct field_info *IFi, *OFi;
     struct line_cats *Cats;
-    struct line_pnts *Points;
     int **ocats, *nocats, *fields;
     int i;
 
     /* Collect list of output cats */
-    Points = Vect_new_line_struct();
     Cats = Vect_new_cats_struct();
     nfields = Vect_cidx_get_num_fields(In);
     ocats = (int **)G_malloc(nfields * sizeof(int *));
@@ -190,96 +187,57 @@ int copy_tables_by_cats(struct Map_info *In, struct Map_info *Out)
     return 1;
 }
 
-/* parse filter option and select appropriate lines */
-/* return array with selected lines or NULL */
-struct varray *parse_filter_options(struct Map_info *Map, int layer,
-                      int mask_type, char *where, char *cats, int *chcat)
-{
-    struct varray *varray;
-
-    /* allow selection of areas and other types */
-    if (mask_type & GV_AREA) {
-	mask_type &= ~(GV_AREA);
-	mask_type |= GV_CENTROID;
-    }
-
-    if (where) {
-	if (layer < 1)
-	    G_fatal_error(_("'%s' must be > 0 for '%s'"), "layer", "where");
-	if (cats)
-	    G_warning(_("'where' and 'cats' parameters were supplied, cat will be ignored"));
-	*chcat = 1;
-	varray = Vect_new_varray(Vect_get_num_lines(Map));
-
-	if (Vect_set_varray_from_db
-	    (Map, layer, where, mask_type, 1, varray) == -1) {
-	    G_warning(_("Unable to load data from database"));
-	}
-    }
-    else if (cats) {
-	if (layer < 1)
-	    G_fatal_error(_("'%s' must be > 0 for '%s'"), "layer", "cat");
-	*chcat = 1;
-	varray = Vect_new_varray(Vect_get_num_lines(Map));
-
-	if (Vect_set_varray_from_cat_string
-	    (Map, layer, cats, mask_type, 1, varray) == -1) {
-	    G_warning(_("Problem loading category values"));
-	}
-    }
-    else if (layer > 0) {
-	int i, type, cat, nlines;
-	struct line_cats *Cats = Vect_new_cats_struct();
-
-	nlines = Vect_get_num_lines(Map);
-	varray = Vect_new_varray(nlines);
-	*chcat = 1;
-	
-	for (i = 1; i <= nlines; i++) {
-	    varray->c[i] = 0;
-	    type = Vect_read_line(Map, NULL, Cats, i);
-	    
-	    if (!(type & mask_type))
-		continue;
-		
-	    if (Vect_cat_get(Cats, layer, &cat))
-		varray->c[i] = 1;
-	}
-	Vect_destroy_cats_struct(Cats);
-    }
-    else
-	return NULL;
-	
-    return varray;
-}
-
 /* check topology corruption by boundary modification
  * return 0 on corruption, 1 if modification is ok */
 int check_topo(struct Map_info *Out, int line, struct line_pnts *APoints,
                struct line_pnts *Points, struct line_cats *Cats)
 {
-    int i, intersect, newline, left_old, right_old,
+    int i, j, intersect, newline, left_old, right_old,
 	left_new, right_new;
     struct bound_box box;
     static struct line_pnts *BPoints = NULL;
-    static struct ilist *List = NULL;
+    static struct boxlist *List = NULL;
+    struct line_pnts **AXLines, **BXLines;
+    int naxlines, nbxlines;
 
     if (!BPoints)
 	BPoints = Vect_new_line_struct();
     if (!List)
-	List = Vect_new_list();
+	List = Vect_new_boxlist(1);
+
+    Vect_line_box(Points, &box);
+
+    /* Check the modified boundary for self-intersection */
+    AXLines = BXLines = NULL;
+    Vect_line_intersection(Points, Points, &box, &box, &AXLines, &BXLines,
+			   &naxlines, &nbxlines, 0);
+    /* Free */
+    if (naxlines > 0) {
+	for (j = 0; j < naxlines; j++) {
+	    Vect_destroy_line_struct(AXLines[j]);
+	}
+    }
+    if (AXLines)
+	G_free(AXLines);
+    if (nbxlines > 0) {
+	for (j = 0; j < nbxlines; j++) {
+	    Vect_destroy_line_struct(BXLines[j]);
+	}
+    }
+    if (BXLines)
+	G_free(BXLines);
+
+    if (naxlines > 0 || nbxlines > 0)
+	return 0;
 
     /* Check intersection of the modified boundary with other boundaries */
-    Vect_line_box(Points, &box);
     Vect_select_lines_by_box(Out, &box, GV_BOUNDARY, List);
 
     intersect = 0;
     for (i = 0; i < List->n_values; i++) {
-	int j, bline;
-	struct line_pnts **AXLines, **BXLines;
-	int naxlines, nbxlines;
+	int bline;
 
-	bline = List->value[i];
+	bline = List->id[i];
 	if (bline == line)
 	    continue;
 
@@ -289,7 +247,7 @@ int check_topo(struct Map_info *Out, int line, struct line_pnts *APoints,
 	 * intersections should be found if any */
 
 	AXLines = BXLines = NULL;
-	Vect_line_intersection(Points, BPoints, &AXLines, &BXLines,
+	Vect_line_intersection(Points, BPoints, &box, &List->box[i], &AXLines, &BXLines,
 			       &naxlines, &nbxlines, 0);
 
 	G_debug(4,

@@ -23,63 +23,66 @@
 #include <ctype.h>
 #include <math.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 
 int main(int argc, char **argv)
 {
-    char *input, *mapset;
+    char *input;
+    const char *driver_default, *database_default;
+    
     struct GModule *module;
     struct Option *inopt, *dbdriver, *dbdatabase, *dbtable, *field_opt,
 	*dbkey, *sep_opt;
-    struct Flag *overwrite, *print, *columns, *delete, *shell_print,
-	*limit_layer;
+    struct Flag *overwrite, *print, *columns, *delete, *shell_print;
     dbDriver *driver;
     dbString table_name;
     dbTable *table;
     dbHandle handle;
     struct field_info *fi;
     int field, ret, num_dblinks, i, ncols, col;
+    char *fieldname;
     struct Map_info Map;
-    char *drv, *db;
+    char *sep;
 
     /* set up the options and flags for the command line parser */
 
     module = G_define_module();
-    module->keywords = _("vector, database, attribute table");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("attribute table"));
+    G_add_keyword(_("database"));
+    G_add_keyword(_("layer"));
     module->description =
 	_("Prints/sets DB connection for a vector map to attribute table.");
 
     inopt = G_define_standard_option(G_OPT_V_MAP);
 
-    dbdriver = G_define_standard_option(G_OPT_DRIVER);
+    dbdriver = G_define_standard_option(G_OPT_DB_DRIVER);
     dbdriver->options = db_list_drivers();
-    if ((drv = G__getenv2("DB_DRIVER", G_VAR_MAPSET)))
-	dbdriver->answer = G_store(drv);
+    driver_default = db_get_default_driver_name();
+    if (driver_default)
+	dbdriver->answer = G_store(driver_default);
     dbdriver->guisection = _("Settings");
 
-    dbdatabase = G_define_standard_option(G_OPT_DATABASE);
-    if ((db = G__getenv2("DB_DATABASE", G_VAR_MAPSET)))
-	dbdatabase->answer = G_store(db);
+    dbdatabase = G_define_standard_option(G_OPT_DB_DATABASE);
+    database_default = db_get_default_database_name();
+    if (database_default)
+	dbdatabase->answer = G_store(database_default);
     dbdatabase->guisection = _("Settings");
 
-    dbtable = G_define_standard_option(G_OPT_TABLE);
+    dbtable = G_define_standard_option(G_OPT_DB_TABLE);
 
-    dbkey = G_define_standard_option(G_OPT_COLUMN);
-    dbkey->key = "key";
-    dbkey->answer = "cat";
-    dbkey->label = _("Key column name");
-    dbkey->description = _("Must refer to an integer column");
-
+    dbkey = G_define_standard_option(G_OPT_DB_KEYCOLUMN);
+    
     field_opt = G_define_standard_option(G_OPT_V_FIELD);
-    field_opt->gisprompt = "new_layer,layer,layer";
+    field_opt->description = _("Format: layer number[/layer name]");
+    field_opt->gisprompt = "new,layer,layer";
 
     sep_opt = G_define_standard_option(G_OPT_F_SEP);
-    sep_opt->description = _("Field separator for shell script style output");
-    sep_opt->answer = " ";
+    sep_opt->label = _("Field separator for shell script style output");
     sep_opt->guisection = _("Print");
-    
+
     print = G_define_flag();
     print->key = 'p';
     print->description = _("Print all map connection parameters and exit");
@@ -87,20 +90,10 @@ int main(int argc, char **argv)
 
     shell_print = G_define_flag();
     shell_print->key = 'g';
-    shell_print->label = _("Print all map connection parameters and exit "
-			   "in shell script style");
+    shell_print->label = _("Print all map connection parameters in shell script style and exit");
     shell_print->description =
 	_("Format: layer[/layer name] table key database driver");
     shell_print->guisection = _("Print");
-
-    /* This should be changed in GRASS 7.
-       Printing options shouldn't ignore layer=%d option.
-       That would require us to override/unset the default layer=1 there :-/
-        or add a new -a flag for print all layers ?? */
-    limit_layer = G_define_flag();
-    limit_layer->key = 'l';
-    limit_layer->description =
-	_("When printing, limit to layer specified by the layer option");
 
     columns = G_define_flag();
     columns->key = 'c';
@@ -124,7 +117,6 @@ int main(int argc, char **argv)
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-
     /* The check must allow '.' in the name (schema.table) */
     /*
        if (dbtable->answer) {
@@ -133,21 +125,34 @@ int main(int argc, char **argv)
        }
      */
 
-    /* set input vector map name and mapset */
+    /* set input vector map name */
     input = inopt->answer;
-    mapset = G_find_vector2(input, "");
-    if (!mapset)
-	G_fatal_error(_("Vector map <%s> not found"), input);
 
-    if (field_opt->answer)
+    if (field_opt->answer) {
+	fieldname = strchr(field_opt->answer, '/');
+	if (fieldname != NULL) {	/* field has name */
+	    fieldname[0] = 0;
+	    fieldname++;
+	}
+	
 	field = atoi(field_opt->answer);
-    else
+    }
+    else {
 	field = 1;
+	fieldname = NULL;
+    }
+    G_debug(1, "layer number %d, layer name %s", field, fieldname);
 
-    G_debug(3, "Mapset = %s", mapset);
+    sep = G_option_to_separator(sep_opt);
 
-    if (print->answer || shell_print->answer || columns->answer)
-	Vect_open_old(&Map, inopt->answer, mapset);
+    if (print->answer && shell_print->answer)
+	G_fatal_error(_("Please choose only one print style"));
+
+    Vect_set_open_level(1); /* no topology needed */
+    if (print->answer || shell_print->answer || columns->answer) {
+	if (Vect_open_old2(&Map, inopt->answer, "", field_opt->answer) < 0)
+	    G_fatal_error(_("Unable to open vector map <%s>"), inopt->answer);
+    }
     else {
 	if (Vect_open_update_head(&Map, inopt->answer, G_mapset()) < 1)
 	    G_fatal_error(_("Unable to modify vector map stored in other mapset"));
@@ -158,7 +163,7 @@ int main(int argc, char **argv)
 	num_dblinks = Vect_get_num_dblinks(&Map);
 	if (num_dblinks <= 0) {
 	    /* it is ok if a vector map is not connected o an attribute table */
-	    G_message(_("Database connection for map <%s> is not defined in DB file"),
+	    G_message(_("Map <%s> is not connected to a database"),
 			  input);
 	    Vect_close(&Map);
 	    exit(EXIT_SUCCESS);
@@ -167,46 +172,46 @@ int main(int argc, char **argv)
 
 	    if (print->answer || shell_print->answer) {
 		if (!(shell_print->answer)) {
-		    G_message(_("Vector map <%s> is connected by:"),
-			      G_fully_qualified_name(input, mapset));
+		    fprintf(stdout,_("Vector map <%s> is connected by:\n"),
+			      input);
 		}
 		for (i = 0; i < num_dblinks; i++) {
 		    if ((fi = Vect_get_dblink(&Map, i)) == NULL)
 			G_fatal_error(_("Database connection not defined"));
 
-		    if (limit_layer->answer && fi->number != field)
-			continue;
-
 		    if (shell_print->answer) {
-			const char *sep = sep_opt->answer;
-
-			if (fi->name) {
+			if (fi->name)
 			    fprintf(stdout, "%d/%s%s%s%s%s%s%s%s%s\n",
 				    fi->number, fi->name, sep,
 				    fi->table, sep, fi->key, sep,
 				    fi->database, sep, fi->driver);
-			}
-			else {
+			else
 			    fprintf(stdout, "%d%s%s%s%s%s%s%s%s\n",
 				    fi->number, sep,
 				    fi->table, sep, fi->key, sep,
 				    fi->database, sep, fi->driver);
-			}
 		    }
 		    else {
-			fprintf(stdout,
-				_("layer <%d> table <%s> in database <%s> through driver "
-				  "<%s> with key <%s>\n"), fi->number,
-				fi->table, fi->database, fi->driver,
-				fi->key);
+			if (fi->name) {
+			    fprintf(stdout,
+				    _("layer <%d/%s> table <%s> in database <%s> through driver "
+				    "<%s> with key <%s>\n"), fi->number, fi->name,
+				    fi->table, fi->database, fi->driver, fi->key);
+			}
+			else {
+			    fprintf(stdout,
+				    _("layer <%d> table <%s> in database <%s> through driver "
+				    "<%s> with key <%s>\n"), fi->number,
+				    fi->table, fi->database, fi->driver, fi->key);
+			}
 		    }
 		}
 	    }			/* end print */
 	    else {		/* columns */
 
-		if ((fi = Vect_get_field(&Map, field)) == NULL)
-		    G_fatal_error(_("Database connection not defined for layer %d"),
-				  field);
+		if ((fi = Vect_get_field2(&Map, field_opt->answer)) == NULL)
+		    G_fatal_error(_("Database connection not defined for layer <%s>"),
+				  field_opt->answer);
 		driver = db_start_driver(fi->driver);
 		if (driver == NULL)
 		    G_fatal_error(_("Unable to start driver <%s>"),
@@ -247,13 +252,13 @@ int main(int argc, char **argv)
 	    if (field_opt->answer && dbtable->answer && dbkey->answer
 		&& dbdatabase->answer && dbdriver->answer) {
 		fi = (struct field_info *)G_malloc(sizeof(struct field_info));
-		fi->name = NULL;
+		fi->name = fieldname;
 		fi->table = dbtable->answer;
 		fi->key = dbkey->answer;
 		fi->database = dbdatabase->answer;
 		fi->driver = dbdriver->answer;
 
-		ret = Vect_map_check_dblink(&Map, field);
+		ret = Vect_map_check_dblink(&Map, field, fieldname);
 		G_debug(3, "Vect_map_check_dblink = %d", ret);
 		if (ret == 1) {
 		    /* field already defined */
@@ -281,7 +286,7 @@ int main(int argc, char **argv)
 			db_get_column(driver, dbtable->answer, dbkey->answer,
 				      &column);
 			if (!column)
-			    G_fatal_error(_("Missing column <%s> in table <%s>"),
+			    G_fatal_error(_("Column <%s> not found in table <%s>"),
 					  dbkey->answer, dbtable->answer);
 
 			if (db_column_Ctype

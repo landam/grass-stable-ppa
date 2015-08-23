@@ -28,13 +28,14 @@
  */
 
 
-#define SWAP(a,b) temp=a;a=b;b=temp
+static void adjust_lat(double *);
+static void adjust_lon(double *);
 
-static int adjust_lat(double *);
-static int adjust_lon(double *);
+static struct state {
+    double A, B;
+} state;
 
-static double A, B;
-
+static struct state *st = &state;
 
 int G_begin_geodesic_equation(double lon1, double lat1, double lon2,
 			      double lat2)
@@ -46,13 +47,12 @@ int G_begin_geodesic_equation(double lon1, double lat1, double lon2,
     adjust_lat(&lat1);
     adjust_lat(&lat2);
     if (lon1 > lon2) {
-	register double temp;
-
-	SWAP(lon1, lon2);
-	SWAP(lat1, lat2);
+	double temp;
+	temp = lon1; lon1 = lon2; lon2 = temp;
+	temp = lat1; lat1 = lat2; lat2 = temp;
     }
     if (lon1 == lon2) {
-	A = B = 0.0;
+	st->A = st->B = 0.0;
 	return 0;
     }
     lon1 = Radians(lon1);
@@ -64,8 +64,8 @@ int G_begin_geodesic_equation(double lon1, double lat1, double lon2,
     tan1 = tan(lat1);
     tan2 = tan(lat2);
 
-    A = (tan2 * cos(lon1) - tan1 * cos(lon2)) / sin21;
-    B = (tan2 * sin(lon1) - tan1 * sin(lon2)) / sin21;
+    st->A = (tan2 * cos(lon1) - tan1 * cos(lon2)) / sin21;
+    st->B = (tan2 * sin(lon1) - tan1 * sin(lon2)) / sin21;
 
     return 1;
 }
@@ -77,25 +77,21 @@ double G_geodesic_lat_from_lon(double lon)
     adjust_lon(&lon);
     lon = Radians(lon);
 
-    return Degrees(atan(A * sin(lon) - B * cos(lon)));
+    return Degrees(atan(st->A * sin(lon) - st->B * cos(lon)));
 }
 
-static int adjust_lon(double *lon)
+static void adjust_lon(double *lon)
 {
     while (*lon > 180.0)
 	*lon -= 360.0;
     while (*lon < -180.0)
 	*lon += 360.0;
-
-    return 0;
 }
 
-static int adjust_lat(double *lat)
+static void adjust_lat(double *lat)
 {
     if (*lat > 90.0)
 	*lat = 90.0;
     if (*lat < -90.0)
 	*lat = -90.0;
-
-    return 0;
 }

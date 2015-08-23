@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 #include <grass/neta.h>
 
@@ -30,9 +30,11 @@ int main(int argc, char *argv[])
     struct line_cats *Cats;
     struct GModule *module;	/* GRASS module for parsing arguments */
     struct Option *map_in, *map_out;
-    struct Option *field_opt, *method_opt;
+    struct Option *afield_opt, *nfield_opt, *abcol, *afcol, *ncol,
+                  *method_opt;
+    char *desc;
     int with_z;
-    int layer, mask_type;
+    int afield, nfield, mask_type;
     dglGraph_s *graph;
     int i, bridges, articulations;
     struct ilist *bridge_list, *articulation_list;
@@ -42,7 +44,9 @@ int main(int argc, char *argv[])
 
     /* initialize module */
     module = G_define_module();
-    module->keywords = _("vector, network, articulation points");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("network"));
+    G_add_keyword(_("articulation points"));
     module->description =
 	_("Computes bridges and articulation points in the network.");
 
@@ -50,7 +54,37 @@ int main(int argc, char *argv[])
     map_in = G_define_standard_option(G_OPT_V_INPUT);
     map_out = G_define_standard_option(G_OPT_V_OUTPUT);
 
-    field_opt = G_define_standard_option(G_OPT_V_FIELD);
+    afield_opt = G_define_standard_option(G_OPT_V_FIELD);
+    afield_opt->key = "arc_layer";
+    afield_opt->answer = "1";
+    afield_opt->label = _("Arc layer");
+    afield_opt->guisection = _("Cost");
+
+    nfield_opt = G_define_standard_option(G_OPT_V_FIELD);
+    nfield_opt->key = "node_layer";
+    nfield_opt->answer = "2";
+    nfield_opt->label = _("Node layer");
+    nfield_opt->guisection = _("Cost");
+
+    afcol = G_define_standard_option(G_OPT_DB_COLUMN);
+    afcol->key = "arc_column";
+    afcol->required = NO;
+    afcol->description =
+	_("Arc forward/both direction(s) cost column (number)");
+    afcol->guisection = _("Cost");
+
+    abcol = G_define_standard_option(G_OPT_DB_COLUMN);
+    abcol->key = "arc_backward_column";
+    abcol->required = NO;
+    abcol->description = _("Arc backward direction cost column (number)");
+    abcol->guisection = _("Cost");
+
+    ncol = G_define_option();
+    ncol->key = "node_column";
+    ncol->type = TYPE_STRING;
+    ncol->required = NO;
+    ncol->description = _("Node cost column (number)");
+    ncol->guisection = _("Cost");
 
     method_opt = G_define_option();
     method_opt->key = "method";
@@ -58,8 +92,12 @@ int main(int argc, char *argv[])
     method_opt->required = YES;
     method_opt->multiple = NO;
     method_opt->options = "bridge,articulation";
-    method_opt->descriptions = _("bridge;Finds bridges;"
-				 "articulation;Finds articulation points;");
+    desc = NULL;
+    G_asprintf(&desc,
+	       "bridge;%s;articulation;%s",
+	       _("Finds bridges"),
+	       _("Finds articulation points"));
+    method_opt->descriptions = desc;
     method_opt->description = _("Feature type");
 
     /* options and flags parser */
@@ -72,7 +110,7 @@ int main(int argc, char *argv[])
     Cats = Vect_new_cats_struct();
 
     Vect_check_input_output_name(map_in->answer, map_out->answer,
-				 GV_FATAL_EXIT);
+				 G_FATAL_EXIT);
 
     Vect_set_open_level(2);
 
@@ -88,10 +126,14 @@ int main(int argc, char *argv[])
 
 
     /* parse filter option and select appropriate lines */
-    layer = atoi(field_opt->answer);
+    afield = Vect_get_field_number(&In, afield_opt->answer);
+    nfield = Vect_get_field_number(&In, nfield_opt->answer);
 
-    Vect_net_build_graph(&In, mask_type, 0, 0, NULL, NULL, NULL, 0, 0);
-    graph = &(In.graph);
+    if (0 != Vect_net_build_graph(&In, mask_type, afield, nfield, afcol->answer,
+                                  abcol->answer, ncol->answer, 0, 0))
+        G_fatal_error(_("Unable to build graph for vector map <%s>"), Vect_get_full_name(&In));
+    
+    graph = Vect_net_get_graph(&In);
 
     Vect_copy_head_data(&In, &Out);
     Vect_hist_copy(&In, &Out);

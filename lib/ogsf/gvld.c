@@ -1,5 +1,5 @@
 /*!
-   \file gvld.c
+   \file lib/ogsf/gvld.c
 
    \brief OGSF library - loading and manipulating volumes (lower level functions)
 
@@ -19,7 +19,7 @@
 #include <math.h>
 
 #include <grass/gis.h>
-#include <grass/gstypes.h>
+#include <grass/ogsf.h>
 
 #include "mc33_table.h"
 
@@ -67,7 +67,7 @@ int gvld_vol(geovol *gvl)
  */
 int gvld_wire_vol(geovol * gvl)
 {
-    G_debug(5, "gvld_vol(): id=%d", gvl->gvol_id);
+    G_debug(5, "gvld_wire_vol(): id=%d", gvl->gvol_id);
 
     gvld_wind3_box(gvl);
 

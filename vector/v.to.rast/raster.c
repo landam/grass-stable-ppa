@@ -1,5 +1,6 @@
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/raster.h>
+#include <grass/vector.h>
 #include "local.h"
 
 
@@ -17,6 +18,7 @@ static CELL cat;
 static DCELL dcat;
 static int cur_x, cur_y;
 static int format;
+static int dense;
 static CELL *cell;
 static DCELL *dcell;
 static char **null_flags;
@@ -31,31 +33,40 @@ static int move(int, int);
 static int (*dot) (int, int);
 
 
-int begin_rasterization(int nrows, int f)
+int begin_rasterization(int cache_mb, int f, int do_dense)
 {
-    int i, size;
+    int i;
+    double row_mb;
     int pages;
+    size_t size;
+
+    dense = (do_dense != 0);
 
     /* otherwise get complaints about window changes */
     G_suppress_warnings(1);
 
     format = f;
 
-    max_rows = nrows;
-    if (max_rows <= 0)
-	max_rows = 512;
-
     G_get_set_window(&region);
     G_get_set_window(&page);
+
+    row_mb = (double) region.cols * (sizeof(char) + Rast_cell_size(f)) /
+	     (1 << 20);
+
+    max_rows = cache_mb / row_mb;
+    if (max_rows < 1)
+	max_rows = 4;
 
     pages = (region.rows + max_rows - 1) / max_rows;
 
     if (max_rows > region.rows)
 	max_rows = region.rows;
 
-    size = max_rows * region.cols;
+    G_debug(1, "%d of %d rows are cached", max_rows, region.rows);
+
+    size = (size_t) max_rows * region.cols;
     switch (format) {
-    case USE_CELL:
+    case CELL_TYPE:
 	raster.cell =
 	    (CELL **) G_calloc(max_rows * sizeof(char), sizeof(CELL *));
 	raster.cell[0] = (CELL *) G_calloc(size * sizeof(char), sizeof(CELL));
@@ -64,7 +75,7 @@ int begin_rasterization(int nrows, int f)
 	dot = cell_dot;
 	break;
 
-    case USE_DCELL:
+    case DCELL_TYPE:
 	raster.dcell =
 	    (DCELL **) G_calloc(max_rows * sizeof(char), sizeof(DCELL *));
 	raster.dcell[0] =
@@ -104,12 +115,12 @@ static int configure_plot(void)
 
     /* zero the raster */
     switch (format) {
-    case USE_CELL:
+    case CELL_TYPE:
 	for (i = 0; i < nrows; i++)
 	    for (j = 0; j < ncols; j++)
 		raster.cell[i][j] = 0;
 	break;
-    case USE_DCELL:
+    case DCELL_TYPE:
 	for (i = 0; i < nrows; i++)
 	    for (j = 0; j < ncols; j++)
 		raster.dcell[i][j] = 0;
@@ -126,7 +137,10 @@ static int configure_plot(void)
     G_set_window(&page);
 
     /* configure the plot routines */
-    G_setup_plot(-0.5, page.rows - 0.5, -0.5, page.cols - 0.5, move, cont);
+    if (dense)
+	setup_plot(0, page.rows, 0, page.cols, dot);
+    else
+	G_setup_plot(-0.5, page.rows - 0.5, -0.5, page.cols - 0.5, move, cont);
 
     return 0;
 }
@@ -139,21 +153,19 @@ int output_raster(int fd)
     for (i = 0; i < page.rows; i++, at_row++) {
 	G_percent(i, page.rows, 2);
 	switch (format) {
-	case USE_CELL:
+	case CELL_TYPE:
 	    cell = raster.cell[i];
 
 	    /* insert the NULL values */
-	    G_insert_c_null_values(cell, null_flags[i], page.cols);
-	    if (G_put_c_raster_row(fd, cell) < 0)
-		return -1;
+	    Rast_insert_c_null_values(cell, null_flags[i], page.cols);
+	    Rast_put_c_row(fd, cell);
 	    break;
-	case USE_DCELL:
+	case DCELL_TYPE:
 	    dcell = raster.dcell[i];
 
 	    /* insert the NULL values */
-	    G_insert_d_null_values(dcell, null_flags[i], page.cols);
-	    if (G_put_d_raster_row(fd, dcell) < 0)
-		return -1;
+	    Rast_insert_d_null_values(dcell, null_flags[i], page.cols);
+	    Rast_put_d_row(fd, dcell);
 	    break;
 	}
     }

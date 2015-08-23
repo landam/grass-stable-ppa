@@ -2,10 +2,11 @@
 #include <string.h>
 #include "global.h"
 
-int add_lwpolyline(struct dxf_file *dxf, struct Map_info *Map)
+void add_lwpolyline(struct dxf_file *dxf, struct Map_info *Map)
 {
     int code;
-    char layer[DXF_BUF_SIZE];
+    char handle[DXF_BUF_SIZE];	/* entity handle, 16 hexadecimal digits */
+    char layer[DXF_BUF_SIZE];	/* layer name */
     int layer_flag = 0;		/* indicates if a layer name has been found */
     int polyline_flag = 0;	/* indicates the type of polyline */
     int xflag = 0;		/* indicates if a x value has been found */
@@ -17,31 +18,32 @@ int add_lwpolyline(struct dxf_file *dxf, struct Map_info *Map)
     double bulge = 0.0;		/* for arc curves */
     double prev_bulge = 0.0;	/* for arc curves */
 
+    handle[0] = 0;
     strcpy(layer, UNIDENTIFIED_LAYER);
 
     /* read in lines and process information until a 0 is read in */
     while ((code = dxf_get_code(dxf)) != 0) {
 	if (code == -2)
-	    return -1;
+	    return;
 
 	switch (code) {
+	case 5:		/* entity handle */
+	    strcpy(handle, dxf_buf);
+	    break;
 	case 8:		/* layer name */
 	    if (!layer_flag && *dxf_buf) {
 		if (flag_list) {
-		    if (!is_layer_in_list(dxf_buf)) {
-			add_layer_to_list(dxf_buf);
-			fprintf(stdout, _("Layer %d: %s\n"), num_layers,
-				dxf_buf);
-		    }
-		    return 0;
+		    if (!is_layer_in_list(dxf_buf))
+			add_layer_to_list(dxf_buf, 1);
+		    return;
 		}
-		/* skip if layers != NULL && (
+		/* skip if (opt_layers != NULL && (
 		 * (flag_invert == 0 && is_layer_in_list == 0) ||
 		 * (flag_invert == 1 && is_layer_in_list == 1)
 		 * )
 		 */
-		if (layers && flag_invert == is_layer_in_list(dxf_buf))
-		    return 0;
+		if (opt_layers && flag_invert == is_layer_in_list(dxf_buf))
+		    return;
 		strcpy(layer, dxf_buf);
 		layer_flag = 1;
 	    }
@@ -61,6 +63,7 @@ int add_lwpolyline(struct dxf_file *dxf, struct Map_info *Map)
 	    bulge = atof(dxf_buf);
 	    break;
 	case 70:		/* polyline flag */
+
 	    /*******************************************************************
 	     Polyline flag (bit-coded); default is 0:
 	     1 = Closed; 128 = Plinegen
@@ -100,16 +103,16 @@ int add_lwpolyline(struct dxf_file *dxf, struct Map_info *Map)
 	    arr_size++;
 
 	    /* arr_size incremented to be consistent with polyline_flag != 1 */
-	    if (arr_size == ARR_MAX) {
-		ARR_MAX += ARR_INCR;
-		xpnts = (double *)G_realloc(xpnts, ARR_MAX * sizeof(double));
-		ypnts = (double *)G_realloc(ypnts, ARR_MAX * sizeof(double));
-		zpnts = (double *)G_realloc(zpnts, ARR_MAX * sizeof(double));
+	    if (arr_size == arr_max) {
+		arr_max += ARR_INCR;
+		xpnts = (double *)G_realloc(xpnts, arr_max * sizeof(double));
+		ypnts = (double *)G_realloc(ypnts, arr_max * sizeof(double));
+		zpnts = (double *)G_realloc(zpnts, arr_max * sizeof(double));
 	    }
 	}
     }
 
-    write_line(Map, layer, arr_size);
+    write_vect(Map, layer, "LWPOLYLINE", handle, "", arr_size, GV_LINE);
 
-    return 0;
+    return;
 }

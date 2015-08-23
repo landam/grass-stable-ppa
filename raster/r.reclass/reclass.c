@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
+#include <grass/manage.h>
 #include <grass/glocale.h>
 #include "rule.h"
 
@@ -20,11 +22,11 @@ static void compose(struct Reclass *new, const struct Reclass *mid,
     for (i = old->min; i <= old->max; i++) {
 
 	j = old->table[i - old->min];
-	if (G_is_c_null_value(&j) || j < mid->min || j > mid->max)
+	if (Rast_is_c_null_value(&j) || j < mid->min || j > mid->max)
 	    continue;
 
 	k = mid->table[j - mid->min];
-	if (G_is_c_null_value(&k))
+	if (Rast_is_c_null_value(&k))
 	    continue;
 
 	if (first) {
@@ -53,8 +55,8 @@ static void compose(struct Reclass *new, const struct Reclass *mid,
 
     for (i = new->min; i <= new->max; i++) {
 	j = old->table[i - old->min];
-	if (G_is_c_null_value(&j) || j < mid->min || j > mid->max) {
-	    G_set_c_null_value(&new->table[i - new->min], 1);
+	if (Rast_is_c_null_value(&j) || j < mid->min || j > mid->max) {
+	    Rast_set_c_null_value(&new->table[i - new->min], 1);
 	    continue;
 	}
 
@@ -72,12 +74,12 @@ static void init_reclass(struct Reclass *rec, const RULE * rules)
 
     first = 1;
 
-    if (default_rule && !G_is_c_null_value(&DEFAULT)) {
+    if (default_rule && !Rast_is_c_null_value(&DEFAULT)) {
 	struct Range range;
 
-	G_read_range(rec->name, rec->mapset, &range);
-	G_get_range_min_max(&range, &rec->min, &rec->max);
-	if (!G_is_c_null_value(&rec->min) && !G_is_c_null_value(&rec->max))
+	Rast_read_range(rec->name, rec->mapset, &range);
+	Rast_get_range_min_max(&range, &rec->min, &rec->max);
+	if (!Rast_is_c_null_value(&rec->min) && !Rast_is_c_null_value(&rec->max))
 	    first = 0;
     }
 
@@ -125,7 +127,7 @@ static void init_table(struct Reclass *rec, int *is_default)
 	    is_default[i] = 1;
 	}
 	else {
-	    G_set_c_null_value(&rec->table[i], 1);
+	    Rast_set_c_null_value(&rec->table[i], 1);
 	    is_default[i] = 0;
 	}
     }
@@ -152,7 +154,7 @@ static void set_cats(struct Categories *cats, /* const */ int *is_default,
     int cats_read = 0;
 
     if (default_rule && default_to_itself)
-	cats_read = (G_read_cats(rec->name, rec->mapset, &old_cats) >= 0);
+	cats_read = (Rast_read_cats(rec->name, rec->mapset, &old_cats) >= 0);
 
     if (cats_read) {
 	int i;
@@ -160,13 +162,13 @@ static void set_cats(struct Categories *cats, /* const */ int *is_default,
 	for (i = 0; i < rec->num; i++)
 	    if (is_default[i]) {
 		int x = i + rec->min;
-		char *label = G_get_cat(x, &old_cats);
+		char *label = Rast_get_c_cat(&x, &old_cats);
 
-		G_set_cat(x, label, cats);
+		Rast_set_c_cat(&x, &x, label, cats);
 	    }
     }
     else if (default_rule)
-	G_set_cat(DEFAULT, default_label, cats);
+	Rast_set_c_cat(&DEFAULT, &DEFAULT, default_label, cats);
 }
 
 static int _reclass( /* const */ RULE * rules, struct Categories *cats,
@@ -185,7 +187,7 @@ static int _reclass( /* const */ RULE * rules, struct Categories *cats,
 
 static int re_reclass( /* const */ RULE * rules, struct Categories *cats,
 		      /* const */ struct Reclass *old, struct Reclass *new,
-		      char *input_name, char *input_mapset)
+		      const char *input_name, const char *input_mapset)
 {
     struct Reclass mid;
 
@@ -199,17 +201,17 @@ static int re_reclass( /* const */ RULE * rules, struct Categories *cats,
     return 0;
 }
 
-int reclass(char *old_name, char *old_mapset,
-	    char *new_name, RULE * rules, struct Categories *cats,
-	    char *title)
+int reclass(const char *old_name, const char *old_mapset,
+	    const char *new_name, RULE *rules, struct Categories *cats,
+	    const char *title)
 {
     struct Reclass old, new;
     struct History hist;
     int is_reclass;
     FILE *fd;
-    char buf[256];
+    char buf[GNAME_MAX + GMAPSET_MAX];
 
-    is_reclass = G_get_reclass(old_name, old_mapset, &old);
+    is_reclass = Rast_get_reclass(old_name, old_mapset, &old);
     if (is_reclass < 0)
 	G_fatal_error(_("Cannot read header file of <%s@%s>"), old_name,
 		      old_mapset);
@@ -225,11 +227,21 @@ int reclass(char *old_name, char *old_mapset,
 	_reclass(rules, cats, &new);
     }
 
-    if (G_put_reclass(new_name, &new) < 0)
+    if (G_find_file2("cell", new_name, G_mapset()) &&
+	Rast_map_type(new_name, G_mapset()) != CELL_TYPE) {
+	M_read_list(FALSE, NULL);
+        if (M_do_remove(M_get_element("raster"), new_name) == 1)
+	    G_fatal_error(_("Cannot overwrite existing raster map <%s>"),
+			  new_name);
+    }
+
+    if (Rast_put_reclass(new_name, &new) < 0)
 	G_fatal_error(_("Cannot create reclass file of <%s>"), new_name);
 
-    if (title == NULL)
-	G_snprintf(title = buf, sizeof(buf), "Reclass of %s in %s", new.name, new.mapset);
+    if (!title) {
+	G_snprintf(buf, sizeof(buf), "Reclass of %s in %s", new.name, new.mapset);
+	title = buf;
+    }
 
     if ((fd = G_fopen_new("cell", new_name)) == NULL)
 	G_fatal_error(_("Cannot create raster map <%s>"), new_name);
@@ -237,18 +249,18 @@ int reclass(char *old_name, char *old_mapset,
     fprintf(fd, "Don't remove me\n");
     fclose(fd);
 
-    G_set_cats_title(title, cats);
-    if (G_write_cats(new_name, cats) == -1)
-	G_fatal_error(_("Cannot create category file of <%s>"), new_name);
+    Rast_set_cats_title(title, cats);
+    Rast_write_cats(new_name, cats);
 
-    G_free_cats(cats);
+    Rast_free_cats(cats);
 
-    G_short_history(new_name, "reclass", &hist);
-    strcpy(hist.datsrc_1, "Reclassified map based on:");
-    G_snprintf(hist.datsrc_2, RECORD_LEN, "  Map [%s] in mapset [%s]", new.name, new.mapset);
+    Rast_short_history(new_name, "reclass", &hist);
+    Rast_set_history(&hist, HIST_DATSRC_1, "Reclassified map based on:");
+    Rast_format_history(&hist, HIST_DATSRC_2, "  Map [%s] in mapset [%s]",
+			new.name, new.mapset);
 
-    G_command_history(&hist);
-    G_write_history(new_name, &hist);
+    Rast_command_history(&hist);
+    Rast_write_history(new_name, &hist);
 
     new_range(new_name, &new);
 

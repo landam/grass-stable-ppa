@@ -1,21 +1,17 @@
 /*!
-   \file dbcolumns.c
+   \file lib/vector/Vlib/dbcolumns.c
 
    \brief Vector library - DB info on vectors maps
 
    Higher level functions for reading/writing/manipulating vectors.
 
-   (C) 2005-2008 by the GRASS Development Team
+   (C) 2005-2009 by the GRASS Development Team
 
-   This program is free software under the 
-   GNU General Public License (>=v2). 
-   Read the file COPYING that comes with GRASS
-   for details.
+   This program is free software under the GNU General Public License
+   (>=v2).  Read the file COPYING that comes with GRASS for details.
 
    \author Markus Neteler
-
-   \date 2005-2008
- */
+*/
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -24,8 +20,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <grass/glocale.h>
-#include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 
 /*!
@@ -37,7 +32,7 @@
    \return list of column(s) names on success
    \return NULL on error 
  */
-const char *Vect_get_column_names(struct Map_info *Map, int field)
+const char *Vect_get_column_names(const struct Map_info *Map, int field)
 {
     int num_dblinks, ncols, col;
     struct field_info *fi;
@@ -45,7 +40,7 @@ const char *Vect_get_column_names(struct Map_info *Map, int field)
     dbHandle handle;
     dbString table_name;
     dbTable *table;
-    char buf[2000], temp_buf[2000];
+    char buf[2000];
 
 
     num_dblinks = Vect_get_num_dblinks(Map);
@@ -75,11 +70,9 @@ const char *Vect_get_column_names(struct Map_info *Map, int field)
 	if (col == 0)
 	    sprintf(buf, "%s",
 		    db_get_column_name(db_get_table_column(table, col)));
-	else {
-	    sprintf(temp_buf, ",%s",
+	else
+	    sprintf(buf, "%s,%s", buf,
 		    db_get_column_name(db_get_table_column(table, col)));
-	    strcat(buf, temp_buf);
-	}
     }
     G_debug(3, "%s", buf);
 
@@ -98,7 +91,7 @@ const char *Vect_get_column_names(struct Map_info *Map, int field)
    \return list of column(s) types on success
    \return NULL on error 
  */
-const char *Vect_get_column_types(struct Map_info *Map, int field)
+const char *Vect_get_column_types(const struct Map_info *Map, int field)
 {
     int num_dblinks, ncols, col;
     struct field_info *fi;
@@ -106,7 +99,7 @@ const char *Vect_get_column_types(struct Map_info *Map, int field)
     dbHandle handle;
     dbString table_name;
     dbTable *table;
-    char buf[2000], temp_buf[2000];
+    char buf[2000];
 
 
     num_dblinks = Vect_get_num_dblinks(Map);
@@ -137,12 +130,10 @@ const char *Vect_get_column_types(struct Map_info *Map, int field)
 	    sprintf(buf, "%s",
 		    db_sqltype_name(db_get_column_sqltype
 				    (db_get_table_column(table, col))));
-	else {
-	    sprintf(temp_buf, ",%s",
+	else
+	    sprintf(buf, "%s,%s", buf,
 		    db_sqltype_name(db_get_column_sqltype
 				    (db_get_table_column(table, col))));
-	    strcat(buf, temp_buf);
-	}
     }
     G_debug(3, "%s", buf);
 
@@ -160,9 +151,9 @@ const char *Vect_get_column_types(struct Map_info *Map, int field)
    \param field layer number
 
    \return list of column(s) types on success
-   \retutn NULL on error 
+   \return NULL on error 
  */
-const char *Vect_get_column_names_types(struct Map_info *Map, int field)
+const char *Vect_get_column_names_types(const struct Map_info *Map, int field)
 {
     int num_dblinks, ncols, col;
     struct field_info *fi;
@@ -170,7 +161,7 @@ const char *Vect_get_column_names_types(struct Map_info *Map, int field)
     dbHandle handle;
     dbString table_name;
     dbTable *table;
-    char buf[2000], temp_buf[2000];
+    char buf[2000];
 
 
     num_dblinks = Vect_get_num_dblinks(Map);
@@ -202,13 +193,11 @@ const char *Vect_get_column_names_types(struct Map_info *Map, int field)
 		    db_get_column_name(db_get_table_column(table, col)),
 		    db_sqltype_name(db_get_column_sqltype
 				    (db_get_table_column(table, col))));
-	else {
-	    sprintf(temp_buf, ",%s(%s)",
+	else
+	    sprintf(buf, "%s,%s(%s)", buf,
 		    db_get_column_name(db_get_table_column(table, col)),
 		    db_sqltype_name(db_get_column_sqltype
 				    (db_get_table_column(table, col))));
-	    strcat(buf, temp_buf);
-	}
     }
     G_debug(3, "%s", buf);
 

@@ -1,15 +1,14 @@
-"""!
+"""
 @package core.units
 
 @brief Units management
 
-@todo Probably will be replaced by Python ctypes fns in the near
-future(?)
+.. todo::
+    Probably will be replaced by Python ctypes fns in the near future(?)
 
 Usage:
-@code
-from core.units import Units
-@endcode
+
+    from core.units import Units
 
 Classes:
  - units::BaseUnits
@@ -21,6 +20,14 @@ This program is free software under the GNU General Public License
 
 @author Martin Landa <landa.martin gmail.com>
 """
+
+import math
+
+if __name__ == '__main__':
+    import os
+    import sys
+
+from core.utils import _
 
 class BaseUnits:
     def __init__(self):
@@ -38,11 +45,11 @@ class BaseUnits:
                              4 : { 'key' : 'ht', 'label' : _('hectares') } }
 
     def GetUnitsList(self, type):
-        """!Get list of units (their labels)
+        """Get list of units (their labels)
         
-        @param type units type ('length' or 'area')
+        :param type: units type ('length' or 'area')
         
-        @return list of units labels
+        :return: list of units labels
         """
         result = list()
         try:
@@ -56,20 +63,20 @@ class BaseUnits:
         return result
 
     def GetUnitsKey(self, type, index):
-        """!Get units key based on index
+        """Get units key based on index
         
-        @param type units type ('length' or 'area')
-        @param index units index
+        :param type: units type ('length' or 'area')
+        :param index: units index
         """
         return self._units[type][index]['key']
 
     def GetUnitsIndex(self, type, key):
-        """!Get units index based on key
+        """Get units index based on key
         
-        @param type units type ('length' or 'area')
-        @param key units key, e.g. 'me' for meters
+        :param type: units type ('length' or 'area')
+        :param key: units key, e.g. 'me' for meters
 
-        @return index
+        :return: index
         """
         for k, u in self._units[type].iteritems():
             if u['key'] == key:
@@ -79,13 +86,13 @@ class BaseUnits:
 Units = BaseUnits()
 
 def ConvertValue(value, type, units):
-    """!Convert value from map units to given units
+    """Convert value from map units to given units
 
     Inspired by vector/v.to.db/units.c
 
-    @param value value to be converted
-    @param type units type ('length', 'area')
-    @param unit  destination units
+    :param value: value to be converted
+    :param type: units type ('length', 'area')
+    :param unit: destination units
     """
     # get map units
     # TODO
@@ -115,3 +122,93 @@ def ConvertValue(value, type, units):
             f = 1.0e-4
 
     return f * value
+
+
+def formatDist(distance, mapunits):
+        """Formats length numbers and units in a nice way.
+
+        Formats length numbers and units as a function of length.
+
+        >>> formatDist(20.56915, 'metres')
+        (20.57, 'm')
+        >>> formatDist(6983.4591, 'metres')
+        (6.983, 'km')
+        >>> formatDist(0.59, 'feet')
+        (0.59, 'ft')
+        >>> formatDist(8562, 'feet')
+        (1.622, 'miles')
+        >>> formatDist(0.48963, 'degrees')
+        (29.38, 'min')
+        >>> formatDist(20.2546, 'degrees')
+        (20.25, 'deg')
+        >>> formatDist(82.146, 'unknown')
+        (82.15, 'units')
+
+        Accepted map units are 'meters', 'metres', 'feet', 'degree'.
+        Returns 'units' instead of unrecognized units.
+
+        :param distance: map units
+        :param mapunits: map units
+
+        From code by Hamish Bowman Grass Development Team 2006.
+        """
+        if mapunits == 'metres':
+            mapunits = 'meters'
+        outunits = mapunits
+        distance = float(distance)
+        divisor = 1.0
+
+        # figure out which units to use
+        if mapunits == 'meters':
+            if distance > 2500.0:
+                outunits = 'km'
+                divisor = 1000.0
+            else:
+                outunits = 'm'
+        elif mapunits == 'feet':
+            # nano-bug: we match any "feet", but US Survey feet is really
+            #  5279.9894 per statute mile, or 10.6' per 1000 miles. As >1000
+            #  miles the tick markers are rounded to the nearest 10th of a
+            #  mile (528'), the difference in foot flavours is ignored.
+            if distance > 5280.0:
+                outunits = 'miles'
+                divisor = 5280.0
+            else:
+                outunits = 'ft'
+        elif 'degree' in mapunits:
+            # was: 'degree' in mapunits and not haveCtypes (for unknown reason)
+            if distance < 1:
+                outunits = 'min'
+                divisor = (1 / 60.0)
+            else:
+                outunits = 'deg'
+        else:
+            return (distance, 'units')
+
+        # format numbers in a nice way
+        if (distance / divisor) >= 2500.0:
+            outdistance = round(distance / divisor)
+        elif (distance / divisor) >= 1000.0:
+            outdistance = round(distance / divisor, 1)
+        elif (distance / divisor) > 0.0:
+            outdistance = round(distance / divisor,
+                                int(math.ceil(3 - math.log10(distance / divisor))))
+        else:
+            outdistance = float(distance / divisor)
+
+        return (outdistance, outunits)
+
+
+def doc_test():
+    """Tests the module using doctest
+
+    :return: a number of failed tests
+    """
+    import doctest
+    from core.utils import do_doctest_gettext_workaround
+    do_doctest_gettext_workaround()
+    return doctest.testmod().failed
+
+
+if __name__ == '__main__':
+    sys.exit(doc_test())

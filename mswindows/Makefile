@@ -1,8 +1,6 @@
 MODULE_TOPDIR = ..
 
-include $(MODULE_TOPDIR)/include/Make/Platform.make
-include $(MODULE_TOPDIR)/include/Make/Grass.make
-include $(MODULE_TOPDIR)/include/Make/Rules.make
+include $(MODULE_TOPDIR)/include/Make/Other.make
 
 EXTRA_CLEAN_FILES = GRASS-Packager.bat GRASS-Installer.nsi
 

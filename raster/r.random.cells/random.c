@@ -2,7 +2,6 @@
 #include <grass/gis.h>
 #include <grass/glocale.h>
 
-#undef MAIN
 #include "ransurf.h"
 
 #define M1 259200

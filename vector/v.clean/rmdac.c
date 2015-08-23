@@ -16,7 +16,7 @@
  * **************************************************************/
 #include <stdlib.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 
 int rmdac(struct Map_info *Out, struct Map_info *Err)
@@ -37,7 +37,6 @@ int rmdac(struct Map_info *Out, struct Map_info *Err)
 
     for (i = 1; i <= nlines; i++) {
 	G_percent(i, nlines, 2);
-
 	if (!Vect_line_alive(Out, i))
 	    continue;
 

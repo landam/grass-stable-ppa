@@ -12,10 +12,10 @@
 #include <grass/gis.h>
 #include <grass/display.h>
 #include <grass/raster.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
-#include <grass/freetypecap.h>
+#include <grass/fontcap.h>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -44,32 +44,28 @@ struct _label_point
 struct _label
 {
 
-    struct line_pnts *skyline;	    /**< The skyline of the text, as an offest
-	                                  *  from the label point */
-    BOUND_BOX bb;
+    struct line_pnts *skyline;	/**< The skyline of the text, as an offest
+				  *  from the label point */
+    struct bound_box bb;
     double size;
 
-    double current_score;	    /**< The current score of the label. */
+    double current_score;	  /**< The current score of the label. */
 
     label_candidate_t *candidates;  /**< A list of candidate positions */
 
-    int n_candidates;		    /**< The size of the candidates array */
+    int n_candidates;		 /**< The size of the candidates array */
 
-    int current_candidate;	    /**< An index into the candidates array
-	                                  *  describing the currently selected candidate */
+    int current_candidate;	 /**< An index into the candidates array
+				   *  describing the currently selected candidate */
 
-    char *text;			    /**< The label text */
+    char *text;			 /**< The label text */
 
-    int cat;			    /**< the cat of the feature */
+    int cat;			     /**< the cat of the feature */
 
-    int type;			    /**< The feature type (point, line, area) */
+    int type;			     /**< The feture type (point, line, area) */
 
-    struct line_pnts *shape;	    /**< The points for the feature that this
-	                                  *  label belongs to */
-
-    char hide;			    /**< If this is 1, the label will not be created */
-
-    double weight;		    /**< The label weight if user requested to ide overlaps */
+    struct line_pnts *shape;	     /**< The points for the feature that this
+				       *  label belongs to */
 };
 
 /**
@@ -78,19 +74,19 @@ struct _label
 struct _label_candidate
 {
 
-    label_point_t point;	    /**< The point of the label position
-	                                  *  (lower left corner)*/
+    label_point_t point;     /**< The point of the label position 
+			       *  (lower left corner)*/
 
-    double score;		    /**< The base score of this position (sans overlap metric) */
+    double score; /**< The base score of this position (sans overlap metric) */
     double lineover;
 
-    double rotation;		    /**< The mount the label is rotated in this position */
+    double rotation;	 /**< The mount the label is rotated in this position */
 
-    label_intersection_t *intersections;  /**< A list of all label candidate
-	                                        *  positions which intersect with
-	                                        *  this position. */
+    label_intersection_t *intersections;  /**< A list of all label candidate 
+                                            *  positions which intersect with
+                                            *  this position. */
 
-    int n_intersections;	    /**< Number of items in the intersections array */
+    int n_intersections; /**< Number of items in the intersections array */
     struct line_pnts *baseline;
     struct line_pnts *swathline;
     int above;
@@ -128,7 +124,6 @@ struct params
     struct Option *opaque;
     struct Option *bocolor;
     struct Option *bowidth;
-    struct Option *overlap;
 
     /*    struct Option */
     /*      struct Option *where; *//* later */
@@ -183,20 +178,5 @@ void print_label(FILE * labelf, label_t * label, struct params *p);
  */
 struct line_pnts *skyline_trans_rot(struct line_pnts *skyline,
 				    label_point_t * p, double angle);
-
-/**
- * This function rotates and translates the label bounding box to the
- * given point, and returns it as a polygon.
- * @param bb The bounding box to translate and rotate.
- * @param p The point to translate the bounding box to
- * @param angle The angle (in radians) to rotate the label counter-clockwise
- * @return A lint_pnts structure containing the rotated and translated
- * bounding box as a polygon.
- */
-struct line_pnts *box_trans_rot(BOUND_BOX * bb, label_point_t * p,
-				double angle);
-
-void free_freetypecap(struct GFONT_CAP *ftcap);
-struct GFONT_CAP *find_font_from_freetypecap(const char *font);
 
 #endif /* _LABELS_H */

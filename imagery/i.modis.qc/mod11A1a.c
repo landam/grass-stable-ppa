@@ -5,7 +5,7 @@
  * 11 -> class 3: LST not produced primarily due to reasons other than cloud
  */  
 
-#include <grass/gis.h>
+#include <grass/raster.h>
 
 CELL mod11A1a (CELL pixel) 
 {

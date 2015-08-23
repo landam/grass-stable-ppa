@@ -1,37 +1,32 @@
 /*!
-   \file clean_nodes.c
+   \file lib/vector/Vlib/clean_nodes.c
 
    \brief Vector library - Clean boundaries at nodes
 
    Higher level functions for reading/writing/manipulating vectors.
 
-   (C) 2001-2008 by the GRASS Development Team
+   (C) 2001-2009 by the GRASS Development Team
 
-   This program is free software under the 
-   GNU General Public License (>=v2). 
-   Read the file COPYING that comes with GRASS
-   for details.
+   This program is free software under the GNU General Public License
+   (>=v2).  Read the file COPYING that comes with GRASS for details.
 
    \author Radim Blazek
-
-   \date 2001-2008
  */
 
 #include <stdlib.h>
-#include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 
 /*!
    \brief Clean small angles at nodes.
 
-   It may happen that even if the angle between 2 boundaries at node is
-   very small, the calculated angle is 0 because of
-   representation error.  The map must be built at least on level
-   GV_BUILD_BASE
+   It may happen that even if the angle between 2 boundaries at node
+   is very small, the calculated angle is 0 because of representation
+   error. The map must be built at least on level GV_BUILD_BASE
 
    \param Map input map
-   \param Err vector map where error line segments are written
+   \param otype feature type
+   \param[out] Err vector map where error line segments are written
 
    \return number of line modifications
  */
@@ -50,10 +45,11 @@ Vect_clean_small_angles_at_nodes(struct Map_info *Map, int otype,
     OCats = Vect_new_cats_struct();
 
     nnodes = Vect_get_num_nodes(Map);
-    for (node = 1; node <= nnodes; node++) {
+    for (node = 1; node <= Vect_get_num_nodes(Map); node++) {
 	int i, nlines;
 
-	G_percent(node, nnodes, 1);
+	if (node <= nnodes)
+	    G_percent(node, nnodes, 1);
 	G_debug(3, "node = %d", node);
 	if (!Vect_node_alive(Map, node))
 	    continue;
@@ -67,7 +63,7 @@ Vect_clean_small_angles_at_nodes(struct Map_info *Map, int otype,
 	    G_debug(3, "nlines = %d", nlines);
 
 	    for (i = 0; i < nlines; i++) {
-		P_LINE *Line;
+		struct P_line *Line;
 		int line2;
 		float angle2;
 
@@ -248,8 +244,8 @@ Vect_clean_small_angles_at_nodes(struct Map_info *Map, int otype,
 	    if (clean || !Vect_node_alive(Map, node))
 		break;
 	}
-	nnodes = Vect_get_num_nodes(Map);
     }
+    G_verbose_message(_("Modifications: %d"), nmodif);
 
     return (nmodif);
 }

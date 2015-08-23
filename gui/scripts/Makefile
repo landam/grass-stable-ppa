@@ -1,21 +1,26 @@
 MODULE_TOPDIR = ../..
 
-include $(MODULE_TOPDIR)/include/Make/Dir.make
+include $(MODULE_TOPDIR)/include/Make/Rules.make
+include $(MODULE_TOPDIR)/include/Make/Vars.make
+include $(MODULE_TOPDIR)/include/Make/Python.make
+
+DSTDIR = $(GUIDIR)/scripts
 
 ifdef MINGW
-SCRIPT_ACTIONS += create.bat
+PYFILES := $(patsubst %.py, $(DSTDIR)/%_wrapper.py, $(filter %.py, $(PY_SOURCES)))
+BATFILES := $(patsubst %.py, $(DSTDIR)/%.bat, $(filter %.py, $(PY_SOURCES)))
+$(DSTDIR)/%_wrapper.py: %.py | $(DSTDIR)
+	$(INSTALL) $< $@
+$(DSTDIR)/%.bat: $(MODULE_TOPDIR)/scripts/windows_launch.bat
+	sed -e "s#SCRIPT_NAME#$(*)_wrapper#" -e "s#SCRIPT_DIR#%GISBASE%/gui/scripts#" $(MODULE_TOPDIR)/scripts/windows_launch.bat > $@
+	unix2dos $@
+default: $(PYFILES) $(BATFILES)
+else
+PYFILES := $(patsubst %.py, $(DSTDIR)/%, $(filter %.py, $(PY_SOURCES)))
+$(DSTDIR)/%: %.py | $(DSTDIR)
+	$(INSTALL) $< $@
+default: $(PYFILES)
 endif
 
-default: $(SCRIPT_ACTIONS)
-	if [ ! -d $(ETC)/gui ] ; then $(MKDIR) $(ETC)/gui ; fi
-	if [ ! -d $(ETC)/gui/scripts ] ; then $(MKDIR) $(ETC)/gui/scripts ; fi
-	for file in d.* g.* r.* v.* ; do $(INSTALL) $$file $(ETC)/gui/scripts/ ; done
-
-create.bat:
-	if [ ! -d $(ETC)/gui ] ; then $(MKDIR) $(ETC)/gui ; fi
-	if [ ! -d $(ETC)/gui/scripts ] ; then $(MKDIR) $(ETC)/gui/scripts ; fi
-	for file in d.* g.*sh r.* v.*sh ; do \
-	sed -e "s#SCRIPT_NAME#$$file#" $(MODULE_TOPDIR)/gui/scripts/windows_launch.bat \
-		> $(ETC)/gui/scripts/$$file.bat ; \
-	sed -e "s#SCRIPT_NAME#$$file#" $(MODULE_TOPDIR)/gui/scripts/windows_launch.bat \
-		> $(BIN)/$$file.bat ; done
+$(DSTDIR):
+	-test -d $@ | $(MKDIR) $@

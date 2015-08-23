@@ -1,16 +1,14 @@
-
-/**
-   \file list.c
+/*!
+   \file lib/gis/list.c
 
    \brief List elements
 
    \author Unknown (probably CERL)
 
-   (C) 2000 by the GRASS Development Team
+   (C) 2000, 2010 by the GRASS Development Team
 
-   This program is free software under the GNU General Public
-   License (>=v2). Read the file COPYING that comes with GRASS
-   for details.
+   This program is free software under the GNU General Public License
+   (>=v2). Read the file COPYING that comes with GRASS for details.
 */
 
 #include <stdlib.h>
@@ -23,78 +21,50 @@
 #include <grass/gis.h>
 #include <grass/glocale.h>
 
-static int broken_pipe;
-static int hit_return = 0;
 static int list_element(FILE *, const char *, const char *, const char *,
 			int (*)(const char *, const char *, const char *));
-static RETSIGTYPE sigpipe_catch(int);
 
-int G_set_list_hit_return(int flag)
-{
-    hit_return = flag;
-    return 0;
-}
-
-/**
-   \brief General purpose list function.
-
-   Will list files from all mapsets
-   in the mapset list for a specified database element.
-
-   Note: output is to stdout piped thru the more utility
-
-   lister (char *name char *mapset, char* buf)
-   
-   Given file 'name', and 'mapset', lister() should copy a string into 'buf'
-   when called with name == "", should set buf to general title for mapset list.
-
-   \param element    Database element (eg, "cell", "cellhd", etc)
-   \param desc       Description for element (if NULL, element is used)
-   \param mapset     Mapset to be listed "" to list all mapsets in mapset search list 
-   "." will list current mapset
-   \param lister     If given will call this routine to get a list
-   title. NULL if no titles desired. 
-
-   \return Number of elements
+/*!
+  \brief General purpose list function
+  
+  Will list files from all mapsets in the mapset list for a specified
+  database element.
+  
+  Note: output is to stdout piped thru the more utility
+  
+  \code
+  lister (char *name char *mapset, char* buf)
+  \endcode
+  
+  Given file <em>name</em>, and <em>mapset</em>, lister() should
+  copy a string into 'buf' when called with name == "", should set
+  buf to general title for mapset list.
+  
+  \param element    database element (eg, "cell", "cellhd", etc.)
+  \param desc       description for element (if NULL, element is used)
+  \param mapset     mapset to be listed "" to list all mapsets in mapset search list 
+                    "." will list current mapset
+  \param lister     if given will call this routine to get a list title.
+                    NULL if no titles desired. 
 */
-int G_list_element(const char *element,
-		   const char *desc,
-		   const char *mapset,
-		   int (*lister) (const char *, const char *, const char *))
+void G_list_element(const char *element,
+		    const char *desc,
+		    const char *mapset,
+		    int (*lister) (const char *, const char *, const char *))
 {
+    struct Popen pager;
     int n;
     FILE *more;
     int count;
-
-#ifdef SIGPIPE
-    RETSIGTYPE (*sigpipe)(int);
-#endif
-
-    /* must catch broken pipe in case "more" quits */
-    broken_pipe = 0;
-#ifdef SIGPIPE
-    sigpipe = signal(SIGPIPE, sigpipe_catch);
-#endif
 
     count = 0;
     if (desc == 0 || *desc == 0)
 	desc = element;
 
     /*
-     * popen() the more command to page the output
+     * G_popen() the more command to page the output
      */
-    if (isatty(1)) {
-#ifdef __MINGW32__
-	more = popen("%GRASS_PAGER%", "w");
-#else
-	more = popen("$GRASS_PAGER", "w");
-#endif
-	if (!more)
-	    more = stdout;
-    }
-    else
-	more = stdout;
-
+    more = G_open_pager(&pager);
     fprintf(more, "----------------------------------------------\n");
 
     /*
@@ -103,50 +73,29 @@ int G_list_element(const char *element,
      * otherwise just list the specified mapset
      */
     if (mapset == 0 || *mapset == 0)
-	for (n = 0; !broken_pipe && (mapset = G__mapset_name(n)); n++)
+	for (n = 0; (mapset = G_get_mapset_name(n)); n++)
 	    count += list_element(more, element, desc, mapset, lister);
     else
 	count += list_element(more, element, desc, mapset, lister);
 
-    if (!broken_pipe) {
-	if (count == 0) {
-	    if (mapset == 0 || *mapset == 0)
-		fprintf(more, _("no %s files available in current mapset\n"),
-			desc);
-	    else
-		fprintf(more, _("no %s files available in mapset <%s>\n"),
-			desc, mapset);
-	}
+    if (count == 0) {
+	if (mapset == 0 || *mapset == 0)
+	    fprintf(more, _("no %s files available in current mapset\n"),
+		    desc);
+	else
+	    fprintf(more, _("no %s files available in mapset <%s>\n"),
+		    desc, mapset);
 
 	fprintf(more, "----------------------------------------------\n");
     }
     /*
      * close the more
      */
-    if (more != stdout)
-	pclose(more);
-#ifdef SIGPIPE
-    signal(SIGPIPE, sigpipe);
-#endif
-    if (hit_return && isatty(1)) {
-	fprintf(stderr, _("hit RETURN to continue -->"));
-	while (getchar() != '\n') ;
-    }
-
-    return 0;
+    G_close_pager(&pager);
 }
 
-static RETSIGTYPE sigpipe_catch(int n)
-{
-    broken_pipe = 1;
-    signal(n, sigpipe_catch);
-}
-
-static int list_element(FILE * out,
-			const char *element, const char *desc,
-			const char *mapset, int (*lister) (const char *,
-							   const char *,
-							   const char *))
+static int list_element(FILE *out, const char *element, const char *desc, const char *mapset,
+			int (*lister)(const char *, const char *, const char *))
 {
     char path[GPATH_MAX];
     int count = 0;
@@ -166,7 +115,7 @@ static int list_element(FILE * out,
      *
      * if lister() routine is given, the ls command must give 1 name
      */
-    G__file_name(path, element, "", mapset);
+    G_file_name(path, element, "", mapset);
     if (access(path, 0) != 0) {
 	fprintf(out, "\n");
 	return count;
@@ -177,7 +126,7 @@ static int list_element(FILE * out,
      * otherwise the ls must be forced into columnar form.
      */
 
-    list = G__ls(path, &count);
+    list = G_ls2(path, &count);
 
     if (count > 0) {
 	fprintf(out, _("%s files available in mapset <%s>:\n"), desc, mapset);
@@ -214,15 +163,16 @@ static int list_element(FILE * out,
 }
 
 /*!
- * \brief List specified type of elements. Application must release
- the allocated memory.
- * \param element Element type (G_ELEMENT_RASTER, G_ELEMENT_VECTOR, 
- G_ELEMENT_REGION )
- * \param gisbase Path to GISBASE
- * \param location Location name
- * \param mapset Mapset name
- * \return Zero terminated array of element names
- */
+  \brief List specified type of elements. Application must release
+  the allocated memory.
+ 
+  \param element element type (G_ELEMENT_RASTER, G_ELEMENT_VECTOR, G_ELEMENT_REGION )
+  \param gisbase path to GISBASE
+  \param location location name
+  \param mapset mapset name
+
+ \return zero terminated array of element names
+*/
 char **G_list(int element, const char *gisbase, const char *location,
 	      const char *mapset)
 {
@@ -291,12 +241,12 @@ char **G_list(int element, const char *gisbase, const char *location,
     return list;
 }
 
-/**
-   \brief Free list
-   
-   \param list char* array to be freed
-
-   \return
+/*!
+  \brief Free list
+  
+  \param list char* array to be freed
+  
+  \return
 */
 void G_free_list(char **list)
 {

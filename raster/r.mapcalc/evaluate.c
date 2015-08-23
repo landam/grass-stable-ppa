@@ -3,10 +3,12 @@
 #include <unistd.h>
 
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 #include "mapcalc.h"
 #include "globals.h"
+#include "func_proto.h"
 
 /****************************************************************************/
 
@@ -15,14 +17,14 @@ int depths, rows, columns;
 
 /****************************************************************************/
 
-static void initialize(expression * e);
-static void evaluate(expression * e);
+static void initialize(expression *e);
+static void evaluate(expression *e);
 
 /****************************************************************************/
 
 static void allocate_buf(expression * e)
 {
-    e->buf = G_malloc(columns * G_raster_size(e->res_type));
+    e->buf = G_malloc(columns * Rast_cell_size(e->res_type));
 }
 
 static void set_buf(expression * e, void *buf)
@@ -55,6 +57,7 @@ static void initialize_function(expression * e)
 
     allocate_buf(e);
 
+    e->data.func.argv = G_malloc((e->data.func.argc + 1) * sizeof(void *));
     e->data.func.argv[0] = e->buf;
 
     for (i = 1; i <= e->data.func.argc; i++) {
@@ -90,6 +93,23 @@ static void initialize(expression * e)
     default:
 	G_fatal_error(_("Unknown type: %d"), e->type);
     }
+}
+
+/****************************************************************************/
+
+static void do_evaluate(void *p)
+{
+    evaluate((struct expression *) p);
+}
+
+static void begin_evaluate(struct expression *e)
+{
+    G_begin_execute(do_evaluate, e, &e->worker, 0);
+}
+
+static void end_evaluate(struct expression *e)
+{
+    G_end_execute(&e->worker);
 }
 
 /****************************************************************************/
@@ -140,8 +160,16 @@ static void evaluate_function(expression * e)
     int i;
     int res;
 
-    for (i = 1; i <= e->data.func.argc; i++)
-	evaluate(e->data.func.args[i]);
+    if (e->data.func.argc > 1 && e->data.func.func != f_eval) {
+	for (i = 1; i <= e->data.func.argc; i++)
+	    begin_evaluate(e->data.func.args[i]);
+
+	for (i = 1; i <= e->data.func.argc; i++)
+	    end_evaluate(e->data.func.args[i]);
+    }
+    else
+	for (i = 1; i <= e->data.func.argc; i++)
+	    evaluate(e->data.func.args[i]);
 
     res = (*e->data.func.func) (e->data.func.argc,
 				e->data.func.argt, e->data.func.argv);
@@ -213,12 +241,9 @@ static expr_list *exprs;
 
 /****************************************************************************/
 
-static int error_handler(const char *msg, int fatal)
+static void error_handler(void *p)
 {
     expr_list *l;
-
-    if (!fatal)
-	return 0;
 
     for (l = exprs; l; l = l->next) {
 	expression *e = l->exp;
@@ -227,30 +252,6 @@ static int error_handler(const char *msg, int fatal)
 	if (fd >= 0)
 	    unopen_output_map(fd);
     }
-
-    G_unset_error_routine();
-    G_fatal_error("%s", msg);
-    return 0;
-}
-
-static void setup_rand(void)
-{
-    /* Read PRNG seed from environment variable if available */
-    /* GRASS_RND_SEED */
-    const char *random_seed = getenv("GRASS_RND_SEED");
-    long seed_value;
-
-    if (!random_seed)
-	return;
-
-    seed_value = atol(random_seed);
-    G_debug(3, "Read random seed from environment: %ld", seed_value);
-
-#if defined(HAVE_DRAND48)
-    srand48(seed_value);
-#else
-    srand((unsigned int)seed_value);
-#endif
 }
 
 void execute(expr_list * ee)
@@ -260,22 +261,36 @@ void execute(expr_list * ee)
     int count, n;
 
     setup_region();
-    setup_maps();
-    setup_rand();
 
     exprs = ee;
-    G_set_error_routine(error_handler);
+    G_add_error_handler(error_handler, NULL);
+
+    for (l = ee; l; l = l->next) {
+	expression *e = l->exp;
+	const char *var;
+
+	if (e->type != expr_type_binding && e->type != expr_type_function)
+	    G_fatal_error("internal error: execute: invalid type: %d",
+			  e->type);
+
+	if (e->type != expr_type_binding)
+	    continue;
+
+	var = e->data.bind.var;
+
+	if (!overwrite_flag && check_output_map(var))
+	    G_fatal_error(_("output map <%s> exists"), var);
+    }
 
     for (l = ee; l; l = l->next) {
 	expression *e = l->exp;
 	const char *var;
 	expression *val;
 
-	if (e->type != expr_type_binding)
-	    G_fatal_error("internal error: execute: invalid type: %d",
-			  e->type);
-
 	initialize(e);
+
+	if (e->type != expr_type_binding)
+	    continue;
 
 	var = e->data.bind.var;
 	val = e->data.bind.val;
@@ -283,8 +298,12 @@ void execute(expr_list * ee)
 	e->data.bind.fd = open_output_map(var, val->res_type);
     }
 
+    setup_maps();
+
     count = rows * depths;
     n = 0;
+
+    G_init_workers();
 
     for (current_depth = 0; current_depth < depths; current_depth++)
 	for (current_row = 0; current_row < rows; current_row++) {
@@ -293,23 +312,37 @@ void execute(expr_list * ee)
 
 	    for (l = ee; l; l = l->next) {
 		expression *e = l->exp;
-		int fd = e->data.bind.fd;
+		int fd;
 
 		evaluate(e);
+
+		if (e->type != expr_type_binding)
+		    continue;
+
+		fd = e->data.bind.fd;
 		put_map_row(fd, e->buf, e->res_type);
 	    }
 
 	    n++;
 	}
 
+    G_finish_workers();
+
     if (verbose)
 	G_percent(n, count, 2);
 
     for (l = ee; l; l = l->next) {
 	expression *e = l->exp;
-	const char *var = e->data.bind.var;
-	expression *val = e->data.bind.val;
-	int fd = e->data.bind.fd;
+	const char *var;
+	expression *val;
+	int fd;
+
+	if (e->type != expr_type_binding)
+	    continue;
+
+	var = e->data.bind.var;
+	val = e->data.bind.val;
+	fd = e->data.bind.fd;
 
 	close_output_map(fd);
 	e->data.bind.fd = -1;

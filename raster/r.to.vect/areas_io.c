@@ -17,9 +17,10 @@
 #include <string.h>
 #include <math.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include <grass/dbmi.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include "global.h"
 
 
@@ -83,11 +84,15 @@ static int write_bnd(struct COOR *line_begin, struct COOR *line_end,	/* start an
 		     int n	/* number of points to write */
     )
 {
-    struct line_pnts *points = Vect_new_line_struct();
+    static struct line_pnts *points = NULL;
     double x;
     double y;
     struct COOR *p, *last;
     int i;
+
+    if (!points)
+	points = Vect_new_line_struct();
+    Vect_reset_line(points);
 
     n++;			/* %% 6.4.88 */
 
@@ -156,12 +161,16 @@ static int write_smooth_bnd(struct COOR *line_begin, struct COOR *line_end,	/* s
 			    int n	/* number of points to write */
     )
 {
-    struct line_pnts *points = Vect_new_line_struct();
+    static struct line_pnts *points = NULL;
     double x, y;
     double dx, dy;
     int idx, idy;
     struct COOR *p, *last;
     int i, total;
+
+    if (!points)
+	points = Vect_new_line_struct();
+    Vect_reset_line(points);
 
     n++;			/* %% 6.4.88 */
 
@@ -201,8 +210,6 @@ static int write_smooth_bnd(struct COOR *line_begin, struct COOR *line_end,	/* s
 	x = cell_head.west + (p->col - dx) * cell_head.ew_res;
 	total++;
 	Vect_append_point(points, x, y, 0.0);
-
-	/* G_free (last); */
     }				/* end of for i */
 
     y = cell_head.north - (double)p->row * cell_head.ns_res;
@@ -211,15 +218,13 @@ static int write_smooth_bnd(struct COOR *line_begin, struct COOR *line_end,	/* s
     Vect_append_point(points, x, y, 0.0);
 
     /* strip out the duplicate points from the list */
-    y = cell_head.north - (double)p->row * cell_head.ns_res;
-    x = cell_head.west + (double)p->col * cell_head.ew_res;
-    total++;
-    Vect_append_point(points, x, y, 0.0);
+    Vect_line_prune(points);
+    G_debug(3, "removed duplicates: %d", total - points->n_points);
 
     /* write files */
     Vect_write_line(&Map, GV_BOUNDARY, points, Cats);
 
-    /* now free all thwe pointers */
+    /* now free all the pointers */
     p = line_begin;
 
     for (i = 1; i < n; i++) {
@@ -297,8 +302,11 @@ int write_area(struct area_table *a_list,	/* list of areas */
 
     catNum = 1;
 
+    G_important_message(_("Writing areas..."));
     for (i = 0, p = a_list; i < n_areas; i++, p++) {
-	if (equivs[i] == i && p->width > 0 && !G_is_d_null_value(&(p->cat))) {
+	G_percent(i, n_areas, 3);
+
+	if (equivs[i] == i && p->width > 0 && !Rast_is_d_null_value(&(p->cat))) {
 	    char buf[1000];
 
 	    if (value_flag) {	/* raster value */
@@ -347,16 +355,14 @@ int write_area(struct area_table *a_list,	/* list of areas */
 		    sprintf(buf, "%d", (int)p->cat);
 		    break;
 		case FCELL_TYPE:
-		    sprintf(buf, "%f", (float)p->cat);
-		    break;
 		case DCELL_TYPE:
-		    sprintf(buf, "%lf", p->cat);
+		    sprintf(buf, "%f", p->cat);
 		    break;
 		}
 		db_append_string(&sql, buf);
 
 		if (has_cats) {
-		    temp_buf = G_get_cat(p->cat, &RastCats);
+		    temp_buf = Rast_get_d_cat(&p->cat, &RastCats);
 
 		    db_set_string(&label, temp_buf);
 		    db_double_quote_string(&label);
@@ -365,7 +371,7 @@ int write_area(struct area_table *a_list,	/* list of areas */
 		}
 
 		db_append_string(&sql, ")");
-		G_debug(3, db_get_string(&sql));
+		G_debug(3, "%s", db_get_string(&sql));
 
 		if (db_execute_immediate(driver, &sql) != DB_OK)
 		    G_fatal_error(_("Cannot insert new row: %s"),
@@ -373,6 +379,7 @@ int write_area(struct area_table *a_list,	/* list of areas */
 	    }
 	}
     }
-
+    G_percent(1, 1, 1);
+    
     return 0;
 }

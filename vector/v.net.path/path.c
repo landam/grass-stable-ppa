@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 
@@ -26,7 +26,7 @@ int cmp(const void *, const void *);
 int path(struct Map_info *In, struct Map_info *Out, char *filename,
 	 int nfield, double maxdist, int segments)
 {
-    FILE *in_file;
+    FILE *in_file = NULL;
     int i, nlines, line, npoints, type, cat, id, fcat, tcat, fline, tline,
 	fnode, tnode, count;
     int ret, sp, input_mode, unreachable, nopoint, formaterr;
@@ -88,13 +88,14 @@ int path(struct Map_info *In, struct Map_info *Out, char *filename,
 
     /* Create table */
     Fi = Vect_default_field_info(Out, 1, NULL, GV_1TABLE);
-    Vect_map_add_dblink(Out, 1, NULL, Fi->table, "cat", Fi->database,
+    Vect_map_add_dblink(Out, 1, NULL, Fi->table, GV_KEY_COLUMN, Fi->database,
 			Fi->driver);
 
     driver = db_start_driver_open_database(Fi->driver, Fi->database);
     if (driver == NULL)
 	G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 		      Fi->database, Fi->driver);
+    db_set_error_handler_driver(driver);
 
     sprintf(buf,
 	    "create table %s ( cat integer, id integer, fcat integer, tcat integer, "
@@ -105,11 +106,10 @@ int path(struct Map_info *In, struct Map_info *Out, char *filename,
     G_debug(2, db_get_string(&sql));
 
     if (db_execute_immediate(driver, &sql) != DB_OK) {
-	db_close_database_shutdown_driver(driver);
 	G_fatal_error(_("Unable to create table: '%s'"), db_get_string(&sql));
     }
 
-    if (db_create_index2(driver, Fi->table, "cat") != DB_OK)
+    if (db_create_index2(driver, Fi->table, GV_KEY_COLUMN) != DB_OK)
 	G_warning(_("Cannot create index"));
 
     if (db_grant_on_table
@@ -118,7 +118,7 @@ int path(struct Map_info *In, struct Map_info *Out, char *filename,
 
     db_begin_transaction(driver);
 
-    /* Read stdin, find shortest path, and write connectin line and new database record */
+    /* Read stdin, find shortest path, and write connecting line and new database record */
     cat = 0;
     formaterr = nopoint = unreachable = 0;
     while (1) {
@@ -173,7 +173,9 @@ int path(struct Map_info *In, struct Map_info *Out, char *filename,
 	    }
 	    else {
 		fline = Citem->line;
-		Vect_get_line_nodes(In, fline, &fnode, NULL);
+		type = Vect_read_line(In, Points, NULL, fline);
+		fnode = Vect_find_node(In, Points->x[0], Points->y[0], Points->z[0], 0, 0);
+		/* Vect_get_line_nodes(In, fline, &fnode, NULL); */
 	    }
 	    G_debug(3, "from: cat = %5d point(line) = %5d node = %5d", fcat,
 		    fline, fnode);
@@ -191,7 +193,9 @@ int path(struct Map_info *In, struct Map_info *Out, char *filename,
 	    }
 	    else {
 		tline = Citem->line;
-		Vect_get_line_nodes(In, tline, &tnode, NULL);
+		type = Vect_read_line(In, Points, NULL, tline);
+		tnode = Vect_find_node(In, Points->x[0], Points->y[0], Points->z[0], 0, 0);
+		/* Vect_get_line_nodes(In, tline, &tnode, NULL); */
 	    }
 	    G_debug(3, "to  : cat = %5d point(line) = %5d node = %5d", tcat,
 		    tline, tnode);
@@ -305,7 +309,6 @@ int path(struct Map_info *In, struct Map_info *Out, char *filename,
 	G_debug(3, db_get_string(&sql));
 
 	if (db_execute_immediate(driver, &sql) != DB_OK) {
-	    db_close_database_shutdown_driver(driver);
 	    G_fatal_error(_("Cannot insert new record: %s"),
 			  db_get_string(&sql));
 	}

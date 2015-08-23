@@ -1,5 +1,5 @@
 /*!
-   \file gvl_calc.c
+   \file lib/ogsf/gvl_calc.c
 
    \brief OGSF library - loading and manipulating volumes (lower level functions)
 
@@ -19,7 +19,7 @@
 #include <math.h>
 
 #include <grass/gis.h>
-#include <grass/gstypes.h>
+#include <grass/ogsf.h>
 
 #include "rgbpack.h"
 #include "mc33_table.h"
@@ -392,7 +392,8 @@ void iso_calc_cube(geovol_isosurf * isosurf, int x, int y, int z,
 	iso_get_cube_values(isosurf, ATT_EMIT, x, y, z, val[ATT_EMIT]);
     }
 
-    FOR_0_TO_N(3, d_sum[FOR_VAR] = 0.; n_sum[FOR_VAR] = 0.);
+    FOR_0_TO_N(3, d_sum[FOR_VAR] = 0.;
+	       n_sum[FOR_VAR] = 0.);
 
     /* loop in edges */
     for (i = 0; i < cell_table[c_ndx].nedges; i++) {
@@ -601,6 +602,13 @@ int gvl_isosurf_calc(geovol * gvol)
     for (i = 0; i < gvol->n_isosurfs; i++) {
 	isosurf = gvol->isosurf[i];
 
+	/* initialize read/write buffers */
+	dbuff[i].old = NULL;
+	dbuff[i].new = NULL;
+	dbuff[i].ndx_old = 0;
+	dbuff[i].ndx_new = 0;
+	dbuff[i].num_zero = 0;
+
 	need_update[i] = 0;
 	for (a = 1; a < MAX_ATTS; a++) {
 	    if (isosurf->att[a].changed) {
@@ -631,12 +639,8 @@ int gvl_isosurf_calc(geovol * gvol)
 	}
 
 	if (need_update[i]) {
-	    /* initialize read/write buffers */
+	    /* set data buffer */
 	    dbuff[i].old = isosurf->data;
-	    dbuff[i].new = NULL;
-	    dbuff[i].ndx_old = 0;
-	    dbuff[i].ndx_new = 0;
-	    dbuff[i].num_zero = 0;
 	}
     }
 
@@ -680,8 +684,10 @@ int gvl_isosurf_calc(geovol * gvol)
 		gvl_write_char(dbuff[i].ndx_new++, &(dbuff[i].new),
 			       dbuff[i].num_zero);
 
+	    if (dbuff[i].old == isosurf->data)
+		dbuff[i].old = NULL;
 	    G_free(isosurf->data);
-	    /* gvl_align_data(dbuff[i].ndx_new, dbuff[i].new); */
+	    gvl_align_data(dbuff[i].ndx_new, &(dbuff[i].new));
 	    isosurf->data = dbuff[i].new;
 	    isosurf->data_desc = 0;
 	}
@@ -715,6 +721,8 @@ int gvl_isosurf_calc(geovol * gvol)
 	    }
 	}
     }
+    
+    /* TODO: G_free() dbuff and need_update ??? */
 
     return (1);
 }
@@ -738,7 +746,7 @@ void gvl_write_char(int pos, unsigned char **data, unsigned char c)
 	}
 
 	G_debug(3,
-		"gvl_write_char(): reallocate memory for pos : %d to : %d B",
+		"gvl_write_char(): reallocate memory for pos : %d to : %lu B",
 		pos, sizeof(char) * ((pos / BUFFER_SIZE) + 1) * BUFFER_SIZE);
     }
 
@@ -768,21 +776,23 @@ unsigned char gvl_read_char(int pos, const unsigned char *data)
    \param pos position index
    \param data data buffer
  */
-void gvl_align_data(int pos, unsigned char *data)
+void gvl_align_data(int pos, unsigned char **data)
 {
-    /* WARNING: wrong pointer usage
-     * this function needs **data, not *data,
-     * and if pos == 0, data must be set to NULL,
-     * thus: */
-    return;
+    unsigned char *p = *data;
+    
 
     /* realloc memory to fit in data length */
-    data = (char *)G_realloc(data, sizeof(char) * pos);	/* G_fatal_error */
-    if (!data) {
+    p = (unsigned char *)G_realloc(p, sizeof(unsigned char) * pos);	/* G_fatal_error */
+    if (!p) {
 	return;
     }
 
     G_debug(3, "gvl_align_data(): reallocate memory finally to : %d B", pos);
+
+    if (pos == 0)
+	p = NULL;
+    
+    *data = p;
 
     return;
 }
@@ -1012,7 +1022,7 @@ int slice_calc(geovol * gvl, int ndx_slc, void *colors)
 
     /* end reading volume file */
     gvl_file_end_read(vf);
-    /* gvl_align_data(pos, slice->data); */
+    gvl_align_data(pos, &(slice->data));
 
     return (1);
 }

@@ -1,5 +1,5 @@
 /*!
-   \file gsd_views.c
+   \file lib/ogsf/gsd_views.c
 
    \brief OGSF library - manipulating views (lower level functions)
 
@@ -26,7 +26,7 @@
 #include <OpenGL/glu.h>
 #endif
 
-#include <grass/gstypes.h>
+#include <grass/ogsf.h>
 #include "math.h"
 
 /*!

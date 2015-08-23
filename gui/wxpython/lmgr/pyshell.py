@@ -1,4 +1,4 @@
-"""!
+"""
 @package lmgr.pyshell
 
 @brief wxGUI Interactive Python Shell for Layer Manager
@@ -6,8 +6,9 @@
 Classes:
  - pyshell::PyShellWindow
 
-@todo Run pyshell and evaluate code in a separate instance of python &
-design the widget communicate back and forth with it
+.. todo::
+    Run pyshell and evaluate code in a separate instance of python &
+    design the widget communicate back and forth with it
 
 (C) 2011 by the GRASS Development Team
 
@@ -24,9 +25,10 @@ from wx.py.shell   import Shell as PyShell
 from wx.py.version import VERSION
 
 import grass.script as grass
+from core.utils import _
 
 class PyShellWindow(wx.Panel):
-    """!Python Shell Window"""
+    """Python Shell Window"""
     def __init__(self, parent, id = wx.ID_ANY, **kwargs):
         self.parent = parent # GMFrame
         
@@ -36,8 +38,9 @@ class PyShellWindow(wx.Panel):
             _("Type %s for more GRASS scripting related information.") % "\"help(grass)\"" + "\n" + \
             _("Type %s to add raster or vector to the layer tree.") % "\"AddLayer()\"" + "\n\n"
         self.shell = PyShell(parent = self, id = wx.ID_ANY,
-                             introText = self.intro, locals = {'grass' : grass,
-                                                               'AddLayer' : self.AddLayer})
+                             introText = self.intro,
+                             locals={'grass': grass,
+                                     'AddLayer': self.AddLayer})
         
         sys.displayhook = self._displayhook
         
@@ -72,10 +75,10 @@ class PyShellWindow(wx.Panel):
         self.Layout()
 
     def AddLayer(self, name, ltype = 'auto'):
-        """!Add selected map to the layer tree
+        """Add selected map to the layer tree
 
-        @param name name of raster/vector map to be added
-        @param type map type ('raster', 'vector', 'auto' for autodetection)
+        :param name: name of raster/vector map to be added
+        :param type: map type ('raster', 'vector', 'auto' for autodetection)
         """
         fname = None
         if ltype == 'raster' or ltype != 'vector':
@@ -105,7 +108,7 @@ class PyShellWindow(wx.Panel):
         return _('Vector map <%s> added') % fname
     
     def OnClear(self, event):
-        """!Delete all text from the shell
+        """Delete all text from the shell
         """
         self.shell.clear()
         self.shell.showIntro(self.intro)

@@ -1,10 +1,10 @@
-"""!
+"""
 @package gcp.toolbars
 
 @brief Georectification module - toolbars
 
 Classes:
- - toolbars::GCPManToolbar
+ - toolbars::GCPMapToolbar
  - toolbars::GCPDisplayToolbar
 
 (C) 2007-2011 by the GRASS Development Team
@@ -21,13 +21,15 @@ import sys
 import wx
 
 from core              import globalvar
+from core.utils import _
 from gui_core.toolbars import BaseToolbar, BaseIcons
-from icon              import MetaIcon
-   
-class GCPManToolbar(BaseToolbar):
-    """!Toolbar for managing ground control points
+from icons.icon import MetaIcon
 
-    @param parent reference to GCP widget
+
+class GCPManToolbar(BaseToolbar):
+    """Toolbar for managing ground control points
+
+    :param parent: reference to GCP widget
     """
     def __init__(self, parent):
         BaseToolbar.__init__(self, parent)
@@ -74,16 +76,15 @@ class GCPManToolbar(BaseToolbar):
                                     )
     
 class GCPDisplayToolbar(BaseToolbar):
+    """GCP Display toolbar
     """
-    GCP Display toolbar
-    """
-    def __init__(self, parent):
-        """!
-        GCP Display toolbar constructor
+    def __init__(self, parent, toolSwitcher):
+        """GCP Display toolbar constructor
         """
-        BaseToolbar.__init__(self, parent)
+        BaseToolbar.__init__(self, parent, toolSwitcher)
         
         self.InitToolbar(self._toolbarData())
+        self._default = self.gcpset
         
         # add tool to toggle active map window
         self.togglemapid = wx.NewId()
@@ -96,19 +97,16 @@ class GCPDisplayToolbar(BaseToolbar):
                                                               BaseIcons["zoomBack"].GetLabel(),
                                                               _(' / Zoom to map')))
 
+        for tool in (self.gcpset, self.pan, self.zoomin, self.zoomout):
+            self.toolSwitcher.AddToolToGroup(group='mouseUse', toolbar=self, tool=tool)
+
         # realize the toolbar
         self.Realize()
-        
-        self.action = { 'id' : self.gcpset }
-        self.defaultAction = { 'id' : self.gcpset,
-                               'bind' : self.parent.OnPointer }
-        
-        self.OnTool(None)
-        
+
         self.EnableTool(self.zoomback, False)
         
     def _toolbarData(self):
-        """!Toolbar data"""
+        """Toolbar data"""
         icons = {
             'gcpSet'    : MetaIcon(img = 'gcp-create',
                                    label = _('Update GCP coordinates'),

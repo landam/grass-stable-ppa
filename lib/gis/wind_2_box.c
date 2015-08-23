@@ -1,17 +1,17 @@
 
-/**
- * \file wind_2_box.c
+/*!
+ * \file lib/gis/wind_2_box.c
  *
  * \brief GIS Library - Window box functions.
  *
- * (C) 2001-2008 by the GRASS Development Team
+ * (C) 2001-2014 by the GRASS Development Team
  *
  * This program is free software under the GNU General Public License
  * (>=v2). Read the file COPYING that comes with GRASS for details.
  *
  * \author GRASS GIS Development Team
  *
- * \date 1999-2008
+ * \date 1999-2014
  */
 
 #include <grass/gis.h>
@@ -27,15 +27,15 @@
  * \param[in,out] dst destination window
  * \param[in] rows number of rows in box
  * \param[in] cols number of columns in box
- * \return always returns 0
+ * \return
  */
 
-int G_adjust_window_to_box(const struct Cell_head *src,
-			   struct Cell_head *dst, int rows, int cols)
+void G_adjust_window_to_box(const struct Cell_head *src,
+			    struct Cell_head *dst, int rows, int cols)
 {
     double ew, ns;
 
-    G_copy((char *)dst, (char *)src, sizeof(*dst));
+    *dst = *src;
 
     /* calculate the effective resolutions */
     ns = (src->ns_res * src->rows) / rows;
@@ -53,6 +53,4 @@ int G_adjust_window_to_box(const struct Cell_head *src,
     /* compute rows and cols */
     dst->rows = (dst->north - dst->south) / dst->ns_res;
     dst->cols = (dst->east - dst->west) / dst->ew_res;
-
-    return 0;
 }

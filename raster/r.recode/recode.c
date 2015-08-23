@@ -1,7 +1,5 @@
 #include <stdio.h>
-
-#include <grass/glocale.h>
-
+#include <grass/raster.h>
 #include "global.h"
 
 #define F2I(map_type) \
@@ -31,53 +29,45 @@ int do_recode(void)
     /* set the window from the header for the input file */
     if (align_wind) {
 	G_get_window(&window);
-	if (G_get_cellhd(name, mapset, &cellhd) >= 0) {
-	    G_align_window(&window, &cellhd);
-	    G_set_window(&window);
-	}
+	Rast_get_cellhd(name, "", &cellhd);
+	Rast_align_window(&window, &cellhd);
+	Rast_set_window(&window);
     }
 
     G_get_set_window(&window);
 
-    nrows = G_window_rows();
-    ncols = G_window_cols();
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
 
     /* open the input file for reading */
-    in_fd = G_open_cell_old(name, mapset);
-    if (in_fd < 0)
-	G_fatal_error(_("Unable to open raster map <%s>"),
-		      G_fully_qualified_name(name, mapset));
+    in_fd = Rast_open_old(name, "");
 
-    out_fd = G_open_raster_new(result, out_type);
+    out_fd = Rast_open_new(result, out_type);
 
-    out_rast = G_allocate_raster_buf(out_type);
-    in_rast = G_allocate_raster_buf(in_type);
+    out_rast = Rast_allocate_buf(out_type);
+    in_rast = Rast_allocate_buf(in_type);
 
     for (row = 0; row < nrows; row++) {
 	G_percent(row, nrows, 2);
 	PROCESS_ROW(row);
     }
     G_percent(row, nrows, 2);
-    G_close_cell(in_fd);
-    G_close_cell(out_fd);
+    Rast_close(in_fd);
+    Rast_close(out_fd);
 
     /* writing history file */
-    G_short_history(result, "raster", &hist);
-    sprintf(hist.edhist[0], "recode of raster map %s", name);
+    Rast_short_history(result, "raster", &hist);
+    Rast_append_format_history(&hist, "recode of raster map %s", name);
     /* if there are more rules than history lines allocated, write only 
        MAXEDLINES-1 rules , and "...." as a last rule */
-    for (i = 0; (i < nrules) && (i < MAXEDLINES - 2); i++)
-	sprintf(hist.edhist[i + 1], "%s", rules[i]);
-    if (nrules > MAXEDLINES - 1) {
-	sprintf(hist.edhist[MAXEDLINES - 1], "...");
-	hist.edlinecnt = MAXEDLINES;
-    }
-    else
-	hist.edlinecnt = nrules + 1;
-    sprintf(hist.datsrc_1, "raster map %s", name);
+    for (i = 0; i < nrules && i < 50; i++)
+	Rast_append_history(&hist, rules[i]);
+    if (nrules > 50)
+	Rast_append_history(&hist, "...");
+    Rast_format_history(&hist, HIST_DATSRC_1, "raster map %s", name);
 
-    G_command_history(&hist);
-    G_write_history(result, &hist);
+    Rast_command_history(&hist);
+    Rast_write_history(result, &hist);
 
     return 0;
 }
@@ -85,98 +75,98 @@ int do_recode(void)
 static void process_row_ii(int row)
 {
     if (no_mask)
-	G_get_c_raster_row_nomask(in_fd, (CELL *) in_rast, row);
+	Rast_get_c_row_nomask(in_fd, (CELL *) in_rast, row);
     else
-	G_get_c_raster_row(in_fd, (CELL *) in_rast, row);
-    G_fpreclass_perform_ii(&rcl_struct, (CELL *) in_rast, (CELL *) out_rast,
+	Rast_get_c_row(in_fd, (CELL *) in_rast, row);
+    Rast_fpreclass_perform_ii(&rcl_struct, (CELL *) in_rast, (CELL *) out_rast,
 			   ncols);
-    G_put_raster_row(out_fd, (CELL *) out_rast, CELL_TYPE);
+    Rast_put_row(out_fd, (CELL *) out_rast, CELL_TYPE);
 }
 
 static void process_row_if(int row)
 {
     if (no_mask)
-	G_get_c_raster_row_nomask(in_fd, (CELL *) in_rast, row);
+	Rast_get_c_row_nomask(in_fd, (CELL *) in_rast, row);
     else
-	G_get_c_raster_row(in_fd, (CELL *) in_rast, row);
-    G_fpreclass_perform_if(&rcl_struct, (CELL *) in_rast, (FCELL *) out_rast,
+	Rast_get_c_row(in_fd, (CELL *) in_rast, row);
+    Rast_fpreclass_perform_if(&rcl_struct, (CELL *) in_rast, (FCELL *) out_rast,
 			   ncols);
-    G_put_f_raster_row(out_fd, (FCELL *) out_rast);
+    Rast_put_f_row(out_fd, (FCELL *) out_rast);
 }
 
 static void process_row_id(int row)
 {
     if (no_mask)
-	G_get_c_raster_row_nomask(in_fd, (CELL *) in_rast, row);
+	Rast_get_c_row_nomask(in_fd, (CELL *) in_rast, row);
     else
-	G_get_c_raster_row(in_fd, (CELL *) in_rast, row);
-    G_fpreclass_perform_id(&rcl_struct, (CELL *) in_rast, (DCELL *) out_rast,
+	Rast_get_c_row(in_fd, (CELL *) in_rast, row);
+    Rast_fpreclass_perform_id(&rcl_struct, (CELL *) in_rast, (DCELL *) out_rast,
 			   ncols);
-    G_put_raster_row(out_fd, (DCELL *) out_rast, DCELL_TYPE);
+    Rast_put_row(out_fd, (DCELL *) out_rast, DCELL_TYPE);
 }
 
 static void process_row_fi(int row)
 {
     if (no_mask)
-	G_get_f_raster_row_nomask(in_fd, (FCELL *) in_rast, row);
+	Rast_get_f_row_nomask(in_fd, (FCELL *) in_rast, row);
     else
-	G_get_f_raster_row(in_fd, (FCELL *) in_rast, row);
-    G_fpreclass_perform_fi(&rcl_struct, (FCELL *) in_rast, (CELL *) out_rast,
+	Rast_get_f_row(in_fd, (FCELL *) in_rast, row);
+    Rast_fpreclass_perform_fi(&rcl_struct, (FCELL *) in_rast, (CELL *) out_rast,
 			   ncols);
-    G_put_raster_row(out_fd, (CELL *) out_rast, CELL_TYPE);
+    Rast_put_row(out_fd, (CELL *) out_rast, CELL_TYPE);
 }
 
 static void process_row_ff(int row)
 {
     if (no_mask)
-	G_get_f_raster_row_nomask(in_fd, (FCELL *) in_rast, row);
+	Rast_get_f_row_nomask(in_fd, (FCELL *) in_rast, row);
     else
-	G_get_f_raster_row(in_fd, (FCELL *) in_rast, row);
-    G_fpreclass_perform_ff(&rcl_struct, (FCELL *) in_rast, (FCELL *) out_rast,
+	Rast_get_f_row(in_fd, (FCELL *) in_rast, row);
+    Rast_fpreclass_perform_ff(&rcl_struct, (FCELL *) in_rast, (FCELL *) out_rast,
 			   ncols);
-    G_put_f_raster_row(out_fd, (FCELL *) out_rast);
+    Rast_put_f_row(out_fd, (FCELL *) out_rast);
 }
 
 static void process_row_fd(int row)
 {
     if (no_mask)
-	G_get_f_raster_row_nomask(in_fd, (FCELL *) in_rast, row);
+	Rast_get_f_row_nomask(in_fd, (FCELL *) in_rast, row);
     else
-	G_get_f_raster_row(in_fd, (FCELL *) in_rast, row);
-    G_fpreclass_perform_fd(&rcl_struct, (FCELL *) in_rast, (DCELL *) out_rast,
+	Rast_get_f_row(in_fd, (FCELL *) in_rast, row);
+    Rast_fpreclass_perform_fd(&rcl_struct, (FCELL *) in_rast, (DCELL *) out_rast,
 			   ncols);
-    G_put_raster_row(out_fd, (DCELL *) out_rast, DCELL_TYPE);
+    Rast_put_row(out_fd, (DCELL *) out_rast, DCELL_TYPE);
 }
 
 static void process_row_di(int row)
 {
     if (no_mask)
-	G_get_d_raster_row_nomask(in_fd, (DCELL *) in_rast, row);
+	Rast_get_d_row_nomask(in_fd, (DCELL *) in_rast, row);
     else
-	G_get_d_raster_row(in_fd, (DCELL *) in_rast, row);
-    G_fpreclass_perform_di(&rcl_struct, (DCELL *) in_rast, (CELL *) out_rast,
+	Rast_get_d_row(in_fd, (DCELL *) in_rast, row);
+    Rast_fpreclass_perform_di(&rcl_struct, (DCELL *) in_rast, (CELL *) out_rast,
 			   ncols);
-    G_put_raster_row(out_fd, (CELL *) out_rast, CELL_TYPE);
+    Rast_put_row(out_fd, (CELL *) out_rast, CELL_TYPE);
 }
 
 static void process_row_df(int row)
 {
     if (no_mask)
-	G_get_d_raster_row_nomask(in_fd, (DCELL *) in_rast, row);
+	Rast_get_d_row_nomask(in_fd, (DCELL *) in_rast, row);
     else
-	G_get_d_raster_row(in_fd, (DCELL *) in_rast, row);
-    G_fpreclass_perform_df(&rcl_struct, (DCELL *) in_rast, (FCELL *) out_rast,
+	Rast_get_d_row(in_fd, (DCELL *) in_rast, row);
+    Rast_fpreclass_perform_df(&rcl_struct, (DCELL *) in_rast, (FCELL *) out_rast,
 			   ncols);
-    G_put_f_raster_row(out_fd, (FCELL *) out_rast);
+    Rast_put_f_row(out_fd, (FCELL *) out_rast);
 }
 
 static void process_row_dd(int row)
 {
     if (no_mask)
-	G_get_d_raster_row_nomask(in_fd, (DCELL *) in_rast, row);
+	Rast_get_d_row_nomask(in_fd, (DCELL *) in_rast, row);
     else
-	G_get_d_raster_row(in_fd, (DCELL *) in_rast, row);
-    G_fpreclass_perform_dd(&rcl_struct, (DCELL *) in_rast, (DCELL *) out_rast,
+	Rast_get_d_row(in_fd, (DCELL *) in_rast, row);
+    Rast_fpreclass_perform_dd(&rcl_struct, (DCELL *) in_rast, (DCELL *) out_rast,
 			   ncols);
-    G_put_raster_row(out_fd, (DCELL *) out_rast, DCELL_TYPE);
+    Rast_put_row(out_fd, (DCELL *) out_rast, DCELL_TYPE);
 }

@@ -3,18 +3,18 @@
 ;GRASS GIS Installer for Windows
 ;Written by Marco Pasetti
 ;Updated for OSGeo4W by Colin Nielsen, Helmut Kudrnovsky, and Martin Landa
-;Last Update: $Id: GRASS-Installer.nsi.tmpl 60867 2014-06-18 19:07:02Z martinl $
+;Last Update: $Id: GRASS-Installer.nsi.tmpl 65576 2015-07-11 14:04:13Z neteler $
 ;Mail to: grass-dev@lists.osgeo.org 
 
 ;----------------------------------------------------------------------------------------------------------------------------
 
 ;Define the source path of the demolocation files
 
-!define DEMOLOCATION_PATH "c:\OSGeo4W\usr\src\grass64_release\demolocation"
+!define DEMOLOCATION_PATH "c:\OSGeo4W\usr\src\grass70_release\demolocation"
 
 ;Define the source of the patched msys.bat
 
-!define MSYS_BATCH "C:\OSGeo4W\usr\src\grass64_release\mswindows\osgeo4w\msys.bat"
+!define MSYS_BATCH "C:\OSGeo4W\usr\src\grass70_release\mswindows\osgeo4w\msys.bat"
 
 ;Select if you are building a "Development Version" (Devel) or a "Release Version" (Release) of the GRASS Installer
 
@@ -24,13 +24,17 @@
 ;set compression configuration
 
 SetCompressor /SOLID lzma
-SetCompressorDictSize 64
+SetCompressorDictSize 128
 
 ;----------------------------------------------------------------------------------------------------------------------------
 
 ;Version variables
 
-!define SVN_REVISION "@GRASS_VERSION_SVN@"
+!if "@GRASS_VERSION_SVN@" == ""
+    !define SVN_REVISION "0"
+!else
+    !define SVN_REVISION "@GRASS_VERSION_SVN@"
+!endif
 !define BINARY_REVISION "1"
 !define VERSION_NUMBER "@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@.@GRASS_VERSION_RELEASE@"
 !define GRASS_BASE "GRASS GIS @GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@.@GRASS_VERSION_RELEASE@"
@@ -55,6 +59,7 @@ SetCompressorDictSize 64
 
 !include "MUI2.nsh"
 !include "LogicLib.nsh"
+!include "Sections.nsh"
 
 ;----------------------------------------------------------------------------------------------------------------------------
 
@@ -92,7 +97,7 @@ OutFile "${INSTALLER_NAME}"
 ;Define installation folder
 InstallDir "$PROGRAMFILES\${GRASS_BASE}"
 
-;Request application privileges for Windows Vista
+;Request application privileges for Windows
 RequestExecutionLevel admin
 
 ;Tell the installer to hide Install and Uninstall details as default
@@ -200,16 +205,10 @@ Function .onInit
 	Var /GLOBAL MESSAGE_2_
 	Var /GLOBAL MESSAGE_3_
 	
-	Var /GLOBAL R_HKLM_INSTALL_PATH 
-	Var /GLOBAL R_HKCU_INSTALL_PATH
-	
 	ReadRegStr $UNINSTALL_STRING HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${GRASS_BASE}" "UninstallString"
 	ReadRegStr $INSTALL_PATH HKLM "Software\${GRASS_BASE}" "InstallPath"
 	ReadRegStr $INSTALLED_VERSION_NUMBER HKLM "Software\${GRASS_BASE}" "VersionNumber"
 	ReadRegStr $INSTALLED_SVN_REVISION HKLM "Software\${GRASS_BASE}" "SvnRevision"
-	
-	ReadRegStr $R_HKLM_INSTALL_PATH HKLM "Software\R-core\R" "InstallPath" 
-	ReadRegStr $R_HKCU_INSTALL_PATH HKCU "Software\R-core\R" "InstallPath"
 	
 	${If} $INSTALLED_SVN_REVISION == ""
 		ReadRegStr $INSTALLED_SVN_REVISION HKLM "Software\${GRASS_BASE}" "Revision"
@@ -318,8 +317,8 @@ FunctionEnd
 
 ;Function CheckInstDir
 ;	Var /GLOBAL INSTDIR_TEST
-;	Var /GLOBAL INSTDIR_LENGHT	
-;	Var /GLOBAL INSTDIR_TEST_LENGHT
+;	Var /GLOBAL INSTDIR_LENGTH	
+;	Var /GLOBAL INSTDIR_TEST_LENGTH
 ;	Var /GLOBAL MESSAGE_CHKINST_
 ;	
 ;	StrCpy $MESSAGE_CHKINST_ "WARNING: you are about to install GRASS into a directory that has spaces$\r$\n"
@@ -331,10 +330,10 @@ FunctionEnd
 ;	
 ;	${StrReplace} "$INSTDIR_TEST" " " "" "$INSTDIR"
 ;	
-;	StrLen $INSTDIR_LENGHT "$INSTDIR"
-;	StrLen $INSTDIR_TEST_LENGHT "$INSTDIR_TEST"
+;	StrLen $INSTDIR_LENGTH "$INSTDIR"
+;	StrLen $INSTDIR_TEST_LENGTH "$INSTDIR_TEST"
 ;	
-;	${If} $INSTDIR_TEST_LENGHT < $INSTDIR_LENGHT	
+;	${If} $INSTDIR_TEST_LENGTH < $INSTDIR_LENGTH	
 ;		MessageBox MB_OK|MB_ICONEXCLAMATION "$MESSAGE_CHKINST_"
 ;	${EndIf}
 ;	
@@ -552,6 +551,9 @@ Section "GRASS" SecGRASS
 	FileWrite $0 'rem set dependecies path$\r$\n'
 	FileWrite $0 'set PATH=%FREETYPEBASE%;%PATH%$\r$\n'
 	FileWrite $0 '$\r$\n'
+	FileWrite $0 'rem GISRC must be set$\r$\n'
+	FileWrite $0 'set GISRC=dummy$\r$\n'
+	FileWrite $0 '$\r$\n'
 	FileWrite $0 'rem run g.mkfontcap outside a grass session$\r$\n'
 	FileWrite $0 '"%GISBASE%\bin\g.mkfontcap.exe" -o$\r$\n'
 	FileWrite $0 'exit$\r$\n'
@@ -627,17 +629,18 @@ Section "GRASS" SecGRASS
 		"DisplayVersion" "${VERSION_NUMBER}-r${SVN_REVISION}-${BINARY_REVISION}"
 	!endif
 	
-	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${GRASS_BASE}" "DisplayIcon" "$INSTALL_DIR\etc\gui\icons\grass.ico"
+	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${GRASS_BASE}" "DisplayIcon" "$INSTALL_DIR\gui\icons\grass.ico"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${GRASS_BASE}" "EstimatedSize" 1
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${GRASS_BASE}" "HelpLink" "${WIKI_PAGE}"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${GRASS_BASE}" "URLInfoAbout" "${WEB_SITE}"
 	WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${GRASS_BASE}" "Publisher" "${PUBLISHER}"
-  
+        
+
 	;Create the Desktop Shortcut
 	SetShellVarContext current
 	
 	CreateShortCut "$DESKTOP\${GRASS_BASE}.lnk" "$INSTALL_DIR\${GRASS_COMMAND}.bat" "-wx"\
-	"$INSTALL_DIR\etc\gui\icons\grass.ico" "" SW_SHOWMINIMIZED "" "Launch GRASS ${VERSION_NUMBER} with wxGUI"
+	"$INSTALL_DIR\gui\icons\grass.ico" "" SW_SHOWNORMAL "" "Launch GRASS ${VERSION_NUMBER} with wxGUI and CMD console"
 	
 	;Create the Windows Start Menu Shortcuts
 	SetShellVarContext all
@@ -645,29 +648,26 @@ Section "GRASS" SecGRASS
 	CreateDirectory "$SMPROGRAMS\${GRASS_BASE}"
 	
 	CreateShortCut "$SMPROGRAMS\${GRASS_BASE}\${GRASS_BASE} GUI.lnk" "$INSTALL_DIR\${GRASS_COMMAND}.bat" "-wx"\
-	"$INSTALL_DIR\etc\gui\icons\grass.ico" "" SW_SHOWMINIMIZED "" "Launch GRASS ${VERSION_NUMBER} with wxGUI"
+	"$INSTALL_DIR\gui\icons\grass.ico" "" SW_SHOWNORMAL "" "Launch GRASS ${VERSION_NUMBER} with wxGUI and CMD console"
 	
-	CreateShortCut "$SMPROGRAMS\${GRASS_BASE}\${GRASS_BASE} GUI with MSYS.lnk" "$INSTALL_DIR\msys\msys.bat" "/grass/${GRASS_COMMAND}.sh -wx"\
-	"$INSTALL_DIR\etc\gui\icons\grass_msys.ico" "" SW_SHOWNORMAL "" "Launch GRASS ${VERSION_NUMBER} with wxGUI and MSYS UNIX console"
+	; CreateShortCut "$SMPROGRAMS\${GRASS_BASE}\${GRASS_BASE} GUI with MSYS.lnk" "$INSTALL_DIR\${GRASS_COMMAND}_msys.bat" "-wx"\
+	; "$INSTALL_DIR\gui\icons\grass_msys.ico" "" SW_SHOWNORMAL "" "Launch GRASS ${VERSION_NUMBER} with wxGUI and MSYS UNIX console"
 	
 	CreateShortCut "$SMPROGRAMS\${GRASS_BASE}\${GRASS_BASE} Command Line.lnk" "$INSTALL_DIR\${GRASS_COMMAND}.bat" "-text"\
-	"$INSTALL_DIR\etc\gui\icons\grass_cmd.ico" "" SW_SHOWNORMAL "" "Launch GRASS ${VERSION_NUMBER} in text mode"
-	
-	CreateShortCut "$SMPROGRAMS\${GRASS_BASE}\${GRASS_BASE} Old TclTk GUI.lnk" "$INSTALL_DIR\${GRASS_COMMAND}.bat" "-tcltk"\
-	"$INSTALL_DIR\etc\gui\icons\grass_tcltk.ico" "" SW_SHOWMINIMIZED "" "Launch GRASS ${VERSION_NUMBER} with the old TclTk GUI"
+	"$INSTALL_DIR\gui\icons\grass_cmd.ico" "" SW_SHOWNORMAL "" "Launch GRASS ${VERSION_NUMBER} in text mode"
 	
 	CreateShortCut "$SMPROGRAMS\${GRASS_BASE}\MSYS UNIX Console.lnk" "$INSTALL_DIR\msys\msys.bat" ""\
-	"$INSTALL_DIR\etc\gui\icons\msys.ico" "" SW_SHOWNORMAL "" "Open a MSYS UNIX console"
+	"$INSTALL_DIR\gui\icons\msys.ico" "" SW_SHOWNORMAL "" "Open a MSYS UNIX console"
 	
 	CreateShortCut "$SMPROGRAMS\${GRASS_BASE}\GRASS Web Site.lnk" "$INSTALL_DIR\GRASS-WebSite.url" ""\
-	"$INSTALL_DIR\etc\gui\icons\grass_web.ico" "" SW_SHOWNORMAL "" "Visit the GRASS website"
+	"$INSTALL_DIR\gui\icons\grass_web.ico" "" SW_SHOWNORMAL "" "Visit the GRASS website"
 	
 ; FIXME: ship the WinGrass release notes .html file instead of URL
 ; http://trac.osgeo.org/grass/browser/grass-web/trunk/grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@/binary/mswindows/native/README.html?format=raw
 ; probably ship with devel versions too? ie Release Notes, not the Release Announcement press release.
 	!if ${INSTALLER_TYPE} == "Release"
 		CreateShortCut "$SMPROGRAMS\${GRASS_BASE}\${GRASS_BASE} Release Notes.lnk" "$INSTALL_DIR\WinGRASS-README.url" ""\
-		"$INSTALL_DIR\etc\gui\icons\wingrass.ico" "" SW_SHOWNORMAL "" "Visit the WinGRASS Project Web Page"
+		"$INSTALL_DIR\gui\icons\wingrass.ico" "" SW_SHOWNORMAL "" "Visit the WinGRASS Project Web Page"
 	!endif
 	
 	CreateShortCut "$SMPROGRAMS\${GRASS_BASE}\Uninstall ${GRASS_BASE}.lnk" "$INSTALL_DIR\Uninstall-GRASS.exe" ""\
@@ -684,28 +684,51 @@ Section "GRASS" SecGRASS
 	FileWrite $0 'rem #$\r$\n'
 	FileWrite $0 'rem #########################################################################$\r$\n'
 	FileWrite $0 'rem #$\r$\n'
-	FileWrite $0 'rem # GRASS Initialization$\r$\n'
+	FileWrite $0 'rem # GRASS initialization bat script$\r$\n'
 	FileWrite $0 'rem #$\r$\n'
 	FileWrite $0 'rem #########################################################################$\r$\n'
 	FileWrite $0 '$\r$\n'
 	FileWrite $0 'set GISBASE=$INSTALL_DIR$\r$\n'
 	FileWrite $0 '$\r$\n'
-	${If} $R_HKLM_INSTALL_PATH != ""
-	FileWrite $0 'set PATH=$R_HKLM_INSTALL_PATH\bin;%PATH%$\r$\n'
-	FileWrite $0 '$\r$\n'
-	${EndIf}
-	${If} $R_HKCU_INSTALL_PATH != ""
-	FileWrite $0 'set PATH=$R_HKCU_INSTALL_PATH\bin;%PATH%$\r$\n'
-	FileWrite $0 '$\r$\n'
-	${EndIf}
 	FileWrite $0 'call "%GISBASE%\etc\env.bat"$\r$\n'
 	FileWrite $0 '$\r$\n'
 	FileWrite $0 'cd "%USERPROFILE%"'
 	FileWrite $0 '$\r$\n'
-	FileWrite $0 '"%GISBASE%\etc\Init.bat" %*'
+	FileWrite $0 '"%GRASS_PYTHON%" "%GISBASE%\etc\grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@.py" %*'
+	FileWrite $0 '$\r$\n$\r$\n'
+	FileWrite $0 'if %ERRORLEVEL% GEQ 1 pause'
 	FileClose $0
 	done_create_grass_command.bat:
-		
+	
+	;Create the grass_command_msys.bat
+        ;
+        ; disabled (really needed?)
+        ;
+	; ClearErrors
+	; FileOpen $0 $INSTALL_DIR\${GRASS_COMMAND}_msys.bat w
+	; IfErrors done_create_grass_command_msys.bat
+	; FileWrite $0 '@echo off$\r$\n'
+	; FileWrite $0 'rem #########################################################################$\r$\n'
+	; FileWrite $0 'rem #$\r$\n'
+	; FileWrite $0 'rem # File dynamically created by NSIS installer script;$\r$\n'
+	; FileWrite $0 'rem #$\r$\n'
+	; FileWrite $0 'rem #########################################################################$\r$\n'
+	; FileWrite $0 'rem #$\r$\n'
+	; FileWrite $0 'rem # GRASS Initialization (MSYS)$\r$\n'
+	; FileWrite $0 'rem #$\r$\n'
+	; FileWrite $0 'rem #########################################################################$\r$\n'
+	; FileWrite $0 '$\r$\n'
+	; FileWrite $0 'set GISBASE=$INSTALL_DIR$\r$\n'
+	; FileWrite $0 'set GRASS_SH=%GISBASE%\msys\bin\sh.exe$\r$\n'
+	; FileWrite $0 '$\r$\n'
+	; FileWrite $0 'call "%GISBASE%\etc\env.bat"$\r$\n'
+	; FileWrite $0 '$\r$\n'
+	; FileWrite $0 'cd "%USERPROFILE%"'
+	; FileWrite $0 '$\r$\n'
+	; FileWrite $0 '"%GRASS_PYTHON%" "%GISBASE%\etc\grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@.py" %*'
+	; FileClose $0
+	; done_create_grass_command_msys.bat:
+	
 	;Set the UNIX_LIKE GRASS Path
 	Var /GLOBAL UNIX_LIKE_DRIVE
 	Var /GLOBAL UNIX_LIKE_GRASS_PATH
@@ -745,89 +768,82 @@ Section "GRASS" SecGRASS
 		${EndIf}
 	${EndIf}
 		
-	;create the grass_command.sh
-	ClearErrors
-	FileOpen $0 $INSTALL_DIR\${GRASS_COMMAND}.sh w
-	IfErrors done_create_grass_command
-	FileWrite $0 '#! /bin/sh$\r$\n'
-	FileWrite $0 '#########################################################################$\r$\n'
-	FileWrite $0 '#$\r$\n'
-	FileWrite $0 '# File dynamically created by NSIS installer script;$\r$\n'
-	FileWrite $0 '# Written by Marco Pasetti;$\r$\n'
-	FileWrite $0 '#$\r$\n'
-	FileWrite $0 '#########################################################################$\r$\n'
-	FileWrite $0 '#$\r$\n'
-	FileWrite $0 '# MODULE:   	GRASS Initialization$\r$\n'
-	FileWrite $0 '# AUTHOR(S):	Justin Hickey - Thailand - jhickey@hpcc.nectec.or.th$\r$\n'
-	FileWrite $0 '# PURPOSE:  	The source file for this shell script is in$\r$\n'
-	FileWrite $0 '#   	    	lib/init/grass.src and is the grass startup script. It$\r$\n'
-	FileWrite $0 '#   	    	requires a source file because the definition of GISBASE$\r$\n'
-	FileWrite $0 '#   	    	is not known until compile time and is substituted from the$\r$\n'
-	FileWrite $0 '#   	    	Makefile. Any command line options are passed to Init.sh.$\r$\n'
-	FileWrite $0 '# COPYRIGHT:  	(C) 2000-2013 by the GRASS Development Team$\r$\n'
-	FileWrite $0 '#$\r$\n'
-	FileWrite $0 '#             	This program is free software under the GNU General Public$\r$\n'
-	FileWrite $0 '#   	    	License (>=v2). Read the file COPYING that comes with GRASS$\r$\n'
-	FileWrite $0 '#   	    	for details.$\r$\n'
-	FileWrite $0 '#$\r$\n'
-	FileWrite $0 '#########################################################################$\r$\n'
-	FileWrite $0 '#$\r$\n'
-	FileWrite $0 '# Modified by Marco Pasetti$\r$\n'
-	FileWrite $0 '# added the export PATH instruction to let GRASS work from$\r$\n'
-	FileWrite $0 '# the MSYS environment in the dynamic NSIS installation$\r$\n'
-	FileWrite $0 '#$\r$\n'
-	FileWrite $0 '#########################################################################$\r$\n'
-	FileWrite $0 '$\r$\n'
-	FileWrite $0 'trap "echo '
-	FileWrite $0 "'User break!' ; "
-	FileWrite $0 'exit" 2 3 9 15$\r$\n'
-	FileWrite $0 '$\r$\n'
-	FileWrite $0 '# Set the GISBASE variable$\r$\n'
-	FileWrite $0 'GISBASE="/$UNIX_LIKE_DRIVE$UNIX_LIKE_GRASS_PATH"$\r$\n'
-	FileWrite $0 'export GISBASE$\r$\n'
-	FileWrite $0 '$\r$\n'
-	FileWrite $0 '# Set the PATH variable$\r$\n'
-	FileWrite $0 'PATH="$$GISBASE/extrabin:$$PATH"$\r$\n'
-	FileWrite $0 'export PATH$\r$\n'
-	FileWrite $0 '$\r$\n'
-	FileWrite $0 'GRASS_PAGER=more$\r$\n'
-	FileWrite $0 'export GRASS_PAGER$\r$\n'
-	FileWrite $0 '$\r$\n'
-	FileWrite $0 '# Set the PYTHONPATH variable$\r$\n'
-	FileWrite $0 'PYTHONPATH="$$GISBASE/etc/python:$$GISBASE/Python27:$$PYTHONPATH"$\r$\n'
-	FileWrite $0 'export PYTHONPATH$\r$\n'
-	FileWrite $0 'PYTHONHOME="$INSTALL_DIR\Python27"$\r$\n'
-	FileWrite $0 'export PYTHONHOME$\r$\n'
-	FileWrite $0 'if [ -z "$$GRASS_PYTHON" ] ; then$\r$\n'
-	FileWrite $0 '   GRASS_PYTHON=python$\r$\n'
-	FileWrite $0 '   export GRASS_PYTHON$\r$\n'
-	FileWrite $0 'fi$\r$\n'
-	FileWrite $0 '$\r$\n'
-	FileWrite $0 '# Set the default web browser$\r$\n'
-	FileWrite $0 'GRASS_HTML_BROWSER=explorer$\r$\n'
-	FileWrite $0 'export GRASS_HTML_BROWSER$\r$\n'
-	FileWrite $0 '$\r$\n'
-	FileWrite $0 '# Set the GRASS_PROJSHARE variable$\r$\n'
-	FileWrite $0 'GRASS_PROJSHARE="$INSTALL_DIR\share\proj"$\r$\n'
-	FileWrite $0 'export GRASS_PROJSHARE$\r$\n'
-	FileWrite $0 '$\r$\n'
-	FileWrite $0 '# Set the PROJ_LIB variable$\r$\n'
-	FileWrite $0 'PROJ_LIB="$INSTALL_DIR\share\proj"$\r$\n'
-	FileWrite $0 'export PROJ_LIB $\r$\n'
-	FileWrite $0 '$\r$\n'
-	FileWrite $0 '# Set the GDAL_DATA variable$\r$\n'
-	FileWrite $0 'GDAL_DATA="$INSTALL_DIR\share\gdal"$\r$\n'
-	FileWrite $0 'export GDAL_DATA$\r$\n'
-	FileWrite $0 '$\r$\n'
-	FileWrite $0 '# Set the GEOTIFF_CSV variable$\r$\n'
-	FileWrite $0 'GEOTIFF_CSV="$INSTALL_DIR\share\epsg_csv"$\r$\n'
-	FileWrite $0 'export GEOTIFF_CSV$\r$\n'
-	FileWrite $0 '$\r$\n'
-	FileWrite $0 'cd "$$USERPROFILE"'
-	FileWrite $0 '$\r$\n' 
-	FileWrite $0 'exec "$$GISBASE/etc/Init.sh" "$$@"'
-	FileClose $0
-	done_create_grass_command:
+	;create the $INSTALL_DIR\bin grass_command
+        ;
+        ;disabled (really needed?)
+        ;
+	; ClearErrors
+	; FileOpen $0 $INSTALL_DIR\${GRASS_COMMAND}.sh w
+	; IfErrors done_create_grass_command
+	; FileWrite $0 '#! /bin/sh$\r$\n'
+	; FileWrite $0 '#########################################################################$\r$\n'
+	; FileWrite $0 '#$\r$\n'
+	; FileWrite $0 '# File dynamically created by NSIS installer script;$\r$\n'
+	; FileWrite $0 '# Written by Marco Pasetti;$\r$\n'
+	; FileWrite $0 '#$\r$\n'
+	; FileWrite $0 '#########################################################################$\r$\n'
+	; FileWrite $0 '#$\r$\n'
+	; FileWrite $0 '# MODULE:   	GRASS Initialization$\r$\n'
+	; FileWrite $0 '# AUTHOR(S):	Justin Hickey - Thailand - jhickey@hpcc.nectec.or.th$\r$\n'
+	; FileWrite $0 '# PURPOSE:  	The source file for this shell script is in$\r$\n'
+	; FileWrite $0 '#   	    	lib/init/grass.src and is the grass startup script. It$\r$\n'
+	; FileWrite $0 '#   	    	requires a source file because the definition of GISBASE$\r$\n'
+	; FileWrite $0 '#   	    	is not known until compile time and is substituted from the$\r$\n'
+	; FileWrite $0 '#   	    	Makefile. Any command line options are passed to Init.sh.$\r$\n'
+	; FileWrite $0 '# COPYRIGHT:  	(C) 2000-2010 by the GRASS Development Team$\r$\n'
+	; FileWrite $0 '#$\r$\n'
+	; FileWrite $0 '#             	This program is free software under the GNU General Public$\r$\n'
+	; FileWrite $0 '#   	    	License (>=v2). Read the file COPYING that comes with GRASS$\r$\n'
+	; FileWrite $0 '#   	    	for details.$\r$\n'
+	; FileWrite $0 '#$\r$\n'
+	; FileWrite $0 '#########################################################################$\r$\n'
+	; FileWrite $0 '#$\r$\n'
+	; FileWrite $0 '# Modified by Marco Pasetti$\r$\n'
+	; FileWrite $0 '# added the export PATH instruction to let GRASS work from$\r$\n'
+	; FileWrite $0 '# the MSYS environment in the dynamic NSIS installation$\r$\n'
+	; FileWrite $0 '#$\r$\n'
+	; FileWrite $0 '#########################################################################$\r$\n'
+	; FileWrite $0 '$\r$\n'
+	; FileWrite $0 'trap "echo '
+	; FileWrite $0 "'User break!' ; "
+	; FileWrite $0 'exit" 2 3 9 15$\r$\n'
+	; FileWrite $0 '$\r$\n'
+	; FileWrite $0 '# Set the GISBASE variable$\r$\n'
+	; FileWrite $0 'GISBASE="/$UNIX_LIKE_DRIVE$UNIX_LIKE_GRASS_PATH"$\r$\n'
+	; FileWrite $0 'export GISBASE$\r$\n'
+	; FileWrite $0 '$\r$\n'
+	; FileWrite $0 '# Set the PATH variable$\r$\n'
+	; FileWrite $0 'PATH="$$GISBASE/extrabin:$$PATH"$\r$\n'
+	; FileWrite $0 'export PATH$\r$\n'
+	; FileWrite $0 '# Set the PYTHONPATH variable$\r$\n'
+	; FileWrite $0 'PYTHONPATH="$$GISBASE/etc/python:$$GISBASE/gui/wxpython:$$GISBASE/Python27:$$PYTHONPATH"$\r$\n'
+	; FileWrite $0 'export PYTHONPATH$\r$\n'
+	; FileWrite $0 'PYTHONHOME="$INSTALL_DIR\Python27"$\r$\n'
+	; FileWrite $0 'export PYTHONHOME$\r$\n'
+	; FileWrite $0 'if [ -z "$$GRASS_PYTHON" ] ; then$\r$\n'
+	; FileWrite $0 '   GRASS_PYTHON=python$\r$\n'
+	; FileWrite $0 '   export GRASS_PYTHON$\r$\n'
+	; FileWrite $0 'fi$\r$\n'
+	; FileWrite $0 '$\r$\n'
+	; FileWrite $0 '# Set the GRASS_PROJSHARE variable$\r$\n'
+	; FileWrite $0 'GRASS_PROJSHARE="$INSTALL_DIR\share\proj"$\r$\n'
+	; FileWrite $0 'export GRASS_PROJSHARE$\r$\n'
+	; FileWrite $0 '$\r$\n'
+	; FileWrite $0 '# Set the PROJ_LIB variable$\r$\n'
+	; FileWrite $0 'PROJ_LIB="$INSTALL_DIR\share\proj"$\r$\n'
+	; FileWrite $0 'export PROJ_LIB $\r$\n'
+	; FileWrite $0 '$\r$\n'
+	; FileWrite $0 '# Set the GDAL_DATA variable$\r$\n'
+	; FileWrite $0 'GDAL_DATA="$INSTALL_DIR\share\gdal"$\r$\n'
+	; FileWrite $0 'export GDAL_DATA$\r$\n'
+	; FileWrite $0 '$\r$\n'
+	; FileWrite $0 '# Set the GEOTIFF_CSV variable$\r$\n'
+	; FileWrite $0 'GEOTIFF_CSV="$INSTALL_DIR\share\epsg_csv"$\r$\n'
+	; FileWrite $0 'export GEOTIFF_CSV$\r$\n'
+	; FileWrite $0 '$\r$\n'
+	; FileWrite $0 '"$$GRASS_PYTHON" "$$GISBASE/etc/grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@.py" "$$@"'
+	; FileClose $0
+	; done_create_grass_command:
 		
 	;Get the short form of the install path (to allow for paths with spaces)
 	VAR /GLOBAL INST_DIR_SHORT
@@ -848,13 +864,13 @@ Section "GRASS" SecGRASS
 	;${StrReplace} "$UNIX_LIKE_GIS_DATABASE_PATH" "\" "/" "$GIS_DATABASE"
 
 	SetShellVarContext current  
-	${If} ${FileExists} "$APPDATA\GRASS@GRASS_VERSION_MAJOR@\grassrc6"
-	      DetailPrint "File $APPDATA\GRASS@GRASS_VERSION_MAJOR@\grassrc6 already exists. Skipping."
+	${If} ${FileExists} "$APPDATA\GRASS@GRASS_VERSION_MAJOR@\rc"
+	      DetailPrint "File $APPDATA\GRASS@GRASS_VERSION_MAJOR@\rc already exists. Skipping."
 	${Else}
-	      ;create $APPDATA\GRASS@GRASS_VERSION_MAJOR@\grassrc6
+	      ;create $APPDATA\GRASS@GRASS_VERSION_MAJOR@\rc
 	      ClearErrors
 	      CreateDirectory	$APPDATA\GRASS@GRASS_VERSION_MAJOR@
-	      FileOpen $0 $APPDATA\GRASS@GRASS_VERSION_MAJOR@\grassrc6 w
+	      FileOpen $0 $APPDATA\GRASS@GRASS_VERSION_MAJOR@\rc w
 	      IfErrors done_create_grass_rc
 	      FileWrite $0 'GISDBASE: $GIS_DATABASE$\r$\n'
 	      FileWrite $0 'LOCATION_NAME: demolocation$\r$\n'
@@ -863,18 +879,19 @@ Section "GRASS" SecGRASS
 	      done_create_grass_rc:
 	${EndIf}
 
-	;replace gisbase = "/c/OSGeo4W/apps/grass/grass-@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@.@GRASS_VERSION_RELEASE@" in grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@.py with $INSTDIR
+	;replace gisbase
 	Push "$INSTDIR\etc\grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@.py" ; file to modify
 	Push 'gisbase = "/c/OSGeo4W/apps/grass/grass-@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@.@GRASS_VERSION_RELEASE@"' ; string that a line must begin with *WS Sensitive*
 	Push 'gisbase = "$INSTDIR"' ; string to replace whole line with
 	Call ReplaceLineStr
 	
-	;replace config_projshare = "/c/OSGeo4W/share/proj" i n grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@.py with $INSTDIR\share/proj
+	;replace config_projshare
 	Push "$INSTDIR\etc\grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@.py" ; file to modify
 	Push 'config_projshare = "/c/OSGeo4W/share/proj"' ; string that a line must begin with *WS Sensitive*
 	Push 'config_projshare = "$INSTDIR\share\proj"' ; string to replace whole line with
 	Call ReplaceLineStr
-                 
+
+        AccessControl::SetOnFile "$INSTDIR\etc\grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@.py" "(BU)" "Execute"                 
 SectionEnd
 
 ;--------------------------------------------------------------------------
@@ -918,17 +935,6 @@ Function DownloadInstallMSRuntime
 	Pop $0
 	StrCmp $0 "success" untar_ok untar_failed
 	
-	untar_ok:
-	ExecWait "$TEMP\$ORIGINAL_UNTAR_FOLDER\bin\vcredist_2005_x86.exe /q"
-	ExecWait "$TEMP\$ORIGINAL_UNTAR_FOLDER\bin\vcredist_2008_x86.exe /q"	
-	ExecWait "$TEMP\$ORIGINAL_UNTAR_FOLDER\bin\vcredist_2010_x86.exe /q"
-	CopyFiles "$TEMP\$ORIGINAL_UNTAR_FOLDER\bin\*.dll" "$INSTDIR\extrabin"
-	Delete "$TEMP\$ARCHIVE_NAME"
-	RMDir /r "$TEMP\$ORIGINAL_UNTAR_FOLDER"
-	;the following doesn't work. Maybe because the installer is still running?
-	RMDir "$TEMP\$ORIGINAL_UNTAR_FOLDER"
-	Goto end
-	
 	download_failed:
 	DetailPrint "$0" ;print error message to log
 	MessageBox MB_OK "Download Failed.$\r$\nGRASS will be installed without the $EXTENDED_ARCHIVE_NAME."
@@ -940,12 +946,25 @@ Function DownloadInstallMSRuntime
 	
 	untar_failed:
 	DetailPrint "$0" ;print error message to log
+
+	untar_ok:
+	DetailPrint "Archive successfully unzipped."
+	DetailPrint "Installing vcredist_2005_x86.exe ..."
+	ExecWait '"$TEMP\$ORIGINAL_UNTAR_FOLDER\bin\vcredist_2005_x86.exe" /q'
+	DetailPrint "Installing vcredist_2008_x86.exe ..."
+	ExecWait '"$TEMP\$ORIGINAL_UNTAR_FOLDER\bin\vcredist_2008_x86.exe" /q'	
+	DetailPrint "Installing vcredist_2010_x86.exe ..."
+	ExecWait '"$TEMP\$ORIGINAL_UNTAR_FOLDER\bin\vcredist_2010_x86.exe" /q'
+	DetailPrint "Copying runtime files ..."
+	CopyFiles "$TEMP\$ORIGINAL_UNTAR_FOLDER\bin\*.dll" "$INSTALL_DIR\extrabin"
+	DetailPrint "MS runtime files installed."
+	Goto end
 	
 	end:
 
 FunctionEnd
 
-Section /O "Important Microsoft Runtime DLLs" SecMSRuntime
+Section "Important Microsoft Runtime DLLs" SecMSRuntime
 
 	;Set the size (in KB)  of the archive file
 	StrCpy $ARCHIVE_SIZE_KB 12521
@@ -954,7 +973,7 @@ Section /O "Important Microsoft Runtime DLLs" SecMSRuntime
 	AddSize 13500
 	
 	StrCpy $HTTP_PATH "http://download.osgeo.org/osgeo4w/${PLATFORM}/release/msvcrt/"
-	StrCpy $ARCHIVE_NAME "msvcrt-1.0.1-11.tar.bz2"
+	StrCpy $ARCHIVE_NAME "msvcrt-1.0.1-12.tar.bz2"
 	StrCpy $EXTENDED_ARCHIVE_NAME "Microsoft Visual C++ Redistributable Packages"
 	StrCpy $ORIGINAL_UNTAR_FOLDER "install_msruntime"
 	
@@ -1016,15 +1035,15 @@ FunctionEnd
 Section /O "North Carolina (Wake County) Data Set" SecNorthCarolinaSDB
 
 	;Set the size (in KB)  of the archive file
-	StrCpy $ARCHIVE_SIZE_KB 138629
+	StrCpy $ARCHIVE_SIZE_KB 144213
 	
 	;Set the size (in KB) of the unpacked archive file
-	AddSize 293314
+	AddSize 254521
   
-  	StrCpy $HTTP_PATH "http://grass.osgeo.org/sampledata"
-	StrCpy $ARCHIVE_NAME "nc_spm_latest.tar.gz"
+  	StrCpy $HTTP_PATH "http://grass.osgeo.org/sampledata/north_carolina/"
+	StrCpy $ARCHIVE_NAME "nc_spm_08_grass7.tar.gz"
 	StrCpy $EXTENDED_ARCHIVE_NAME "North Carolina (Wake County)"
-	StrCpy $ORIGINAL_UNTAR_FOLDER "nc_spm_08"
+	StrCpy $ORIGINAL_UNTAR_FOLDER "nc_spm_08_grass7"
 	StrCpy $CUSTOM_UNTAR_FOLDER "North_Carolina"
 	
 	Call DownloadDataSet	
@@ -1048,6 +1067,17 @@ Section /O "South Dakota (Spearfish County) Data Set" SecSpearfishSDB
 	Call DownloadDataSet
 
 SectionEnd
+
+;--------------------------------------------------------------------------
+;Clean downloaded MS runtime files  by .onInstSuccess
+
+Function .onInstSuccess
+	${If} ${SectionIsSelected} ${SecMSRuntime}
+		Delete "$TEMP\$ARCHIVE_NAME"
+		RMDir /r "$TEMP\$ORIGINAL_UNTAR_FOLDER"
+		RMDir "$TEMP\$ORIGINAL_UNTAR_FOLDER"	
+	${EndIf}
+FunctionEnd
 
 ;--------------------------------------------------------------------------
 
@@ -1085,7 +1115,7 @@ SectionEnd
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
 	!insertmacro MUI_DESCRIPTION_TEXT ${SecGRASS} "Install GRASS ${VERSION_NUMBER}"
 	!insertmacro MUI_DESCRIPTION_TEXT ${SecMSRuntime} "Some software included in this installer (e.g. GDAL, Python) may need Microsoft's Visual C++ redistributable system libraries.$\r$\nDownload and install the Redistributable Package. (12 MB)"
-	!insertmacro MUI_DESCRIPTION_TEXT ${SecNorthCarolinaSDB} "Download and install the North Carolina (Wake County) sample data set. (135 MB)"
+	!insertmacro MUI_DESCRIPTION_TEXT ${SecNorthCarolinaSDB} "Download and install the North Carolina (Wake County) sample data set. (141 MB)"
 	!insertmacro MUI_DESCRIPTION_TEXT ${SecSpearfishSDB} "Download and install the South Dakota (Spearfish County) sample data set. (20 MB)"
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 

@@ -61,8 +61,7 @@ int main(int argc, char **argv)
 	GNO_OPTION("f", "file", NULL, &pszFilein,
 		   "Input Graph definition file")
 	GNO_OPTION("g", "graph", NULL, &pszFileout, "Output Graph file")
-    GNO_END if (GNO_PARSE(argc, argv) < 0)
-    {
+	GNO_END if (GNO_PARSE(argc, argv) < 0) {
 	return 1;
     }
     /*

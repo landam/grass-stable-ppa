@@ -40,21 +40,25 @@
  *     to use new GRASS 3dgrid data files & API
  */
 
-#define MAIN
 #include <stdlib.h>
 #include <math.h>
 #include "vizual.h"
 #include <grass/gis.h>
-#include <grass/G3d.h>
+#include <grass/raster3d.h>
 #include "local_proto.h"
 #include <grass/glocale.h>
 
+file_info Headfax;	/* contains info about command line */
+Cube_data CUBE;		/* and the data for a single cube */
+int NTHRESH;
+
 int main(int argc, char *argv[])
 {
-    char *dspout, element[160];
+    char element[GNAME_MAX+10];
+    const char *dspout;
     void *g3map;
-    G3D_Region g3reg;
-    char *mapset;
+    RASTER3D_Region g3reg;
+    const char *mapset;
     double dmin, dmax;
     struct GModule *module;
 
@@ -72,23 +76,24 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster3d, voxel");
+    G_add_keyword(_("raster3d"));
+    G_add_keyword(_("display"));
+    G_add_keyword(_("voxel"));
     module->description =
-	_("Creates a display file from an existing grid3 file according to specified threshold levels.");
+	_("Creates a display file from an existing 3D raster map according to specified threshold levels.");
 
     name = G_define_option();
     name->key = "input";
     name->type = TYPE_STRING;
     name->required = YES;
-    name->gisprompt = "old,grid3,3dcell";
+    name->gisprompt = "old,grid3,3d-raster";
     /* should still find the DIRECTORY */
-    name->description = _("Name of an existing 3d raster map");
+    name->description = _("Name of an existing 3D raster map");
 
-    out = G_define_option();
+    out = G_define_standard_option(G_OPT_F_OUTPUT);
     out->key = "dspf";
-    out->type = TYPE_STRING;
     out->required = YES;
-    out->description = _("Name of output display file");
+    out->description = _("Name for output display file");
 
     levels = G_define_option();
     levels->key = "levels";
@@ -133,9 +138,9 @@ int main(int argc, char *argv[])
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    G3d_initDefaults();
+    Rast3d_init_defaults();
 
-    G3d_getWindow(&g3reg);
+    Rast3d_get_window(&g3reg);
     G_message(_("Region from getWindow: %d %d %d"),
 	      g3reg.rows, g3reg.cols, g3reg.depths);
 
@@ -144,37 +149,37 @@ int main(int argc, char *argv[])
 	 check_get_any_dspname(out->answer, name->answer, G_mapset())))
 	exit(EXIT_FAILURE);
 
-    G3d_setErrorFun(G3d_printError);
+    Rast3d_set_error_fun(Rast3d_print_error);
 
     /* open g3 file for reading and writing */
     if (NULL == (mapset = G_find_file2("grid3", name->answer, "")))
 	G_fatal_error(_("Not able to find grid3 file for [%s]"),
 		      name->answer);
 
-    g3map = G3d_openCellOld(name->answer, mapset, &g3reg,
-			    G3D_TILE_SAME_AS_FILE, G3D_USE_CACHE_DEFAULT);
+    g3map = Rast3d_open_cell_old(name->answer, mapset, &g3reg,
+			    RASTER3D_TILE_SAME_AS_FILE, RASTER3D_USE_CACHE_DEFAULT);
     /*
-       g3map = G3d_openCellOld (name->answer, mapset, G3D_DEFAULT_WINDOW,
-       G3D_TILE_SAME_AS_FILE,
-       G3D_USE_CACHE_DEFAULT);
+       g3map = Rast3d_open_cell_old (name->answer, mapset, RASTER3D_DEFAULT_WINDOW,
+       RASTER3D_TILE_SAME_AS_FILE,
+       RASTER3D_USE_CACHE_DEFAULT);
      */
 
     if (NULL == g3map)
-	G_fatal_error(_("Error opening grid3 file [%s]"), name->answer);
+	G_fatal_error(_("Unable to open 3D raster map <%s>"), name->answer);
 
-    if (0 == G3d_range_load(g3map))
-	G_fatal_error(_("Error reading range for [%s]"), name->answer);
+    if (0 == Rast3d_range_load(g3map))
+	G_fatal_error(_("Unable to read range of 3D raster map <%s>"), name->answer);
 
     /* TODO: look at this - should use current 3dregion rather than
        region represented by original 3dgrid file */
     /*
-       G3d_getRegionStructMap (g3map, &g3reg);
+       Rast3d_get_region_struct_map (g3map, &g3reg);
      */
 
     /* DONT USE Headfax any more ?
        g3read_header(&Headfax);
      */
-    G3d_range_min_max(g3map, &dmin, &dmax);
+    Rast3d_range_min_max(g3map, &dmin, &dmax);
     viz_make_header(&Headfax, dmin, dmax, &g3reg);
 
     /* puts command line options into cmndln_info structure */
@@ -192,7 +197,7 @@ int main(int argc, char *argv[])
     /* open display file for writing */
     sprintf(element, "grid3/%s/dsp", name->answer);
     if ((Headfax.dspfoutfp = G_fopen_new(element, dspout)) == NULL)
-	G_fatal_error(_("Error opening display file [%s]"), dspout);
+	G_fatal_error(_("Unable to open display file <%s>"), dspout);
 
     /* write display file header info */
     /* have to adjust dimensions  -dpg */
@@ -221,7 +226,7 @@ int main(int argc, char *argv[])
 	fprintf(stderr, "\n");
 
     /* tries to write a header! */
-    G3d_closeCell(g3map);
+    Rast3d_close(g3map);
 
     fclose(Headfax.dspfoutfp);
 

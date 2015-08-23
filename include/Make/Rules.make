@@ -1,70 +1,25 @@
-# lexical analyzer and default options
-LEXFLAGS= -d -i -s -t
 
-# parser generator and default options
-YACCFLAGS = -d -v -t
+# first found target
+first: pre default
 
-ifndef LOCAL_HEADERS
-LOCAL_HEADERS = $(wildcard *.h)
-endif
+# create platform dirs 
+ARCH_DIRS = $(ARCH_DISTDIR) $(ARCH_BINDIR) $(ARCH_INCDIR) $(ARCH_LIBDIR) \
+	$(BIN) $(ETC) \
+	$(DRIVERDIR) $(DBDRIVERDIR) $(FONTDIR) $(DOCSDIR) $(HTMLDIR) \
+	$(MANBASEDIR) $(MANDIR) $(TOOLSDIR)
 
-# for i18N support
-DEFS=-DPACKAGE=\"$(PACKAGE)\"
-NLS_CFLAGS=$(ZLIBINCPATH) $(PICFLAGS) $(DEFS)
+pre: | $(ARCH_DIRS)
 
-ifndef MOD_OBJS
-MOD_OBJS := $(subst .c,.o,$(wildcard *.c))
-endif
+default:
 
-ifndef CMD_OBJS
-CMD_OBJS := $(MOD_OBJS)
-endif
-
-ifndef ARCH_CMD_OBJS
-ARCH_CMD_OBJS := $(foreach obj,$(CMD_OBJS),OBJ.$(ARCH)/$(obj))
-endif
+$(ARCH_DIRS):
+	$(MKDIR) $@
 
 $(OBJDIR):
 	-test -d $(OBJDIR) || $(MKDIR) $(OBJDIR)
 
-ifndef BROKEN_MAKE
-ifneq ($(MAKE_VERSION),3.81)
-BROKEN_MAKE=1
-endif
-endif
-
-# default cc rules
-ifeq ($(BROKEN_MAKE),)
-$(OBJDIR)/%.o : %.c $(LOCAL_HEADERS) $(EXTRA_HEADERS) | $(OBJDIR)
-	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $(NLS_CFLAGS) $(EXTRA_INC) $(INC) -o $@ -c $<
-
-$(OBJDIR)/%.o : %.cc $(LOCAL_HEADERS) $(EXTRA_HEADERS) | $(OBJDIR)
-	$(CXX) $(CXXFLAGS) $(EXTRA_CFLAGS) $(NLS_CFLAGS) $(EXTRA_INC) $(INC) -o $@ -c $<
-
-$(OBJDIR)/%.o : %.cpp $(LOCAL_HEADERS) $(EXTRA_HEADERS) | $(OBJDIR)
-	$(CXX) $(CXXFLAGS) $(EXTRA_CFLAGS) $(NLS_CFLAGS) $(EXTRA_INC) $(INC) -o $@ -c $<
-else
-$(OBJDIR)/%.o : %.c $(LOCAL_HEADERS) $(EXTRA_HEADERS)
-	$(MAKE) $(OBJDIR)
-	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $(NLS_CFLAGS) $(EXTRA_INC) $(INC) -o $@ -c $<
-
-$(OBJDIR)/%.o : %.cc $(LOCAL_HEADERS) $(EXTRA_HEADERS)
-	$(MAKE) $(OBJDIR)
-	$(CXX) $(CXXFLAGS) $(EXTRA_CFLAGS) $(NLS_CFLAGS) $(EXTRA_INC) $(INC) -o $@ -c $<
-
-$(OBJDIR)/%.o : %.cpp $(LOCAL_HEADERS) $(EXTRA_HEADERS)
-	$(MAKE) $(OBJDIR)
-	$(CXX) $(CXXFLAGS) $(EXTRA_CFLAGS) $(NLS_CFLAGS) $(EXTRA_INC) $(INC) -o $@ -c $<
-endif
-
-# default parser generation rules, include prefix for files/vars
-%.yy.c: %.l
-	$(LEX) -P$* $(LEXFLAGS) $*.l | \
-	$(SED) -e 's/unistd.h/limits.h/g' \
-	> $@
-
-%.tab.h %.tab.c: %.y
-	$(YACC) -b$* -p$* $(YACCFLAGS) $<
+$(ARCH_INCDIR)/%.h: %.h
+	$(INSTALL_DATA) $< $@
 
 ifneq ($(MINGW),)
 mkpath = $(shell $(TOOLSDIR)/g.echo$(EXE) $(1));$(2)
@@ -72,30 +27,31 @@ else
 mkpath = $(1):$(2)
 endif
 
-GRASS_PYTHONPATH := $(call mkpath,$(GISBASE)/etc/python,$$PYTHONPATH)
-GRASS_PYTHONPATH := $(call mkpath,$(ARCH_DISTDIR)/etc/python,$(GRASS_PYTHONPATH))
+GRASS_PYTHONPATH := $(call mkpath,$(GISBASE)/gui/wxpython,$$PYTHONPATH)
+GRASS_PYTHONPATH := $(call mkpath,$(GISBASE)/etc/python,$(GRASS_PYTHONPATH))
+### really needed ???
+### GRASS_PYTHONPATH := $(call mkpath,$(ARCH_DISTDIR)/etc/python,$(GRASS_PYTHONPATH))
 
 run_grass = \
 	GISRC=$(RUN_GISRC) \
 	GISBASE=$(RUN_GISBASE) \
-	PATH="$(GISBASE)/bin:$$PATH" \
-	PYTHONPATH="$(call mkpath,$(GISBASE)/etc/python,$$PYTHONPATH)" \
-	$(LD_LIBRARY_PATH_VAR)="$(BIN):$(ARCH_LIBDIR):$(BASE_LIBDIR):$($(LD_LIBRARY_PATH_VAR))" \
+	PATH="$(ARCH_DISTDIR)/bin:$(GISBASE)/bin:$(GISBASE)/scripts:$$PATH" \
+	PYTHONPATH="$(GRASS_PYTHONPATH)" \
+	$(LD_LIBRARY_PATH_VAR)="$(BIN):$(GISBASE)/scripts:$(ARCH_LIBDIR):$(BASE_LIBDIR):$($(LD_LIBRARY_PATH_VAR))" \
 	LC_ALL=C \
 	$(1)
 
 # default clean rules
 clean:
 	-rm -rf $(OBJDIR) $(EXTRA_CLEAN_DIRS)
-	-rm -f $(EXTRA_CLEAN_FILES) *.tmp.html
+	-rm -f $(EXTRA_CLEAN_FILES) *.tab.[ch] *.yy.c *.output *.backup *.tmp.html *.pyc $(DEPFILE)
 	-if [ "$(CLEAN_SUBDIRS)" != "" ] ; then \
-		for dir in $(CLEAN_SUBDIRS) ; do \
+		list='$(CLEAN_SUBDIRS)' ; \
+		for dir in $$list ; do \
 			$(MAKE) -C $$dir clean ; \
 		done ; \
 	fi
 
-# HTML page rules:
-include $(MODULE_TOPDIR)/include/Make/Html.make
+depend:
 
-# MAN page rules:
-include $(MODULE_TOPDIR)/include/Make/Man.make
+.PHONY: clean depend

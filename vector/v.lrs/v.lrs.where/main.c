@@ -28,7 +28,7 @@
 #include <string.h>
 #include <time.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 #include "../lib/lrs.h"
@@ -43,8 +43,7 @@ int main(int argc, char **argv)
     struct Option *lfield_opt, *pfield_opt;
     struct Option *driver_opt, *database_opt, *table_opt, *thresh_opt;
     struct GModule *module;
-    char *mapset;
-    const char *drv, *db;
+    const char *mapset;
     struct Map_info LMap, PMap;
     struct line_cats *LCats, *PCats;
     struct line_pnts *LPoints, *PPoints;
@@ -55,7 +54,9 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, LRS, networking");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("Linear Reference System"));
+    G_add_keyword(_("network"));
     module->description =
 	_("Finds line id and real km+offset for given points in vector map "
 	  "using linear reference system.");
@@ -83,16 +84,15 @@ int main(int argc, char **argv)
     driver_opt->type = TYPE_STRING;
     driver_opt->required = NO;
     driver_opt->description = _("Driver name for reference system table");
-    if ((drv = db_get_default_driver_name()))
-	driver_opt->answer = drv;
+    driver_opt->options = db_list_drivers();
+    driver_opt->answer = db_get_default_driver_name();
 
     database_opt = G_define_option();
     database_opt->key = "rsdatabase";
     database_opt->type = TYPE_STRING;
     database_opt->required = NO;
     database_opt->description = _("Database name for reference system table");
-    if ((db = db_get_default_database_name()))
-	database_opt->answer = db;
+    database_opt->answer = db_get_default_database_name();
 
     table_opt = G_define_option();
     table_opt->key = "rstable";
@@ -101,7 +101,7 @@ int main(int argc, char **argv)
     table_opt->description = _("Name of the reference system table");
 
     thresh_opt = G_define_option();
-    thresh_opt->key = "thresh";
+    thresh_opt->key = "threshold";
     thresh_opt->type = TYPE_DOUBLE;
     thresh_opt->required = NO;
     thresh_opt->answer = "1000";
@@ -127,7 +127,8 @@ int main(int argc, char **argv)
 	G_fatal_error(_("Vector map <%s> not found"), lines_opt->answer);
 
     Vect_set_open_level(2);
-    Vect_open_old(&LMap, lines_opt->answer, mapset);
+    if (Vect_open_old(&LMap, lines_opt->answer, mapset) < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), lines_opt->answer);
 
     /* Open input points */
     mapset = G_find_vector2(points_opt->answer, NULL);
@@ -135,7 +136,8 @@ int main(int argc, char **argv)
 	G_fatal_error(_("Vector map <%s> not found"), points_opt->answer);
 
     Vect_set_open_level(2);
-    Vect_open_old(&PMap, points_opt->answer, mapset);
+    if (Vect_open_old(&PMap, points_opt->answer, mapset) < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), points_opt->answer);
 
     db_init_handle(&rshandle);
     db_init_string(&rsstmt);
@@ -217,14 +219,24 @@ int main(int argc, char **argv)
     Vect_close(&LMap);
     Vect_close(&PMap);
 
-    G_message(_("[%d] points read from input"), n_points);
-    G_message(_("[%d] positions found"), n_found);
+    G_message(n_("[%d] point read from input",
+                 "[%d] points read from input",
+                 n_points), n_points);
+    G_message(n_("[%d] position found",
+                 "[%d] positions found",
+                 n_found), n_found);
     if (n_outside)
-	G_message(_("[%d] points outside threshold"), n_outside);
+	G_message(n_("[%d] point outside threshold",
+                     "[%d] points outside threshold",
+                     n_outside), n_outside);
     if (n_no_record)
-	G_message(_("[%d] points - no record found"), n_no_record);
+	G_message(n_("[%d] point - no record found",
+                     "[%d] points - no record found",
+                     n_no_record), n_no_record);
     if (n_many_records)
-	G_message(_("[%d] points - too many records found"), n_many_records);
+	G_message(n_("[%d] point - too many records found",
+                     "[%d] points - too many records found",
+                     n_many_records), n_many_records);
 
     exit(EXIT_SUCCESS);
 }

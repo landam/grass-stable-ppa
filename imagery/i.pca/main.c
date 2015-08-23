@@ -23,6 +23,8 @@
 #include <string.h>
 #include <math.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
+#include <grass/imagery.h>
 #include <grass/gmath.h>
 #include <grass/glocale.h>
 #include "local_proto.h"
@@ -36,7 +38,7 @@ static CELL round_c(double);
 static int set_output_scale(struct Option *, int *, int *, int *);
 static int calc_mu_cov(int *, double **, double *, double *, int);
 static int write_pca(double **, double *, double *, int *, char *, int,
-                     int, int, int);
+                     int, int, int, int);
 
 #ifdef PCA_DEBUG
 static int dump_eigen(int, double **, double *);
@@ -47,6 +49,8 @@ int main(int argc, char *argv[])
 {
     int i;			/* Loop control variables */
     int bands;			/* Number of image bands */
+    int pcbands;		/* Number of pc scores to use for filtering */
+    int pcperc;			/* cumulative percent to use for filtering */
     double *mu;			/* Mean vector for image bands */
     double *stddev;		/* Stddev vector for image bands */
     double **covar;		/* Covariance Matrix */
@@ -54,31 +58,33 @@ int main(int argc, char *argv[])
     double **eigmat;
     int *inp_fd;
     int scale, scale_max, scale_min;
+    struct Ref ref;
+    const char *mapset;
 
     struct GModule *module;
-    struct Option *opt_in, *opt_out, *opt_scale;
-    struct Flag *flag_norm;
+    struct Option *opt_in, *opt_out, *opt_scale, *opt_filt;
+    struct Flag *flag_norm, *flag_filt;
 
     /* initialize GIS engine */
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("imagery, image transformation, PCA");
+    G_add_keyword(_("imagery"));
+    G_add_keyword(_("transformation"));
+    G_add_keyword(_("PCA"));
+    G_add_keyword(_("principal components analysis"));
     module->description = _("Principal components analysis (PCA) "
 			    "for image processing.");
+    module->overwrite = 1;
 
     /* Define options */
     opt_in = G_define_standard_option(G_OPT_R_INPUTS);
-    opt_in->description = _("Name of two or more input raster maps");
+    opt_in->description = _("Name of two or more input raster maps or imagery group");
 
-    opt_out = G_define_option();
-    opt_out->label = _("Base name for output raster maps");
+    opt_out = G_define_standard_option(G_OPT_R_BASENAME_OUTPUT);
+    opt_out->label = _("Name for output basename raster map(s)");
     opt_out->description =
 	_("A numerical suffix will be added for each component map");
-    opt_out->key = "output_prefix";
-    opt_out->type = TYPE_STRING;
-    opt_out->key_desc = "string";
-    opt_out->required = YES;
 
     opt_scale = G_define_option();
     opt_scale->key = "rescale";
@@ -92,16 +98,57 @@ int main(int argc, char *argv[])
 	_("For no rescaling use 0,0");
     opt_scale->guisection = _("Rescale");
     
+    opt_filt = G_define_option();
+    opt_filt->key = "percent";
+    opt_filt->type = TYPE_INTEGER;
+    opt_filt->required = NO;
+    opt_filt->options = "50-99";
+    opt_filt->answer = "99";
+    opt_filt->label =
+	_("Cumulative percent importance for filtering");
+    opt_filt->guisection = _("Filter");
+
     flag_norm = G_define_flag();
     flag_norm->key = 'n';
-    flag_norm->description = (_("Normalize (center and scale) input maps"));
+    flag_norm->label = (_("Normalize (center and scale) input maps"));
+    flag_norm->description = (_("Default: center only"));
     
+    flag_filt = G_define_flag();
+    flag_filt->key = 'f';
+    flag_filt->label = (_("Output will be filtered input bands"));
+    flag_filt->description = (_("Apply inverse PCA after PCA"));
+    flag_filt->guisection = _("Filter");
+
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
 
     /* determine number of bands passed in */
     for (bands = 0; opt_in->answers[bands] != NULL; bands++) ;
+
+    /* input can be either several raster maps or a group */
+    if (bands > 1) {
+	char name[GNAME_MAX];
+	
+	I_init_group_ref(&ref);
+	for (i = 0; opt_in->answers[i] != NULL; i++) {
+	    /* strip @mapset, do not modify opt_in->answers */
+	    strcpy(name, opt_in->answers[i]);
+	    mapset = G_find_raster(name, "");
+	    if (!mapset)
+		G_fatal_error(_("Raster map <%s> not found"),
+			      opt_in->answers[i]);
+	    /* Add input to group. */
+	    I_add_file_to_group_ref(name, mapset, &ref);
+	}
+    }
+    else {
+	/* Maybe input is group. Try to read group file */
+	if (I_get_group_ref(opt_in->answer, &ref) != 1)
+	    G_fatal_error(_("Group <%s> not found"),
+			  opt_in->answer);
+    }
+    bands = ref.nfiles;
 
     if (bands < 2)
 	G_fatal_error(_("Sorry, at least 2 input bands must be provided"));
@@ -113,6 +160,16 @@ int main(int argc, char *argv[])
 
     /* get scale parameters */
     set_output_scale(opt_scale, &scale, &scale_min, &scale_max);
+
+    /* filter threshold */
+    pcperc = -1;
+    if (flag_filt->answer) {
+	pcperc = atoi(opt_filt->answer);
+	if (pcperc < 0)
+	    G_fatal_error(_("'%s' must be positive"), opt_filt->key);
+	if (pcperc > 99)
+	    G_fatal_error(_("'%s' must be < 100"), opt_filt->key);
+    }
 
     /* allocate memory */
     covar = G_alloc_matrix(bands, bands);
@@ -128,26 +185,20 @@ int main(int argc, char *argv[])
 
     /* open and check input/output files */
     for (i = 0; i < bands; i++) {
-	char tmpbuf[128];
-	char *mapset;
+	char tmpbuf[GNAME_MAX];
 
 	sprintf(tmpbuf, "%s.%d", opt_out->answer, i + 1);
-	G_check_input_output_name(opt_in->answers[i], tmpbuf, GR_FATAL_EXIT);
+	G_check_input_output_name(ref.file[i].name, tmpbuf, G_FATAL_EXIT);
 
-	if ((mapset = G_find_cell(opt_in->answers[i], "")) == NULL)
-	    G_fatal_error(_("Raster map <%s> not found"), opt_in->answers[i]);
-
-	if ((inp_fd[i] = G_open_cell_old(opt_in->answers[i], mapset)) < 0)
-	    G_fatal_error(_("Unable to open raster map <%s>"),
-			  opt_in->answers[i]);
+	inp_fd[i] = Rast_open_old(ref.file[i].name, ref.file[i].mapset);
     }
 
     if (!calc_mu_cov(inp_fd, covar, mu, stddev, bands))
 	G_fatal_error(_("No non-null values"));
 
-    eigmat[0] = memcpy(eigmat[0], covar[0], bands * bands);
+    G_math_d_copy(covar[0], eigmat[0], bands * bands);
     G_debug(1, "Calculating eigenvalues and eigenvectors...");
-    eigen(covar, eigmat, eigval, bands);
+    G_math_eigen(eigmat, eigval, bands);
 
 #ifdef PCA_DEBUG
     /* dump eigen matrix and eigen values */
@@ -155,26 +206,54 @@ int main(int argc, char *argv[])
 #endif
 
     G_debug(1, "Ordering eigenvalues in descending order...");
-    egvorder2(eigval, eigmat, bands);
+    G_math_egvorder(eigval, eigmat, bands);
 
     G_debug(1, "Transposing eigen matrix...");
-    transpose2(eigmat, bands);
+    G_math_d_A_T(eigmat, bands);
+
+    pcbands = 0;
+    if (flag_filt->answer) {
+	double eigval_total = 0.0;
+	double eigval_perc = 0.0;
+
+	for (i = 0; i < bands; i++) {
+	    eigval_total += eigval[i];
+	}
+	for (i = 0; i < bands; i++) {
+	    eigval_perc += eigval[i] * 100. / eigval_total;
+	    pcbands++;
+	    if (eigval_perc > pcperc)
+		break;
+	}
+
+	/* filtering has an effect only if at least one PC is removed  */
+	if (pcbands == bands)
+	    pcbands--;
+	if (pcbands < 2)
+	    G_fatal_error(_("Not enough principal components left for filtering"));
+
+	G_message(_("Using %d of %d principal components for filtering"), pcbands, bands);
+	scale = 0;
+    }
 
     /* write output images */
     write_pca(eigmat, mu, stddev, inp_fd, opt_out->answer, bands,
-              scale, scale_min, scale_max);
+              scale, scale_min, scale_max, pcbands);
 
     /* write colors and history to output */
     for (i = 0; i < bands; i++) {
-	char outname[80];
+	char outname[GNAME_MAX];
+
+	/* close input files */
+	Rast_unopen(inp_fd[i]);
 
 	sprintf(outname, "%s.%d", opt_out->answer, i + 1);
 
 	/* write colors and history to file */
-	write_support(bands, outname, eigmat, eigval);
-
-	/* close output file */
-	G_unopen_cell(inp_fd[i]);
+	if (flag_filt->answer)
+	    write_support(bands, ref.file[i].name, outname, eigmat, eigval);
+	else
+	    write_support(bands, NULL, outname, eigmat, eigval);
     }
     
     /* free memory */
@@ -239,8 +318,8 @@ static int calc_mu_cov(int *fds, double **covar, double *mu,
 {
     int i, j;
     int row, col;
-    int rows = G_window_rows();
-    int cols = G_window_cols();
+    int rows = Rast_window_rows();
+    int cols = Rast_window_cols();
     off_t count = 0;
     DCELL **rowbuf = (DCELL **) G_malloc(bands * sizeof(DCELL *));
     double **sum2 = (double **)G_calloc(bands, sizeof(double *));
@@ -256,7 +335,7 @@ static int calc_mu_cov(int *fds, double **covar, double *mu,
     }
 
     for (i = 0; i < bands; i++) {
-	rowbuf[i] = G_allocate_d_raster_buf();
+	rowbuf[i] = Rast_allocate_d_buf();
 	sum2[i] = (double *)G_calloc(bands, sizeof(double));
     }
     sum = mu;
@@ -266,12 +345,12 @@ static int calc_mu_cov(int *fds, double **covar, double *mu,
     for (row = 0; row < rows; row++) {
 	G_percent(row, rows, 2);
 	for (i = 0; i < bands; i++)
-	    G_get_d_raster_row(fds[i], rowbuf[i], row);
+	    Rast_get_d_row(fds[i], rowbuf[i], row);
 
 	for (col = 0; col < cols; col++) {
 	    /* ignore cells where any of the maps has null value */
 	    for (i = 0; i < bands; i++)
-		if (G_is_d_null_value(&rowbuf[i][col]))
+		if (Rast_is_d_null_value(&rowbuf[i][col]))
 		    break;
 	    if (i != bands)
 		continue;
@@ -331,7 +410,7 @@ static int calc_mu_cov(int *fds, double **covar, double *mu,
 static int
 write_pca(double **eigmat, double *mu, double *stddev,
           int *inp_fd, char *out_basename, int bands, 
-	  int scale, int scale_min, int scale_max)
+	  int scale, int scale_min, int scale_max, int fbands)
 {
     int i, j;
     void **outbuf = (void **) G_malloc(bands * sizeof(void *));
@@ -341,16 +420,20 @@ write_pca(double **eigmat, double *mu, double *stddev,
     double *old_range = (double *) G_calloc(bands, sizeof(double));
     double new_range = 0.;
     int pass;
-    int rows = G_window_rows();
-    int cols = G_window_cols();
+    int rows = Rast_window_rows();
+    int cols = Rast_window_cols();
     /* why CELL_TYPE when scaling output ? */
-    int outmap_type = (scale) ? CELL_TYPE : FCELL_TYPE;
-    int outcell_mapsiz = G_raster_size(outmap_type);
+    int outmap_type = (scale) ? CELL_TYPE : DCELL_TYPE;
+    int outcell_mapsiz = Rast_cell_size(outmap_type);
     int *out_fd = (int *) G_malloc(bands * sizeof(int));
     DCELL **inbuf = (DCELL **) G_malloc(bands * sizeof(DCELL *));
+    DCELL *pcs = NULL;
 
     /* 2 passes for rescale.  1 pass for no rescale */
     int PASSES = (scale) ? 2 : 1;
+
+    if (fbands)
+	pcs = (DCELL *) G_malloc(fbands * sizeof(DCELL));
 
     /* allocate memory for row buffers */
     for (i = 0; i < bands; i++) {
@@ -358,10 +441,10 @@ write_pca(double **eigmat, double *mu, double *stddev,
 
 	/* open output raster maps */
 	sprintf(name, "%s.%d", out_basename, i + 1);
-	out_fd[i] = G_open_raster_new(name, outmap_type);
+	out_fd[i] = Rast_open_new(name, outmap_type);
 
-	inbuf[i] = G_allocate_d_raster_buf();
-	outbuf[i] = G_allocate_raster_buf(outmap_type);
+	inbuf[i] = Rast_allocate_d_buf();
+	outbuf[i] = Rast_allocate_buf(outmap_type);
 	min[i] = max[i] = old_range[i] = 0;
     }
 
@@ -386,36 +469,64 @@ write_pca(double **eigmat, double *mu, double *stddev,
 	    G_percent(row, rows, 2);
 
 	    for (i = 0; i < bands; i++) {
-		G_get_d_raster_row(inp_fd[i], inbuf[i], row);
+		Rast_get_d_row(inp_fd[i], inbuf[i], row);
 		outptr[i] = outbuf[i];
 	    }
 	    for (col = 0; col < cols; col++) {
 		/* ignore cells where any of the maps has null value */
 		for (i = 0; i < bands; i++)
-		    if (G_is_d_null_value(&inbuf[i][col]))
+		    if (Rast_is_d_null_value(&inbuf[i][col]))
 			break;
 			
 		if (i != bands) {
 		    for (i = 0; i < bands; i++) {
-			G_set_null_value(outptr[i], 1, outmap_type);
+			Rast_set_null_value(outptr[i], 1, outmap_type);
 			outptr[i] =
 			    G_incr_void_ptr(outptr[i], outcell_mapsiz);
 		    }
 		    continue;
 		}
+		
+		if (fbands) {
+		    /* calculate all PC scores */
+		    for (i = 0; i < fbands; i++) {
+			DCELL dval = 0.;
+
+			for (j = 0; j < bands; j++) {
+			    /* corresp. cell of j-th band */
+			    if (stddev)
+				dval += eigmat[i][j] * 
+					((inbuf[j][col] - mu[j]) / stddev[j]);
+			    else
+				dval += eigmat[i][j] * (inbuf[j][col] - mu[j]);
+			}
+			pcs[i] = dval;
+		    }
+		}
 
 		for (i = 0; i < bands; i++) {
 		    DCELL dval = 0.;
 
-		    for (j = 0; j < bands; j++) {
-			/* corresp. cell of j-th band */
+		    if (fbands) {
+			for (j = 0; j < fbands; j++) {
+			    /* corresp. PC score of j-th band */
+			    dval += eigmat[j][i] * pcs[j];
+			}
 			if (stddev)
-			    dval += eigmat[i][j] * 
-			            ((inbuf[j][col] - mu[j]) / stddev[j]);
+			    dval = dval * stddev[i] + mu[i];
 			else
-			    dval += eigmat[i][j] * (inbuf[j][col] - mu[j]);
+			    dval += mu[i];
 		    }
-
+		    else {
+			for (j = 0; j < bands; j++) {
+			    /* corresp. cell of j-th band */
+			    if (stddev)
+				dval += eigmat[i][j] * 
+					((inbuf[j][col] - mu[j]) / stddev[j]);
+			    else
+				dval += eigmat[i][j] * (inbuf[j][col] - mu[j]);
+			}
+		    }
 
 		    /* the cell entry is complete */
 		    if (scale && (pass == 1)) {
@@ -430,7 +541,7 @@ write_pca(double **eigmat, double *mu, double *stddev,
 		    else if (scale) {
 
 			if (min[i] == max[i]) {
-			    G_set_raster_value_c(outptr[i], 1,
+			    Rast_set_c_value(outptr[i], 1,
 						 CELL_TYPE);
 			}
 			else {
@@ -439,13 +550,13 @@ write_pca(double **eigmat, double *mu, double *stddev,
 				round_c((new_range * (dval - min[i]) /
 				         old_range[i]) + scale_min);
 
-			    G_set_raster_value_c(outptr[i], tmpcell,
+			    Rast_set_c_value(outptr[i], tmpcell,
 						 outmap_type);
 			}
 		    }
 		    else {	/* (!scale) */
 
-			G_set_raster_value_d(outptr[i], dval,
+			Rast_set_d_value(outptr[i], dval,
 					     outmap_type);
 		    }
 		    outptr[i] = G_incr_void_ptr(outptr[i], outcell_mapsiz);
@@ -454,7 +565,7 @@ write_pca(double **eigmat, double *mu, double *stddev,
 	    }
 	    if (pass == PASSES) {
 		for (i = 0; i < bands; i++)
-		    G_put_raster_row(out_fd[i], outbuf[i], outmap_type);
+		    Rast_put_row(out_fd[i], outbuf[i], outmap_type);
 	    }
 	}
 	G_percent(1, 1, 1);
@@ -462,7 +573,7 @@ write_pca(double **eigmat, double *mu, double *stddev,
 	/* close output file */
 	if (pass == PASSES) {
 	    for (i = 0; i < bands; i++) {
-		G_close_cell(out_fd[i]);
+		Rast_close(out_fd[i]);
 		G_free(inbuf[i]);
 		G_free(outbuf[i]);
 	    }

@@ -25,9 +25,9 @@
 int main(int argc, char *argv[])
 {
     char path[1024];
-    char *element;
-    char *mapset;
-    char *name;
+    const char *element;
+    const char *mapset;
+    const char *name;
     struct GModule *module;
     struct Option *opt1;
     struct Option *opt2;
@@ -36,7 +36,9 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("general, map management");
+    G_add_keyword(_("general"));
+    G_add_keyword(_("map management"));
+    G_add_keyword(_("scripts"));
     module->description = _("Prints GRASS data base file names.");
 
     /* Define the different options */
@@ -74,8 +76,8 @@ int main(int argc, char *argv[])
     if (strcmp(mapset, ".") == 0 || strcmp(mapset, "") == 0)
 	mapset = G_mapset();
 
-    G__make_mapset_element(element);
-    G__file_name(path, element, name, mapset);
+    G_make_mapset_element(element);
+    G_file_name(path, element, name, mapset);
 
     fprintf(stdout, "file='%s'\n", path);
     exit(EXIT_SUCCESS);

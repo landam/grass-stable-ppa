@@ -1,50 +1,46 @@
 
-# common dependencies and rules for building scripts
+include $(MODULE_TOPDIR)/include/Make/Vars.make
 
-SCRIPTDIR = $(ARCH_DISTDIR)/scripts
-STRINGDIR = $(MODULE_TOPDIR)/locale/scriptstrings
-
+ifdef MINGW
+SCRIPT = $(SCRIPTDIR)/$(PGM).py
+else
 SCRIPT = $(SCRIPTDIR)/$(PGM)
+endif
 
-include $(MODULE_TOPDIR)/include/Make/Platform.make
-include $(MODULE_TOPDIR)/include/Make/Grass.make
+HTMLSRC = $(SCRIPT)
+
+ETCDIR = $(ETC)/$(PGM)
+ETCPYFILES := $(patsubst %,$(ETCDIR)/%.py,$(ETCFILES))
+ETCPYCFILES := $(patsubst %,$(ETCDIR)/%.pyc,$(ETCFILES))
+
 include $(MODULE_TOPDIR)/include/Make/Rules.make
+include $(MODULE_TOPDIR)/include/Make/Html.make
+include $(MODULE_TOPDIR)/include/Make/ScriptRules.make
 
-SCRIPT_ACTIONS = $(SCRIPT)
+SCRIPT_ACTIONS = $(SCRIPT) $(ETCPYFILES) $(ETCPYCFILES) html scriptstrings
 ifdef MINGW
 SCRIPT_ACTIONS += $(BIN)/$(PGM).bat
+SCRIPT_DIR = %GISBASE%/scripts
 endif
 
 script: $(SCRIPT_ACTIONS)
 
-$(SCRIPT): $(PGM)
-	if [ ! -d $(SCRIPTDIR) ]; then $(MKDIR) $(SCRIPTDIR); fi
-	$(INSTALL) $(PGM) $(SCRIPT)
-	$(MAKE) htmlscript scriptstrings
-	$(MAKE) mancmd
-
 $(BIN)/$(PGM).bat: $(MODULE_TOPDIR)/scripts/windows_launch.bat
-	sed -e "s#SCRIPT_NAME#$(PGM)#" $(MODULE_TOPDIR)/scripts/windows_launch.bat > $@
+	sed -e "s#SCRIPT_NAME#$(PGM)#" -e "s#SCRIPT_DIR#$(SCRIPT_DIR)#" $(MODULE_TOPDIR)/scripts/windows_launch.bat > $@
 	unix2dos $@
-
-# Make strings in a fake .c file so that they get picked up by the internationalizer stuff.
-# These are only the options (parser.c) type things.
-# See locale/scriptstrings/README for more information
-
-scriptstrings = \
-	GISRC=$(RUN_GISRC) \
-	GISBASE=$(RUN_GISBASE) \
-	PATH=$(BIN):$$PATH \
-	$(LD_LIBRARY_PATH_VAR)="$(ARCH_LIBDIR):$($(LD_LIBRARY_PATH_VAR))" \
-	g.parser -t $(1) | sed s/\"/\\\\\"/g | sed 's/.*/_("&")/' > \
-	$(STRINGDIR)/$(PGM)_to_translate.c ; true
-
-$(STRINGDIR)/$(PGM)_to_translate.c: $(PGM)
-	$(call scriptstrings,$(PGM))
 
 scriptstrings: $(STRINGDIR)/$(PGM)_to_translate.c
 
 install:
-	$(INSTALL) $(ARCH_DISTDIR)/scripts/$(PGM)$(EXE) $(INST_DIR)/scripts/
+	$(INSTALL) $(SCRIPT) $(INST_DIR)/scripts/
 	$(INSTALL_DATA) $(HTMLDIR)/$(PGM).html $(INST_DIR)/docs/html/
-	$(INSTALL_DATA) $(ARCH_DISTDIR)/man/man1/$(PGM).1 $(INST_DIR)/man/man1/
+	$(eval IMG := $(wildcard $(HTMLDIR)/*.png) $(wildcard $(HTMLDIR)/*.jpg))
+	if [ -n "$(IMG)" ] ; then \
+		$(INSTALL_DATA) $(IMG)  $(INST_DIR)/docs/html/ ; \
+	fi
+	$(INSTALL_DATA) $(ARCH_DISTDIR)/docs/man/man1/$(PGM).1 $(INST_DIR)/docs/man/man1/
+	if [ -d "$(ETC)/$(PGM)" ] ; then \
+		cp -rL $(ETC)/$(PGM) $(INST_DIR)/etc/ ; \
+	fi
+
+.PHONY: script scriptstrings

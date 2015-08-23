@@ -208,7 +208,6 @@ int main(int argc, char **argv)
     struct Option *output;
     struct Option *coords;
     struct Flag *format;
-    struct Flag *quiet;
     struct Flag *reverse;
     struct Flag *close;
     struct GModule *module;
@@ -216,7 +215,6 @@ int main(int argc, char **argv)
     struct survey_record record, first_record;
     const char *cptr;
     char *ss;
-    int verbose = TRUE;
     unsigned long linenum = 0, dataline = 0;
     int (*parse_line) (const char *, struct survey_record *);
     void (*print_func) (FILE *, struct survey_record *);
@@ -224,7 +222,8 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("miscellaneous, distance");
+    G_add_keyword(_("miscellaneous"));
+    G_add_keyword(_("distance"));
     module->label = _("A simple utility for converting bearing and "
 		      "distance measurements to coordinates and vice versa.");
     module->description = _("It assumes a cartesian coordinate system");
@@ -232,10 +231,6 @@ int main(int argc, char **argv)
     format = G_define_flag();
     format->key = 'l';
     format->description = _("Lines are labelled");
-
-    quiet = G_define_flag();
-    quiet->key = 'q';
-    quiet->description = _("Suppress warnings");
 
     reverse = G_define_flag();
     reverse->key = 'r';
@@ -255,11 +250,7 @@ int main(int argc, char **argv)
     output->required = NO;
     output->answer = "-";
 
-    coords = G_define_option();
-    coords->key = "coord";
-    coords->key_desc = "x,y";
-    coords->type = TYPE_DOUBLE;
-    coords->required = NO;
+    coords = G_define_standard_option(G_OPT_M_COORDS);
     coords->description = _("Starting coordinate pair");
     coords->answer = "0.0,0.0";
 
@@ -294,9 +285,6 @@ int main(int argc, char **argv)
 	record.haslabel = NO;
     }
 
-    if (quiet->answer)
-	verbose = FALSE;
-
     if (reverse->answer) {
 	parse_line = parse_reverse;
 	print_func = print_cogo;
@@ -327,8 +315,7 @@ int main(int argc, char **argv)
 	}
 
 	if (!parse_line(cptr, &record)) {
-	    if (verbose)
-		G_warning(_("Input parse error on line %d"), linenum);
+            G_warning(_("Input parse error on line %lu"), linenum);
 	    continue;
 	}
 

@@ -1,4 +1,4 @@
-"""!
+"""
 @package icons.icon
 
 @brief Icon metadata
@@ -6,7 +6,7 @@
 Classes:
  - MetaIcon
 
-(C) 2007-2008, 2010-2011 by the GRASS Development Team
+(C) 2007-2014 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -17,73 +17,41 @@ This program is free software under the GNU General Public License
 
 import os
 import sys
-import types
 import copy
 
 import wx
 
 from core.settings import UserSettings
+from core.utils import _
 
-import grass2_icons # default icon set
-iconPathDefault = grass2_icons.iconPath
-iconSetDefault  = grass2_icons.iconSet
+# default icon set
+import grass_icons
+iconSetDefault  = grass_icons.iconSet
+iconPathDefault = grass_icons.iconPath
 
 iconTheme = UserSettings.Get(group = 'appearance', key = 'iconTheme', subkey = 'type')
-if iconTheme == 'silk':
-    import silk_icons
-    iconPath = silk_icons.iconPath
-    iconSet  = silk_icons.iconSet
-elif iconTheme == 'grass':
-    import grass_icons
-    iconPath = grass_icons.iconPath
-    iconPathVDigit = grass_icons.iconPathVDigit
-    iconSet  = grass_icons.iconSet
-else:
-    iconPath = iconPathDefault
-    iconSet  = iconSetDefault
+if iconTheme != 'grass':
+    sys.stderr.write(_("Unknown iconset '%s', using default 'grass'...\n") % (iconTheme))
 
-# merge icons dictionaries, join paths
+iconSet  = iconSetDefault
+iconPath = iconPathDefault
+
+# join paths
 try:
     if iconPath and not os.path.exists(iconPath):
         raise OSError
     
-    if iconTheme != 'grass':
-        # use default icons if no icon is available
-        for key, img in iconSet.iteritems():
-            if key not in iconSet or \
-                    iconSet[key] is None: # add key
-                iconSet[key] = img
-            
-            iconSet[key] = os.path.join(iconPath, iconSet[key])
-    else:
-        for key, img in iconSet.iteritems():
-            if img and type(iconSet[key]) == types.StringType:
-                if key in ("point-create",
-                           "line-create",
-                           "boundary-create",
-                           "centroid-create",
-                           "polygon-create",
-                           "vertex-create",
-                           "vertex-move",
-                           "vertex-delete",
-                           "line-split",
-                           "line-edit",
-                           "line-move",
-                           "line-delete",
-                           "cats-copy",
-                           "cats-display",
-                           "attributes-display",
-                           "undo",
-                           "tools"):
-                    iconSet[key] = os.path.join(iconPathVDigit, img)
-                else:
-                    iconSet[key] = os.path.join(iconPath, img)
-
-except StandardError, e:
-    sys.exit(_("Unable to load icon theme. Reason: %s") % e)
-
+    for key, img in iconSet.iteritems():
+        if key not in iconSet or \
+                iconSet[key] is None: # add key
+            iconSet[key] = img
+        
+        iconSet[key] = os.path.join(iconPath, iconSet[key])
+except StandardError as e:
+    sys.exit(_("Unable to load icon theme. Reason: %s. Quiting wxGUI...") % e)
+    
 class MetaIcon:
-    """!Handle icon metadata (image path, tooltip, ...)
+    """Handle icon metadata (image path, tooltip, ...)
     """
     def __init__(self, img, label = None, desc = None):
         self.imagepath = iconSet.get(img, wx.ART_MISSING_IMAGE)
@@ -131,11 +99,12 @@ class MetaIcon:
         return os.path.basename(self.imagepath)
 
     def SetLabel(self, label = None, desc = None):
-        """!Set label/description for icon
-        @param label icon label (None for no change)
-        @param desc icon description (None for no change)
+        """Set label/description for icon
+
+        :param label: icon label (None for no change)
+        :param desc: icon description (None for no change)
         
-        @return copy of original object
+        :return: copy of original object
         """
         cobj = copy.copy(self)
         if label:

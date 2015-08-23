@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 #include <math.h>
-#include <grass/gis.h>
+#include <grass/raster.h>
 
 #define ODD(a)	((a) & 1)
 
@@ -19,12 +19,6 @@
 /* S_O_D == (2 * MAX_INTERVAL) / DELTA_T                                */
 #define SIZE_OF_DISTRIBUTION 	20000
 #define PI       		M_PI
-
-#ifdef MAIN
-#define GLOBAL
-#else
-#define GLOBAL extern
-#endif
 
 #define BIGF struct _big_f_filter_
 BIGF {
@@ -43,17 +37,20 @@ CATINFO {
     double *Average, *Max, *Min;
 };
 
-GLOBAL BIGF BigF;
-GLOBAL double **Surface, NS, EW, FilterSD, AllMaxDist, *Norm;
-GLOBAL int MapCount, FDM, Rs, Cs, Theory;
-GLOBAL CELL *CellBuffer;
-GLOBAL FILTER *AllFilters, Filter;
-GLOBAL CATINFO CatInfo;
-GLOBAL int *Seeds, Seed, NumSeeds, Low, High, NumMaps, NumFilters, OutFD;
-GLOBAL char Buf[240], **OutNames, *TheoryName, *Mapset;
-GLOBAL struct Flag *Uniform;
+extern BIGF BigF;
+extern double **Surface, NS, EW, FilterSD, AllMaxDist, *Norm;
+extern int MapCount, FDM, Rs, Cs, Theory;
+extern CELL *CellBuffer;
+extern FILTER *AllFilters, Filter;
+extern CATINFO CatInfo;
+extern int *Seeds, Seed, NumSeeds, Low, High, NumMaps, NumFilters, OutFD;
+extern char Buf[240], **OutNames, *TheoryName, *Mapset;
+extern struct Flag *Uniform;
 
     /* please, remove before GRASS 7 released */
-GLOBAL struct Flag *Verbose;
-GLOBAL struct Option *Distance, *Exponent, *Weight;
+extern struct Flag *Verbose;
+extern struct Option *Distance, *Exponent, *Weight;
+extern struct Option *Output;
+extern struct Option *range_high_stuff;
+extern struct Option *SeedStuff;
 #endif

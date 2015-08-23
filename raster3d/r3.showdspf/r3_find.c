@@ -4,7 +4,7 @@
  * Find the a 3dcell in the current mapset
  **************************************************************/
 #include <grass/gis.h>
-#include <grass/G3d.h>
+#include <grass/raster3d.h>
 
 
 int g3_find_dsp_file(cell, file, mset)
@@ -19,7 +19,7 @@ int g3_find_dsp_file(cell, file, mset)
 
     strcpy(tofind, file);
 
-    if (G__name_is_fully_qualified(cell, name, mapset))
+    if (G_name_is_fully_qualified(cell, name, mapset))
 	sprintf(element, "grid3/%s/dsp", name);
     else
 	sprintf(element, "grid3/%s/dsp", cell);
@@ -35,18 +35,15 @@ char *check_get_any_dspname(dspf, g3f, mset)
     char element[200], question[200];
     static char dspout[200];
 
-    if (!G_legal_filename(dspf))
-	return (NULL);
-
-    if (!G_find_grid3(g3f, "")) {
-	fprintf(stderr, "3D raster map <%s> not found\n", g3f);
+    if (!G_find_raster3d(g3f, "")) {
+	fprintf(stderr, "3D raster map <%s> not found", g3f);
 	return (NULL);
     }
 
     if (mset) {			/* otherwise must be reading only  */
 
 	if (g3_find_dsp_file(g3f, dspf, mset)) {	/* already exists */
-	    sprintf(question, "\n** <%s> exists. ok to overwrite? ", dspf);
+	    sprintf(question, "\n** %s exists. ok to overwrite? ", dspf);
 	    if (!G_yes(question, 0)) {
 		if (NULL == G_ask_any("", dspout, element, "display", 1))
 		    return (NULL);

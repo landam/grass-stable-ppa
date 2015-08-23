@@ -24,7 +24,7 @@
 #include <grass/glocale.h>
 #include <grass/stats.h>
 #include <grass/dbmi.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 
 struct menu
 {
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
     char *p;
     int i, j, k;
     int method, half, use_catno;
-    char *mapset;
+    const char *mapset;
     struct GModule *module;
     struct Option *point_opt,	/* point vector */
      *area_opt,			/* area vector */
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
      *stats_column_opt,		/* area column for stats result */
      *fs_opt;			/* field separator for printed output */
     struct Flag *print_flag;
-    char fs[2];
+    char *fs;
     struct Map_info PIn, AIn;
     int point_type, point_field, area_field;
     struct line_pnts *Points;
@@ -107,8 +107,8 @@ int main(int argc, char *argv[])
     dbDriver *Pdriver, *Adriver;
     char buf[2000];
     int update_ok, update_err;
-    struct ilist *List;
-    BOUND_BOX box;
+    struct boxlist *List;
+    struct bound_box box;
     dbCatValArray cvarr;
     dbColumn *column;
     struct pvalcat
@@ -125,8 +125,12 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, database, attribute table");
-    module->description = _("Count points in areas, calculate statistics.");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("attribute table"));
+    G_add_keyword(_("database"));
+    G_add_keyword(_("univariate statistics"));
+    G_add_keyword(_("zonal statistics"));
+    module->description = _("Count points in areas, calculate statistics from point attributes.");
 
     point_opt = G_define_standard_option(G_OPT_V_INPUT);
     point_opt->key = "points";
@@ -146,11 +150,11 @@ int main(int argc, char *argv[])
     point_type_opt->required = NO;
 
     point_field_opt = G_define_standard_option(G_OPT_V_FIELD);
-    point_field_opt->key = "player";
+    point_field_opt->key = "points_layer";
     point_field_opt->label = _("Layer number for points map");
 
     area_field_opt = G_define_standard_option(G_OPT_V_FIELD);
-    area_field_opt->key = "alayer";
+    area_field_opt->key = "areas_layer";
     area_field_opt->label = _("Layer number for area map");
 
     method_opt = G_define_option();
@@ -169,8 +173,8 @@ int main(int argc, char *argv[])
     method_opt->options = p;
     method_opt->description = _("Method for aggregate statistics");
 
-    point_column_opt = G_define_standard_option(G_OPT_COLUMN);
-    point_column_opt->key = "pcolumn";
+    point_column_opt = G_define_standard_option(G_OPT_DB_COLUMN);
+    point_column_opt->key = "points_column";
     point_column_opt->required = NO;
     point_column_opt->multiple = NO;
     point_column_opt->label =
@@ -178,7 +182,7 @@ int main(int argc, char *argv[])
     point_column_opt->description = _("Column of points map must be numeric");
 
     count_column_opt = G_define_option();
-    count_column_opt->key = "ccolumn";
+    count_column_opt->key = "count_column";
     count_column_opt->type = TYPE_STRING;
     count_column_opt->required = NO;
     count_column_opt->multiple = NO;
@@ -187,7 +191,7 @@ int main(int argc, char *argv[])
 	_("Column to hold points count, must be of type integer, will be created if not existing");
 
     stats_column_opt = G_define_option();
-    stats_column_opt->key = "scolumn";
+    stats_column_opt->key = "stats_column";
     stats_column_opt->type = TYPE_STRING;
     stats_column_opt->required = NO;
     stats_column_opt->multiple = NO;
@@ -196,9 +200,6 @@ int main(int argc, char *argv[])
 	_("Column to hold statistics, must be of type double, will be created if not existing");
 
     fs_opt = G_define_standard_option(G_OPT_F_SEP);
-    fs_opt->answer = "|";
-    fs_opt->key_desc = "character|space|tab";
-    fs_opt->description = _("Output field separator");
 
     print_flag = G_define_flag();
     print_flag->key = 'p';
@@ -214,22 +215,11 @@ int main(int argc, char *argv[])
     point_field = atoi(point_field_opt->answer);
     area_field = atoi(area_field_opt->answer);
 
-    strcpy(fs, " ");
-    if (print_flag->answer) {
+    if (print_flag->answer)
 	/* get field separator */
-	if (fs_opt->answer) {
-	    if (strcmp(fs_opt->answer, "space") == 0)
-		*fs = ' ';
-	    else if (strcmp(fs_opt->answer, "tab") == 0)
-		*fs = '\t';
-	    else if (strcmp(fs_opt->answer, "\\t") == 0)
-		*fs = '\t';
-	    else
-		*fs = *fs_opt->answer;
-	}
-	else
-	    *fs = '|';
-    }
+	    fs = G_option_to_separator(fs_opt);
+    else
+	    fs = NULL;
 
     /* check for stats */
     if (method_opt->answer) {
@@ -237,14 +227,14 @@ int main(int argc, char *argv[])
 	    G_fatal_error("Method but no point column selected");
 	}
 	if (!print_flag->answer && !stats_column_opt->answer)
-	    G_fatal_error("Name for stats column is missing");
+	    G_fatal_error("Name for stats_column is missing");
     }
 
     if (point_column_opt->answer) {
 	if (!method_opt->answer)
 	    G_fatal_error("No method for statistics selected");
 	if (!print_flag->answer && !stats_column_opt->answer)
-	    G_fatal_error("Name for stats column is missing");
+	    G_fatal_error("Name for stats_column is missing");
     }
     
     /* Open points vector */
@@ -252,7 +242,8 @@ int main(int argc, char *argv[])
 	G_fatal_error(_("Vector map <%s> not found"), point_opt->answer);
 
     Vect_set_open_level(2);
-    Vect_open_old(&PIn, point_opt->answer, mapset);
+    if (Vect_open_old(&PIn, point_opt->answer, mapset) < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), point_opt->answer);
 
     /* Open areas vector */
     if ((mapset = G_find_vector2(area_opt->answer, "")) == NULL)
@@ -262,7 +253,8 @@ int main(int argc, char *argv[])
 		      area_opt->answer);
 
     Vect_set_open_level(2);
-    Vect_open_old(&AIn, area_opt->answer, mapset);
+    if (Vect_open_old(&AIn, area_opt->answer, mapset) < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), area_opt->answer);
 
     method = -1;
     use_catno = 0;
@@ -309,7 +301,7 @@ int main(int argc, char *argv[])
 			  AFi->database, AFi->driver);
 
 	if (!count_column_opt->answer)
-	    G_fatal_error(_("ccolumn is required to upload point counts"));
+	    G_fatal_error(_("count_column is required to upload point counts"));
 
 	/* check if count column exists */
 	G_debug(1, "check if count column exists");
@@ -318,7 +310,7 @@ int main(int argc, char *argv[])
 	    /* check count column type */
 	    if (db_column_Ctype(Adriver, AFi->table, count_column_opt->answer)
 		!= DB_C_TYPE_INT)
-		G_fatal_error(_("ccolumn must be of type integer"));
+		G_fatal_error(_("count_column must be of type integer"));
 
 	    db_free_column(column);
 	    column = NULL;
@@ -337,7 +329,7 @@ int main(int argc, char *argv[])
 
 	if (method_opt->answer) {
 	    if (!stats_column_opt->answer)
-		G_fatal_error(_("scolumn is required to upload point stats"));
+		G_fatal_error(_("stats_column is required to upload point stats"));
 
 	    /* check if stats column exists */
 	    G_debug(1, "check if stats column exists");
@@ -348,7 +340,7 @@ int main(int argc, char *argv[])
 		if (db_column_Ctype
 		    (Adriver, AFi->table,
 		     stats_column_opt->answer) != DB_C_TYPE_DOUBLE)
-		    G_fatal_error(_("scolumn must be of type double"));
+		    G_fatal_error(_("stats_column must be of type double precision"));
 
 		db_free_column(column);
 		column = NULL;
@@ -379,10 +371,19 @@ int main(int argc, char *argv[])
 	    G_fatal_error(_("Database connection not defined for layer %d"),
 			  point_field);
 
-	Pdriver = db_start_driver_open_database(PFi->driver, PFi->database);
-	if (Pdriver == NULL)
-	    G_fatal_error(_("Unable to open database <%s> with driver <%s>"),
-			  PFi->database, PFi->driver);
+
+	/* Open points map driver and database */
+	if (Adriver && strcmp(AFi->driver, PFi->driver) == 0
+	    && strcmp(AFi->database, PFi->database) == 0) {
+	    G_debug(3, "Use the same driver");
+	    Pdriver = Adriver;
+	}
+	else {
+	    Pdriver = db_start_driver_open_database(PFi->driver, PFi->database);
+	    if (Pdriver == NULL)
+		G_fatal_error(_("Unable to open database <%s> with driver <%s>"),
+			      PFi->database, PFi->driver);
+	}
 
 	/* check if point column exists */
 	db_get_column(Pdriver, PFi->table, point_column_opt->answer, &column);
@@ -410,13 +411,15 @@ int main(int argc, char *argv[])
 	nrec = db_select_CatValArray(Pdriver, PFi->table, PFi->key,
 				     point_column_opt->answer, NULL, &cvarr);
 	G_debug(1, "selected values = %d", nrec);
-	db_close_database_shutdown_driver(Pdriver);
+
+	if (Pdriver != Adriver)
+	    db_close_database_shutdown_driver(Pdriver);
     }
 
     Points = Vect_new_line_struct();
     ACats = Vect_new_cats_struct();
     PCats = Vect_new_cats_struct();
-    List = Vect_new_list();
+    List = Vect_new_boxlist(0);
 
     /* Allocate space ( may be more than needed (duplicate cats and elements without cats) ) */
     if ((nareas = Vect_get_num_areas(&AIn)) <= 0)
@@ -477,10 +480,6 @@ int main(int argc, char *argv[])
     pvalcats =
 	(struct pvalcat *)G_calloc(npvalcatsalloc, sizeof(struct pvalcat));
 
-    /* remove for GRASS 7 */
-    G_verbose_message(_("creating spatial index"));
-    Vect_build_spatial_index(&PIn);
-
     G_message(_("Selecting points for each area..."));
     count = 0;
     for (area = 1; area <= nareas; area++) {
@@ -505,7 +504,7 @@ int main(int argc, char *argv[])
 	/* For each point in box check if it is in the area */
 	for (i = 0; i < List->n_values; i++) {
 
-	    pline = List->value[i];
+	    pline = List->id[i];
 	    G_debug(4, "%d: point %d", i, pline);
 
 	    ptype = Vect_read_line(&PIn, Points, PCats, pline);
@@ -513,7 +512,7 @@ int main(int argc, char *argv[])
 		continue;
 
 	    /* point in area */
-	    if (Vect_point_in_area(&AIn, area, Points->x[0], Points->y[0])) {
+	    if (Vect_point_in_area(Points->x[0], Points->y[0], &AIn, area, &box)) {
 		AREA_CAT *area_info, search_ai;
 
 		int tmp_cat;

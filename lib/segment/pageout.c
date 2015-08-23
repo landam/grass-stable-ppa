@@ -9,35 +9,42 @@
  *
  * \author GRASS GIS Development Team
  *
- * \date 2005-2006
+ * \date 2005-2009
  */
 
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
-#include <grass/segment.h>
+#include <grass/gis.h>
+#include "local_proto.h"
 
 
 /**
- * \fn int segment_pageout(SEGMENT *SEG, int i)
- *
- * \brief Pages segment to disk.
+ * \brief Internal use only
+ * 
+ * Pages segment to disk.
  *
  * Finds segment value <b>i</b> in segment <b>seg</b> and pages it out 
  * to disk.
  *
- * \param[in] seg segment
+ * \param[in] SEG segment
  * \param[in] i segment value
  * \return 1 if successful
  * \return -1 on error
  */
 
-int segment_pageout(SEGMENT * SEG, int i)
+int seg_pageout(SEGMENT * SEG, int i)
 {
-    segment_seek(SEG, SEG->scb[i].n, 0);
+    SEG->seek(SEG, SEG->scb[i].n, 0);
+    errno = 0;
     if (write(SEG->fd, SEG->scb[i].buf, SEG->size) != SEG->size) {
-	G_warning("segment_pageout: %s", strerror(errno));
+	int err = errno;
+
+	if (err)
+	    G_warning("Segment pageout: %s", strerror(err));
+	else
+	    G_warning("Segment pageout: insufficient disk space?");
 	return -1;
     }
     SEG->scb[i].dirty = 0;

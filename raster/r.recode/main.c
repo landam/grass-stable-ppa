@@ -1,3 +1,4 @@
+
 /****************************************************************************
  *
  * MODULE:       r.recode
@@ -12,7 +13,7 @@
  *               comes with GRASS for details.
  *
  *****************************************************************************/
-#define MAIN
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,6 +21,15 @@
 #include <grass/gis.h>
 #include <grass/glocale.h>
 #include "global.h"
+
+RASTER_MAP_TYPE in_type;
+RASTER_MAP_TYPE out_type;
+struct FPReclass rcl_struct;
+CELL old_min, old_max;
+DCELL old_dmin, old_dmax;
+int in_fd, out_fd, no_mask, align_wind, make_dcell, nrules, rule_size;
+char *name, *result, *title;
+char **rules;
 
 int main(int argc, char *argv[])
 {
@@ -32,13 +42,11 @@ int main(int argc, char *argv[])
 	struct Flag *a, *d;
     } parm;
 
-    /* any interaction must run in a term window */
-    G_putenv("GRASS_UI_TERM", "1");
-
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, recode category");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("recode categories"));
     module->description = _("Recodes categorical raster maps.");
 
     parm.input = G_define_standard_option(G_OPT_R_INPUT);
@@ -48,10 +56,8 @@ int main(int argc, char *argv[])
 
     parm.rules = G_define_standard_option(G_OPT_F_INPUT);
     parm.rules->key = "rules";
-    parm.rules->required = NO;
     parm.rules->label = _("File containing recode rules");
-    parm.rules->description = _("\"-\" to read from stdin");
-    parm.rules->guisection = _("Required");
+    parm.rules->description = _("'-' for standard input");
     
     parm.title = G_define_option();
     parm.title->key = "title";
@@ -76,18 +82,8 @@ int main(int argc, char *argv[])
     align_wind = parm.a->answer;
     make_dcell = parm.d->answer;
 
-    mapset = G_find_cell2(name, "");
-    if (mapset == NULL)
-	G_fatal_error(_("Raster map <%s> not found"), name);
-
-    if (G_legal_filename(result) < 0)
-	G_fatal_error(_("<%s> is an illegal file name"), result);
-
-    if (strcmp(name, result) == 0 && strcmp(mapset, G_mapset()) == 0)
-	G_fatal_error(_("Input map can NOT be the same as output map"));
-
     srcfp = stdin;
-    if (parm.rules->answer && strcmp("-", parm.rules->answer) != 0) {
+    if (strcmp(parm.rules->answer, "-") != 0) {
 	srcfp = fopen(parm.rules->answer, "r");
 	if (!srcfp)
 	    G_fatal_error(_("Unable to open file <%s>"),
@@ -107,10 +103,7 @@ int main(int argc, char *argv[])
     do_recode();
 
     if(title)
-	G_put_cell_title(result, title);
-
-    G_done_msg(_("Raster map <%s> created."),
-	       result);
+	Rast_put_cell_title(result, title);
 
     exit(EXIT_SUCCESS);
 }

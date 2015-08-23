@@ -1,62 +1,57 @@
-
-/**
- * \file adj_cellhd.c
+/*!
+ * \file lib/gis/adj_cellhd.c
  *
  * \brief GIS Library - CELL header adjustment.
  *
- * (C) 2001-2008 by the GRASS Development Team
+ * (C) 2001-2009 by the GRASS Development Team
  *
  * This program is free software under the GNU General Public License
  * (>=v2). Read the file COPYING that comes with GRASS for details.
  *
- * \author GRASS GIS Development Team
- *
- * \date 1999-2008
+ * \author Original author CERL
  */
 
 #include <grass/gis.h>
 #include <grass/glocale.h>
 
-
-/**
+/*!
  * \brief Adjust cell header.
  *
- * This function fills in missing parts of the input
- * cell header (or region).  It also makes projection-specific adjustments. The
- * <b>cellhd</b> structure must have its <i>north, south, east, west</i>,
- * and <i>proj</i> fields set. 
+ * This function fills in missing parts of the input cell header (or
+ * region). It also makes projection-specific adjustments. The
+ * <i>cellhd</i> structure must have its <i>north, south, east,
+ * west</i>, and <i>proj</i> fields set.
  * 
- * If <b>row_flag</b> is true, then the north-south resolution is computed 
- * from the number of <i>rows</i> in the <b>cellhd</b> structure. Otherwise the number of 
- * <i>rows</i> is computed from the north-south resolution in the structure, similarly for
- * <b>col_flag</b> and the number of columns and the east-west resolution. 
+ * If <i>row_flag</i> is true, then the north-south resolution is
+ * computed from the number of <i>rows</i> in the <i>cellhd</i>
+ * structure. Otherwise the number of <i>rows</i> is computed from the
+ * north-south resolution in the structure, similarly for
+ * <i>col_flag</i> and the number of columns and the east-west
+ * resolution.
  *
  * <b>Note:</b> 3D values are not adjusted.
  *
- * \param[in,out] cellhd
- * \param[in] row_flag
- * \param[in] col_flag
- * \return NULL on success
- * \return Localized text string on error
+ * \param[in,out] cellhd pointer to Cell_head structure
+ * \param row_flag compute n-s resolution
+ * \param col_flag compute e-w resolution
  */
-
-char *G_adjust_Cell_head(struct Cell_head *cellhd, int row_flag, int col_flag)
+void G_adjust_Cell_head(struct Cell_head *cellhd, int row_flag, int col_flag)
 {
     if (!row_flag) {
 	if (cellhd->ns_res <= 0)
-	    return (_("Illegal n-s resolution value"));
+	    G_fatal_error(_("Illegal n-s resolution value"));
     }
     else {
 	if (cellhd->rows <= 0)
-	    return (_("Illegal row value"));
+	    G_fatal_error(_("Illegal row value"));
     }
     if (!col_flag) {
 	if (cellhd->ew_res <= 0)
-	    return (_("Illegal e-w resolution value"));
+	    G_fatal_error(_("Illegal e-w resolution value"));
     }
     else {
 	if (cellhd->cols <= 0)
-	    return (_("Illegal col value"));
+	    G_fatal_error(_("Illegal col value"));
     }
 
     /* for lat/lon, check north,south. force east larger than west */
@@ -81,7 +76,7 @@ char *G_adjust_Cell_head(struct Cell_head *cellhd, int row_flag, int col_flag)
 		cellhd->north = 90.0;
 	    }
 	    else
-		return (_("Illegal latitude for North"));
+		G_fatal_error(_("Illegal latitude for North"));
 	}
 
 	if (cellhd->south < -90.0) {
@@ -92,7 +87,7 @@ char *G_adjust_Cell_head(struct Cell_head *cellhd, int row_flag, int col_flag)
 		cellhd->south = -90.0;
 	    }
 	    else
-		return (_("Illegal latitude for South"));
+		G_fatal_error(_("Illegal latitude for South"));
 	}
 
 #if 0
@@ -128,12 +123,12 @@ char *G_adjust_Cell_head(struct Cell_head *cellhd, int row_flag, int col_flag)
     /* check the edge values */
     if (cellhd->north <= cellhd->south) {
 	if (cellhd->proj == PROJECTION_LL)
-	    return (_("North must be north of South"));
+	    G_fatal_error(_("North must be north of South"));
 	else
-	    return (_("North must be larger than South"));
+	    G_fatal_error(_("North must be larger than South"));
     }
     if (cellhd->east <= cellhd->west)
-	return (_("East must be larger than West"));
+	G_fatal_error(_("East must be larger than West"));
 
     /* compute rows and columns, if not set */
     if (!row_flag) {
@@ -152,79 +147,76 @@ char *G_adjust_Cell_head(struct Cell_head *cellhd, int row_flag, int col_flag)
     }
 
     if (cellhd->cols < 0 || cellhd->rows < 0) {
-	return (_("Invalid coordinates"));
+	G_fatal_error(_("Invalid coordinates"));
     }
 
 
     /* (re)compute the resolutions */
     cellhd->ns_res = (cellhd->north - cellhd->south) / cellhd->rows;
     cellhd->ew_res = (cellhd->east - cellhd->west) / cellhd->cols;
-
-    return NULL;
 }
 
-
-/**
+/*!
  * \brief Adjust cell header for 3D values.
  *
- * This function fills in missing parts of the input
- * cell header (or region).  It also makes projection-specific adjustments. The
- * <b>cellhd</b> structure must have its <i>north, south, east, west</i>,
- * and <i>proj</i> fields set. 
+ * This function fills in missing parts of the input cell header (or
+ * region).  It also makes projection-specific adjustments. The
+ * <i>cellhd</i> structure must have its <i>north, south, east,
+ * west</i>, and <i>proj</i> fields set.
  * 
- * If <b>row_flag</b> is true, then the north-south resolution is computed 
- * from the number of <i>rows</i> in the <b>cellhd</b> structure. 
+ * If <i>row_flag</i> is true, then the north-south resolution is computed 
+ * from the number of <i>rows</i> in the <i>cellhd</i> structure. 
  * Otherwise the number of <i>rows</i> is computed from the north-south 
- * resolution in the structure, similarly for <b>col_flag</b> and the 
+ * resolution in the structure, similarly for <i>col_flag</i> and the 
  * number of columns and the east-west resolution. 
  *
- * If <b>depth_flag</b> is true, top-bottom resolution is calculated 
+ * If <i>depth_flag</i> is true, top-bottom resolution is calculated 
  * from depths.
- * If <b>depth_flag</b> are false, number of depths is calculated from 
+ * If <i>depth_flag</i> are false, number of depths is calculated from 
  * top-bottom resolution.
  *
- * \param[in,out] cellhd
- * \param[in] row_flag
- * \param[in] col_flag
- * \param[in] depth_flag
- * \return NULL on success
- * \return Localized text string on error
+ * \warning This function can cause segmentation fault without any warning
+ * when it is called with Cell_head top and bottom set to zero.
+ *
+ * \param[in,out] cellhd pointer to Cell_head structure
+ * \param row_flag compute n-s resolution
+ * \param col_flag compute e-w resolution
+ * \param depth_flag compute t-b resolution
  */
-
-char *G_adjust_Cell_head3(struct Cell_head *cellhd, int row_flag,
-			  int col_flag, int depth_flag)
+void G_adjust_Cell_head3(struct Cell_head *cellhd, int row_flag,
+			 int col_flag, int depth_flag)
 {
     if (!row_flag) {
 	if (cellhd->ns_res <= 0)
-	    return (_("Illegal n-s resolution value"));
+	    G_fatal_error(_("Illegal n-s resolution value"));
 	if (cellhd->ns_res3 <= 0)
-	    return (_("Illegal n-s3 resolution value"));
+	    G_fatal_error(_("Illegal n-s3 resolution value"));
     }
     else {
 	if (cellhd->rows <= 0)
-	    return (_("Illegal row value"));
+	    G_fatal_error(_("Illegal row value"));
 	if (cellhd->rows3 <= 0)
-	    return (_("Illegal row3 value"));
+	    G_fatal_error(_("Illegal row3 value"));
     }
     if (!col_flag) {
 	if (cellhd->ew_res <= 0)
-	    return (_("Illegal e-w resolution value"));
+	    G_fatal_error(_("Illegal e-w resolution value"));
 	if (cellhd->ew_res3 <= 0)
-	    return (_("Illegal e-w3 resolution value"));
+	    G_fatal_error(_("Illegal e-w3 resolution value"));
     }
     else {
 	if (cellhd->cols <= 0)
-	    return (_("Illegal col value"));
+	    G_fatal_error(_("Illegal col value"));
 	if (cellhd->cols3 <= 0)
-	    return (_("Illegal col3 value"));
+	    G_fatal_error(_("Illegal col3 value"));
     }
     if (!depth_flag) {
 	if (cellhd->tb_res <= 0)
-	    return (_("Illegal t-b3 resolution value"));
+	    G_fatal_error(_("Illegal t-b3 resolution value"));
     }
     else {
 	if (cellhd->depths <= 0)
-	    return (_("Illegal depths value"));
+	    G_fatal_error(_("Illegal depths value"));
     }
 
     /* for lat/lon, check north,south. force east larger than west */
@@ -249,7 +241,7 @@ char *G_adjust_Cell_head3(struct Cell_head *cellhd, int row_flag,
 		cellhd->north = 90.0;
 	    }
 	    else
-		return (_("Illegal latitude for North"));
+		G_fatal_error(_("Illegal latitude for North"));
 	}
 
 	if (cellhd->south < -90.0) {
@@ -260,7 +252,7 @@ char *G_adjust_Cell_head3(struct Cell_head *cellhd, int row_flag,
 		cellhd->south = -90.0;
 	    }
 	    else
-		return (_("Illegal latitude for South"));
+		G_fatal_error(_("Illegal latitude for South"));
 	}
 
 #if 0
@@ -296,15 +288,15 @@ char *G_adjust_Cell_head3(struct Cell_head *cellhd, int row_flag,
     /* check the edge values */
     if (cellhd->north <= cellhd->south) {
 	if (cellhd->proj == PROJECTION_LL)
-	    return (_("North must be north of South"));
+	    G_fatal_error(_("North must be north of South"));
 	else
-	    return (_("North must be larger than South"));
+	    G_fatal_error(_("North must be larger than South"));
     }
     if (cellhd->east <= cellhd->west)
-	return (_("East must be larger than West"));
-    if (cellhd->top <= cellhd->bottom)
-	return (_("Top must be larger than Bottom"));
+	G_fatal_error(_("East must be larger than West"));
 
+    if (cellhd->top <= cellhd->bottom)
+	G_fatal_error(_("Top must be larger than Bottom"));
 
     /* compute rows and columns, if not set */
     if (!row_flag) {
@@ -345,7 +337,7 @@ char *G_adjust_Cell_head3(struct Cell_head *cellhd, int row_flag,
 
     if (cellhd->cols < 0 || cellhd->rows < 0 || cellhd->cols3 < 0 ||
 	cellhd->rows3 < 0 || cellhd->depths < 0) {
-	return (_("Invalid coordinates"));
+	G_fatal_error(_("Invalid coordinates"));
     }
 
     /* (re)compute the resolutions */
@@ -354,6 +346,4 @@ char *G_adjust_Cell_head3(struct Cell_head *cellhd, int row_flag,
     cellhd->ew_res = (cellhd->east - cellhd->west) / cellhd->cols;
     cellhd->ew_res3 = (cellhd->east - cellhd->west) / cellhd->cols3;
     cellhd->tb_res = (cellhd->top - cellhd->bottom) / cellhd->depths;
-
-    return NULL;
 }

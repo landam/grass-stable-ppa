@@ -1,3 +1,15 @@
+/*!
+  \file lib/pngdriver/write.c
+
+  \brief GRASS png display driver - write image (lower level functions)
+
+  (C) 2007-2014 by Glynn Clements and the GRASS Development Team
+  
+  This program is free software under the GNU General Public License
+  (>=v2). Read the file COPYING that comes with GRASS for details.
+  
+  \author Glynn Clements
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,17 +21,17 @@
 
 void write_image(void)
 {
-    char *p = file_name + strlen(file_name) - 4;
+    char *p = png.file_name + strlen(png.file_name) - 4;
 
-    if (!modified)
+    if (!png.modified)
 	return;
 
-    if (mapped)
+    if (png.mapped)
 	return;
 
     if (G_strcasecmp(p, ".ppm") == 0) {
 	write_ppm();
-	if (has_alpha)
+	if (png.has_alpha)
 	    write_pgm();
     }
     else if (G_strcasecmp(p, ".bmp") == 0)
@@ -31,5 +43,5 @@ void write_image(void)
     else
 	G_fatal_error("write_image: unknown file type: %s", p);
 
-    modified = 0;
+    png.modified = 0;
 }

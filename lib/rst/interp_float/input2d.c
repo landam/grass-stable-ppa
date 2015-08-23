@@ -17,8 +17,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+
 #include <grass/gis.h>
-#include <grass/site.h>
+#include <grass/raster.h>
 #include <grass/bitmap.h>
 #include <grass/linkm.h>
 #include <grass/interpf.h>
@@ -28,13 +29,13 @@ struct BM *IL_create_bitmask(struct interp_params *params)
 
 /** Creates a bitmap mask from given raster map **/
 {
-    int i, j, cfmask = 0, irev, MASKfd;
-    char *mapsetm;
+    int i, j, cfmask = -1, irev, MASKfd;
+    const char *mapsetm;
     CELL *cellmask, *MASK;
     struct BM *bitmask;
 
-    if ((MASKfd = G_maskfd()) >= 0)
-	MASK = G_allocate_cell_buf();
+    if ((MASKfd = Rast_maskfd()) >= 0)
+	MASK = Rast_allocate_c_buf();
     else
 	MASK = NULL;
 
@@ -42,13 +43,13 @@ struct BM *IL_create_bitmask(struct interp_params *params)
 	bitmask = BM_create(params->nsizc, params->nsizr);
 
 	if (params->maskmap != NULL) {
-	    mapsetm = G_find_cell2(params->maskmap, "");
+	    mapsetm = G_find_raster2(params->maskmap, "");
 	    if (!mapsetm)
 		G_fatal_error(_("Mask raster map <%s> not found"),
 			      params->maskmap);
 
-	    cellmask = G_allocate_cell_buf();
-	    cfmask = G_open_cell_old(params->maskmap, mapsetm);
+	    cellmask = Rast_allocate_c_buf();
+	    cfmask = Rast_open_old(params->maskmap, mapsetm);
 	}
 	else
 	    cellmask = NULL;
@@ -56,11 +57,12 @@ struct BM *IL_create_bitmask(struct interp_params *params)
 	for (i = 0; i < params->nsizr; i++) {
 	    irev = params->nsizr - i - 1;
 	    if (cellmask)
-		G_get_map_row(cfmask, cellmask, i);
+		Rast_get_c_row(cfmask, cellmask, i);
 	    if (MASK)
-		G_get_map_row(MASKfd, MASK, i);
+		Rast_get_c_row(MASKfd, MASK, i);
 	    for (j = 0; j < params->nsizc; j++) {
-		if ((cellmask && cellmask[j] == 0) || (MASK && MASK[j] == 0))
+		if ((cellmask && (cellmask[j] == 0 || Rast_is_c_null_value(&cellmask[j]))) || 
+		    (MASK && (MASK[j] == 0 || Rast_is_c_null_value(&MASK[j]))))
 		    BM_set(bitmask, j, irev, 0);
 		else
 		    BM_set(bitmask, j, irev, 1);
@@ -70,6 +72,9 @@ struct BM *IL_create_bitmask(struct interp_params *params)
     }
     else
 	bitmask = NULL;
+
+    if (cfmask >= 0)
+	Rast_close(cfmask);
 
     return bitmask;
 }

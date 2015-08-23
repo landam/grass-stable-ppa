@@ -20,7 +20,7 @@
 #include <string.h>
 #include <grass/gis.h>
 #include <grass/dbmi.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 #include "ogr_api.h"
 #include "global.h"
@@ -30,8 +30,8 @@ int split_line(struct Map_info *Map, int otype, struct line_pnts *Points,
 
 /* Add categories to centroids inside polygon */
 int
-centroid(OGRGeometryH hGeom, CENTR * Centr, SPATIAL_INDEX * Sindex, int field,
-	 int cat, double min_area, int type)
+centroid(OGRGeometryH hGeom, CENTR * Centr, struct spatial_index *Sindex,
+	 int field, int cat, double min_area, int type)
 {
     int i, valid_isles, j, np, nr, ret;
     static int first = 1;
@@ -42,7 +42,7 @@ centroid(OGRGeometryH hGeom, CENTR * Centr, SPATIAL_INDEX * Sindex, int field,
     OGRGeometryH hRing;
     double size;
     static struct ilist *List;
-    BOUND_BOX box;
+    struct bound_box box;
 
     G_debug(3, "centroid() cat = %d", cat);
 
@@ -72,6 +72,10 @@ centroid(OGRGeometryH hGeom, CENTR * Centr, SPATIAL_INDEX * Sindex, int field,
 
 	/* Area */
 	hRing = OGR_G_GetGeometryRef(hGeom, 0);
+        if (hRing == NULL) {
+            G_warning(_("Skipping empty geometry feature %d"), cat);
+	    return 0;
+        }
 	np = OGR_G_GetPointCount(hRing);
 	Vect_reset_line(Points);
 	for (j = 0; j < np; j++) {
@@ -136,7 +140,7 @@ centroid(OGRGeometryH hGeom, CENTR * Centr, SPATIAL_INDEX * Sindex, int field,
 		in = 1;
 		for (j = 0; j < valid_isles; j++) {
 		    ret = Vect_point_in_poly(x, y, IPoints[j]);
-		    if (ret == 1) {	/* centroid in inner ring */
+		    if (ret > 0) {	/* centroid in inner ring */
 			in = 0;
 			break;	/* inside isle */
 		    }
@@ -171,7 +175,7 @@ centroid(OGRGeometryH hGeom, CENTR * Centr, SPATIAL_INDEX * Sindex, int field,
 }
 
 /* count polygons and isles */
-int poly_count(OGRGeometryH hGeom)
+int poly_count(OGRGeometryH hGeom, int line2boundary)
 {
     int i, nr, ret;
     OGRwkbGeometryType eType;
@@ -179,23 +183,46 @@ int poly_count(OGRGeometryH hGeom)
     eType = wkbFlatten(OGR_G_GetGeometryType(hGeom));
 
     if (eType == wkbPolygon) {
-	G_debug(3, "Polygon");
+	G_debug(5, "Polygon");
 	nr = OGR_G_GetGeometryCount(hGeom);
 	n_polygon_boundaries += nr;
 
     }
     else if (eType == wkbGeometryCollection || eType == wkbMultiPolygon) {
-	G_debug(3, "GeometryCollection or MultiPolygon");
+	G_debug(5, "GeometryCollection or MultiPolygon");
 	nr = OGR_G_GetGeometryCount(hGeom);
 	for (i = 0; i < nr; i++) {
 	    hRing = OGR_G_GetGeometryRef(hGeom, i);
 
-	    ret = poly_count(hRing);
+	    ret = poly_count(hRing, line2boundary);
 	    if (ret == -1) {
-		G_warning(_("Cannot read part of geometry"));
+		G_warning(_("Unable to read part of geometry"));
 	    }
 	}
     }
+
+    if (!line2boundary)
+	return 0;
+
+    if (eType == wkbLineString) {
+	G_debug(5, "Polygon");
+	n_polygon_boundaries++;
+
+    }
+    else if (eType == wkbGeometryCollection || eType == wkbMultiLineString) {
+	G_debug(5, "GeometryCollection or MultiPolygon");
+	nr = OGR_G_GetGeometryCount(hGeom);
+	for (i = 0; i < nr; i++) {
+	    hRing = OGR_G_GetGeometryRef(hGeom, i);
+
+	    ret = poly_count(hRing, line2boundary);
+	    if (ret == -1) {
+		G_warning(_("Unable to read part of geometry"));
+	    }
+	}
+    }
+
+    G_debug(1, "poly_count(): n_poly_boundaries=%d", n_polygon_boundaries);
     return 0;
 }
 
@@ -231,9 +258,10 @@ geom(OGRGeometryH hGeom, struct Map_info *Map, int field, int cat,
 
     if (eType == wkbPoint) {
 	if ((np = OGR_G_GetPointCount(hGeom)) == 0) {
-	    G_warning(_("Skipping empty geometry feature"));
+	    G_warning(_("Skipping empty geometry feature %d"), cat);
 	    return 0;
 	}
+
 	Vect_append_point(Points, OGR_G_GetX(hGeom, 0), OGR_G_GetY(hGeom, 0),
 			  OGR_G_GetZ(hGeom, 0));
 	if (type & GV_CENTROID)
@@ -244,7 +272,7 @@ geom(OGRGeometryH hGeom, struct Map_info *Map, int field, int cat,
     }
     else if (eType == wkbLineString) {
 	if ((np = OGR_G_GetPointCount(hGeom)) == 0) {
-	    G_warning(_("Skipping empty geometry feature"));
+	    G_warning(_("Skipping empty geometry feature %d"), cat);
 	    return 0;
 	}
 
@@ -252,6 +280,7 @@ geom(OGRGeometryH hGeom, struct Map_info *Map, int field, int cat,
 	    Vect_append_point(Points, OGR_G_GetX(hGeom, i),
 			      OGR_G_GetY(hGeom, i), OGR_G_GetZ(hGeom, i));
 	}
+	Vect_line_prune(Points);
 	if (type & GV_BOUNDARY)
 	    otype = GV_BOUNDARY;
 	else
@@ -264,19 +293,18 @@ geom(OGRGeometryH hGeom, struct Map_info *Map, int field, int cat,
     }
 
     else if (eType == wkbPolygon) {
-	G_debug(3, "Polygon");
+	G_debug(4, "\tPolygon");
 
 	/* SFS: 1 exterior boundary and 0 or more interior boundaries.
 	 *  So I hope that exterior is the first one, even if it is not explicitly told  */
 
 	/* Area */
 	hRing = OGR_G_GetGeometryRef(hGeom, 0);
-	if ((np = OGR_G_GetPointCount(hRing)) == 0) {
-	    G_warning(_("Skipping empty geometry feature"));
+	if (hRing == NULL || (np = OGR_G_GetPointCount(hRing)) == 0) {
+            G_warning(_("Skipping empty geometry feature %d"), cat);
 	    return 0;
 	}
 
-	n_polygons++;
 	nr = OGR_G_GetGeometryCount(hGeom);
 
 	Vect_reset_line(Points);
@@ -284,18 +312,21 @@ geom(OGRGeometryH hGeom, struct Map_info *Map, int field, int cat,
 	    Vect_append_point(Points, OGR_G_GetX(hRing, j),
 			      OGR_G_GetY(hRing, j), OGR_G_GetZ(hRing, j));
 	}
+	Vect_line_prune(Points);
 
 	/* Degenerate is not ignored because it may be useful to see where it is,
 	 * but may be eliminated by min_area option */
 	if (Points->n_points < 4)
-	    G_warning(_("Degenerate polygon ([%d] vertices)"),
-		      Points->n_points);
+	    G_warning(_("Feature (cat %d): degenerated polygon (%d vertices)"),
+		      cat, Points->n_points);
 
 	size = G_area_of_polygon(Points->x, Points->y, Points->n_points);
 	if (size < min_area) {
-	    G_debug(2, "Area size [%.1e], area not imported", size);
+	    G_debug(2, "\tArea size %.1e, area not imported", size);
 	    return 0;
 	}
+
+	n_polygons++;
 
 	if (type & GV_LINE)
 	    otype = GV_LINE;
@@ -313,12 +344,12 @@ geom(OGRGeometryH hGeom, struct Map_info *Map, int field, int cat,
 					  sizeof(struct line_pnts *));
 	valid_isles = 0;
 	for (i = 1; i < nr; i++) {
-	    G_debug(3, "Inner ring %d", i);
+	    G_debug(3, "\tInner ring %d", i);
 
 	    hRing = OGR_G_GetGeometryRef(hGeom, i);
 
 	    if ((np = OGR_G_GetPointCount(hRing)) == 0) {
-		G_warning(_("Skipping empty geometry feature"));
+		G_warning(_("Skipping empty geometry feature %d"), cat);
 	    }
 	    else {
 		IPoints[valid_isles] = Vect_new_line_struct();
@@ -329,9 +360,10 @@ geom(OGRGeometryH hGeom, struct Map_info *Map, int field, int cat,
 				      OGR_G_GetY(hRing, j),
 				      OGR_G_GetZ(hRing, j));
 		}
+		Vect_line_prune(IPoints[valid_isles]);
 
 		if (IPoints[valid_isles]->n_points < 4)
-		    G_warning(_("Degenerate island ([%d] vertices)"),
+		    G_warning(_("Degenerate island (%d vertices)"),
 			      IPoints[i - 1]->n_points);
 
 		size =
@@ -339,7 +371,7 @@ geom(OGRGeometryH hGeom, struct Map_info *Map, int field, int cat,
 				      IPoints[valid_isles]->y,
 				      IPoints[valid_isles]->n_points);
 		if (size < min_area) {
-		    G_debug(2, "Island size [%.1e], island not imported",
+		    G_debug(2, "\tIsland size %.1e, island not imported",
 			      size);
 		}
 		else {
@@ -362,10 +394,10 @@ geom(OGRGeometryH hGeom, struct Map_info *Map, int field, int cat,
 	if (mk_centr) {
 	    if (Points->n_points >= 4) {
 		ret =
-		    Vect_get_point_in_poly_isl(Points, IPoints, valid_isles,
-					       &x, &y);
+		    Vect_get_point_in_poly_isl(Points, (const struct line_pnts **)IPoints,
+					       valid_isles, &x, &y);
 		if (ret == -1) {
-		    G_warning(_("Cannot calculate centroid"));
+		    G_warning(_("Unable calculate centroid"));
 		}
 		else {
 		    Vect_reset_line(Points);
@@ -410,14 +442,14 @@ geom(OGRGeometryH hGeom, struct Map_info *Map, int field, int cat,
     else if (eType == wkbGeometryCollection
 	     || eType == wkbMultiPolygon
 	     || eType == wkbMultiLineString || eType == wkbMultiPoint) {
-	G_debug(3, "GeometryCollection or MultiPolygon/LineString/Point");
+	G_debug(4, "\tGeometryCollection or MultiPolygon/LineString/Point");
 	nr = OGR_G_GetGeometryCount(hGeom);
 	for (i = 0; i < nr; i++) {
 	    hRing = OGR_G_GetGeometryRef(hGeom, i);
 
 	    ret = geom(hRing, Map, field, cat, min_area, type, mk_centr);
 	    if (ret == -1) {
-		G_warning(_("Cannot write part of geometry"));
+		G_warning(_("Unable to write part of geometry"));
 	    }
 	}
     }
@@ -443,6 +475,10 @@ int split_line(struct Map_info *Map, int otype, struct line_pnts *Points,
 
     /* can't split boundaries with only 2 vertices */
     if (Points->n_points == 2) {
+	Vect_line_prune(Points);
+	
+	if (Points->n_points < 2)
+	    return 0;
 	Vect_write_line(Map, otype, Points, Cats);
 	return 0;
     }
@@ -471,7 +507,10 @@ int split_line(struct Map_info *Map, int otype, struct line_pnts *Points,
 	Vect_append_point(OutPoints, Points->x[i], Points->y[i],
 			  Points->z[i]);
     }
-    Vect_write_line(Map, otype, OutPoints, Cats);
+    Vect_line_prune(OutPoints);
+    
+    if (OutPoints->n_points > 1)
+	Vect_write_line(Map, otype, OutPoints, Cats);
 
     Vect_destroy_line_struct(OutPoints);
 

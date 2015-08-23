@@ -4,11 +4,12 @@
  * MODULE:     v.generalize
  *
  * AUTHOR(S):  Daniel Bundala
+ *             OGR support by Martin Landa <landa.martin gmail.com> (2009)
  *             Markus Metz: preserve areas and area attributes
  *
  * PURPOSE:    Module for line simplification and smoothing
  *
- * COPYRIGHT:  (C) 2007-2010 by the GRASS Development Team
+ * COPYRIGHT:  (C) 2007-2010, 2012 by the GRASS Development Team
  *
  *             This program is free software under the GNU General
  *             Public License (>=v2).  Read the file COPYING that
@@ -20,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 #include "misc.h"
 #include "operators.h"
@@ -41,49 +42,62 @@
 
 int main(int argc, char *argv[])
 {
-    struct Map_info In, Out;
+    struct Map_info In, Out, Error;
     struct line_pnts *Points;
     struct line_cats *Cats;
     int i, type, iter;
-    char *mapset;
     struct GModule *module;	/* GRASS module for parsing arguments */
-    struct Option *map_in, *map_out, *thresh_opt, *method_opt,
+    struct Option *map_in, *map_out, *error_out, *thresh_opt, *method_opt,
 	*look_ahead_opt;
     struct Option *iterations_opt, *cat_opt, *alpha_opt, *beta_opt, *type_opt;
     struct Option *field_opt, *where_opt, *reduction_opt, *slide_opt;
     struct Option *angle_thresh_opt, *degree_thresh_opt,
 	*closeness_thresh_opt;
     struct Option *betweeness_thresh_opt;
-    struct Flag *ca_flag, *rs_flag;
+    struct Flag *notab_flag, *loop_support_flag;
     int with_z;
     int total_input, total_output;	/* Number of points in the input/output map respectively */
     double thresh, alpha, beta, reduction, slide, angle_thresh;
     double degree_thresh, closeness_thresh, betweeness_thresh;
     int method;
     int look_ahead, iterations;
-    int chcat;
+    int loop_support;
     int layer;
     int n_lines;
     int simplification, mask_type;
-    VARRAY *varray;
-    char *s;
+    struct cat_list *cat_list = NULL;
+    char *s, *descriptions;
 
     /* initialize GIS environment */
     G_gisinit(argv[0]);		/* reads grass env, stores program name to G_program_name() */
 
     /* initialize module */
     module = G_define_module();
-    module->keywords =
-	_("vector, generalization, simplification, smoothing, displacement, network generalization");
-    module->description = _("Vector based generalization.");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("generalization"));
+    G_add_keyword(_("simplification"));
+    G_add_keyword(_("smoothing"));
+    G_add_keyword(_("displacement"));
+    G_add_keyword(_("network generalization"));
+    module->description = _("Performs vector based generalization.");
 
     /* Define the different options as defined in gis.h */
     map_in = G_define_standard_option(G_OPT_V_INPUT);
-    map_out = G_define_standard_option(G_OPT_V_OUTPUT);
+
+    field_opt = G_define_standard_option(G_OPT_V_FIELD_ALL);
 
     type_opt = G_define_standard_option(G_OPT_V_TYPE);
     type_opt->options = "line,boundary,area";
     type_opt->answer = "line,boundary,area";
+    type_opt->guisection = _("Selection");
+    
+    map_out = G_define_standard_option(G_OPT_V_OUTPUT);
+
+    error_out = G_define_standard_option(G_OPT_V_OUTPUT);
+    error_out->key = "error";
+    error_out->required = NO;
+    error_out->description =
+	_("Error map of all lines and boundaries not being generalized due to topology issues or over-simplification");
 
     method_opt = G_define_option();
     method_opt->key = "method";
@@ -92,20 +106,36 @@ int main(int argc, char *argv[])
     method_opt->multiple = NO;
     method_opt->options =
 	"douglas,douglas_reduction,lang,reduction,reumann,boyle,sliding_averaging,distance_weighting,chaiken,hermite,snakes,network,displacement";
-    method_opt->descriptions = _("douglas;Douglas-Peucker Algorithm;"
-				 "douglas_reduction;Douglas-Peucker Algorithm with reduction parameter;"
-				 "lang;Lang Simplification Algorithm;"
-				 "reduction;Vertex Reduction Algorithm eliminates points close to each other;"
-				 "reumann;Reumann-Witkam Algorithm;"
-				 "boyle;Boyle's Forward-Looking Algorithm;"
-				 "sliding_averaging;McMaster's Sliding Averaging Algorithm;"
-				 "distance_weighting;McMaster's Distance-Weighting Algorithm;"
-				 "chaiken;Chaiken's Algorithm;"
-				 "hermite;Interpolation by Cubic Hermite Splines;"
-				 "snakes;Snakes method for line smoothing;"
-				 "network;Network generalization;"
-				 "displacement;Displacement of lines close to each other;");
-
+    descriptions = NULL;
+    G_asprintf(&descriptions,
+               "douglas;%s;"
+               "douglas_reduction;%s;"
+               "lang;%s;"
+               "reduction;%s;"
+               "reumann;%s;"
+               "boyle;%s;"
+               "sliding_averaging;%s;"
+               "distance_weighting;%s;"
+               "chaiken;%s;"
+               "hermite;%s;"
+               "snakes;%s;"
+               "network;%s;"
+               "displacement;%s;",
+               _("Douglas-Peucker Algorithm"),
+               _("Douglas-Peucker Algorithm with reduction parameter"),
+               _("Lang Simplification Algorithm"),
+               _("Vertex Reduction Algorithm eliminates points close to each other"),
+               _("Reumann-Witkam Algorithm"),
+               _("Boyle's Forward-Looking Algorithm"),
+               _("McMaster's Sliding Averaging Algorithm"),
+               _("McMaster's Distance-Weighting Algorithm"),
+               _("Chaiken's Algorithm"),
+               _("Interpolation by Cubic Hermite Splines"),
+               _("Snakes method for line smoothing"),
+               _("Network generalization"),
+               _("Displacement of lines close to each other"));
+    method_opt->descriptions = G_store(descriptions);
+    
     method_opt->description = _("Generalization algorithm");
 
     thresh_opt = G_define_option();
@@ -130,7 +160,7 @@ int main(int argc, char *argv[])
     reduction_opt->options = "0-100";
     reduction_opt->description =
 	_("Percentage of the points in the output of 'douglas_reduction' algorithm");
-
+    
     slide_opt = G_define_option();
     slide_opt->key = "slide";
     slide_opt->type = TYPE_DOUBLE;
@@ -195,20 +225,21 @@ int main(int argc, char *argv[])
     iterations_opt->answer = "1";
     iterations_opt->description = _("Number of iterations");
 
-    field_opt = G_define_standard_option(G_OPT_V_FIELD);
     cat_opt = G_define_standard_option(G_OPT_V_CATS);
-    where_opt = G_define_standard_option(G_OPT_WHERE);
+    cat_opt->guisection = _("Selection");
+    
+    where_opt = G_define_standard_option(G_OPT_DB_WHERE);
+    where_opt->guisection = _("Selection");
 
-    ca_flag = G_define_flag();
-    ca_flag->key = 'c';
-    ca_flag->description = _("Copy attributes");
+    loop_support_flag = G_define_flag();
+    loop_support_flag->key = 'l';
+    loop_support_flag->label = _("Disable loop support");
+    loop_support_flag->description = _("Do not modify end points of lines forming a closed loop");
 
-    rs_flag = G_define_flag();
-    rs_flag->key = 'r';
-    rs_flag->description =
-	_("This does nothing. It is retained for backwards compatibility");
-    rs_flag->guisection = _("Unused");
-
+    notab_flag = G_define_standard_flag(G_FLG_V_TABLE);
+    notab_flag->description = _("Do not copy attributes");
+    notab_flag->guisection = _("Attributes");
+    
     /* options and flags parser */
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
@@ -284,23 +315,31 @@ int main(int argc, char *argv[])
     Cats = Vect_new_cats_struct();
 
     Vect_check_input_output_name(map_in->answer, map_out->answer,
-				 GV_FATAL_EXIT);
-
-    if ((mapset = G_find_vector2(map_in->answer, "")) == NULL)
-	G_fatal_error(_("Vector map <%s> not found"), map_in->answer);
+				 G_FATAL_EXIT);
 
     Vect_set_open_level(2);
 
-    if (1 > Vect_open_old(&In, map_in->answer, mapset))
-	G_fatal_error(_("Unable to open vector map <%s>"),
-		      G_fully_qualified_name(map_in->answer, mapset));
+    if (Vect_open_old2(&In, map_in->answer, "", field_opt->answer) < 1)
+	G_fatal_error(_("Unable to open vector map <%s>"), map_in->answer);
 
+    if (Vect_get_num_primitives(&In, mask_type) == 0) {
+	G_warning(_("No lines found in input map <%s>"), map_in->answer);
+	Vect_close(&In);
+	exit(EXIT_SUCCESS);
+    }
     with_z = Vect_is_3d(&In);
 
     if (0 > Vect_open_new(&Out, map_out->answer, with_z)) {
 	Vect_close(&In);
 	G_fatal_error(_("Unable to create vector map <%s>"), map_out->answer);
     }
+
+    if(error_out->answer)
+        if (0 > Vect_open_new(&Error, error_out->answer, with_z)) {
+	    Vect_close(&In);
+	    G_fatal_error(_("Unable to create error vector map <%s>"), error_out->answer);
+        }
+
 
 
     Vect_copy_head_data(&In, &Out);
@@ -309,20 +348,18 @@ int main(int argc, char *argv[])
 
     total_input = total_output = 0;
 
-    chcat = 0;
-    varray = NULL;
-    layer = atoi(field_opt->answer);
-    /* parse filter option and select appropriate lines */
-    if (method == DISPLACEMENT)
-	varray = parse_filter_options(&In, layer, mask_type,
-			      where_opt->answer, cat_opt->answer, &chcat);
+    layer = Vect_get_field_number(&In, field_opt->answer);
+    /* parse filter options */
+    if (layer > 0)
+	cat_list = Vect_cats_set_constraint(&In, layer, 
+			      where_opt->answer, cat_opt->answer);
 
     if (method == DISPLACEMENT) {
 	/* modifies only lines, all other features including boundaries are preserved */
 	/* options where, cats, and layer are respected */
 	G_message(_("Displacement..."));
 	snakes_displacement(&In, &Out, thresh, alpha, beta, 1.0, 10.0,
-			    iterations, varray);
+			    iterations, cat_list, layer);
     }
 
     /* TODO: rearrange code below. It's really messy */
@@ -337,7 +374,7 @@ int main(int argc, char *argv[])
 
     /* copy tables here because method == NETWORK is complete and 
      * tables for Out may be needed for parse_filter_options() below */
-    if (ca_flag->answer) {
+    if (!notab_flag->answer) {
 	if (method == NETWORK)
 	    copy_tables_by_cats(&In, &Out);
 	else
@@ -356,17 +393,13 @@ int main(int argc, char *argv[])
 
 	Vect_copy_map_lines(&In, &Out);
 	Vect_build_partial(&Out, GV_BUILD_CENTROIDS);
-	/* varray needs to be retrieved from Out vector and not from In vector
-	 * because identical lines can have different ids
-	 * if dead lines are still registered in topo of In */
-	varray = parse_filter_options(&Out, layer, mask_type,
-			      where_opt->answer, cat_opt->answer, &chcat);
 
 	if ((mask_type & GV_AREA) && !(mask_type & GV_BOUNDARY))
 	    mask_type |= GV_BOUNDARY;
 
 	G_message("-----------------------------------------------------");
 	G_message(_("Generalization (%s)..."), method_opt->answer);
+	G_message(_("Using threshold: %g %s"), thresh, G_database_unit_name(1));
 	G_percent_reset();
 
 	APoints = Vect_new_line_struct();
@@ -381,28 +414,50 @@ int main(int argc, char *argv[])
 
 	    if (!(type & GV_LINES) || !(mask_type & type))
 		continue;
-		
-	    if ((type & GV_LINE) && chcat && !varray->c[i])
-		continue;
-	    else if ((type & GV_BOUNDARY) && chcat) {
-		int do_line = varray->c[i];
 
-		if ((mask_type & GV_AREA) && !do_line) {
+	    if (layer > 0) {
+		if ((type & GV_LINE) &&
+		    !Vect_cats_in_constraint(Cats, layer, cat_list))
+		    continue;
+		else if ((type & GV_BOUNDARY)) {
+		    int do_line = 0;
 		    int left, right;
 		    
-		    /* check if any of the centroids is selected */
-		    Vect_get_line_areas(&Out, i, &left, &right);
-		    if (left > 0) {
-			left = Vect_get_area_centroid(&Out, left);
-			do_line = varray->c[left];
+		    do_line = Vect_cats_in_constraint(Cats, layer, cat_list);
+
+		    if (!do_line) {
+			
+			/* check if any of the centroids is selected */
+			Vect_get_line_areas(&Out, i, &left, &right);
+			if (left > 0) {
+			    Vect_get_area_cats(&Out, left, Cats);
+			    do_line = Vect_cats_in_constraint(Cats, layer, cat_list);
+			}
+			else if (left < 0) {
+			    left = Vect_get_isle_area(&Out, abs(left));
+			    if (left > 0) {
+				Vect_get_area_cats(&Out, left, Cats);
+				do_line = Vect_cats_in_constraint(Cats, layer, cat_list);
+			    }
+			}
+			
+			if (!do_line) {
+			    if (right > 0) {
+				Vect_get_area_cats(&Out, right, Cats);
+				do_line = Vect_cats_in_constraint(Cats, layer, cat_list);
+			    }
+			    else if (right < 0) {
+				right = Vect_get_isle_area(&Out, abs(right));
+				if (right > 0) {
+				    Vect_get_area_cats(&Out, right, Cats);
+				    do_line = Vect_cats_in_constraint(Cats, layer, cat_list);
+				}
+			    }
+			}
 		    }
-		    if (!do_line && right > 0) {
-			right = Vect_get_area_centroid(&Out, right);
-			do_line = varray->c[right];
-		    }
+		    if (!do_line)
+			continue;
 		}
-		if (!do_line)
-		    continue;
 	    }
 
 	    Vect_line_prune(APoints);
@@ -416,6 +471,20 @@ int main(int argc, char *argv[])
 	    /* copy points */
 	    Vect_reset_line(Points);
 	    Vect_append_points(Points, APoints, GV_FORWARD);
+	    
+	    loop_support = 0;
+	    if (!loop_support_flag->answer) {
+		int n1, n2;
+
+		Vect_get_line_nodes(&Out, i, &n1, &n2);
+		if (n1 == n2) {
+		    if (Vect_get_node_n_lines(&Out, n1) == 2) {
+			if (abs(Vect_get_node_line(&Out, n1, 0)) == i &&
+			    abs(Vect_get_node_line(&Out, n1, 1)) == i)
+			    loop_support = 1;
+		    }
+		}
+	    }
 		
 	    for (iter = 0; iter < iterations; iter++) {
 		switch (method) {
@@ -436,36 +505,45 @@ int main(int argc, char *argv[])
 		    reumann_witkam(Points, thresh, with_z);
 		    break;
 		case BOYLE:
-		    boyle(Points, look_ahead, with_z);
+		    boyle(Points, look_ahead, loop_support, with_z);
 		    break;
 		case SLIDING_AVERAGING:
-		    sliding_averaging(Points, slide, look_ahead, with_z);
+		    sliding_averaging(Points, slide, look_ahead, loop_support, with_z);
 		    break;
 		case DISTANCE_WEIGHTING:
-		    distance_weighting(Points, slide, look_ahead, with_z);
+		    distance_weighting(Points, slide, look_ahead, loop_support, with_z);
 		    break;
 		case CHAIKEN:
-		    chaiken(Points, thresh, with_z);
+		    chaiken(Points, thresh, loop_support, with_z);
 		    break;
 		case HERMITE:
-		    hermite(Points, thresh, angle_thresh, with_z);
+		    hermite(Points, thresh, angle_thresh, loop_support, with_z);
 		    break;
 		case SNAKES:
-		    snakes(Points, alpha, beta, with_z);
+		    snakes(Points, alpha, beta, loop_support, with_z);
 		    break;
 		}
 	    }
-	    
-	    /* safety check, BUG in method if not passed */
-	    if (APoints->x[0] != Points->x[0] || 
-		APoints->y[0] != Points->y[0] ||
-		APoints->z[0] != Points->z[0])
-		G_fatal_error(_("Method '%s' did not preserve first point"), method_opt->answer);
-		
-	    if (APoints->x[APoints->n_points - 1] != Points->x[Points->n_points - 1] || 
-		APoints->y[APoints->n_points - 1] != Points->y[Points->n_points - 1] ||
-		APoints->z[APoints->n_points - 1] != Points->z[Points->n_points - 1])
-		G_fatal_error(_("Method '%s' did not preserve last point"), method_opt->answer);
+
+	    if (loop_support == 0) { 
+		/* safety check, BUG in method if not passed */
+		if (APoints->x[0] != Points->x[0] || 
+		    APoints->y[0] != Points->y[0] ||
+		    APoints->z[0] != Points->z[0])
+		    G_fatal_error(_("Method '%s' did not preserve first point"), method_opt->answer);
+		    
+		if (APoints->x[APoints->n_points - 1] != Points->x[Points->n_points - 1] || 
+		    APoints->y[APoints->n_points - 1] != Points->y[Points->n_points - 1] ||
+		    APoints->z[APoints->n_points - 1] != Points->z[Points->n_points - 1])
+		    G_fatal_error(_("Method '%s' did not preserve last point"), method_opt->answer);
+	    }
+	    else {
+		/* safety check, BUG in method if not passed */
+		if (Points->x[0] != Points->x[Points->n_points - 1] || 
+		    Points->y[0] != Points->y[Points->n_points - 1] ||
+		    Points->z[0] != Points->z[Points->n_points - 1])
+		    G_fatal_error(_("Method '%s' did not preserve loop"), method_opt->answer);
+	    }
 
 	    Vect_line_prune(Points);
 
@@ -473,12 +551,16 @@ int main(int argc, char *argv[])
 	    if (Points->n_points < 2) {
 		after = APoints->n_points;
 		n_oversimplified++;
+                if (error_out->answer)
+		    Vect_write_line(&Error, type, APoints, Cats);
 	    }
 	    /* check for topology corruption */
 	    else if (type == GV_BOUNDARY) {
 		if (!check_topo(&Out, i, APoints, Points, Cats)) {
 		    after = APoints->n_points;
 		    not_modified_boundaries++;
+                    if (error_out->answer)
+		        Vect_write_line(&Error, type, APoints, Cats);
 		}
 		else
 		    after = Points->n_points;
@@ -492,30 +574,36 @@ int main(int argc, char *argv[])
 	    total_output += after;
 	}
 	if (not_modified_boundaries > 0)
-	    G_message(_("%d boundaries were not modified because modification would damage topology"),
+	    G_warning(_("%d boundaries were not modified because modification would damage topology"),
 		      not_modified_boundaries);
 	if (n_oversimplified > 0)
-	    G_message(_("%d lines/boundaries were not modified due to over-simplification"),
+	    G_warning(_("%d lines/boundaries were not modified due to over-simplification"),
 		      n_oversimplified);
 	G_message("-----------------------------------------------------");
 
 	/* make sure that clean topo is built at the end */
 	Vect_build_partial(&Out, GV_BUILD_NONE);
+        if (error_out->answer)
+	    Vect_build_partial(&Error, GV_BUILD_NONE);
     }
 
     Vect_build(&Out);
+    if (error_out->answer)
+        Vect_build(&Error);
 
     Vect_close(&In);
     Vect_close(&Out);
+    if (error_out->answer)
+        Vect_close(&Error);
 
     G_message("-----------------------------------------------------");
     if (total_input != 0 && total_input != total_output)
-	G_message(_("Number of vertices for selected lines %s from %d to %d (%d%%)."),
-		  simplification ? _("reduced") : _("changed"), 
-		  total_input, total_output,
-		  (total_output * 100) / total_input);
-
-    G_done_msg(" ");
+	G_done_msg(_("Number of vertices for selected features %s from %d to %d (%d%% remaining)"),
+                   simplification ? _("reduced") : _("changed"), 
+                   total_input, total_output,
+                   (total_output * 100) / total_input);
+    else
+        G_done_msg(" ");
 
     exit(EXIT_SUCCESS);
 }

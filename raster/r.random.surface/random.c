@@ -1,5 +1,4 @@
 /* random.c                                                             */
-#undef MAIN
 #include <grass/gis.h>
 #include "ransurf.h"
 
@@ -54,4 +53,3 @@ double ran1(void)
 
     return temp;
 }
-

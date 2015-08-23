@@ -1,3 +1,4 @@
+#include <grass/raster.h>
 
 struct ncb			/* neighborhood control block */
 {
@@ -6,16 +7,9 @@ struct ncb			/* neighborhood control block */
     int nsize;			/* size of the neighborhood */
     int dist;			/* nsize/2 */
     struct Categories cats;
-    char title[1024];
-    FILE *out;
     char **mask;
     DCELL **weights;
-    struct
-    {
-	char *name;
-	char *mapset;
-    }
-    oldcell, newcell;
+    const char *oldcell;
 };
 
 extern struct ncb ncb;

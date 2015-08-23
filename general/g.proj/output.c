@@ -48,11 +48,10 @@ void print_projinfo(int shell)
 
     /* EPSG code is preserved for historical metadata interest only:
 	the contents of this file are not used by pj_*() routines at all */
-    G__file_name(path, "", "PROJ_EPSG", "PERMANENT");
+    G_file_name(path, "", "PROJ_EPSG", "PERMANENT");
     if (access(path, F_OK) == 0) {
 	struct Key_Value *in_epsg_key;
-	int stat;
-	in_epsg_key = G_read_key_value_file(path, &stat);
+	in_epsg_key = G_read_key_value_file(path);
 	if (!shell) {
 	    fprintf(stdout,
 		"-PROJ_EPSG-------------------------------------------------\n");
@@ -189,8 +188,9 @@ static int check_xy(int shell)
 {
     if (cellhd.proj == PROJECTION_XY) {
 	if (shell)
-	    fprintf(stdout, "name=");
-	fprintf(stdout, "XY location (unprojected)\n");
+	    fprintf(stdout, "name=xy_location_unprojected\n");
+	else
+	    fprintf(stdout, "XY location (unprojected)\n");
 	return 1;
     }
     else

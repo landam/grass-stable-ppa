@@ -1,27 +1,75 @@
 /*!
-   \file intersect.c
+   \file lib/vector/Vlib/intersect.c
 
    \brief Vector library - intersection
 
    Higher level functions for reading/writing/manipulating vectors.
 
-   (C) 2001-2008 by the GRASS Development Team
+   Some parts of code taken from grass50 v.spag/linecros.c
 
-   This program is free software under the 
-   GNU General Public License (>=v2). 
-   Read the file COPYING that comes with GRASS
-   for details.
+   Based on the following:
+
+   <code>
+   (ax2-ax1)r1 - (bx2-bx1)r2 = ax2 - ax1
+   (ay2-ay1)r1 - (by2-by1)r2 = ay2 - ay1
+   </code>
+
+   Solving for r1 and r2, if r1 and r2 are between 0 and 1, then line
+   segments (ax1,ay1)(ax2,ay2) and (bx1,by1)(bx2,by2) intersect.
+
+   Intersect 2 line segments.
+
+   Returns: 0 - do not intersect
+   1 - intersect at one point
+   <pre>
+   \  /    \  /  \  /
+    \/      \/    \/
+    /\             \
+   /  \             \
+   2 - partial overlap         ( \/                      )
+   ------      a          (    distance < threshold )
+   ------   b          (                         )
+   3 - a contains b            ( /\                      )
+   ----------  a    ----------- a
+   ----     b          ----- b
+   4 - b contains a
+   ----     a          ----- a
+   ----------  b    ----------- b
+   5 - identical
+   ----------  a
+   ----------  b
+   </pre>
+   Intersection points: 
+   <pre>
+   return  point1 breakes: point2 breaks:    distance1 on:   distance2 on:
+   0        -              -                  -              -  
+   1        a,b            -                  a              b
+   2        a              b                  a              b
+   3        a              a                  a              a
+   4        b              b                  b              b
+   5        -              -                  -              -
+   </pre>
+   Sometimes (often) is important to get the same coordinates for a x
+   b and b x a.  To reach this, the segments a,b are 'sorted' at the
+   beginning, so that for the same switched segments, results are
+   identical. (reason is that double values are always rounded because
+   of limited number of decimal places and for different order of
+   coordinates, the results would be different)
+
+   (C) 2001-2009 by the GRASS Development Team
+
+   This program is free software under the GNU General Public License
+   (>=v2).  Read the file COPYING that comes with GRASS for details.
 
    \author Original author CERL, probably Dave Gerdes or Mike Higgins.
-   Update to GRASS 5.7 Radim Blazek.
-
-   \date 2001-2008
+   \author Update to GRASS 5.7 Radim Blazek.
  */
 
 #include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
 #include <math.h>
-#include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 
 /* function prototypes */
@@ -30,74 +78,26 @@ static void add_cross(int asegment, double adistance, int bsegment,
 		      double bdistance, double x, double y);
 static double dist2(double x1, double y1, double x2, double y2);
 
+static int debug_level = -1;
+
 #if 0
 static int ident(double x1, double y1, double x2, double y2, double thresh);
 #endif
-static int cross_seg(int id, int *arg);
-static int find_cross(int id, int *arg);
-
-
-/* Some parts of code taken from grass50 v.spag/linecros.c
- * 
- * Based on the following:
- * 
- *     (ax2-ax1)r1 - (bx2-bx1)r2 = ax2 - ax1
- *     (ay2-ay1)r1 - (by2-by1)r2 = ay2 - ay1
- * 
- * Solving for r1 and r2, if r1 and r2 are between 0 and 1,
- * then line segments (ax1,ay1)(ax2,ay2) and (bx1,by1)(bx2,by2)
- * intersect
- * ****************************************************************/
+static int cross_seg(int id, const struct RTree_Rect *rect, int *arg);
+static int find_cross(int id, const struct RTree_Rect *rect, int *arg);
 
 #define D  ((ax2-ax1)*(by1-by2) - (ay2-ay1)*(bx1-bx2))
 #define D1 ((bx1-ax1)*(by1-by2) - (by1-ay1)*(bx1-bx2))
 #define D2 ((ax2-ax1)*(by1-ay1) - (ay2-ay1)*(bx1-ax1))
 
-/* Intersect 2 line segments.
- *
- *  Returns: 0 - do not intersect
- *           1 - intersect at one point
- *                 \  /    \  /  \  /
- *                  \/      \/    \/
- *                  /\             \
- *                 /  \             \
- *           2 - partial overlap         ( \/                      )
- *                ------      a          (    distance < threshold )
- *                   ------   b          (                         )
- *           3 - a contains b            ( /\                      )
- *                ----------  a    ----------- a
- *                   ----     b          ----- b
- *           4 - b contains a
- *                   ----     a          ----- a
- *                ----------  b    ----------- b
- *           5 - identical
- *                ----------  a
- *                ----------  b
- *
- *  Intersection points: 
- *  return  point1 breakes: point2 breaks:    distance1 on:   distance2 on:
- *     0        -              -                  -              -  
- *     1        a,b            -                  a              b
- *     2        a              b                  a              b
- *     3        a              a                  a              a
- *     4        b              b                  b              b
- *     5        -              -                  -              -
- *     
- *  Sometimes (often) is important to get the same coordinates for a x b and b x a.
- *  To reach this, the segments a,b are 'sorted' at the beginning, so that for the same switched segments,
- *  results are identical. (reason is that double values are always rounded because of limited number
- *  of decimal places and for different order of coordinates, the results would be different)
- *     
- */
-
 /*!
  * \brief Check for intersect of 2 line segments.
  *
- * \param[in] ax1,ay1,az1,ax2,ay2,az2 input line a
- * \param[in] bx1,by1,bz1,bx2,by2,bz2 input line b
+ * \param ax1,ay1,az1,ax2,ay2,az2 input line a
+ * \param bx1,by1,bz1,bx2,by2,bz2 input line b
  * \param[out] x1,y1,z1 intersection point1 (case 2-4)
  * \param[out] x2,y2,z2 intersection point2 (case 2-4)
- * \param[in] with_z use z coordinate (3D) (TODO)
+ * \param with_z use z coordinate (3D) (TODO)
  *
  * \return 0 - do not intersect,
  * \return 1 - intersect at one point,
@@ -424,7 +424,7 @@ typedef struct
 
 /* Current line in arrays is for some functions like cmp() set by: */
 static int current;
-static int second;		/* line whic is not current */
+static int second;		/* line which is not current */
 
 static int a_cross = 0;
 static int n_cross;
@@ -502,7 +502,7 @@ static int ident(double x1, double y1, double x2, double y2, double thresh)
 static struct line_pnts *APnts, *BPnts;
 
 /* break segments (called by rtree search) */
-static int cross_seg(int id, int *arg)
+static int cross_seg(int id, const struct RTree_Rect *rect, int *arg)
 {
     double x1, y1, z1, x2, y2, z2;
     int i, j, ret;
@@ -546,13 +546,13 @@ static int cross_seg(int id, int *arg)
  * intersection with B line. Points (Points->n_points == 1) are not
  * supported.
  *
- * \param[in] APoints first input line 
- * \param[in] BPoints second input line 
+ * \param APoints first input line 
+ * \param BPoints second input line 
  * \param[out] ALines array of new lines created from original A line
  * \param[out] BLines array of new lines created from original B line
  * \param[out] nalines number of new lines (ALines)
  * \param[out] nblines number of new lines (BLines)
- * \param[in] with_z 3D, not supported!
+ * \param with_z 3D, not supported!
  *
  * \return 0 no intersection 
  * \return 1 intersection found
@@ -560,19 +560,37 @@ static int cross_seg(int id, int *arg)
 int
 Vect_line_intersection(struct line_pnts *APoints,
 		       struct line_pnts *BPoints,
+		       struct bound_box *ABox,
+		       struct bound_box *BBox,
 		       struct line_pnts ***ALines,
 		       struct line_pnts ***BLines,
 		       int *nalines, int *nblines, int with_z)
 {
     int i, j, k, l, last_seg, seg, last;
     int n_alive_cross;
-    double dist, curdist, last_dist, last_x, last_y, last_z;
+    double dist, curdist, last_x, last_y, last_z;
     double x, y, rethresh;
-    struct Rect rect;
     struct line_pnts **XLines, *Points;
-    struct Node *RTree;
+    struct RTree *MyRTree;
     struct line_pnts *Points1, *Points2;	/* first, second points */
     int seg1, seg2, vert1, vert2;
+    static struct RTree_Rect rect;
+    static int rect_init = 0;
+    struct bound_box box, abbox;
+
+    if (debug_level == -1) {
+	const char *dstr = G_getenv_nofatal("DEBUG");
+
+	if (dstr != NULL)
+	    debug_level = atoi(dstr);
+	else
+	    debug_level = 0;
+    }
+
+    if (!rect_init) {
+	rect.boundary = G_malloc(6 * sizeof(RectReal));
+	rect_init = 6;
+    }
 
     n_cross = 0;
     rethresh = 0.000001;	/* TODO */
@@ -585,7 +603,10 @@ Vect_line_intersection(struct line_pnts *APoints,
      *  The number above is in fact not required threshold, and will not work
      *  for example: equator length is 40.075,695 km (8 digits), units are m (+3) 
      *  and we want precision in mm (+ 3) = 14 -> minimum rethresh may be around 0.001
-     *  ?Maybe all nonsense? */
+     *  ?Maybe all nonsense? 
+     *  Use rounding error of the unit in the least place ? 
+     *  max of fabs(x), fabs(y)
+     *  rethresh = pow(2, log2(max) - 53) */
 
     /* Warning: This function is also used to intersect the line by itself i.e. APoints and
      * BPoints are identical. I am not sure if it is clever, but it seems to work, but
@@ -636,8 +657,36 @@ Vect_line_intersection(struct line_pnts *APoints,
      *  is build first for the second line and segments from the first line are broken by segments
      *  in bound box */
 
+    if (!Vect_box_overlap(ABox, BBox)) {
+	*nalines = 0;
+	*nblines = 0;
+	return 0;
+    }
+    
+    abbox = *BBox;
+    if (abbox.N > ABox->N)
+	abbox.N = ABox->N;
+    if (abbox.S < ABox->S)
+	abbox.S = ABox->S;
+    if (abbox.E > ABox->E)
+	abbox.E = ABox->E;
+    if (abbox.W < ABox->W)
+	abbox.W = ABox->W;
+    if (abbox.T > ABox->T)
+	abbox.T = ABox->T;
+    if (abbox.B < ABox->B)
+	abbox.B = ABox->B;
+
+    abbox.N += rethresh;
+    abbox.S -= rethresh;
+    abbox.E += rethresh;
+    abbox.W -= rethresh;
+    abbox.T += rethresh;
+    abbox.B -= rethresh;
+    
     /* Create rtree for B line */
-    RTree = RTreeNewIndex();
+    MyRTree = RTreeCreateTree(-1, 0, 2);
+    RTreeSetOverflow(MyRTree, 0);
     for (i = 0; i < BPoints->n_points - 1; i++) {
 	if (BPoints->x[i] <= BPoints->x[i + 1]) {
 	    rect.boundary[0] = BPoints->x[i];
@@ -666,7 +715,16 @@ Vect_line_intersection(struct line_pnts *APoints,
 	    rect.boundary[5] = BPoints->z[i];
 	}
 
-	RTreeInsertRect(&rect, i + 1, &RTree, 0);	/* B line segment numbers in rtree start from 1 */
+	box.W = rect.boundary[0] - rethresh;
+	box.S = rect.boundary[1] - rethresh;
+	box.B = rect.boundary[2] - rethresh;
+	box.E = rect.boundary[3] + rethresh;
+	box.N = rect.boundary[4] + rethresh;
+	box.T = rect.boundary[5] + rethresh;
+
+	if (Vect_box_overlap(&abbox, &box)) {
+	    RTreeInsertRect(&rect, i + 1, MyRTree);	/* B line segment numbers in rtree start from 1 */
+	}
     }
 
     /* Break segments in A by segments in B */
@@ -696,12 +754,20 @@ Vect_line_intersection(struct line_pnts *APoints,
 	    rect.boundary[2] = APoints->z[i + 1];
 	    rect.boundary[5] = APoints->z[i];
 	}
+	box.W = rect.boundary[0] - rethresh;
+	box.S = rect.boundary[1] - rethresh;
+	box.B = rect.boundary[2] - rethresh;
+	box.E = rect.boundary[3] + rethresh;
+	box.N = rect.boundary[4] + rethresh;
+	box.T = rect.boundary[5] + rethresh;
 
-	j = RTreeSearch(RTree, &rect, (void *)cross_seg, &i);	/* A segment number from 0 */
+	if (Vect_box_overlap(&abbox, &box)) {
+	    j = RTreeSearch(MyRTree, &rect, (void *)cross_seg, &i);	/* A segment number from 0 */
+	}
     }
 
     /* Free RTree */
-    RTreeDestroyNode(RTree);
+    RTreeDestroyTree(MyRTree);
 
     G_debug(2, "n_cross = %d", n_cross);
     /* Lines do not cross each other */
@@ -712,13 +778,17 @@ Vect_line_intersection(struct line_pnts *APoints,
     }
 
     /* Snap breaks to nearest vertices within RE threshold */
+    /* Calculate distances along segments */
     for (i = 0; i < n_cross; i++) {
+
 	/* 1. of A seg */
 	seg = cross[i].segment[0];
 	curdist =
 	    dist2(cross[i].x, cross[i].y, APoints->x[seg], APoints->y[seg]);
 	x = APoints->x[seg];
 	y = APoints->y[seg];
+
+	cross[i].distance[0] = curdist;
 
 	/* 2. of A seg */
 	dist =
@@ -734,12 +804,15 @@ Vect_line_intersection(struct line_pnts *APoints,
 	seg = cross[i].segment[1];
 	dist =
 	    dist2(cross[i].x, cross[i].y, BPoints->x[seg], BPoints->y[seg]);
+	cross[i].distance[1] = dist;
+
 	if (dist < curdist) {
 	    curdist = dist;
 	    x = BPoints->x[seg];
 	    y = BPoints->y[seg];
 	}
-	dist = dist2(cross[i].x, cross[i].y, BPoints->x[seg + 1], BPoints->y[seg + 1]);	/* 2. of B seg */
+	/* 2. of B seg */
+	dist = dist2(cross[i].x, cross[i].y, BPoints->x[seg + 1], BPoints->y[seg + 1]);
 	if (dist < curdist) {
 	    curdist = dist;
 	    x = BPoints->x[seg + 1];
@@ -748,17 +821,15 @@ Vect_line_intersection(struct line_pnts *APoints,
 	if (curdist < rethresh * rethresh) {
 	    cross[i].x = x;
 	    cross[i].y = y;
-	}
-    }
 
-    /* Calculate distances along segments */
-    for (i = 0; i < n_cross; i++) {
-	seg = cross[i].segment[0];
-	cross[i].distance[0] =
-	    dist2(APoints->x[seg], APoints->y[seg], cross[i].x, cross[i].y);
-	seg = cross[i].segment[1];
-	cross[i].distance[1] =
-	    dist2(BPoints->x[seg], BPoints->y[seg], cross[i].x, cross[i].y);
+	    /* Update distances along segments */
+	    seg = cross[i].segment[0];
+	    cross[i].distance[0] =
+		dist2(APoints->x[seg], APoints->y[seg], cross[i].x, cross[i].y);
+	    seg = cross[i].segment[1];
+	    cross[i].distance[1] =
+		dist2(BPoints->x[seg], BPoints->y[seg], cross[i].x, cross[i].y);
+	}
     }
 
     /* l = 1 ~ line A, l = 2 ~ line B */
@@ -791,13 +862,16 @@ Vect_line_intersection(struct line_pnts *APoints,
 	      cmp_cross);
 
 	/* Print all (raw) breaks */
-	for (i = 0; i < n_cross; i++) {
-	    G_debug(3,
-		    "  cross = %d seg1/dist1 = %d/%f seg2/dist2 = %d/%f x = %f y = %f",
-		    i, cross[i].segment[current],
-		    sqrt(cross[i].distance[current]),
-		    cross[i].segment[second], sqrt(cross[i].distance[second]),
-		    cross[i].x, cross[i].y);
+	/* avoid loop when not debugging */
+	if (debug_level > 2) {
+	    for (i = 0; i < n_cross; i++) {
+		G_debug(3,
+			"  cross = %d seg1/dist1 = %d/%f seg2/dist2 = %d/%f x = %f y = %f",
+			i, cross[i].segment[current],
+			sqrt(cross[i].distance[current]),
+			cross[i].segment[second], sqrt(cross[i].distance[second]),
+			cross[i].x, cross[i].y);
+	    }
 	}
 
 	/* Remove breaks on first/last line vertices */
@@ -911,7 +985,7 @@ Vect_line_intersection(struct line_pnts *APoints,
 	 *        break on vertex is always on first segment of this vertex (used below) 
 	 */
 	last = -1;
-	for (i = 1; i < n_cross; i++) {
+	for (i = 0; i < n_cross; i++) {
 	    if (use_cross[i] == 0)
 		continue;
 	    if (last == -1) {	/* set first alive */
@@ -958,7 +1032,6 @@ Vect_line_intersection(struct line_pnts *APoints,
 	    cross[n_cross].segment[current] = Points->n_points - 2;
 
 	    last_seg = 0;
-	    last_dist = 0;
 	    last_x = Points->x[0];
 	    last_y = Points->y[0];
 	    last_z = Points->z[0];
@@ -994,13 +1067,36 @@ Vect_line_intersection(struct line_pnts *APoints,
 			    Points->y[j]);
 		}
 
-		/* add current cross or end point */
-		Vect_append_point(XLines[k], cross[i].x, cross[i].y, 0.0);
-		G_debug(2, "   append cross / last point: %f %f", cross[i].x,
-			cross[i].y);
 		last_seg = seg;
 		last_x = cross[i].x;
-		last_y = cross[i].y, last_z = 0;
+		last_y = cross[i].y;
+		last_z = 0;
+		/* calculate last_z */
+		if (Points->z[last_seg] == Points->z[last_seg + 1]) {
+		    last_z = Points->z[last_seg + 1];
+		}
+		else if (last_x == Points->x[last_seg] &&
+		    last_y == Points->y[last_seg]) {
+		    last_z = Points->z[last_seg];
+		}
+		else if (last_x == Points->x[last_seg + 1] &&
+		    last_y == Points->y[last_seg + 1]) {
+		    last_z = Points->z[last_seg + 1];
+		}
+		else {
+		    dist = dist2(Points->x[last_seg],
+		                 Points->x[last_seg + 1],
+				 Points->y[last_seg],
+				 Points->y[last_seg + 1]);
+		    last_z = (Points->z[last_seg] * sqrt(cross[i].distance[current]) +
+			      Points->z[last_seg + 1] * (sqrt(dist) - sqrt(cross[i].distance[current]))) /
+			      sqrt(dist);
+		}
+
+		/* add current cross or end point */
+		Vect_append_point(XLines[k], cross[i].x, cross[i].y, last_z);
+		G_debug(2, "   append cross / last point: %f %f", cross[i].x,
+			cross[i].y);
 
 		/* Check if line is degenerate */
 		if (dig_line_degenerate(XLines[k]) > 0) {
@@ -1021,6 +1117,8 @@ Vect_line_intersection(struct line_pnts *APoints,
 	    *BLines = XLines;
 	}
     }
+    
+    /* clean up */
 
     return 1;
 }
@@ -1030,7 +1128,7 @@ static struct line_pnts *APnts, *BPnts, *IPnts;
 static int cross_found;		/* set by find_cross() */
 
 /* break segments (called by rtree search) */
-static int find_cross(int id, int *arg)
+static int find_cross(int id, const struct RTree_Rect *rect, int *arg)
 {
     double x1, y1, z1, x2, y2, z2;
     int i, j, ret;
@@ -1049,7 +1147,7 @@ static int find_cross(int id, int *arg)
 
     if (!IPnts)
 	IPnts = Vect_new_line_struct();
-    
+
     switch (ret) {
     case 0:
     case 5:
@@ -1080,9 +1178,9 @@ static int find_cross(int id, int *arg)
  *
  * Points (Points->n_points == 1) are also supported.
  *
- * \param[in] APoints first input line 
- * \param[in] BPoints second input line 
- * \param[in] with_z 3D, not supported (only if one or both are points)!
+ * \param APoints first input line 
+ * \param BPoints second input line 
+ * \param with_z 3D, not supported (only if one or both are points)!
  *
  * \return 0 no intersection 
  * \return 1 intersection found
@@ -1093,8 +1191,14 @@ Vect_line_check_intersection(struct line_pnts *APoints,
 {
     int i;
     double dist, rethresh;
-    struct Rect rect;
-    struct Node *RTree;
+    struct RTree *MyRTree;
+    static struct RTree_Rect rect;
+    static int rect_init = 0;
+
+    if (!rect_init) {
+	rect.boundary = G_malloc(6 * sizeof(RectReal));
+	rect_init = 6;
+    }
 
     rethresh = 0.000001;	/* TODO */
     APnts = APoints;
@@ -1174,7 +1278,8 @@ Vect_line_check_intersection(struct line_pnts *APoints,
      *  in bound box */
 
     /* Create rtree for B line */
-    RTree = RTreeNewIndex();
+    MyRTree = RTreeCreateTree(-1, 0, 2);
+    RTreeSetOverflow(MyRTree, 0);
     for (i = 0; i < BPoints->n_points - 1; i++) {
 	if (BPoints->x[i] <= BPoints->x[i + 1]) {
 	    rect.boundary[0] = BPoints->x[i];
@@ -1203,7 +1308,7 @@ Vect_line_check_intersection(struct line_pnts *APoints,
 	    rect.boundary[5] = BPoints->z[i];
 	}
 
-	RTreeInsertRect(&rect, i + 1, &RTree, 0);	/* B line segment numbers in rtree start from 1 */
+	RTreeInsertRect(&rect, i + 1, MyRTree);	/* B line segment numbers in rtree start from 1 */
     }
 
     /* Find intersection */
@@ -1236,7 +1341,7 @@ Vect_line_check_intersection(struct line_pnts *APoints,
 	    rect.boundary[5] = APoints->z[i];
 	}
 
-	RTreeSearch(RTree, &rect, (void *)find_cross, &i);	/* A segment number from 0 */
+	RTreeSearch(MyRTree, &rect, (void *)find_cross, &i);	/* A segment number from 0 */
 
 	if (cross_found) {
 	    break;
@@ -1244,7 +1349,7 @@ Vect_line_check_intersection(struct line_pnts *APoints,
     }
 
     /* Free RTree */
-    RTreeDestroyNode(RTree);
+    RTreeDestroyTree(MyRTree);
 
     return cross_found;
 }
@@ -1254,10 +1359,10 @@ Vect_line_check_intersection(struct line_pnts *APoints,
  * 
  * A wrapper around Vect_line_check_intersection() function.
  *
- * \param[in] APoints first input line 
- * \param[in] BPoints second input line 
+ * \param APoints first input line 
+ * \param BPoints second input line 
  * \param[out] IPoints output with intersection points
- * \param[in] with_z 3D, not supported (only if one or both are points)!
+ * \param with_z 3D, not supported (only if one or both are points)!
  *
  * \return 0 no intersection 
  * \return 1 intersection found

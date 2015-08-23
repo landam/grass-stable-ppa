@@ -43,7 +43,7 @@ TMPNAME="`echo ${PID}_tmp_testmap | sed 's+\.+_+g'`"
 cleanup()
 {
  echo "Removing temporary map"
- g.remove rast=$TMPNAME > /dev/null
+ g.remove -f type=raster name=$TMPNAME > /dev/null
 }
 
 # check if a MASK is already present:
@@ -59,11 +59,11 @@ finalcleanup()
 {
  echo "Restoring user region"
  g.region region=$TMPNAME
- g.remove region=$TMPNAME > /dev/null
+ g.remove -f type=region name=$TMPNAME > /dev/null
  #restore user mask if present:
  if test -f $LOCATION/cell/$USERMASK ; then
   echo "Restoring user MASK"
-  g.remove rast=MASK > /dev/null
+  g.remove -f type=raster name=MASK > /dev/null
   g.rename $USERMASK,MASK > /dev/null
  fi
 }
@@ -71,7 +71,7 @@ finalcleanup()
 check_exit_status()
 {
  if [ $1 -ne 0 ] ; then
-  echo "An error occured."
+  echo "An error occurred."
   cleanup ; finalcleanup
   exit 1
  fi
@@ -125,7 +125,7 @@ check_exit_status $?
 ########### 2D raster INT tests ###########
 VALUE=1
 echo "INT/CELL test."
-r.mapcalc "$TMPNAME=1"
+r.mapcalc "$TMPNAME = 1"
 check_exit_status $?
 
 echo "Univariate statistics of INT/CELL test."
@@ -148,7 +148,7 @@ echo "##################################"
 ########### 2D raster FCELL tests ###########
 VALUE=1.1
 echo "FLOAT/FCELL test."
-r.mapcalc "$TMPNAME=$VALUE"
+r.mapcalc "$TMPNAME = $VALUE"
 check_exit_status $?
 
 echo "Univariate statistics of FLOAT/FCELL test."

@@ -5,15 +5,18 @@
 # define INIT(x) = x
 #endif
 
-#include <grass/gis.h>
-#include <grass/glocale.h>
+#include <grass/raster.h>
+
+#define SORT_DEFAULT 0
+#define SORT_ASC     1
+#define SORT_DESC    2
 
 extern struct Cell_head window;
 
 struct _layer_
 {
-    char *name;
-    char *mapset;
+    const char *name;
+    const char *mapset;
     struct Categories labels;
     int nlen;			/* num chars of largest cat when printed */
     int clen;			/* num chars for cat label when printed */
@@ -46,8 +49,8 @@ struct _units_
 extern UNITS unit[MAX_UNITS];
 extern int nunits;
 
-#define DEFAULT_PAGE_LENGTH 0
-#define DEFAULT_PAGE_WIDTH  79
+#define DEFAULT_PAGE_LENGTH "0"
+#define DEFAULT_PAGE_WIDTH  "79"
 
 extern int page_width;
 extern int page_length;
@@ -55,10 +58,10 @@ extern int masking;
 extern int use_formfeed;
 extern int nlines;
 extern int with_headers;
-extern int verbose;
 extern int e_format;
 extern int no_nulls;
 extern int no_nulls_all;
+extern int do_sort;
 
 extern char *stats_file;
 extern char *no_data_str;
@@ -85,7 +88,7 @@ int header(int, int);
 int divider(char *);
 int trailer(void);
 int newline(void);
-int lcr(char *, char *, char *, char *, int);
+int lcr(const char *, const char *, const char *, char *, int);
 
 /* label.c */
 char *print_label(char *, int, int, int, int);

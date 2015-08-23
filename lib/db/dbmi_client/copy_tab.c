@@ -1,16 +1,16 @@
 /*!
- * \file db/dbmi_client/copy_tab.c
- * 
- * \brief DBMI Library (client) - copy table
- *
- * (C) 1999-2008 by the GRASS Development Team
- *
- * This program is free software under the GNU General Public
- * License (>=v2). Read the file COPYING that comes with GRASS
- * for details.
- *
- * \author Joel Jones (CERL/UIUC), Radim Blazek
- */
+  \file db/dbmi_client/copy_tab.c
+  
+  \brief DBMI Library (client) - copy table
+  
+  (C) 1999-2008 by the GRASS Development Team
+  
+  This program is free software under the GNU General Public
+  License (>=v2). Read the file COPYING that comes with GRASS
+  for details.
+  
+  \author Joel Jones (CERL/UIUC), Radim Blazek
+*/
 
 #include <stdlib.h>
 #include <string.h>
@@ -31,7 +31,7 @@ static int cmp(const void *pa, const void *pb)
 }
 
 /*!
-  \brief Copy table, used by various db_copy_table*
+  \brief Copy table, used by various db_copy_table* (internal use only)
   
   Use either 'where' or 'select' or 'selcol'+'ivals'+'nvals' but
   never more than one.
@@ -54,12 +54,11 @@ static int cmp(const void *pa, const void *pb)
   \return DB_OK on success
   \return DB_FAILED on failure
  */
-
-int db__copy_table(const char *from_drvname, const char *from_dbname,
-		   const char *from_tblname, const char *to_drvname,
-		   const char *to_dbname, const char *to_tblname,
-		   const char *where, const char *select, const char *selcol,
-		   int *ivals, int nvals)
+static int copy_table(const char *from_drvname, const char *from_dbname,
+		      const char *from_tblname, const char *to_drvname,
+		      const char *to_dbname, const char *to_tblname,
+		      const char *where, const char *select, const char *selcol,
+		      int *ivals, int nvals)
 {
     int col, ncols, sqltype, ctype, more, selcol_found;
     char buf[1000];
@@ -87,12 +86,20 @@ int db__copy_table(const char *from_drvname, const char *from_dbname,
     db_init_string(&sql);
     db_init_string(&value_string);
 
-    /* Make a copy of input values and sort it */
-    if (ivals) {
-	ivalues = (int *)G_malloc(nvals * sizeof(int));
-	memcpy(ivalues, ivals, nvals * sizeof(int));
-	qsort((void *)ivalues, nvals, sizeof(int), cmp);
+    if (selcol) {
+	if (!ivals || (ivals && nvals == 0)) {
+	    G_warning(_("Array of values to select from column <%s> is empty"), selcol);
+	    return DB_FAILED;
+	}
+	/* Make a copy of input values and sort it */
+	if (ivals) {
+	    ivalues = (int *)G_malloc(nvals * sizeof(int));
+	    memcpy(ivalues, ivals, nvals * sizeof(int));
+	    qsort((void *)ivalues, nvals, sizeof(int), cmp);
+	}
     }
+    else
+	ivalues = NULL;
 
     /* Open input driver and database */
     from_driver = db_start_driver(from_drvname);
@@ -152,15 +159,27 @@ int db__copy_table(const char *from_drvname, const char *from_dbname,
 
     for (i = 0; i < count; i++) {
 	const char *tblname = db_get_string(&tblnames[i]);
-
+	int ret;
+	
+	ret = DB_FAILED;
 	if (strcmp(to_tblname, tblname) == 0) {
-	    G_warning(_("Table <%s> already exists in database <%s>"),
-		      to_tblname, to_dbname);
-	    db_close_database_shutdown_driver(to_driver);
-	    if (from_driver != to_driver)
-		db_close_database_shutdown_driver(from_driver);
-
-	    return DB_FAILED;
+	    if (G_get_overwrite()) {
+		G_warning(_("Table <%s> already exists in database and will be overwritten"),
+			  to_tblname);
+		ret = db_drop_table(to_driver, &tblnames[i]);
+	    }
+	    else {
+		G_warning(_("Table <%s> already exists in database <%s>"),
+			  to_tblname, to_dbname);
+	    }
+	    
+	    if (ret != DB_OK) {
+		db_close_database_shutdown_driver(to_driver);
+		if (from_driver != to_driver)
+		    db_close_database_shutdown_driver(from_driver);
+		
+		return DB_FAILED;
+	    }
 	}
     }
 
@@ -390,12 +409,12 @@ int db__copy_table(const char *from_drvname, const char *from_dbname,
 /*!
   \brief Copy a table
  
-  \param from_dvrname name of driver from table is copied
+  \param from_drvname name of driver from table is copied
   \param from_dbname name of database from table is copied
-  \param from_tbl_name name of table to be copied
-  \param to_dvrname name of driver to - where table is copied to
+  \param from_tblname name of table to be copied
+  \param to_drvname name of driver to - where table is copied to
   \param to_dbname name of database to - where table is copied to
-  \param to_dbname name of copied table
+  \param to_tblname name of copied table
 
   \return DB_OK on success
   \return DB_FAILED on failure
@@ -404,20 +423,20 @@ int db_copy_table(const char *from_drvname, const char *from_dbname,
 		  const char *from_tblname, const char *to_drvname,
 		  const char *to_dbname, const char *to_tblname)
 {
-    return db__copy_table(from_drvname, from_dbname, from_tblname,
-			  to_drvname, to_dbname, to_tblname,
-			  NULL, NULL, NULL, NULL, 0);
+    return copy_table(from_drvname, from_dbname, from_tblname,
+		      to_drvname, to_dbname, to_tblname,
+		      NULL, NULL, NULL, NULL, 0);
 }
 
 /*!
   \brief Copy a table (by where statement)
 
-  \param from_dvrname name of driver from table is copied
+  \param from_drvname name of driver from table is copied
   \param from_dbname name of database from table is copied
-  \param from_tbl_name name of table to be copied
-  \param to_dvrname name of driver to - where table is copied to
+  \param from_tblname name of table to be copied
+  \param to_drvname name of driver to - where table is copied to
   \param to_dbname name of database to - where table is copied to
-  \param to_dbname name of copied table
+  \param to_tblname name of copied table
   \param where WHERE SQL condition (without where key word)
 
   \return DB_OK on success
@@ -428,20 +447,20 @@ int db_copy_table_where(const char *from_drvname, const char *from_dbname,
 			const char *to_dbname, const char *to_tblname,
 			const char *where)
 {
-    return db__copy_table(from_drvname, from_dbname, from_tblname,
-			  to_drvname, to_dbname, to_tblname,
-			  where, NULL, NULL, NULL, 0);
+    return copy_table(from_drvname, from_dbname, from_tblname,
+		      to_drvname, to_dbname, to_tblname,
+		      where, NULL, NULL, NULL, 0);
 }
 
 /*!
   \brief Copy a table (by select statement)
 
-  \param from_dvrname name of driver from table is copied
+  \param from_drvname name of driver from table is copied
   \param from_dbname name of database from table is copied
-  \param from_tbl_name name of table to be copied
-  \param to_dvrname name of driver to - where table is copied to
+  \param from_dbname name of table to be copied
+  \param to_drvname name of driver to - where table is copied to
   \param to_dbname name of database to - where table is copied to
-  \param to_dbname name of copied table
+  \param to_tblname name of copied table
   \param select full select statement
 
   \return DB_OK on success
@@ -452,20 +471,20 @@ int db_copy_table_select(const char *from_drvname, const char *from_dbname,
 			 const char *to_dbname, const char *to_tblname,
 			 const char *select)
 {
-    return db__copy_table(from_drvname, from_dbname, from_tblname,
-			  to_drvname, to_dbname, to_tblname,
-			  NULL, select, NULL, NULL, 0);
+    return copy_table(from_drvname, from_dbname, from_tblname,
+		      to_drvname, to_dbname, to_tblname,
+		      NULL, select, NULL, NULL, 0);
 }
 
 /*!
   \brief Copy a table (by keys)
 
-  \param from_dvrname name of driver from table is copied
+  \param from_drvname name of driver from table is copied
   \param from_dbname name of database from table is copied
-  \param from_tbl_name name of table to be copied
-  \param to_dvrname name of driver to - where table is copied to
+  \param from_tblname name of table to be copied
+  \param to_drvname name of driver to - where table is copied to
   \param to_dbname name of database to - where table is copied to
-  \param to_dbname name of copied table
+  \param to_tblname name of copied table
   \param selcol name of column used to select records by values in ivals or NULL
   \param ivals pointer to array of integer values or NULL
   \param nvals number of values in ivals
@@ -478,7 +497,7 @@ int db_copy_table_by_ints(const char *from_drvname, const char *from_dbname,
 			  const char *to_dbname, const char *to_tblname,
 			  const char *selcol, int *ivals, int nvals)
 {
-    return db__copy_table(from_drvname, from_dbname, from_tblname,
-			  to_drvname, to_dbname, to_tblname,
-			  NULL, NULL, selcol, ivals, nvals);
+    return copy_table(from_drvname, from_dbname, from_tblname,
+		      to_drvname, to_dbname, to_tblname,
+		      NULL, NULL, selcol, ivals, nvals);
 }

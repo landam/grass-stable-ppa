@@ -1,9 +1,10 @@
 Description: Don't include GRASS_VERSION_RELEASE in path.
 Author: Francesco Paolo Lovergine <frankie@debian.org>
+Forwarded: not-needed
 
 --- a/configure
 +++ b/configure
-@@ -1432,7 +1432,7 @@ fi
+@@ -1427,7 +1427,7 @@ fi
  if test -n "$MACOSX_APP" ; then
      INSTDIR='${prefix}'"/GRASS-${GRASS_VERSION_MAJOR}.${GRASS_VERSION_MINOR}.app/Contents/MacOS"
  else
@@ -12,24 +13,36 @@ Author: Francesco Paolo Lovergine <frankie@debian.org>
  fi
  
  
+--- a/configure.in
++++ b/configure.in
+@@ -214,7 +214,7 @@ AC_SUBST(MACOSX_SDK)
+ if test -n "$MACOSX_APP" ; then
+     INSTDIR='${prefix}'"/GRASS-${GRASS_VERSION_MAJOR}.${GRASS_VERSION_MINOR}.app/Contents/MacOS"
+ else
+-    INSTDIR='${prefix}'"/grass-${GRASS_VERSION_MAJOR}.${GRASS_VERSION_MINOR}.${GRASS_VERSION_RELEASE}"
++    INSTDIR='${prefix}'"/grass${GRASS_VERSION_MAJOR}${GRASS_VERSION_MINOR}"
+ fi
+ 
+ AC_SUBST(INSTDIR)
 --- a/grass.pc.in
 +++ b/grass.pc.in
-@@ -1,12 +1,12 @@
- # Package Information for pkg-config
+@@ -2,13 +2,13 @@
+ #
+ # See also: grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@ --config
  
 -prefix=@prefix@/grass-@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@.@GRASS_VERSION_RELEASE@
 -exec_prefix=@prefix@/grass-@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@.@GRASS_VERSION_RELEASE@
 -libdir=@prefix@/grass-@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@.@GRASS_VERSION_RELEASE@/lib
 -includedir=@prefix@/grass-@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@.@GRASS_VERSION_RELEASE@/include
-+prefix=@prefix@/grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@
-+exec_prefix=@prefix@/grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@
-+libdir=@prefix@/grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@/lib
-+includedir=@prefix@/grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@/include
++prefix=@prefix@/grass@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@
++exec_prefix=@prefix@/grass@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@
++libdir=@prefix@/grass@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@/lib
++includedir=@prefix@/grass@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@/include
  
  Name: GRASS
  Description: GRASS GIS
  Version: @GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@.@GRASS_VERSION_RELEASE@
--Libs: -L@prefix@/grass-@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@.@GRASS_VERSION_RELEASE@/lib -lgrass_I -lgrass_vask -lgrass_gmath -lgrass_gis -lgrass_datetime -lgrass_gproj -lgrass_vect -lgrass_dbmibase -lgrass_dbmiclient
+-Libs: -L@prefix@/grass-@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@.@GRASS_VERSION_RELEASE@/lib -lgrass_gmath -lgrass_gis -lgrass_datetime -lgrass_gproj -lgrass_raster -lgrass_vector -lgrass_dbmibase -lgrass_dbmiclient -lm -lz
 -Cflags: -I@prefix@/grass-@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@.@GRASS_VERSION_RELEASE@/include
-+Libs: -L@prefix@/grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@/lib -lgrass_I -lgrass_vask -lgrass_gmath -lgrass_gis -lgrass_datetime -lgrass_gproj -lgrass_vect -lgrass_dbmibase -lgrass_dbmiclient
-+Cflags: -I@prefix@/grass@GRASS_VERSION_MAJOR@@GRASS_VERSION_MINOR@/include
++Libs: -L@prefix@/grass@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@/lib -lgrass_gmath -lgrass_gis -lgrass_datetime -lgrass_gproj -lgrass_raster -lgrass_vector -lgrass_dbmibase -lgrass_dbmiclient -lm -lz
++Cflags: -I@prefix@/grass@GRASS_VERSION_MAJOR@.@GRASS_VERSION_MINOR@/include

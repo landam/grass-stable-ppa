@@ -1,9 +1,9 @@
 /* cloud shadow unsigned int bits[2]
- * 0 -> class 0: yes
- * 1 -> class 1: no
+ * 0 -> class 0: no
+ * 1 -> class 1: yes
  */  
 
-#include <grass/gis.h>
+#include <grass/raster.h>
 
 CELL mod09A1sb(CELL pixel) 
 {

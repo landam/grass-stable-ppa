@@ -30,6 +30,7 @@
 #endif
 
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "daemon.h"
 #include "defs.h"
@@ -52,8 +53,6 @@ static rli_func *func;
 
 void worker_init(char *r, rli_func *f, char **p)
 {
-    char *mapset;
-
     cm = G_malloc(sizeof(struct cell_memory_entry));
     fm = G_malloc(sizeof(struct fcell_memory_entry));
     dm = G_malloc(sizeof(struct dcell_memory_entry));
@@ -64,17 +63,13 @@ void worker_init(char *r, rli_func *f, char **p)
     func = f;
 
     /* open raster map */
-    if (!(mapset = G_find_cell(raster, "")))
-        G_fatal_error(_("Raster map <%s> not found"), raster);
-    fd = G_open_cell_old(raster, mapset);
-    if (fd < 0)
-	    G_fatal_error(_("Cannot open raster map <%s>"), raster);
+    fd = Rast_open_old(raster, "");
 
     /* get current window */
-    G_get_window(&hd);
+    Rast_get_window(&hd);
 
     /* read data type to allocate cache */
-    data_type = G_raster_map_type(raster, mapset);
+    data_type = Rast_map_type(raster, "");
 
     /* calculate rows in cache */
     switch (data_type) {
@@ -167,21 +162,21 @@ void worker_process(msg * ret, msg * m)
 	switch (data_type) {
 	case CELL_TYPE:{
 		for (i = 0; i < (ad->rc - used); i++) {
-		    cm->cache[used + i] = G_allocate_cell_buf();
+		    cm->cache[used + i] = Rast_allocate_c_buf();
 		    cm->contents[used + i] = -1;
 		}
 	    }
 	    break;
 	case DCELL_TYPE:{
 		for (i = 0; i < ad->rc - used; i++) {
-		    dm->cache[used + i] = G_allocate_d_raster_buf();
+		    dm->cache[used + i] = Rast_allocate_d_buf();
 		    dm->contents[used + i] = -1;
 		}
 	    }
 	    break;
 	case FCELL_TYPE:{
 		for (i = 0; i < ad->rc - used; i++) {
-		    fm->cache[used + i] = G_allocate_f_raster_buf();
+		    fm->cache[used + i] = Rast_allocate_f_buf();
 		    fm->contents[used + i] = -1;
 		}
 	    }
@@ -218,13 +213,12 @@ void worker_process(msg * ret, msg * m)
 void worker_end(void)
 {
     /* close raster map */
-    G_close_cell(fd);
+    Rast_close(fd);
 }
 
 char *mask_preprocessing(char *mask, char *raster, struct area_entry *ad)
 {
     const char *tmp_file;
-    char *mask_mapset;
     int mask_fd, old_fd, *buf, i, j;
     CELL *old;
 
@@ -235,28 +229,25 @@ char *mask_preprocessing(char *mask, char *raster, struct area_entry *ad)
 
     tmp_file = G_tempfile();
     mask_fd = open(tmp_file, O_RDWR | O_CREAT, 0755);
-
-    /* mapset is used hold the mapset of input raster */
-    mask_mapset = G_find_cell(mask, "");
-    old_fd = G_open_cell_old(mask, mask_mapset);
-    old = G_allocate_cell_buf();
+    old_fd = Rast_open_old(mask, "");
+    old = Rast_allocate_c_buf();
 
     /* write out sample area size: ad->rl rows and ad->cl columns */
 
     for (i = 0; i < ad->rl; i++) {
 
-	G_get_c_raster_row_nomask(old_fd, old, i + ad->y);
+	Rast_get_c_row_nomask(old_fd, old, i + ad->y);
 	for (j = 0; j < ad->cl; j++) {
 
 	    /* NULL -> 0, else 1 */
-	    buf[j] = !G_is_null_value(&old[j + ad->x], CELL_TYPE);
+	    buf[j] = !Rast_is_c_null_value(&old[j + ad->x]);
 	}
 	if (write(mask_fd, buf, ad->cl * sizeof(int)) < 0)
 	    return NULL;
     }
 
     close(mask_fd);
-    G_close_cell(old_fd);
+    Rast_close(old_fd);
     
     G_free(buf);
     G_free(old);
@@ -272,7 +263,7 @@ CELL *RLI_get_cell_raster_row(int fd, int row, struct area_entry *ad)
     if (ad->cm->contents[hash] == row)
 	return ad->cm->cache[hash];
     else {
-	G_get_raster_row(fd, ad->cm->cache[hash], row, CELL_TYPE);
+	Rast_get_row(fd, ad->cm->cache[hash], row, CELL_TYPE);
 	ad->cm->contents[hash] = row;
 	return ad->cm->cache[hash];
     }
@@ -287,7 +278,7 @@ DCELL *RLI_get_dcell_raster_row(int fd, int row, struct area_entry *ad)
     if (ad->dm->contents[hash] == row)
 	return ad->dm->cache[hash];
     else {
-	G_get_raster_row(fd, ad->dm->cache[hash], row, DCELL_TYPE);
+	Rast_get_row(fd, ad->dm->cache[hash], row, DCELL_TYPE);
 	ad->dm->contents[hash] = row;
 	return ad->dm->cache[hash];
     }
@@ -302,7 +293,7 @@ FCELL *RLI_get_fcell_raster_row(int fd, int row, struct area_entry *ad)
     if (ad->fm->contents[hash] == row)
 	return ad->fm->cache[hash];
     else {
-	G_get_raster_row(fd, ad->fm->cache[hash], row, FCELL_TYPE);
+	Rast_get_row(fd, ad->fm->cache[hash], row, FCELL_TYPE);
 	ad->fm->contents[hash] = row;
 	return ad->fm->cache[hash];
     }

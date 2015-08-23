@@ -5,14 +5,14 @@
 
 #include <grass/gis.h>
 #include "vizual.h"
-#include <grass/G3d.h>
+#include <grass/raster3d.h>
 /*
    #define DEBUG1
  */
 
 int init_caps(D_Cap, g3reg)
      struct Cap *D_Cap;
-     G3D_Region *g3reg;
+     RASTER3D_Region *g3reg;
 
 /* this subroutine only needs to be called once */
 {

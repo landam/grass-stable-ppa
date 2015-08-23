@@ -7,7 +7,7 @@
  *               Glynn Clements <glynn gclements.plus.com>, Hamish Bowman <hamish_b yahoo.com>,
  *               Jan-Oliver Wagner <jan intevation.de>, Paul Kelly <paul-grass stjohnspoint.co.uk>
  * PURPOSE:      combines a series of GRASS raster maps into a single MPEG-1
- * COPYRIGHT:    (C) 1999-2006 by the GRASS Development Team
+ * COPYRIGHT:    (C) 1999-2006, 2011 by the GRASS Development Team
  *
  *               This program is free software under the GNU General Public
  *               License (>=v2). Read the file COPYING that comes with GRASS
@@ -40,6 +40,8 @@
 #include <unistd.h>
 
 #include <grass/gis.h>
+#include <grass/raster.h>
+#include <grass/spawn.h>
 #include <grass/glocale.h>
 
 #include "rom_proto.h"
@@ -52,10 +54,10 @@
 
 
 /* global variables */
-int nrows, ncols, numviews, quality, quiet = 0;
+int nrows, ncols, numviews, quality;
 char *vfiles[MAXVIEWS][MAXIMAGES];
-char outfile[BUFSIZ];
-char encoder[15];
+char outfile[GPATH_MAX];
+const char *encoder;
 
 float vscale, scale;		/* resampling scale factors */
 int irows, icols, vrows, vcols;
@@ -65,32 +67,102 @@ int frames;
 /* function prototypes */
 static int load_files(void);
 static int use_r_out(void);
-static char **gee_wildfiles(char *wildarg, char *element, int *num);
-static void parse_command(int argc, char *argv[],
-			  char *vfiles[MAXVIEWS][MAXIMAGES], int *numviews,
-			  int *numframes, int *quality, int *convert);
+static char **gee_wildfiles(const char *wildarg, const char *element, int *num);
+static void parse_command(struct Option **viewopts,
+			  char *vfiles[MAXVIEWS][MAXIMAGES],
+			  int *numviews, int *numframes);
 
+static int check_encoder(const char *encoder)
+{
+    int status, prev;
+
+    prev = G_suppress_warnings(1);
+
+    status = G_spawn_ex(
+	encoder, encoder,
+	SF_REDIRECT_FILE, SF_STDERR, SF_MODE_OUT, G_DEV_NULL,
+	NULL);
+
+    G_suppress_warnings(prev);
+
+    return status >= 0 && status != 127;
+}
 
 int main(int argc, char **argv)
 {
-    /*    int               i, j, d; */
+    struct GModule *module;
+    struct Option *viewopts[MAXVIEWS], *out, *qual;
+    struct Flag *conv;
+    int i;
     int *sdimp, longdim, r_out;
 
     G_gisinit(argv[0]);
-    parse_command(argc, argv, vfiles, &numviews, &frames, &quality, &r_out);
+
+    module = G_define_module();
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("export"));
+    G_add_keyword(_("animation"));
+
+    module->description =
+	_("Converts raster map series to MPEG movie.");
+
+    for (i = 0; i < MAXVIEWS; i++) {
+	char *buf = NULL;
+	viewopts[i] = G_define_standard_option(G_OPT_R_INPUTS);
+	G_asprintf(&buf, "view%d", i + 1);
+	viewopts[i]->key = G_store(buf);
+	viewopts[i]->required = (i ? NO : YES);
+	G_asprintf(&buf, _("Name of input raster map(s) for view no.%d"), i + 1);
+	viewopts[i]->description = G_store(buf);
+        viewopts[i]->guisection = _("Views");
+	G_free(buf);
+    }
+
+    out = G_define_standard_option(G_OPT_F_OUTPUT);
+    
+    qual = G_define_option();
+    qual->key = "quality";
+    qual->type = TYPE_INTEGER;
+    qual->required = NO;
+    qual->multiple = NO;
+    qual->answer = "3";
+    qual->options = "1-5";
+    qual->description =
+	_("Quality factor (1 = highest quality, lowest compression)");
+    qual->guisection = _("Settings");
+    
+    conv = G_define_flag();
+    conv->key = 'c';
+    conv->label = _("Convert on the fly, uses less disk space");
+    conv->description =	_("Requires r.out.ppm with stdout option");
+    
+    if (G_parser(argc, argv))
+	exit(EXIT_FAILURE);
+
+    parse_command(viewopts, vfiles, &numviews, &frames);
+
+    r_out = 0;
+    if (conv->answer)
+	r_out = 1;
+
+    quality = 3;
+    if (qual->answer != NULL)
+	sscanf(qual->answer, "%d", &quality);
+    if (quality > 5 || quality < 1)
+	quality = 3;
 
     /* find a working encoder */
-    if (256 == G_system("ppmtompeg 2> /dev/null"))
-	strcpy(encoder, "ppmtompeg");
-    else if (256 == G_system("mpeg_encode 2> /dev/null"))
-	strcpy(encoder, "mpeg_encode");
+    if (check_encoder("ppmtompeg"))
+	encoder = "ppmtompeg";
+    else if (check_encoder("mpeg_encode"))
+	encoder = "mpeg_encode";
     else
 	G_fatal_error(_("Either mpeg_encode or ppmtompeg must be installed"));
 
     G_debug(1, "encoder = [%s]", encoder);
 
-    vrows = G_window_rows();
-    vcols = G_window_cols();
+    vrows = Rast_window_rows();
+    vcols = Rast_window_cols();
     nrows = vrows;
     ncols = vcols;
 
@@ -108,7 +180,7 @@ int main(int argc, char **argv)
 
     scale = 1.0;
 
-    {				/* find animation image size */
+    {	/* find animation image size */
 	int max, min;
 	char *p;
 
@@ -157,14 +229,15 @@ static int load_files(void)
     void *voidc;
     int rtype;
     register int i, rowoff, row, col, vxoff, vyoff, offset;
-    int cnt, ret, fd, size, tsiz, coff;
+    int cnt, fd, size, tsiz, coff;
     int vnum;
     int y_rows, y_cols;
     char *pr, *pg, *pb;
     unsigned char *tr, *tg, *tb, *tset;
-    char *mpfilename, *mapset, name[BUFSIZ];
-    char cmd[1000], *yfiles[MAXIMAGES];
+    char *mpfilename, *name;
+    char *yfiles[MAXIMAGES];
     struct Colors colors;
+    int ret;
 
     size = nrows * ncols;
 
@@ -172,7 +245,7 @@ static int load_files(void)
     pg = G_malloc(size);
     pb = G_malloc(size);
 
-    tsiz = G_window_cols();
+    tsiz = Rast_window_cols();
 
     tr = (unsigned char *)G_malloc(tsiz);
     tg = (unsigned char *)G_malloc(tsiz);
@@ -208,39 +281,23 @@ static int load_files(void)
 		vyoff = vnum > 1 ? vrows + 2 * BORDER_W : BORDER_W;
 	    }
 
-	    strcpy(name, vfiles[vnum][cnt]);
-	    if (!quiet)
-		G_message("\r%s <%s>", _("Reading file"), name);
+	    name = vfiles[vnum][cnt];
 
-	    mapset = G_find_cell2(name, "");
-	    if (mapset == NULL)
-		G_fatal_error(_("Raster map <%s> not found"), name);
+	    G_message(_("Reading raster map <%s>..."), name);
 
-	    fd = G_open_cell_old(name, mapset);
-	    if (fd < 0)
-		exit(EXIT_FAILURE);
+	    fd = Rast_open_old(name, "");
 
-	    ret = G_read_colors(name, mapset, &colors);
-	    if (ret < 0)
-		exit(EXIT_FAILURE);
+	    if (Rast_read_colors(name, "", &colors) < 0)
+		G_fatal_error(_("Unable to read color table for <%s>"), name);
 
-	    rtype = G_get_raster_map_type(fd);
-	    if (rtype == CELL_TYPE)
-		voidc = G_allocate_c_raster_buf();
-	    else if (rtype == FCELL_TYPE)
-		voidc = G_allocate_f_raster_buf();
-	    else if (rtype == DCELL_TYPE)
-		voidc = G_allocate_d_raster_buf();
-	    else
-		exit(EXIT_FAILURE);
+	    rtype = Rast_get_map_type(fd);
+	    voidc = Rast_allocate_buf(rtype);
 
 	    for (row = 0; row < vrows; row++) {
-		if (G_get_raster_row(fd, voidc,
-				     (int)(row / vscale), rtype) < 0)
-		    exit(EXIT_FAILURE);
+		Rast_get_row(fd, voidc, (int)(row / vscale), rtype);
 
 		rowoff = (vyoff + row) * ncols;
-		G_lookup_raster_colors(voidc, tr, tg, tb,
+		Rast_lookup_colors(voidc, tr, tg, tb,
 				       tset, tsiz, &colors, rtype);
 
 		for (col = 0; col < vcols; col++) {
@@ -257,7 +314,7 @@ static int load_files(void)
 		}
 	    }
 
-	    G_close_cell(fd);
+	    Rast_close(fd);
 	}
 
 	yfiles[cnt] = G_tempfile();
@@ -270,15 +327,17 @@ static int load_files(void)
     }
 
     mpfilename = G_tempfile();
-    write_params(mpfilename, yfiles, outfile, cnt, quality, y_rows, y_cols,
-		 0);
+    write_params(mpfilename, yfiles, outfile, cnt, quality, y_rows, y_cols, 0);
 
-    if (quiet)
-	sprintf(cmd, "%s %s 2> /dev/null > /dev/null", encoder, mpfilename);
+    if (G_verbose() <= G_verbose_min())
+	ret = G_spawn(encoder, encoder, mpfilename,
+		      SF_REDIRECT_FILE, SF_STDOUT, SF_MODE_OUT, G_DEV_NULL,
+		      SF_REDIRECT_FILE, SF_STDERR, SF_MODE_OUT, G_DEV_NULL,
+		      NULL);
     else
-	sprintf(cmd, "%s %s", encoder, mpfilename);
+	ret = G_spawn(encoder, encoder, mpfilename, NULL);
 
-    if (0 != G_system(cmd))
+    if (ret != 0)
 	G_warning(_("mpeg_encode ERROR"));
 
     clean_files(mpfilename, yfiles, cnt);
@@ -295,20 +354,23 @@ static int load_files(void)
     return (cnt);
 }
 
-
 static int use_r_out(void)
 {
-    char *mpfilename, cmd[1000];
+    char *mpfilename;
+    int ret;
 
     mpfilename = G_tempfile();
     write_params(mpfilename, vfiles[0], outfile, frames, quality, 0, 0, 1);
 
-    if (quiet)
-	sprintf(cmd, "%s %s 2> /dev/null > /dev/null", encoder, mpfilename);
+    if (G_verbose() <= G_verbose_min())
+	ret = G_spawn(encoder, encoder, mpfilename,
+		      SF_REDIRECT_FILE, SF_STDOUT, SF_MODE_OUT, G_DEV_NULL,
+		      SF_REDIRECT_FILE, SF_STDERR, SF_MODE_OUT, G_DEV_NULL,
+		      NULL);
     else
-	sprintf(cmd, "%s %s", encoder, mpfilename);
+	ret = G_spawn(encoder, encoder, mpfilename, NULL);
 
-    if (0 != G_system(cmd))
+    if (ret != 0)
 	G_warning(_("mpeg_encode ERROR"));
 
     clean_files(mpfilename, NULL, 0);
@@ -316,144 +378,105 @@ static int use_r_out(void)
     return (1);
 }
 
-
 /* ###################################################### */
-static char **gee_wildfiles(char *wildarg, char *element, int *num)
+
+static void mlist(const char *element, const char *wildarg, const char *outfile)
 {
-    int n, cnt = 0;
-    char path[1000], *mapset, cmd[1000], buf[512];
-    char *p, *tfile;
-    static char *newfiles[MAXIMAGES];
-    FILE *tf;
+    int n;
+    const char *mapset;
 
-    *num = 0;
-    tfile = G_tempfile();
+    for (n = 0; (mapset = G_get_mapset_name(n)); n++) {
+	char type_arg[GNAME_MAX];
+	char pattern_arg[GNAME_MAX];
+	char mapset_arg[GMAPSET_MAX];
 
-    /* build list of filenames */
-    for (n = 0; (mapset = G__mapset_name(n)); n++) {
 	if (strcmp(mapset, ".") == 0)
 	    mapset = G_mapset();
 
-	G__file_name(path, element, "", mapset);
-	if (access(path, 0) == 0) {
-	    sprintf(cmd, "cd %s; \\ls %s >> %s 2> /dev/null",
-		    path, wildarg, tfile);
-	    G_system(cmd);
-	}
+	sprintf(type_arg, "type=%s", element);
+	sprintf(pattern_arg, "pattern=%s", wildarg);
+	sprintf(mapset_arg, "mapset=%s", mapset);
+
+	G_spawn_ex("g.list", "g.list",
+		   type_arg, pattern_arg, mapset_arg,
+		   SF_REDIRECT_FILE, SF_STDOUT, SF_MODE_APPEND, outfile,
+		   NULL);
     }
-
-    if (NULL == (tf = fopen(tfile, "r")))
-	G_warning(_("Error reading wildcard"));
-    else {
-	while (NULL != fgets(buf, 512, tf)) {
-	    /* replace newline with null */
-	    if ((p = strchr(buf, '\n')))
-		*p = '\0';
-	    /* replace first space with null */
-	    else if ((p = strchr(buf, ' ')))
-		*p = '\0';
-
-	    if (strlen(buf) > 1)
-		newfiles[cnt++] = G_store(buf);
-	}
-
-	fclose(tf);
-    }
-
-    *num = cnt;
-    sprintf(cmd, "\\rm %s", tfile);
-    G_system(cmd);
-    G_free(tfile);
-
-    return (newfiles);
 }
 
-
-/********************************************************************/
-static void parse_command(int argc, char *argv[],
-			  char *vfiles[MAXVIEWS][MAXIMAGES], int *numviews,
-			  int *numframes, int *quality, int *convert)
+static char **parse(const char *filename, int *num)
 {
-    struct GModule *module;
-    struct Option *viewopts[MAXVIEWS], *out, *qual;
-    struct Flag *qt, *conv;
-    char buf[BUFSIZ], **wildfiles;
-    int i, j, k, numi, wildnum;
+    char buf[GNAME_MAX];
+    char **files = NULL;
+    int max_files = 0;
+    int num_files = 0;
+    FILE *fp;
 
-    module = G_define_module();
-    module->keywords = _("raster, export");
-    module->description = _("Raster File Series to MPEG Conversion.");
+    fp = fopen(filename, "r");
+    if (!fp)
+	G_fatal_error(_("Error reading wildcard"));
 
-    *numviews = *numframes = 0;
-    for (i = 0; i < MAXVIEWS; i++) {
-	viewopts[i] = G_define_option();
-	sprintf(buf, "view%d", i + 1);
-	viewopts[i]->key = G_store(buf);
-	viewopts[i]->type = TYPE_STRING;
-	viewopts[i]->required = (i ? NO : YES);
-	viewopts[i]->multiple = YES;
-	viewopts[i]->gisprompt = "old,cell,Raster";
-	sprintf(buf, _("Raster file(s) for View%d"), i + 1);
-	viewopts[i]->description = G_store(buf);
+    while (fgets(buf, sizeof(buf), fp)) {
+	char *p = strchr(buf, '\n');
+	if (p)
+	    *p = '\0';
+
+	if (!*buf)
+	    continue;
+
+	if (num_files >= max_files) {
+	    max_files += 50;
+	    files = (char **) G_realloc((void *) files,
+					max_files * sizeof(char *));
+	}
+
+	files[num_files++] = G_store(buf);
     }
 
-    out = G_define_option();
-    out->key = "output";
-    out->type = TYPE_STRING;
-    out->required = NO;
-    out->multiple = NO;
-    out->answer = "gmovie.mpg";
-    out->description = _("Name for output file");
+    fclose(fp);
 
-    qual = G_define_option();
-    qual->key = "qual";
-    qual->type = TYPE_INTEGER;
-    qual->required = NO;
-    qual->multiple = NO;
-    qual->answer = "3";
-    qual->options = "1-5";
-    qual->description =
-	_("Quality factor (1 = highest quality, lowest compression)");
+    *num = num_files;
 
-    qt = G_define_flag();
-    qt->key = 'q';
-    qt->description = _("Quiet - suppress progress report");
+    return files;
+}
 
-    conv = G_define_flag();
-    conv->key = 'c';
-    conv->description =
-	_("Convert on the fly, use less disk space\n\t(requires r.out.ppm with stdout option)");
+static char **gee_wildfiles(const char *wildarg, const char *element, int *num)
+{
+    char *tfile;
+    char **files;
 
-    if (G_parser(argc, argv))
-	exit(EXIT_FAILURE);
+    tfile = G_tempfile();
+    
+    mlist(element, wildarg, tfile);
+    files = parse(tfile, num);
 
-    *convert = 0;
-    if (qt->answer)
-	quiet = 1;
-    if (conv->answer)
-	*convert = 1;
+    remove(tfile);
+    G_free(tfile);
 
-    *quality = 3;
-    if (qual->answer != NULL)
-	sscanf(qual->answer, "%d", quality);
-    if (*quality > 5 || *quality < 1)
-	*quality = 3;
+    return files;
+}
 
-    if (out->answer)
-	strcpy(outfile, out->answer);
-    else
-	strcpy(outfile, "gmovie.mpg");
+/********************************************************************/
+static void parse_command(struct Option **viewopts,
+			  char *vfiles[MAXVIEWS][MAXIMAGES],
+			  int *numviews, int *numframes)
+{
+    int i, j, k;
+
+    *numviews = *numframes = 0;
 
     for (i = 0; i < MAXVIEWS; i++) {
 	if (viewopts[i]->answers) {
+	    int numi, wildnum;
+
 	    (*numviews)++;
 
 	    for (j = 0, numi = 0; viewopts[i]->answers[j]; j++) {
 		if ((NULL != strchr(viewopts[i]->answers[j], '*')) ||
 		    (NULL != strchr(viewopts[i]->answers[j], '?')) ||
 		    (NULL != strchr(viewopts[i]->answers[j], '['))) {
-		    wildfiles = gee_wildfiles(viewopts[i]->answers[j],
-					      "cell", &wildnum);
+		    char **wildfiles = gee_wildfiles(viewopts[i]->answers[j],
+						     "rast", &wildnum);
 
 		    for (k = 0; k < wildnum; k++)
 			vfiles[i][numi++] = wildfiles[k];
@@ -468,7 +491,3 @@ static void parse_command(int argc, char *argv[],
 	}
     }
 }
-
-/*********************************************************************/
-
-/*********************************************************************/

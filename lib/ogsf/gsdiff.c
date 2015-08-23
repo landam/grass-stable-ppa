@@ -1,5 +1,5 @@
 /*!
-   \file gsdiff.c
+   \file lib/ogsf/gsdiff.c
 
    \brief OGSF library - manipulating surfaces (lower level functions)
 
@@ -27,7 +27,7 @@
    \author Doxygenized by Martin Landa <landa.martin gmail.com> (May 2008)
  */
 
-#include <grass/gstypes.h>
+#include <grass/ogsf.h>
 #include "gsget.h"
 
 static geosurf *Refsurf = NULL;

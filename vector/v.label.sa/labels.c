@@ -5,6 +5,8 @@
 */
 #include "labels.h"
 static int label_skyline(FT_Face face, const char *charset, label_t * label);
+static struct line_pnts *box_trans_rot(struct bound_box * bb, label_point_t * p,
+				       double angle);
 static void label_point_candidates(label_t * label);
 static void label_line_candidates(label_t * label);
 static int candidate_compare(const void *a, const void *b);
@@ -16,11 +18,8 @@ static double label_lineover(label_t * label, label_candidate_t * candidate,
 static double min_dist_2_lines(struct line_pnts *skyline,
 			       struct line_pnts *swathline,
 			       label_point_t * p);
-static int box_overlap(BOUND_BOX * a, BOUND_BOX * b);
+static int box_overlap(struct bound_box * a, struct bound_box * b);
 static int box_overlap2(struct line_pnts *a, struct line_pnts *b);
-static int segments_intersect(double x1, double y1, double x2, double y2,
-			      double x3, double y3, double x4, double y4,
-			      double *x, double *y);
 
 /**
  * The font size in map units. A global variable because I'm lazy :P
@@ -43,7 +42,6 @@ static double buffer = 0.0;
 label_t *labels_init(struct params *p, int *n_labels)
 {
     label_t *labels;
-    char *mapset;
     int legal_types, layer, i = 0, error, sql_len;
     size_t label_sz;
     struct field_info *fi;
@@ -55,13 +53,9 @@ label_t *labels_init(struct params *p, int *n_labels)
     fprintf(stderr, "Initialising labels...");
     legal_types = Vect_option_to_types(p->type);
 
-    /* open vector */
-    mapset = G_find_vector2(p->map->answer, NULL);
-    if (mapset == NULL)
-	G_fatal_error(_("Vector map <%s> not found"), p->map->answer);
-
     /* open vector for read only */
-    Vect_open_old(&Map, p->map->answer, mapset);
+    if (Vect_open_old(&Map, p->map->answer, "") < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), p->map->answer);
 
     label_sz = Vect_get_num_primitives(&Map, legal_types);
 
@@ -83,10 +77,10 @@ label_t *labels_init(struct params *p, int *n_labels)
     if (driver == NULL)
 	G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 		      fi->database, fi->driver);
+    db_set_error_handler_driver(driver);
 
-    sql_len =
-	strlen(p->column->answer) + strlen(p->overlap->answer) +
-	strlen(fi->table) + strlen(fi->key) + 31;
+    sql_len = strlen(p->column->answer) + strlen(fi->table) +
+	strlen(fi->key) + 30;
 
     /* initialize FT 2 library */
     if (FT_Init_FreeType(&library))
@@ -103,7 +97,7 @@ label_t *labels_init(struct params *p, int *n_labels)
     else if (error)
 	G_fatal_error(_("Font file can not be loaded"));
     p->font->answer = G_store(font_cap->name);
-    free_freetypecap(font_cap);
+    free_fontcap(font_cap);
 
     font_size = atof(p->size->answer);
     buffer = atof(p->isize->answer);
@@ -156,15 +150,8 @@ label_t *labels_init(struct params *p, int *n_labels)
 
 	sql = (char *) G_malloc(sql_len);
 	/* Read label from database */
-	if (p->overlap->answer[0] != '\0') {
-	    sprintf(sql, "select %s,%s from %s where %s = %d",
-		    p->column->answer, p->overlap->answer,
-		    fi->table, fi->key, cat);
-	}
-	else {
-	    sprintf(sql, "select %s from %s where %s = %d", p->column->answer,
-		    fi->table, fi->key, cat);
-	}
+	sprintf(sql, "select %s from %s where %s = %d", p->column->answer,
+		fi->table, fi->key, cat);
 	G_debug(3, "SQL: %s", sql);
 	db_init_string(&query);
 	db_set_string(&query, sql);
@@ -189,50 +176,20 @@ label_t *labels_init(struct params *p, int *n_labels)
 
 	db_init_string(&value);
 	db_convert_column_value_to_string(column, &value);
+	db_close_cursor(&cursor);
 
 	G_debug(3, "Label: %s", db_get_string(&value));
 
 	/* ignore empty strings */
-	if (strlen(db_get_string(&value)) == 0) {
-	    Vect_destroy_cats_struct(Cats);
-	    Vect_destroy_line_struct(Points);
+	if (strlen(db_get_string(&value)) == 0)
 	    continue;
-	}
 
-	labels[i].text = G_strdup(db_get_string(&value));
+	labels[i].text = G_store(db_get_string(&value));
 	labels[i].cat = cat;
 	labels[i].type = type;
 	labels[i].shape = Points;
 	G_debug(3, "Label [%d]: %s, cat=%d, type=0x%02x", i, labels[i].text,
 		labels[i].cat, labels[i].type);
-
-	if (p->overlap->answer[0] != '\0') {
-	    int ctype;
-	    double dbl;
-
-	    column = db_get_table_column(table, 1);
-	    ctype = db_sqltype_to_Ctype(db_get_column_sqltype(column));
-	    if (ctype == DB_C_TYPE_INT) {
-		dbValue *val;
-
-		val = db_get_column_value(column);
-		dbl = (double)db_get_value_int(val);
-	    }
-	    else if (ctype == DB_C_TYPE_DOUBLE) {
-		dbValue *val;
-
-		val = db_get_column_value(column);
-		dbl = db_get_value_double(val);
-	    }
-	    else {
-		db_close_cursor(&cursor);
-		G_fatal_error(_("Cannot load overlap weights. "
-				"Column %s is not of numeric type in "
-				"table <%s>"), p->overlap->answer, fi->table);
-	    }
-	    labels[i].weight = dbl;
-	}
-	db_close_cursor(&cursor);
 
 	/* make a skyline for the text */
 	label_skyline(face, p->charset->answer, &labels[i]);
@@ -378,29 +335,26 @@ void label_candidates(label_t * labels, int n_labels)
 
     /* generate candidate location for each label based on feture type
      * see chapter 5 of MERL-TR-96-04 */
-	G_debug(3, "n_labels=%d", n_labels);
     fprintf(stderr, "Generating label candidates: ...");
     for (i = 0; i < n_labels; i++) {
-	G_percent(i, n_labels, 1);
+	G_percent(i, n_labels - 1, 1);
 	switch (labels[i].type) {
 	case GV_POINT:
-	    G_debug(3, "Point (%d): %s", i, labels[i].text);
+	    G_debug(3, "Line (%d): %s", i, labels[i].text);
 	    label_point_candidates(&labels[i]);
 	    break;
 	case GV_LINE:
 	    G_debug(3, "Line (%d): %s", i, labels[i].text);
 	    label_line_candidates(&labels[i]);
 	    break;
-	case GV_CENTROID:
-	    G_debug(3, "Area (%d): %s", i, labels[i].text);
-	    label_point_candidates(&labels[i]);
-	    break;
+	    /*                case GV_AREA:
+	     * label_area_candidates(labels[i]);
+	     * break; */
 	default:
 	    /* this should never be reached */
 	    break;
 	}
     }
-    G_percent(n_labels, n_labels, 1);
     Vect_close(&Map);
     return;
 }
@@ -844,44 +798,43 @@ struct line_pnts *skyline_trans_rot(struct line_pnts *skyline,
     return Points;
 }
 
-#define SET_POINT(P, i, X, Y) (P)->x[(i)]=(X); (P)->y[(i)]=(Y); (P)->z[(i)]=0
-
-struct line_pnts *box_trans_rot(BOUND_BOX * bb, label_point_t * p,
-				double angle)
+/**
+ * This function rotates and translates the label bounding box to the
+ * given point, and returns it as a polygon.
+ * @param bb The bounding box to translate and rotate.
+ * @param p The point to translate the bounding box to
+ * @param angle The angle (in radians) to rotate the label counter-clockwise
+ * @return A lint_pnts structure containing the rotated and translated
+ * bounding box as a polygon.
+ */
+static struct line_pnts *box_trans_rot(struct bound_box * bb, label_point_t * p,
+				       double angle)
 {
     struct line_pnts *Points;
     double x0, y0, x1, y1, x2, y2;
 
     Points = Vect_new_line_struct();
-    Points->x = G_calloc(5, sizeof(double));
-    Points->y = G_calloc(5, sizeof(double));
-    Points->z = G_calloc(5, sizeof(double));
-    Points->n_points=5;
-    Points->alloc_points=5;
-    if((Points->x == NULL) || (Points->y == NULL)) {
-	return NULL;
-    }
 
     /* Lower Left, no rotation needed */
     x0 = p->x + bb->W;
     y0 = p->y + bb->S;
-    SET_POINT(Points, 0, x0, y0);
+    Vect_append_point(Points, x0, y0, 0);
     /* Lower Right */
     x1 = (bb->E - bb->W) * cos(angle);
     y1 = (bb->E - bb->W) * sin(angle);
-    SET_POINT(Points, 1, x0 + x1, y0 + y1);
+    Vect_append_point(Points, x0 + x1, y0 + y1, 0);
 
     /* Upper Right */
     x2 = (bb->N - bb->S) * sin(angle);
     y2 = (bb->N - bb->S) * cos(angle);
     /* First translate to LR, and then translate like UL */
-    SET_POINT(Points, 2, x0 + x1 - x2, y0 + y1 + y2);
+    Vect_append_point(Points, x0 + x1 - x2, y0 + y1 + y2, 0);
 
     /* Upper Left */
-    SET_POINT(Points, 3, x0 - x2, y0 + y2);
+    Vect_append_point(Points, x0 - x2, y0 + y2, 0);
 
     /* close polygon */
-    SET_POINT(Points, 4, x0, y0);
+    Vect_append_point(Points, x0, y0, 0);
 
     return Points;
 }
@@ -966,48 +919,54 @@ static double label_flatness(label_t * label, label_candidate_t * candidate)
     for (i = 1; i < candidate->swathline->n_points; i++) {
 	int r;
 	double b, h;
-	double px, py, pz;
+	double px1, py1, pz1, px2, py2, pz2;
 
-	r = segments_intersect(x1, y1, x2, y2,
-				candidate->swathline->x[i - 1],
-				candidate->swathline->y[i - 1],
-				candidate->swathline->x[i],
-				candidate->swathline->y[i],
-				&px, &py);
+	r = Vect_segment_intersection(x1, y1, 0, x2, y2, 0,
+				      candidate->swathline->x[i - 1],
+				      candidate->swathline->y[i - 1],
+				      0,
+				      candidate->swathline->x[i],
+				      candidate->swathline->y[i],
+				      0,
+				      &px1, &py1, &pz1, &px2, &py2, &pz2, 0);
 	/* Now calculate the area between the swath and the line */
 	switch (r) {
 	case 0:		/* no intersection */
 	    dig_distance2_point_to_line(candidate->swathline->x[i],
 					candidate->swathline->y[i], 0,
 					x1, y1, 0, x2, y2, 0, 0,
-					&px, &py, &pz, &h, NULL);
+					&px1, &py1, &pz1, &h, NULL);
 	    h = (sqrt(pow(x1 - candidate->swathline->x[i - 1], 2.0) +
 		      pow(y1 - candidate->swathline->y[i - 1], 2.0)) +
 		 h) / 2.0;
-	    b = sqrt(pow(px - x1, 2) + pow(py - y1, 2));
+	    b = sqrt(pow(px1 - x1, 2) + pow(py1 - y1, 2));
 	    flatness += b * h;
-	    x1 = px;
-	    y1 = py;
+	    x1 = px1;
+	    y1 = py1;
 	    break;
 	case 1:
 	    h = sqrt(pow(x1 - candidate->swathline->x[i - 1], 2.0) +
 		     pow(y1 - candidate->swathline->y[i - 1], 2.0));
-	    b = sqrt(pow(px - x1, 2) + pow(py - y1, 2));
+	    b = sqrt(pow(px1 - x1, 2) + pow(py1 - y1, 2));
 	    flatness += b * h * 0.5;	/* the first triangle */
-	    x1 = px;
-	    y1 = py;
+	    x1 = px1;
+	    y1 = py1;
 	    dig_distance2_point_to_line(candidate->swathline->x[i],
 					candidate->swathline->y[i], 0,
 					x1, y1, 0, x2, y2, 0, 0,
-					&px, &py, &pz, &h, NULL);
-	    b = sqrt(pow(px - x1, 2) + pow(py - y1, 2));
+					&px1, &py1, &pz1, &h, NULL);
+	    b = sqrt(pow(px1 - x1, 2) + pow(py1 - y1, 2));
 	    flatness += b * h * 0.5;	/* the second triangle */
-	    x1 = px;
-	    y1 = py;
+	    x1 = px1;
+	    y1 = py1;
 	    break;
-	case 2:
-	    x1 = px;
-	    y1 = py;
+	case 3:
+	    x1 = px2;
+	    y1 = py2;
+	    break;
+	case 5:
+	    x1 = px2;
+	    y1 = py2;
 	    break;
 	default:
 	    G_fatal_error("Programming error!!\n");
@@ -1043,7 +1002,7 @@ static double label_pointover(label_t * label, label_candidate_t * candidate)
      */
     trbb = box_trans_rot(&label->bb, &candidate->point, candidate->rotation);
     n = Vect_select_lines_by_polygon(&Map, trbb, 0, NULL, GV_POINT, il);
-    Vect_destroy_line_struct(trbb);
+
     pointover = (double)il->n_values;
     Vect_destroy_list(il);
 
@@ -1077,15 +1036,13 @@ static double label_lineover(label_t * label, label_candidate_t * candidate,
     n = Vect_select_lines_by_polygon(&Map, trbb, 0, NULL, linetype, il);
 
     if (n == 0) {
-	Vect_destroy_line_struct(trbb);
-	Vect_destroy_list(il);
 	return 0.0;
     }
 
     for (i = 0; i < il->n_values; i++) {
 	int j, found = 0;
 	struct line_pnts *line;
-	label_point_t v = {0, 0}, v1 = {0, 0} , v2 = {0 ,0};
+	label_point_t v, v1, v2;
 
 	line = Vect_new_line_struct();
 	Vect_read_line(&Map, line, NULL, il->value[i]);
@@ -1095,23 +1052,30 @@ static double label_lineover(label_t * label, label_candidate_t * candidate,
 
 	    for (k = 1; k < trbb->n_points; k++) {
 		int r;
-		double x=0, y=0;
+		double x1, x2, y1, y2, z1, z2;
 
-		r = segments_intersect(trbb->x[k - 1], trbb->y[k - 1],
-				      trbb->x[k], trbb->y[k],
-				      line->x[j - 1], line->y[j - 1],
-				      line->x[j], line->y[j],
-				      &x, &y);
+		r = Vect_segment_intersection(trbb->x[k - 1], trbb->y[k - 1],
+					      0, trbb->x[k], trbb->y[k], 0,
+					      line->x[j - 1], line->y[j - 1],
+					      0, line->x[j], line->y[j], 0,
+					      &x1, &y1, &z1, &x2, &y2, &z2,
+					      0);
 		if (r > 0) {	/* intersection at one point */
 		    if (found == 0) {
 			found = 1;
-			v1.x = x;
-			v1.y = y;
+			v1.x = x1;
+			v1.y = y1;
 		    }
 		    else {
 			found++;
-			v2.x = x;
-			v2.y = y;
+			if (r > 1) {
+			    v2.x = x2;
+			    v2.y = y2;
+			}
+			else {
+			    v2.x = x1;
+			    v2.y = y1;
+			}
 		    }
 		}
 	    }
@@ -1129,7 +1093,6 @@ static double label_lineover(label_t * label, label_candidate_t * candidate,
 	Vect_destroy_line_struct(line);
     }
 
-    Vect_destroy_line_struct(trbb);
     Vect_destroy_list(il);
     return lineover;
 }
@@ -1199,7 +1162,7 @@ void label_candidate_overlap(label_t * labels, int n_labels)
 
 		    if ((labels[i].candidates[j].rotation == 0) &&
 			(labels[k].candidates[l].rotation == 0)) {
-			BOUND_BOX a, b;
+			struct bound_box a, b;
 
 			a.N =
 			    labels[i].bb.N + labels[i].candidates[j].point.y;
@@ -1261,7 +1224,6 @@ void label_candidate_overlap(label_t * labels, int n_labels)
 		}
 	    }
 	}
-	G_debug(3, "i=%d n_labels=%d", i, n_labels);
 	G_percent(i, n_labels, 1);
     }
     G_percent(n_labels, n_labels, 1);
@@ -1273,7 +1235,7 @@ void label_candidate_overlap(label_t * labels, int n_labels)
  * @param b Bounding box B
  * @return REtruns 1 if the two boxes overlap 0 if not.
  */
-static int box_overlap(BOUND_BOX * a, BOUND_BOX * b)
+static int box_overlap(struct bound_box * a, struct bound_box * b)
 {
     int vert = 0, hori = 0;
 
@@ -1299,82 +1261,24 @@ static int box_overlap(BOUND_BOX * a, BOUND_BOX * b)
  */
 static int box_overlap2(struct line_pnts *a, struct line_pnts *b)
 {
-    int i;
+    int i, r = 0;
+
     for (i = 0; i < (a->n_points - 1); i++) {
 	int j;
+
 	for (j = 0; j < (b->n_points - 1); j++) {
-	    int r;
-	    r = segments_intersect(a->x[i], a->y[i],
-				   a->x[i + 1], a->y[i + 1],
-				   b->x[j], b->y[j],
-				   b->x[j + 1], a->y[j + 1],
-				   NULL, NULL);
-	    if (r == 1) {
-		return 1;
-	    }
-	}
-    }
-    return 0;
-}
+	    double d[6];
 
-/**
- * This function checks if two line segments intersect. This function is based
- * on the theory provided by Paul Burk.
- * @sa http://ozviz.wasp.uwa.edu.au/~pbourke/geometry/lineline2d/
- * @param x1 The X-coordinate of P1
- * @param y1 The Y-coordinate of P1
- * @param x2 The X-coordinate of P2
- * @param y2 The Y-coordinate of P2
- * @param x3 The X-coordinate of P3
- * @param y3 The Y-coordinate of P3
- * @param x4 The X-coordinate of P4
- * @param y4 The Y-coordinate of P4
- * @param x A pointer to a double which will be set to the X-coordinate of the
-            unique intersection point (Coincident segments: x4).
- * @param y A pointer to a double which will be set to the Y-coordinate of the
-            unique intersection point (Coincident segments: y4).
- * @return 0: No intersection. 1: Intersect. 2: The segments are coincident.
- */
-static int segments_intersect(double x1, double y1, double x2, double y2,
-			      double x3, double y3, double x4, double y4,
-			      double *x, double *y)
-{
-    double u1numer = (x4-x3)*(y1-y3) - (y4-y3)*(x1-x3);
-    double u2numer = (x2-x1)*(y1-y3) - (y2-y1)*(x1-x3);
-    double denomin = (y4-y3)*(x2-x1) - (x4-x3)*(y2-y1);
-    double ua, ub;
-    int ret = 0;
- /*
-    * If the denominator and numerator for the equations for ua and ub are 0 then the two lines are coincident.
- */
- if(((u1numer < GRASS_EPSILON) && (u1numer > -GRASS_EPSILON)) &&
-    ((u2numer < GRASS_EPSILON) && (u2numer > -GRASS_EPSILON)))
-    {
-	if((x != NULL) && (y != NULL)) {
-	    *x = x4;
-	    *y = y4;
-	}
-	ret = 2;
-    }
-/*
-    * The denominators for the equations for ua and ub are the same.
-    * If the denominator for the equations for ua and ub is 0 then the two lines are parallel.
- */
-    if((denomin < GRASS_EPSILON) && (denomin > -GRASS_EPSILON)) {
-	ret = 0; /* parallel but don't overlap */
-    }
- /*
-    * The equations apply to lines, if the intersection of line segments is required then it is only necessary to test if ua and ub lie between 0 and 1. Whichever one lies within that range then the corresponding line segment contains the intersection point. If both lie within the range of 0 to 1 then the intersection point is within both line segments. 
-    */
-    ua = u1numer / denomin;
-    ub = u2numer / denomin;
-    if(((ua > 0.0) && (ua < 1.0)) && ((ub > 0.0) && (ub < 1.0))) {
-	ret = 1;
-	if((x != NULL) && (y != NULL)) {
-	    *x = x1 + ua * (x2 - x1);
-	    *y = y1 + ua * (y2 - y1);
+	    r += Vect_segment_intersection(a->x[i], a->y[i], 0,
+					   a->x[i + 1], a->y[i + 1], 0,
+					   b->x[j], b->y[j], 0,
+					   b->x[j + 1], a->y[j + 1], 0,
+					   &d[0], &d[1], &d[2],
+					   &d[3], &d[4], &d[5], 0);
 	}
     }
-    return ret;
+    if (r > 1)
+	return 1;
+    else
+	return 0;
 }
-

@@ -1,12 +1,10 @@
-rem
-rem Environmental variables for GRASS stand-alone installer
-rem
+REM
+REM Environmental variables for GRASS stand-alone installer
+REM
 
-set GRASS_WISH=%GISBASE%\extrabin\wish.exe
-set GRASS_SH=%GISBASE%\msys\bin\sh.exe
-set GRASS_PAGER=more
-
-set GRASS_HTML_BROWSER=explorer
+REM Default prompt: cmd.exe
+REM To enable bash prompt please uncomment the line bellow
+REM set GRASS_SH=%GISBASE%\msys\bin\sh.exe
 
 set GRASS_PYTHON=%GISBASE%\extrabin\python.exe
 set PYTHONHOME=%GISBASE%\Python27

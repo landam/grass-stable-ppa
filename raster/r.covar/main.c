@@ -21,6 +21,7 @@
 #include <string.h>
 #include <math.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 
@@ -28,7 +29,7 @@ int main(int argc, char *argv[])
 {
     int nrows, ncols;
     DCELL **dcell;
-    char *name, *mapset;
+    char *name;
     double *sum, **sum2;
     double count;
     double ii, jj;
@@ -44,13 +45,11 @@ int main(int argc, char *argv[])
 	struct Flag *r;
     } flag;
 
-    /* please, remove before GRASS 7 released */
-    struct Flag *q_flag;
-
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, statistics");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("statistics"));
     module->description =
 	_("Outputs a covariance/correlation matrix "
 	  "for user-specified raster map layer(s).");
@@ -61,20 +60,8 @@ int main(int argc, char *argv[])
     flag.r->key = 'r';
     flag.r->description = _("Print correlation matrix");
 
-    /* please, remove before GRASS 7 released */
-    q_flag = G_define_flag();
-    q_flag->key = 'q';
-    q_flag->description = _("Run quietly");
-
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
-
-    /* please, remove before GRASS 7 released */
-    if (q_flag->answer) {
-	G_putenv("GRASS_VERBOSE", "0");
-	G_warning(_("The '-q' flag is superseded and will be removed "
-		    "in future. Please use '--quiet' instead."));
-    }
 
     /* flags */
     correlation = flag.r->answer;
@@ -88,31 +75,25 @@ int main(int argc, char *argv[])
     sum2 = (double **)G_malloc(nfiles * sizeof(double *));
     for (i = 0; i < nfiles; i++) {
 	sum2[i] = (double *)G_calloc(nfiles, sizeof(double));
-	dcell[i] = G_allocate_d_raster_buf();
+	dcell[i] = Rast_allocate_d_buf();
 	name = maps->answers[i];
-	mapset = G_find_cell(name, "");
-	if (!mapset)
-	    G_fatal_error(_("Raster map <%s> not found"), name);
-	fd[i] = G_open_cell_old(name, mapset);
-	if (fd[i] < 0)
-	    G_fatal_error(_("Unable to open raster map <%s>"), name);
+	fd[i] = Rast_open_old(name, "");
     }
 
-    nrows = G_window_rows();
-    ncols = G_window_cols();
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
 
     G_message(_("%s: complete ... "), G_program_name());
     count = 0;
     for (row = 0; row < nrows; row++) {
 	G_percent(row, nrows, 2);
-	for (i = 0; i < nfiles; i++) {
-	    if (G_get_d_raster_row(fd[i], dcell[i], row) < 0)
-		exit(1);
-	}
+	for (i = 0; i < nfiles; i++)
+	    Rast_get_d_row(fd[i], dcell[i], row);
+
 	for (col = 0; col < ncols; col++) {
 	    /* ignore cells where any of the maps has null value */
 	    for (i = 0; i < nfiles; i++)
-		if (G_is_d_null_value(&dcell[i][col]))
+		if (Rast_is_d_null_value(&dcell[i][col]))
 		    break;
 	    if (i != nfiles)
 		continue;

@@ -1,11 +1,10 @@
-
 /******************************************************************************
  * gmath.h
  * Top level header file for gmath units
 
  * @Copyright David D.Gray <ddgray@armadce.demon.co.uk>
  * 27th. Sep. 2000
- * Last updated: 2007-08-26
+ * Last updated: $Id: gmath.h 49183 2011-11-11 17:44:36Z martinl $
  *
 
  * This file is part of GRASS GIS. It is free software. You can 
@@ -21,8 +20,8 @@
 
  ******************************************************************************/
 
-#ifndef GMATH_H_
-#define GMATH_H_
+#ifndef GRASS_GMATH_H
+#define GRASS_GMATH_H
 
 #include <grass/config.h>
 #if defined(HAVE_LIBLAPACK) && defined(HAVE_LIBBLAS) && defined(HAVE_G2C_H)
@@ -31,71 +30,32 @@
 #endif
 #include <stddef.h>
 
-/* fft.c */
-int fft(int, double *[2], int, int, int);
-int fft2(int, double (*)[2], int, int, int);
+/*solver names */
+#define G_MATH_SOLVER_DIRECT_GAUSS "gauss"
+#define G_MATH_SOLVER_DIRECT_LU "lu"
+#define G_MATH_SOLVER_DIRECT_CHOLESKY "cholesky"
+#define G_MATH_SOLVER_ITERATIVE_JACOBI "jacobi"
+#define G_MATH_SOLVER_ITERATIVE_SOR "sor"
+#define G_MATH_SOLVER_ITERATIVE_CG "cg"
+#define G_MATH_SOLVER_ITERATIVE_PCG "pcg"
+#define G_MATH_SOLVER_ITERATIVE_BICGSTAB "bicgstab"
 
-/* gauss.c */
-double G_math_rand_gauss(int, double);
+/*preconditioner */
+#define G_MATH_DIAGONAL_PRECONDITION 1
+#define G_MATH_ROWSCALE_ABSSUMNORM_PRECONDITION 2
+#define G_MATH_ROWSCALE_EUKLIDNORM_PRECONDITION 3
+#define G_MATH_ROWSCALE_MAXNORM_PRECONDITION 4
 
-/* max_pow2.c */
-long G_math_max_pow2(long);
-long G_math_min_pow2(long);
+/*!
+ * \brief The row vector of the sparse matrix
+ * */
+typedef struct
+{
+    double *values;		/*The non null values of the row */
+    unsigned int cols;		/*Number of entries */
+    unsigned int *index;	/*the index number */
+} G_math_spvector;
 
-/* rand1.c */
-float G_math_rand(int);
+#include <grass/defs/gmath.h>
 
-/* del2g.c */
-int del2g(double *[2], int, double);
-
-/* findzc.c */
-int G_math_findzc(double[], int, double[], double, int);
-
-/* getg.c */
-int getg(double, double *[2], int);
-
-/* eigen.c */
-int eigen(double **, double **, double *, int);
-int egvorder2(double *, double **, long);
-int transpose2(double **, long);
-
-/* jacobi.c */
-#define MX 9
-int jacobi(double[MX][MX], long, double[MX], double[MX][MX]);
-int egvorder(double[MX], double[MX][MX], long);
-int transpose(double[MX][MX], long);
-
-/* mult.c */
-int mult(double *v1[2], int size1, double *v2[2], int size2, double *v3[2],
-	 int size3);
-
-/* dalloc.c */
-double *G_alloc_vector(size_t);
-double **G_alloc_matrix(int, int);
-float *G_alloc_fvector(size_t);
-float **G_alloc_fmatrix(int, int);
-void G_free_vector(double *);
-void G_free_matrix(double **);
-void G_free_fvector(float *);
-void G_free_fmatrix(float **);
-
-/* eigen_tools.c */
-int G_tqli(double[], double[], int, double **);
-void G_tred2(double **, int, double[], double[]);
-
-/* ialloc.c */
-int *G_alloc_ivector(size_t);
-int **G_alloc_imatrix(int, int);
-void G_free_ivector(int *);
-void G_free_imatrix(int **);
-
-/* lu.c */
-int G_ludcmp(double **, int, int *, double *);
-void G_lubksb(double **, int, int *, double[]);
-
-/* svd.c */
-int G_svdcmp(double **, int, int, double *, double **);
-int G_svbksb(double **, double[], double **, int, int, double[], double[]);
-int G_svelim(double *, int);
-
-#endif /* GMATH_H_ */
+#endif /* GRASS_GMATH_H */

@@ -1,3 +1,14 @@
+/*!
+  \file db/driver/postgres/parse.c
+  
+  \brief DBMI - Low Level PostgreSQL database driver - parse connection string
+  
+  This program is free software under the GNU General Public License
+  (>=v2). Read the file COPYING that comes with GRASS for details.
+  
+  \author Radim Blazek
+*/
+
 #include <stdlib.h>
 #include <string.h>
 #include <grass/gis.h>
@@ -7,31 +18,24 @@
 #include <grass/glocale.h>
 
 /*
- * \brief Parse connection string in form:
- *    1) 'database_name'
- *    2) 'host=xx,port=xx,dbname=xx'
- *  
- *  returns:  DB_OK     - OK
- *            DB_FAILED - error
- */
+  \brief Parse connection string in form:
+  1) 'database_name'
+  2) 'host=xx,port=xx,dbname=xx'
+  
+  \returns DB_OK on success
+  \return DB_FAILED on failure
+*/
 int parse_conn(const char *str, PGCONN * pgconn)
 {
     int i;
     char **tokens, delm[2];
 
     /* reset */
-    pgconn->host = NULL;
-    pgconn->port = NULL;
-    pgconn->options = NULL;
-    pgconn->tty = NULL;
-    pgconn->dbname = NULL;
-    pgconn->user = NULL;
-    pgconn->password = NULL;
-    pgconn->schema = NULL;
+    G_zero(pgconn, sizeof(PGCONN));
 
-    G_debug(3, "parse_conn : %s", str);
+    G_debug(3, "parse_conn: '%s'", str);
 
-    if (strchr(str, '=') == NULL) {	/*db name only */
+    if (strchr(str, '=') == NULL) {	/* db name only */
 	pgconn->dbname = G_store(str);
     }
     else {
@@ -40,6 +44,7 @@ int parse_conn(const char *str, PGCONN * pgconn)
 	tokens = G_tokenize(str, delm);
 	i = 0;
 	while (tokens[i]) {
+	    G_chop(tokens[i]);
 	    G_debug(3, "token %d : %s", i, tokens[i]);
 	    if (strncmp(tokens[i], "host", 4) == 0)
 		pgconn->host = G_store(tokens[i] + 5);
@@ -60,8 +65,10 @@ int parse_conn(const char *str, PGCONN * pgconn)
 	    else if (strncmp(tokens[i], "schema", 6) == 0)
 		pgconn->schema = G_store(tokens[i] + 7);
 	    else {
-		append_error(_("Unknown option in database definition for PostgreSQL: "));
-		append_error(tokens[i]);
+		db_d_append_error("%s %s",
+				  _("Unknown option in database definition "
+				    "for PostgreSQL: "),
+				  tokens[i]);
 		return DB_FAILED;
 	    }
 	    i++;

@@ -1,9 +1,101 @@
-grass (6.4.4-2) UNRELEASED; urgency=medium
+grass (7.0.1-1~exp1) experimental; urgency=medium
 
+  * New upstream release.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Thu, 30 Jul 2015 23:45:54 +0200
+
+grass (7.0.1~rc2-1~exp1) experimental; urgency=medium
+
+  * New upstream release candidate.
+  * Drop typo patches, applied upstream.
+  * Support alternative tarball extensions in watch file.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Thu, 23 Jul 2015 00:06:10 +0200
+
+grass (7.0.1~rc1-1~exp2) experimental; urgency=medium
+
+  * Enable liblas support.
+    (closes: #781227)
+  * Require at least liblas 1.8.0-3 for boost dependencies.
+  * Change build dependency to liblas-c-dev for capi.
+  * Drop unused lintian overrides.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Sun, 05 Jul 2015 01:39:05 +0200
+
+grass (7.0.1~rc1-1~exp1) experimental; urgency=medium
+
+  [ Bas Couwenberg ]
+  * Use upstream grass startup script, and install custom x-grass7 as x-grass70.
+  * Add Conflicts/Provides/Replaces on the grass7* packages by upstream.
+  * New upstream release candidate.
+  * Refresh patches and mark as Forwarded.
+  * Add patches for various typos.
+
+  [ Francesco Paolo Lovergine ]
+  * Added liblas-dev b-d to support new Lidar modules.
+  * Introduced a separate tag in debian/rules to regenerate debian stuff from 
+    templates.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Sat, 04 Jul 2015 21:23:04 +0200
+
+grass (7.0.0-1~exp1) experimental; urgency=medium
+
+  * New upstream release.
+  * Update python-ctypes-ternary.patch to use if/else instead of and/or.
+  * Drop check4dev patch, rely on upstream check.
+  * Add build dependency on libpq-dev to grass-dev for libpq-fe.h.
+  * Drop patches applied upstream, refresh remaining patches.
+  * Update symlinks for images switched from jpg to png.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Fri, 20 Feb 2015 23:12:08 +0100
+
+grass (7.0.0~rc2-1~exp1) experimental; urgency=medium
+
+  * New upstream release candidate.
+  * Remove additional Doxygen files on clean.
+  * Drop upstream tarball repacking, fixed upstream.
+  * Drop patches applied upstream, refresh remaining patches.
+  * Add build dependencies on: zlib1g-dev, python-ply, python-pil.
+  * Update copyright file, update copyright years.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Mon, 09 Feb 2015 08:53:56 +0100
+
+grass (7.0.0~rc1+ds1-1~exp2) experimental; urgency=medium
+
+  * Add patch to treat GNU/{Hurd,kFreeBSD} like Linux in SC_CONFIG_CFLAGS.
+  * Add patch to fix Python ctypes conversion for stat64 struct on Hurd.
+  * Add patch to prevent build failures by ignoring HTML description
+    errors.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Sun, 08 Feb 2015 18:23:42 +0100
+
+grass (7.0.0~rc1+ds1-1~exp1) experimental; urgency=medium
+
+  * New upstream release candidate.
+  * Repack upstream tarball, remove precompiled Python objects.
   * Add upstream metadata.
-  * Update watch file to use lower case RC.
+  * Update gbp.conf and Vcs-Git URL to use the experimental branch.
+  * Update watch file for GRASS 7.0.
+  * Drop build dependencies for Tcl/Tk, add build dependencies:
+    python-numpy, libnetcdf-dev, netcdf-bin, libblas-dev, liblapack-dev
+  * Update Vcs-Browser URL to use cgit instead of gitweb.
+  * Update paths to use grass70.
+  * Add configure options: --with-netcdf, --with-blas, --with-lapack,
+    remove --with-tcltk-includes.
+  * Update patches for GRASS 7.
+  * Update copyright file, changes:
+    - Update copyright years
+    - Group files by license
+    - Remove unused license sections
+  * Add patches for various typos.
+  * Fix desktop file with patch instead of d/rules.
+  * Use minimal dh rules.
+  * Bump Standards-Version to 3.9.6, no changes.
+  * Use dpkg-maintscript-helper to replace directories with symlinks.
+    (closes: #776349)
+  * Update my email to use @debian.org address.
 
- -- Bas Couwenberg <sebastic@xs4all.nl>  Fri, 28 Nov 2014 23:25:44 +0100
+ -- Bas Couwenberg <sebastic@debian.org>  Fri, 06 Feb 2015 18:51:17 +0100
 
 grass (6.4.4-1) unstable; urgency=medium
 

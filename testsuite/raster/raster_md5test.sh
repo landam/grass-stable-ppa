@@ -48,7 +48,7 @@ TMPNAME="`echo ${PID}_tmp_testmap | sed 's+\.+_+g'`"
 cleanup()
 {
  echo "Removing temporary map"
- g.remove rast=$TMPNAME > /dev/null
+ g.remove -f type=raster name=$TMPNAME > /dev/null
 }
 
 # check if a MASK is already present:
@@ -57,26 +57,26 @@ USERMASK=usermask_${MASKTMP}
 if test -f $LOCATION/cell/MASK
 then
  echo "A user raster mask (MASK) is present. Saving it..."
- g.rename MASK,$USERMASK > /dev/null
+ g.rename raster=MASK,$USERMASK > /dev/null
 fi
 
 finalcleanup()
 {
  echo "Restoring user region"
  g.region region=$TMPNAME
- g.remove region=$TMPNAME > /dev/null
+ g.remove -f type=region name=$TMPNAME > /dev/null
  #restore user mask if present:
  if test -f $LOCATION/cell/$USERMASK ; then
   echo "Restoring user MASK"
-  g.remove rast=MASK > /dev/null
-  g.rename $USERMASK,MASK > /dev/null
+  g.remove -f type=raster name=MASK > /dev/null
+  g.rename raster=$USERMASK,MASK > /dev/null
  fi
 }
 
 check_exit_status()
 {
  if [ $1 -ne 0 ] ; then
-  echo "An error occured."
+  echo "An error occurred."
   cleanup ; finalcleanup
   exit 1
  fi
@@ -111,7 +111,7 @@ check_exit_status $?
 ########### 2D raster INT tests ###########
 VALUE=1
 echo "INT/CELL md5sum test."
-r.mapcalc "$TMPNAME=1"
+r.mapcalc "$TMPNAME = 1"
 check_exit_status $?
 
 echo "MD5 checksum on output of INT/CELL test."
@@ -125,7 +125,7 @@ echo "##################################"
 ########### 2D raster FCELL tests ###########
 VALUE=1.1
 echo "FLOAT/FCELL md5sum test."
-r.mapcalc "$TMPNAME=$VALUE"
+r.mapcalc "$TMPNAME = $VALUE"
 check_exit_status $?
 
 echo "MD5 checksum on output of FLOAT/FCELL test."

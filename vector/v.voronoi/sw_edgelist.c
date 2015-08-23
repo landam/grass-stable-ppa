@@ -63,7 +63,7 @@ struct Halfedge *ELgethash(int b)
 
     /* Hash table points to deleted half edge.  Patch as necessary. */
     ELhash[b] = (struct Halfedge *)NULL;
-    if ((--(he->ELrefcnt)) == 0)
+    if (--(he->ELrefcnt) == 0)
 	makefree((struct Freenode *)he, &hfl);
     return ((struct Halfedge *)NULL);
 }

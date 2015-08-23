@@ -1,6 +1,6 @@
 
 /**
- * \file put.c
+ * \file lib/segment/put.c
  *
  * \brief Segment write routines.
  *
@@ -9,19 +9,20 @@
  *
  * \author GRASS GIS Development Team
  *
- * \date 2005-2006
+ * \date 2005-2009
  */
 
 #include <string.h>
-#include <grass/segment.h>
+#include <grass/gis.h>
+#include "local_proto.h"
 
 
 /*bugfix: buf: char* vs int* -> wrong pointer arithmetics!!!. Pierre de Mouveaux - 09 april 2000 */
-/* int segment_put (SEGMENT *SEG,int *buf,int row,int col) */
+/* int Segment_put (SEGMENT *SEG,int *buf,int row,int col) */
 
 
 /**
- * \fn int segment_put (SEGMENT *SEG, void *buf, int row, int col)
+ * \fn int Segment_put (SEGMENT *SEG, void *buf, int row, int col)
  *
  * \brief Write value to segment file.
  *
@@ -41,13 +42,15 @@
  * \return -1 if unable to seek or write segment file
  */
 
-int segment_put(SEGMENT * SEG, const void *buf, int row, int col)
+int Segment_put(SEGMENT * SEG, const void *buf, off_t row, off_t col)
 {
     int index, n, i;
 
-    segment_address(SEG, row, col, &n, &index);
-    if ((i = segment_pagein(SEG, n)) < 0)
+    SEG->address(SEG, row, col, &n, &index);
+    if ((i = seg_pagein(SEG, n)) < 0) {
+	G_warning("segment lib: put: pagein failed");
 	return -1;
+    }
 
     SEG->scb[i].dirty = 1;
 

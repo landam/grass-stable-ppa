@@ -16,6 +16,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <signal.h>
+#include <errno.h>
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -97,15 +99,12 @@ static void create_window(void)
     XFlush(dpy);
 }
 
-static void redraw(void)
+static void draw(void)
 {
     int x0 = (w_width - i_width) / 2;
     int y0 = (w_height - i_height) / 2;
     const unsigned char *p = imgbuf;
-    struct timeval tv0, tv1;
     int row, col;
-
-    gettimeofday(&tv0, NULL);
 
     for (row = 0; row < i_height; row++) {
 	for (col = 0; col < i_width; col++) {
@@ -121,14 +120,33 @@ static void redraw(void)
 
     XPutImage(dpy, grwin, gc, ximg, 0, 0, x0, y0, i_width, i_height);
     XSync(dpy, False);
+}
+
+static void redraw(void)
+{
+    struct timeval tv0, tv1;
+
+    gettimeofday(&tv0, NULL);
+
+    draw();
 
     gettimeofday(&tv1, NULL);
     last = (tv1.tv_sec - tv0.tv_sec) * 1000000L + (tv1.tv_usec - tv0.tv_usec);
 }
 
+static void dummy_handler(int sig)
+{
+}
+
 static void main_loop(void)
 {
     int xfd = ConnectionNumber(dpy);
+    struct sigaction act;
+
+    act.sa_handler = &dummy_handler;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    sigaction(SIGUSR1, &act, NULL);
 
     for (;;) {
 	fd_set waitset;
@@ -142,7 +160,7 @@ static void main_loop(void)
 
 	    switch (event.type) {
 	    case Expose:
-		redraw();
+		draw();
 		break;
 	    case ConfigureNotify:
 		w_width = event.xconfigure.width;
@@ -151,17 +169,19 @@ static void main_loop(void)
 	    }
 	}
 
-	delay = (unsigned long)(last / fraction);
+	if (fraction > 0.001)
+	    delay = (unsigned long)(last / fraction);
 
 	tv.tv_sec = delay / 1000000;
 	tv.tv_usec = delay % 1000000;
 
 	FD_ZERO(&waitset);
 	FD_SET(xfd, &waitset);
-	if (select(FD_SETSIZE, &waitset, NULL, NULL, &tv) < 0)
+	errno = 0;
+	if (select(FD_SETSIZE, &waitset, NULL, NULL, &tv) < 0 && errno != EINTR)
 	    continue;
 
-	if (!FD_ISSET(xfd, &waitset))
+	if (!FD_ISSET(xfd, &waitset) || errno == EINTR)
 	    redraw();
     }
 }
@@ -267,15 +287,17 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("display");
+    G_add_keyword(_("display"));
+    G_add_keyword(_("graphics"));
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("visualization"));
     module->description = _("View BMP images from the PNG driver.");
 
-    opt.image = G_define_option();
+    opt.image = G_define_standard_option(G_OPT_F_INPUT);
     opt.image->key = "image";
-    opt.image->type = TYPE_STRING;
     opt.image->required = YES;
-    opt.image->multiple = NO;
-    opt.image->gisprompt = "old_file,file,input";
+    opt.image->gisprompt = "old_file,file,file";
     opt.image->description = _("Image file");
 
     opt.percent = G_define_option();

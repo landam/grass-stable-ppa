@@ -7,7 +7,7 @@
 *
 * PURPOSE:      Outputs basic information about a user-specified raster map layer.
 *
-* COPYRIGHT:    (C) 2005 by the GRASS Development Team
+* COPYRIGHT:    (C) 2005-2011 by the GRASS Development Team
 *
 *               This program is free software under the GNU General Public
 *               License (>=v2). Read the file COPYING that comes with GRASS
@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "local_proto.h"
 
@@ -38,10 +39,10 @@ static void compose_line(FILE *, const char *, ...);
 
 int main(int argc, char **argv)
 {
-    char *name, *mapset;
+    const char *name, *mapset;
     char tmp1[100], tmp2[100], tmp3[100];
     char timebuff[256];
-    char units[GNAME_MAX], vdatum[GNAME_MAX];
+    char *units, *vdatum;
     int i;
     CELL mincat = 0, maxcat = 0, cat;
     double zmin, zmax;		/* min and max data values */
@@ -53,83 +54,66 @@ int main(int argc, char **argv)
     struct History hist;
     struct TimeStamp ts;
     int time_ok = 0, first_time_ok = 0, second_time_ok = 0;
-    int head_ok, cats_ok, hist_ok;
+    int cats_ok, hist_ok;
     int is_reclass;
     RASTER_MAP_TYPE data_type;
     struct Reclass reclass;
     struct GModule *module;
     struct Option *opt1;
-    struct Flag *rflag, *sflag, *tflag, *gflag, *hflag, *mflag;
-    struct Flag *uflag, *dflag, *timestampflag;
+    struct Flag *gflag, *rflag, *eflag, *hflag;
 
     /* Initialize GIS Engine */
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, metadata");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("metadata"));
+    G_add_keyword(_("extent"));
+    G_add_keyword(_("history"));
     module->description =
-	_("Output basic information about a raster map layer.");
+	_("Outputs basic information about a raster map.");
 
     opt1 = G_define_standard_option(G_OPT_R_MAP);
 
-    rflag = G_define_flag();
-    rflag->key = 'r';
-    rflag->description = _("Print range only");
-
-    sflag = G_define_flag();
-    sflag->key = 's';
-    sflag->description =
-	_("Print raster map resolution (NS-res, EW-res) only");
-
-    tflag = G_define_flag();
-    tflag->key = 't';
-    tflag->description = _("Print raster map type only");
-
     gflag = G_define_flag();
     gflag->key = 'g';
-    gflag->description = _("Print map region only");
+    gflag->description = _("Print raster array information in shell script style");
+
+    rflag = G_define_flag();
+    rflag->key = 'r';
+    rflag->description = _("Print range in shell script style");
+
+    eflag = G_define_flag();
+    eflag->key = 'e';
+    eflag->description = _("Print extended metadata information in shell script style");
 
     hflag = G_define_flag();
     hflag->key = 'h';
     hflag->description = _("Print raster history instead of info");
 
-    uflag = G_define_flag();
-    uflag->key = 'u';
-    uflag->description = _("Print raster map data units only");
-
-    dflag = G_define_flag();
-    dflag->key = 'd';
-    dflag->description = _("Print raster map vertical datum only");
-
-    mflag = G_define_flag();
-    mflag->key = 'm';
-    mflag->description = _("Print map title only");
-
-    timestampflag = G_define_flag();
-    timestampflag->key = 'p';
-    timestampflag->description =
-	_("Print raster map timestamp (day.month.year hour:minute:seconds) only");
-
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
+    if (hflag->answer && (gflag->answer || rflag->answer || eflag->answer))
+        G_fatal_error(_("Flags -%c and -%c/%c/%c are mutually exclusive"),
+                      hflag->key, gflag->key, rflag->key, eflag->key);
+
     name = G_store(opt1->answer);
-    if ((mapset = G_find_cell2(name, "")) == NULL)
+    if ((mapset = G_find_raster2(name, "")) == NULL)
 	G_fatal_error(_("Raster map <%s> not found"), name);
 
-    head_ok = G_get_cellhd(name, mapset, &cellhd) >= 0;
-    cats_ok = G_read_cats(name, mapset, &cats) >= 0;
-    hist_ok = G_read_history(name, mapset, &hist) >= 0;
-    is_reclass = G_get_reclass(name, mapset, &reclass);
-    data_type = G_raster_map_type(name, mapset);
+    Rast_get_cellhd(name, "", &cellhd);
+    cats_ok = Rast_read_cats(name, "", &cats) >= 0;
+    hist_ok = Rast_read_history(name, "", &hist) >= 0;
+    is_reclass = Rast_get_reclass(name, "", &reclass);
+    data_type = Rast_map_type(name, "");
 
-    if (G_read_raster_units(name, mapset, units) != 0)
-	units[0] = '\0';
-    if (G_read_raster_vdatum(name, mapset, vdatum) != 0)
-	vdatum[0] = '\0';
+    units = Rast_read_units(name, "");
+
+    vdatum = Rast_read_vdatum(name, "");
 
     /*Check the Timestamp */
-    time_ok = G_read_raster_timestamp(name, mapset, &ts) > 0;
+    time_ok = G_read_raster_timestamp(name, "", &ts) > 0;
     /*Check for valid entries, show none if no timestamp available */
     if (time_ok) {
 	if (ts.count > 0)
@@ -138,28 +122,27 @@ int main(int argc, char **argv)
 	    second_time_ok = 1;
     }
 
-    if (G_read_fp_range(name, mapset, &range) < 0)
+    if (Rast_read_fp_range(name, "", &range) < 0)
 	G_fatal_error(_("Unable to read range file"));
-    G_get_fp_range_min_max(&range, &zmin, &zmax);
+    Rast_get_fp_range_min_max(&range, &zmin, &zmax);
 
     out = stdout;
 
-    if (!rflag->answer && !sflag->answer && !tflag->answer &&
-	!gflag->answer && !hflag->answer && !timestampflag->answer &&
-	!mflag->answer && !uflag->answer && !dflag->answer) {
+    if (!gflag->answer && !rflag->answer &&
+	!eflag->answer && !hflag->answer) {
 	divider('+');
 
-	compose_line(out, "Layer:    %-29.29s  Date: %s", name,
-		     hist_ok ? hist.mapid : "??");
+	compose_line(out, "Map:      %-29.29s  Date: %s", name,
+		     hist_ok ? Rast_get_history(&hist, HIST_MAPID) : "??");
 	compose_line(out, "Mapset:   %-29.29s  Login of Creator: %s",
-		     mapset, hist_ok ? hist.creator : "??");
+		     mapset, hist_ok ? Rast_get_history(&hist, HIST_CREATOR) : "??");
 	compose_line(out, "Location: %s", G_location());
 	compose_line(out, "DataBase: %s", G_gisdbase());
 	compose_line(out, "Title:    %s ( %s )",
 		     cats_ok ? cats.title : "??",
-		     hist_ok ? hist.title : "??");
+		     hist_ok ? Rast_get_history(&hist, HIST_TITLE) : "??");
 
-	/*This shows the TimeStamp */
+	/* This shows the TimeStamp */
 	if (time_ok && (first_time_ok || second_time_ok)) {
 	    G_format_timestamp(&ts, timebuff);
 	    compose_line(out, "Timestamp: %s", timebuff);
@@ -176,7 +159,7 @@ int main(int argc, char **argv)
 
 	compose_line(out,
 		     "  Type of Map:  %-20.20s Number of Categories: %-9s",
-		     hist_ok ? hist.maptype : "??", cats_ok ? tmp1 : "??");
+		     hist_ok ? Rast_get_history(&hist, HIST_MAPTYPE) : "??", cats_ok ? tmp1 : "??");
 
 	compose_line(out, "  Data Type:    %s",
 		     (data_type == CELL_TYPE ? "CELL" :
@@ -186,12 +169,11 @@ int main(int argc, char **argv)
 	/* For now hide these unless they exist to keep the noise low. In
 	 *   future when the two are used more widely they can be printed
 	 *   along with the standard set. */
-	if (units[0] || vdatum[0]) {
+	if (units || vdatum)
 	    compose_line(out, "  Data Units:   %-20.20s Vertical datum: %s",
-			 units, vdatum);
-	}
+			 units ? units : "(none)", vdatum ? vdatum : "(none)");
 
-	if (head_ok) {
+	{
 	    compose_line(out, "  Rows:         %d", cellhd.rows);
 	    compose_line(out, "  Columns:      %d", cellhd.cols);
 #ifdef HAVE_LONG_LONG_INT
@@ -228,7 +210,7 @@ int main(int argc, char **argv)
 			 tmp1, tmp2, tmp3);
 
 	    if (data_type == CELL_TYPE) {
-		if (2 == G_read_range(name, mapset, &crange))
+		if (2 == Rast_read_range(name, "", &crange))
 		    compose_line(out,
 				 "  Range of data:    min = NULL  max = NULL");
 		else
@@ -249,23 +231,23 @@ int main(int argc, char **argv)
 	printline("");
 
 	if (hist_ok) {
-	    if (hist.datsrc_1[0] != '\0' || hist.datsrc_2[0] != '\0') {
+	    if (Rast_get_history(&hist, HIST_DATSRC_1)[0] != '\0' ||
+		Rast_get_history(&hist, HIST_DATSRC_2)[0] != '\0') {
 		printline("  Data Source:");
-		compose_line(out, "   %s", hist.datsrc_1);
-		compose_line(out, "   %s", hist.datsrc_2);
+		compose_line(out, "   %s", Rast_get_history(&hist, HIST_DATSRC_1));
+		compose_line(out, "   %s", Rast_get_history(&hist, HIST_DATSRC_2));
 		printline("");
 	    }
 
 	    printline("  Data Description:");
-	    compose_line(out, "   %s", hist.keywrd);
+	    compose_line(out, "   %s", Rast_get_history(&hist, HIST_KEYWRD));
 
 	    printline("");
-	    if (hist.edlinecnt) {
+	    if (Rast_history_length(&hist)) {
 		printline("  Comments:  ");
 
-		for (i = 0; i < hist.edlinecnt; i++) {
-		    compose_line(out, "   %s", hist.edhist[i]);
-		}
+		for (i = 0; i < Rast_history_length(&hist); i++)
+		    compose_line(out, "   %s", Rast_history_line(&hist, i));
 	    }
 
 	    printline("");
@@ -286,7 +268,7 @@ int main(int argc, char **argv)
 	    for (i = 0; i < reclass.num; i++) {
 		CELL x = reclass.table[i];
 
-		if (G_is_c_null_value(&x))
+		if (Rast_is_c_null_value(&x))
 		    continue;
 		if (first || x < mincat)
 		    mincat = x;
@@ -320,11 +302,44 @@ int main(int argc, char **argv)
 
 	fprintf(out, "\n");
     }
-    else {	/* rflag or sflag or tflag or gflag or hflag or mflag */
+    else {	/* g,r,e, or h flags */
+
+	if (gflag->answer) {
+	    G_format_northing(cellhd.north, tmp1, -1);
+	    G_format_northing(cellhd.south, tmp2, -1);
+	    fprintf(out, "north=%s\n", tmp1);
+	    fprintf(out, "south=%s\n", tmp2);
+
+	    G_format_easting(cellhd.east, tmp1, -1);
+	    G_format_easting(cellhd.west, tmp2, -1);
+	    fprintf(out, "east=%s\n", tmp1);
+	    fprintf(out, "west=%s\n", tmp2);
+
+	    G_format_resolution(cellhd.ns_res, tmp3, -1);
+	    fprintf(out, "nsres=%s\n", tmp3);
+
+	    G_format_resolution(cellhd.ew_res, tmp3, -1);
+	    fprintf(out, "ewres=%s\n", tmp3);
+
+            fprintf(out, "rows=%d\n", cellhd.rows);
+            fprintf(out, "cols=%d\n", cellhd.cols);
+            
+            fprintf(out, "cells=%lld\n",
+                    (long long)cellhd.rows * cellhd.cols);
+            
+	    fprintf(out, "datatype=%s\n",
+		    (data_type == CELL_TYPE ? "CELL" :
+		     (data_type == DCELL_TYPE ? "DCELL" :
+		      (data_type == FCELL_TYPE ? "FCELL" : "??"))));
+            if (cats_ok)
+                format_double((double)cats.num, tmp1);
+	    fprintf(out, "ncats=%s\n",
+                    cats_ok ? tmp1 : "??");
+	}
 
 	if (rflag->answer) {
 	    if (data_type == CELL_TYPE) {
-		if (2 == G_read_range(name, mapset, &crange)) {
+		if (2 == Rast_read_range(name, "", &crange)) {
 		    fprintf(out, "min=NULL\n");
 		    fprintf(out, "max=NULL\n");
 		}
@@ -341,42 +356,20 @@ int main(int argc, char **argv)
 		fprintf(out, "min=%.15g\n", zmin);
 		fprintf(out, "max=%.15g\n", zmax);
 	    }
-
 	}
 
-	if (gflag->answer) {
-	    G_format_northing(cellhd.north, tmp1, -1);
-	    G_format_northing(cellhd.south, tmp2, -1);
-	    fprintf(out, "north=%s\n", tmp1);
-	    fprintf(out, "south=%s\n", tmp2);
+	if (eflag->answer) {
+            char xname[GNAME_MAX], xmapset[GMAPSET_MAX];
+            G_unqualified_name(name, mapset, xname, xmapset);
 
-	    G_format_easting(cellhd.east, tmp1, -1);
-	    G_format_easting(cellhd.west, tmp2, -1);
-	    fprintf(out, "east=%s\n", tmp1);
-	    fprintf(out, "west=%s\n", tmp2);
-	}
-
-	if (sflag->answer) {
-	    G_format_resolution(cellhd.ns_res, tmp3, cellhd.proj);
-	    fprintf(out, "nsres=%s\n", tmp3);
-
-	    G_format_resolution(cellhd.ew_res, tmp3, cellhd.proj);
-	    fprintf(out, "ewres=%s\n", tmp3);
-	}
-
-	if (tflag->answer) {
-	    fprintf(out, "datatype=%s\n",
-		    (data_type == CELL_TYPE ? "CELL" :
-		     (data_type == DCELL_TYPE ? "DCELL" :
-		      (data_type == FCELL_TYPE ? "FCELL" : "??"))));
-	}
-
-	if (mflag->answer) {
-	    fprintf(out, "title=%s (%s)\n", cats_ok ? cats.title :
-		    "??", hist_ok ? hist.title : "??");
-	}
-
-	if (timestampflag->answer) {
+            fprintf(out, "map=%s\n", xname);
+            fprintf(out, "mapset=%s\n", mapset);
+            fprintf(out, "location=%s\n", G_location());
+            fprintf(out, "database=%s\n", G_gisdbase());
+            fprintf(out, "date=\"%s\"\n", hist_ok ? Rast_get_history(&hist, HIST_MAPID) : "??");
+            fprintf(out, "creator=\"%s\"\n", hist_ok ? Rast_get_history(&hist, HIST_CREATOR) : "??");
+	    fprintf(out, "title=\"%s (%s)\"\n", cats_ok ? cats.title :
+		    "??", hist_ok ? Rast_get_history(&hist, HIST_TITLE) : "??");
 	    if (time_ok && (first_time_ok || second_time_ok)) {
 
 		G_format_timestamp(&ts, timebuff);
@@ -388,24 +381,30 @@ int main(int argc, char **argv)
 	    else {
 		fprintf(out, "timestamp=\"none\"\n");
 	    }
+	    fprintf(out, "units=%s\n", units ? units : "\"none\"");
+	    fprintf(out, "vdatum=%s\n", vdatum ? vdatum : "\"none\"");
+	    fprintf(out, "source1=\"%s\"\n", hist_ok ? Rast_get_history(&hist, HIST_DATSRC_1) : "\"none\"");
+	    fprintf(out, "source2=\"%s\"\n", hist_ok ? Rast_get_history(&hist, HIST_DATSRC_2) : "\"none\"");
+	    fprintf(out, "description=\"%s\"\n", hist_ok ? Rast_get_history(&hist, HIST_KEYWRD) : "\"none\"");
+	    if (Rast_history_length(&hist)) {
+		fprintf(out, "comments=\"");
+		for (i = 0; i < Rast_history_length(&hist); i++)
+		    fprintf(out, "%s", Rast_history_line(&hist, i));
+                fprintf(out, "\"\n");
+	    }
 	}
-
-	if (uflag->answer)
-	    fprintf(out, "units=%s\n", units);
-	if (dflag->answer)
-	    fprintf(out, "vertical_datum=%s\n", vdatum);
 
 	if (hflag->answer) {
 	    if (hist_ok) {
 		fprintf(out, "Data Source:\n");
-		fprintf(out, "   %s\n", hist.datsrc_1);
-		fprintf(out, "   %s\n", hist.datsrc_2);
+		fprintf(out, "   %s\n", Rast_get_history(&hist, HIST_DATSRC_1));
+		fprintf(out, "   %s\n", Rast_get_history(&hist, HIST_DATSRC_2));
 		fprintf(out, "Data Description:\n");
-		fprintf(out, "   %s\n", hist.keywrd);
-		if (hist.edlinecnt) {
+		fprintf(out, "   %s\n", Rast_get_history(&hist, HIST_KEYWRD));
+		if (Rast_history_length(&hist)) {
 		    fprintf(out, "Comments:\n");
-		    for (i = 0; i < hist.edlinecnt; i++)
-			fprintf(out, "   %s\n", hist.edhist[i]);
+		    for (i = 0; i < Rast_history_length(&hist); i++)
+			fprintf(out, "   %s\n", Rast_history_line(&hist, i));
 		}
 	    }
 	}
@@ -417,7 +416,7 @@ int main(int argc, char **argv)
 
 static void format_double(const double value, char *buf)
 {
-    sprintf(buf, "%.8lf", value);
+    sprintf(buf, "%.8f", value);
     G_trim_decimal(buf);
 }
 

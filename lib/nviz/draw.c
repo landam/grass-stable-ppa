@@ -246,15 +246,16 @@ int Nviz_draw_all(nv_data * data)
     /* North Arrow */
     if (data->draw_arrow) {
 	gsd_north_arrow(data->arrow->where, data->arrow->size,
-			(GLuint)NULL, data->arrow->color, data->arrow->color);
+			0, data->arrow->color, data->arrow->color);
     }
 
     /* scale bar */
     for (i = 0; i < data->num_scalebars; i++) {
-	struct scalebar_data *s = data->scalebar[i];
-	gsd_scalebar_v2(s->where, s->size, 0, s->color, s->color);
+        if (data->scalebar[i]){
+            struct scalebar_data *s = data->scalebar[i];
+            gsd_scalebar_v2(s->where, s->size, 0, s->color, s->color);
+        }
     }
-    
     GS_done_draw();
     GS_set_draw(GSD_BACK);
 

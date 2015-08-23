@@ -1,4 +1,4 @@
-"""!
+"""
 @brief Support script for wxGUI - only for developers needs. Updates
 menudata.xml file.
 
@@ -30,13 +30,11 @@ except ImportError:
 from grass.script import core as grass
 from grass.script import task as gtask
 
-if __name__ == "__main__":
-    sys.path.append(os.path.join(os.getenv('GISBASE'), 'etc', 'wxpython'))
-from lmgr.menudata  import ManagerData
+from lmgr.menudata  import LayerManagerMenuData
 from core.globalvar import grassCmd
 
 def parseModules():
-    """!Parse modules' interface"""
+    """Parse modules' interface"""
     modules = dict()
     
     # list of modules to be ignored
@@ -55,7 +53,7 @@ def parseModules():
             continue
         try:
             interface = gtask.parse_interface(module)
-        except Exception, e:
+        except Exception as e:
             grass.error(module + ': ' + str(e))
             continue
         modules[interface.name] = { 'label'   : interface.label,
@@ -65,7 +63,7 @@ def parseModules():
     return modules
 
 def updateData(data, modules):
-    """!Update menu data tree"""
+    """Update menu data tree"""
     # list of modules to be ignored
     ignore = ['v.type_wrapper.py',
               'vcolors']
@@ -112,7 +110,7 @@ def updateData(data, modules):
             grass.warning("'%s' not available from the menu" % module)
     
 def writeData(data, file = None):
-    """!Write updated menudata.xml"""
+    """Write updated menudata.xml"""
     if file is None:
         file = os.path.join('xml', 'menudata.xml')
     
@@ -151,7 +149,7 @@ def main(argv = None):
     modules = dict()
     modules = parseModules()
     grass.info("Step 3: reading menu data...")
-    data = ManagerData()
+    data = LayerManagerMenuData()
     grass.info("Step 4: updating menu data...")
     updateData(data, modules)
     

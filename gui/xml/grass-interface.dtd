@@ -101,10 +101,8 @@
 <!ELEMENT gisprompt    EMPTY>
 <!ATTLIST gisprompt    age            (any | old | new | mapset) #REQUIRED
                        element        (cell | fcell | cellhd | cats | colr |
-                                       colr2 | cell_misc | hist | dig | dig_ascii |
-                                       dig_att | dig_cats | dig_plus | reg | arc |
-                                       bldg | dlg | dxf | camera | icons | paint |
-                                       group | site_lists | windows | CDATA) #REQUIRED
+                                       colr2 | cell_misc | hist | paint |
+                                       group | vector | windows | CDATA) #REQUIRED
                        prompt         CDATA #REQUIRED>
 
 <!--    A flag must have a name and should have a description.
@@ -154,3 +152,23 @@
 <!--	list of keywords that describes a task
 -->
 <!ELEMENT keywords   (#PCDATA)>
+
+<!--	option inter-dependency rules
+-->
+<!ELEMENT rules   (rule+)>
+
+<!--	an option inter-dependency rule
+-->
+<!ELEMENT rule   (rule-flag*, rule-option*)>
+<!ATTLIST rule   type            (exclusive | required | requires | requires-all |
+                                  excludes | collective) #REQUIRED>
+
+<!--	a flag name
+-->
+<!ELEMENT rule-flag    EMPTY>
+<!ATTLIST rule-flag    key       CDATA #REQUIRED>
+
+<!--	an option name
+-->
+<!ELEMENT rule-option    EMPTY>
+<!ATTLIST rule-option    key       CDATA #REQUIRED>

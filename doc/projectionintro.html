@@ -1,21 +1,4 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
-<head>
- <title>Projections in GRASS GIS</title>
- <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
- <meta name="Author" content="Markus Neteler/GRASS Development Team">
- <link rel="stylesheet" href="grassdocs.css" type="text/css">
-</head>
-<body bgcolor="white">
-
-<img src="grass_logo.png" alt="GRASS logo"><hr align=center size=6 noshade>
-
-<!-- file source: doc/projectionintro.html -->
- 
-<!-- meta page description: Projections and spatial transformations -->
-
-<h2>Projections and spatial transformations in GRASS GIS</h2>
-
+<!-- meta page description: Projections and spatial transformations in GRASS GIS-->
 <h3>Introduction</h3>
 
 A GRASS location is referenced with a single projection and coordinate system
@@ -40,12 +23,11 @@ location (or another XY location), a forward transformation is performed.
 The unreferenced map is geocoded within the XY location by defining 
 four corner points or by seeking several ground control points
 (<a href="i.group.html">i.group</a>, <a href="i.target.html">i.target</a>,
- <a href="i.points.html">i.points</a>) and then transformed into the
+ <a href="g.gui.gcp.html">g.gui.gcp</a>) and then transformed into the
 target location (<a href="i.rectify.html">i.rectify</a>). Polynomial
 transformation of 1st, 2nd and 3rd order are supported.
 <p>
-A graphical user interface is provided by <a href="wxGUI.html">wxGUI</a> 
-(old interface: <a href="gis.m.html">gis.m</a>).
+A graphical user interface is provided by <a href="wxGUI.html">wxGUI</a>.
 <p>
 To simply translate a raster map (without stretching or rotation), the
 <a href="r.region.html">r.region</a> command can be used.
@@ -66,30 +48,28 @@ into the location with projection and geocoded within this location by
 defining  four corner points or by seeking several ground control points.
 These points are stored into an ASCII file and then transformed within 
 the same location (<a href="v.transform.html">v.transform</a>).
+
+Alternatively, <a href="v.rectify.html">v.rectify</a> rectifies a vector
+by computing a coordinate transformation for each object in the vector
+based on the control points. 
 <p>
-A graphical user interface is provided by <a href="wxGUI.html">wxGUI</a> 
-(old interface: <a href="gis.m.html">gis.m</a>).
+A graphical user interface is provided by <a href="wxGUI.html">wxGUI</a>.
 
 <h3>References</h3>
 
 <ul>
-<li> <a href="http://www.asprs.org/persjournals/PE-RS-Journals/Grids-Datums.html">ASPRS Grids and Datum</a>
+<li> <a href="http://www.asprs.org/Grids-Datums.html">ASPRS Grids and Datum</a>
 <li> <a href="http://www.remotesensing.org/geotiff/proj_list/">Projections Transform List</a> (PROJ4)
 <li> <a href="http://www.mapref.org">MapRef - The Collection of Map Projections and Reference Systems for Europe</a>
-<li> <a href="http://www.crs-geo.eu">Information and Service System for European Coordinate Reference Systems - CRS</a>
+<li> <a href="http://crs.bkg.bund.de/crs-eu/">Information and Service System for European Coordinate Reference Systems - CRS</a>
 </ul>
-
 
 <h3>See also</h3>
 
 <ul>
-<li><a href=rasterintro.html>Introduction to GRASS raster map processing</a></li>
-<li><a href=imageryintro.html>Introduction to GRASS image processing</a></li>
-<li><a href=vectorintro.html>Introduction to GRASS vector map processing</a></li>
+  <li><a href="rasterintro.html">Introduction into raster data processing</a></li>
+  <li><a href="raster3dintro.html">Introduction into 3D raster data (voxel) processing</a></li>
+  <li><a href="vectorintro.html">Introduction into vector data processing</a></li>
+  <li><a href="imageryintro.html">Introduction into image processing</a></li>
+  <li><a href="databaseintro.html">Database management</a></li>
 </ul>
-
-<hr>
-<p><a href="index.html">Main index</a> - <a href="full_index.html">full index</a>
-<p>&copy; 2008-2012 <a href="http://grass.osgeo.org">GRASS Development Team</a>
-</body>
-</html>

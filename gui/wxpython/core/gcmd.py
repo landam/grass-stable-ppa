@@ -1,4 +1,4 @@
-"""!
+"""
 @package core.gcmd
 
 @brief wxGUI command interface
@@ -30,18 +30,9 @@ import sys
 import time
 import errno
 import signal
-import locale
 import traceback
-import copy
-
-import wx
-
-try:
-    import subprocess
-except:
-    compatPath = os.path.join(globalvar.ETCWXDIR, "compat")
-    sys.path.append(compatPath)
-    import subprocess
+import locale
+import subprocess
 if subprocess.mswindows:
     from win32file import ReadFile, WriteFile
     from win32pipe import PeekNamedPipe
@@ -51,13 +42,26 @@ else:
     import fcntl
 from threading import Thread
 
+import wx
+
 from grass.script import core as grass
 
 from core       import globalvar
 from core.debug import Debug
 
+# cannot import from the core.utils module to avoid cross dependencies
+try:
+    # intended to be used also outside this module
+    import gettext
+    _ = gettext.translation('grasswxpy', os.path.join(os.getenv("GISBASE"), 'locale')).ugettext
+except IOError:
+    # using no translation silently
+    def null_gettext(string):
+        return string
+    _ = null_gettext
+
 def GetRealCmd(cmd):
-    """!Return real command name - only for MS Windows
+    """Return real command name - only for MS Windows
     """
     if sys.platform == 'win32':
         for ext in globalvar.grassScripts.keys():
@@ -67,45 +71,46 @@ def GetRealCmd(cmd):
     return cmd
 
 def DecodeString(string):
-    """!Decode string using system encoding
+    """Decode string using system encoding
     
-    @param string string to be decoded
+    :param string: string to be decoded
     
-    @return decoded string
+    :return: decoded string
     """
     if not string:
         return string
-
-    try:
-        enc = locale.getdefaultlocale()[1]
-    except ValueError, e:
-        sys.stderr.write(_("ERROR: %s\n") % str(e))
-        return string
     
-    if enc:
-        Debug.msg(5, "DecodeString(): enc=%s" % enc)
-        return string.decode(enc)
+    if _enc:
+        Debug.msg(5, "DecodeString(): enc=%s" % _enc)
+        return string.decode(_enc)
     
     return string
 
 def EncodeString(string):
-    """!Return encoded string using system locales
+    """Return encoded string using system locales
     
-    @param string string to be encoded
+    :param string: string to be encoded
     
-    @return encoded string
+    :return: encoded string
     """
     if not string:
         return string
-    enc = locale.getdefaultlocale()[1]
-    if enc:
-        Debug.msg(5, "EncodeString(): enc=%s" % enc)
-        return string.encode(enc)
+    
+    if _enc:
+        Debug.msg(5, "EncodeString(): enc=%s" % _enc)
+        return string.encode(_enc)
     
     return string
 
 class GError:
     def __init__(self, message, parent = None, caption = None, showTraceback = True):
+        """Show error message window
+
+        :param message: error message
+        :param parent: centre window on parent if given
+        :param caption: window caption (if not given "Error")
+        :param showTraceback: True to show also Python traceback
+        """
         if not caption:
             caption = _('Error')
         style = wx.OK | wx.ICON_ERROR | wx.CENTRE
@@ -155,8 +160,11 @@ class GException(Exception):
     def __str__(self):
         return self.value
 
+    def __unicode__(self):
+        return self.value
+
 class Popen(subprocess.Popen):
-    """!Subclass subprocess.Popen"""
+    """Subclass subprocess.Popen"""
     def __init__(self, args, **kwargs):
         if subprocess.mswindows:
             args = map(EncodeString, args)
@@ -184,12 +192,12 @@ class Popen(subprocess.Popen):
         setattr(self, which, None)
 
     def kill(self):
-        """!Try to kill running process"""
+        """Try to kill running process"""
         if subprocess.mswindows:
             import win32api
             handle = win32api.OpenProcess(1, 0, self.pid)
             return (0 != win32api.TerminateProcess(handle, 0))
-	else:
+        else:
             try:
                 os.kill(-self.pid, signal.SIGTERM) # kill whole group
             except OSError:
@@ -205,7 +213,7 @@ class Popen(subprocess.Popen):
                 (errCode, written) = WriteFile(x, input)
             except ValueError:
                 return self._close('stdin')
-            except (subprocess.pywintypes.error, Exception), why:
+            except (subprocess.pywintypes.error, Exception) as why:
                 if why[0] in (109, errno.ESHUTDOWN):
                     return self._close('stdin')
                 raise
@@ -226,7 +234,7 @@ class Popen(subprocess.Popen):
                     (errCode, read) = ReadFile(x, nAvail, None)
             except ValueError:
                 return self._close(which)
-            except (subprocess.pywintypes.error, Exception), why:
+            except (subprocess.pywintypes.error, Exception) as why:
                 if why[0] in (109, errno.ESHUTDOWN):
                     return self._close(which)
                 raise
@@ -245,7 +253,7 @@ class Popen(subprocess.Popen):
 
             try:
                 written = os.write(self.stdin.fileno(), input)
-            except OSError, why:
+            except OSError as why:
                 if why[0] == errno.EPIPE: #broken pipe
                     return self._close('stdin')
                 raise
@@ -309,13 +317,12 @@ def send_all(p, data):
         data = buffer(data, sent)
 
 class Command:
-    """!Run command in separate thread. Used for commands launched
+    """Run command in separate thread. Used for commands launched
     on the background.
-    
+
     If stdout/err is redirected, write() method is required for the
     given classes.
 
-    @code
         cmd = Command(cmd=['d.rast', 'elevation.dem'], verbose=3, wait=True)
 
         if cmd.returncode == None:
@@ -324,25 +331,25 @@ class Command:
             print 'SUCCESS'
         else:
             print 'FAILURE (%d)' % cmd.returncode
-    @endcode
-
-    @param cmd     command given as list
-    @param stdin   standard input stream
-    @param verbose verbose level [0, 3] (--q, --v)
-    @param wait    wait for child execution terminated
-    @param rerr    error handling (when CmdError raised).
-    True for redirection to stderr, False for GUI dialog,
-    None for no operation (quiet mode)
-    @param stdout  redirect standard output or None
-    @param stderr  redirect standard error output or None
     """
     def __init__ (self, cmd, stdin = None,
                   verbose = None, wait = True, rerr = False,
                   stdout = None, stderr = None):
+        """
+        :param cmd: command given as list
+        :param stdin: standard input stream
+        :param verbose: verbose level [0, 3] (--q, --v)
+        :param wait: wait for child execution terminated
+        :param rerr: error handling (when GException raised).
+                     True for redirection to stderr, False for GUI
+                     dialog, None for no operation (quiet mode)
+        :param stdout:  redirect standard output or None
+        :param stderr:  redirect standard error output or None
+        """
         Debug.msg(1, "gcmd.Command(): %s" % ' '.join(cmd))
         self.cmd = cmd
         self.stderr = stderr
-	
+
         #
         # set verbosity level
         #
@@ -405,9 +412,9 @@ class Command:
             del os.environ["GRASS_VERBOSE"]
             
     def __ReadOutput(self, stream):
-        """!Read stream and return list of lines
+        """Read stream and return list of lines
 
-        @param stream stream to be read
+        :param stream: stream to be read
         """
         lineList = []
 
@@ -424,14 +431,14 @@ class Command:
         return lineList
                     
     def __ReadErrOutput(self):
-        """!Read standard error output and return list of lines"""
+        """Read standard error output and return list of lines"""
         return self.__ReadOutput(self.cmdThread.module.stderr)
 
     def __ProcessStdErr(self):
         """
         Read messages/warnings/errors from stderr
 
-        @return list of (type, message)
+        :return: list of (type, message)
         """
         if self.stderr is None:
             lines = self.__ReadErrOutput()
@@ -464,31 +471,29 @@ class Command:
         return msg
 
     def __GetError(self):
-        """!Get error message or ''"""
+        """Get error message or ''"""
         if not self.cmdThread.module:
             return _("Unable to exectute command: '%s'") % ' '.join(self.cmd)
-
+        
         for type, msg in self.__ProcessStdErr():
             if type == 'ERROR':
-                enc = locale.getdefaultlocale()[1]
-                if enc:
-                    return unicode(msg, enc)
-                else:
-                    return msg
+                if _enc:
+                    return unicode(msg, _enc)
+                return msg
         
         return ''
     
 class CommandThread(Thread):
-    """!Create separate thread for command. Used for commands launched
+    """Create separate thread for command. Used for commands launched
     on the background."""
     def __init__ (self, cmd, env = None, stdin = None,
                   stdout = sys.stdout, stderr = sys.stderr):
         """
-        @param cmd command (given as list)
-        @param env environmental variables
-        @param stdin standard input stream 
-        @param stdout redirect standard output or None
-        @param stderr redirect standard error output or None
+        :param cmd: command (given as list)
+        :param env: environmental variables
+        :param stdin: standard input stream 
+        :param stdout: redirect standard output or None
+        :param stderr: redirect standard error output or None
         """
         Thread.__init__(self)
         
@@ -517,42 +522,39 @@ class CommandThread(Thread):
             del os.environ["GRASS_MESSAGE_FORMAT"]
         
     def run(self):
-        """!Run command"""
+        """Run command"""
         if len(self.cmd) == 0:
             return
 
         Debug.msg(1, "gcmd.CommandThread(): %s" % ' '.join(self.cmd))
-        
+
         self.startTime = time.time()
-        
+
         # TODO: replace ugly hack below
+        # this cannot be replaced it can be only improved
+        # also unifying this with 3 other places in code would be nice
+        # changing from one chdir to get_real_command function
         args = self.cmd
-        if sys.platform == 'win32' and os.path.splitext(self.cmd[0])[1] == '.py':
-            # Python GUI script should be replaced by Shell scripts
-            os.chdir(os.path.join(os.getenv('GISBASE'), 'etc', 'gui', 'scripts'))
-            args = [sys.executable, self.cmd[0]] + self.cmd[1:]
-        if sys.platform == 'win32' and \
-                self.cmd[0] in globalvar.grassScripts[globalvar.SCT_EXT]:
-            args[0] = self.cmd[0] + globalvar.SCT_EXT
-            env = copy.deepcopy(self.env)
-            # FIXME: env is None?  hmph. borrow sys.path instead.
-            #env['PATH'] = os.path.join(os.getenv('GISBASE').replace('/', '\\'), 'scripts') + \
-            #    os.pathsep + env['PATH']
-            scriptdir = os.path.join(os.getenv('GISBASE').replace('/', '\\'), 'scripts')
-            if scriptdir not in sys.path:
-                sys.path.append(scriptdir)
-        else:
-            env = self.env
-        
+        if sys.platform == 'win32':
+            if os.path.splitext(args[0])[1] == globalvar.SCT_EXT:
+                args[0] = args[0][:-3]
+            # using Python executable to run the module if it is a script
+            # expecting at least module name at first position
+            # cannot use make_command for this now because it is used in GUI
+            # The same code is in grass.script.core already twice.
+            args[0] = grass.get_real_command(args[0])
+            if args[0].endswith('.py'):
+                args.insert(0, sys.executable)
+ 
         try:
             self.module = Popen(args,
                                 stdin = subprocess.PIPE,
                                 stdout = subprocess.PIPE,
                                 stderr = subprocess.PIPE,
                                 shell = sys.platform == "win32",
-                                env = env)
-        
-        except OSError, e:
+                                env = self.env)
+            
+        except OSError as e:
             self.error = str(e)
             print >> sys.stderr, e
             return 1
@@ -565,25 +567,25 @@ class CommandThread(Thread):
         self._redirect_stream()
         
     def _redirect_stream(self):
-        """!Redirect stream"""
+        """Redirect stream"""
         if self.stdout:
             # make module stdout/stderr non-blocking
             out_fileno = self.module.stdout.fileno()
-	    if not subprocess.mswindows:
+            if not subprocess.mswindows:
                 flags = fcntl.fcntl(out_fileno, fcntl.F_GETFL)
                 fcntl.fcntl(out_fileno, fcntl.F_SETFL, flags| os.O_NONBLOCK)
                 
         if self.stderr:
             # make module stdout/stderr non-blocking
             out_fileno = self.module.stderr.fileno()
-	    if not subprocess.mswindows:
+            if not subprocess.mswindows:
                 flags = fcntl.fcntl(out_fileno, fcntl.F_GETFL)
                 fcntl.fcntl(out_fileno, fcntl.F_SETFL, flags| os.O_NONBLOCK)
         
         # wait for the process to end, sucking in stuff until it does end
         while self.module.poll() is None:
             if self._want_abort: # abort running process
-                self.module.kill()
+                self.module.terminate()
                 self.aborted = True
                 return 
             if self.stdout:
@@ -606,11 +608,11 @@ class CommandThread(Thread):
                 self.error = line
             
     def abort(self):
-        """!Abort running process, used by main thread to signal an abort"""
+        """Abort running process, used by main thread to signal an abort"""
         self._want_abort = True
     
 def _formatMsg(text):
-    """!Format error messages for dialogs
+    """Format error messages for dialogs
     """
     message = ''
     for line in text.splitlines():
@@ -629,24 +631,26 @@ def _formatMsg(text):
     
     return message
 
-def RunCommand(prog, flags = "", overwrite = False, quiet = False, verbose = False,
-               parent = None, read = False, stdin = None, getErrorMsg = False, **kwargs):
-    """!Run GRASS command
+def RunCommand(prog, flags = "", overwrite = False, quiet = False,
+               verbose = False, parent = None, read = False,
+               parse = None, stdin = None, getErrorMsg = False, **kwargs):
+    """Run GRASS command
 
-    @param prog program to run
-    @param flags flags given as a string
-    @param overwrite, quiet, verbose flags
-    @param parent parent window for error messages
-    @param read fetch stdout
-    @param stdin stdin or None
-    @param getErrorMsg get error messages on failure
-    @param kwargs program parameters
+    :param prog: program to run
+    :param flags: flags given as a string
+    :param overwrite, quiet, verbose: flags
+    :param parent: parent window for error messages
+    :param read: fetch stdout
+    :param parse: fn to parse stdout (e.g. grass.parse_key_val) or None
+    :param stdin: stdin or None
+    :param getErrorMsg: get error messages on failure
+    :param kwargs: program parameters
     
-    @return returncode (read == False and getErrorMsg == False)
-    @return returncode, messages (read == False and getErrorMsg == True)
-    @return stdout (read == True and getErrorMsg == False)
-    @return returncode, stdout, messages (read == True and getErrorMsg == True)
-    @return stdout, stderr
+    :return: returncode (read == False and getErrorMsg == False)
+    :return: returncode, messages (read == False and getErrorMsg == True)
+    :return: stdout (read == True and getErrorMsg == False)
+    :return: returncode, stdout, messages (read == True and getErrorMsg == True)
+    :return: stdout, stderr
     """
     cmdString = ' '.join(grass.make_command(prog, flags, overwrite,
                                             quiet, verbose, **kwargs))
@@ -660,11 +664,16 @@ def RunCommand(prog, flags = "", overwrite = False, quiet = False, verbose = Fal
     
     if stdin:
         kwargs['stdin'] = subprocess.PIPE
-    
-    ps = grass.start_command(GetRealCmd(prog), flags, overwrite, quiet, verbose, **kwargs)
+
+    if parent:
+        messageFormat = os.getenv('GRASS_MESSAGE_FORMAT', 'gui')
+        os.environ['GRASS_MESSAGE_FORMAT'] = 'standard'
     
     Debug.msg(2, "gcmd.RunCommand(): command started")
-
+    start = time.time()
+    
+    ps = grass.start_command(prog, flags, overwrite, quiet, verbose, **kwargs)
+    
     if stdin:
         ps.stdin.write(stdin)
         ps.stdin.close()
@@ -673,18 +682,25 @@ def RunCommand(prog, flags = "", overwrite = False, quiet = False, verbose = Fal
     Debug.msg(3, "gcmd.RunCommand(): decoding string")
     stdout, stderr = map(DecodeString, ps.communicate())
     
+    if parent: # restore previous settings
+        os.environ['GRASS_MESSAGE_FORMAT'] = messageFormat
+    
     ret = ps.returncode
-    Debug.msg(1, "gcmd.RunCommand(): get return code %d" % ret)
-        
+    Debug.msg(1, "gcmd.RunCommand(): get return code %d (%.6f sec)" % \
+                  (ret, (time.time() - start)))
+    
     Debug.msg(3, "gcmd.RunCommand(): print error")
-    if ret != 0 and parent:
-        Debug.msg(2, "gcmd.RunCommand(): error %s" % stderr)
-        if (stderr == None):
-            Debug.msg(2, "gcmd.RunCommand(): nothing to print ???")
+    if ret != 0:
+        if stderr:
+            Debug.msg(2, "gcmd.RunCommand(): error %s" % stderr)
         else:
-            GError(parent = parent,
-                   message = stderr)
+            Debug.msg(2, "gcmd.RunCommand(): nothing to print ???")
         
+        if parent:
+            GError(parent = parent,
+                   caption = _("Error in %s") % prog,
+                   message = stderr)
+    
     Debug.msg(3, "gcmd.RunCommand(): print read error")
     if not read:
         if not getErrorMsg:
@@ -696,6 +712,10 @@ def RunCommand(prog, flags = "", overwrite = False, quiet = False, verbose = Fal
         Debug.msg(2, "gcmd.RunCommand(): return stdout\n'%s'" % stdout)
     else:
         Debug.msg(2, "gcmd.RunCommand(): return stdout = None")
+    
+    if parse:
+        stdout = parse(stdout)
+    
     if not getErrorMsg:
         return stdout
     
@@ -707,11 +727,11 @@ def RunCommand(prog, flags = "", overwrite = False, quiet = False, verbose = Fal
     return stdout, _formatMsg(stderr)
 
 def GetDefaultEncoding(forceUTF8 = False):
-    """!Get default system encoding
+    """Get default system encoding
     
-    @param forceUTF8 force 'UTF-8' if encoding is not defined
+    :param bool forceUTF8: force 'UTF-8' if encoding is not defined
 
-    @return system encoding (can be None)
+    :return: system encoding (can be None)
     """
     enc = locale.getdefaultlocale()[1]
     if forceUTF8 and (enc is None or enc == 'UTF8'):
@@ -719,3 +739,5 @@ def GetDefaultEncoding(forceUTF8 = False):
     
     Debug.msg(1, "GetSystemEncoding(): %s" % enc)
     return enc
+
+_enc = GetDefaultEncoding() # define as global variable

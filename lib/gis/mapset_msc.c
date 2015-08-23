@@ -1,14 +1,15 @@
 /*!
-   \file mapset_msc.c
+   \file lib/gis/mapset_msc.c
 
    \brief GIS library - Mapset user permission routines.
 
-   (C) 1999-2008 The GRASS development team
+   (C) 1999-2014 The GRASS development team
 
    This program is free software under the GNU General Public License
    (>=v2). Read the file COPYING that comes with GRASS for details.
  */
 
+#include <grass/config.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -31,7 +32,7 @@
    \return 0 ?
    \return ?
  */
-int G__make_mapset_element(const char *p_element)
+int G_make_mapset_element(const char *p_element)
 {
     char path[GPATH_MAX];
     char *p;
@@ -41,7 +42,7 @@ int G__make_mapset_element(const char *p_element)
     if (*element == 0)
 	return 0;
 
-    G__file_name(p = path, "", "", G_mapset());
+    G_file_name(p = path, NULL, NULL, G_mapset());
     while (*p)
 	p++;
     /* add trailing slash if missing */
@@ -84,7 +85,7 @@ int G__make_mapset_element_misc(const char *dir, const char *name)
     char buf[GNAME_MAX * 2 + 1];
 
     sprintf(buf, "%s/%s", dir, name);
-    return G__make_mapset_element(buf);
+    return G_make_mapset_element(buf);
 }
 
 static int check_owner(const struct stat *info)
@@ -112,12 +113,12 @@ static int check_owner(const struct stat *info)
    \return 0 mapset exists, BUT user denied permission
    \return -1 mapset does not exist
  */
-int G__mapset_permissions(const char *mapset)
+int G_mapset_permissions(const char *mapset)
 {
     char path[GPATH_MAX];
     struct stat info;
 
-    G__file_name(path, "", "", mapset);
+    G_file_name(path, "", "", mapset);
 
     if (G_stat(path, &info) != 0)
 	return -1;
@@ -141,7 +142,7 @@ int G__mapset_permissions(const char *mapset)
    \return 0 mapset exists, BUT user denied permission
    \return -1 mapset does not exist
  */
-int G__mapset_permissions2(const char *gisdbase, const char *location,
+int G_mapset_permissions2(const char *gisdbase, const char *location,
 			   const char *mapset)
 {
     char path[GPATH_MAX];

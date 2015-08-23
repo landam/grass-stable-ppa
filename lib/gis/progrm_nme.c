@@ -1,41 +1,45 @@
+/*!
+ * \file lib/gis/progrm_nme.c
+ *
+ * \brief GIS Library - Program name
+ *
+ * (C) 2001-2014 by the GRASS Development Team
+ *
+ * This program is free software under the GNU General Public License
+ * (>=v2). Read the file COPYING that comes with GRASS for details.
+ *
+ * \author Original author CERL
+ */
 
-/**********************************************************************
- *
- *   char *
- *   G_program_name()
- *
- *   returns the current program name
- *
- **********************************************************************
- *
- *   G_set_program_name(name)
- *        char *name 
- *
- *   program name set to name (name will be returned by G_program_name
- *
- **********************************************************************/
 #include <string.h>
 #include <grass/gis.h>
 
 static const char *name = "?";
 
-
 /*!
- * \brief return module name
+ * \brief Return module name
  *
- * Routine returns the name
- * of the module as set by the call to <i>G_gisinit.</i>
+ * Routine returns the name of the module as set by the call to
+ * G_gisinit().
  *
- *  \param ~
- *  \return char * 
+ * \return pointer to string with program name
  */
-
 const char *G_program_name(void)
 {
     return name;
 }
 
-int G_set_program_name(const char *s)
+/*!
+  \brief Set program name
+
+  Program name set to name (name will be returned by
+  G_program_name*())
+
+  Extension like .exe or .py is stripped from program name.
+
+  \param s program name
+*/
+void G_set_program_name(const char *s)
 {
     int i;
     char *temp;
@@ -47,10 +51,14 @@ int G_set_program_name(const char *s)
 	    break;
 	}
     }
+
+    /* strip extension from program name */
     temp = G_store(s);
     G_basename(temp, "exe");
+    G_basename(temp, "py");
     name = G_store(temp);
-    G_free(temp);
 
-    return 0;
+    G_debug(1, "G_set_program_name(): %s", name);
+    
+    G_free(temp);
 }

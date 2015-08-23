@@ -15,12 +15,13 @@
 *
 *****************************************************************************/
 #include <stdlib.h>
+#include <sys/types.h>
 #include <string.h>
-#include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
+#include <grass/glocale.h>
 #include <grass/version.h>
 
-int dig_write_cidx_head(GVFILE * fp, struct Plus_head *plus)
+int dig_write_cidx_head(struct gvfile * fp, struct Plus_head *plus)
 {
     int i;
     unsigned char buf[5];
@@ -38,8 +39,17 @@ int dig_write_cidx_head(GVFILE * fp, struct Plus_head *plus)
     buf[2] = GV_CIDX_EARLIEST_MAJOR;
     buf[3] = GV_CIDX_EARLIEST_MINOR;
     buf[4] = plus->cidx_port.byte_order;
-    if (0 >= dig__fwrite_port_C(buf, 5, fp))
+    if (0 >= dig__fwrite_port_C((const char *)buf, 5, fp))
 	return (-1);
+
+    /* get required offset size */
+    if (plus->off_t_size == 0) {
+	/* should not happen, topo is written first */
+	if (plus->coor_size > (off_t)PORT_LONG_MAX)
+	    plus->off_t_size = 8;
+	else
+	    plus->off_t_size = 4;
+    }
 
     /* bytes 6 - 9 : header size */
     if (0 >= dig__fwrite_port_L(&length, 1, fp))
@@ -56,7 +66,7 @@ int dig_write_cidx_head(GVFILE * fp, struct Plus_head *plus)
 
 	ci = &(plus->cidx[i]);
 
-	G_debug(3, "cidx %d head offset: %ld", i, dig_ftell(fp));
+	G_debug(3, "cidx %d head offset: %"PRI_OFF_T, i, dig_ftell(fp));
 
 	/* Field number */
 	if (0 >= dig__fwrite_port_I(&(ci->field), 1, fp))
@@ -90,18 +100,26 @@ int dig_write_cidx_head(GVFILE * fp, struct Plus_head *plus)
 	}
 
 	/* Offset */
-	if (0 >= dig__fwrite_port_L(&(ci->offset), 1, fp))
+	if (0 >= dig__fwrite_port_O(&(ci->offset), 1, fp, plus->off_t_size))
 	    return (0);
-	G_debug(3, "cidx %d offset: %ld", i, ci->offset);
+	G_debug(3, "cidx %d offset: %"PRI_OFF_T, i, ci->offset);
     }
 
-    G_debug(3, "cidx body offset %ld", dig_ftell(fp));
+    G_debug(3, "cidx body offset %"PRI_OFF_T, dig_ftell(fp));
 
     return (0);
 }
 
-/* return: 0 OK, -1 error */
-int dig_read_cidx_head(GVFILE * fp, struct Plus_head *plus)
+/*!
+  \brief Read header of cidx file
+  
+  \param fp pointer to gvfile structure
+  \param plus pointer to Plus_head strcuture
+
+  \return 0 OK
+  \return -1 error
+*/
+int dig_read_cidx_head(struct gvfile * fp, struct Plus_head *plus)
 {
     unsigned char buf[5];
     int i, byte_order;
@@ -109,34 +127,34 @@ int dig_read_cidx_head(GVFILE * fp, struct Plus_head *plus)
     dig_rewind(fp);
 
     /* bytes 1 - 5 */
-    if (0 >= dig__fread_port_C(buf, 5, fp))
+    if (0 >= dig__fread_port_C((char *)buf, 5, fp))
 	return (-1);
-    plus->cidx_Version_Major = buf[0];
-    plus->cidx_Version_Minor = buf[1];
-    plus->cidx_Back_Major = buf[2];
-    plus->cidx_Back_Minor = buf[3];
+    plus->version.cidx.major = buf[0];
+    plus->version.cidx.minor = buf[1];
+    plus->version.cidx.back_major = buf[2];
+    plus->version.cidx.back_minor = buf[3];
     byte_order = buf[4];
 
     G_debug(3,
 	    "Cidx header: file version %d.%d , supported from GRASS version %d.%d",
-	    plus->cidx_Version_Major, plus->cidx_Version_Minor,
-	    plus->cidx_Back_Major, plus->cidx_Back_Minor);
+	    plus->version.cidx.major, plus->version.cidx.minor,
+	    plus->version.cidx.back_major, plus->version.cidx.back_minor);
 
     G_debug(3, "  byte order %d", byte_order);
 
     /* check version numbers */
-    if (plus->cidx_Version_Major > GV_CIDX_VER_MAJOR ||
-	plus->cidx_Version_Minor > GV_CIDX_VER_MINOR) {
+    if (plus->version.cidx.major > GV_CIDX_VER_MAJOR ||
+	plus->version.cidx.minor > GV_CIDX_VER_MINOR) {
 	/* The file was created by GRASS library with higher version than this one */
 
-	if (plus->cidx_Back_Major > GV_CIDX_VER_MAJOR ||
-	    plus->cidx_Back_Minor > GV_CIDX_VER_MINOR) {
+	if (plus->version.cidx.back_major > GV_CIDX_VER_MAJOR ||
+	    plus->version.cidx.back_minor > GV_CIDX_VER_MINOR) {
 	    /* This version of GRASS lib is lower than the oldest which can read this format */
 	    G_debug(1, "Category index format version %d.%d",
-		    plus->cidx_Version_Major, plus->cidx_Version_Minor);
+		    plus->version.cidx.major, plus->version.cidx.minor);
 	    G_fatal_error
-		("This version of GRASS (%d.%d) is too old to read this category index format."
-		 " Try to rebuild topology or upgrade GRASS to at least version %d.",
+		(_("This version of GRASS (%d.%d) is too old to read this category index format."
+		 " Try to rebuild topology or upgrade GRASS to at least version %d."),
 		 GRASS_VERSION_MAJOR, GRASS_VERSION_MINOR, GRASS_VERSION_MAJOR + 1);
 	    return (-1);
 	}
@@ -144,7 +162,7 @@ int dig_read_cidx_head(GVFILE * fp, struct Plus_head *plus)
 	G_warning
 	    ("Your GRASS version does not fully support category index format %d.%d of the vector."
 	     " Consider to rebuild topology or upgrade GRASS.",
-	     plus->cidx_Version_Major, plus->cidx_Version_Minor);
+	     plus->version.cidx.major, plus->version.cidx.minor);
     }
 
     dig_init_portable(&(plus->cidx_port), byte_order);
@@ -155,15 +173,26 @@ int dig_read_cidx_head(GVFILE * fp, struct Plus_head *plus)
 	return (-1);
     G_debug(3, "  header size %ld", plus->cidx_head_size);
 
+    /* get required offset size */
+    if (plus->off_t_size == 0) {
+	/* should not happen, topo is opened first */
+	if (plus->coor_size > (off_t)PORT_LONG_MAX)
+	    plus->off_t_size = 8;
+	else
+	    plus->off_t_size = 4;
+    }
+
     /* Body of header - info about all fields */
     /* Number of fields */
     if (0 >= dig__fread_port_I(&(plus->n_cidx), 1, fp))
 	return (-1);
 
     /* alloc space */
-    plus->a_cidx = plus->n_cidx;
-    plus->cidx =
-	(struct Cat_index *)G_malloc(plus->a_cidx * sizeof(struct Cat_index));
+    if (plus->a_cidx < plus->n_cidx) {
+	plus->a_cidx = plus->n_cidx;
+	plus->cidx =
+	    (struct Cat_index *)G_realloc(plus->cidx, plus->a_cidx * sizeof(struct Cat_index));
+    }
 
     for (i = 0; i < plus->n_cidx; i++) {
 	int t;
@@ -204,7 +233,7 @@ int dig_read_cidx_head(GVFILE * fp, struct Plus_head *plus)
 	}
 
 	/* Offset */
-	if (0 >= dig__fread_port_L(&(ci->offset), 1, fp))
+	if (0 >= dig__fread_port_O(&(ci->offset), 1, fp, plus->off_t_size))
 	    return (0);
     }
 
@@ -215,7 +244,7 @@ int dig_read_cidx_head(GVFILE * fp, struct Plus_head *plus)
 }
 
 /* Write spatial index */
-int dig_write_cidx(GVFILE * fp, struct Plus_head *plus)
+int dig_write_cidx(struct gvfile * fp, struct Plus_head *plus)
 {
     int i;
 
@@ -249,16 +278,23 @@ int dig_write_cidx(GVFILE * fp, struct Plus_head *plus)
     return 0;
 }
 
-/* Read spatial index file 
- * returns 0 - OK
- *         1 - error
- */
-int dig_read_cidx(GVFILE * fp, struct Plus_head *plus, int head_only)
+/*!
+  \brief Read spatial index file 
+
+  \param fp pointer to gvfile structure
+  \param[in,out] plus pointer to Plus_head structure
+  \param head_only non-zero to read only head
+
+  \return 0 OK
+  \return 1 error
+*/
+int dig_read_cidx(struct gvfile * fp, struct Plus_head *plus, int head_only)
 {
     int i;
 
     G_debug(3, "dig_read_cidx()");
 
+    dig_cidx_free(plus);
     dig_cidx_init(plus);
 
     dig_rewind(fp);

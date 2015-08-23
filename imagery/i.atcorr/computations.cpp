@@ -6,14 +6,14 @@ extern "C" {
 }
 
 #include "common.h"
-#include "GeomCond.h"
-#include "AtmosModel.h"
-#include "AerosolModel.h"
-#include "AerosolConcentration.h"
-#include "Altitude.h"
-#include "Iwave.h"
-#include "Gauss.h"
-#include "Transform.h"
+#include "geomcond.h"
+#include "atmosmodel.h"
+#include "aerosolmodel.h"
+#include "aerosolconcentration.h"
+#include "altitude.h"
+#include "iwave.h"
+#include "gauss.h"
+#include "transform.h"
 #ifdef WIN32
 #pragma warning (disable : 4305)
 #endif
@@ -1106,7 +1106,7 @@ void iso(const float tamoy, const float trmoy, const float pizmoy,
 	ig++;
 
 	/* successive orders
-	   multiple scattering source function at every level within the laye */
+	   multiple scattering source function at every level within the layer */
 	for(k = 1; k <= mu; k++)
 	{
 	    for(int i = 0; i <= snt; i++)

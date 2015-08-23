@@ -101,7 +101,7 @@ int Nviz_new_map_obj(int type, const char *name, double value, nv_data * data)
 
 	/* initialize display parameters
 	   automatically select all surfaces to draw vector */
-	GV_set_vectmode(new_id, 1, 0xFF0000, 2, 0);
+	GV_set_style(new_id, 1, 0x000000, 2, 0);
 	surf_list = GS_get_surf_list(&num_surfs);
 	if (num_surfs) {
 	    for (i = 0; i < num_surfs; i++) {
@@ -130,7 +130,7 @@ int Nviz_new_map_obj(int type, const char *name, double value, nv_data * data)
 	}
 
 	/* initialize display parameters */
-	GP_set_sitemode(new_id, ST_ATT_NONE, 0xFF0000, 2, 100, ST_X);
+	GP_set_style(new_id, 0x000000, 2, 100, ST_X);
 	surf_list = GS_get_surf_list(&num_surfs);
 	for (i = 0; i < num_surfs; i++) {
 	    GP_select_surf(new_id, surf_list[i]);
@@ -220,6 +220,8 @@ int Nviz_set_attr(int id, int type, int desc, int src,
 	    else if (src == MAP_ATT) {
 		ret = GS_load_att_map(id, str_value, desc);
 	    }
+	    else
+		ret = -1;
 
 	    /* After we've loaded a constant map or a file,
 	     * may need to adjust resolution if we are resetting
@@ -297,17 +299,13 @@ void Nviz_set_surface_attr_default()
  */
 int Nviz_set_vpoint_attr_default(int id)
 {
-    int i;
     geosite *gp;
 
     gp = gp_get_site(id);
 
     if (!gp)
 	return 0;
-
-    for (i = 0; i < GPT_MAX_ATTR; i++)
-	gp->use_attr[i] = ST_ATT_NONE;
-
+    
     return 1;
 }
 

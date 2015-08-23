@@ -20,10 +20,20 @@
 #include <grass/gis.h>
 #include <grass/glocale.h>
 
-#define MAIN
 #include "ransurf.h"
 #include "local_proto.h"
-#undef MAIN
+
+double NS, EW;
+int CellCount, Rs, Cs;
+double MaxDist, MaxDistSq;
+FLAG *Cells;
+CELLSORTER *DoNext;
+CELL **Out, *CellBuffer;
+int Seed, OutFD;
+struct Flag *Verbose;
+struct Option *Distance;
+struct Option *Output;
+struct Option *SeedStuff;
 
 int main(int argc, char *argv[])
 {
@@ -32,11 +42,34 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
     /* Set description */
     module = G_define_module();
-    module->keywords = _("raster, random, cell");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("sampling"));
+    G_add_keyword(_("random"));
+    G_add_keyword(_("autocorrelation"));
     module->description =
 	_("Generates random cell values with spatial dependence.");
 
-    Init(argc, argv);
+    Output = G_define_standard_option(G_OPT_R_OUTPUT);
+
+    Distance = G_define_option();
+    Distance->key = "distance";
+    Distance->type = TYPE_DOUBLE;
+    Distance->required = YES;
+    Distance->multiple = NO;
+    Distance->description =
+	_("Maximum distance of spatial correlation (value >= 0.0)");
+
+    SeedStuff = G_define_option();
+    SeedStuff->key = "seed";
+    SeedStuff->type = TYPE_INTEGER;
+    SeedStuff->required = NO;
+    SeedStuff->description =
+	_("Random seed (SEED_MIN >= value >= SEED_MAX) (default [random])");
+
+    if (G_parser(argc, argv))
+	exit(EXIT_FAILURE);
+
+    Init();
     Indep();
     
     G_done_msg(" ");

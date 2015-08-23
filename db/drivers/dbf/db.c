@@ -22,6 +22,7 @@
 #include <errno.h>
 #include <grass/dbmi.h>
 #include <grass/gis.h>
+#include <grass/glocale.h>
 #include "globals.h"
 #include "proto.h"
 
@@ -64,12 +65,13 @@ int db__driver_open_database(dbHandle * handle)
 	db.name[0] = '\0';	/* re-init */
 
 	for (n = 0; n < no_tokens; n++) {
+	    G_chop(tokens[n]);
 	    G_debug(3, "tokens[%d] = %s", n, tokens[n]);
 	    if (tokens[n][0] == '$') {
 		G_strchg(tokens[n], '$', ' ');
 		G_chop(tokens[n]);
-		strcat(db.name, G__getenv(tokens[n]));
-		G_debug(3, "   -> %s", G__getenv(tokens[n]));
+		strcat(db.name, G_getenv_nofatal(tokens[n]));
+		G_debug(3, "   -> %s", G_getenv_nofatal(tokens[n]));
 	    }
 	    else
 		strcat(db.name, tokens[n]);
@@ -89,24 +91,24 @@ int db__driver_open_database(dbHandle * handle)
 
 	    status = G_mkdir(db.name);
 	    if (status != 0) {	/* mkdir failed */
-		append_error("Cannot create dbf database: %s\n", name);
-		report_error();
+		db_d_append_error(_("Unable create DBF database: %s"), name);
+		db_d_report_error();
 		return DB_FAILED;
 	    }
 	    else {
 		/* now that the dbf/ dir is created, try again */
 		dir = opendir(db.name);
 		if (dir == NULL) {
-		    append_error("Cannot open dbf database directory: %s\n",
-				 name);
-		    report_error();
+		    db_d_append_error(_("Cannot open DBF database directory: %s"),
+					name);
+		    db_d_report_error();
 		    return DB_FAILED;
 		}
 	    }
 	}
 	else {			/* some other problem */
-	    append_error("Cannot open dbf database: %s\n", name);
-	    report_error();
+	    db_d_append_error(_("Unable to open DBF database: %s"), name);
+	    db_d_report_error();
 	    return DB_FAILED;
 	}
     }

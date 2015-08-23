@@ -1,9 +1,9 @@
 /*!
- * \file gis/open.c
+ * \file lib/gis/open.c
  * 
- * \brief GIS Library - open file functions
+ * \brief GIS Library - Open file functions
  *
- * (C) 1999-2008 by the GRASS Development Team
+ * (C) 1999-2009 by the GRASS Development Team
  *
  * This program is free software under the GNU General Public
  * License (>=v2). Read the file COPYING that comes with GRASS
@@ -13,6 +13,7 @@
  */
 
 #include <grass/config.h>
+#include <errno.h>
 #include <string.h>
 
 #include <unistd.h>
@@ -20,6 +21,8 @@
 
 #include <grass/gis.h>
 #include <grass/glocale.h>
+
+#include "local_proto.h"
 
 /*!
   \brief Lowest level open routine.
@@ -49,6 +52,7 @@
 static int G__open(const char *element,
 		   const char *name, const char *mapset, int mode)
 {
+    int fd;
     char path[GPATH_MAX];
     char xname[GNAME_MAX], xmapset[GMAPSET_MAX];
 
@@ -57,7 +61,7 @@ static int G__open(const char *element,
 
     /* READ */
     if (mode == 0) {
-	if (G__name_is_fully_qualified(name, xname, xmapset)) {
+	if (G_name_is_fully_qualified(name, xname, xmapset)) {
 	    if (*mapset && strcmp(xmapset, mapset) != 0) {
 		G_warning(_("G__open(read): mapset <%s> doesn't match xmapset <%s>"),
 			  mapset, xmapset);
@@ -66,20 +70,23 @@ static int G__open(const char *element,
 	    name = xname;
 	    mapset = xmapset;
 	}
-	else if (!mapset || !*mapset)
-	    mapset = G_find_file2(element, name, mapset);
+
+	mapset = G_find_file2(element, name, mapset);
 
 	if (!mapset)
 	    return -1;
 
-	G__file_name(path, element, name, mapset);
+	G_file_name(path, element, name, mapset);
 
-	return open(path, 0);
+	if ((fd = open(path, 0)) < 0)
+	    G_warning(_("G__open(read): Unable to open '%s': %s"),
+	              path, strerror(errno));
+	return fd;
     }
     /* WRITE */
     if (mode == 1 || mode == 2) {
 	mapset = G_mapset();
-	if (G__name_is_fully_qualified(name, xname, xmapset)) {
+	if (G_name_is_fully_qualified(name, xname, xmapset)) {
 	    if (strcmp(xmapset, mapset) != 0) {
 		G_warning(_("G__open(write): xmapset <%s> != G_mapset() <%s>"),
 			  xmapset, mapset);
@@ -88,17 +95,20 @@ static int G__open(const char *element,
 	    name = xname;
 	}
 
-	if (G_legal_filename(name) == -1)
+	if (*name && G_legal_filename(name) == -1)
 	    return -1;
 
-	G__file_name(path, element, name, mapset);
+	G_file_name(path, element, name, mapset);
 
 	if (mode == 1 || access(path, 0) != 0) {
-	    G__make_mapset_element(element);
+	    G_make_mapset_element(element);
 	    close(open(path, O_WRONLY | O_CREAT | O_TRUNC, 0666));
 	}
 
-	return open(path, mode);
+	if ((fd = open(path, mode)) < 0)
+	    G_warning(_("G__open(write): Unable to open '%s': %s"),
+	              path, strerror(errno));
+	return fd;
     }
     return -1;
 }
@@ -191,7 +201,7 @@ int G_open_update(const char *element, const char *name)
   \param name map file name
 
   \return open file descriptor (FILE *)
-  \return NULL could not open
+  \return NULL on error
  */
 
 FILE *G_fopen_new(const char *element, const char *name)
@@ -199,9 +209,13 @@ FILE *G_fopen_new(const char *element, const char *name)
     int fd;
 
     fd = G__open(element, name, G_mapset(), 1);
-    if (fd < 0)
+    if (fd < 0) {
+        G_debug(1, "G_fopen_new(): element = %s, name = %s : NULL",
+                element, name);
 	return (FILE *) 0;
+    }
 
+    G_debug(2, "\tfile open: new (mode = w)");
     return fdopen(fd, "w");
 }
 
@@ -221,7 +235,7 @@ FILE *G_fopen_new(const char *element, const char *name)
   \param mapset mapset name containing map <i>name</i>
 
   \return open file descriptor (FILE *)
-  \return NULL could not open
+  \return NULL on error
 */
 FILE *G_fopen_old(const char *element, const char *name, const char *mapset)
 {
@@ -229,8 +243,9 @@ FILE *G_fopen_old(const char *element, const char *name, const char *mapset)
 
     fd = G__open(element, name, mapset, 0);
     if (fd < 0)
-	return (FILE *) 0;
+	return (FILE *) NULL;
 
+    G_debug(2, "\tfile open: read (mode = r)");
     return fdopen(fd, "r");
 }
 
@@ -247,7 +262,7 @@ FILE *G_fopen_old(const char *element, const char *name, const char *mapset)
   \param name map file name
 
   \return open file descriptor (FILE *)
-  \return NULL could not open
+  \return NULL on error
 */
 FILE *G_fopen_append(const char *element, const char *name)
 {
@@ -258,6 +273,7 @@ FILE *G_fopen_append(const char *element, const char *name)
 	return (FILE *) 0;
     lseek(fd, 0L, SEEK_END);
 
+    G_debug(2, "\tfile open: append (mode = a)");
     return fdopen(fd, "a");
 }
 
@@ -274,7 +290,7 @@ FILE *G_fopen_append(const char *element, const char *name)
   \param name map file name
 
   \return open file descriptor (FILE *)
-  \return NULL
+  \return NULL on error
 */
 FILE *G_fopen_modify(const char *element, const char *name)
 {
@@ -285,5 +301,6 @@ FILE *G_fopen_modify(const char *element, const char *name)
 	return (FILE *) 0;
     lseek(fd, 0L, SEEK_END);
 
+    G_debug(2, "\tfile open: modify (mode = r+)");
     return fdopen(fd, "r+");
 }

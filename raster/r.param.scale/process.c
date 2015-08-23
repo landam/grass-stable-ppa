@@ -15,6 +15,7 @@
 
 #include <stdlib.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include <grass/gmath.h>
 #include "param.h"
@@ -35,7 +36,8 @@ void process(void)
 	/* raster row, each element is of type  */
 	/* DCELL        */
 	*window_ptr,		/* Stores local terrain window.         */
-	centre;			/* Elevation of central cell in window. */
+	centre,			/* Elevation of central cell in window. */
+	*window_cell;		/* Stores last read cell in window. */
 
     CELL *featrow_out = NULL;	/* store features in CELL */
 
@@ -54,7 +56,7 @@ void process(void)
       temp;			/* Unused */
 
     double *weight_ptr;		/* Weighting matrix for observed values. */
-
+    int found_null;             /* If null was found among window cells  */
 
     /*--------------------------------------------------------------------------*/
     /*                     GET RASTER AND WINDOW DETAILS                        */
@@ -64,8 +66,8 @@ void process(void)
     G_get_window(&region);	/* Fill out the region structure (the   */
     /* geographical limits etc.)            */
 
-    nrows = G_window_rows();	/* Find out the number of rows and      */
-    ncols = G_window_cols();	/* columns of the raster.               */
+    nrows = Rast_window_rows();	/* Find out the number of rows and      */
+    ncols = Rast_window_cols();	/* columns of the raster.               */
 
 
     if ((region.ew_res / region.ns_res >= 1.01) ||	/* If EW and NS resolns are    */
@@ -85,10 +87,14 @@ void process(void)
     row_in = (DCELL *) G_malloc(ncols * sizeof(DCELL) * wsize);
     /* Reserve `wsize' rows of memory.      */
 
-    if (mparam != FEATURE)
-	row_out = G_allocate_raster_buf(DCELL_TYPE);	/* Initialise output row buffer.     */
-    else
-	featrow_out = G_allocate_raster_buf(CELL_TYPE);	/* Initialise output row buffer.  */
+    if (mparam != FEATURE) {
+	row_out = Rast_allocate_buf(DCELL_TYPE);	/* Initialise output row buffer.     */
+	Rast_set_d_null_value(row_out, ncols);
+    }
+    else {
+	featrow_out = Rast_allocate_buf(CELL_TYPE);	/* Initialise output row buffer.  */
+	Rast_set_c_null_value(featrow_out, ncols);
+    }
 
     window_ptr = (DCELL *) G_malloc(SQR(wsize) * sizeof(DCELL));
     /* Reserve enough memory for local wind. */
@@ -146,13 +152,13 @@ void process(void)
 
     if (mparam != FEATURE)
 	for (wind_row = 0; wind_row < EDGE; wind_row++)
-	    G_put_raster_row(fd_out, row_out, DCELL_TYPE);	/* Write out the edge cells as NULL.    */
+	    Rast_put_row(fd_out, row_out, DCELL_TYPE);	/* Write out the edge cells as NULL.    */
     else
 	for (wind_row = 0; wind_row < EDGE; wind_row++)
-	    G_put_raster_row(fd_out, featrow_out, CELL_TYPE);	/* Write out the edge cells as NULL.    */
+	    Rast_put_row(fd_out, featrow_out, CELL_TYPE);	/* Write out the edge cells as NULL.    */
 
     for (wind_row = 0; wind_row < wsize - 1; wind_row++)
-	G_get_raster_row(fd_in, row_in + (wind_row * ncols), wind_row,
+	Rast_get_row(fd_in, row_in + (wind_row * ncols), wind_row,
 			 DCELL_TYPE);
     /* Read in enough of the first rows to  */
     /* allow window to be examined.         */
@@ -160,22 +166,47 @@ void process(void)
     for (row = EDGE; row < (nrows - EDGE); row++) {
 	G_percent(row + 1, nrows - EDGE, 2);
 
-	G_get_raster_row(fd_in, row_in + ((wsize - 1) * ncols), row + EDGE,
+	Rast_get_row(fd_in, row_in + ((wsize - 1) * ncols), row + EDGE,
 			 DCELL_TYPE);
 
 	for (col = EDGE; col < (ncols - EDGE); col++) {
 	    /* Find central z value */
 	    centre = *(row_in + EDGE * ncols + col);
-
-	    for (wind_row = 0; wind_row < wsize; wind_row++)
-		for (wind_col = 0; wind_col < wsize; wind_col++)
+	    /* Test for no data and propagate */
+	    if (Rast_is_d_null_value(&centre)) {
+		if (mparam == FEATURE)
+		    Rast_set_c_null_value(featrow_out + col, 1);
+		else {
+		    Rast_set_d_null_value(row_out + col, 1);
+		}
+		continue;
+	    }
+	    found_null = FALSE;
+	    for (wind_row = 0; wind_row < wsize; wind_row++) {
+		if (found_null)
+		    break;
+		for (wind_col = 0; wind_col < wsize; wind_col++) {
 
 		    /* Express all window values relative   */
 		    /* to the central elevation.            */
+		    window_cell = row_in + (wind_row * ncols) + col + wind_col - EDGE;
+		    /* Test for no data and propagate */
+		    if (Rast_is_d_null_value(window_cell)) {
+			if (mparam == FEATURE)
+			    Rast_set_c_null_value(featrow_out + col, 1);
+			else {
+			    Rast_set_d_null_value(row_out + col, 1);
+			}
+			found_null = TRUE;
+			break;
+		    }
 		    *(window_ptr + (wind_row * wsize) + wind_col) =
-			*(row_in + (wind_row * ncols) + col + wind_col -
-			  EDGE) - centre;
+			*(window_cell) - centre;
+		}
+	    }
 
+	    if (found_null)
+		continue;
 
 	    /*--- Use LU back substitution to solve normal equations. ---*/
 	    find_obs(window_ptr, obs_ptr, weight_ptr);
@@ -210,10 +241,10 @@ void process(void)
 	}
 
 	if (mparam != FEATURE)
-	    G_put_raster_row(fd_out, row_out, DCELL_TYPE);	/* Write the row buffer to the output   */
+	    Rast_put_row(fd_out, row_out, DCELL_TYPE);	/* Write the row buffer to the output   */
 	/* raster.                              */
 	else			/* write FEATURE to CELL */
-	    G_put_raster_row(fd_out, featrow_out, CELL_TYPE);	/* Write the row buffer to the output       */
+	    Rast_put_row(fd_out, featrow_out, CELL_TYPE);	/* Write the row buffer to the output       */
 	/* raster.                              */
 
 	/* 'Shuffle' rows down one, and read in */
@@ -224,11 +255,15 @@ void process(void)
 		    *(row_in + ((wind_row + 1) * ncols) + col);
     }
 
+    if (mparam != FEATURE)
+	Rast_set_d_null_value(row_out, ncols);
+    else
+	Rast_set_c_null_value(featrow_out, ncols);
     for (wind_row = 0; wind_row < EDGE; wind_row++) {
 	if (mparam != FEATURE)
-	    G_put_raster_row(fd_out, row_out, DCELL_TYPE);	/* Write out the edge cells as NULL. */
+	    Rast_put_row(fd_out, row_out, DCELL_TYPE);	/* Write out the edge cells as NULL. */
 	else
-	    G_put_raster_row(fd_out, featrow_out, CELL_TYPE);	/* Write out the edge cells as NULL. */
+	    Rast_put_row(fd_out, featrow_out, CELL_TYPE);	/* Write out the edge cells as NULL. */
     }
 
     /*--------------------------------------------------------------------------*/

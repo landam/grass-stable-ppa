@@ -6,19 +6,22 @@
  *               GRASS 6 update: Radim Blazek <radim.blazek gmail.com>
  *               Glynn Clements <glynn gclements.plus.com>,
  *               Jachym Cepicky <jachym les-ejk.cz>, Markus Neteler <neteler itc.it>
+ *               OGR support by Martin Landa <landa.martin gmail.com>
  * PURPOSE:      
  * COPYRIGHT:    (C) 1999-2009 by the GRASS Development Team
  *
- *               This program is free software under the GNU General Public
- *               License (>=v2). Read the file COPYING that comes with GRASS
- *               for details.
+ *               This program is free software under the GNU General
+ *               Public License (>=v2). Read the file COPYING that
+ *               comes with GRASS for details.
  *
  *****************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 
@@ -48,7 +51,7 @@ int main(int argc, char *argv[])
     /*    struct Flag *d_flag; */
     struct Option *in_opt, *out_opt, *type_opt, *field_opt, *rules_opt,
 	*col_opt;
-    char *mapset, *key, *data, buf[1024];
+    char *key, *data, buf[1024];
     int rclelem, type, field;
     struct Map_info In, Out;
 
@@ -61,28 +64,30 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, reclass, attributes");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("reclassification"));
+    G_add_keyword(_("attributes"));
     module->description =
 	_("Changes vector category values for an existing vector map "
 	  "according to results of SQL queries or a value in attribute table column.");
 
     in_opt = G_define_standard_option(G_OPT_V_INPUT);
 
-    out_opt = G_define_standard_option(G_OPT_V_OUTPUT);
+    field_opt = G_define_standard_option(G_OPT_V_FIELD);
+    field_opt->guisection = _("Selection");
 
     type_opt = G_define_standard_option(G_OPT_V_TYPE);
     type_opt->options = "point,line,boundary,centroid";
     type_opt->answer = "point,line,boundary,centroid";
     type_opt->guisection = _("Selection");
 
-    field_opt = G_define_standard_option(G_OPT_V_FIELD);
-    field_opt->guisection = _("Selection");
-
-    col_opt = G_define_standard_option(G_OPT_COLUMN);
+    out_opt = G_define_standard_option(G_OPT_V_OUTPUT);
+    
+    col_opt = G_define_standard_option(G_OPT_DB_COLUMN);
     col_opt->label =
 	_("The name of the column whose values are to be used as new categories");
     col_opt->description = _("The source for the new key column must be type integer or string");
-
+    
     rules_opt = G_define_standard_option(G_OPT_F_INPUT);
     rules_opt->key = "rules";
     rules_opt->required = NO;
@@ -93,23 +98,24 @@ int main(int argc, char *argv[])
 
 
     type = Vect_option_to_types(type_opt);
-    field = atoi(field_opt->answer);
 
     if ((!(rules_opt->answer) && !(col_opt->answer)) ||
 	(rules_opt->answer && col_opt->answer)) {
-	G_fatal_error(_("Either 'rules' or 'col' must be specified"));
+	G_fatal_error(_("Either '%s' or '%s' must be specified"),
+		      rules_opt->key, col_opt->key);
     }
 
     Vect_check_input_output_name(in_opt->answer, out_opt->answer,
-				 GV_FATAL_EXIT);
+				 G_FATAL_EXIT);
 
-    mapset = G_find_vector2(in_opt->answer, NULL);
-    if (mapset == NULL)
-	G_fatal_error(_("Vector map <%s> not found"), in_opt->answer);
     Vect_set_open_level(2);
-    Vect_open_old(&In, in_opt->answer, mapset);
+    if (Vect_open_old2(&In, in_opt->answer, "", field_opt->answer) < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), in_opt->answer);
+    field = Vect_get_field_number(&In, field_opt->answer);
 
-    Vect_open_new(&Out, out_opt->answer, Vect_is_3d(&In));
+    if (Vect_open_new(&Out, out_opt->answer, Vect_is_3d(&In)) < 0)
+	G_fatal_error(_("Unable to create vector map <%s>"), out_opt->answer);
+
     Vect_copy_head_data(&In, &Out);
     Vect_hist_copy(&In, &Out);
     Vect_hist_command(&Out);
@@ -119,13 +125,14 @@ int main(int argc, char *argv[])
 
     Fi = Vect_get_field(&In, field);
     if (Fi == NULL)
-      G_fatal_error(_("Database connection not defined for layer %d"),
-		    field);
+      G_fatal_error(_("Database connection not defined for layer %s"),
+		    field_opt->answer);
 
     Driver = db_start_driver_open_database(Fi->driver, Fi->database);
     if (Driver == NULL)
 	G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 		      Fi->database, Fi->driver);
+    db_set_error_handler_driver(Driver);
 
     if (col_opt->answer) {
 	int ctype;
@@ -154,19 +161,31 @@ int main(int argc, char *argv[])
 	    dbTable *table;
 	    struct field_info *NewFi;
 	    dbDriver *Driver2;
+	    int foundnull;
 
 	    db_init_string(&stmt);
 	    db_init_string(&stmt2);
 	    db_init_string(&lastval);
 
 	    NewFi = Vect_default_field_info(&Out, field, NULL, GV_1TABLE);
-	    Vect_map_add_dblink(&Out, field, NULL, NewFi->table, "cat",
+	    Vect_map_add_dblink(&Out, field, NULL, NewFi->table, GV_KEY_COLUMN,
 				NewFi->database, NewFi->driver);
 
-	    Driver2 = db_start_driver_open_database(NewFi->driver,
-						    Vect_subst_var(NewFi->
-								   database,
-								   &Out));
+
+	    /* Open output driver and database */
+	    if (strcmp(Fi->driver, NewFi->driver) == 0
+		&& strcmp(Fi->database,
+		          Vect_subst_var(NewFi->database, &Out)) == 0) {
+		G_debug(3, "Use the same driver");
+		Driver2 = Driver;
+	    }
+	    else {
+		Driver2 = db_start_driver_open_database(NewFi->driver,
+							Vect_subst_var(NewFi->
+								       database,
+								       &Out));
+		db_set_error_handler_driver(Driver2);
+	    }
 
 	    /* get string column length */
 	    db_set_string(&stmt, Fi->table);
@@ -198,8 +217,6 @@ int main(int argc, char *argv[])
 
 	    if (db_execute_immediate(Driver2, &stmt2) != DB_OK) {
 		Vect_close(&Out);
-		db_close_database_shutdown_driver(Driver);
-		db_close_database_shutdown_driver(Driver2);
 		G_fatal_error("Unable to create table: '%s'",
 			      db_get_string(&stmt2));
 	    }
@@ -240,9 +257,12 @@ int main(int argc, char *argv[])
 	    cvarr.ctype = DB_C_TYPE_INT;
 
 	    newval = 0;
+	    foundnull = 0;
 
 	    /* fetch the data */
 	    for (i = 0; i < nrows; i++) {
+		int isnull;
+
 		if (db_fetch(&cursor, DB_NEXT, &more) != DB_OK) {
 		    G_fatal_error(_("Unable to fetch data from table <%s>"),
 				  Fi->table);
@@ -250,10 +270,17 @@ int main(int argc, char *argv[])
 
 		column = db_get_table_column(table, 1);
 		value = db_get_column_value(column);
+		isnull = db_test_value_isnull(value);
 
-		if (i == 0 ||
-		    strcmp(db_get_value_string(value),
-			   db_get_string(&lastval)) != 0) {
+		if (i == 0 || (!foundnull && isnull) ||
+		    (!isnull && strcmp(db_get_value_string(value),
+				       db_get_string(&lastval)) != 0)) {
+
+		    if (!foundnull && isnull) {
+		        foundnull = 1;
+			db_set_value_string(value, "");
+		    }
+
 		    newval++;
 		    db_set_string(&lastval, db_get_value_string(value));
 		    G_debug(3, "  newval = %d string = %s", newval,
@@ -268,8 +295,6 @@ int main(int argc, char *argv[])
 
 		    if (db_execute_immediate(Driver2, &stmt2) != DB_OK) {
 			Vect_close(&Out);
-			db_close_database_shutdown_driver(Driver);
-			db_close_database_shutdown_driver(Driver2);
 			G_fatal_error(_("Cannot insert data: [%s]"),
 				      db_get_string(&stmt2));
 		    }
@@ -302,7 +327,8 @@ int main(int argc, char *argv[])
 		G_fatal_error(_("Unable to grant privileges on table <%s>"),
 			      NewFi->table);
 	    }
-	    db_close_database_shutdown_driver(Driver2);
+	    if (Driver2 != Driver)
+		db_close_database_shutdown_driver(Driver2);
 
 	    qsort((void *)cvarr.value, nrows, sizeof(dbCatVal), cmpcat);
 	}

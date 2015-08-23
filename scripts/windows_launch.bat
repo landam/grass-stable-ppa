@@ -1,1 +1,1 @@
-@"%GRASS_SH%" "%GISBASE%/scripts/SCRIPT_NAME" %*
+@"%GRASS_PYTHON%" "SCRIPT_DIR/SCRIPT_NAME.py" %*

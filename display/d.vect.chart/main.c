@@ -20,7 +20,7 @@
 #include <grass/gis.h>
 #include <grass/raster.h>
 #include <grass/display.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/colors.h>
 #include <grass/symbol.h>
 #include <grass/dbmi.h>
@@ -29,7 +29,7 @@
 
 int main(int argc, char **argv)
 {
-    char *mapset, *p;
+    char *p;
     int y_center;
     int i, j, ret, type, field, ctype, ncols;
     COLOR ocolor, *colors;
@@ -60,7 +60,9 @@ int main(int argc, char **argv)
     };
 
     module = G_define_module();
-    module->keywords = _("display, cartography");
+    G_add_keyword(_("display"));
+    G_add_keyword(_("cartography"));
+    G_add_keyword(_("chart maps"));
     module->description =
 	_("Displays charts of vector data in the active frame "
 	  "on the graphics monitor.");
@@ -69,11 +71,13 @@ int main(int argc, char **argv)
 
     type_opt = G_define_standard_option(G_OPT_V_TYPE);
     type_opt->answer = "point,line,boundary,centroid";
+    type_opt->guisection = _("Selection");
 
     field_opt = G_define_standard_option(G_OPT_V_FIELD);
+    field_opt->guisection = _("Selection");
 
     ctype_opt = G_define_option();
-    ctype_opt->key = "ctype";
+    ctype_opt->key = "chart_type";
     ctype_opt->type = TYPE_STRING;
     ctype_opt->required = NO;
     ctype_opt->multiple = NO;
@@ -82,16 +86,12 @@ int main(int argc, char **argv)
     ctype_opt->description = _("Chart type");
     ctype_opt->guisection = _("Chart properties");
 
-    columns_opt = G_define_option();
-    columns_opt->key = "columns";
-    columns_opt->type = TYPE_STRING;
+    columns_opt = G_define_standard_option(G_OPT_DB_COLUMNS);
     columns_opt->required = YES;
-    columns_opt->multiple = YES;
     columns_opt->description = _("Attribute columns containing data");
 
-    sizecol_opt = G_define_option();
-    sizecol_opt->key = "sizecol";
-    sizecol_opt->type = TYPE_STRING;
+    sizecol_opt = G_define_standard_option(G_OPT_DB_COLUMN);
+    sizecol_opt->key = "size_column";
     sizecol_opt->required = NO;
     sizecol_opt->description = _("Column used for pie chart size");
     sizecol_opt->guisection = _("Chart properties");
@@ -111,21 +111,15 @@ int main(int argc, char **argv)
     scale_opt->description = _("Scale for size (to get size in pixels)");
     scale_opt->guisection = _("Chart properties");
 
-    ocolor_opt = G_define_option();
-    ocolor_opt->key = "ocolor";
-    ocolor_opt->type = TYPE_STRING;
-    ocolor_opt->answer = DEFAULT_FG_COLOR;
-    ocolor_opt->description = _("Outline color");
-    ocolor_opt->gisprompt = GISPROMPT_COLOR;
+    ocolor_opt = G_define_standard_option(G_OPT_C);
+    ocolor_opt->key = "outline_color";
+    ocolor_opt->label = _("Outline color");
     ocolor_opt->guisection = _("Chart properties");
 
-    colors_opt = G_define_option();
+    colors_opt = G_define_standard_option(G_OPT_C);
     colors_opt->key = "colors";
-    colors_opt->type = TYPE_STRING;
-    colors_opt->required = NO;
     colors_opt->multiple = YES;
-    colors_opt->description = _("Colors used to fill charts");
-    colors_opt->gisprompt = GISPROMPT_COLOR;
+    colors_opt->label = _("Colors used to fill charts");
     colors_opt->guisection = _("Chart properties");
 
     y_center_flag = G_define_flag();
@@ -195,7 +189,7 @@ int main(int argc, char **argv)
     colors = (COLOR *) G_malloc(ncols * sizeof(COLOR));
 
     /* Fill max_reference values */
-    max_reference = (double *)G_malloc(ncols * sizeof(double));
+    max_reference = NULL;
 
     /* default colors */
     j = 0;
@@ -240,24 +234,20 @@ int main(int argc, char **argv)
     size = atoi(size_opt->answer);
     scale = atof(scale_opt->answer);
 
-    /* Make sure map is available */
-    mapset = G_find_vector2(map_opt->answer, NULL);
-    if (mapset == NULL)
-	G_fatal_error(_("Vector map <%s> not found"), map_opt->answer);
-
     /* open vector */
     Vect_set_open_level(2);
-    Vect_open_old(&Map, map_opt->answer, mapset);
+    if (Vect_open_old(&Map, map_opt->answer, "") < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), map_opt->answer);
 
     ctype = CTYPE_PIE;
     if (ctype_opt->answer[0] == 'b')
 	ctype = CTYPE_BAR;
 
-    if (R_open_driver() != 0)
-	G_fatal_error(_("No graphics device selected"));
-
+    D_open_driver();
+    
     /* should we plot the maximum reference on bar plots? */
     if (max_reference_opt->answer != NULL) {
+	max_reference = (double *)G_malloc(ncols * sizeof(double));
 
 	/* loop through the given values */
 	for (i = 0; i < ncols; i++) {
@@ -271,21 +261,13 @@ int main(int argc, char **argv)
 
     D_setup(0);
 
-    G_setup_plot(D_get_d_north(), D_get_d_south(), D_get_d_west(),
-		 D_get_d_east(), D_move_abs, D_cont_abs);
-
     ret = plot(ctype, &Map, type, field,
 	       columns_opt->answer, ncols,
 	       sizecol_opt->answer, size, scale,
 	       &ocolor, colors, y_center, max_reference);
 
-    if (ret == 0) {
-	D_add_to_list(G_recreate_command());
-	D_set_dig_name(G_fully_qualified_name(map_opt->answer, mapset));
-	D_add_to_dig_list(G_fully_qualified_name(map_opt->answer, mapset));
-    }
-
-    R_close_driver();
+    D_save_command(G_recreate_command());
+    D_close_driver();
 
     Vect_close(&Map);
 

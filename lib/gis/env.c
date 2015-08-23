@@ -1,17 +1,15 @@
+/*!
+  \file lib/gis/env.c
 
-/**
-   \file env.c
-
-   \brief GIS library - environment routines
-   
-   (C) 2001-2008 by the GRASS Development Team
-   
-   This program is free software under the 
-   GNU General Public License (>=v2). 
-   Read the file COPYING that comes with GRASS
-   for details.
-   
-   \author Original author CERL
+  \brief GIS library - environment routines
+  
+  (C) 2001-2014 by the GRASS Development Team
+  
+  This program is free software under the GNU General Public License
+  (>=v2).  Read the file COPYING that comes with GRASS for details.
+  
+  \author Original author CERL
+  \author Updated for GRASS7 by Glynn Clements
 */
 
 #include <signal.h>
@@ -22,75 +20,107 @@
 #include <grass/gis.h>
 #include <grass/glocale.h>
 
-#define ENV struct env
-
-ENV {
+struct bind {
     int loc;
     char *name;
     char *value;
 };
 
-static ENV *env = NULL;
-static ENV *env2 = NULL;
-static int count = 0;
-static int count2 = 0;
-static int init[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-static char *gisrc = NULL;
-static int varmode = G_GISRC_MODE_FILE;	/* where find/store variables */
+struct env {
+    struct bind *binds;
+    int count;
+    int size;
+};
+
+static struct state {
+    struct env env;
+    struct env env2;
+    char *gisrc;
+    int varmode;
+    int init[2];
+} state;
+
+static struct state *st = &state;
 
 static int read_env(int);
 static int set_env(const char *, const char *, int);
 static int unset_env(const char *, int);
-static char *get_env(const char *, int);
-static int write_env(int);
+static const char *get_env(const char *, int);
+static void write_env(int);
+static void parse_env(FILE *, int);
+static void force_read_env(int);
 static FILE *open_env(const char *, int);
 
-/**
-   \brief Set where to find/store variables
-
-   Modes:
-    - G_GISRC_MODE_FILE
-    - G_GISRC_MODE_MEMORY 
+/*!
+  \brief Set where to find/store variables
+  
+  Modes:
+   - G_GISRC_MODE_FILE
+   - G_GISRC_MODE_MEMORY 
 
    \param mode mode to find/store variables (G_GISRC_MODE_FILE by default)
-
-   \return
 */
 void G_set_gisrc_mode(int mode)
 {
-    varmode = mode;
+    st->varmode = mode;
 }
 
-/**
-   \brief Get info where variables are stored
-
-   \param
-
-   \return mode
+/*!
+  \brief Get info where variables are stored
+  
+  \return mode
 */
 int G_get_gisrc_mode(void)
 {
-    return (varmode);
+    return (st->varmode);
 }
 
-static int read_env(int loc)
+/*!
+  \brief Initialize variables
+  
+  \return
+*/
+void G_init_env(void)
 {
+    read_env(G_VAR_GISRC);
+    read_env(G_VAR_MAPSET);
+}
+
+/*!
+ * \brief Force to read the mapset environment file VAR
+ * 
+ * The mapset specific VAR file of the mapset set with G_setenv()
+ * will be read into memory, ignoring if it was readed before. 
+ * Existing values will be overwritten, new values appended.
+ * 
+ * \return
+ */ 
+void G__read_mapset_env(void)
+{
+    force_read_env(G_VAR_MAPSET);
+}
+
+/*!
+ * \brief Force to read the GISRC environment file
+ * 
+ * The GISRC file 
+ * will be read into memory, ignoring if it was readed before. 
+ * Existing values will be overwritten, new values appended.
+ * 
+ * \return
+ */ 
+void G__read_gisrc_env(void)
+{
+    force_read_env(G_VAR_GISRC);
+}
+
+static void parse_env(FILE *fd, int loc)
+{    
     char buf[200];
     char *name;
     char *value;
 
-    FILE *fd;
-
-    if (loc == G_VAR_GISRC && varmode == G_GISRC_MODE_MEMORY)
-	return 0;		/* don't use file for GISRC */
-
-    if (init[loc])
-	return 1;
-
-    init[loc] = 1;
-
-    if ((fd = open_env("r", loc))) {
-	while (G_getl2(buf, sizeof buf, fd)) {
+    while (G_getl2(buf, sizeof buf, fd)) {
 	    for (name = value = buf; *value; value++)
 		if (*value == ':')
 		    break;
@@ -103,11 +133,42 @@ static int read_env(int loc)
 	    if (*name && *value)
 		set_env(name, value, loc);
 	}
-	fclose(fd);
+}
+
+static int read_env(int loc)
+{
+
+    FILE *fd;
+
+    if (loc == G_VAR_GISRC && st->varmode == G_GISRC_MODE_MEMORY)
+	return 0;		/* don't use file for GISRC */
+
+    if (G_is_initialized(&st->init[loc]))
+	return 1;
+
+    if ((fd = open_env("r", loc))) {
+        parse_env(fd, loc);
+        fclose(fd);
     }
 
+    G_initialize_done(&st->init[loc]);
     return 0;
 }
+
+/*!
+ * \brief Force the reading or the GISRC or MAPSET/VAR files
+ * and overwrite/append the specified variables
+ * 
+ */ 
+static void force_read_env(int loc)
+{
+    FILE *fd;
+    if ((fd = open_env("r", loc))) {
+        parse_env(fd, loc);
+        fclose(fd);
+    }
+}
+
 
 static int set_env(const char *name, const char *value, int loc)
 {
@@ -135,31 +196,38 @@ static int set_env(const char *name, const char *value, int loc)
      *   and look for name in the environment
      */
     empty = -1;
-    for (n = 0; n < count; n++)
-	if (!env[n].name)	/* mark empty slot found */
+    for (n = 0; n < st->env.count; n++) {
+	struct bind *b = &st->env.binds[n];
+	if (!b->name)	/* mark empty slot found */
 	    empty = n;
-	else if (strcmp(env[n].name, name) == 0 && env[n].loc == loc) {
-	    env[n].value = tv;
+	else if (strcmp(b->name, name) == 0 && b->loc == loc) {
+	    b->value = tv;
 	    return 1;
 	}
+    }
 
     /* add name to env: to empty slot if any */
     if (empty >= 0) {
-	env[empty].loc = loc;
-	env[empty].name = G_store(name);
-	env[empty].value = tv;
+	struct bind *b = &st->env.binds[empty];
+	b->loc = loc;
+	b->name = G_store(name);
+	b->value = tv;
 	return 0;
     }
 
     /* must increase the env list and add in */
-    if ((n = count++))
-	env = (ENV *) G_realloc((char *)env, count * sizeof(ENV));
-    else
-	env = (ENV *) G_malloc(sizeof(ENV));
+    if (st->env.count >= st->env.size) {
+	st->env.size += 20;
+	st->env.binds = G_realloc(st->env.binds, st->env.size * sizeof(struct bind));
+    }
 
-    env[n].loc = loc;
-    env[n].name = G_store(name);
-    env[n].value = tv;
+    {
+	struct bind *b = &st->env.binds[st->env.count++];
+
+	b->loc = loc;
+	b->name = G_store(name);
+	b->value = tv;
+    }
 
     return 0;
 }
@@ -168,43 +236,44 @@ static int unset_env(const char *name, int loc)
 {
     int n;
 
-    for (n = 0; n < count; n++)
-	if (env[n].name && (strcmp(env[n].name, name) == 0) &&
-	    env[n].loc == loc) {
-	    G_free(env[n].name);
-	    env[n].name = 0;
+    for (n = 0; n < st->env.count; n++) {
+	struct bind *b = &st->env.binds[n];
+	if (b->name && strcmp(b->name, name) == 0 && b->loc == loc) {
+	    G_free(b->name);
+	    b->name = 0;
 	    return 1;
 	}
+    }
 
     return 0;
 }
 
-static char *get_env(const char *name, int loc)
+static const char *get_env(const char *name, int loc)
 {
     int n;
 
-    for (n = 0; n < count; n++) {
-	if (env[n].name && (strcmp(env[n].name, name) == 0) &&
-	    env[n].loc == loc)
-	    return env[n].value;
+    for (n = 0; n < st->env.count; n++) {
+	struct bind *b = &st->env.binds[n];
+	if (b->name && (strcmp(b->name, name) == 0) &&
+	    b->loc == loc)
+	    return b->value;
     }
 
     return NULL;
 }
 
-static int write_env(int loc)
+static void write_env(int loc)
 {
     FILE *fd;
     int n;
     char dummy[2];
-    void (*sigint) ()
+    RETSIGTYPE (*sigint)(int);
 #ifdef SIGQUIT
-     , (*sigquit) ()
+    RETSIGTYPE (*sigquit)(int);
 #endif
-     ;
 
-    if (loc == G_VAR_GISRC && varmode == G_GISRC_MODE_MEMORY)
-	return 0;		/* don't use file for GISRC */
+    if (loc == G_VAR_GISRC && st->varmode == G_GISRC_MODE_MEMORY)
+	return;		/* don't use file for GISRC */
 
     /*
      * THIS CODE NEEDS TO BE PROTECTED FROM INTERRUPTS
@@ -215,10 +284,12 @@ static int write_env(int loc)
     sigquit = signal(SIGQUIT, SIG_IGN);
 #endif
     if ((fd = open_env("w", loc))) {
-	for (n = 0; n < count; n++)
-	    if (env[n].name && env[n].value && env[n].loc == loc
-		&& (sscanf(env[n].value, "%1s", dummy) == 1))
-		fprintf(fd, "%s: %s\n", env[n].name, env[n].value);
+	for (n = 0; n < st->env.count; n++) {
+	    struct bind *b = &st->env.binds[n];
+	    if (b->name && b->value && b->loc == loc
+		&& (sscanf(b->value, "%1s", dummy) == 1))
+		fprintf(fd, "%s: %s\n", b->name, b->value);
+	}
 	fclose(fd);
     }
 
@@ -226,23 +297,21 @@ static int write_env(int loc)
 #ifdef SIGQUIT
     signal(SIGQUIT, sigquit);
 #endif
-
-    return 0;
 }
 
 static FILE *open_env(const char *mode, int loc)
 {
-    char buf[1000];
+    char buf[GPATH_MAX];
 
     if (loc == G_VAR_GISRC) {
-	if (!gisrc)
-	    gisrc = getenv("GISRC");
+	if (!st->gisrc)
+	    st->gisrc = getenv("GISRC");
 
-	if (!gisrc) {
+	if (!st->gisrc) {
 	    G_fatal_error(_("GISRC - variable not set"));
-	    return (NULL);
+	    return NULL;
 	}
-	strcpy(buf, gisrc);
+	strcpy(buf, st->gisrc);
     }
     else if (loc == G_VAR_MAPSET) {
 	/* Warning: G_VAR_GISRC must be previously read -> */
@@ -255,61 +324,61 @@ static FILE *open_env(const char *mode, int loc)
     return fopen(buf, mode);
 }
 
-/**
-   \brief Get environment variable
-
-   Calls G_fatal_error() if name not set.
-
-   \param name variable name
-
-   \return char pointer to value for name
+/*!
+  \brief Get environment variable
+  
+  G_fatal_error() is called when variable is not found.
+  
+  \param name variable name
+  
+  \return char pointer to value for name
 */
-char *G_getenv(const char *name)
+const char *G_getenv(const char *name)
 {
-    char *value;
+    const char *value = G_getenv_nofatal(name);
 
-    if ((value = G__getenv(name)))
+    if (value)
 	return value;
 
-    G_fatal_error(_("G_getenv(): Variable %s not set"), name);
+    G_fatal_error(_("Variable '%s' not set"), name);
     return NULL;
 }
 
-/**
-   \brief Read variable from specific place
+/*!
+  \brief Get variable from specific place
+  
+  Locations:
+   - G_VAR_GISRC
+   - G_VAR_MAPSET
 
-   Locations:
-    - G_VAR_GISRC
-    - G_VAR_MAPSET
-
-   G_fatal_error() is called when variable is not found.
-
-   \param name variable name
-   \param loc location id
-
-   \return variable value
-   \return NULL if not found
-*/
-char *G_getenv2(const char *name, int loc)
-{
-    char *value;
-
-    if ((value = G__getenv2(name, loc)))
-	return value;
-
-    G_fatal_error(_("%s not set"), name);
-    return NULL;
-}
-
-/**
-   \brief Get environment variable
-
-   \param name variable name
+  G_fatal_error() is called when variable is not found.
+  
+  \param name variable name
+  \param loc location (G_VAR_GISRC, G_VAR_MAPSET)
    
-   \return char pointer to value for name
-   \return NULL if name not set
+  \return variable value
+  \return NULL if not found
 */
-char *G__getenv(const char *name)
+const char *G_getenv2(const char *name, int loc)
+{
+    const char *value = G_getenv_nofatal2(name, loc);
+
+    if (value)
+	return value;
+
+    G_fatal_error(_("Variable '%s' not set"), name);
+    return NULL;
+}
+
+/*!
+  \brief Get environment variable
+  
+  \param name variable name
+  
+  \return char pointer to value for name
+  \return NULL if name not set
+*/
+const char *G_getenv_nofatal(const char *name)
 {
     if (strcmp(name, "GISBASE") == 0)
 	return getenv(name);
@@ -319,16 +388,16 @@ char *G__getenv(const char *name)
     return get_env(name, G_VAR_GISRC);
 }
 
-/**
-   \brief Get environment variable from specific place
-
-   \param name variable name
-   \param loc location id
-   
-   \return char pointer to value for name
-   \return NULL if name not set
+/*!
+  \brief Get environment variable from specific place
+  
+  \param name variable name
+  \param loc location (G_VAR_GISRC, G_VAR_MAPSET)
+  
+  \return char pointer to value for name
+  \return NULL if name not set
 */
-char *G__getenv2(const char *name, int loc)
+const char *G_getenv_nofatal2(const char *name, int loc)
 {
     if (strcmp(name, "GISBASE") == 0)
 	return getenv(name);
@@ -338,239 +407,166 @@ char *G__getenv2(const char *name, int loc)
     return get_env(name, loc);
 }
 
-/**
-   \brief Set environment variable
+/*!
+  \brief Set environment variable (updates .gisrc)
 
-   If value is NULL, becomes an G_unsetenv().
-   Updates .gisrc
-
-   \param name variable name
-   \param value variable value
-
-   \return 0
+  If value is NULL, becomes an G_unsetenv().
+    
+  \param name variable name
+  \param value variable value
 */
-int G_setenv(const char *name, const char *value)
+void G_setenv(const char *name, const char *value)
 {
     read_env(G_VAR_GISRC);
     set_env(name, value, G_VAR_GISRC);
     write_env(G_VAR_GISRC);
-    return 0;
 }
 
-/**
-   \brief Set environment variable from specific place
+/*!
+  \brief Set environment variable from specific place (updates .gisrc)
+  
+  If value is NULL, becomes an G_unsetenv().
+  
+  \param name variable name
+  \param value variable value
+  \param loc location (G_VAR_GISRC, G_VAR_MAPSET)
 
-   If value is NULL, becomes an G_unsetenv().
-   Updates .gisrc
-
-   \param name variable name
-   \param value variable value
-   \param loc location id
-
-   \return 0
 */
-int G_setenv2(const char *name, const char *value, int loc)
+void G_setenv2(const char *name, const char *value, int loc)
 {
     read_env(loc);
     set_env(name, value, loc);
     write_env(loc);
-    return 0;
 }
 
-/**
-   \brief Set environment name to value
-
-   \param name variable name
-   \param value variable value
-
-   \return 0
+/*!
+  \brief Set environment name to value (doesn't update .gisrc)
+  
+  \param name variable name
+  \param value variable value
 */
-int G__setenv(const char *name, const char *value)
+void G_setenv_nogisrc(const char *name, const char *value)
 {
     read_env(G_VAR_GISRC);
     set_env(name, value, G_VAR_GISRC);
-    return 0;
 }
 
-/**
-   \brief Set environment name to value from specific place
-
-   \param name variable name
-   \param value variable value
-   \param loc location id
-
-   \return 0
+/*!
+  \brief Set environment name to value from specific place (doesn't update .gisrc)
+  
+  \param name variable name
+  \param value variable value
+  \param loc location (G_VAR_GISRC, G_VAR_MAPSET)
 */
-int G__setenv2(const char *name, const char *value, int loc)
+void G_setenv_nogisrc2(const char *name, const char *value, int loc)
 {
     read_env(loc);
     set_env(name, value, loc);
-    return 0;
 }
 
-/**
-   \brief Remove name from environment
-
-   Updates .gisrc
-
-   \param name variable name
-
-   \return 0
+/*!
+  \brief Remove name from environment
+  
+  Updates .gisrc
+  
+  \param name variable name
 */
-int G_unsetenv(const char *name)
+void G_unsetenv(const char *name)
 {
     read_env(G_VAR_GISRC);
     unset_env(name, G_VAR_GISRC);
     write_env(G_VAR_GISRC);
-
-    return 0;
 }
 
-/**
-   \brief Remove name from environment from specific place
-
-   Updates .gisrc
-
-   \param name variable name
-
-   \return 0
+/*!
+  \brief Remove name from environment from specific place
+  
+  Updates .gisrc
+  
+  \param name variable name
+  \param loc location (G_VAR_GISRC, G_VAR_MAPSET)
 */
-int G_unsetenv2(const char *name, int loc)
+void G_unsetenv2(const char *name, int loc)
 {
     read_env(loc);
     unset_env(name, loc);
     write_env(loc);
-
-    return 0;
 }
 
-/**
-   \brief Writes current environment to .gisrc
-
-   \param
-
-   \return 0
+/*!
+  \brief Writes current environment to .gisrc
 */
-int G__write_env(void)
+void G__write_env(void)
 {
-    if (init[G_VAR_GISRC])
+    if (st->init[G_VAR_GISRC])
 	write_env(G_VAR_GISRC);
-
-    return 0;
 }
 
-/**
-   \brief Get variable name for index n.
+/*!
+  \brief Get variable name for index n.
+  
+  For example:
 
-   For example:
-   \code
+  \code
    for (n = 0; ; n++)
-      if ((name = G__env_name(n)) == NULL)
+      if ((name = G_get_env_name(n)) == NULL)
         break;
-   \endcode
+  \endcode
 
-   \param n index of variable
-
-   \return pointer to variable name
+  \param n index of variable
+  
+  \return pointer to variable name
+  \return NULL not found
 */
-char *G__env_name(int n)
+const char *G_get_env_name(int n)
 {
     int i;
 
     read_env(G_VAR_GISRC);
     if (n >= 0)
-	for (i = 0; i < count; i++)
-	    if (env[i].name && *env[i].name && (n-- == 0))
-		return env[i].name;
+	for (i = 0; i < st->env.count; i++)
+	    if (st->env.binds[i].name && *st->env.binds[i].name && (n-- == 0))
+		return st->env.binds[i].name;
     return NULL;
 }
 
-/**
-   \brief Initialize init array for G_VAR_GISRC.
-
-   \param
-
-   \return 0
+/*!
+  \brief Initialize init array for G_VAR_GISRC.
 */
-int G__read_env(void)
+void G__read_env(void)
 {
-    init[G_VAR_GISRC] = 0;
-
-    return 0;
+    st->init[G_VAR_GISRC] = 0;
 }
 
-/**
-   \brief Sets filename for gisrc
-
-   \param name filename
-
-   \return 0
+/*!
+  \brief Set up alternative environment variables
 */
-int G__set_gisrc_file(const char *name)
-{
-    gisrc = NULL;
-    if (name && *name)
-	gisrc = G_store(name);
-
-    return 0;
-}
-
-/**
-   \brief Get gisrc filename
-
-   \param
-   
-   \return char pointer to filename
-*/
-char *G__get_gisrc_file(void)
-{
-    return gisrc;
-}
-
-/**
-   \brief Set up alternative environment variables
-
-   \param
-
-   \return 0
-*/
-int G__create_alt_env(void)
+void G_create_alt_env(void)
 {
     int i;
 
     /* copy env to env2 */
-    env2 = env;
-    count2 = count;
-    env = NULL;
-    count = 0;
-
-    for (i = 0; i < count2; i++)
-	if (env2[count].name)
-	    set_env(env2[count].name, env2[count].value, G_VAR_GISRC);
-
-    return 0;
+    st->env2 = st->env;
+    
+    st->env.count = 0;
+    st->env.size = 0;
+    st->env.binds = NULL;
+    
+    for (i = 0; i < st->env2.count; i++) {
+	struct bind *b = &st->env2.binds[i];
+	if (b->name)
+	    set_env(b->name, b->value, G_VAR_GISRC);
+    }
 }
 
-/**
-   \brief Switch environments
-
-   \param
-
-   \return 0
+/*!
+  \brief Switch environments
 */
-int G__switch_env(void)
+void G_switch_env(void)
 {
-    ENV *tmp;
-    int n;
+    struct env tmp;
 
-    n = count;
-    tmp = env;
-
-    env = env2;
-    count = count2;
-
-    env2 = tmp;
-    count2 = n;
-
-    return 0;
+    tmp = st->env;
+    st->env = st->env2;
+    st->env2 = tmp;
 }

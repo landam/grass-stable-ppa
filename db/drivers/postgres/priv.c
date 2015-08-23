@@ -1,4 +1,15 @@
+/*!
+  \file db/driver/postgres/priv.c
+  
+  \brief DBMI - Low Level PostgreSQL database driver - privilages
+  
+  This program is free software under the GNU General Public License
+  (>=v2). Read the file COPYING that comes with GRASS for details.
+  
+  \author Radim Blazek
+ */
 #include <grass/dbmi.h>
+#include <grass/glocale.h>
 #include "globals.h"
 #include "proto.h"
 
@@ -12,7 +23,6 @@ int db__driver_grant_on_table(dbString * tableName, int priv, int to)
 
     db_get_connection(&connection);
     db_init_string(&sql);
-    init_error();
 
     db_set_string(&sql, "grant ");
     if (priv | DB_PRIV_SELECT)
@@ -39,11 +49,11 @@ int db__driver_grant_on_table(dbString * tableName, int priv, int to)
     res = PQexec(pg_conn, db_get_string(&sql));
 
     if (!res || PQresultStatus(res) != PGRES_COMMAND_OK) {
-	append_error("Cannot grant on table:\n");
-	append_error(db_get_string(&sql));
-	append_error("\n");
-	append_error(PQerrorMessage(pg_conn));
-	report_error();
+	db_d_append_error("%s\n%s\n%s",
+			  _("Unable grant on table:"),
+			  db_get_string(&sql),
+			  PQerrorMessage(pg_conn));
+	db_d_report_error();
 	PQclear(res);
 	db_free_string(&sql);
 	return DB_FAILED;

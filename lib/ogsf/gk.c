@@ -1,5 +1,5 @@
 /*!
-   \file gk.c
+   \file lib/ogsf/gk.c
 
    \brief OGSF library - setting and manipulating keyframes animation (lower level functions)
 
@@ -21,9 +21,7 @@
 
 #include <grass/gis.h>
 #include <grass/glocale.h>
-#include <grass/gstypes.h>
-#include <grass/keyframe.h>
-#include <grass/kftypes.h>
+#include <grass/ogsf.h>
 
 static float spl3(float, double, double, double, double, double, double,
 		  double);

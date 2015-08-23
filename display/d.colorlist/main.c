@@ -19,46 +19,45 @@
 #include <stdlib.h>
 #include <grass/gis.h>
 #include <grass/glocale.h>
-#include <grass/display.h>
+#include <grass/colors.h>
 
 int main(int argc, char **argv)
 {
     struct Option *sep;
     struct GModule *module;
-    char *colorlist;
+    char *colorlist, *sep_str;
     int i;
 
     /* Initialize the GIS calls */
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("display, setup");
+    G_add_keyword(_("display"));
+    G_add_keyword(_("settings"));
+    G_add_keyword(_("colors"));
     module->description =
-	"Output a list of all available display colors with a configurable "
-	"separator (default is comma).";
+	_("Outputs a list of all available display colors.");
 
     /* set up option */
-    sep = G_define_option();
-    sep->key = "fs";
-    sep->type = TYPE_STRING;
-    sep->required = NO;
-    sep->description = "character for separation of list items";
-    sep->answer = ",";
+    sep = G_define_standard_option(G_OPT_F_SEP);
+    sep->answer = "comma";
+    
+    if (G_parser(argc, argv))
+	exit(EXIT_FAILURE);
 
-    G_disable_interactive();
-
-    if (argc > 1 && G_parser(argc, argv))
-	exit(1);
-
-    colorlist = G_store(D_color_list());
+    sep_str = G_option_to_separator(sep);
+    
+    colorlist = G_store(D_COLOR_LIST);
 
     /* if separator is different from ",", escape this character */
-    if (strcmp(sep->answer, ",") != 0 && strlen(sep->answer) > 0) {
-	for (i = 0; colorlist[i] != '\0'; i++)
-	    if (colorlist[i] == ',')
-		colorlist[i] = (char)sep->answer[0];
+    for (i = 0; colorlist[i] != '\0'; i++) {
+        if (colorlist[i] == ',') {
+            fprintf(stdout, "%s", sep_str);
+            continue;
+        }
+        fprintf(stdout, "%c", colorlist[i]);
     }
-
-    fprintf(stdout, "%s\n", colorlist);
-    return (0);
+    fprintf(stdout, "\n");
+    
+    exit(EXIT_SUCCESS);
 }

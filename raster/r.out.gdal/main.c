@@ -24,6 +24,7 @@
 #include <math.h>
 #include <string.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/imagery.h>
 #include <grass/gprojects.h>
 #include <grass/glocale.h>
@@ -53,12 +54,19 @@ void supported_formats(const char **formats)
 	GDALDriverH hDriver = GDALGetDriver(iDr);
 	const char *pszRWFlag;
 
+#ifdef GDAL_DCAP_RASTER
+            /* Starting with GDAL 2.0, vector drivers can also be returned */
+            /* Only keep raster drivers */
+            if (!GDALGetMetadataItem(hDriver, GDAL_DCAP_RASTER, NULL))
+                continue;
+#endif
+
 	if (GDALGetMetadataItem(hDriver, GDAL_DCAP_CREATE, NULL))
 	    pszRWFlag = "rw+";
 	else if (GDALGetMetadataItem(hDriver, GDAL_DCAP_CREATECOPY, NULL))
 	    pszRWFlag = "rw";
 	else
-	    pszRWFlag = "ro";
+          continue;
 
 	if (*formats)
 	    fprintf(stdout, "  %s (%s): %s\n",
@@ -106,7 +114,7 @@ int main(int argc, char *argv[])
 {
 
     struct GModule *module;
-    struct Flag *flag_l, *flag_c, *flag_f;
+    struct Flag *flag_l, *flag_c, *flag_f, *flag_t;
     struct Option *input, *format, *type, *output, *createopt, *metaopt,
 	*nodataopt;
 
@@ -118,40 +126,49 @@ int main(int argc, char *argv[])
     double dfCellMin, export_min;
     double dfCellMax, export_max;
     struct FPRange sRange;
-    int retval = 0, check_range;
+    int retval = 0;
 
     G_gisinit(argv[0]);
 
     module = G_define_module();
     module->description =
 	_("Exports GRASS raster maps into GDAL supported formats.");
-    module->keywords = _("raster, export");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("export"));
 
     flag_l = G_define_flag();
     flag_l->key = 'l';
     flag_l->description = _("List supported output formats");
     flag_l->guisection = _("Print");
+    flag_l->suppress_required = YES;
 
     flag_c = G_define_flag();
     flag_c->key = 'c';
     flag_c->label = _("Do not write GDAL standard colortable");
-    flag_c->description = _("Only applicable to Byte or UInt16 data types.");
+    flag_c->description = _("Only applicable to Byte or UInt16 data types");
+    flag_c->guisection = _("Creation");
+
+    flag_t = G_define_flag();
+    flag_t->key = 't';
+    flag_t->label = _("Write raster attribute table");
+    flag_t->description = _("Some export formats may not be supported");
 
     flag_f = G_define_flag();
     flag_f->key = 'f';
     flag_f->label = _("Force raster export despite any warnings of data loss");
-    flag_f->description = _("Overrides nodata safety check.");
+    flag_f->description = _("Overrides nodata safety check");
 
     input = G_define_standard_option(G_OPT_R_INPUT);
-    input->required = NO;
     input->description = _("Name of raster map (or group) to export");
-    input->guisection = _("Required");
+
+    output = G_define_standard_option(G_OPT_F_OUTPUT);
+    output->description = _("Name for output raster file");
 
     format = G_define_option();
     format->key = "format";
     format->type = TYPE_STRING;
     format->description =
-	_("GIS format to write (case sensitive, see also -l flag)");
+	_("Raster data format to write (case sensitive, see also -l flag)");
 
 #ifdef __ALLOW_DYNAMIC_OPTIONS__
     /* Init GDAL */
@@ -167,31 +184,27 @@ int main(int argc, char *argv[])
     format->options = gdal_formats;
 #endif
     format->answer = "GTiff";
-    format->required = NO;
-
+    format->required = YES;
+    
     type = G_define_option();
     type->key = "type";
     type->type = TYPE_STRING;
-    type->description = _("File type");
+    type->description = _("Data type");
     type->options =
 	"Byte,Int16,UInt16,Int32,UInt32,Float32,Float64,CInt16,CInt32,CFloat32,CFloat64";
     type->required = NO;
-
-    output = G_define_standard_option(G_OPT_F_OUTPUT);
-    output->required = NO;
-    output->gisprompt = "new_file,file,output";
-    output->description = _("Name for output raster file");
-    output->guisection = _("Required");
-
+    type->guisection = _("Creation");
+ 
     createopt = G_define_option();
     createopt->key = "createopt";
     createopt->type = TYPE_STRING;
     createopt->label =
 	_("Creation option(s) to pass to the output format driver");
     createopt->description =
-	_("In the form of \"NAME=VALUE\", separate multiple entries with a comma.");
+	_("In the form of \"NAME=VALUE\", separate multiple entries with a comma");
     createopt->multiple = YES;
     createopt->required = NO;
+    createopt->guisection = _("Creation");
 
     metaopt = G_define_option();
     metaopt->key = "metaopt";
@@ -202,6 +215,7 @@ int main(int argc, char *argv[])
 	  "with a comma. Not supported by all output format drivers.");
     metaopt->multiple = YES;
     metaopt->required = NO;
+    metaopt->guisection = _("Creation");
 
     nodataopt = G_define_option();
     nodataopt->key = "nodata";
@@ -210,8 +224,8 @@ int main(int argc, char *argv[])
 	_("Assign a specified nodata value to output bands");
     nodataopt->multiple = NO;
     nodataopt->required = NO;
-
-
+    nodataopt->guisection = _("Creation");
+    
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
@@ -225,12 +239,9 @@ int main(int argc, char *argv[])
 	supported_formats(&gdal_formats);
 	exit(EXIT_SUCCESS);
     }
-
-    if (!input->answer)
-	G_fatal_error(_("Required parameter <%s> not set"), input->key);
-
-    /* Try to open input GRASS raster.. */
-    mapset = G_find_cell2(input->answer, "");
+    
+    /* Find input GRASS raster.. */
+    mapset = G_find_raster2(input->answer, "");
 
     if (mapset != NULL) {
 	/* Add input to "group". "Group" whith 1 raster (band) will exist only in memory. */
@@ -341,19 +352,18 @@ int main(int argc, char *argv[])
     /* get min/max values */
     int band;
 
-    check_range = 0;
     bHaveMinMax = TRUE;
     export_min = TYPE_FLOAT64_MIN;
     export_max = TYPE_FLOAT64_MAX;
     for (band = 0; band < ref.nfiles; band++) {
-	if (G_read_fp_range
+	if (Rast_read_fp_range
 	    (ref.file[band].name, ref.file[band].mapset, &sRange) == -1) {
 	    bHaveMinMax = FALSE;
 	    G_warning(_("Could not read data range of raster <%s>"),
 		      ref.file[band].name);
 	}
 	else {
-	    G_get_fp_range_min_max(&sRange, &dfCellMin, &dfCellMax);
+	    Rast_get_fp_range_min_max(&sRange, &dfCellMin, &dfCellMax);
 	    if (band == 0) {
 		export_min = dfCellMin;
 		export_max = dfCellMax;
@@ -377,7 +387,7 @@ int main(int argc, char *argv[])
     /* GDAL datatype not set by user, determine suitable datatype */
     if (datatype == GDT_Unknown) {
 	/* Use raster data type from first GRASS raster in a group */
-	maptype = G_raster_map_type(ref.file[0].name, ref.file[0].mapset);
+	maptype = Rast_map_type(ref.file[0].name, ref.file[0].mapset);
 	if (maptype == FCELL_TYPE) {
 	    datatype = GDT_Float32;
 	}
@@ -406,8 +416,8 @@ int main(int argc, char *argv[])
     }
 
     /* got a GDAL datatype, report to user */
-    G_message(_("Exporting to GDAL data type: %s"),
-	      GDALGetDataTypeName(datatype));
+    G_verbose_message(_("Exporting to GDAL data type: %s"),
+		      GDALGetDataTypeName(datatype));
 
     G_debug(3, "Input map datatype=%s\n",
 	    (maptype == CELL_TYPE ? "CELL" :
@@ -426,7 +436,7 @@ int main(int argc, char *argv[])
 	/* Precision tests */
 	for (band = 0; band < ref.nfiles; band++) {
 	    testmaptype =
-		G_raster_map_type(ref.file[band].name, ref.file[band].mapset);
+		Rast_map_type(ref.file[band].name, ref.file[band].mapset);
 	    /* Exporting floating point rasters to some integer type ? */
 	    if ((testmaptype == FCELL_TYPE || testmaptype == DCELL_TYPE) &&
 		(datatype == GDT_Byte || datatype == GDT_Int16 ||
@@ -458,15 +468,12 @@ int main(int argc, char *argv[])
 		retval = -1;
 	    }
 	}
-	 /* disabled to not break R-GRASS interface in 6.4 */
-	/*
 	if (retval == -1) {
 	    if (flag_f->answer)
 		G_warning(_("Forcing raster export."));
 	    else
 		G_fatal_error(_("Raster export aborted."));
 	}
-	*/
     }
 
     /* Nodata value */
@@ -489,7 +496,7 @@ int main(int argc, char *argv[])
     }
 
     /* exact range and nodata checks for each band */
-    G_message(_("Checking GDAL data type and nodata value"));
+    G_message(_("Checking GDAL data type and nodata value..."));
     for (band = 0; band < ref.nfiles; band++) {
 	if (ref.nfiles > 1) {
 	    G_verbose_message(_("Checking options for raster map <%s> (band %d)..."),
@@ -532,8 +539,6 @@ int main(int argc, char *argv[])
 
     GDALDatasetH hCurrDS = NULL, hMEMDS = NULL, hDstDS = NULL;
 
-    if (!output->answer)
-	G_fatal_error(_("Output file name not specified"));
     if (hMEMDriver) {
 	hMEMDS =
 	    GDALCreate(hMEMDriver, "", cellhead.cols, cellhead.rows,
@@ -566,7 +571,7 @@ int main(int argc, char *argv[])
 	G_warning(_("Unable to set geo transform"));
 
     /* Set Projection  */
-    CPLErr ret;
+    CPLErr ret = CE_None;
 
     if (srswkt)
 	ret = GDALSetProjection(hCurrDS, srswkt);
@@ -577,7 +582,7 @@ int main(int argc, char *argv[])
     AttachMetadata(hCurrDS, metaopt->answers);
 
     /* Export to GDAL raster */
-    G_message(_("Exporting to GDAL raster"));
+    G_message(_("Exporting raster data to %s format..."), format->answer);
     for (band = 0; band < ref.nfiles; band++) {
 	if (ref.nfiles > 1) {
 	    G_verbose_message(_("Exporting raster map <%s> (band %d)..."),
@@ -587,14 +592,19 @@ int main(int argc, char *argv[])
 	}
 
 	retval = export_band
-	    (hCurrDS, datatype, band + 1, ref.file[band].name,
+	    (hCurrDS, band + 1, ref.file[band].name,
 	     ref.file[band].mapset, &cellhead, maptype, nodataval,
-	     nodataopt->key, flag_c->answer, default_nodataval);
+	     flag_c->answer);
 
 	/* read/write error */
 	if (retval == -1) {
 	    G_warning(_("Unable to export raster map <%s>"),
 		      ref.file[band].name);
+	}
+	else if (flag_t->answer) {
+	    retval = export_attr(hCurrDS, band + 1, ref.file[band].name,
+	     ref.file[band].mapset, maptype);
+
 	}
     }
 
@@ -616,7 +626,7 @@ int main(int argc, char *argv[])
 
     CSLDestroy(papszOptions);
 
-    G_done_msg(" ");
+    G_done_msg("File <%s> created.", output->answer);
     exit(EXIT_SUCCESS);
 }
 
@@ -632,7 +642,7 @@ int range_check(double min, double max, GDALDataType datatype)
 	    G_warning(_("GDAL datatype: %s, range: %d - %d"),
 		      GDALGetDataTypeName(datatype), TYPE_BYTE_MIN,
 		      TYPE_BYTE_MAX);
-	    G_warning(_("Range to be exported: %f - %f"), min, max);
+	    G_warning(_("Range to be exported: %g - %g"), min, max);
 	    return 1;
 	}
 	else
@@ -644,7 +654,7 @@ int range_check(double min, double max, GDALDataType datatype)
 	    G_warning(_("GDAL datatype: %s, range: %d - %d"),
 		      GDALGetDataTypeName(datatype), TYPE_UINT16_MIN,
 		      TYPE_UINT16_MAX);
-	    G_warning(_("Range to be exported: %f - %f"), min, max);
+	    G_warning(_("Range to be exported: %g - %g"), min, max);
 	    return 1;
 	}
 	else
@@ -657,7 +667,7 @@ int range_check(double min, double max, GDALDataType datatype)
 	    G_warning(_("GDAL datatype: %s, range: %d - %d"),
 		      GDALGetDataTypeName(datatype), TYPE_INT16_MIN,
 		      TYPE_INT16_MAX);
-	    G_warning(_("Range to be exported: %f - %f"), min, max);
+	    G_warning(_("Range to be exported: %g - %g"), min, max);
 	    return 1;
 	}
 	else
@@ -670,7 +680,7 @@ int range_check(double min, double max, GDALDataType datatype)
 	    G_warning(_("GDAL datatype: %s, range: %d - %d"),
 		      GDALGetDataTypeName(datatype), TYPE_INT32_MIN,
 		      TYPE_INT32_MAX);
-	    G_warning(_("Range to be exported: %f - %f"), min, max);
+	    G_warning(_("Range to be exported: %g - %g"), min, max);
 	    return 1;
 	}
 	else
@@ -682,7 +692,7 @@ int range_check(double min, double max, GDALDataType datatype)
 	    G_warning(_("GDAL datatype: %s, range: %u - %u"),
 		      GDALGetDataTypeName(datatype), TYPE_UINT32_MIN,
 		      TYPE_UINT32_MAX);
-	    G_warning(_("Range to be exported: %f - %f"), min, max);
+	    G_warning(_("Range to be exported: %g - %g"), min, max);
 	    return 1;
 	}
 	else
@@ -720,7 +730,7 @@ int nodataval_check(double nodataval, GDALDataType datatype)
 	 * accordingly below for the other GDAL types */
 	if (nodataval != (double)(GByte)(CELL) nodataval) {
 	    G_warning(_("Mismatch between metadata nodata value and actual nodata value in exported raster: "
-		       "specified nodata value %f gets converted to %d by selected GDAL datatype."),
+		       "specified nodata value %g gets converted to %d by selected GDAL datatype."),
 		      nodataval, (GByte)(CELL) nodataval);
 	    G_warning(_("GDAL datatype: %s, valid range: %d - %d"),
 		      GDALGetDataTypeName(datatype), TYPE_BYTE_MIN,
@@ -733,7 +743,7 @@ int nodataval_check(double nodataval, GDALDataType datatype)
     case GDT_UInt16:
 	if (nodataval != (double)(GUInt16)(CELL) nodataval) {
 	    G_warning(_("Mismatch between metadata nodata value and actual nodata value in exported raster: "
-		       "specified nodata value %f gets converted to %d by selected GDAL datatype."),
+		       "specified nodata value %g gets converted to %d by selected GDAL datatype."),
 		      nodataval, (GUInt16)(CELL) nodataval);
 	    G_warning(_("GDAL datatype: %s, valid range: %u - %u"),
 		      GDALGetDataTypeName(datatype), TYPE_UINT16_MIN,
@@ -747,7 +757,7 @@ int nodataval_check(double nodataval, GDALDataType datatype)
     case GDT_CInt16:
 	if (nodataval != (double)(GInt16)(CELL) nodataval) {
 	    G_warning(_("Mismatch between metadata nodata value and actual nodata value in exported raster: "
-		       "specified nodata value %f gets converted to %d by selected GDAL datatype."),
+		       "specified nodata value %g gets converted to %d by selected GDAL datatype."),
 		      nodataval, (GInt16)(CELL) nodataval);
 	    G_warning(_("GDAL datatype: %s, valid range: %d - %d"),
 		      GDALGetDataTypeName(datatype), TYPE_INT16_MIN,
@@ -760,7 +770,7 @@ int nodataval_check(double nodataval, GDALDataType datatype)
     case GDT_UInt32:
 	if (nodataval != (double)(GUInt32)(DCELL) nodataval) {
 	    G_warning(_("Mismatch between metadata nodata value and actual nodata value in exported raster: "
-		       "specified nodata value %f gets converted to %d by selected GDAL datatype."),
+		       "specified nodata value %g gets converted to %d by selected GDAL datatype."),
 		      nodataval, (GUInt32)(DCELL) nodataval);
 	    G_warning(_("GDAL datatype: %s, valid range: %u - %u"),
 		      GDALGetDataTypeName(datatype), TYPE_UINT32_MIN,
@@ -775,7 +785,7 @@ int nodataval_check(double nodataval, GDALDataType datatype)
     	/* GInt32 is equal to CELL, but that may change in the future */
 	if (nodataval != (double)(GInt32)(CELL) nodataval) {
 	    G_warning(_("Mismatch between metadata nodata value and actual nodata value in exported raster: "
-		       "specified nodata value %f gets converted to %d by selected GDAL datatype."),
+		       "specified nodata value %g gets converted to %d by selected GDAL datatype."),
 		      nodataval, (GInt32)(CELL) nodataval);
 	    G_warning(_("GDAL datatype: %s, valid range: %d - %d"),
 		      GDALGetDataTypeName(datatype), TYPE_INT32_MIN,

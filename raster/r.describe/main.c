@@ -31,8 +31,6 @@ int main(int argc, char *argv[])
     int range;
     int windowed;
     int nsteps;
-    char name[GNAME_MAX];
-    char *mapset;
     char *no_data_str;
     struct GModule *module;
     struct
@@ -50,26 +48,19 @@ int main(int argc, char *argv[])
 	struct Option *nsteps;
     } option;
 
-    /* please, remove before GRASS 7 released */
-    struct Flag *q_flag;
-
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, metadata");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("metadata"));
     module->description =
 	_("Prints terse list of category values found in a raster map layer.");
 
     /* define different options */
     option.map = G_define_standard_option(G_OPT_R_MAP);
 
-    option.nv = G_define_option();
-    option.nv->key = "nv";
-    option.nv->type = TYPE_STRING;
-    option.nv->required = NO;
-    option.nv->multiple = NO;
+    option.nv = G_define_standard_option(G_OPT_M_NULL_VALUE);
     option.nv->answer = "*";
-    option.nv->description = _("String representing no data cell value");
 
     option.nsteps = G_define_option();
     option.nsteps->key = "nsteps";
@@ -99,22 +90,10 @@ int main(int argc, char *argv[])
 
     flag.i = G_define_flag();
     flag.i->key = 'i';
-    flag.i->description = _("Read fp map as integer");
-
-    /* please, remove before GRASS 7 released */
-    q_flag = G_define_flag();
-    q_flag->key = 'q';
-    q_flag->description = _("Run quietly");
+    flag.i->description = _("Read floating-point map as integer");
 
     if (0 > G_parser(argc, argv))
 	exit(EXIT_FAILURE);
-
-    /* please, remove before GRASS 7 released */
-    if (q_flag->answer) {
-	G_putenv("GRASS_VERBOSE", "0");
-	G_warning(_("The '-q' flag is superseded and will be removed "
-		    "in future. Please use '--quiet' instead."));
-    }
 
     compact = (!flag.one->answer);
     range = flag.r->answer;
@@ -126,15 +105,8 @@ int main(int argc, char *argv[])
 	G_fatal_error(_("%s = %s -- must be greater than zero"),
 		      option.nsteps->key, option.nsteps->answer);
 
-    strcpy(name, option.map->answer);
-
-    if ((mapset = G_find_cell2(name, ""))) {
-	describe(name, mapset, compact, no_data_str,
-		 range, windowed, nsteps, as_int, flag.n->answer);
-	exit(EXIT_SUCCESS);
-    }
-
-    G_fatal_error(_("%s: [%s] not found"), G_program_name(), name);
+    describe(option.map->answer, compact, no_data_str,
+	     range, windowed, nsteps, as_int, flag.n->answer);
 
     return EXIT_SUCCESS;
 }

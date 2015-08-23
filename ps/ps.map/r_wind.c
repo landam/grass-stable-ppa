@@ -1,6 +1,8 @@
 /* parse the "region" instruction */
-#include "ps_info.h"
+
 #include <string.h>
+#include <grass/colors.h>
+#include <grass/raster.h>
 #include "local_proto.h"
 
 #define KEY(x) (strcmp(key,x)==0)
@@ -26,11 +28,7 @@ int read_wind(char *name, char *mapset)
 
     sprintf(fullname, "%s in %s", name, mapset);
 
-    if (G__get_window(&window, "windows", name, mapset) != NULL) {
-	error(fullname, "", "can't read region definition file");
-	gobble_input();
-	return 0;
-    }
+    G_get_element_window(&window, "windows", name, mapset);
 
     width = 1.;
     color_R = color_G = color_B = 0;

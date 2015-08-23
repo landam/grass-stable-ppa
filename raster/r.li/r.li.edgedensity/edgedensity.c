@@ -20,6 +20,7 @@
 #include <math.h>
 
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 #include "../r.li.daemon/avlDefs.h"
@@ -31,9 +32,12 @@ int calculate(int fd, struct area_entry *ad, char **par, double *result);
 int calculateD(int fd, struct area_entry *ad, char **par, double *result);
 int calculateF(int fd, struct area_entry *ad, char **par, double *result);
 
+static int brdr = 1;
+
 int main(int argc, char *argv[])
 {
     struct Option *raster, *conf, *output, *class;
+    struct Flag *flag_brdr;
     struct GModule *module;
     char **par = NULL;
 
@@ -41,14 +45,16 @@ int main(int argc, char *argv[])
     module = G_define_module();
     module->description =
 	_("Calculates edge density index on a raster map, using a 4 neighbour algorithm");
-    module->keywords = _("raster, landscape structure analysis, patch index");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("landscape structure analysis"));
+    G_add_keyword(_("patch index"));
 
     /* define options */
 
-    raster = G_define_standard_option(G_OPT_R_MAP);
+    raster = G_define_standard_option(G_OPT_R_INPUT);
 
     conf = G_define_standard_option(G_OPT_F_INPUT);
-    conf->key = "conf";
+    conf->key = "config";
     conf->description = _("Configuration file");
     conf->required = YES;
 
@@ -63,6 +69,10 @@ int main(int argc, char *argv[])
     class->description = _("It can be integer, double or float; "
 			   "it will be changed in function of map type");
 
+    flag_brdr = G_define_flag();
+    flag_brdr->key = 'b';
+    flag_brdr->description = _("Exclude border edges");
+
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
@@ -72,6 +82,7 @@ int main(int argc, char *argv[])
     else
 	par = &class->answer;
 
+    brdr = flag_brdr->answer == 0;
 
     return calculateIndex(conf->answer, edgedensity, par, raster->answer,
 			  output->answer);
@@ -124,7 +135,7 @@ int calculate(int fd, struct area_entry *ad, char **par, double *result)
     int mask_fd, *mask_buf, *mask_sup, *mask_tmp, masked;
     struct Cell_head hd;
 
-    G_get_window(&hd);
+    Rast_get_window(&hd);
 
     /* open mask if needed */
     mask_fd = -1;
@@ -149,14 +160,14 @@ int calculate(int fd, struct area_entry *ad, char **par, double *result)
 	masked = TRUE;
     }
 
-    buf_null = G_allocate_cell_buf();
+    buf_null = Rast_allocate_c_buf();
     if (buf_null == NULL) {
 	G_fatal_error("malloc buf_null failed");
 	return RLI_ERRORE;
     }
 
     /* the first time buf_sup is all null */
-    G_set_c_null_value(buf_null, G_window_cols());
+    Rast_set_c_null_value(buf_null, Rast_window_cols());
     buf_sup = buf_null;
 
     if (par != NULL) {	/* only 1 class */
@@ -166,7 +177,7 @@ int calculate(int fd, struct area_entry *ad, char **par, double *result)
 	ptype = atoi(sval);
     }
     else
-	G_set_c_null_value(&ptype, 1);
+	Rast_set_c_null_value(&ptype, 1);
 
     nedges = 0;
     area = 0;
@@ -189,66 +200,76 @@ int calculate(int fd, struct area_entry *ad, char **par, double *result)
 		return RLI_ERRORE;
 	}
 
-	G_set_c_null_value(&precCell, 1);
+	Rast_set_c_null_value(&precCell, 1);
 
 	for (j = 0; j < ad->cl; j++) {
 	    corrCell = buf[j + ad->x];
 
 	    if (masked && mask_buf[j] == 0) {
-		G_set_c_null_value(&corrCell, 1);
-	    }
-	    else {
-		/* total sample area */
-		area++;
+		Rast_set_c_null_value(&corrCell, 1);
 	    }
 
 	    supCell = buf_sup[j + ad->x];
 	    if (masked && (mask_sup[j] == 0)) {
-		G_set_c_null_value(&supCell, 1);
+		Rast_set_c_null_value(&supCell, 1);
 	    }
 
-	    if (!G_is_c_null_value(&ptype)) {
-		/* only one patch type */
-		if (!G_is_c_null_value(&corrCell) && corrCell == ptype) {
-		    if (corrCell != precCell)
-			nedges++;
-		    if (corrCell != supCell)
-			nedges++;
-		    /* right and bottom */
-		    if (i == ad->rl - 1)
-			nedges++;
-		    if (j == ad->cl - 1)
-			nedges++;
+	    if (brdr) {
+		if (!Rast_is_c_null_value(&corrCell)) {
+		    area++; 
+		    if (Rast_is_c_null_value(&ptype) || corrCell == ptype) {
+			if (Rast_is_c_null_value(&precCell) || precCell != corrCell) {
+			    nedges++;
+			}
+			if (Rast_is_c_null_value(&supCell) || supCell != corrCell) {
+			    nedges++;
+			}
+			/* right and bottom */
+			if (i == ad->rl - 1)
+			    nedges++;
+			if (j == ad->cl - 1)
+			    nedges++;
+		    }
 		}
-		if (!G_is_c_null_value(&precCell) && precCell == ptype) {
-		    if (corrCell != precCell)
-			nedges++;
-		}
-		if (!G_is_c_null_value(&supCell) && supCell == ptype) {
-		    if (corrCell != supCell)
-			nedges++;
+		else /* corrCell == NULL */ {
+		    if (!Rast_is_c_null_value(&precCell)) {
+			if (Rast_is_c_null_value(&ptype) || precCell == ptype) {
+			    nedges++;
+			}
+		    }
+		    if (!Rast_is_c_null_value(&supCell)) {
+			if (Rast_is_c_null_value(&ptype) || supCell == ptype) {
+			    nedges++;
+			}
+		    }
 		}
 	    }
 	    else {
-		/* all patch types */
-		if (!G_is_c_null_value(&corrCell)) {
-		    if (corrCell != precCell) {
-			nedges++;
+		/* exclude border edges */
+		if (!Rast_is_c_null_value(&corrCell)) {
+		    area++; 
+		    if (Rast_is_c_null_value(&ptype) || corrCell == ptype) {
+			if (j > 0 && !(masked && mask_buf[j - 1] == 0) &&
+			    (Rast_is_c_null_value(&precCell) || precCell != corrCell)) {
+			    nedges++;
+			}
+			if (i > 0 && !(masked && mask_sup[i - 1] == 0) &&
+			    (Rast_is_c_null_value(&supCell) || supCell != corrCell)) {
+			    nedges++;
+			}
 		    }
-		    if (corrCell != supCell) {
-			nedges++;
+		}
+		else if (Rast_is_c_null_value(&corrCell) && !(masked && mask_buf[j] == 0)) {
+		    if (!Rast_is_c_null_value(&precCell)) {
+			if (Rast_is_c_null_value(&ptype) || precCell == ptype) {
+			    nedges++;
+			}
 		    }
-		    /* right and bottom */
-		    if (i == ad->rl - 1)
-			nedges++;
-		    if (j == ad->cl - 1)
-			nedges++;
-		}
-		if (!G_is_c_null_value(&precCell) && corrCell != precCell) {
-		    nedges++;
-		}
-		if (!G_is_c_null_value(&supCell) && corrCell != supCell) {
-		    nedges++;
+		    if (!Rast_is_c_null_value(&supCell)) {
+			if (Rast_is_c_null_value(&ptype) || supCell == ptype) {
+			    nedges++;
+			}
+		    }
 		}
 	    }
 	    precCell = corrCell;
@@ -280,7 +301,7 @@ int calculate(int fd, struct area_entry *ad, char **par, double *result)
 	*result = (double) nedges * elength * 10000 / (area * cell_size);
     }
     else
-	G_set_d_null_value(result, 1);
+	Rast_set_d_null_value(result, 1);
 
     if (masked) {
 	close(mask_fd);
@@ -302,7 +323,7 @@ int calculateD(int fd, struct area_entry *ad, char **par, double *result)
     int mask_fd, *mask_buf, *mask_sup, *mask_tmp, masked;
     struct Cell_head hd;
 
-    G_get_window(&hd);
+    Rast_get_window(&hd);
 
     /* open mask if needed */
     mask_fd = -1;
@@ -327,14 +348,14 @@ int calculateD(int fd, struct area_entry *ad, char **par, double *result)
 	masked = TRUE;
     }
 
-    buf_null = G_allocate_d_raster_buf();
+    buf_null = Rast_allocate_d_buf();
     if (buf_null == NULL) {
 	G_fatal_error("malloc buf_null failed");
 	return RLI_ERRORE;
     }
 
     /* the first time buf_sup is all null */
-    G_set_d_null_value(buf_null, G_window_cols());
+    Rast_set_d_null_value(buf_null, Rast_window_cols());
     buf_sup = buf_null;
 
     if (par != NULL) {	/* only 1 class */
@@ -344,7 +365,7 @@ int calculateD(int fd, struct area_entry *ad, char **par, double *result)
 	ptype = atof(sval);
     }
     else
-	G_set_d_null_value(&ptype, 1);
+	Rast_set_d_null_value(&ptype, 1);
 
     nedges = 0;
     area = 0;
@@ -367,66 +388,76 @@ int calculateD(int fd, struct area_entry *ad, char **par, double *result)
 		return RLI_ERRORE;
 	}
 
-	G_set_d_null_value(&precCell, 1);
+	Rast_set_d_null_value(&precCell, 1);
 
 	for (j = 0; j < ad->cl; j++) {
 	    corrCell = buf[j + ad->x];
 
 	    if (masked && mask_buf[j] == 0) {
-		G_set_d_null_value(&corrCell, 1);
-	    }
-	    else {
-		/* total sample area */
-		area++;
+		Rast_set_d_null_value(&corrCell, 1);
 	    }
 
 	    supCell = buf_sup[j + ad->x];
 	    if (masked && (mask_sup[j] == 0)) {
-		G_set_d_null_value(&supCell, 1);
+		Rast_set_d_null_value(&supCell, 1);
 	    }
 
-	    if (!G_is_d_null_value(&ptype)) {
-		/* only one patch type */
-		if (!G_is_d_null_value(&corrCell) && corrCell == ptype) {
-		    if (corrCell != precCell)
-			nedges++;
-		    if (corrCell != supCell)
-			nedges++;
-		    /* right and bottom */
-		    if (i == ad->rl - 1)
-			nedges++;
-		    if (j == ad->cl - 1)
-			nedges++;
+	    if (brdr) {
+		if (!Rast_is_d_null_value(&corrCell)) {
+		    area++; 
+		    if (Rast_is_d_null_value(&ptype) || corrCell == ptype) {
+			if (Rast_is_d_null_value(&precCell) || precCell != corrCell) {
+			    nedges++;
+			}
+			if (Rast_is_d_null_value(&supCell) || supCell != corrCell) {
+			    nedges++;
+			}
+			/* right and bottom */
+			if (i == ad->rl - 1)
+			    nedges++;
+			if (j == ad->cl - 1)
+			    nedges++;
+		    }
 		}
-		if (!G_is_d_null_value(&precCell) && precCell == ptype) {
-		    if (corrCell != precCell)
-			nedges++;
-		}
-		if (!G_is_d_null_value(&supCell) && supCell == ptype) {
-		    if (corrCell != supCell)
-			nedges++;
+		else /* corrCell == NULL */ {
+		    if (!Rast_is_d_null_value(&precCell)) {
+			if (Rast_is_d_null_value(&ptype) || precCell == ptype) {
+			    nedges++;
+			}
+		    }
+		    if (!Rast_is_d_null_value(&supCell)) {
+			if (Rast_is_d_null_value(&ptype) || supCell == ptype) {
+			    nedges++;
+			}
+		    }
 		}
 	    }
 	    else {
-		/* all patch types */
-		if (!G_is_d_null_value(&corrCell)) {
-		    if (corrCell != precCell) {
-			nedges++;
+		/* exclude border edges */
+		if (!Rast_is_d_null_value(&corrCell)) {
+		    area++; 
+		    if (Rast_is_d_null_value(&ptype) || corrCell == ptype) {
+			if (j > 0 && !(masked && mask_buf[j - 1] == 0) &&
+			    (Rast_is_d_null_value(&precCell) || precCell != corrCell)) {
+			    nedges++;
+			}
+			if (i > 0 && !(masked && mask_sup[i - 1] == 0) &&
+			    (Rast_is_d_null_value(&supCell) || supCell != corrCell)) {
+			    nedges++;
+			}
 		    }
-		    if (corrCell != supCell) {
-			nedges++;
+		}
+		else if (Rast_is_d_null_value(&corrCell) && !(masked && mask_buf[j] == 0)) {
+		    if (!Rast_is_d_null_value(&precCell)) {
+			if (Rast_is_d_null_value(&ptype) || precCell == ptype) {
+			    nedges++;
+			}
 		    }
-		    /* right and bottom */
-		    if (i == ad->rl - 1)
-			nedges++;
-		    if (j == ad->cl - 1)
-			nedges++;
-		}
-		if (!G_is_d_null_value(&precCell) && corrCell != precCell) {
-		    nedges++;
-		}
-		if (!G_is_d_null_value(&supCell) && corrCell != supCell) {
-		    nedges++;
+		    if (!Rast_is_d_null_value(&supCell)) {
+			if (Rast_is_d_null_value(&ptype) || supCell == ptype) {
+			    nedges++;
+			}
+		    }
 		}
 	    }
 	    precCell = corrCell;
@@ -458,7 +489,7 @@ int calculateD(int fd, struct area_entry *ad, char **par, double *result)
 	*result = (double) nedges * elength * 10000 / (area * cell_size);
     }
     else
-	G_set_d_null_value(result, 1);
+	Rast_set_d_null_value(result, 1);
 
     if (masked) {
 	close(mask_fd);
@@ -480,7 +511,7 @@ int calculateF(int fd, struct area_entry *ad, char **par, double *result)
     int mask_fd, *mask_buf, *mask_sup, *mask_tmp, masked;
     struct Cell_head hd;
 
-    G_get_window(&hd);
+    Rast_get_window(&hd);
 
     /* open mask if needed */
     mask_fd = -1;
@@ -505,14 +536,14 @@ int calculateF(int fd, struct area_entry *ad, char **par, double *result)
 	masked = TRUE;
     }
 
-    buf_null = G_allocate_f_raster_buf();
+    buf_null = Rast_allocate_f_buf();
     if (buf_null == NULL) {
 	G_fatal_error("malloc buf_null failed");
 	return RLI_ERRORE;
     }
 
     /* the first time buf_sup is all null */
-    G_set_f_null_value(buf_null, G_window_cols());
+    Rast_set_f_null_value(buf_null, Rast_window_cols());
     buf_sup = buf_null;
 
     if (par != NULL) {	/* only 1 class */
@@ -522,7 +553,7 @@ int calculateF(int fd, struct area_entry *ad, char **par, double *result)
 	ptype = atof(sval);
     }
     else
-	G_set_f_null_value(&ptype, 1);
+	Rast_set_f_null_value(&ptype, 1);
 
     nedges = 0;
     area = 0;
@@ -545,66 +576,76 @@ int calculateF(int fd, struct area_entry *ad, char **par, double *result)
 		return RLI_ERRORE;
 	}
 
-	G_set_f_null_value(&precCell, 1);
+	Rast_set_f_null_value(&precCell, 1);
 
 	for (j = 0; j < ad->cl; j++) {
 	    corrCell = buf[j + ad->x];
 
 	    if (masked && mask_buf[j] == 0) {
-		G_set_f_null_value(&corrCell, 1);
-	    }
-	    else {
-		/* total sample area */
-		area++;
+		Rast_set_f_null_value(&corrCell, 1);
 	    }
 
 	    supCell = buf_sup[j + ad->x];
 	    if (masked && (mask_sup[j] == 0)) {
-		G_set_f_null_value(&supCell, 1);
+		Rast_set_f_null_value(&supCell, 1);
 	    }
 
-	    if (!G_is_f_null_value(&ptype)) {
-		/* only one patch type */
-		if (!G_is_f_null_value(&corrCell) && corrCell == ptype) {
-		    if (corrCell != precCell)
-			nedges++;
-		    if (corrCell != supCell)
-			nedges++;
-		    /* right and bottom */
-		    if (i == ad->rl - 1)
-			nedges++;
-		    if (j == ad->cl - 1)
-			nedges++;
+	    if (brdr) {
+		if (!Rast_is_f_null_value(&corrCell)) {
+		    area++; 
+		    if (Rast_is_f_null_value(&ptype) || corrCell == ptype) {
+			if (Rast_is_f_null_value(&precCell) || precCell != corrCell) {
+			    nedges++;
+			}
+			if (Rast_is_f_null_value(&supCell) || supCell != corrCell) {
+			    nedges++;
+			}
+			/* right and bottom */
+			if (i == ad->rl - 1)
+			    nedges++;
+			if (j == ad->cl - 1)
+			    nedges++;
+		    }
 		}
-		if (!G_is_f_null_value(&precCell) && precCell == ptype) {
-		    if (corrCell != precCell)
-			nedges++;
-		}
-		if (!G_is_f_null_value(&supCell) && supCell == ptype) {
-		    if (corrCell != supCell)
-			nedges++;
+		else /* corrCell == NULL */ {
+		    if (!Rast_is_f_null_value(&precCell)) {
+			if (Rast_is_f_null_value(&ptype) || precCell == ptype) {
+			    nedges++;
+			}
+		    }
+		    if (!Rast_is_f_null_value(&supCell)) {
+			if (Rast_is_f_null_value(&ptype) || supCell == ptype) {
+			    nedges++;
+			}
+		    }
 		}
 	    }
 	    else {
-		/* all patch types */
-		if (!G_is_f_null_value(&corrCell)) {
-		    if (corrCell != precCell) {
-			nedges++;
+		/* exclude border edges */
+		if (!Rast_is_f_null_value(&corrCell)) {
+		    area++; 
+		    if (Rast_is_f_null_value(&ptype) || corrCell == ptype) {
+			if (j > 0 && !(masked && mask_buf[j - 1] == 0) &&
+			    (Rast_is_f_null_value(&precCell) || precCell != corrCell)) {
+			    nedges++;
+			}
+			if (i > 0 && !(masked && mask_sup[i - 1] == 0) &&
+			    (Rast_is_f_null_value(&supCell) || supCell != corrCell)) {
+			    nedges++;
+			}
 		    }
-		    if (corrCell != supCell) {
-			nedges++;
+		}
+		else if (Rast_is_f_null_value(&corrCell) && !(masked && mask_buf[j] == 0)) {
+		    if (!Rast_is_f_null_value(&precCell)) {
+			if (Rast_is_f_null_value(&ptype) || precCell == ptype) {
+			    nedges++;
+			}
 		    }
-		    /* right and bottom */
-		    if (i == ad->rl - 1)
-			nedges++;
-		    if (j == ad->cl - 1)
-			nedges++;
-		}
-		if (!G_is_f_null_value(&precCell) && corrCell != precCell) {
-		    nedges++;
-		}
-		if (!G_is_f_null_value(&supCell) && corrCell != supCell) {
-		    nedges++;
+		    if (!Rast_is_f_null_value(&supCell)) {
+			if (Rast_is_f_null_value(&ptype) || supCell == ptype) {
+			    nedges++;
+			}
+		    }
 		}
 	    }
 	    precCell = corrCell;
@@ -636,7 +677,7 @@ int calculateF(int fd, struct area_entry *ad, char **par, double *result)
 	*result = (double) nedges * elength * 10000 / (area * cell_size);
     }
     else
-	G_set_d_null_value(result, 1);
+	Rast_set_d_null_value(result, 1);
 
     if (masked) {
 	close(mask_fd);

@@ -7,7 +7,7 @@
  * PURPOSE:      Provides a means of reporting the contents of GRASS
  *               projection information files and creating
  *               new projection information files.
- * COPYRIGHT:    (C) 2003-2007, 2011 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2003-2014 by the GRASS Development Team
  *
  *               This program is free software under the GNU General
  *               Public License (>=v2). Read the file COPYING that
@@ -60,10 +60,12 @@ int main(int argc, char *argv[])
 				 * (to create a new location) when none exists */
 
     module = G_define_module();
-    module->keywords = _("general, projection");
+    G_add_keyword(_("general"));
+    G_add_keyword(_("projection"));
+    G_add_keyword(_("create location"));
 #ifdef HAVE_OGR
     module->label =
-	_("Prints and manipulates GRASS projection information files "
+	_("Prints or modifies GRASS projection information files "
 	  "(in various co-ordinate system descriptions).");
     module->description =
 	_("Can also be used to create new GRASS locations.");
@@ -168,7 +170,7 @@ int main(int argc, char *argv[])
 	_("Accepts standard GRASS datum codes, or \"list\" to list and exit");
 
     dtrans = G_define_option();
-    dtrans->key = "datumtrans";
+    dtrans->key = "datum_trans";
     dtrans->type = TYPE_INTEGER;
     dtrans->key_desc = "index";
     dtrans->required = NO;
@@ -188,8 +190,7 @@ int main(int argc, char *argv[])
     create = G_define_flag();
     create->key = 'c';
     create->guisection = _("Modify");
-    create->description = _("Create new projection files (modifies current "
-			    "location)");
+    create->description = _("Modify current location projection files");
 
     location = G_define_option();
     location->key = "location";
@@ -298,7 +299,7 @@ int main(int argc, char *argv[])
 	print_wkt(esristyle->answer, dontprettify->answer);
 #endif
     else if (location->answer)
-	create_location(location->answer);
+	create_location(location->answer, inepsg->answer);
     else if (create->answer)
 	modify_projinfo();
     else
@@ -318,21 +319,7 @@ int main(int argc, char *argv[])
     if (create->answer){ 
 #endif
 	/* preserve epsg code for user records only (not used by grass's pj routines) */
-	FILE *fp;
-	char path[GPATH_MAX];
-	/* if inputs were not clean it should of failed by now */
-	if (location->answer) {
-            snprintf(path, sizeof(path), "%s/%s/%s/%s", G_gisdbase(),
-		     location->answer, "PERMANENT", "PROJ_EPSG");
-	    path[sizeof(path)-1] = '\0';
-	}
-	else
-	    G__file_name(path, "", "PROJ_EPSG", "PERMANENT");
-	fp = fopen(path, "w");
-#ifdef HAVE_OGR
-	fprintf(fp, "epsg: %s\n", inepsg->answer);
-#endif
-	fclose(fp);
+        create_epsg(location->answer, inepsg->answer);
     }
 
 

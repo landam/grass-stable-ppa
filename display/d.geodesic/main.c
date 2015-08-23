@@ -11,7 +11,7 @@
  *               Jan-Oliver Wagner <jan intevation.de>
  * PURPOSE:      displays a geodesic line in the active frame on the user's 
  *               graphics monitor
- * COPYRIGHT:    (C) 1999-2006 by the GRASS Development Team
+ * COPYRIGHT:    (C) 1999-2014 by the GRASS Development Team
  *
  *               This program is free software under the GNU General Public
  *               License (>=v2). Read the file COPYING that comes with GRASS
@@ -22,7 +22,6 @@
 #include <string.h>
 #include <grass/gis.h>
 #include <grass/display.h>
-#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "local_proto.h"
 
@@ -30,80 +29,78 @@ int main(int argc, char *argv[])
 {
     int line_color;
     int text_color;
-    int use_mouse;
     double lon1, lat1, lon2, lat2;
     char *deftcolor;
+    const char *unit;
+    int unit_id;
+    double factor;
     struct GModule *module;
     struct
     {
-	struct Option *lcolor, *tcolor, *coor;
+	struct Option *lcolor, *tcolor, *coor, *units;
     } parm;
 
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("display, distance");
+    G_add_keyword(_("display"));
+    G_add_keyword(_("distance"));
+    G_add_keyword(_("great circle"));
+    G_add_keyword(_("shortest path"));
     module->description =
 	_("Displays a geodesic line, tracing the shortest distance "
 	"between two geographic points along a great circle, in "
 	"a longitude/latitude data set.");
 
-    parm.coor = G_define_option();
-    parm.coor->key = "coor";
+    parm.coor = G_define_standard_option(G_OPT_M_COORDS);
     parm.coor->key_desc = "lon1,lat1,lon2,lat2";
-    parm.coor->type = TYPE_STRING;
-    parm.coor->required = NO;
+    parm.coor->required = YES;
     parm.coor->description = _("Starting and ending coordinates");
 
-    parm.lcolor = G_define_option();
-    parm.lcolor->key = "lcolor";
-    parm.lcolor->type = TYPE_STRING;
-    parm.lcolor->required = NO;
-    parm.lcolor->description = _("Line color");
-    parm.lcolor->options = D_color_list();
-    parm.lcolor->answer = DEFAULT_FG_COLOR;
+    parm.lcolor = G_define_standard_option(G_OPT_C);
+    parm.lcolor->key = "line_color";
+    parm.lcolor->label = _("Line color");
 
-    parm.tcolor = G_define_option();
-    parm.tcolor->key = "tcolor";
-    parm.tcolor->type = TYPE_STRING;
-    parm.tcolor->required = NO;
-    parm.tcolor->description = _("Text color or \"none\"");
-    /*    parm.tcolor->options    = D_color_list(); */
+    parm.tcolor = G_define_standard_option(G_OPT_C);
+    parm.tcolor->key = "text_color";
+    parm.tcolor->label = _("Text color");
+    parm.tcolor->answer = NULL;
 
-    if (argc > 1 && G_parser(argc, argv))
+    parm.units = G_define_standard_option(G_OPT_M_UNITS);
+    parm.units->options = "meters,kilometers,feet,miles";
+    parm.units->label = parm.units->description;
+    parm.units->answer = "meters";
+
+    if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-
     if (G_projection() != PROJECTION_LL)
-	G_fatal_error(_("Location is not %s"), G__projection_name(PROJECTION_LL));
+	G_fatal_error(_("Location is not %s"),
+		      G_projection_name(PROJECTION_LL));
 
-    use_mouse = 1;
-    if (parm.coor->answer) {
-	if (parm.coor->answers[0] == NULL)
-	    G_fatal_error(_("No coordinates given"));
+    /* get conversion factor and unit name */
+    unit_id = G_units(parm.units->answer);
+    factor = 1. / G_meters_to_units_factor(unit_id);
+    unit = G_get_units_name(unit_id, 1, 0);
 
-	if (!G_scan_easting(parm.coor->answers[0], &lon1, G_projection())) {
-	    G_usage();
-	    G_fatal_error(_("%s - illegal longitude"), parm.coor->answers[0]);
-	}
-	if (!G_scan_northing(parm.coor->answers[1], &lat1, G_projection())) {
-	    G_usage();
-	    G_fatal_error(_("%s - illegal longitude"), parm.coor->answers[1]);
-	}
-	if (!G_scan_easting(parm.coor->answers[2], &lon2, G_projection())) {
-	    G_usage();
-	    G_fatal_error(_("%s - illegal longitude"), parm.coor->answers[2]);
-	}
-	if (!G_scan_northing(parm.coor->answers[3], &lat2, G_projection())) {
-	    G_usage();
-	    G_fatal_error(_("%s - illegal longitude"), parm.coor->answers[3]);
-	}
-	use_mouse = 0;
-    }
+    if (parm.coor->answers[0] == NULL)
+	G_fatal_error(_("No coordinates given"));
 
-    if (R_open_driver() != 0)
-	G_fatal_error(_("No graphics device selected"));
+    if (!G_scan_easting(parm.coor->answers[0], &lon1, G_projection()))
+	G_fatal_error(_("%s - illegal longitude"), parm.coor->answers[0]);
 
+    if (!G_scan_northing(parm.coor->answers[1], &lat1, G_projection()))
+	G_fatal_error(_("%s - illegal longitude"), parm.coor->answers[1]);
+
+    if (!G_scan_easting(parm.coor->answers[2], &lon2, G_projection()))
+	G_fatal_error(_("%s - illegal longitude"), parm.coor->answers[2]);
+
+    if (!G_scan_northing(parm.coor->answers[3], &lat2, G_projection()))
+	G_fatal_error(_("%s - illegal longitude"), parm.coor->answers[3]);
+
+
+    D_open_driver();
+    
     line_color = D_translate_color(parm.lcolor->answer);
     if (!line_color)
 	line_color = D_translate_color(parm.lcolor->answer =
@@ -121,15 +118,10 @@ int main(int argc, char *argv[])
     else
 	text_color = D_translate_color(parm.tcolor->answer);
 
-    setup_plot();
-    if (use_mouse)
-	mouse(line_color, text_color);
-    else
-	plot(lon1, lat1, lon2, lat2, line_color, text_color);
+    plot(lon1, lat1, lon2, lat2, line_color, text_color, factor, unit);
 
-    if (!use_mouse)
-	D_add_to_list(G_recreate_command());
+    D_save_command(G_recreate_command());
+    D_close_driver();
 
-    R_close_driver();
     exit(EXIT_SUCCESS);
 }

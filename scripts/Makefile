@@ -2,90 +2,79 @@ MODULE_TOPDIR = ..
 
 SUBDIRS = \
 	d.correlate \
-	d.font.freetype \
-	d.monsize \
-	d.mvmon \
-	d.out.gpsdrive \
-	d.out.png \
 	d.out.file \
-	d.paint.labels \
+	d.to.rast \
 	d.polar \
 	d.rast.edit \
 	d.rast.leg \
 	d.redraw \
-	d.resize \
-	d.shadedmap \
-	d.slide.show \
-	d.split \
-	d.split.frame \
-	d.text.freetype \
-	d.vect.thematic \
-	db.dropcol \
+	d.shade \
+	d.what.rast \
+	d.what.vect \
+	db.dropcolumn \
 	db.droptable \
 	db.in.ogr \
 	db.out.ogr \
 	db.test \
+	db.univar \
 	g.extension \
+	g.extension.all \
 	g.manual \
-	i.fusion.brovey \
+	i.colors.enhance \
 	i.image.mosaic \
 	i.in.spotvgt \
-	i.landsat.rgb \
 	i.oif \
+	i.pansharpen \
 	i.spectral \
 	i.tasscap \
 	m.proj \
-	p.out.vrml \
 	r.blend \
-	r.cats \
+	r.buffer.lowmem \
 	r.colors.stddev \
 	r.fillnulls \
+	r.grow \
 	r.in.aster \
 	r.in.srtm \
 	r.in.wms \
-	r.mapcalculator \
 	r.mask \
-	r.out.gdal \
 	r.out.xyz \
 	r.pack \
-	r.unpack \
 	r.plane \
 	r.reclass.area \
-	r.shaded.relief \
+	r.rgb \
+	r.shade \
 	r.tileset \
-	r.univar.sh \
-	r3.mapcalculator \
+	r.unpack \
+	r3.in.xyz \
 	v.build.all \
 	v.centroids \
-	v.colors \
-	v.convert.all \
-	v.db.addcol \
+	v.db.addcolumn \
 	v.db.addtable \
 	v.db.join \
-	v.db.dropcol \
+	v.db.dropcolumn \
+	v.db.droprow \
 	v.db.droptable \
-	v.db.renamecol \
+	v.db.renamecolumn \
 	v.db.reconnect.all \
 	v.db.univar \
 	v.db.update \
 	v.dissolve \
 	v.in.e00 \
-	v.in.garmin \
 	v.in.geonames \
-	v.in.gns \
-	v.in.gpsbabel \
 	v.in.lines \
 	v.in.mapgen \
-	v.in.sites.all \
 	v.in.wfs \
-	v.out.gpsbabel \
 	v.rast.stats \
 	v.report \
-	v.univar.sh \
-	v.what.vect
+	v.pack \
+	v.to.lines \
+	v.unpack \
+	v.what.strds \
+	v.what.vect \
+	wxpyimgview \
+	v.krige
 
 include $(MODULE_TOPDIR)/include/Make/Dir.make
 
 default: parsubdirs
 
-clean: cleansubdirs

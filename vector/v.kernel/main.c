@@ -19,12 +19,13 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <float.h>
+#include <string.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include <grass/gmath.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include "global.h"
 
 
@@ -74,12 +75,13 @@ double L(double smooth)
 int main(int argc, char **argv)
 {
     struct Option *in_opt, *net_opt, *out_opt;
-    struct Option *stddev_opt, *dsize_opt, *segmax_opt, *netmax_opt,
+    struct Option *radius_opt, *dsize_opt, *segmax_opt, *netmax_opt,
 	*multip_opt, *node_opt, *kernel_opt;
-    struct Flag *flag_o, *flag_q, *flag_normalize, *flag_multiply, *flag_v;
+    struct Flag *flag_o, *flag_q, *flag_normalize, *flag_multiply;
+    char *desc;
 
-    char *mapset;
     struct Map_info In, Net, Out;
+    int overwrite;
     int fdout = -1, maskfd = -1;
     int node_method, kernel_function;
     int row, col;
@@ -89,12 +91,13 @@ int main(int argc, char **argv)
     CELL *mask = NULL;
     DCELL *output_cell = NULL;
     double sigma, dmax, segmax, netmax, multip;
+    char *tmpstr1, *tmpstr2;
 
     double **coordinate;
     double sigmaOptimal;
     struct GModule *module;
     double dsize;
-    double term;
+    double term = 0;
 
     double gausmax = 0;
     int notreachable = 0;
@@ -103,31 +106,37 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, kernel density");
-    module->description =
-	_("Generates a raster density map from vector point data using a moving kernel or "
-	 "optionally generates a vector density map on a vector network.");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("kernel density"));
+    module->label =
+        _("Generates a raster density map from vector points map.");
+    module->description = _("Density is computed using a moving kernel. "
+                            "Optionally generates a vector density map on a vector network.");
 
     in_opt = G_define_standard_option(G_OPT_V_INPUT);
-    in_opt->description = _("Input vector with training points");
-
+    in_opt->label = _("Name of input vector map with training points");
+    in_opt->description = NULL;
+    
     net_opt = G_define_standard_option(G_OPT_V_INPUT);
     net_opt->key = "net";
-    net_opt->description = _("Input network vector map");
+    net_opt->label = _("Name of input network vector map");
+    net_opt->description = NULL;
     net_opt->required = NO;
+    net_opt->guisection = _("Network");
 
     out_opt = G_define_option();
     out_opt->key = "output";
     out_opt->type = TYPE_STRING;
     out_opt->key_desc = "name";
     out_opt->required = YES;
-    out_opt->description = _("Output raster/vector map");
+    out_opt->label = _("Name for output raster/vector map");
+    out_opt->description = _("Outputs vector map if network map is given, otherwise raster map");
 
-    stddev_opt = G_define_option();
-    stddev_opt->key = "stddeviation";
-    stddev_opt->type = TYPE_DOUBLE;
-    stddev_opt->required = YES;
-    stddev_opt->description = _("Standard deviation in map units");
+    radius_opt = G_define_option();
+    radius_opt->key = "radius";
+    radius_opt->type = TYPE_DOUBLE;
+    radius_opt->required = YES;
+    radius_opt->description = _("Kernel radius in map units");
 
     dsize_opt = G_define_option();
     dsize_opt->key = "dsize";
@@ -142,6 +151,7 @@ int main(int argc, char **argv)
     segmax_opt->required = NO;
     segmax_opt->description = _("Maximum length of segment on network");
     segmax_opt->answer = "100.";
+    segmax_opt->guisection = _("Network");
 
     netmax_opt = G_define_option();
     netmax_opt->key = "distmax";
@@ -149,9 +159,10 @@ int main(int argc, char **argv)
     netmax_opt->required = NO;
     netmax_opt->description = _("Maximum distance from point to network");
     netmax_opt->answer = "100.";
+    netmax_opt->guisection = _("Network");
 
     multip_opt = G_define_option();
-    multip_opt->key = "mult";
+    multip_opt->key = "multiplier";
     multip_opt->type = TYPE_DOUBLE;
     multip_opt->required = NO;
     multip_opt->description = _("Multiply the density result by this number");
@@ -164,9 +175,13 @@ int main(int argc, char **argv)
     node_opt->description = _("Node method");
     node_opt->options = "none,split";
     node_opt->answer = "none";
-    node_opt->descriptions =
-	_("none;No method applied at nodes with more than 2 arcs;"
-	  "split;Equal split (Okabe 2009) applied at nodes;");
+    desc = NULL;
+    G_asprintf(&desc,
+	       "none;%s;split;%s",
+	       _("No method applied at nodes with more than 2 arcs"),
+	       _("Equal split (Okabe 2009) applied at nodes"));
+    node_opt->descriptions = desc;
+    node_opt->guisection = _("Network");
 
     kernel_opt = G_define_option();
     kernel_opt->key = "kernel";
@@ -191,27 +206,40 @@ int main(int argc, char **argv)
     flag_normalize->key = 'n';
     flag_normalize->description =
 	_("In network mode, normalize values by sum of density multiplied by length of each segment. Integral over the output map then gives 1.0 * mult");
+    flag_normalize->guisection = _("Network");
 
     flag_multiply = G_define_flag();
     flag_multiply->key = 'm';
     flag_multiply->description =
-	_("In network mode, multiply the result by number of input points.");
-
-    flag_v = G_define_flag();
-    flag_v->key = 'v';
-    flag_v->description =
-	_("Verbose module output (retained for backwards compatibility)");
-
+	_("In network mode, multiply the result by number of input points");
+    flag_multiply->guisection = _("Network");
+    
+    overwrite = G_check_overwrite(argc, argv);
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-
-    /* remove for grass7 */
-    if (flag_v->answer)
-	G_set_verbose(G_verbose_max());
+    if (net_opt->answer) {
+	if (G_find_vector2(out_opt->answer, G_mapset()))
+            if (overwrite)
+                G_warning(_("Vector map <%s> already exists and will be overwritten"),
+                          out_opt->answer);
+            else
+                G_fatal_error(_("Vector map <%s> already exists"),
+                              out_opt->answer);
+    }
+    else {
+	if (G_find_raster(out_opt->answer, G_mapset()))
+            if (overwrite)
+                G_warning(_("Raster map <%s> already exists and will be overwritten"),
+                          out_opt->answer);
+            else
+                G_fatal_error(_("Raster map <%s> already exists"),
+                              out_opt->answer);
+    }
 
     /*read options */
-    sigma = atof(stddev_opt->answer);
+    dmax = atof(radius_opt->answer);
+    sigma = dmax;
     dsize = atof(dsize_opt->answer);
     segmax = atof(segmax_opt->answer);
     netmax = atof(netmax_opt->answer);
@@ -260,23 +288,26 @@ int main(int argc, char **argv)
 
     if (net_opt->answer) {
 	Vect_check_input_output_name(in_opt->answer, out_opt->answer,
-				     GV_FATAL_EXIT);
+				     G_FATAL_EXIT);
 	Vect_check_input_output_name(net_opt->answer, out_opt->answer,
-				     GV_FATAL_EXIT);
+				     G_FATAL_EXIT);
     }
 
     G_get_window(&window);
 
-    G_message("STDDEV: %f\nRES: %f\tROWS: %d\tCOLS: %d",
-	      sigma, window.ew_res, window.rows, window.cols);
-
+    G_verbose_message(_("Standard deviation: %f"), sigma);
+    G_asprintf(&tmpstr1, n_("%d row", "%d rows", window.rows), window.rows);
+    G_asprintf(&tmpstr2, n_("%d column", "%d columns", window.cols), window.cols);
+    /* GTC First argument is resolution, second - number of rows as a text, third - number of columns as a text. */
+    G_verbose_message(_("Output raster map: resolution: %f\t%s\t%s"),
+                      window.ew_res, tmpstr1, tmpstr2);
+    G_free(tmpstr1);
+    G_free(tmpstr2); 
+    
     /* Open input vector */
-    if ((mapset = G_find_vector2(in_opt->answer, "")) == NULL)
-	G_fatal_error(_("Vector map <%s> not found"), in_opt->answer);
-
     Vect_set_open_level(2);
-    Vect_open_old(&In, in_opt->answer, mapset);
-
+    if (Vect_open_old(&In, in_opt->answer, "") < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), in_opt->answer);
 
     if (net_opt->answer) {
 	int nlines, line;
@@ -286,16 +317,17 @@ int main(int argc, char **argv)
 	net = 1;
 	dimension = 1.;
 	/* Open input network */
-	if ((mapset = G_find_vector2(net_opt->answer, "")) == NULL)
-	    G_fatal_error(_("Network input map <%s> not found"),
-			  net_opt->answer);
-
 	Vect_set_open_level(2);
-	Vect_open_old(&Net, net_opt->answer, mapset);
+
+	if (Vect_open_old(&Net, net_opt->answer, "") < 0)
+	    G_fatal_error(_("Unable to open vector map <%s>"), net_opt->answer);
+
 	Vect_net_build_graph(&Net, GV_LINES, 0, 0, NULL, NULL, NULL, 0, 0);
 
 	if (!flag_q->answer) {
-	    Vect_open_new(&Out, out_opt->answer, 0);
+	    if (Vect_open_new(&Out, out_opt->answer, 0) < 0)
+		G_fatal_error(_("Unable to create vector map <%s>"),
+				out_opt->answer);
 	    Vect_hist_command(&Out);
 	}
 
@@ -314,28 +346,23 @@ int main(int argc, char **argv)
 	}
 
 	if (notreachable > 0)
-	    G_warning(_("%d points outside threshold"), notreachable);
+	    G_warning(n_("%d point outside threshold",
+                         "%d points outside threshold",
+                         notreachable), notreachable);
     }
     else {
 	/* check and open the name of output map */
 	if (!flag_q->answer) {
-	    if (G_legal_filename(out_opt->answer) < 0)
-		G_fatal_error(_("<%s> is an illegal file name"),
-			      out_opt->answer);
-
-	    G_set_fp_type(DCELL_TYPE);
-	    if ((fdout = G_open_raster_new(out_opt->answer, DCELL_TYPE)) < 0)
-		G_fatal_error(_("Unable to create raster map <%s>"),
-			      out_opt->answer);
+	    fdout = Rast_open_new(out_opt->answer, DCELL_TYPE);
 
 	    /* open mask file */
-	    if ((maskfd = G_maskfd()) >= 0)
-		mask = G_allocate_cell_buf();
+	    if ((maskfd = Rast_maskfd()) >= 0)
+		mask = Rast_allocate_c_buf();
 	    else
 		mask = NULL;
 
 	    /* allocate output raster */
-	    output_cell = G_allocate_raster_buf(DCELL_TYPE);
+	    output_cell = Rast_allocate_buf(DCELL_TYPE);
 	}
     }
 
@@ -364,7 +391,9 @@ int main(int argc, char **argv)
 	}
 
 	G_message(_("Number of input points: %d."), npoints);
-	G_message(_("%d distances read from the map."), ndists);
+	G_message(n_("%d distance read from the map.",
+                     "%d distances read from the map.",
+                     ndists), ndists);
 
 	if (ndists == 0)
 	    G_fatal_error(_("Distances between all points are beyond %e (4 * "
@@ -393,11 +422,15 @@ int main(int argc, char **argv)
 	}
     }
 
-    term = 1. / (pow(sigma, dimension) * pow((2. * M_PI), dimension / 2.));
-
-    dmax = sigma;
     if (kernel_function == KERNEL_GAUSSIAN)
-	dmax = sigma * 4.;
+	sigma /= 4.;
+
+    if (net_opt->answer) {
+	setKernelFunction(kernel_function, 1, sigma, &term);
+    }
+    else {
+	setKernelFunction(kernel_function, 2, sigma, &term);
+    }
 
     if (net) {
 	int line, nlines;
@@ -405,10 +438,10 @@ int main(int argc, char **argv)
 	struct line_cats *SCats;
 	double total = 0.0;
 
-	G_message(_("\nWriting output vector map using smooth parameter=%f."),
-		  sigma);
-	G_message(_("\nNormalising factor=%f."),
-		  1. / gaussianFunction(sigma / 4., sigma, dimension));
+	G_verbose_message(_("Writing output vector map using smooth parameter %f"),
+                          sigma);
+	G_verbose_message(_("Normalising factor %f"),
+                          1. / gaussianFunction(sigma / 4., sigma, dimension));
 
 	/* Divide lines to segments and calculate gaussian for center of each segment */
 	Points = Vect_new_line_struct();
@@ -422,6 +455,7 @@ int main(int argc, char **argv)
 	    int seg, nseg, ltype;
 	    double llength, length, x, y;
 
+            G_percent(line, nlines, 5);
 	    ltype = Vect_read_line(&Net, Points, NULL, line);
 	    if (!(ltype & GV_LINES))
 		continue;
@@ -443,8 +477,7 @@ int main(int argc, char **argv)
 			offset1, x, y);
 
 		compute_net_distance(x, y, &In, &Net, netmax, sigma, term,
-				     &gaussian, dmax, node_method,
-				     kernel_function);
+				     &gaussian, dmax, node_method);
 		gaussian *= multip;
 		if (gaussian > gausmax)
 		    gausmax = gaussian;
@@ -472,7 +505,6 @@ int main(int argc, char **argv)
 		    total += length * gaussian;
 		}
 	    }
-	    G_percent(line, nlines, 1);
 	}
 
 	if (flag_normalize->answer || flag_multiply->answer) {
@@ -512,43 +544,63 @@ int main(int argc, char **argv)
 	Vect_close(&Out);
     }
     else {
-	G_message(_("\nWriting output raster map using smooth parameter=%f."),
-		  sigma);
-	G_message(_("\nNormalising factor=%f."),
-		  1. / gaussianFunction(sigma / 4., sigma, dimension));
+	/* spatial index handling, borrowed from lib/vector/Vlib/find.c */
+	struct bound_box box;
+	struct boxlist *NList = Vect_new_boxlist(1);
+
+	G_verbose_message(_("Writing output raster map using smooth parameter %f"),
+                          sigma);
+	G_verbose_message(_("Normalising factor %f"),
+                          1. / gaussianFunction(sigma / 4., sigma, dimension));
 
 	for (row = 0; row < window.rows; row++) {
 	    G_percent(row, window.rows, 2);
-	    if (mask) {
-		if (G_get_map_row(maskfd, mask, row) < 0)
-		    G_fatal_error(_("Unable to read MASK"));
-	    }
+	    if (mask)
+		Rast_get_c_row(maskfd, mask, row);
 
 	    for (col = 0; col < window.cols; col++) {
 		/* don't interpolate outside of the mask */
 		if (mask && mask[col] == 0) {
-		    G_set_d_null_value(&output_cell[col], 1);
+		    Rast_set_d_null_value(&output_cell[col], 1);
 		    continue;
 		}
 
-		N = G_row_to_northing(row + 0.5, &window);
-		E = G_col_to_easting(col + 0.5, &window);
+		N = Rast_row_to_northing(row + 0.5, &window);
+		E = Rast_col_to_easting(col + 0.5, &window);
 
+		if ((col & 31) == 0) {
+
+		    /* create bounding box 32x2*dmax size from the current cell center */
+		    box.N = N + dmax;
+		    box.S = N - dmax;
+		    box.E = E + dmax + 32 * window.ew_res;
+		    box.W = E - dmax;
+		    box.T = HUGE_VAL;
+		    box.B = -HUGE_VAL;
+
+		    Vect_select_lines_by_box(&In, &box, GV_POINT, NList);		    
+		}
+		box.N = N + dmax;
+		box.S = N - dmax;
+		box.E = E + dmax;
+		box.W = E - dmax;
+		box.T = HUGE_VAL;
+		box.B = -HUGE_VAL;
 		/* compute_distance(N, E, &In, sigma, term, &gaussian, dmax); */
-		compute_distance(N, E, &In, sigma, term, &gaussian, dmax,
-				 kernel_function);
+		compute_distance(N, E, sigma, term, &gaussian, dmax, &box, NList);
 
 		output_cell[col] = multip * gaussian;
 		if (gaussian > gausmax)
 		    gausmax = gaussian;
 	    }
-	    G_put_raster_row(fdout, output_cell, DCELL_TYPE);
+	    Rast_put_row(fdout, output_cell, DCELL_TYPE);
 	}
-
-	G_close_cell(fdout);
+        G_percent(1, 1, 1);
+        
+	Rast_close(fdout);
     }
 
-    G_message(_("Maximum value in output: %e."), multip * gausmax);
+    G_done_msg(_("Maximum value in output: %e."), multip * gausmax);
 
     Vect_close(&In);
 
@@ -627,12 +679,13 @@ double compute_all_net_distances(struct Map_info *In, struct Map_info *Net,
 {
     int nn, kk, nalines, aline;
     double dist;
-    struct line_pnts *Points;
-    BOUND_BOX box;
-    struct ilist *List;
+    struct line_pnts *APoints, *BPoints;
+    struct bound_box box;
+    struct boxlist *List;
 
-    Points = Vect_new_line_struct();
-    List = Vect_new_list();
+    APoints = Vect_new_line_struct();
+    BPoints = Vect_new_line_struct();
+    List = Vect_new_boxlist(0);
 
     nn = Vect_get_num_primitives(In, GV_POINTS);
     nn = nn * (nn - 1);
@@ -645,14 +698,14 @@ double compute_all_net_distances(struct Map_info *In, struct Map_info *Net,
 
 	G_debug(3, "  aline = %d", aline);
 
-	altype = Vect_read_line(In, Points, NULL, aline);
+	altype = Vect_read_line(In, APoints, NULL, aline);
 	if (!(altype & GV_POINTS))
 	    continue;
 
-	box.E = Points->x[0] + dmax;
-	box.W = Points->x[0] - dmax;
-	box.N = Points->y[0] + dmax;
-	box.S = Points->y[0] - dmax;
+	box.E = APoints->x[0] + dmax;
+	box.W = APoints->x[0] - dmax;
+	box.N = APoints->y[0] + dmax;
+	box.S = APoints->y[0] - dmax;
 	box.T = PORT_DOUBLE_MAX;
 	box.B = -PORT_DOUBLE_MAX;
 
@@ -662,24 +715,23 @@ double compute_all_net_distances(struct Map_info *In, struct Map_info *Net,
 	for (i = 0; i < List->n_values; i++) {
 	    int bline, ret;
 
-	    bline = List->value[i];
+	    bline = List->id[i];
 
 	    if (bline == aline)
 		continue;
 
 	    G_debug(3, "    bline = %d", bline);
-
-	    Vect_get_line_box(In, bline, &box);
-
-
-	    G_debug(3, "  SP: %f %f -> %f %f", Points->x[0], Points->y[0],
-		    box.E, box.N);
+	    Vect_read_line(In, BPoints, NULL, bline);
 
 	    ret =
-		Vect_net_shortest_path_coor(Net, Points->x[0], Points->y[0],
-					    0.0, box.E, box.N,
+		Vect_net_shortest_path_coor(Net, APoints->x[0], APoints->y[0],
+					    0.0, BPoints->x[0], BPoints->y[0],
 					    0.0, netmax, netmax, &dist, NULL,
 					    NULL, NULL, NULL, NULL, NULL);
+
+	    G_debug(3, "  SP: %f %f -> %f %f", APoints->x[0], APoints->y[0],
+		    BPoints->x[0], BPoints->y[0]);
+
 	    if (ret == 0) {
 		G_debug(3, "not reachable");
 		continue;	/* Not reachable */
@@ -707,7 +759,7 @@ int count_node_arcs(struct Map_info *Map, int node)
     n = Vect_get_node_n_lines(Map, node);
     for (i = 0; i < n; i++) {
 	line = Vect_get_node_line(Map, node, i);
-	type = Vect_read_line(Map, NULL, NULL, abs(line));
+	type = Vect_get_line_type(Map, abs(line));
 	if (type & GV_LINES)
 	    count++;
     }
@@ -717,18 +769,17 @@ int count_node_arcs(struct Map_info *Map, int node)
 /* Compute gausian for x, y along Net, using all points in In */
 void compute_net_distance(double x, double y, struct Map_info *In,
 			  struct Map_info *Net, double netmax, double sigma,
-			  double term, double *gaussian, double dmax,
-			  int node_method, int kernel_function)
+			  double term, double *gaussian, double dmax, int node_method)
 {
     int i;
     double dist, kernel;
     static struct line_pnts *FPoints = NULL;
-    BOUND_BOX box;
-    static struct ilist *PointsList = NULL;
+    struct bound_box box;
+    static struct boxlist *PointsList = NULL;
     static struct ilist *NodesList = NULL;
 
     if (!PointsList)
-	PointsList = Vect_new_list();
+	PointsList = Vect_new_boxlist(1);
 
     if (node_method == NODE_EQUAL_SPLIT) {
 	if (!NodesList)
@@ -756,14 +807,16 @@ void compute_net_distance(double x, double y, struct Map_info *In,
     for (i = 0; i < PointsList->n_values; i++) {
 	int line, ret;
 
-	line = PointsList->value[i];
+	line = PointsList->id[i];
 
-	Vect_get_line_box(In, line, &box);
-
-	G_debug(3, "  SP: %f %f -> %f %f", x, y, box.E, box.N);
-
+	G_debug(3, "  SP: %f %f -> %f %f", x, y, PointsList->box[i].E, PointsList->box[i].N);
+	/*ret = Vect_net_shortest_path_coor(Net, x, y, 0.0, Points->x[0], */
+	/*Points->y[0], 0.0, netmax, netmax, */
+	/*&dist, NULL, NULL, NULL, NULL, NULL, */
+	/*NULL); */
 	ret = Vect_net_shortest_path_coor2(Net,
-					   box.E, box.N, 0.0,
+					   PointsList->box[i].E,
+					   PointsList->box[i].N, 0.0,
 					   x, y, 0.0, netmax, 1.0,
 					   &dist, NULL,
 					   NULL, NodesList, FPoints, NULL,
@@ -781,7 +834,7 @@ void compute_net_distance(double x, double y, struct Map_info *In,
 	    continue;
 
 	/* kernel = gaussianKernel(dist / sigma, term); */
-	kernel = kernelFunction(kernel_function, 1, sigma, dist);
+	kernel = kernelFunction(term, sigma, dist);
 
 	if (node_method == NODE_EQUAL_SPLIT) {
 	    int j, node;
@@ -808,47 +861,34 @@ void compute_net_distance(double x, double y, struct Map_info *In,
     }
 }
 
-void compute_distance(double N, double E, struct Map_info *In,
-		      double sigma, double term, double *gaussian,
-		      double dmax, int kernel_function)
+void compute_distance(double N, double E, double sigma, double term,
+                      double *gaussian, double dmax, struct bound_box *box,
+		      struct boxlist *NList)
 {
     int line, nlines;
     double a[2], b[2];
     double dist;
 
-    /* spatial index handling, borrowed from lib/vector/Vlib/find.c */
-    BOUND_BOX box;
-    static struct ilist *NList = NULL;
-
     a[0] = E;
     a[1] = N;
 
-    if (!NList)
-	NList = Vect_new_list();
-
-    /* create bounding box 2x2*dmax size from the current cell center */
-    box.N = N + dmax;
-    box.S = N - dmax;
-    box.E = E + dmax;
-    box.W = E - dmax;
-    box.T = HUGE_VAL;
-    box.B = -HUGE_VAL;
-
     /* number of lines within dmax box  */
-    nlines = Vect_select_lines_by_box(In, &box, GV_POINT, NList);
+    nlines = NList->n_values;
 
     *gaussian = .0;
 
     for (line = 0; line < nlines; line++) {
 
-	Vect_get_line_box(In, NList->value[line], &box);
-	b[0] = box.E;
-	b[1] = box.N;
+	b[0] = NList->box[line].E;
+	b[1] = NList->box[line].N;
 
-	dist = euclidean_distance(a, b, 2);
+	if (b[0] <= box->E && b[0] >= box->W &&
+	    b[1] <= box->N && b[1] >= box->S)  {
+	    dist = euclidean_distance(a, b, 2);
 
-	if (dist <= dmax)
-	    /* *gaussian += gaussianKernel(dist / sigma, term); */
-	    *gaussian += kernelFunction(kernel_function, 2, sigma, dist);
+	    if (dist <= dmax)
+		/* *gaussian += gaussianKernel(dist / sigma, term); */
+		*gaussian += kernelFunction(term, sigma, dist);
+	}
     }
 }

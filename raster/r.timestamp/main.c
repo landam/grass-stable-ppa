@@ -26,13 +26,15 @@ int main(int argc, char *argv[])
     struct Option *map, *date;
     struct TimeStamp ts;
     char *name;
-    char *mapset;
+    const char *mapset;
     int modify;
 
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, metadata, timestamp");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("metadata"));
+    G_add_keyword(_("timestamp"));
     module->label = _("Modifies a timestamp for a raster map.");
     module->description = _("Print/add/remove a timestamp for a raster map.");
 
@@ -54,16 +56,19 @@ int main(int argc, char *argv[])
     modify = date->answer != NULL;
 
     if (modify)
-	mapset = G_find_cell(name, G_mapset());
+	mapset = G_find_raster(name, G_mapset());
     else
-	mapset = G_find_cell(name, "");
-    if (mapset == NULL)
-	G_fatal_error("Map <%s> not found %s", name,
+	mapset = G_find_raster(name, "");
+
+    if (mapset == NULL) {
+	G_fatal_error(_("Raster map <%s> not found %s"), name,
 		      modify ? "in current mapset" : "");
+	exit(EXIT_FAILURE);
+    }
 
     if (!modify) {
-	if (G_read_raster_timestamp(name, mapset, &ts) == 1) {
-	    G__write_timestamp(stdout, &ts);
+	if (G_read_raster_timestamp(name, "", &ts) == 1) {
+	    G_write_timestamp(stdout, &ts);
 	    exit(EXIT_SUCCESS);
 	}
 	else
@@ -74,12 +79,10 @@ int main(int argc, char *argv[])
 	exit(EXIT_SUCCESS);
     }
 
-    if (1 == G_scan_timestamp(&ts, date->answer)) {
-	G_write_raster_timestamp(name, &ts);
-	exit(EXIT_SUCCESS);
-    }
-    else
-	G_fatal_error(_("Invalid timestamp"));
+    if(G_scan_timestamp(&ts, date->answer) != 1)
+        G_fatal_error("Timestamp format is invalid");
+
+    G_write_raster_timestamp(name, &ts);
 
     exit(EXIT_SUCCESS);
 }

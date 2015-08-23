@@ -1,17 +1,17 @@
 
-/**
- * \file commas.c
+/*!
+ * \file lib/gis/commas.c
  *
  * \brief GIS Library - Comma string functions.
  *
- * (C) 2001-2008 by the GRASS Development Team
+ * (C) 2001-2014 by the GRASS Development Team
  *
  * This program is free software under the GNU General Public License
  * (>=v2). Read the file COPYING that comes with GRASS for details.
  *
  * \author GRASS GIS Development Team
  *
- * \date 1999-2008
+ * \date 1999-2014
  */
 
 #include <string.h>
@@ -82,10 +82,10 @@ int G_insert_commas(char *buf)
  *  - 1234       stays   1234
  *
  * \param[in,out] buf string
- * \return always returns 0
+ * \return
  */
 
-int G_remove_commas(char *buf)
+void G_remove_commas(char *buf)
 {
     char *b;
 
@@ -94,6 +94,4 @@ int G_remove_commas(char *buf)
 	    *buf++ = *b;
 
     *buf = 0;
-
-    return 0;
 }

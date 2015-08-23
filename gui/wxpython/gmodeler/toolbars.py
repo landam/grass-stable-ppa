@@ -1,4 +1,4 @@
-"""!
+"""
 @package gmodeler.toolbars
 
 @brief wxGUI Graphical Modeler toolbars classes
@@ -20,23 +20,28 @@ import sys
 import wx
 
 from core              import globalvar
+from core.utils import _
 from gui_core.toolbars import BaseToolbar, BaseIcons
 
 from icons.icon        import MetaIcon
 
 class ModelerToolbar(BaseToolbar):
-    """!Graphical modeler toolbaro (see gmodeler.py)
+    """Graphical modeler toolbaro (see gmodeler.py)
     """
     def __init__(self, parent):
         BaseToolbar.__init__(self, parent)
-        
+
+        # workaround for http://trac.wxwidgets.org/ticket/13888
+        if sys.platform == 'darwin':
+            parent.SetToolBar(self)
+
         self.InitToolbar(self._toolbarData())
         
         # realize the toolbar
         self.Realize()
         
     def _toolbarData(self):
-        """!Toolbar data"""
+        """Toolbar data"""
         icons = {
             'new'        : MetaIcon(img = 'create',
                                     label = _('Create new model (Ctrl+N)')),
@@ -55,7 +60,9 @@ class ModelerToolbar(BaseToolbar):
             'relation'   : MetaIcon(img = 'relation-create',
                                     label = _('Manually define relation between data and commands')),
             'loop'       : MetaIcon(img = 'loop-add',
-                                    label = _('Add loop/series')),
+                                    label = _('Add loop/series to model')),
+            'comment'    : MetaIcon(img = 'label-add',
+                                    label = _('Add comment to model')),
             'run'        : MetaIcon(img = 'execute',
                                     label = _('Run model')),
             'validate'   : MetaIcon(img = 'check',
@@ -89,6 +96,8 @@ class ModelerToolbar(BaseToolbar):
                                       self.parent.OnDefineRelation),
                                      ('loop', icons['loop'],
                                       self.parent.OnDefineLoop),
+                                     ('comment', icons['comment'],
+                                      self.parent.OnAddComment),
                                      (None, ),
                                      ('redraw', icons['redraw'],
                                       self.parent.OnCanvasRefresh),

@@ -1,0 +1,54 @@
+Description: Enclose Python ternary in parenthesis.
+ This fixes an issue with the C to Python conversion of the stat & stat64
+ structs on GNU/Hurd. The structs define the final member conditionally:
+ .
+  #define _SPARE_SIZE     ((sizeof (__fsid_t) == sizeof (int)) ? 9 : 8)
+      int st_spare[_SPARE_SIZE];  /* Room for future expansion.  */
+  #undef _SPARE_SIZE
+ .
+ This gets converted by ctypesgen to:
+ .
+  ('st_spare', c_int * (sizeof(__fsid_t) == sizeof(c_int)) and 9 or 8),
+ .
+ Which causes a TypeError:
+ .
+  TypeError: second item in _fields_ tuple (index 17) must be a C type
+ .
+ Enclosing the Python expression in parenthesis to become:
+ .
+  ('st_spare', c_int * ((sizeof(__fsid_t) == sizeof(c_int)) and 9 or 8)),
+ .
+ fixes the TypeError.
+ .
+ While the and/or idiom is common it's also unsafe, because it can return
+ wrong results when the "and" value has a false boolean value. See:
+ .
+ https://docs.python.org/3.4/faq/programming.html#is-there-an-equivalent-of-c-s-ternary-operator
+ .
+ In the st_spare case this is not a problem, but it can cause problems for
+ other conversions in the future.
+ .
+ Instead of the and/or idiom the recommended if/else idiom is used.
+ .
+ The st_spare member thus becomes:
+ .
+  ('st_spare', c_int * (9 if (sizeof(__fsid_t) == sizeof(c_int)) else 8)),
+ .
+Author: Bas Couwenberg <sebastic@xs4all.nl>
+Forwarded: https://trac.osgeo.org/grass/ticket/2581
+
+--- a/lib/python/ctypes/ctypesgencore/expressions.py
++++ b/lib/python/ctypes/ctypesgencore/expressions.py
+@@ -208,9 +208,9 @@ class ConditionalExpressionNode(Expressi
+             return self.no.evaluate(context)
+ 
+     def py_string(self, can_be_ctype):
+-        return "%s and %s or %s" % \
+-            (self.cond.py_string(True),
+-             self.yes.py_string(can_be_ctype),
++        return "(%s if %s else %s)" % \
++            (self.yes.py_string(can_be_ctype),
++             self.cond.py_string(True),
+              self.no.py_string(can_be_ctype))
+ 
+ class AttributeExpressionNode(ExpressionNode):

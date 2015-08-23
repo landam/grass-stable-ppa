@@ -1,7 +1,8 @@
 /****************************************************************************
  * 
- *  MODULE:	iostream
+ *  MODULE:     iostream
  *
+
  *  COPYRIGHT (C) 2007 Laura Toma
  *   
  * 
@@ -25,18 +26,19 @@
  *  the Free Software Foundation; either version 2 of the License, or
  *  (at your option) any later version.
  *
+
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *****************************************************************************/
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  General Public License for more details.  *
+ *  **************************************************************************/
+
 
 #ifndef __EMPQ_IMPL_H
 #define __EMPQ_IMPL_H
 
 #include <ostream>
-using namespace std;
+#include <vector>
 
 #include "empq.h"
 
@@ -554,7 +556,7 @@ long em_pqueue<T,Key>::maxlen() {
 //return the total nb of elements in the structure 
 template<class T, class Key>
 unsigned long em_pqueue<T,Key>::size() {
-  //sum up the lenghts(nb of elements) of the external buffers 
+  //sum up the lengths(nb of elements) of the external buffers 
   unsigned long elen = 0;
   for (unsigned short i=0; i < crt_buf; i++) {
     elen += buff[i]->get_buf_len();
@@ -1536,7 +1538,7 @@ em_pqueue<T,Key>::print() {
 //************************************************************/
 template<class T, class Key>
 void em_pqueue<T,Key>::print_size() {
-  //sum up the lenghts(nb of elements) of the external buffers 
+  //sum up the lengths(nb of elements) of the external buffers 
   long elen = 0;
   cout << "EMPQ: pq=" << pq->size() <<",B0=" << buff_0->get_buf_len() << endl;
   cout.flush();

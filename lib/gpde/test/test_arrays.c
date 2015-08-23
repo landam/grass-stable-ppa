@@ -19,7 +19,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <grass/glocale.h>
 #include <grass/N_pde.h>
 #include "test_gpde_lib.h"
 
@@ -45,18 +44,18 @@ int unit_test_arrays(void)
     io_bench_2d();
     return sum;
 
-    G_message(_("\n++ Running array unit tests ++"));
+    G_message("\n++ Running array unit tests ++");
 
-    G_message(_("\t 1. testing 2d arrays"));
+    G_message("\t 1. testing 2d arrays");
     sum += test_array_2d();
 
-    G_message(_("\t 2. testing 3d arrays"));
+    G_message("\t 2. testing 3d arrays");
     sum += test_array_3d();
 
     if (sum > 0)
-	G_warning(_("\n-- Array unit tests failure --"));
+	G_warning("\n-- Array unit tests failure --");
     else
-	G_message(_("\n-- Array unit tests finished successfully --"));
+	G_message("\n-- Array unit tests finished successfully --");
 
     return sum;
 }
@@ -295,7 +294,7 @@ int io_bench_2d(void)
 
 
     sprintf(buff,
-	    "g.remove rast=gpde_lib_test_raster_1,gpde_lib_test_raster_2,gpde_lib_test_raster_3");
+	    "g.remove -f type=raster name=gpde_lib_test_raster_1,gpde_lib_test_raster_2,gpde_lib_test_raster_3");
     system(buff);
 
     N_free_array_2d(data1);
@@ -332,12 +331,10 @@ int test_array_2d(void)
     data11 = N_alloc_array_2d(TEST_N_NUM_COLS, TEST_N_NUM_ROWS, 1, CELL_TYPE);
     data2 = N_alloc_array_2d(TEST_N_NUM_COLS, TEST_N_NUM_ROWS, 1, FCELL_TYPE);
     N_print_array_2d_info(data2);
-    data22 =
-	N_alloc_array_2d(TEST_N_NUM_COLS, TEST_N_NUM_ROWS, 1, FCELL_TYPE);
+    data22 = N_alloc_array_2d(TEST_N_NUM_COLS, TEST_N_NUM_ROWS, 1, FCELL_TYPE);
     data3 = N_alloc_array_2d(TEST_N_NUM_COLS, TEST_N_NUM_ROWS, 1, DCELL_TYPE);
     N_print_array_2d_info(data3);
-    data33 =
-	N_alloc_array_2d(TEST_N_NUM_COLS, TEST_N_NUM_ROWS, 1, DCELL_TYPE);
+    data33 = N_alloc_array_2d(TEST_N_NUM_COLS, TEST_N_NUM_ROWS, 1, DCELL_TYPE);
 
     /*Fill the first arrays with data */
 
@@ -529,8 +526,7 @@ int test_array_2d(void)
     N_math_array_2d(data2, data22, tmp, N_ARRAY_SUM);
     res = N_convert_array_2d_null_to_zero(tmp);
     if (res == 0) {
-	G_warning
-	    ("test_array_2d: error in  N_convert_array_2d_null_to_zero ");
+	G_warning("test_array_2d: error in  N_convert_array_2d_null_to_zero ");
 	sum++;
     }
     N_free_array_2d(tmp);
@@ -592,7 +588,7 @@ int test_array_2d(void)
 
 
     sprintf(buff,
-	    "g.remove rast=gpde_lib_test_raster_1,gpde_lib_test_raster_2,gpde_lib_test_raster_3");
+	    "g.remove -f type=raster name=gpde_lib_test_raster_1,gpde_lib_test_raster_2,gpde_lib_test_raster_3");
     system(buff);
 
 
@@ -614,7 +610,7 @@ int test_array_3d(void)
 {
     int sum = 0, res = 0;
     char buff[1024];
-    G3D_Region region;
+    RASTER3D_Region region;
 
     N_array_3d *data1;
     N_array_3d *data11;
@@ -627,19 +623,19 @@ int test_array_3d(void)
 
     /*Alloacte memory for all arrays */
     data1 =
-	N_alloc_array_3d(TEST_N_NUM_COLS, TEST_N_NUM_ROWS, TEST_N_NUM_DEPTHS,
-			 2, FCELL_TYPE);
+	N_alloc_array_3d(TEST_N_NUM_COLS, TEST_N_NUM_ROWS, TEST_N_NUM_DEPTHS, 2,
+			 FCELL_TYPE);
     N_print_array_3d_info(data1);
     data11 =
-	N_alloc_array_3d(TEST_N_NUM_COLS, TEST_N_NUM_ROWS, TEST_N_NUM_DEPTHS,
-			 2, FCELL_TYPE);
+	N_alloc_array_3d(TEST_N_NUM_COLS, TEST_N_NUM_ROWS, TEST_N_NUM_DEPTHS, 2,
+			 FCELL_TYPE);
     data2 =
-	N_alloc_array_3d(TEST_N_NUM_COLS, TEST_N_NUM_ROWS, TEST_N_NUM_DEPTHS,
-			 2, DCELL_TYPE);
+	N_alloc_array_3d(TEST_N_NUM_COLS, TEST_N_NUM_ROWS, TEST_N_NUM_DEPTHS, 2,
+			 DCELL_TYPE);
     N_print_array_3d_info(data2);
     data22 =
-	N_alloc_array_3d(TEST_N_NUM_COLS, TEST_N_NUM_ROWS, TEST_N_NUM_DEPTHS,
-			 2, DCELL_TYPE);
+	N_alloc_array_3d(TEST_N_NUM_COLS, TEST_N_NUM_ROWS, TEST_N_NUM_DEPTHS, 2,
+			 DCELL_TYPE);
 
 
     /*Fill the first arrays with data */
@@ -837,8 +833,8 @@ int test_array_3d(void)
     N_free_array_3d(data2);
 
     /*Set the defaults */
-    G3d_initDefaults();
-    G3d_getWindow(&region);
+    Rast3d_init_defaults();
+    Rast3d_get_window(&region);
 
     data1 =
 	N_alloc_array_3d(region.cols, region.rows, region.depths, 0,
@@ -861,7 +857,7 @@ int test_array_3d(void)
     N_free_array_3d(tmp);
 
     sprintf(buff,
-	    "g.remove rast3d=gpde_lib_test_volume_1,gpde_lib_test_volume_2");
+	    "g.remove -f type=raster_3d name=gpde_lib_test_volume_1,gpde_lib_test_volume_2");
     system(buff);
 
     N_free_array_3d(data1);

@@ -1,8 +1,18 @@
+/*!
+  \file db/driver/postgres/cursor.c
+  
+  \brief DBMI - Low Level PostgreSQL database driver - describe table
+  
+  This program is free software under the GNU General Public License
+  (>=v2). Read the file COPYING that comes with GRASS for details.
+  
+  \author Radim Blazek
+ */
 #include <grass/dbmi.h>
 #include <grass/datetime.h>
+#include <grass/glocale.h>
 #include "globals.h"
 #include "proto.h"
-#include <grass/glocale.h>
 
 int db__driver_describe_table(dbString * table_name, dbTable ** table)
 {
@@ -18,17 +28,17 @@ int db__driver_describe_table(dbString * table_name, dbTable ** table)
     res = PQexec(pg_conn, db_get_string(&sql));
 
     if (!res || PQresultStatus(res) != PGRES_TUPLES_OK) {
-	append_error(db_get_string(&sql));
-	append_error("\n");
-	append_error(PQerrorMessage(pg_conn));
-	report_error();
+	db_d_append_error("%s\n%s",
+			  db_get_string(&sql),
+			  PQerrorMessage(pg_conn));
+	db_d_report_error();
 	PQclear(res);
 	return DB_FAILED;
     }
 
     if (describe_table(res, table, NULL) == DB_FAILED) {
-	append_error("Cannot describe table\n");
-	report_error();
+	db_d_append_error(_("Unable to describe table."));
+	db_d_report_error();
 	PQclear(res);
 	return DB_FAILED;
     }
@@ -50,7 +60,6 @@ int describe_table(PGresult * res, dbTable ** table, cursor * c)
     G_debug(3, "describe_table()");
 
     ncols = PQnfields(res);
-
 
     /* Count columns of known type */
     kcols = 0;
@@ -100,13 +109,18 @@ int describe_table(PGresult * res, dbTable ** table, cursor * c)
 	/* PG types defined in globals.h (and pg_type.h) */
 	if (sqltype == DB_SQL_TYPE_UNKNOWN) {
 	    if (gpgtype == PG_TYPE_POSTGIS_GEOM) {
-		G_warning(_("pg driver: PostGIS column '%s', type 'geometry'  will not be converted"),
-			  fname);
+		G_debug(1, "PostgreSQL driver: PostGIS column '%s', type 'geometry' "
+			"will not be converted", fname);
+		continue;
+	    }
+	    else if (gpgtype == PG_TYPE_POSTGIS_TOPOGEOM) {
+		G_debug(1, "PostgreSQL driver: PostGIS column '%s', type 'topogeometry' "
+			"will not be converted", fname);
 		continue;
 	    }
 	    else {
 		/* Warn, ignore and continue */
-		G_warning(_("pg driver: column '%s', type %d  is not supported"),
+		G_warning(_("PostgreSQL driver: column '%s', type %d is not supported"),
 			  fname, pgtype);
 		continue;
 	    }
@@ -171,7 +185,8 @@ int get_column_info(PGresult * res, int col, int *pgtype, int *gpgtype,
 
     /* Convert internal type to PG_TYPE_* */
 
-    /* TODO: we should load field names from pg_type table instead of using copy of #defines */
+    /* TODO: we should load field names from pg_type table
+       instead of using copy of #defines */
     switch (*gpgtype) {
     case PG_TYPE_BIT:
     case PG_TYPE_INT2:

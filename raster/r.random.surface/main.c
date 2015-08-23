@@ -24,38 +24,108 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
-#define MAIN
 #include "ransurf.h"
 #include "local_proto.h"
-#undef MAIN
+
+BIGF BigF;
+double **Surface, NS, EW, FilterSD, AllMaxDist, *Norm;
+int MapCount, FDM, Rs, Cs, Theory;
+CELL *CellBuffer;
+FILTER *AllFilters, Filter;
+CATINFO CatInfo;
+int *Seeds, Seed, NumSeeds, Low, High, NumMaps, NumFilters, OutFD;
+char Buf[240], **OutNames, *TheoryName, *Mapset;
+
+struct Flag *Uniform;
+struct Option *Distance, *Exponent, *Weight;
+struct Option *Output;
+struct Option *range_high_stuff;
+struct Option *SeedStuff;
 
 int main(int argc, char **argv)
 {
     struct GModule *module;
+
     int DoMap, DoFilter, MapSeed;
-    double ran1();
 
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, random, surface");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("surface"));
+    G_add_keyword(_("random"));
     module->description =
 	_("Generates random surface(s) with spatial dependence.");
 
-    Init(argc, argv);
+    Output = G_define_option();
+    Output->key = "output";
+    Output->type = TYPE_STRING;
+    Output->required = YES;
+    Output->multiple = YES;
+    Output->description = _("Name for output raster map(s)");
+    Output->gisprompt = "new,cell,raster";
+
+    Distance = G_define_option();
+    Distance->key = "distance";
+    Distance->type = TYPE_DOUBLE;
+    Distance->required = NO;
+    Distance->multiple = NO;
+    Distance->description =
+	_("Maximum distance of spatial correlation (value >= 0.0)");
+    Distance->answer = "0.0";
+
+    Exponent = G_define_option();
+    Exponent->key = "exponent";
+    Exponent->type = TYPE_DOUBLE;
+    Exponent->multiple = NO;
+    Exponent->required = NO;
+    Exponent->description = _("Distance decay exponent (value > 0.0)");
+    Exponent->answer = "1.0";
+
+    Weight = G_define_option();
+    Weight->key = "flat";
+    Weight->type = TYPE_DOUBLE;
+    Weight->multiple = NO;
+    Weight->required = NO;
+    Weight->description =
+	_("Distance filter remains flat before beginning exponent");
+    Weight->answer = "0.0";
+
+    SeedStuff = G_define_option();
+    SeedStuff->key = "seed";
+    SeedStuff->type = TYPE_INTEGER;
+    SeedStuff->required = NO;
+    SeedStuff->description =
+	_("Random seed (SEED_MIN >= value >= SEED_MAX), default [random]");
+
+    range_high_stuff = G_define_option();
+    range_high_stuff->key = "high";
+    range_high_stuff->type = TYPE_INTEGER;
+    range_high_stuff->required = NO;
+    range_high_stuff->description = _("Maximum cell value of distribution");
+    range_high_stuff->answer = "255";
+
+    Uniform = G_define_flag();
+    Uniform->key = 'u';
+    Uniform->description = _("Uniformly distributed cell values");
+
+    if (G_parser(argc, argv))
+	exit(EXIT_FAILURE);
+
+    Init();
+
     if (Uniform->answer)
 	GenNorm();
-    CalcSD();
-    for (DoMap = 0; DoMap < NumMaps; DoMap++) {
-	OutFD = G_open_cell_new(OutNames[DoMap]);
-	if (OutFD < 0)
-	    G_fatal_error(_("Unable to open raster map <%s>"),
-			  OutNames[DoMap]);
 
-	G_message(_("Generating raster map <%s>..."),
-		  OutNames[DoMap]);
+    CalcSD();
+
+    for (DoMap = 0; DoMap < NumMaps; DoMap++) {
+	OutFD = Rast_open_c_new(OutNames[DoMap]);
+
+	G_message(_("Generating raster map <%s>..."), OutNames[DoMap]);
 
 	if (Seeds[DoMap] == SEED_MIN - 1)
 	    Seeds[DoMap] = (int)(ran1() * SEED_MAX);
@@ -65,10 +135,11 @@ int main(int argc, char **argv)
 
 	for (DoFilter = 0; DoFilter < NumFilters; DoFilter++) {
 	    CopyFilter(&Filter, AllFilters[DoFilter]);
-	    G_debug(1, "Starting filter #%d, distance: %.*lf, exponent: %.*lf, flat: %.*lf",
+	    G_debug(1,
+		    "Starting filter #%d, distance: %.*lf, exponent: %.*lf, flat: %.*lf",
 		    DoFilter, Digits(2.0 * Filter.MaxDist, 6),
-		      2.0 * Filter.MaxDist, Digits(1.0 / Filter.Exp, 6),
-		      1.0 / Filter.Exp, Digits(Filter.Mult, 6), Filter.Mult);
+		    2.0 * Filter.MaxDist, Digits(1.0 / Filter.Exp, 6),
+		    1.0 / Filter.Exp, Digits(Filter.Mult, 6), Filter.Mult);
 
 	    MakeBigF();
 	    CalcSurface();
@@ -78,6 +149,6 @@ int main(int argc, char **argv)
     }
 
     G_done_msg(" ");
-    
+
     exit(EXIT_SUCCESS);
 }

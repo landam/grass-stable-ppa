@@ -16,15 +16,15 @@
 *****************************************************************************/
 #include <stdlib.h>
 #include <string.h>
-#include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 
-/* 
- *  dig_cidx_init ()
- *  initit cat index
+/*! 
+ * \brief Initialize Plus_head structure (cidx)
  *
- *  returns 1 OK
- *          0 on error      
+ * \param Plus pointer to Plus_head structure
+ *
+ * \return 1 OK
+ * \return 0 on error      
  */
 int dig_cidx_init(struct Plus_head *Plus)
 {
@@ -48,11 +48,16 @@ void dig_cidx_free(struct Plus_head *Plus)
 
     G_debug(2, "dig_cidx_free()");
     for (i = 0; i < Plus->n_cidx; i++) {
-	ci = &(Plus->cidx[0]);
+	ci = &(Plus->cidx[i]);
 	G_free(ci->cat);
 	ci->cat = NULL;
 	ci->field = ci->n_cats = ci->a_cats = ci->n_types = 0;
     }
+    if (Plus->cidx) {
+	G_free(Plus->cidx);
+	Plus->cidx = NULL;
+    }
+    Plus->a_cidx = 0;
     Plus->n_cidx = 0;
     Plus->cidx_up_to_date = 0;
 }
@@ -130,7 +135,7 @@ dig_cidx_add_cat(struct Plus_head *Plus, int field, int cat, int line,
     return 1;
 }
 
-/* Compare by cat */
+/* Compare by cat, resolve ties by type, resolve ties by id */
 static int cmp_cat(const void *pa, const void *pb)
 {
     int *p1 = (int *)pa;
@@ -139,6 +144,14 @@ static int cmp_cat(const void *pa, const void *pb)
     if (p1[0] < p2[0])
 	return -1;
     if (p1[0] > p2[0])
+	return 1;
+    if (p1[1] < p2[1])
+	return -1;
+    if (p1[1] > p2[1])
+	return 1;
+    if (p1[2] < p2[2])
+	return -1;
+    if (p1[2] > p2[2])
 	return 1;
     return 0;
 }
@@ -208,21 +221,18 @@ dig_cidx_add_cat_sorted(struct Plus_head *Plus, int field, int cat, int line,
 	ci->cat = G_realloc(ci->cat, ci->a_cats * 3 * sizeof(int));
     }
 
-    /* Find position */
-    for (position = 0; position < ci->n_cats; position++) {
-	if (ci->cat[position][0] >= cat) {
-	    break;
+    /* Find position and move on the way */
+    for (position = ci->n_cats; position > 0; position--) {
+	if (ci->cat[position - 1][0] < cat ||
+	   (ci->cat[position - 1][0] == cat && ci->cat[position - 1][1] <= type)) {
+	       break;
 	}
+	ci->cat[position][0] = ci->cat[position - 1][0];
+	ci->cat[position][1] = ci->cat[position - 1][1];
+	ci->cat[position][2] = ci->cat[position - 1][2];
     }
 
     G_debug(4, "position = %d", position);
-
-    /* Move */
-    for (i = ci->n_cats; i > position; i--) {
-	ci->cat[i][0] = ci->cat[i - 1][0];
-	ci->cat[i][1] = ci->cat[i - 1][1];
-	ci->cat[i][2] = ci->cat[i - 1][2];
-    }
 
     ci->cat[position][0] = cat;
     ci->cat[position][1] = type;
@@ -332,7 +342,7 @@ void dig_cidx_sort(struct Plus_head *Plus)
 
 	ci = &(Plus->cidx[f]);
 
-	/* Sort by category */
+	/* Sort by 1. category, 2. type, 3. line id */
 	qsort(ci->cat, ci->n_cats, 3 * sizeof(int), cmp_cat);
 
 	/* Calculate number of unique cats */

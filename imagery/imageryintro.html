@@ -1,20 +1,6 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
-<head>
- <title>Image processing in GRASS GIS</title>
- <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
- <meta name="Author" content="Markus Neteler/GRASS Development Team">
- <link rel="stylesheet" href="grassdocs.css" type="text/css">
-</head>
-<body bgcolor="white">
-
-<img src="grass_logo.png" alt="GRASS logo"><hr align=center size=6 noshade>
-
-<!-- meta page description: Image processing introduction -->
-<h2>Image processing in GRASS GIS</h2>
-
-
-<h3>General introduction</h3>
+<!-- meta page description: Image processing in GRASS GIS -->
+<!-- meta page index: imagery -->
+<h3>Image processing in general</h3>
 
 <b>Digital numbers and physical values (reflection/radiance-at-sensor):</b>
 <p>
@@ -34,7 +20,8 @@ in 8 to 16 bits. DNs can be turned back into physical values by
 applying the reverse formula <tt>(x = (y - b) / a)</tt>.
 <p>
 The GRASS GIS module <a href="i.landsat.toar.html">i.landsat.toar</a>
-easily transforms Landsat DN to radiance-at-sensor.
+easily transforms Landsat DN to radiance-at-sensor. The equivalent 
+module for ASTER data is <a href="i.aster.toar.html">i.aster.toar</a>.
 For other satellites, <a href="r.mapcalc.html">r.mapcalc</a> can 
 be employed.
 <p>
@@ -108,14 +95,17 @@ GRASS is able to geocode raster and image data of various types:
 <ul>
 <li>unreferenced scanned maps by defining four corner points
  (<a href="i.group.html">i.group</a>, <a href="i.target.html">i.target</a>,
- <a href="i.points.html">i.points</a>, <a href="i.rectify.html">i.rectify</a>)</li>
+ <a href="g.gui.gcp.html">g.gui.gcp</a>, <a href="i.rectify.html">i.rectify</a>)</li>
 <li>unreferenced satellite data from optical and Radar sensors by
  defining a certain number of ground control points 
  (<a href="i.group.html">i.group</a>, <a href="i.target.html">i.target</a>,
- <a href="i.points.html">i.points</a>, <a href="i.rectify.html">i.rectify</a>)</li>
-<li>orthophoto based on DEM: <a href="i.ortho.photo.html">i.ortho.photo</a></li>
+ <a href="g.gui.gcp.html">g.gui.gcp</a>, <a href="i.rectify.html">i.rectify</a>)</li>
+<li>interactive graphical <a href="wxGUI.gcp.html">Ground Control Point (GCP) manager</a></li>
+<!--
+<li>orthophoto generation based on DEM: <a href="i.ortho.photo.html">i.ortho.photo</a></li>
 <li>digital handheld camera geocoding: modified procedure for
     <a href="i.ortho.photo.html">i.ortho.photo</a></li>
+-->
 </ul>
 
 
@@ -123,7 +113,7 @@ GRASS is able to geocode raster and image data of various types:
 
 To quickly combine the first three channels to a near natural color
 image, the GRASS command <a href="d.rgb.html">d.rgb</a> can be used or
-the graphical GIS manager (<a href="gis.m.html">gis.m</a>). It assigns
+the graphical GIS manager (<a href="wxGUI.html">wxGUI</a>). It assigns
 each channel to a color which is then mixed while displayed. With a
 bit more work of tuning the grey scales of the channels, nearly
 perfect colors can be achieved. Channel histograms can be shown with
@@ -162,29 +152,46 @@ GRASS supports the following methods:
 <ul>
 <li> Radiometric classification:
   <ul>
-  <li> Unsupervised classification (<a href="i.cluster.html">i.cluster</A>,
-   <a href="i.maxlik.html">i.maxlik</A>) using the Maximum Likelihood
+  <li> Unsupervised classification (<a href="i.cluster.html">i.cluster</a>,
+   <a href="i.maxlik.html">i.maxlik</a>) using the Maximum Likelihood
     classification method</li>
-  <li> Supervised classification (<a href="i.gensig.html">i.gensig</A>
-    or <a href="i.class.html">i.class</A>, <a href="i.maxlik.html">i.maxlik</A>)
+  <li> Supervised classification (<a href="i.gensig.html">i.gensig</a>
+    or <a href="g.gui.iclass.html">g.gui.iclass</a>, <a href="i.maxlik.html">i.maxlik</a>)
    using the Maximum Likelihood classification method</li>
   </ul>
-<li> Combined radiometric/geometric (segmentation based) supervised
-   classification (<A HREF="i.gensigset.html">i.gensigset</A>,
+<li> Combined radiometric/geometric (segmentation based) classification:
+  <ul>
+  <li> Supervised classification (<a href="i.gensigset.html">i.gensigset</a>,
    <a href="i.smap.html">i.smap</a>)
-
+  </ul>
+<li> Object-oriented classification:
+  <ul>
+  <li> Unsupervised classification (segmentation based: 
+       <a href="i.segment.html">i.segment</a>)
+  </ul>
 </ul>
-
+  
 Kappa statistic can be calculated to validate the results
-(<a href="r.kappa.html">r.kappa</a>).
+(<a href="r.kappa.html">r.kappa</a>). Covariance/correlation matrices can be
+calculated with <a href="r.covar.html">r.covar</a>.
 
 <h3>Image fusion</h3>
 
 In case of using multispectral data, improvements of the resolution
 can be gained by merging the panchromatic channel with color
 channels. GRASS provides the HIS (<a href="i.rgb.his.html">i.rgb.his</a>,
-<a href="i.his.rgb.html">i.his.rgb</a>) and the Brovey transform
-(<a href="i.fusion.brovey.html">i.fusion.brovey</a>) methods.
+<a href="i.his.rgb.html">i.his.rgb</a>) and the Brovey and PCA transform
+(<a href="i.pansharpen.html">i.pansharpen</a>) methods.
+
+<h3>Radiometric corrections</h3>
+
+Atmospheric effects can be removed with <a href="i.atcorr.html">i.atcorr</a>.
+Correction for topographic/terrain effects is offered in <a href="i.topo.corr.html">i.topo.corr</a>.
+Clouds in LANDSAT data can be identified and removed with
+<a href="i.landsat.acca.html">i.landsat.acca</a>.
+Calibrated digital numbers of LANDSAT and ASTER imagery may be converted to
+top-of-atmosphere radiance or reflectance and temperature (<a href="i.aster.toar.html">i.aster.toar</a>,
+<a href="i.landsat.toar.html">i.landsat.toar</a>).
 
 <h3>Time series processing</h3>
 
@@ -199,20 +206,11 @@ be calculated.
 <ul>
 <li> GRASS GIS Wiki page: <a href="http://grasswiki.osgeo.org/wiki/Image_processing">Image processing</a></li>
 <li>The GRASS 4 
-    <em><A HREF="http://grass.osgeo.org/gdp/imagery/grass4_image_processing.pdf">Image
-     Processing manual</A></EM>
-<li><a href=rasterintro.html>Introduction to GRASS 2D raster map processing</a></li>
-<li><a href=raster3dintro.html>Introduction to GRASS 3D raster map (voxel) processing</a></li>
-<li><a href=vectorintro.html>Introduction to GRASS vector map processing</a></li>
+    <em><a href="http://grass.osgeo.org/gdp/imagery/grass4_image_processing.pdf">Image
+     Processing manual</a></em></li>
+  <li><a href="rasterintro.html">Introduction into raster data processing</a></li>
+  <li><a href="raster3dintro.html">Introduction into 3D raster data (voxel) processing</a></li>
+  <li><a href="vectorintro.html">Introduction into vector data processing</a></li>
+  <li><a href="databaseintro.html">Database management</a></li>
+  <li><a href="projectionintro.html">Projections and spatial transformations</a></li>
 </ul>
-
-<HR>
-
-<P>
-<a href="index.html">Main index</a> - <a href="imagery.html">imagery index</a> - 
-<a href="full_index.html">full index</a>
-</p>
-<P>&copy; 2008-2012 <a href="http://grass.osgeo.org">GRASS Development Team</a></P>
-
-</body>
-</html>

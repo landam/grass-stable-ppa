@@ -4,15 +4,16 @@
  * MODULE:       v.db.select
  * 
  * AUTHOR(S):    Radim Blazek
+ *               OGR support by Martin Landa <landa.martin gmail.com>
+ *               -f flag by Huidae Cho <grass4u gmail.com>
  *               
  * PURPOSE:      Print vector attributes
  *               
- * COPYRIGHT:    (C) 2005-2013 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2005-2009, 2011-2014 by the GRASS Development Team
  *
- *               This program is free software under the 
- *               GNU General Public License (>=v2). 
- *               Read the file COPYING that comes with GRASS
- *               for details.
+ *               This program is free software under the GNU General
+ *               Public License (>=v2). Read the file COPYING that
+ *               comes with GRASS for details.
  *
  **************************************************************/
 
@@ -24,7 +25,7 @@
 
 #include <grass/glocale.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 
 int main(int argc, char **argv)
@@ -32,7 +33,7 @@ int main(int argc, char **argv)
     struct GModule *module;
     struct Option *map_opt, *field_opt, *fs_opt, *vs_opt, *nv_opt, *col_opt,
 	*where_opt, *file_opt;
-    struct Flag *c_flag, *v_flag, *r_flag;
+    struct Flag *c_flag, *v_flag, *r_flag, *f_flag;
     dbDriver *driver;
     dbString sql, value_string;
     dbCursor cursor;
@@ -40,41 +41,42 @@ int main(int argc, char **argv)
     dbColumn *column;
     dbValue *value;
     struct field_info *Fi;
-    int field, ncols, col, more;
+    int ncols, col, more;
     struct Map_info Map;
-    char *mapset, *fs;
     char query[1024];
     struct ilist *list_lines;
-
-    BOUND_BOX *min_box, *line_box;
-    int i, line, area, init_box, cat;
+    char *fs, *vs;
+    struct bound_box *min_box, *line_box;
+    int i, line, area, init_box, cat, field_number;
 
     module = G_define_module();
-    module->keywords = _("vector, database, attribute table");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("attribute table"));
+    G_add_keyword(_("database"));
+    G_add_keyword(_("SQL"));
     module->description = _("Prints vector map attributes.");
 
     map_opt = G_define_standard_option(G_OPT_V_MAP);
+
     field_opt = G_define_standard_option(G_OPT_V_FIELD);
+    field_opt->guisection = _("Selection");
 
-    col_opt = G_define_standard_option(G_OPT_COLUMNS);
-
-    where_opt = G_define_standard_option(G_OPT_WHERE);
-
+    col_opt = G_define_standard_option(G_OPT_DB_COLUMNS);
+    col_opt->guisection = _("Selection");
+    
+    where_opt = G_define_standard_option(G_OPT_DB_WHERE);
+    where_opt->guisection = _("Selection");
+    
     fs_opt = G_define_standard_option(G_OPT_F_SEP);
-    fs_opt->description = _("Output field separator");
     fs_opt->guisection = _("Format");
 
     vs_opt = G_define_standard_option(G_OPT_F_SEP);
-    vs_opt->key = "vs";
-    vs_opt->description = _("Output vertical record separator");
+    vs_opt->key = "vertical_separator";
+    vs_opt->label = _("Output vertical record separator");
     vs_opt->answer = NULL;
     vs_opt->guisection = _("Format");
 
-    nv_opt = G_define_option();
-    nv_opt->key = "nv";
-    nv_opt->type = TYPE_STRING;
-    nv_opt->required = NO;
-    nv_opt->description = _("Null value indicator");
+    nv_opt = G_define_standard_option(G_OPT_M_NULL_VALUE);
     nv_opt->guisection = _("Format");
 
     file_opt = G_define_standard_option(G_OPT_F_OUTPUT); 
@@ -87,6 +89,7 @@ int main(int argc, char **argv)
     r_flag->key = 'r';
     r_flag->description =
 	_("Print minimal region extent of selected vector features instead of attributes");
+    r_flag->guisection = _("Region");
 
     c_flag = G_define_flag();
     c_flag->key = 'c';
@@ -98,73 +101,73 @@ int main(int argc, char **argv)
     v_flag->description = _("Vertical output (instead of horizontal)");
     v_flag->guisection = _("Format");
 
+    f_flag = G_define_flag();
+    f_flag->key = 'f';
+    f_flag->description = _("Exclude attributes not linked to features");
+    f_flag->guisection = _("Selection");
+
     G_gisinit(argv[0]);
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
     /* set input vector map name and mapset */
-    field = atoi(field_opt->answer);
-
     if (file_opt->answer && strcmp(file_opt->answer, "-") != 0) { 
 	if (NULL == freopen(file_opt->answer, "w", stdout)) { 
 	    G_fatal_error(_("Unable to open file <%s> for writing"), file_opt->answer); 
 	} 
     } 
     
-    if (r_flag->answer) {
-	min_box = (BOUND_BOX *) G_malloc(sizeof(BOUND_BOX));
-	G_zero((void *)min_box, sizeof(BOUND_BOX));
+    min_box = line_box = NULL;
+    list_lines = NULL;
 
-	line_box = (BOUND_BOX *) G_malloc(sizeof(BOUND_BOX));
+    if (r_flag->answer) {
+	min_box = (struct bound_box *) G_malloc(sizeof(struct bound_box));
+	G_zero((void *)min_box, sizeof(struct bound_box));
+
+	line_box = (struct bound_box *) G_malloc(sizeof(struct bound_box));
+    }
+
+    if (r_flag->answer || f_flag->answer)
 	list_lines = Vect_new_list();
-    }
-    else {
-      min_box = line_box = NULL;
-      list_lines = NULL;
-    }
 
     /* the field separator */
-    fs = fs_opt->answer;
-    if (strcmp(fs, "\\t") == 0)
-        fs = "\t";
-    if (strcmp(fs, "tab") == 0)
-        fs = "\t";
-    if (strcmp(fs, "space") == 0)
-        fs = " ";
-    if (strcmp(fs, "comma") == 0)
-        fs = ",";
-
+    fs = G_option_to_separator(fs_opt);
+    if (vs_opt->answer)
+        vs = G_option_to_separator(vs_opt);
+    else
+        vs = NULL;
+    
     db_init_string(&sql);
     db_init_string(&value_string);
 
     /* open input vector */
-    if ((mapset = G_find_vector2(map_opt->answer, "")) == NULL) {
-	G_fatal_error(_("Vector map <%s> not found"), map_opt->answer);
-    }
-
-    if (!r_flag->answer) {
-	Vect_open_old_head(&Map, map_opt->answer, mapset);
-    }
-    else {
-	if (2 > Vect_open_old(&Map, map_opt->answer, mapset)) {
+    if (r_flag->answer || f_flag->answer) {
+	if (2 > Vect_open_old2(&Map, map_opt->answer, "", field_opt->answer)) {
 	    Vect_close(&Map);
 	    G_fatal_error(_("Unable to open vector map <%s> at topology level. "
 			   "Flag '%c' requires topology level."),
-			  G_fully_qualified_name(map_opt->answer, mapset),
-			  r_flag->key);
+			  map_opt->answer, r_flag->key);
 	}
+	field_number = Vect_get_field_number(&Map, field_opt->answer);
+    } else {
+	if (Vect_open_old_head2(&Map, map_opt->answer, "", field_opt->answer) < 0)
+	    G_fatal_error(_("Unable to open vector map <%s>"), map_opt->answer);
+	/* field_number won't be used, but is initialized to suppress compiler
+	 * warnings. */
+	field_number = -1;
     }
 
-    if ((Fi = Vect_get_field(&Map, field)) == NULL)
-	G_fatal_error(_("Database connection not defined for layer %d"),
-		      field);
+    if ((Fi = Vect_get_field2(&Map, field_opt->answer)) == NULL)
+	G_fatal_error(_("Database connection not defined for layer <%s>"),
+		      field_opt->answer);
 
     driver = db_start_driver_open_database(Fi->driver, Fi->database);
 
     if (!driver)
 	G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 		      Fi->database, Fi->driver);
+    db_set_error_handler_driver(driver);
 
     if (col_opt->answer)
 	sprintf(query, "SELECT %s FROM ", col_opt->answer);
@@ -225,6 +228,14 @@ int main(int argc, char **argv)
 	    if (r_flag->answer)
 		continue;
 
+	    if (f_flag->answer) {
+		Vect_cidx_find_all(&Map, field_number, -1, cat, list_lines);
+		/* if no features are found for this category, don't print
+		 * anything. */
+		if (list_lines->n_values == 0)
+		    break;
+	    }
+
 	    db_convert_column_value_to_string(column, &value_string);
 
 	    if (!c_flag->answer && v_flag->answer)
@@ -242,16 +253,21 @@ int main(int argc, char **argv)
 		fprintf(stdout, "\n");
 	}
 
+	if (f_flag->answer && col < ncols)
+	    continue;
+
 	if (r_flag->answer) {
 	    /* get minimal region extent */
-	    Vect_cidx_find_all(&Map, field, -1, cat, list_lines);
+	    Vect_cidx_find_all(&Map, field_number, -1, cat, list_lines);
 	    for (i = 0; i < list_lines->n_values; i++) {
 		line = list_lines->value[i];
-		area = Vect_get_centroid_area(&Map, line);
-		if (area > 0) {
-		    if (!Vect_get_area_box(&Map, area, line_box))
-			G_fatal_error(_("Unable to get bounding box of area %d"),
-				      area);
+		if (Vect_get_line_type(&Map, line) == GV_CENTROID) {
+		    area = Vect_get_centroid_area(&Map, line);
+		    if (area > 0) {
+			if (!Vect_get_area_box(&Map, area, line_box))
+			    G_fatal_error(_("Unable to get bounding box of area %d"),
+					  area);
+		    }
 		}
 		else {
 		    if (!Vect_get_line_box(&Map, line, line_box))
@@ -270,8 +286,8 @@ int main(int argc, char **argv)
 	else {
 	    if (!v_flag->answer)
 		fprintf(stdout, "\n");
-	    else if (vs_opt->answer)
-		fprintf(stdout, "%s\n", vs_opt->answer);
+	    else if (vs)
+		fprintf(stdout, "%s\n", vs);
 	}
     }
 
@@ -291,10 +307,6 @@ int main(int argc, char **argv)
 
 	Vect_destroy_list(list_lines);
     }
-
-    if (!driver)
-	G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
-		      Fi->database, Fi->driver);
 
     db_close_cursor(&cursor);
     db_close_database_shutdown_driver(driver);

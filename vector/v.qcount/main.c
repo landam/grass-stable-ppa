@@ -1,24 +1,10 @@
-
-/*-
- * from s.qcount - GRASS program to sample a raster map at site locations.
- * Copyright (C) 1993-1995. James Darrell McCauley.
+/****************************************************************************
  *
- * Author: James Darrell McCauley darrell@mccauley-usa.com
+ * MODULE:       v.qcount
+ * AUTHOR(S):    James Darrell McCauley darrell@mccauley-usa.com
  * 	                          http://mccauley-usa.com/
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *               OGR support by Martin Landa <landa.martin gmail.com>
+ * PURPOSE:      GRASS program to sample a raster map at site locations (based on s.qcount)
  *
  * Modification History:
  * <03 Mar 1993> - began coding (jdm)
@@ -29,21 +15,27 @@
  * <25 Jun 1995> - v 0.7B, new site API (jdm)
  * <13 Sep 2000> - released under GPL
  *
- */
-
+ * COPYRIGHT:    (C) 2003-2009 by the GRASS Development Team
+ *
+ *               This program is free software under the GNU General
+ *               Public License (>=v2). Read the file COPYING that
+ *               comes with GRASS for details.
+ *
+ *****************************************************************************/
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
+
 #include "quaddefs.h"
 
 int main(int argc, char **argv)
 {
-    char *mapset;
     double radius;
     double fisher, david, douglas, lloyd, lloydip, morisita;
     int i, nquads, *counts;
@@ -52,11 +44,10 @@ int main(int argc, char **argv)
     struct GModule *module;
     struct
     {
-	struct Option *input, *output, *n, *r;
+	struct Option *input, *field, *output, *n, *r;
     } parm;
     struct
     {
-	struct Flag *q;
 	struct Flag *g;
     } flag;
     COOR *quads;
@@ -66,57 +57,38 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, statistics");
-    module->description = _("Indices for quadrat counts of sites lists.");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("statistics"));
+    G_add_keyword(_("point pattern"));
+    module->description = _("Indices for quadrat counts of vector point lists.");
 
-    parm.input = G_define_option();
-    parm.input->key = "input";
-    parm.input->type = TYPE_STRING;
-    parm.input->required = YES;
-    parm.input->description = _("Vector of points defining sample points");
-    parm.input->gisprompt = "old,vector,vector";
+    parm.input = G_define_standard_option(G_OPT_V_INPUT);
 
-    parm.output = G_define_option();
-    parm.output->key = "output";
-    parm.output->type = TYPE_STRING;
+    parm.field = G_define_standard_option(G_OPT_V_FIELD_ALL);
+    
+    parm.output = G_define_standard_option(G_OPT_V_OUTPUT);
     parm.output->required = NO;
     parm.output->description =
-	_("Output quadrant centres, number of points is written as category");
-    parm.output->gisprompt = "new,vector,vector";
+	_("Name for output quadrat centers map (number of points is written as category)");
 
     parm.n = G_define_option();
-    parm.n->key = "n";
+    parm.n->key = "nquadrats";
     parm.n->type = TYPE_INTEGER;
     parm.n->required = YES;
     parm.n->description = _("Number of quadrats");
-    parm.n->options = NULL;
 
     parm.r = G_define_option();
-    parm.r->key = "r";
+    parm.r->key = "radius";
     parm.r->type = TYPE_DOUBLE;
     parm.r->required = YES;
     parm.r->description = _("Quadrat radius");
-    parm.r->options = NULL;
 
     flag.g = G_define_flag();
     flag.g->key = 'g';
     flag.g->description = _("Print results in shell script style");
 
-
-    /* please, remove before GRASS 7 released */
-    flag.q = G_define_flag();
-    flag.q->key = 'q';
-    flag.q->description = "Quiet";
-
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
-
-    /* please, remove before GRASS 7 released */
-    if (flag.q->answer) {
-	G_set_verbose(G_verbose_min());
-	G_warning(_("The '-q' flag is superseded and will be removed "
-		    "in future. Please use '--quiet' instead."));
-    }
 
     sscanf(parm.n->answer, "%d", &nquads);
     sscanf(parm.r->answer, "%lf", &radius);
@@ -124,11 +96,9 @@ int main(int argc, char **argv)
     G_get_window(&window);
 
     /* Open input */
-    if ((mapset = G_find_vector2(parm.input->answer, "")) == NULL) {
-	G_fatal_error(_("Vector map <%s> not found"), parm.input->answer);
-    }
     Vect_set_open_level(2);
-    Vect_open_old(&Map, parm.input->answer, mapset);
+    if (Vect_open_old2(&Map, parm.input->answer, "", parm.field->answer) < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), parm.input->answer);
 
     /* Get the quadrats */
     G_message(_("Finding quadrats..."));
@@ -136,10 +106,11 @@ int main(int argc, char **argv)
     quads = find_quadrats(nquads, radius, window);
 
     /* Get the counts per quadrat */
-    G_message(_("Counting sites in quadrats..."));
+    G_message(_("Counting points quadrats..."));
 
     counts = (int *)G_malloc(nquads * (sizeof(int)));
-    count_sites(quads, nquads, counts, radius, &Map);
+    count_sites(quads, nquads, counts, radius, &Map,
+		Vect_get_field_number(&Map, parm.field->answer));
 
     Vect_close(&Map);
 
@@ -152,7 +123,10 @@ int main(int argc, char **argv)
 	Points = Vect_new_line_struct();
 	Cats = Vect_new_cats_struct();
 
-	Vect_open_new(&Out, parm.output->answer, 0);
+	if (Vect_open_new(&Out, parm.output->answer, 0) < 0)
+	    G_fatal_error(_("Unable to create vector map <%s>"),
+			    parm.output->answer);
+
 	Vect_hist_command(&Out);
 
 	for (i = 0; i < nquads; i++) {

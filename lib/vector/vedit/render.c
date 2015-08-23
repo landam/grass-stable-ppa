@@ -65,7 +65,7 @@ struct robject_list *Vedit_render_map(struct Map_info *Map,
 				      int map_height, double map_res)
 {
     int i, nfeat, fid;
-    struct ilist *list;
+    struct boxlist *list;
     struct robject_list *list_obj;
     struct robject *robj;
 
@@ -78,7 +78,7 @@ struct robject_list *Vedit_render_map(struct Map_info *Map,
     region.map_west = center_easting - (map_width / 2.) * map_res;
     region.map_north = center_northing + (map_height / 2.) * map_res;
 
-    list = Vect_new_list();
+    list = Vect_new_boxlist(0);
     list_obj = NULL;
     state.nitems_alloc = 1000;
 
@@ -92,7 +92,7 @@ struct robject_list *Vedit_render_map(struct Map_info *Map,
     if (draw_flag & DRAW_AREA) {
 	nfeat = Vect_select_areas_by_box(Map, box, list);
 	for (i = 0; i < nfeat; i++) {
-	    fid = list->value[i];
+	    fid = list->id[i];
 	    draw_area(Map, fid, list_obj);
 	}
     }
@@ -105,7 +105,7 @@ struct robject_list *Vedit_render_map(struct Map_info *Map,
 
     /* features */
     for (i = 0; i < list->n_values; i++) {
-	fid = list->value[i];
+	fid = list->id[i];
 	robj = draw_line(Map, fid, draw_flag);
 	if (!robj)
 	    continue;
@@ -137,8 +137,8 @@ struct robject_list *Vedit_render_map(struct Map_info *Map,
 
     G_debug(1, "Vedit_render_map(): -> nitems = %d",
 	    list_obj->nitems);
-
-    Vect_destroy_list(list);
+    
+    Vect_destroy_boxlist(list);
 
     return list_obj;
 }
@@ -250,6 +250,9 @@ void draw_line_nodes(struct Map_info *Map, int line, int draw_flag,
     int x, y;
     double east, north;
     struct robject *robj;
+
+    if (Vect_get_line_type(Map, line) & GV_POINTS)
+	return;
 
     Vect_get_line_nodes(Map, line, &(nodes[0]), &(nodes[1]));
     
@@ -464,7 +467,7 @@ void draw_area(struct Map_info *Map, int area, struct robject_list *list)
     /* get area's boundary */
     Vect_get_area_points(Map, area, state.Points);
     robj = robj_alloc(TYPE_AREA, state.Points->n_points);
-    robj->fid = centroid;
+    robj->fid = area;
     robj_points(robj, state.Points);
     list_append(list, robj);
 

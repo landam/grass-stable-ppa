@@ -19,6 +19,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "pv.h"
 
@@ -30,11 +31,10 @@ int main(int argc, char *argv[])
 
     struct Option *rast_el, *rast_co, *out;
     struct Option *exag_opt;
-    char *t_mapset;
     int elevfd = 0, colorfd = 0;
     FILE *vout = NULL;
     struct Colors colr;
-    char errbuf[100], outfile[256];
+    char outfile[GPATH_MAX];
     int shh, color_ok;
     double exag, min, max;
     struct GModule *module;
@@ -44,54 +44,36 @@ int main(int argc, char *argv[])
     shh = color_ok = 0;
 
     module = G_define_module();
-    module->keywords = _("raster, export, VRML");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("export"));
+    G_add_keyword(_("VRML"));
     module->description =
-	_("Export a raster map to the Virtual Reality Modeling Language (VRML)");
+	_("Exports a raster map to the Virtual Reality Modeling Language (VRML).");
 
-    rast_el = G_define_option();
-    rast_el->key = "elev";
-    rast_el->type = TYPE_STRING;
-    rast_el->required = YES;
-    rast_el->gisprompt = "old,cell,raster";
-    rast_el->description = _("Name of elevation map");
+    rast_el = G_define_standard_option(G_OPT_R_ELEV);
 
-    rast_co = G_define_option();
+    rast_co = G_define_standard_option(G_OPT_R_INPUT);
     rast_co->key = "color";
-    rast_co->type = TYPE_STRING;
     rast_co->required = NO;
-    rast_co->gisprompt = "old,cell,raster";
-    rast_co->description = _("Name of color file");
+    rast_co->description = _("Name of input color map");
 
     exag_opt = G_define_option();
-    exag_opt->key = "exag";
+    exag_opt->key = "exaggeration";
     exag_opt->type = TYPE_DOUBLE;
     exag_opt->required = NO;
     exag_opt->answer = "1.0";
     exag_opt->description = _("Vertical exaggeration");
 
-    out = G_define_option();
-    out->key = "output";
-    out->type = TYPE_STRING;
+    out = G_define_standard_option(G_OPT_F_OUTPUT);
     out->required = YES;
-    out->gisprompt = "new_file,file,output";
-    out->description = _("Name for new VRML file");
+    out->description = _("Name for output VRML file");
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
     G_get_set_window(&W);
 
-    t_mapset = NULL;
-    t_mapset = G_find_file2("cell", rast_el->answer, "");
-    if (!t_mapset) {
-	sprintf(errbuf, "Couldn't find raster map %s", rast_el->answer);
-	G_fatal_error(errbuf);
-    }
-    if ((elevfd = G_open_cell_old(rast_el->answer, t_mapset)) == -1) {
-	sprintf(errbuf, "Not able to open cellfile for [%s]",
-		rast_el->answer);
-	G_fatal_error(errbuf);
-    }
+    elevfd = Rast_open_old(rast_el->answer, "");
 
     {
 	CELL cmin, cmax;
@@ -100,47 +82,31 @@ int main(int argc, char *argv[])
 	DCELL dmin, dmax;
 	struct FPRange fp_range;
 
-	is_fp = G_raster_map_is_fp(rast_el->answer, t_mapset);
+	is_fp = Rast_map_is_fp(rast_el->answer, "");
 	if (is_fp) {
-	    if (G_read_fp_range(rast_el->answer, t_mapset, &fp_range) != 1) {
-		sprintf(errbuf,
-			"Range info for [%s] not available (run r.support)\n",
-			rast_el->answer);
-		G_fatal_error(errbuf);
+	    if (Rast_read_fp_range(rast_el->answer, "", &fp_range) != 1) {
+		G_fatal_error(_("Range info for [%s] not available (run r.support)"),
+			      rast_el->answer);
 	    }
-	    G_get_fp_range_min_max(&fp_range, &dmin, &dmax);
+	    Rast_get_fp_range_min_max(&fp_range, &dmin, &dmax);
 	    min = dmin;
 	    max = dmax;
 	}
 	else {
-	    if (G_read_range(rast_el->answer, t_mapset, &range) == -1) {
-		sprintf(errbuf,
-			"Range info for [%s] not available (run r.support)\n",
-			rast_el->answer);
-		G_fatal_error(errbuf);
+	    if (Rast_read_range(rast_el->answer, "", &range) == -1) {
+		G_fatal_error(_("Range info for <%s> not available (run r.support)"),
+			      rast_el->answer);
 	    }
-	    G_get_range_min_max(&range, &cmin, &cmax);
+	    Rast_get_range_min_max(&range, &cmin, &cmax);
 	    min = cmin;
 	    max = cmax;
 	}
     }
 
     if (rast_co->answer) {
-	t_mapset = NULL;
-	t_mapset = G_find_file2("cell", rast_co->answer, "");
-	if (!t_mapset) {
-	    sprintf(errbuf, "Couldn't find raster map %s", rast_co->answer);
-	    G_warning(errbuf);
-	}
-	else if ((colorfd = G_open_cell_old(rast_co->answer, t_mapset)) == -1) {
-	    sprintf(errbuf, "Not able to open cellfile for [%s]",
-		    rast_co->answer);
-	    G_warning(errbuf);
-	}
-	else {
-	    G_read_colors(rast_co->answer, t_mapset, &colr);
-	    color_ok = 1;
-	}
+	colorfd = Rast_open_old(rast_co->answer, "");
+	Rast_read_colors(rast_co->answer, "", &colr);
+	color_ok = 1;
     }
 
     /* TODO: if file exists, just append new objects */
@@ -162,8 +128,7 @@ int main(int argc, char *argv[])
 	/* open file for writing VRML */
 	G_message(_("Opening %s for writing... "), outfile);
 	if (NULL == (vout = fopen(outfile, "w"))) {
-	    sprintf(errbuf, "Couldn't open output file %s", outfile);
-	    G_fatal_error(errbuf);
+	    G_fatal_error(_("Unable to open output file <%s>"), outfile);
 	}
     }
 
@@ -183,9 +148,9 @@ int main(int argc, char *argv[])
     vrml_end(vout);
 
 
-    G_close_cell(elevfd);
+    Rast_close(elevfd);
     if (color_ok)
-	G_close_cell(colorfd);
+	Rast_close(colorfd);
 
     return (EXIT_SUCCESS);
 
@@ -221,8 +186,8 @@ int init_coordcnv(double exag, struct Cell_head *w, double min, double max)
     Zrange = (w->rows - 1) * w->ns_res;
     Xrange = (w->cols - 1) * w->ew_res;
 
-    transX = -(G_col_to_easting(0.5, w));
-    transZ = -(G_row_to_northing(0.5, w));
+    transX = -(Rast_col_to_easting(0.5, w));
+    transZ = -(Rast_row_to_northing(0.5, w));
     transY = -min;
 
     if (Zrange >= Xrange && Zrange >= Yrange) {	/* northing biggest */

@@ -1,5 +1,5 @@
 /*!
-   \file gvl_file.c
+   \file lib/ogsf/gvl_file.c
 
    \brief OGSF library - loading and manipulating volumes (lower level functions)
 
@@ -20,9 +20,8 @@
 #include <stdlib.h>
 
 #include <grass/gis.h>
-#include <grass/gstypes.h>
-#include <grass/gsurf.h>
-#include <grass/G3d.h>
+#include <grass/ogsf.h>
+#include <grass/raster3d.h>
 #include <grass/glocale.h>
 
 #define LUCKY                 33
@@ -70,7 +69,7 @@ int close_g3d_file(void *);
 static int init_volfiles(void)
 {
     int i;
-    G3D_Region *w3;
+    RASTER3D_Region *w3;
 
     for (i = 0; i < MAX_VOL_FILES; i++) {
 	/* avoiding dynamic allocation */
@@ -132,7 +131,7 @@ geovol_file *gvl_file_get_volfile(int id)
    \brief Find file with name and type in geovol_file array an return handle
 
    \param name file name
-   \para begin
+   \param begin
 
    \param data id
    \param -1 not found
@@ -233,7 +232,7 @@ void gvl_file_get_min_max(geovol_file * vf, double *min, double *max)
 void *open_volfile(const char *name, IFLAG file_type, IFLAG * data_type,
 		   double *min, double *max)
 {
-    if (file_type == VOL_FTYPE_G3D) {
+    if (file_type == VOL_FTYPE_RASTER3D) {
 	return open_g3d_file(name, data_type, min, max);
     }
 
@@ -251,7 +250,7 @@ void *open_volfile(const char *name, IFLAG file_type, IFLAG * data_type,
  */
 int close_volfile(void *map, IFLAG type)
 {
-    if (type == VOL_FTYPE_G3D) {
+    if (type == VOL_FTYPE_RASTER3D) {
 	return close_g3d_file(map);
     }
 
@@ -401,7 +400,7 @@ int gvl_file_free_datah(int id)
 }
 
 /******************************************************************/
-/* reading from G3D raster volume files */
+/* reading from RASTER3D raster volume files */
 
 /******************************************************************/
 
@@ -413,7 +412,7 @@ int gvl_file_free_datah(int id)
    \param[out] min min value
    \param[out] max max value
 
-   \pointer to data
+   \returns pointer to data
  */
 void *open_g3d_file(const char *filename, IFLAG * type, double *min,
 		    double *max)
@@ -423,7 +422,7 @@ void *open_g3d_file(const char *filename, IFLAG * type, double *min,
     void *map;
 
     /* search for g3d file a return his mapset */
-    mapset = G_find_grid3(filename, "");
+    mapset = G_find_raster3d(filename, "");
     if (!mapset) {
 	G_warning(_("3D raster map <%s> not found"), filename);
 	return (NULL);
@@ -431,23 +430,23 @@ void *open_g3d_file(const char *filename, IFLAG * type, double *min,
 
     /* open g3d file */
     map =
-	G3d_openCellOld(filename, mapset, G3D_DEFAULT_WINDOW,
-			G3D_TILE_SAME_AS_FILE, G3D_USE_CACHE_DEFAULT);
+	Rast3d_open_cell_old(filename, mapset, RASTER3D_DEFAULT_WINDOW,
+			RASTER3D_TILE_SAME_AS_FILE, RASTER3D_USE_CACHE_DEFAULT);
     if (!map) {
 	G_warning(_("Unable to open 3D raster map <%s>"), filename);
 	return (NULL);
     }
 
     /* load range into range structure of map */
-    if (!G3d_range_load(map)) {
+    if (!Rast3d_range_load(map)) {
 	G_warning(_("Unable to read range of 3D raster map <%s>"), filename);
 	return (NULL);
     }
 
-    G3d_range_min_max(map, min, max);
+    Rast3d_range_min_max(map, min, max);
 
     /* get file data type */
-    itype = G3d_fileTypeMap(map);
+    itype = Rast3d_file_type_map(map);
     if (itype == FCELL_TYPE)
 	*type = VOL_DTYPE_FLOAT;
     if (itype == DCELL_TYPE)
@@ -467,9 +466,9 @@ void *open_g3d_file(const char *filename, IFLAG * type, double *min,
 int close_g3d_file(void *map)
 {
     /* close opened g3d file */
-    if (G3d_closeCell((G3D_Map *) map) != 1) {
+    if (Rast3d_close((RASTER3D_Map *) map) != 1) {
 	G_warning(_("Unable to close 3D raster map <%s>"),
-		  ((G3D_Map *) map)->fileName);
+		  ((RASTER3D_Map *) map)->fileName);
 	return (-1);
     }
 
@@ -492,12 +491,12 @@ int read_g3d_value(IFLAG type, void *map, int x, int y, int z, void *value)
     switch (type) {
 	/* float data type */
     case (VOL_DTYPE_FLOAT):
-	*((float *)value) = G3d_getFloat(map, x, y, z);
+	*((float *)value) = Rast3d_get_float(map, x, y, z);
 	break;
 
 	/* double data type */
     case (VOL_DTYPE_DOUBLE):
-	*((double *)value) = G3d_getDouble(map, x, y, z);
+	*((double *)value) = Rast3d_get_double(map, x, y, z);
 	break;
 
 	/* unsupported data type */
@@ -529,7 +528,7 @@ int read_g3d_slice(IFLAG type, void *map, int level, void *data)
 	for (x = 0; x < Cols; x++) {
 	    for (y = 0; y < Rows; y++) {
 		((float *)data)[x + y * Cols] =
-		    G3d_getFloat(map, x, y, level);
+		    Rast3d_get_float(map, x, y, level);
 	    }
 	}
 
@@ -540,7 +539,7 @@ int read_g3d_slice(IFLAG type, void *map, int level, void *data)
 	for (x = 0; x < Cols; x++) {
 	    for (y = 0; y < Rows; y++) {
 		((double *)data)[x + y * Cols] =
-		    G3d_getDouble(map, x, y, level);
+		    Rast3d_get_double(map, x, y, level);
 	    }
 	}
 
@@ -575,7 +574,7 @@ int read_g3d_vol(IFLAG type, void *map, void *data)
 	    for (y = 0; y < Rows; y++) {
 		for (z = 0; z < Depths; z++) {
 		    ((float *)data)[x + y * Cols + z * Rows * Cols] =
-			G3d_getFloat(map, x, y, z);
+			Rast3d_get_float(map, x, y, z);
 		}
 	    }
 	}
@@ -588,7 +587,7 @@ int read_g3d_vol(IFLAG type, void *map, void *data)
 	    for (y = 0; y < Rows; y++) {
 		for (z = 0; z < Depths; z++) {
 		    ((double *)data)[x + y * Cols + z * Rows * Cols] =
-			G3d_getDouble(map, x, y, z);
+			Rast3d_get_double(map, x, y, z);
 		}
 	    }
 	}
@@ -618,12 +617,12 @@ int is_null_g3d_value(IFLAG type, void *value)
     switch (type) {
 	/* float data type */
     case (VOL_DTYPE_FLOAT):
-	return G3d_isNullValueNum(value, FCELL_TYPE);
+	return Rast3d_is_null_value_num(value, FCELL_TYPE);
 	break;
 
 	/* double data type */
     case (VOL_DTYPE_DOUBLE):
-	return G3d_isNullValueNum(value, DCELL_TYPE);
+	return Rast3d_is_null_value_num(value, DCELL_TYPE);
 	break;
 
 	/* unsupported data type */
@@ -681,7 +680,7 @@ int get_buff_value(IFLAG type, void *data, int offset, void *value)
 
    \param vf pointer to geovol_file struct
    \param x,y,z real point
-   \oaram[out] value data value
+   \param[out] value data value
 
    \return -1 on failure
    \return 1 on success
@@ -689,8 +688,8 @@ int get_buff_value(IFLAG type, void *data, int offset, void *value)
 int get_direct_value(geovol_file * vf, int x, int y, int z, void *value)
 {
     switch (vf->file_type) {
-	/* G3D file type */
-    case (VOL_FTYPE_G3D):
+	/* RASTER3D file type */
+    case (VOL_FTYPE_RASTER3D):
 	if (0 > read_g3d_value(vf->data_type, vf->map, x, y, z, value))
 	    return (-1);
 	break;
@@ -766,8 +765,8 @@ int free_vol_buff(geovol_file * vf)
 int read_vol(geovol_file * vf)
 {
     switch (vf->file_type) {
-	/* G3D file format */
-    case (VOL_FTYPE_G3D):
+	/* RASTER3D file format */
+    case (VOL_FTYPE_RASTER3D):
 	if (0 > read_g3d_vol(vf->data_type, vf->map, vf->buff))
 	    return (-1);
 	break;
@@ -876,8 +875,8 @@ int read_slice(geovol_file * vf, int s, int l)
     slice_data *sd = (slice_data *) vf->buff;
 
     switch (vf->file_type) {
-	/* G3D file format */
-    case (VOL_FTYPE_G3D):
+	/* RASTER3D file format */
+    case (VOL_FTYPE_RASTER3D):
 	if (0 > read_g3d_slice(vf->data_type, vf->map, l, sd->slice[s]))
 	    return (-1);
 	break;
@@ -1088,8 +1087,8 @@ int gvl_file_get_value(geovol_file * vf, int x, int y, int z, void *value)
 int gvl_file_is_null_value(geovol_file * vf, void *value)
 {
     switch (vf->file_type) {
-	/* G3D file format */
-    case (VOL_FTYPE_G3D):
+	/* RASTER3D file format */
+    case (VOL_FTYPE_RASTER3D):
 	return is_null_g3d_value(vf->file_type, value);
 	break;
 	/* unsupported file format */

@@ -2,185 +2,123 @@
 #ifndef _DRIVER_H
 #define _DRIVER_H
 
-#include <grass/freetypecap.h>
+#include <grass/fontcap.h>
 
-extern int NCOLORS;
+extern int screen_width;
+extern int screen_height;
 
-extern int screen_left;
-extern int screen_right;
-extern int screen_bottom;
-extern int screen_top;
-
-extern int cur_x;
-extern int cur_y;
+extern double cur_x;
+extern double cur_y;
 
 extern double text_size_x;
 extern double text_size_y;
 extern double text_rotation;
-
-extern int mouse_button[];
+extern double text_sinrot;
+extern double text_cosrot;
+extern int matrix_valid;
 
 extern struct GFONT_CAP *ftcap;
 
 struct driver
 {
-    void (*Box_abs) (int, int, int, int);
-    void (*Box_rel) (int, int);
-    void (*Client_Open) (void);
-    void (*Client_Close) (void);
-    void (*Erase) (void);
-    int (*Get_with_box) (int, int, int *, int *, int *);
-    int (*Get_with_line) (int, int, int *, int *, int *);
-    int (*Get_with_pointer) (int *, int *, int *);
-    int (*Graph_set) (int, char **);
-    void (*Graph_close) (void);
-    void (*Line_width) (int);
-    void (*Panel_save) (const char *, int, int, int, int);
-    void (*Panel_restore) (const char *);
-    void (*Panel_delete) (const char *);
-    void (*Polydots_abs) (const int *, const int *, int);
-    void (*Polydots_rel) (const int *, const int *, int);
-    void (*Polyline_abs) (const int *, const int *, int);
-    void (*Polyline_rel) (const int *, const int *, int);
-    void (*Polygon_abs) (const int *, const int *, int);
-    void (*Polygon_rel) (const int *, const int *, int);
-    void (*Set_window) (int, int, int, int);
-    void (*Begin_scaled_raster) (int, int[2][2], int[2][2]);
-    int (*Scaled_raster) (int, int,
-			  const unsigned char *,
-			  const unsigned char *,
-			  const unsigned char *, const unsigned char *);
-    void (*End_scaled_raster) (void);
-    void (*Respond) (void);
-    int (*Work_stream) (void);
-    void (*Do_work) (int);
+    char *name;
 
-    int (*lookup_color) (int, int, int);
-    void (*color) (int);
-    void (*draw_line) (int, int, int, int);
-    void (*draw_point) (int, int);
-    void (*draw_bitmap) (int, int, int, const unsigned char *);
-    void (*draw_text) (const char *);
+    void (*Box)(double, double, double, double);
+    void (*Erase)(void);
+    int (*Graph_set)(void);
+    void (*Graph_close)(void);
+    const char * (*Graph_get_file)(void);
+    void (*Line_width)(double);
+    void (*Set_window)(double, double, double, double);
+    void (*Begin_raster)(int, int[2][2], double[2][2]);
+    int (*Raster)(int, int,
+		  const unsigned char *,
+		  const unsigned char *,
+		  const unsigned char *,
+		  const unsigned char *);
+    void (*End_raster)(void);
+    void (*Begin)(void);
+    void (*Move)(double, double);
+    void (*Cont)(double, double);
+    void (*Close)(void);
+    void (*Stroke)(void);
+    void (*Fill)(void);
+    void (*Point)(double, double);
+
+    void (*Color)(int, int, int);
+    void (*Bitmap)(int, int, int, const unsigned char *);
+    void (*Text)(const char *);
+    void (*Text_box)(const char *, double *, double *, double *, double *);
+    void (*Set_font)(const char *);
+    void (*Font_list)(char ***, int *);
+    void (*Font_info)(char ***, int *);
 };
 
 /* Library Functions */
 
-/* command.c */
-extern int LIB_command_get_input(void);
-
 /* init.c */
-extern int LIB_init(const struct driver *drv, int argc, char **argv);
-
-/* main.c */
-extern int LIB_main(int argc, char **argv);
+extern void LIB_init(const struct driver *drv);
 
 /* Commands */
 
-/* Bitmap.c */
-extern void COM_Bitmap(int, int, int, const unsigned char *);
+/* box.c */
+extern void COM_Box_abs(double, double, double, double);
 
-/* Box.c */
-extern void COM_Box_abs(int, int, int, int);
-extern void COM_Box_rel(int, int);
-
-/* Client.c */
-extern void COM_Client_Open(void);
-extern void COM_Client_Close(void);
-
-/* Color.c */
+/* color.c */
 extern void COM_Color_RGB(unsigned char, unsigned char, unsigned char);
 extern void COM_Standard_color(int);
 
-/* Cont.c */
-extern void COM_Cont_abs(int, int);
-extern void COM_Cont_rel(int, int);
-
-/* Erase.c */
+/* erase.c */
 extern void COM_Erase(void);
 
-/* Font.c */
-extern void COM_Font_get(const char *);
-extern void COM_Font_init_charset(const char *);
+/* font.c */
+extern void COM_Set_font(const char *);
+extern void COM_Set_encoding(const char *);
 extern void COM_Font_list(char ***, int *);
 extern void COM_Font_info(char ***, int *);
 
-/* Get_location.c */
-extern int COM_Get_location_with_box(int, int, int *, int *, int *);
-extern int COM_Get_location_with_line(int, int, int *, int *, int *);
-extern int COM_Get_location_with_pointer(int *, int *, int *);
+/* get_t_box.c */
+extern void COM_Get_text_box(const char *, double *, double *, double *, double *);
 
-/* Get_t_box.c */
-extern void COM_Get_text_box(const char *, int *, int *, int *, int *);
-
-/* Graph.c */
-extern int COM_Graph_set(int, char **);
+/* graph.c */
+extern int COM_Graph_set(void);
 extern void COM_Graph_close(void);
+extern const char *COM_Graph_get_file(void);
 
-/* Line_width.c */
-extern void COM_Line_width(int);
+/* line_width.c */
+extern void COM_Line_width(double);
 
-/* Move.c */
-extern void COM_Move_abs(int, int);
-extern void COM_Move_rel(int, int);
+/* move.c */
+extern void COM_Pos_abs(double, double);
 
-/* Panel.c */
-extern void COM_Panel_save(const char *, int, int, int, int);
-extern void COM_Panel_restore(const char *);
-extern void COM_Panel_delete(const char *);
+/* raster.c */
+extern void COM_begin_raster(int, int[2][2], double[2][2]);
+extern int COM_raster(int, int, const unsigned char *,
+		      const unsigned char *, const unsigned char *,
+		      const unsigned char *);
+extern void COM_end_raster(void);
 
-/* Polydots.c */
-extern void COM_Polydots_abs(const int *, const int *, int);
-extern void COM_Polydots_rel(const int *, const int *, int);
+/* set_window.c */
+extern void COM_Set_window(double, double, double, double);
+extern void COM_Get_window(double *, double *, double *, double *);
 
-/* Polygon.c */
-extern void COM_Polygon_abs(const int *, const int *, int);
-extern void COM_Polygon_rel(const int *, const int *, int);
-
-/* Polyline.c */
-extern void COM_Polyline_abs(const int *, const int *, int);
-extern void COM_Polyline_rel(const int *, const int *, int);
-
-/* Raster.c */
-extern void COM_begin_scaled_raster(int, int[2][2], int[2][2]);
-extern int COM_scaled_raster(int, int, const unsigned char *,
-			     const unsigned char *, const unsigned char *,
-			     const unsigned char *);
-extern void COM_end_scaled_raster(void);
-
-/* Respond.c */
-extern void COM_Respond(void);
-
-/* Returns.c */
-extern void COM_Screen_left(int *);
-extern void COM_Screen_rite(int *);
-extern void COM_Screen_bot(int *);
-extern void COM_Screen_top(int *);
-extern void COM_Number_of_colors(int *);
-
-/* Set_window.c */
-extern void COM_Set_window(int, int, int, int);
-
-/* Text.c */
+/* text.c */
 extern void COM_Text(const char *);
 
-/* Text_size.c */
-extern void COM_Text_size(int, int);
+/* text_size.c */
+extern void COM_Text_size(double, double);
 extern void COM_Text_rotation(double);
-
-/* Work.c */
-extern int COM_Has_work(void);
-extern int COM_Work_stream(void);
-extern void COM_Do_work(int);
 
 /* Driver Operations */
 
-/* Color.c */
-extern int DRV_lookup_color(int, int, int);
-extern void DRV_color(int);
-
-/* Draw.c */
-extern void DRV_draw_bitmap(int, int, int, const unsigned char *);
-extern void DRV_draw_line(int x0, int y0, int x1, int y1);
-extern void DRV_draw_point(int x, int y);
+/* draw.c */
+extern void COM_Bitmap(int, int, int, const unsigned char *);
+extern void COM_Begin(void);
+extern void COM_Move(double, double);
+extern void COM_Cont(double, double);
+extern void COM_Close(void);
+extern void COM_Stroke(void);
+extern void COM_Fill(void);
+extern void COM_Point(double, double);
 
 #endif /* _DRIVER_H */

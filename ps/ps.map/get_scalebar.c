@@ -5,8 +5,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "decorate.h"
-#include "ps_info.h"
 #include "local_proto.h"
 
 #define KEY(x) (strcmp(key,x)==0)
@@ -18,7 +16,10 @@ static char *help[] = {
     "height	height",
     "segment	no_segemnts",
     "numbers	no_labels",
+    "font   	fontname",
     "fontsize   fontsize",
+    "color   	fontcolor",
+    "bgcolor   	backgroundcolor",
     "background [Y|n]",
     "width      #",
     ""
@@ -33,13 +34,15 @@ int read_scalebar(void)
     /* struct defined in decorate.h */
     sb.segment = 4;		/* four segments */
     sb.numbers = 1;		/* label each segment */
+    sb.font = G_store("Helvetica");
     sb.fontsize = 8;
+    sb.color = BLACK;		/* TODO: multi-color */
     sb.width = 1.;
     sb.length = -1.;
     sb.height = 0.1;		/* default height in inches */
     sb.x = PS.page_width / 2.;
     sb.y = 2.;
-    sb.bgcolor = 1;		/* default is "on" [white|none] (TODO: multi-color) */
+    sb.bgcolor = 1;		/* TODO: multi-color */
     sb.units = SB_UNITS_AUTO;   /* default to automatic based on value in PROJ_UNITS */
 
 
@@ -121,12 +124,30 @@ int read_scalebar(void)
 		continue;
 	}
 
+	if (KEY("font")) {
+	    get_font(data);
+	    G_free(sb.font);
+	    sb.font = G_store(data);
+	    continue;
+	}
+
 	if (KEY("fontsize")) {
 	    if (sscanf(data, "%d", &sb.fontsize) != 1 || sb.fontsize <= 0) {
 		error(key, data, "illegal fontsize request");
 	    }
 	    else
 		continue;
+	}
+
+	if (KEY("color"))
+	{
+	    sb.color = get_color_number(data);
+	    if (sb.color < 0)
+	    {
+		sb.color = BLACK;
+		error(key, data, "illegal color request");
+	    }
+	    continue;
 	}
 
 	if (KEY("background")) {

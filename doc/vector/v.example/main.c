@@ -8,7 +8,7 @@
  * PURPOSE:    copies vector data from source map to destination map
  *             prints out all point coordinates and atributes
  *
- * COPYRIGHT:  (C) 2002-2008 by the GRASS Development Team
+ * COPYRIGHT:  (C) 2002-2009 by the GRASS Development Team
  *
  *             This program is free software under the
  *             GNU General Public License (>=v2).
@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 
@@ -47,7 +47,9 @@ int main(int argc, char *argv[])
 
     /* initialize module */
     module = G_define_module();
-    module->keywords = _("vector, keyword2, keyword3");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("keyword2"));
+    G_add_keyword(_("keyword3"));
     module->description = _("My first vector module");
 
     /* Define the different options as defined in gis.h */
@@ -67,9 +69,9 @@ int main(int argc, char *argv[])
        3) if input was found in current mapset, check if input != output.
        lib/vector/Vlib/legal_vname.c
      */
-    Vect_check_input_output_name(old->answer, new->answer, GV_FATAL_EXIT);
+    Vect_check_input_output_name(old->answer, new->answer, G_FATAL_EXIT);
 
-    if ((mapset = G_find_vector2(old->answer, "")) == NULL)
+    if ((mapset = (char *)G_find_vector2(old->answer, "")) == NULL)
 	G_fatal_error(_("Vector map <%s> not found"), old->answer);
 
     /* Predetermine level at which a map will be opened for reading 
@@ -102,8 +104,9 @@ int main(int argc, char *argv[])
 	Vect_close(&In);
 	G_fatal_error(_("Database connection not defined for layer %d"), 1);
     }
-    /* Output information usefull for debuging 
-       incluse/vect/dig_structs.h
+
+    /* Output information useful for debuging 
+       include/vect/dig_structs.h
      */
     G_debug(1,
 	    "Field number:%d; Name:<%s>; Driver:<%s>; Database:<%s>; Table:<%s>; Key:<%s>;\n",
@@ -116,7 +119,7 @@ int main(int argc, char *argv[])
     db_init_string(&table_name);
     db_init_handle(&handle);
 
-    /* Prepearing database for use */
+    /* Prepare database for use */
     driver = db_start_driver(Fi->driver);
     if (driver == NULL) {
 	Vect_close(&In);

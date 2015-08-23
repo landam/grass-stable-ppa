@@ -1,9 +1,9 @@
 #include <stdlib.h>
 #include <math.h>
 #include "vizual.h"
-#include "cell_table.h"
 #include <grass/gis.h>
-#include <grass/G3d.h>
+#include <grass/raster.h>
+#include <grass/raster3d.h>
 #include "local_proto.h"
 
 
@@ -25,7 +25,7 @@ static void xings_grad(float *data[], int c_ndx, int x1, int y1,
 static void normalize(float n[3]);
 
 
-void viz_iso_surface(void *g3map, G3D_Region * g3reg,
+void viz_iso_surface(void *g3map, RASTER3D_Region * g3reg,
 		     cmndln_info * linefax, int quiet)
 {
     float *data[4];		/* will hold 4 slices of xy data */
@@ -149,14 +149,14 @@ static void calc_cube_info(float *data[], int z1)
 		/* CHANGED: use NULLS instead of zeros - if any are null, polygons
 		   are undefined - or else need to define polygons which exclude nulls under
 		   various combinations e.g., give each null a tetrahedron of influence */
-		if (G_is_f_null_value((FCELL *) (DATA + 0)) ||
-		    G_is_f_null_value((FCELL *) (DATA + 1)) ||
-		    G_is_f_null_value((FCELL *) (DATA + 2)) ||
-		    G_is_f_null_value((FCELL *) (DATA + 3)) ||
-		    G_is_f_null_value((FCELL *) (DATA + 4)) ||
-		    G_is_f_null_value((FCELL *) (DATA + 5)) ||
-		    G_is_f_null_value((FCELL *) (DATA + 6)) ||
-		    G_is_f_null_value((FCELL *) (DATA + 7)))
+		if (Rast_is_f_null_value((FCELL *) (DATA + 0)) ||
+		    Rast_is_f_null_value((FCELL *) (DATA + 1)) ||
+		    Rast_is_f_null_value((FCELL *) (DATA + 2)) ||
+		    Rast_is_f_null_value((FCELL *) (DATA + 3)) ||
+		    Rast_is_f_null_value((FCELL *) (DATA + 4)) ||
+		    Rast_is_f_null_value((FCELL *) (DATA + 5)) ||
+		    Rast_is_f_null_value((FCELL *) (DATA + 6)) ||
+		    Rast_is_f_null_value((FCELL *) (DATA + 7)))
 		    c_ndx = 0;
 
 		/* c_ndx numbers (1 - 254) contain polygons */

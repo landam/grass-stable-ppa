@@ -1,281 +1,172 @@
+/*!
+ \file lib/gis/color_rules.c
+ 
+ \brief GIS Library - Color tables management subroutines
 
-/****************************************************************************
- *
- * MODULE:       gis library
- * AUTHOR(S):    Glynn Clements <glynn@gclements.plus.com>
- * COPYRIGHT:    (C) 2007 Glynn Clements and the GRASS Development Team
- *
- * NOTE:         Based upon r.colors/rules.c
- *               The colors are stored in ./colors/
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *****************************************************************************/
+ Taken from r.colors module.
 
-#include <stdio.h>
+ (C) 2001-2011 by the GRASS Development Team
+*/
+
+#include <stdlib.h>
+#include <string.h>
+
 #include <grass/gis.h>
 #include <grass/glocale.h>
 
-struct rule
+static char **scan_rules(int *);
+static int cmp(const void *, const void *);
+
+/*!
+  \brief Get list of color rules for Option->options
+  
+  \return allocated string buffer with options
+*/
+char *G_color_rules_options(void)
 {
-    int set;
-    int r, g, b;
-    DCELL val;
-};
+    char *list, **rules;
+    const char *name;
+    int size, len, nrules;
+    int i, n;
 
-enum rule_error
-{
-    CR_OK = 0,
-    CR_ERROR_SYNTAX,
-    CR_ERROR_RGB,
-    CR_ERROR_COLOR,
-    CR_ERROR_PERCENT,
-    CR_ERROR_VALUE,
-};
+    list = NULL;
+    size = len = 0;
 
-int G_parse_color_rule(DCELL min, DCELL max, const char *buf,
-		       DCELL * val, int *r, int *g, int *b,
-		       int *norm, int *nval, int *dflt)
-{
-    char value[80], color[80];
-    double x;
-    char c;
+    rules = scan_rules(&nrules);
+    
+    for (i = 0; i < nrules; i++) {
+        name = rules[i];
+        n = strlen(name);
 
-    *norm = *nval = *dflt = 0;
+        if (size < len + n + 2) {
+            size = len + n + 200;
+            list = G_realloc(list, size);
+        }
 
-    if (sscanf(buf, "%s %[^\n]", value, color) != 2)
-	return CR_ERROR_SYNTAX;
+        if (len > 0)
+            list[len++] = ',';
 
-    G_chop(color);
-
-    if (sscanf(color, "%d:%d:%d", r, g, b) == 3 ||
-	sscanf(color, "%d %d %d", r, g, b) == 3) {
-	if (*r < 0 || *r > 255 || *g < 0 || *g > 255 || *b < 0 || *b > 255)
-	    return CR_ERROR_RGB;
-    }
-    else {
-	float fr, fg, fb;
-
-	if (G_color_values(color, &fr, &fg, &fb) < 0)
-	    return CR_ERROR_COLOR;
-
-	*r = (int)(fr * 255.99);
-	*g = (int)(fg * 255.99);
-	*b = (int)(fb * 255.99);
+        memcpy(&list[len], name, n + 1);
+        len += n;
     }
 
-    G_chop(value);
-
-    if (G_strcasecmp(value, "default") == 0) {
-	*dflt = 1;
-	return CR_OK;
-    }
-
-    if (G_strcasecmp(value, "nv") == 0) {
-	*nval = 1;
-	return CR_OK;
-    }
-
-    if (sscanf(value, "%lf%c", &x, &c) == 2 && c == '%') {
-	if (x < 0 || x > 100)
-	    return CR_ERROR_PERCENT;
-
-	*val = min + (max - min) * (x / 100);
-	*norm = 1;
-	return CR_OK;
-    }
-
-    if (sscanf(value, "%lf", val) == 1) {
-	*norm = 1;
-	return CR_OK;
-    }
-
-    return CR_ERROR_VALUE;
+    G_free(rules);
+    
+    return list;
 }
 
-const char *G_parse_color_rule_error(int code)
+/*!
+  \brief Get color rules description for Option->descriptions
+
+  \return allocated buffer with descriptions
+*/
+char *G_color_rules_descriptions(void)
 {
-    switch (code) {
-    case CR_OK:
-	return "";
-    case CR_ERROR_SYNTAX:
-	return _("syntax error");
-    case CR_ERROR_RGB:
-	return _("R/G/B not in range 0-255");
-    case CR_ERROR_COLOR:
-	return _("invalid color name");
-    case CR_ERROR_PERCENT:
-	return _("percentage not in range 0-100");
-    case CR_ERROR_VALUE:
-	return _("invalid value");
-    default:
-	return _("unknown error");
-    }
-}
+    char path[GPATH_MAX];
+    struct Key_Value *kv;
+    int result_len, result_max;
+    char *result, **rules;
+    const char *name, *desc;
+    int i, len, nrules;
 
-int G_read_color_rule(void *closure, DCELL min, DCELL max,
-		      DCELL * val, int *r, int *g, int *b,
-		      int *norm, int *nval, int *dflt)
-{
-    char buf[1024];
-    FILE *fp = closure;
-    int ret;
+    result_len = 0;
+    result_max = 2000;
+    result = G_malloc(result_max);
+    
+    G_snprintf(path, GPATH_MAX, "%s/etc/colors.desc", G_gisbase());
+    kv = G_read_key_value_file(path);
+    if (!kv)
+        return NULL;
 
-    *norm = *nval = *dflt = 0;
+    rules = scan_rules(&nrules);
+    
+    for (i = 0; i < nrules; i++) {
+        name = rules[i];
+        desc = G_find_key_value(name, kv);
+        
+        if (!desc)
+	    desc = _("no description");
+	
+        /* desc = _(desc); */
+	
+        len = strlen(name) + strlen(desc) + 2;
+        if (result_len + len >= result_max) {
+            result_max = result_len + len + 1000;
+            result = G_realloc(result, result_max);
+        }
 
-    for (;;) {
-	if (!G_getl2(buf, sizeof(buf), fp))
-	    return 0;
-
-	G_strip(buf);
-	G_debug(5, "color buf = [%s]", buf);
-
-	if (*buf == '\0')
-	    continue;
-	if (*buf == '#')
-	    continue;
-
-	ret =
-	    G_parse_color_rule(min, max, buf, val, r, g, b, norm, nval, dflt);
-	if (ret == 0)
-	    return 1;
-
-	G_fatal_error(_("bad rule (%s): [%s]"),
-		      G_parse_color_rule_error(ret), buf);
+        sprintf(result + result_len, "%s;%s;", name, desc);
+        result_len += len;
     }
 
-    return 0;
+    G_free_key_value(kv);
+    G_free(rules);
+    
+    return result;
 }
 
-int G_read_color_rules(struct Colors *colors, DCELL min, DCELL max,
-		       read_rule_fn * read_rule, void *closure)
+char **scan_rules(int *nrules)
 {
-    struct rule *rule = NULL;
-    int nrules = 0;
-    struct rule dflt, null;
-    int set, is_null, is_dflt, r, g, b;
-    DCELL val;
-    int n;
-
-    if (!read_rule)
-	read_rule = G_read_color_rule;
-
-    G_init_colors(colors);
-
-    /* initialization */
-    dflt.r = dflt.g = dflt.b = dflt.set = 0;
-    null.r = null.g = null.b = null.set = 0;
-
-    while ((*read_rule)
-	   (closure, min, max, &val, &r, &g, &b, &set, &is_null, &is_dflt)) {
-	struct rule *p;
-
-	if (set) {
-	    n = nrules++;
-	    rule = G_realloc(rule, nrules * sizeof(struct rule));
-	    p = &rule[n];
-	}
-	else if (is_dflt)
-	    p = &dflt;
-	else if (is_null)
-	    p = &null;
-
-	p->r = r;
-	p->g = g;
-	p->b = b;
-	p->set = 1;
-	p->val = val;
-    }
-
-    if (nrules == 0)
-	return 0;
-
-    if (nrules == 1) {
-	const struct rule *p = &rule[0];
-
-	G_set_d_color(p->val, p->r, p->g, p->b, colors);
-    }
-
-    for (n = 1; n < nrules; n++) {
-	struct rule *lo = &rule[n - 1];
-	struct rule *hi = &rule[n];
-
-	G_add_d_raster_color_rule(&lo->val, lo->r, lo->g, lo->b,
-				  &hi->val, hi->r, hi->g, hi->b, colors);
-    }
-
-    G_free(rule);
-
-    /* null value and default color set up, if rules are set up by user */
-    if (null.set)
-	G_set_null_value_color(null.r, null.g, null.b, colors);
-
-    if (dflt.set)
-	G_set_default_color(dflt.r, dflt.g, dflt.b, colors);
-
-    return 1;
-}
-
-static int load_rules_file(struct Colors *colors, const char *path, DCELL min,
-			   DCELL max)
-{
-    FILE *fp;
-    int ret;
-
-    fp = fopen(path, "r");
-
-    if (!fp)
-	return 0;
-
-    ret = G_read_color_rules(colors, min, max, G_read_color_rule, (void *)fp);
-
-    fclose(fp);
-
-    return ret;
-}
-
-int G_load_colors(struct Colors *colors, const char *path, CELL min, CELL max)
-{
-    return load_rules_file(colors, path, (DCELL) min, (DCELL) max);
-}
-
-int G_load_fp_colors(struct Colors *colors, const char *path, DCELL min,
-		     DCELL max)
-{
-    return load_rules_file(colors, path, min, max);
-}
-
-static int load_rules_name(struct Colors *colors, const char *name, DCELL min,
-			   DCELL max)
-{
-    int ret;
+    char **rules;
     char path[GPATH_MAX];
 
-    sprintf(path, "%s/etc/colors/%s", G_gisbase(), name);
+    G_snprintf(path, GPATH_MAX, "%s/etc/colors", G_gisbase());
 
-    ret = load_rules_file(colors, path, min, max);
+    rules = G_ls2(path, nrules);
 
-    if (!ret)
-	G_fatal_error(_("Unable to load color rules <%s>"), name);
+    rules = G_realloc(rules, (*nrules + 3) * sizeof (const char *));
 
-    return ret;
+    rules[(*nrules)++] = G_store("random");
+    rules[(*nrules)++] = G_store("grey.eq");
+    rules[(*nrules)++] = G_store("grey.log");
+
+    qsort(rules, *nrules, sizeof (char *), cmp);
+
+    return rules;
 }
 
-int G_make_colors(struct Colors *colors, const char *name, CELL min, CELL max)
+int cmp(const void *aa, const void *bb)
 {
-    return load_rules_name(colors, name, (DCELL) min, (DCELL) max);
+    char *const *a = (char *const *) aa;
+    char *const *b = (char *const *) bb;
+
+    return strcmp(*a, *b);
 }
 
-int G_make_fp_colors(struct Colors *colors, const char *name, DCELL min,
-		     DCELL max)
+/*!
+  \brief Print color rules
+
+  \param out file where to print
+*/
+void G_list_color_rules(FILE *out)
 {
-    return load_rules_name(colors, name, min, max);
+    int i, nrules;
+    char **rules;
+
+    rules = scan_rules(&nrules);
+
+    for (i = 0; i < nrules; i++)
+	fprintf(out, "%s\n", rules[i]);
+}
+
+/*!
+  \brief Check if color rule is defined
+
+  \param name color rule name
+
+  \return 1 found
+  \return 0 not found
+*/
+int G_find_color_rule(const char *name)
+{
+    int i, nrules;
+    char **rules;
+
+    rules = scan_rules(&nrules);
+    
+    for (i = 0; i < nrules; i++)
+        if (strcmp(name, rules[i]) == 0)
+            return 1;
+
+    return 0;
 }

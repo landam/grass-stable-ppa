@@ -9,19 +9,21 @@
  *               Eric G. Miller <egm2 jps.net>, 
  *               Glynn Clements <glynn gclements.plus.com>, 
  *               Jan-Oliver Wagner <jan intevation.de>, 
- *               Radim Blazek <radim.blazek gmail.com>
+ *               Radim Blazek <radim.blazek gmail.com>,
+ *               Martin Landa <landa.martin gmail.com>
  * PURPOSE:      display raster maps in active graphics display
- * COPYRIGHT:    (C) 1999-2006 by the GRASS Development Team
+ * COPYRIGHT:    (C) 1999-2006, 2011 by the GRASS Development Team
  *
- *               This program is free software under the GNU General Public
- *               License (>=v2). Read the file COPYING that comes with GRASS
- *               for details.
+ *               This program is free software under the GNU General
+ *               Public License (>=v2). Read the file COPYING that
+ *               comes with GRASS for details.
  *
  *****************************************************************************/
 #include <stdlib.h>
 #include <grass/gis.h>
 #include <grass/raster.h>
-#define MAIN
+#include <grass/display.h>
+
 #include "mask.h"
 #include "local_proto.h"
 #include <grass/glocale.h>
@@ -29,26 +31,28 @@
 static int parse_catlist(char **, Mask *);
 static int parse_vallist(char **, d_Mask *);
 
+d_Mask d_mask;
+Mask mask;
+
 int main(int argc, char **argv)
 {
-    char *mapset;
     char *name;
     int overlay;
     int invert, fp;
     struct GModule *module;
     struct Option *map;
-    struct Option *catlist;
     struct Option *vallist;
     struct Option *bg;
-    struct Flag *flag_o;
+    struct Flag *flag_n;
     struct Flag *flag_i;
-    struct Flag *flag_x;
 
     /* Initialize the GIS calls */
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("display, raster");
+    G_add_keyword(_("display"));
+    G_add_keyword(_("graphics"));
+    G_add_keyword(_("raster"));
     module->description = _("Displays user-specified raster map in the active "
 			    "graphics frame.");
     
@@ -56,88 +60,55 @@ int main(int argc, char **argv)
     map = G_define_standard_option(G_OPT_R_MAP);
     map->description = _("Name of raster map to be displayed");
 
-    catlist = G_define_option();
-    catlist->key = "catlist";
-    catlist->key_desc = "cat[-cat]";
-    catlist->type = TYPE_STRING;
-    catlist->required = NO;
-    catlist->multiple = YES;
-    catlist->description = _("List of categories to be displayed (INT maps)");
-    catlist->guisection = _("Selection");
-
     vallist = G_define_option();
-    vallist->key = "vallist";
-    vallist->key_desc = "val[-val]";
+    vallist->key = "values";
+    vallist->key_desc = "value[-value]";
     vallist->type = TYPE_STRING;
     vallist->required = NO;
     vallist->multiple = YES;
-    vallist->description = _("List of values to be displayed (FP maps)");
+    vallist->description = _("List of categories or values to be displayed");
     vallist->guisection = _("Selection");
 
-    bg = G_define_option();
-    bg->key = "bg";
+    bg = G_define_standard_option(G_OPT_C);
+    bg->key = "bgcolor";
     bg->key_desc = "color";
-    bg->type = TYPE_STRING;
-    bg->gisprompt = GISPROMPT_COLOR;
-    bg->required = NO;
-    bg->description = _("Background color (for null)");
+    bg->answer = DEFAULT_BG_COLOR;
+    bg->label = _("Background color (for null)");
     bg->guisection = _("Null cells");
 
-    flag_o = G_define_flag();
-    flag_o->key = 'o';
-    flag_o->description = _("Overlay (non-null values only)");
-    flag_o->guisection = _("Null cells");
+    flag_n = G_define_flag();
+    flag_n->key = 'n';
+    flag_n->description = _("Make null cells opaque");
+    flag_n->guisection = _("Null cells");
 
     flag_i = G_define_flag();
     flag_i->key = 'i';
-    flag_i->description = _("Invert catlist");
+    flag_i->description = _("Invert value list");
     flag_i->guisection = _("Selection");
-
-    flag_x = G_define_flag();
-    flag_x->key = 'x';
-    flag_x->description =
-	_("Don't add to list of rasters and commands in monitor");
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
     name = map->answer;
-    overlay = flag_o->answer;
+    overlay = !flag_n->answer;
     invert = flag_i->answer;
 
-    /* Make sure map is available */
-    mapset = G_find_cell2(name, "");
-    if (mapset == NULL)
-	G_fatal_error(_("Raster map <%s> not found"), name);
+    D_open_driver();
 
-    if (R_open_driver() != 0)
-	G_fatal_error(_("No graphics device selected"));
-
-    fp = G_raster_map_is_fp(name, mapset);
-    if (catlist->answer) {
-	if (fp)
-	    G_warning(_("Ignoring catlist: map is floating point (please use 'val=')"));
-	else
-	    parse_catlist(catlist->answers, &mask);
-    }
+    fp = Rast_map_is_fp(name, "");
     if (vallist->answer) {
-	if (!fp)
-	    G_warning(_("Ignoring vallist: map is integer (please use 'cat=')"));
-	else
+	if (fp)
 	    parse_vallist(vallist->answers, &d_mask);
+	else
+	    parse_catlist(vallist->answers, &mask);
     }
 
     /* use DCELL even if the map is FCELL */
-
-    if (fp)
-	display(name, mapset, overlay, bg->answer, DCELL_TYPE, invert,
-		flag_x->answer);
-    else
-	display(name, mapset, overlay, bg->answer, CELL_TYPE, invert,
-		flag_x->answer);
-
-    R_close_driver();
-
+    display(name, overlay, bg->answer, fp ? DCELL_TYPE : CELL_TYPE, invert);
+    
+    D_save_command(G_recreate_command());
+    D_close_driver();
+    
     exit(EXIT_SUCCESS);
 }
 
@@ -230,7 +201,7 @@ int parse_mask_rule(char *catlist, Mask * mask, char *where)
 	if (where)
 	    fprintf(stderr, "%s: ", where);
 	G_usage();
-	G_fatal_error("%s: illegal category spec", catlist);
+	G_fatal_error(_("[%s]: illegal category specified"), catlist);
     }
 
     return 0;
@@ -261,7 +232,7 @@ int parse_d_mask_rule(char *vallist, d_Mask * d_mask, char *where)
 	if (where)
 	    fprintf(stderr, "%s: ", where);
 	G_usage();
-	G_fatal_error("%s: illegal value spec", vallist);
+	G_fatal_error(_("[%s]: illegal value specified"), vallist);
     }
 
     return 0;

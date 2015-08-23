@@ -1,13 +1,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <grass/glocale.h>
 #include "global.h"
 
 int parse_command_line(int argc, char *argv[])
 {
-    char pl_desc[256];
-    char pw_desc[256];
     int i;
+    char *desc;
     struct
     {
 	struct Option *cell;
@@ -17,6 +17,7 @@ int parse_command_line(int argc, char *argv[])
 	struct Option *outfile;
 	struct Option *nv;
 	struct Option *nsteps;
+        struct Option *sort;
     } parms;
     struct
     {
@@ -34,65 +35,78 @@ int parse_command_line(int argc, char *argv[])
     } flags;
 
     parms.cell = G_define_standard_option(G_OPT_R_MAPS);
-    parms.cell->description = _("Raster map(s) to report on");
+    parms.cell->description = _("Name of raster map(s) to report on");
 
     parms.units = G_define_option();
     parms.units->key = "units";
     parms.units->type = TYPE_STRING;
     parms.units->required = NO;
     parms.units->multiple = YES;
-    parms.units->description = _("Units");
-    parms.units->descriptions =
-	_("mi;miles;me;meters;k;kilometers;a;acres;"
-	  "h;hectares;c;cell counts;p;percent cover");
+    parms.units->description = _("Units to report");
+    desc = NULL;
+    G_asprintf(&desc,
+	       "mi;%s;me;%s;k;%s;a;%s;h;%s;c;%s;p;%s",
+	       _("area in square miles"),
+	       _("area in square meters"),
+	       _("area in square kilometers"),
+	       _("area in acres"),
+	       _("area in hectares"),
+	       _("number of cells"),
+	       _("percent cover"));
+    parms.units->descriptions = desc;
     parms.units->options = "mi,me,k,a,h,c,p";
+    parms.units->guisection = _("Statistics");
 
-    parms.nv = G_define_option();
-    parms.nv->key = "null";
-    parms.nv->type = TYPE_STRING;
-    parms.nv->required = NO;
-    parms.nv->multiple = NO;
+    parms.outfile = G_define_standard_option(G_OPT_F_OUTPUT);
+    parms.outfile->required = NO;
+    parms.outfile->label =
+	_("Name for output file to hold the report");
+    parms.outfile->description =
+	_("If no output file given report is printed to standard output");
+
+    parms.nv = G_define_standard_option(G_OPT_M_NULL_VALUE);
     parms.nv->answer = "*";
-    parms.nv->description = _("Character representing no data cell value");
     parms.nv->guisection = _("Formatting");
 
     parms.pl = G_define_option();
-    parms.pl->key = "pl";
+    parms.pl->key = "page_length";
     parms.pl->type = TYPE_INTEGER;
     parms.pl->required = NO;
-    sprintf(pl_desc, _("Page length (default: %d lines)"),
-	    DEFAULT_PAGE_LENGTH);
-    parms.pl->description = pl_desc;
+    parms.pl->description = _("Page length");
+    parms.pl->answer = DEFAULT_PAGE_LENGTH;
     parms.pl->guisection = _("Formatting");
 
     parms.pw = G_define_option();
-    parms.pw->key = "pw";
+    parms.pw->key = "page_width";
     parms.pw->type = TYPE_INTEGER;
     parms.pw->required = NO;
-    sprintf(pw_desc, _("Page width (default: %d characters)"),
-	    DEFAULT_PAGE_WIDTH);
-    parms.pw->description = pw_desc;
+    parms.pw->description = _("Page width");
+    parms.pw->answer = DEFAULT_PAGE_WIDTH;
     parms.pw->guisection = _("Formatting");
 
-    parms.outfile = G_define_option();
-    parms.outfile->key = "output";
-    parms.outfile->type = TYPE_STRING;
-    parms.outfile->required = NO;
-    parms.outfile->description =
-	_("Name of an output file to hold the report");
-
-    parms.nsteps = G_define_option();
+		    parms.nsteps = G_define_option();
     parms.nsteps->key = "nsteps";
     parms.nsteps->type = TYPE_INTEGER;
     parms.nsteps->required = NO;
     parms.nsteps->multiple = NO;
     parms.nsteps->answer = "255";
     parms.nsteps->description =
-	_("Number of fp subranges to collect stats from");
+	_("Number of floating-point subranges to collect stats from");
+    parms.nsteps->guisection = _("Floating point");
 
-    flags.q = G_define_flag();
-    flags.q->key = 'q';
-    flags.q->description = _("Quiet");
+    parms.sort = G_define_option();
+    parms.sort->key = "sort";
+    parms.sort->type = TYPE_STRING;
+    parms.sort->required = NO;
+    parms.sort->multiple = NO;
+    parms.sort->label = _("Sort output statistics by cell counts");
+    parms.sort->description = _("Default: sorted by categories or intervals");
+    parms.sort->options = "asc,desc";
+    G_asprintf((char **)&(parms.sort->descriptions),
+               "asc;%s;desc;%s",
+               _("Sort by cell counts in ascending order"),
+               _("Sort by cell counts in descending order"));
+    parms.sort->guisection = _("Formatting");
 
     flags.h = G_define_flag();
     flags.h->key = 'h';
@@ -111,20 +125,24 @@ int parse_command_line(int argc, char *argv[])
 
     flags.n = G_define_flag();
     flags.n->key = 'n';
-    flags.n->description = _("Filter out all no data cells");
+    flags.n->description = _("Do not report no data value");
+    flags.n->guisection = _("No data");
 
     flags.N = G_define_flag();
-    flags.N->key = 'N';
-    flags.N->description = _("Filter out cells where all maps have no data");
+    flags.N->key = 'a';
+    flags.N->description = _("Do not report cells where all maps have no data");
+    flags.N->guisection = _("No data");
 
     flags.C = G_define_flag();
-    flags.C->key = 'C';
-    flags.C->description = _("Report for cats fp ranges (fp maps only)");
+    flags.C->key = 'c';
+    flags.C->description = _("Report for cats floating-point ranges (floating-point maps only)");
+    flags.C->guisection = _("Floating point");
 
     flags.i = G_define_flag();
     flags.i->key = 'i';
     flags.i->description =
-	_("Read fp map as integer (use map's quant rules)");
+	_("Read floating-point map as integer (use map's quant rules)");
+    flags.i->guisection = _("Floating point");
 
     /* hidden feature.
      * if first arg is >file just run r.stats into this file and quit
@@ -152,7 +170,6 @@ int parse_command_line(int argc, char *argv[])
 
     use_formfeed = flags.f->answer;
     with_headers = !flags.h->answer;
-    verbose = !flags.q->answer;
     e_format = flags.e->answer;
     no_nulls = flags.n->answer;
     no_nulls_all = flags.N->answer;
@@ -171,19 +188,16 @@ int parse_command_line(int argc, char *argv[])
 	nsteps = 255;
     }
 
-    if (parms.pl->answer) {
-	if (sscanf(parms.pl->answer, "%d", &page_length) != 1 ||
-	    page_length < 0) {
-	    G_fatal_error(_("Illegal page length"));
-	}
+    if (sscanf(parms.pl->answer, "%d", &page_length) != 1 ||
+        page_length < 0) {
+      G_fatal_error(_("Illegal page length"));
     }
 
-    if (parms.pw->answer) {
-	if (sscanf(parms.pw->answer, "%d", &page_width) != 1 ||
-	    page_width < 1) {
-	    G_fatal_error(_("Illegal page width"));
-	}
+    if (sscanf(parms.pw->answer, "%d", &page_width) != 1 ||
+        page_width < 1) {
+      G_fatal_error(_("Illegal page width"));
     }
+
     if (parms.outfile->answer) {
 	if (freopen(parms.outfile->answer, "w", stdout) == NULL) {
 	    perror(parms.outfile->answer);
@@ -191,6 +205,22 @@ int parse_command_line(int argc, char *argv[])
 	}
     }
     no_data_str = parms.nv->answer;
+
+    /* determine sorting method */
+    do_sort = SORT_DEFAULT; /* sort by cats by default */
+    if (parms.sort->answer) {
+        switch(parms.sort->answer[0]) {
+        case 'a':
+            do_sort = SORT_ASC;
+            break;
+        case 'd':
+            do_sort = SORT_DESC;
+            break;
+        default:
+            G_debug(1, "Sorting by '%s' not supported", parms.sort->answer);
+            break;
+        }
+    }
 
     return 0;
 }
@@ -232,12 +262,12 @@ int parse_units(char *s)
 int parse_layer(char *s)
 {
     char name[GNAME_MAX];
-    char *mapset;
+    const char *mapset;
     struct FPRange fp_range;
     int n;
 
     strcpy(name, s);
-    mapset = G_find_cell2(name, "");
+    mapset = G_find_raster2(name, "");
 
     if (mapset == NULL)
 	G_fatal_error(_("Raster map <%s> not found"), s);
@@ -248,19 +278,19 @@ int parse_layer(char *s)
     DMAX = (DCELL *) G_realloc(DMAX, (nlayers + 1) * sizeof(DCELL));
     DMIN = (DCELL *) G_realloc(DMIN, (nlayers + 1) * sizeof(DCELL));
     if (!as_int)
-	is_fp[n] = G_raster_map_is_fp(name, mapset);
+	is_fp[n] = Rast_map_is_fp(name, mapset);
     else
 	is_fp[n] = 0;
     if (is_fp[n]) {
-	if (G_read_fp_range(name, mapset, &fp_range) < 0)
+	if (Rast_read_fp_range(name, mapset, &fp_range) < 0)
 	    G_fatal_error(_("Unable to read fp range for raster map <%s>"),
 			  name);
-	G_get_fp_range_min_max(&fp_range, &DMIN[n], &DMAX[n]);
+	Rast_get_fp_range_min_max(&fp_range, &DMIN[n], &DMAX[n]);
     }
 
     layers[n].name = G_store(name);
     layers[n].mapset = mapset;
-    if (G_read_cats(name, mapset, &layers[n].labels) < 0)
+    if (Rast_read_cats(name, mapset, &layers[n].labels) < 0)
 	G_fatal_error(_("Unable to read category file of raster map <%s@%s>"),
 		      name, mapset);
 
@@ -272,7 +302,7 @@ int match(char *s, char *key, int min)
     size_t len;
 
     len = strlen(s);
-    if (len < min)
+    if ((int) len < min)
 	return 0;
     return strncmp(s, key, len) == 0;
 }

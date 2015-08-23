@@ -10,7 +10,6 @@
 #include <grass/gis.h>
 #include <grass/glocale.h>
 #include "local_proto.h"
-#include "ps_info.h"
 #include "distance.h"
 
 #define PWIDTH	(PS.page_width-PS.left_marg-PS.right_marg)
@@ -101,22 +100,22 @@ static double do_scale(char *text)
 	/* unit2: meters, miles, kilometers */
 	if (strncmp(unit2, "mile", 4) == 0) {
 	    u2 = MILES_TO_INCHES;
-	    G_strcpy(unit2, "mile");
+	    strcpy(unit2, "mile");
 	}
 	else if (strncmp(unit2, "meter", 5) == 0) {
 	    u2 = METERS_TO_INCHES;
-	    G_strcpy(unit2, "meter");
+	    strcpy(unit2, "meter");
 	}
 	else if (strncmp(unit2, "kilometer", 9) == 0) {
 	    u2 = METERS_TO_INCHES * 1000;
-	    G_strcpy(unit2, "kilometer");
+	    strcpy(unit2, "kilometer");
 	}
 	else
 	    OOPS();
 	u2 *= n2;
 
-	G_strcpy(unit1, "inch");
-	G_strcpy(equals, "equal");
+	strcpy(unit1, "inch");
+	strcpy(equals, "equal");
 	if (n1 == 1)
 	    strcat(equals, "s");
 	else

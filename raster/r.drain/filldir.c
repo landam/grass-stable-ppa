@@ -1,8 +1,11 @@
+#include <grass/config.h>
+#include <sys/types.h>
 #include <stdlib.h>
 #include <math.h>
 #include <limits.h>
 #include <float.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include "tinf.h"
 #include "local.h"
 
@@ -33,7 +36,8 @@ void check(CELL newdir, CELL * dir, void *center, void *edge, double cnst,
 void build_one_row(int i, int nl, int ns, struct band3 *bnd, CELL * dir,
 		   struct metrics m)
 {
-    int j, offset, inc;
+    int j, inc;
+    off_t offset;
     CELL sdir;
     double slope;
     char *center;
@@ -45,7 +49,7 @@ void build_one_row(int i, int nl, int ns, struct band3 *bnd, CELL * dir,
 	offset = j * bpe();
 	center = bnd->b[1] + offset;
 	if (is_null(center)) {
-	    G_set_c_null_value(dir + j, 1);
+	    Rast_set_c_null_value(dir + j, 1);
 	    continue;
 	}
 
@@ -96,7 +100,7 @@ void build_one_row(int i, int nl, int ns, struct band3 *bnd, CELL * dir,
 
 void filldir(int fe, int fd, int nl, struct band3 *bnd, struct metrics *m)
 {
-    int i, bufsz;
+    int i, bufsz;  /* use off_t bufsz for large files ? MM */
     CELL *dir;
 
     /* determine the flow direction in each cell.  On outer rows and columns
@@ -108,13 +112,15 @@ void filldir(int fe, int fd, int nl, struct band3 *bnd, struct metrics *m)
     lseek(fe, 0, SEEK_SET);
     lseek(fd, 0, SEEK_SET);
     advance_band3(fe, bnd);
-    for (i = 0; i < nl; i += 1) {
+    for (i = 0; i < nl; i++) {
+        G_percent(i, nl, 5);
 	advance_band3(fe, bnd);
 	build_one_row(i, nl, bnd->ns, bnd, dir, m[i]);
 	write(fd, dir, bufsz);
     }
+    G_percent(1, 1, 1);
     advance_band3(fe, bnd);
-    build_one_row(i, nl, bnd->ns, bnd, dir, m[i]);
+    build_one_row(nl - 1, nl, bnd->ns, bnd, dir, m[nl - 1]);
     write(fd, dir, bufsz);
 
     G_free(dir);

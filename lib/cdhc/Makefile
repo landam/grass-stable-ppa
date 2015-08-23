@@ -1,19 +1,27 @@
 MODULE_TOPDIR = ../..
 
-EXTRA_LIBS=$(MATHLIB)
-LIB_NAME = $(CDHC_LIBNAME)
+include $(MODULE_TOPDIR)/include/Make/Vars.make
 
-LIB_OBJS = \
-	dcmp.o \
-        enormp.o normp.o xinormal.o \
-        omnibus.o geary.o extreme.o dagstndn.o kuiprsvn.o \
-        watsonun.o durbins.o andrsndn.o cvmw2n.o ksn.o \
-        dmax.o dmaxe.o chisqn.o shapiro1.o shapiro2.o shapiroe.o \
-        cvmw2e.o kse.o kuiprsve.o watsonue.o andrsnde.o \
-        chisqe.o kotz.o \
-        royston.o as181.o as177.o as241.o as66.o \
-        weisberg.o
+MOD_OBJS := $(filter-out test.o port_test.o,$(AUTO_OBJS))
+
+LIB = CDHC
 
 include $(MODULE_TOPDIR)/include/Make/Lib.make
+include $(MODULE_TOPDIR)/include/Make/Doxygen.make
 
 default: lib
+	@echo "==============TEST============="
+ifeq ($(strip $(CROSS_COMPILING)),)
+	$(MAKE) test
+endif
+
+test: $(OBJDIR)/test$(EXE)
+	$(call run_grass,$(OBJDIR)/test$(EXE) < test_numbers.csv)
+
+#  Test functions
+$(OBJDIR)/test$(EXE): $(OBJDIR)/test.o $(GISDEP) $(CDHCDEP)
+	$(call linker)
+
+$(OBJDIR)/test$(EXE): LIBES = $(GISLIB) $(CDHCLIB)
+
+DOXNAME = cdhc

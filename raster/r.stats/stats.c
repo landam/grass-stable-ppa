@@ -88,7 +88,7 @@ struct Node *NewNode(double area)
 }
 
 
-/* Essentially, G_quant_add_rule() treats the ranges as half-open,
+/* Essentially, Rast_quant_add_rule() treats the ranges as half-open,
  *  i.e. the values range from low (inclusive) to high (exclusive).
  *  While half-open ranges are a common concept (e.g. floor() behaves
  *  the same way), the range of a GRASS raster is closed, i.e. both the
@@ -112,7 +112,7 @@ void fix_max_fp_val(CELL *cell, int ncols)
 void reset_null_vals(CELL *cell, int ncols)
 {
     while (ncols-- > 0) {
-	if (G_is_c_null_value(&cell[ncols]))
+	if (Rast_is_c_null_value(&cell[ncols]))
 	    cell[ncols] = NULL_CELL;
     }
     return;
@@ -180,7 +180,7 @@ int update_cell_stats(CELL ** cell, int ncols, double area)
     return 0;
 }
 
-int node_compare(const void *pp, const void *qq)
+static int node_compare(const void *pp, const void *qq)
 {
     struct Node *const *p = pp, *const *q = qq;
     register int i, x;
@@ -191,22 +191,50 @@ int node_compare(const void *pp, const void *qq)
     for (i = nfiles; --i >= 0;)
 	if (x = (*a++ - *b++), x)
 	    return x;
+
     return 0;
 }
 
-int sort_cell_stats(void)
+static int node_compare_count_asc(const void *pp, const void *qq)
+{
+    struct Node *const *p = pp, *const *q = qq;
+    long a, b;
+    
+    a = (*p)->count;
+    b = (*q)->count;
+
+    return (a - b);
+}
+
+static int node_compare_count_desc(const void *pp, const void *qq)
+{
+    struct Node *const *p = pp, *const *q = qq;
+    long a, b;
+    
+    a = (*p)->count;
+    b = (*q)->count;
+
+    return (b - a);
+}
+
+int sort_cell_stats(int do_sort)
 {
     struct Node **q, *p;
 
     if (node_count <= 0)
 	return 0;
 
-    G_free(hashtable);		/* make a bit more room */
+    G_free(hashtable); /* make a bit more room */
     sorted_list = (struct Node **)G_calloc(node_count, sizeof(struct Node *));
     for (q = sorted_list, p = node_list; p; p = p->list)
 	*q++ = p;
 
-    qsort(sorted_list, node_count, sizeof(struct Node *), node_compare);
+    if (do_sort == SORT_DEFAULT)
+        qsort(sorted_list, node_count, sizeof(struct Node *), node_compare);
+    else if (do_sort == SORT_ASC)
+        qsort(sorted_list, node_count, sizeof(struct Node *), node_compare_count_asc);
+    else if (do_sort == SORT_DESC)
+        qsort(sorted_list, node_count, sizeof(struct Node *), node_compare_count_desc);
 
     return 0;
 }
@@ -230,7 +258,7 @@ int print_cell_stats(char *fmt, int with_percents, int with_counts,
     if (no_nulls)
 	total_count -= sorted_list[node_count - 1]->count;
 
-    G_set_c_null_value(&null_cell, 1);
+    Rast_set_c_null_value(&null_cell, 1);
     if (node_count <= 0) {
 	fprintf(stdout, "0");
 	for (i = 1; i < nfiles; i++)
@@ -242,7 +270,7 @@ int print_cell_stats(char *fmt, int with_percents, int with_counts,
 	if (with_percents)
 	    fprintf(stdout, "%s0.00%%", fs);
 	if (with_labels)
-	    fprintf(stdout, "%s%s", fs, G_get_cat(null_cell, &labels[i]));
+	    fprintf(stdout, "%s%s", fs, Rast_get_c_cat(&null_cell, &labels[i]));
 	fprintf(stdout, "\n");
     }
     else {
@@ -271,20 +299,20 @@ int print_cell_stats(char *fmt, int with_percents, int with_counts,
 		    fprintf(stdout, "%s%s", i ? fs : "", no_data_str);
 		    if (with_labels && !(raw_output && is_fp[i]))
 			fprintf(stdout, "%s%s", fs,
-				G_get_cat(null_cell, &labels[i]));
+				Rast_get_c_cat(&null_cell, &labels[i]));
 		}
 		else if (raw_output || !is_fp[i] || as_int) {
 		    fprintf(stdout, "%s%ld", i ? fs : "",
 			    (long)node->values[i]);
 		    if (with_labels && !is_fp[i])
 			fprintf(stdout, "%s%s", fs,
-				G_get_cat((CELL) node->values[i],
+				Rast_get_c_cat((CELL*) &(node->values[i]),
 					  &labels[i]));
 		}
 		else {		/* find out which floating point range to print */
 
 		    if (cat_ranges)
-			G_quant_get_ith_rule(&labels[i].q, node->values[i],
+			Rast_quant_get_ith_rule(&labels[i].q, node->values[i],
 					     &dLow, &dHigh, &tmp_cell,
 					     &tmp_cell);
 		    else {
@@ -316,8 +344,8 @@ int print_cell_stats(char *fmt, int with_percents, int with_counts,
 				    labels[i].labels[node->values[i]]);
 			else
 			    fprintf(stdout, "%sfrom %s to %s", fs,
-				    G_get_d_raster_cat(&dLow, &labels[i]),
-				    G_get_d_raster_cat(&dHigh, &labels[i]));
+				    Rast_get_d_cat(&dLow, &labels[i]),
+				    Rast_get_d_cat(&dHigh, &labels[i]));
 		    }
 		}
 
@@ -329,7 +357,7 @@ int print_cell_stats(char *fmt, int with_percents, int with_counts,
 	    if (with_counts)
 		fprintf(stdout, "%s%ld", fs, (long)node->count);
 	    if (with_percents)
-		fprintf(stdout, "%s%6.2f%%", fs,
+		fprintf(stdout, "%s%.2f%%", fs,
 			(double)100 * node->count / total_count);
 	    fprintf(stdout, "\n");
 	}

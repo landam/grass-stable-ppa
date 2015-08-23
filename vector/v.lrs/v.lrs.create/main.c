@@ -29,7 +29,7 @@
 #include <time.h>
 #include <math.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 #include "../lib/lrs.h"
@@ -99,8 +99,8 @@ int main(int argc, char **argv)
     struct Option *start_mp_opt, *start_off_opt, *end_mp_opt, *end_off_opt;
     struct Option *driver_opt, *database_opt, *table_opt, *thresh_opt;
     struct GModule *module;
-    char *mapset, buf[2000];
-    const char *drv, *db;
+    const char *mapset;
+    char buf[2000];
     struct Map_info In, Out, PMap, EMap;
     struct line_cats *LCats, *PCats;
     struct line_pnts *LPoints, *L2Points, *PPoints;
@@ -118,8 +118,10 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, LRS, networking");
-    module->description = _("Creates Linear Reference System");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("Linear Reference System"));
+    G_add_keyword(_("network"));
+    module->description = _("Creates a linear reference system.");
 
     in_lines_opt = G_define_standard_option(G_OPT_V_INPUT);
     in_lines_opt->key = "in_lines";
@@ -203,16 +205,15 @@ int main(int argc, char **argv)
     driver_opt->type = TYPE_STRING;
     driver_opt->required = NO;
     driver_opt->description = _("Driver name for reference system table");
-    if ((drv = db_get_default_driver_name()))
-	driver_opt->answer = drv;
+    driver_opt->options = db_list_drivers();
+    driver_opt->answer = db_get_default_driver_name();
 
     database_opt = G_define_option();
     database_opt->key = "rsdatabase";
     database_opt->type = TYPE_STRING;
     database_opt->required = NO;
     database_opt->description = _("Database name for reference system table");
-    if ((db = db_get_default_database_name()))
-	database_opt->answer = db;
+    database_opt->answer = db_get_default_database_name();
 
     table_opt = G_define_option();
     table_opt->key = "rstable";
@@ -223,7 +224,7 @@ int main(int argc, char **argv)
     table_opt->description = _("New table is created by this module");
 
     thresh_opt = G_define_option();
-    thresh_opt->key = "thresh";
+    thresh_opt->key = "threshold";
     thresh_opt->type = TYPE_DOUBLE;
     thresh_opt->required = NO;
     thresh_opt->answer = "1";
@@ -249,21 +250,29 @@ int main(int argc, char **argv)
     if (mapset == NULL)
 	G_fatal_error(_("Vector map <%s> not found"), in_lines_opt->answer);
 
-    Vect_open_old(&In, in_lines_opt->answer, mapset);
+    if (Vect_open_old(&In, in_lines_opt->answer, mapset) < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"),
+			in_lines_opt->answer);
 
     /* Open input ipoints */
     mapset = G_find_vector2(points_opt->answer, NULL);
     if (mapset == NULL)
 	G_fatal_error(_("Vector map <%s> not found"), points_opt->answer);
 
-    Vect_open_old(&PMap, points_opt->answer, mapset);
+    if (Vect_open_old(&PMap, points_opt->answer, mapset) < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), points_opt->answer);
 
     /* Open output lines */
-    Vect_open_new(&Out, out_lines_opt->answer, Vect_is_3d(&In));
+    if (Vect_open_new(&Out, out_lines_opt->answer, Vect_is_3d(&In)) < 0)
+	G_fatal_error(_("Unable to create vector map <%s>"),
+			out_lines_opt->answer);
 
     /* Open output error map */
-    if (err_opt->answer)
-	Vect_open_new(&EMap, err_opt->answer, Vect_is_3d(&In));
+    if (err_opt->answer) {
+	if (Vect_open_new(&EMap, err_opt->answer, Vect_is_3d(&In)) < 0)
+	    G_fatal_error(_("Unable to create vector map <%s>"),
+			    err_opt->answer);
+    }
 
     /* Because the line feature identified by one id (lidcol) may be split
      *  to more line parts, and milepost may be in threshold for more such parts,
@@ -286,6 +295,7 @@ int main(int argc, char **argv)
     if (db_open_database(ldriver, &lhandle) != DB_OK)
 	G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 		      Lfi->database, Lfi->driver);
+    db_set_error_handler_driver(ldriver);
 
     db_init_handle(&phandle);
     db_init_string(&pstmt);
@@ -294,6 +304,7 @@ int main(int argc, char **argv)
     if (db_open_database(pdriver, &phandle) != DB_OK)
 	G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 		      Pfi->database, Pfi->driver);
+    db_set_error_handler_driver(pdriver);
 
     /* Open database for RS table */
     db_init_handle(&rshandle);
@@ -302,6 +313,7 @@ int main(int argc, char **argv)
     db_set_handle(&rshandle, database_opt->answer, NULL);
     if (db_open_database(rsdriver, &rshandle) != DB_OK)
 	G_fatal_error(_("Unable to open database for reference table"));
+    db_set_error_handler_driver(rsdriver);
 
     /* Create new reference table */
     /* perhaps drop table to be conditionalized upon --o ? */
@@ -861,6 +873,11 @@ int main(int argc, char **argv)
     Vect_close(&PMap);
 
     G_message(_("Building topology for output (out_lines) map..."));
+
+    Vect_copy_head_data(&In, &Out);
+    Vect_hist_copy(&In, &Out);
+    Vect_hist_command(&Out);
+
     Vect_build(&Out);
     Vect_close(&Out);
 

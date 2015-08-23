@@ -14,41 +14,41 @@
  *               for details.
  *
  *****************************************************************************/
-#define MAIN
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 #include "global.h"
+#include <grass/raster.h>
 #include <grass/glocale.h>
+
+struct Quant quant_struct;
+CELL old_min, old_max;
+DCELL old_dmin, old_dmax;
+char **name;		/* input map names */
+int noi;
 
 int main(int argc, char *argv[])
 {
-    char buf[1024];
     struct GModule *module;
-    struct Option *input, *basemap, *fprange, *range;
+    struct Option *input, *basemap, *fprange, *range, *rules;
     struct Flag *trunc, *rnd;
     int truncate;
     int round;
     int i;
     CELL new_min, new_max;
     DCELL new_dmin, new_dmax;
-    char *basename, *basemapset;
+    char *basename;
 
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, quantization");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("quantization"));
+    G_add_keyword(_("statistics"));
     module->description =
 	_("Produces the quantization file for a floating-point map.");
-
-    basemap = G_define_option();
-    basemap->key = "basemap";
-    basemap->required = NO;
-    basemap->type = TYPE_STRING;
-    basemap->answer = "NONE";
-    basemap->gisprompt = "old,cell,raster";
-    basemap->description = _("Base map to take quant rules from");
 
     input = G_define_option();
     input->key = "input";
@@ -58,21 +58,28 @@ int main(int argc, char *argv[])
     input->gisprompt = "old,cell,raster";
     input->description = _("Raster map(s) to be quantized");
 
+    rules = G_define_standard_option(G_OPT_F_INPUT);
+    rules->key = "rules";
+    rules->required = NO;
+    rules->description = _("Path to rules file (\"-\" to read from stdin)");
+
+    basemap = G_define_option();
+    basemap->key = "basemap";
+    basemap->type = TYPE_STRING;
+    basemap->gisprompt = "old,cell,raster";
+    basemap->description = _("Base map to take quant rules from");
+
     fprange = G_define_option();
     fprange->key = "fprange";
     fprange->key_desc = "dmin,dmax";
     fprange->description = _("Floating point range: dmin,dmax");
     fprange->type = TYPE_STRING;
-    fprange->answer = "";
-    fprange->required = YES;
 
     range = G_define_option();
     range->key = "range";
     range->key_desc = "min,max";
     range->description = _("Integer range: min,max");
     range->type = TYPE_STRING;
-    range->answer = "1,255";
-    range->required = YES;
 
     trunc = G_define_flag();
     trunc->key = 't';
@@ -84,87 +91,103 @@ int main(int argc, char *argv[])
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
+
     truncate = trunc->answer;
     round = rnd->answer;
-    G_quant_init(&quant_struct);
+    basename = basemap->answer;
 
+    i = 0;
+    if (truncate)
+	i++;
+    if (round)
+	i++;
+    if (basename)
+	i++;
+    if (fprange->answer || range->answer)
+	i++;
+    if (rules->answer)
+	i++;
+    if (i > 1)
+	G_fatal_error(_("-%c, -%c, %s=, %s= and %s= are mutually exclusive"),
+			trunc->key, rnd->key, rules->key, basemap->key, fprange->key);
+
+    i = 0;
+    if (fprange->answer)
+	i++;
+    if (range->answer)
+	i++;
+    if (i == 1)
+	G_fatal_error(_("%s= and %s= must be used together"),
+			fprange->key, range->key);
+
+    for (noi = 0; input->answers[noi]; noi++)
+	;
+    name = G_malloc(noi * sizeof(char *));
     /* read and check inputs */
     for (noi = 0; input->answers[noi]; noi++) {
 	name[noi] = G_store(input->answers[noi]);
-	mapset[noi] = G_find_cell2(name[noi], "");
-	if (mapset[noi] == NULL) {
-	    sprintf(buf, "%s - not found", name[noi]);
-	    G_fatal_error(buf);
-	}
 
-	if (G_raster_map_type(name[noi], mapset[noi]) == CELL_TYPE) {
-	    sprintf(buf, "%s is integer map, it can't be quantized",
-		    name[noi]);
-	    G_fatal_error(buf);
-	}
+	if (Rast_map_type(name[noi], G_mapset()) == CELL_TYPE)
+	    G_fatal_error(_("%s is integer map, it can't be quantized"),
+			  name[noi]);
     }
 
-    basename = basemap->answer;
+    Rast_quant_init(&quant_struct);
 
     /* now figure out what new quant rules to write */
     if (truncate) {
 	G_message(_("Truncating..."));
-	G_quant_truncate(&quant_struct);
+	Rast_quant_truncate(&quant_struct);
     }
 
     else if (round) {
 	G_message(_("Rounding..."));
-	G_quant_round(&quant_struct);
+	Rast_quant_round(&quant_struct);
     }
 
-    else if (strncmp(basename, "NONE", 4) != 0)
+    else if (basename)
 	/* set the quant to that of basemap */
     {
-	basemapset = G_find_cell2(basename, "");
-	if (basemapset == NULL) {
-	    sprintf(buf, "%s - not found", basename);
-	    G_fatal_error(buf);
-	}
+	if (Rast_map_type(basename, "") == CELL_TYPE)
+	    G_fatal_error(_("%s is integer map, it can't be used as basemap"),
+			  basename);
 
-	if (G_raster_map_type(basename, basemapset) == CELL_TYPE) {
-	    sprintf(buf, "%s is integer map, it can't be used as basemap",
-		    basename);
-	    G_fatal_error(buf);
-	}
-
-	if (G_read_quant(basename, basemapset, &quant_struct) <= 0) {
-	    sprintf(buf, "Can't read quant rules for basemap %s! Exiting.",
-		    basename);
-	    G_fatal_error(buf);
-	}
+	if (Rast_read_quant(basename, "", &quant_struct) <= 0)
+	    G_fatal_error(_("unable to read quant rules for basemap <%s>"),
+			  basename);
     }
 
-    else if ((sscanf(fprange->answer, "%lf,%lf", &new_dmin, &new_dmax) == 2)
-	     && (sscanf(range->answer, "%d,%d", &new_min, &new_max) == 2)) {
-	G_message(_("Setting quant rules for input map(s) to (%f %f) -> (%d,%d)"),
+    else if (fprange->answer)
+    {
+	if (sscanf(fprange->answer, "%lf,%lf", &new_dmin, &new_dmax) != 2)
+	    G_fatal_error(_("invalid value for %s= <%s>"),
+			    fprange->key, fprange->answer);
+	if (sscanf(range->answer, "%d,%d", &new_min, &new_max) != 2)
+	    G_fatal_error(_("invalid value for %s= <%s>"),
+			    range->key, range->answer);
+	G_message(_("Setting quant rules for input map(s) to (%f,%f) -> (%d,%d)"),
 		  new_dmin, new_dmax, new_min, new_max);
-	G_quant_add_rule(&quant_struct, new_dmin, new_dmax, new_min, new_max);
+	Rast_quant_add_rule(&quant_struct, new_dmin, new_dmax, new_min, new_max);
+    }
+
+    else if (rules->answer) {
+	if (!read_rules(rules->answer))
+	    G_fatal_error("No rules specified");
     }
 
     else {			/* ask user for quant rules */
-
-
-	if (!read_rules()) {
+	if (!read_rules("-")) {
 	    if (isatty(0))
 		G_message(_("No rules specified. Quant table(s) not changed."));
 	    else
-		G_fatal_error("No rules specified");
+		G_fatal_error(_("No rules specified"));
 	}
-
     }				/* use rules */
 
-
     for (i = 0; i < noi; i++) {
-	if (G_write_quant(name[i], mapset[i], &quant_struct) < 0)
-	    G_message(_("Quant table not changed for %s"), name[i]);
-	else
-	    G_message(_("New quant table created for %s"), name[i]);
+	Rast_write_quant(name[i], G_mapset(), &quant_struct);
+	G_message(_("New quant table created for %s"), name[i]);
     }
 
-    exit(EXIT_FAILURE);
+    exit(EXIT_SUCCESS);
 }

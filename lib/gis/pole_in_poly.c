@@ -1,40 +1,37 @@
-#include <grass/gis.h>
-
-/**********************************************************
- * G_pole_in_polygon(x, y, n)
- *     double *x, *y, n;
- *
- * For lat-lon coordinates, this routine determines if the polygon
- * defined by the n verticies x,y contain one of the poles
- *
- * returns
- *  -1 if it contains the south pole,
- *   1 if it contains the north pole,
- *   0 no pole
- *
- * Note: don't use this routine if the projection isn't PROJECTION_LL
- *       no check is made by this routine for valid projection
- ***********************************************************/
-
-static int mystats(double, double, double, double, double *, double *);
-
-
 /*!
- * \brief pole in polygon
- *
- * For latitude-longitude coordinates, this routine determines if the polygon
- * defined by the <b>n</b> coordinate vertices <b>x,y</b> contains one of the
- * poles.
- * Returns -1 if it contains the south pole; 1 if it contains the north pole; 0
- * if it contains neither pole.
- * <b>Note.</b> Use this routine only if the projection is PROJECTION_LL.
- *
- *  \param x
- *  \param y
- *  \param n
- *  \return int
+  \file lib/gis/pole_in_poly.c
+
+  \brief GIS Library - Pole in polygon
+  
+  (C) 2001-2009 by the GRASS Development Team
+
+  This program is free software under the GNU General Public License
+  (>=v2).  Read the file COPYING that comes with GRASS for details.
+
+  \author CERL
  */
 
+#include <grass/gis.h>
+
+static void mystats(double, double, double, double, double *, double *);
+
+/*!
+ * \brief Check if pole is in polygon
+ *
+ * For latitude-longitude coordinates, this routine determines if the polygon
+ * defined by the <i>n</i> coordinate vertices <i>x,y</i> contains one of the
+ * poles.
+ *
+ * <b>Note:</b> Use this routine only if the projection is PROJECTION_LL.
+ *
+ *  \param x array of x coordinates
+ *  \param y array of y coordinates
+ *  \param n number of coordinates
+ * 
+ * \return -1 if it contains the south pole
+ * \return 1 if it contains the north pole
+ * \return 0 if it contains neither pole.
+ */
 int G_pole_in_polygon(const double *x, const double *y, int n)
 {
     int i;
@@ -63,8 +60,8 @@ int G_pole_in_polygon(const double *x, const double *y, int n)
     return total_area >= 0.0 ? 1 : -1;
 }
 
-static int mystats(double x0, double y0, double x1, double y1, double *len,
-		   double *area)
+static void mystats(double x0, double y0, double x1, double y1, double *len,
+		    double *area)
 {
     if (x1 > x0)
 	while (x1 - x0 > 180)
@@ -79,6 +76,4 @@ static int mystats(double x0, double y0, double x1, double y1, double *len,
 	*area = (x0 - x1) * (y0 + y1) / 2.0;
     else
 	*area = (x1 - x0) * (y1 + y0) / 2.0;
-
-    return 0;
 }

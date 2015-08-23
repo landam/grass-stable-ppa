@@ -1,52 +1,54 @@
 /*!
-   \file hist.c
+   \file lib/vector/Vlib/hist.c
 
    \brief Vector library - history manipulation
 
    Higher level functions for reading/writing/manipulating vectors.
 
-   (C) 2001-2008 by the GRASS Development Team
+   (C) 2001-2009 by the GRASS Development Team
 
-   This program is free software under the 
-   GNU General Public License (>=v2). 
-   Read the file COPYING that comes with GRASS
-   for details.
+   This program is free software under the GNU General Public License
+   (>=v2).  Read the file COPYING that comes with GRASS for details.
 
    \author Radim Blazek
-
-   \date 2001-2008
  */
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 
 /*!
    \brief Write command info to history file
 
-   \param Map vector map
+   \param Map pointer to Map_info structure
 
-   \return 0 OK
+   \return 0 on success
    \return -1 error
  */
 int Vect_hist_command(struct Map_info *Map)
 {
-    char *cmd, buf[2000];
+    char *cmd, buf[GPATH_MAX];
 
     G_debug(3, "Vect_hist_command()");
 
     cmd = G_recreate_command();
 
-    Vect_hist_write(Map, "COMMAND: ");
-    Vect_hist_write(Map, cmd);
-    Vect_hist_write(Map, "\n");
+    if (0 > Vect_hist_write(Map, "COMMAND: "))
+        return -1;
+    if (0 > Vect_hist_write(Map, cmd))
+        return -1;
+    if (0 > Vect_hist_write(Map, "\n"))
+        return -1;
 
     sprintf(buf, "GISDBASE: %s\n", G_gisdbase());	/* Needed ? */
-    Vect_hist_write(Map, buf);
+    if (0 > Vect_hist_write(Map, buf))
+        return -1;
 
-    sprintf(buf, "LOCATION: %s MAPSET: %s USER: %s DATE: %s\n", G_location(), G_mapset(), G_whoami(), G_date());	/* Needed ? */
-    Vect_hist_write(Map, buf);
+    sprintf(buf, "LOCATION: %s MAPSET: %s USER: %s DATE: %s\n",
+	    G_location(), G_mapset(), G_whoami(), G_date());	/* Needed ? */
+    if (0 > Vect_hist_write(Map, buf))
+        return -1;
 
     return 0;
 }
@@ -54,26 +56,30 @@ int Vect_hist_command(struct Map_info *Map)
 /*!
    \brief Write string to history file
 
-   \param Map vector map
+   \param Map pointer to Map_info structure
    \param str string to write
 
    \return the number of characters printed
+   \return -1 on error
  */
 int Vect_hist_write(struct Map_info *Map, const char *str)
 {
     int ret;
 
-    G_debug(5, "Vect_hist_write()");
-    ret = fprintf(Map->hist_fp, "%s", str);
-    fflush(Map->hist_fp);
+    G_debug(5, "Vect_hist_write(): %s", str);
+    ret = 0;
+    if (Map->hist_fp) {
+	ret = fprintf(Map->hist_fp, "%s", str);
+	fflush(Map->hist_fp);
+    }
 
-    return (ret);
+    return ret;
 }
 
 /*!
    \brief Reads one line from history file without newline character
 
-   \param s buffer, allocated space must be size+1
+   \param[out] s buffer, allocated space must be size+1
    \param size maximum number of character
    \param Map vector map
 
@@ -81,7 +87,7 @@ int Vect_hist_write(struct Map_info *Map, const char *str)
    \return NULL on error
    \return EOF end of file
  */
-char *Vect_hist_read(char *s, int size, struct Map_info *Map)
+char *Vect_hist_read(char *s, int size, const struct Map_info *Map)
 {
     int ret;
 
@@ -117,12 +123,12 @@ void Vect_hist_rewind(struct Map_info *Map)
    \brief Copy history from one map to another
 
    \param In input vector map
-   \param Out output vector map
+   \param[out] Out output vector map
 
-   \return 0 OK
-   \return -1 error
+   \return 0 on success
+   \return -1 on error
  */
-int Vect_hist_copy(struct Map_info *In, struct Map_info *Out)
+int Vect_hist_copy(const struct Map_info *In, struct Map_info *Out)
 {
     size_t red, ret;
     char buf[1000];
@@ -134,7 +140,12 @@ int Vect_hist_copy(struct Map_info *In, struct Map_info *Out)
     if (Out->hist_fp == NULL)
 	return -1;
 
-    fseek(Out->hist_fp, (long)0, SEEK_END);
+    /* skip empty old hist */
+    G_fseek(In->hist_fp, (long)0, SEEK_END);
+    if (G_ftell(In->hist_fp) == 0)
+	return 0;
+
+    G_fseek(Out->hist_fp, (long)0, SEEK_END);
     rewind(In->hist_fp);
 
     while ((red = fread(buf, sizeof(char), sizeof(char) * 1000, In->hist_fp))) {
@@ -145,7 +156,7 @@ int Vect_hist_copy(struct Map_info *In, struct Map_info *Out)
     }
 
     /* In ends with \n ? */
-    fseek(In->hist_fp, (long)-1, SEEK_END);
+    G_fseek(In->hist_fp, (long)-1, SEEK_END);
     if (fread(buf, sizeof(char), sizeof(char), In->hist_fp) != 1) {
 	return -1;
     }

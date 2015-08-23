@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <grass/gis.h>
-#include <grass/display.h>
+#include <grass/colors.h>
 #include <grass/raster.h>
+#include <grass/display.h>
 #include <grass/symbol.h>
 #include <grass/glocale.h>
 
@@ -12,8 +13,8 @@
 #define CHUNK	128
 
 static int coors_allocated = 0;
-static int *xarray;
-static int *yarray;
+static double *xarray;
+static double *yarray;
 
 static float xincr;
 static float yincr;
@@ -22,14 +23,24 @@ static double rotation;		/* degrees counter-clockwise from east */
 
 static RGBA_Color last_color;
 
+static double t, b, l, r;
+
+static double cur_x, cur_y;
+
 int set_graph_stuff(void)
 {
-    xincr = (float)(r - l) / 100.;
-    if (xincr < 0.0)
-	xincr = -xincr;		/* mod: shapiro 13 jun 1991 */
-    yincr = (float)(b - t) / 100.;
-    if (yincr < 0.0)
-	yincr = -yincr;		/* mod: shapiro 13 jun 1991 */
+    D_get_dst(&t, &b, &l, &r);
+
+    if (mapunits) {
+	xincr = (r - l) / 100.;
+	if (xincr < 0.0)
+	    xincr = -xincr;		/* mod: shapiro 13 jun 1991 */
+	yincr = (b - t) / 100.;
+	if (yincr < 0.0)
+	    yincr = -yincr;		/* mod: shapiro 13 jun 1991 */
+    }
+    else
+	xincr = yincr = 1;
 
     rotation = 0.0;		/* init */
 
@@ -39,69 +50,51 @@ int set_graph_stuff(void)
 int set_text_size(void)
 {
     if (hsize >= 0. && vsize >= 0. && hsize <= 100. && vsize <= 100.) {
-	R_text_size((int)(hsize * xincr), (int)(vsize * yincr));
-	G_debug(3, "text size initialized to [%d,%d] pixels",
-		(int)(hsize * xincr), (int)(vsize * yincr));
+	D_text_size(hsize * xincr, vsize * yincr);
+	G_debug(3, "text size initialized to [%.1f,%.1f]",
+		hsize * xincr, vsize * yincr);
     }
     return (0);
 }
 
-int do_draw(char *buff)
+int do_draw(const char *str)
 {
     float xper, yper;
 
-    if (2 != sscanf(buff, "%*s %f %f", &xper, &yper)) {
-	G_warning(_("Problem parsing coordinates [%s]"), buff);
+    if (2 != sscanf(str, "%*s %f %f", &xper, &yper)) {
+	G_warning(_("Problem parsing coordinates [%s]"), str);
 	return (-1);
     }
 
-    if (mapunits) {
-	/* skip check: clips segments if map coordinate is out of region.
-	   if( xper < D_get_u_west() ||
-	   yper < D_get_u_south() ||
-	   xper > D_get_u_east() ||
-	   yper > D_get_u_north() )
-	   return(-1);
-	 */
-	R_cont_abs((int)(D_u_to_d_col(xper) + 0.5),
-		   (int)(D_u_to_d_row(yper) + 0.5));
-    }
-    else {
-	if (xper < 0. || yper < 0. || xper > 100. || yper > 100.)
-	    return (-1);
-	R_cont_abs(l + (int)(xper * xincr), b - (int)(yper * yincr));
-    }
+    D_line_abs(cur_x, cur_y, xper, yper);
+    cur_x = xper;
+    cur_y = yper;
 
     return (0);
 }
 
-int do_move(char *buff)
+int do_move(const char *str)
 {
     float xper, yper;
 
-    if (2 != sscanf(buff, "%*s %f %f", &xper, &yper)) {
-	G_warning(_("Problem parsing coordinates [%s]"), buff);
+    if (2 != sscanf(str, "%*s %f %f", &xper, &yper)) {
+	G_warning(_("Problem parsing coordinates [%s]"), str);
 	return (-1);
     }
 
-    if (mapunits)
-	R_move_abs((int)(D_u_to_d_col(xper) + 0.5),
-		   (int)(D_u_to_d_row(yper) + 0.5));
-    else {
-	if (xper < 0. || yper < 0. || xper > 100. || yper > 100.)
-	    return (-1);
-	R_move_abs(l + (int)(xper * xincr), b - (int)(yper * yincr));
-    }
+    D_pos_abs(xper, yper);
+    cur_x = xper;
+    cur_y = yper;
 
     return (0);
 }
 
-int do_color(char *buff)
+int do_color(const char *str)
 {
     char in_color[64];
     int R, G, B, color = 0;
 
-    if (1 != sscanf(buff, "%*s %s", in_color)) {
+    if (1 != sscanf(str, "%*s %s", in_color)) {
 	G_warning(_("Unable to read color"));
 	return (-1);
     }
@@ -115,30 +108,30 @@ int do_color(char *buff)
 	return (-1);
     }
     if (color == 1) {
-	R_RGB_color(R, G, B);
+	D_RGB_color(R, G, B);
 	/* store for backup */
 	set_last_color(R, G, B, RGBA_COLOR_OPAQUE);
     }
     if (color == 2) {		/* color == 'none' */
 	R = D_translate_color(DEFAULT_BG_COLOR);
-	R_standard_color(R);
+	D_use_color(R);
 	/* store for backup */
 	set_last_color(0, 0, 0, RGBA_COLOR_NONE);
     }
     return (0);
 }
 
-int do_linewidth(char *buff)
+int do_linewidth(const char *str)
 {
-    int width;			/* in pixels */
+    double width;
 
-    if (1 != sscanf(buff, "%*s %d", &width)) {
-	G_warning(_("Problem parsing command [%s]"), buff);
+    if (1 != sscanf(str, "%*s %lf", &width)) {
+	G_warning(_("Problem parsing command [%s]"), str);
 	return (-1);
     }
 
     D_line_width(width);
-    G_debug(3, "line width set to %d pixels", width);
+    G_debug(3, "line width set to %.1f", width);
 
     return (0);
 }
@@ -149,7 +142,6 @@ int do_poly(char *buff, FILE * infile)
     int num;
     char origcmd[64];
     float xper, yper;
-    char *fgets();
     int to_return;
 
     sscanf(buff, "%s", origcmd);
@@ -172,20 +164,10 @@ int do_poly(char *buff, FILE * infile)
 	    break;
 	}
 
-	if (!mapunits) {
-	    if (xper < 0. || yper < 0. || xper > 100. || yper > 100.)
-		break;
-	}
 	check_alloc(num + 1);
 
-	if (mapunits) {
-	    xarray[num] = (int)(D_u_to_d_col(xper) + 0.5);
-	    yarray[num] = (int)(D_u_to_d_row(yper) + 0.5);
-	}
-	else {
-	    xarray[num] = l + (int)(xper * xincr);
-	    yarray[num] = b - (int)(yper * yincr);
-	}
+	xarray[num] = xper;
+	yarray[num] = yper;
 
 	num++;
     }
@@ -194,23 +176,23 @@ int do_poly(char *buff, FILE * infile)
 	/* this check is here so you can use the "polyline" command 
 	   to make an unfilled polygon */
 	if (!strcmp(origcmd, "polygon"))
-	    R_polygon_abs(xarray, yarray, num);
+	    D_polygon_abs(xarray, yarray, num);
 	else
-	    R_polyline_abs(xarray, yarray, num);
+	    D_polyline_abs(xarray, yarray, num);
     }
 
     return (to_return);
 }
 
-int do_size(char *buff)
+int do_size(const char *str)
 {
     float xper, yper;
     int ret;
 
-    ret = sscanf(buff, "%*s %f %f", &xper, &yper);
+    ret = sscanf(str, "%*s %f %f", &xper, &yper);
 
     if (ret != 2 && ret != 1) {
-	G_warning(_("Problem parsing command [%s]"), buff);
+	G_warning(_("Problem parsing command [%s]"), str);
 	return (-1);
     }
 
@@ -221,35 +203,36 @@ int do_size(char *buff)
     if (xper < 0. || yper < 0. || xper > 100. || yper > 100.)
 	return (-1);
 
-    R_text_size((int)(xper * xincr), (int)(yper * yincr));
-    G_debug(3, "text size set to [%d,%d] pixels",
-	    (int)(xper * xincr), (int)(yper * yincr));
+    D_text_size(xper * xincr, yper * yincr);
+    G_debug(3, "text size set to [%.1f,%.1f]",
+	    xper * xincr, yper * yincr);
 
     return (0);
 }
 
-int do_rotate(char *buff)
+int do_rotate(const char *str)
 {
-    if (1 != sscanf(buff, "%*s %lf", &rotation)) {
-	G_warning(_("Problem parsing command [%s]"), buff);
+    if (1 != sscanf(str, "%*s %lf", &rotation)) {
+	G_warning(_("Problem parsing command [%s]"), str);
 	return (-1);
     }
 
-    R_text_rotation((float)rotation);
+    D_text_rotation(rotation);
     G_debug(3, "rotation set to %.1f degrees", rotation);
 
     return (0);
 }
 
-int do_text(char *buff)
+int do_text(const char *str)
 {
-    char *ptr;
+    const char *ptr = str;
 
-    ptr = buff;
     /* skip to beginning of actual text */
-    for (; *ptr != ' '; ptr++) ;
-    for (; *ptr == ' '; ptr++) ;
-    R_text(ptr);
+    for (; *ptr != ' '; ptr++)
+	;
+    for (; *ptr == ' '; ptr++)
+	;
+    D_text(ptr);
 
     return 0;
 }
@@ -262,81 +245,69 @@ int check_alloc(int num)
 	return 0;
 
     to_alloc = coors_allocated;
-    while (num >= to_alloc)
-	to_alloc += CHUNK;
+    if (num >= to_alloc)
+	to_alloc = num + CHUNK;
 
-    if (coors_allocated == 0) {
-	xarray = (int *)falloc(to_alloc, sizeof(int));
-	yarray = (int *)falloc(to_alloc, sizeof(int));
-    }
-    else {
-	xarray = (int *)frealloc((char *)xarray,
-				 to_alloc, sizeof(int), coors_allocated);
-	yarray = (int *)frealloc((char *)yarray,
-				 to_alloc, sizeof(int), coors_allocated);
-    }
+    xarray = G_realloc(xarray, to_alloc * sizeof(double));
+    yarray = G_realloc(yarray, to_alloc * sizeof(double));
 
     coors_allocated = to_alloc;
 
     return 0;
 }
 
-int do_icon(char *buff)
+int do_icon(const char *str)
 {
     double xper, yper;
     char type;
-    int size;
-    int ix, iy;
+    double size;
+    double ix, iy;
 
-    if (4 != sscanf(buff, "%*s %c %d %lf %lf", &type, &size, &xper, &yper)) {
-	G_warning(_("Problem parsing command [%s]"), buff);
+    if (4 != sscanf(str, "%*s %c %lf %lf %lf", &type, &size, &xper, &yper)) {
+	G_warning(_("Problem parsing command [%s]"), str);
 	return (-1);
     }
 
-    if (mapunits) {
-	ix = (int)(D_u_to_d_col(xper) + 0.5);
-	iy = (int)(D_u_to_d_row(yper) + 0.5);
-	/* size in map units too? currently in percentage.
-	   use "size * D_get_u_to_d_yconv()" to convert? */
-    }
-    else {
-	if (xper < 0. || yper < 0. || xper > 100. || yper > 100.)
-	    return (-1);
+    ix = xper;
+    iy = yper;
+    size *= yincr;
 
-	ix = l + (int)(xper * xincr);
-	iy = b - (int)(yper * yincr);
-    }
+    D_begin();
 
-    switch (type & 0177) {
+    switch (type & 0x7F) {
     case 'o':
-	R_move_abs(ix - size, iy - size);
-	R_cont_abs(ix - size, iy + size);
-	R_cont_abs(ix + size, iy + size);
-	R_cont_abs(ix + size, iy - size);
-	R_cont_abs(ix - size, iy - size);
+	D_move_abs(ix - size, iy - size);
+	D_cont_abs(ix - size, iy + size);
+	D_cont_abs(ix + size, iy + size);
+	D_cont_abs(ix + size, iy - size);
+	D_cont_abs(ix - size, iy - size);
 	break;
     case 'x':
-	R_move_abs(ix - size, iy - size);
-	R_cont_abs(ix + size, iy + size);
-	R_move_abs(ix - size, iy + size);
-	R_cont_abs(ix + size, iy - size);
+	D_move_abs(ix - size, iy - size);
+	D_cont_abs(ix + size, iy + size);
+	D_move_abs(ix - size, iy + size);
+	D_cont_abs(ix + size, iy - size);
 	break;
     case '+':
     default:
-	R_move_abs(ix, iy - size);
-	R_cont_abs(ix, iy + size);
-	R_move_abs(ix - size, iy);
-	R_cont_abs(ix + size, iy);
+	D_move_abs(ix, iy - size);
+	D_cont_abs(ix, iy + size);
+	D_move_abs(ix - size, iy);
+	D_cont_abs(ix + size, iy);
 	break;
     }
+
+    D_end();
+    D_stroke();
+
     return (0);
 }
 
-int do_symbol(char *buff)
+int do_symbol(const char *str)
 {
     double xper, yper;
-    int size;
-    int ix, iy;
+    double size;
+    double ix, iy;
     char *symb_name;
     SYMBOL *Symb;
     char *line_color_str, *fill_color_str;
@@ -347,35 +318,26 @@ int do_symbol(char *buff)
     line_color = G_malloc(sizeof(RGBA_Color));
     fill_color = G_malloc(sizeof(RGBA_Color));
 
-    symb_name = G_malloc(sizeof(char) * strlen(buff) + 1);	/* well, it won't be any bigger than this */
-    line_color_str = G_malloc(sizeof(char) * strlen(buff) + 1);
-    fill_color_str = G_malloc(sizeof(char) * strlen(buff) + 1);
+    symb_name = G_malloc(strlen(str) + 1);	/* well, it won't be any bigger than this */
+    line_color_str = G_malloc(strlen(str) + 1);
+    fill_color_str = G_malloc(strlen(str) + 1);
 
-    G_debug(3, "do_symbol() [%s]", buff);
+    G_debug(3, "do_symbol() [%s]", str);
 
     /* set default colors so colors are optional */
     strcpy(line_color_str, DEFAULT_FG_COLOR);
     strcpy(fill_color_str, "grey");
 
     if (sscanf
-	(buff, "%*s %s %d %lf %lf %s %s", symb_name, &size, &xper, &yper,
+	(str, "%*s %s %lf %lf %lf %s %s", symb_name, &size, &xper, &yper,
 	 line_color_str, fill_color_str) < 4) {
-	G_warning(_("Problem parsing command [%s]"), buff);
+	G_warning(_("Problem parsing command [%s]"), str);
 	return (-1);
     }
 
-    if (mapunits) {
-	ix = (int)(D_u_to_d_col(xper) + 0.5);
-	iy = (int)(D_u_to_d_row(yper) + 0.5);
-	/* consider size in map units too? maybe as percentage of display?
-	   perhaps use "size * D_get_u_to_d_yconv()" to convert */
-    }
-    else {
-	if (xper < 0. || yper < 0. || xper > 100. || yper > 100.)
-	    return (-1);
-	ix = l + (int)(xper * xincr);
-	iy = b - (int)(yper * yincr);
-    }
+    ix = xper;
+    iy = yper;
+    size *= yincr;
 
     /* parse line color */
     ret = G_str_to_color(line_color_str, &R, &G, &B);
@@ -422,11 +384,11 @@ int do_symbol(char *buff)
 
     /* restore previous d.graph draw color */
     if (last_color.a == RGBA_COLOR_OPAQUE)
-	R_RGB_color(last_color.r, last_color.g, last_color.b);
+	D_RGB_color(last_color.r, last_color.g, last_color.b);
     else if (last_color.a == RGBA_COLOR_NONE)
-	D_raster_use_color(D_parse_color(DEFAULT_BG_COLOR, 0));
+	D_use_color(D_parse_color(DEFAULT_BG_COLOR, 0));
     else			/* unset or bad */
-	R_RGB_color(line_color->r, line_color->g, line_color->b);
+	D_RGB_color(line_color->r, line_color->g, line_color->b);
 
     G_free(symb_name);
     G_free(line_color_str);

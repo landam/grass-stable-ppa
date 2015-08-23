@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "method.h"
 
@@ -12,11 +13,10 @@
 static int skew(double *, int, double *);
 
 
-int
-o_skew(char *basemap, char *covermap, char *outputmap, int usecats,
-       struct Categories *cats)
+int o_skew(const char *basemap, const char *covermap, const char *outputmap,
+	   int usecats, struct Categories *cats)
 {
-    char command[1024];
+    struct Popen stats_child, reclass_child;
     FILE *stats, *reclass;
     int first, mem, i, count;
     long basecat, covercat, catb, catc;
@@ -27,13 +27,8 @@ o_skew(char *basemap, char *covermap, char *outputmap, int usecats,
     mem = MEM * sizeof(double);
     tab = (double *)G_malloc(mem);
 
-    sprintf(command, "r.stats -cn input=\"%s,%s\" fs=space", basemap,
-	    covermap);
-    stats = popen(command, "r");
-
-    sprintf(command, "r.reclass i=\"%s\" o=\"%s\"", basemap, outputmap);
-    reclass = popen(command, "w");
-
+    stats = run_stats(&stats_child, basemap, covermap, "-cn");
+    reclass = run_reclass(&reclass_child, basemap, outputmap);
 
     first = 1;
     while (read_stats(stats, &basecat, &covercat, &value)) {
@@ -54,7 +49,7 @@ o_skew(char *basemap, char *covermap, char *outputmap, int usecats,
 	}
 
 	if (usecats)
-	    sscanf(G_get_cat((CELL) covercat, cats), "%lf", &x);
+	    sscanf(Rast_get_c_cat((CELL *) &covercat, cats), "%lf", &x);
 	else
 	    x = covercat;
 
@@ -75,12 +70,11 @@ o_skew(char *basemap, char *covermap, char *outputmap, int usecats,
     skew(tab, count, &var);
     fprintf(reclass, "%ld = %ld %f\n", catb, catb, var);
 
+    G_popen_close(&stats_child);
+    G_popen_close(&reclass_child);
 
-    pclose(stats);
-    pclose(reclass);
-     /**/ return (0);
+    return 0;
 }
-
 
 /***********************************************************************
 *

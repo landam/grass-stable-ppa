@@ -33,7 +33,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 
@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
     char *in_name, *out_name, *bbox_name;
     struct GModule *module;
     struct Option *old, *new, *bbox;
-    struct Flag *append, *table_flag;
+    struct Flag *append, *table_flag, *no_topo;
     struct Map_info InMap, OutMap, BBoxMap;
     int n_files;
     int do_table;
@@ -65,9 +65,10 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, geometry");
-    module->description = _("Create a new vector map layer "
-			    "by combining other vector map layers.");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("geometry"));
+    module->description = _("Creates a new vector map "
+			    "by combining other vector maps.");
 
     old = G_define_standard_option(G_OPT_V_INPUTS);
 
@@ -90,6 +91,8 @@ int main(int argc, char *argv[])
     table_flag->description =
 	_("Only the table of layer 1 is currently supported");
 
+    no_topo = G_define_standard_flag(G_FLG_V_TOPO);
+
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
@@ -104,10 +107,11 @@ int main(int argc, char *argv[])
     i = 0;
     while (old->answers[i]) {
 	in_name = old->answers[i++];
-	Vect_check_input_output_name(in_name, new->answer, GV_FATAL_EXIT);
+	Vect_check_input_output_name(in_name, new->answer, G_FATAL_EXIT);
 
 	Vect_set_open_level(2);
-	Vect_open_old_head(&InMap, in_name, "");
+	if (Vect_open_old_head(&InMap, in_name, "") < 0)
+	    G_fatal_error(_("Unable to open vector map <%s>"), in_name);
 
 	if (out_is_3d != WITH_Z && Vect_is_3d(&InMap))
 	    out_is_3d = WITH_Z;
@@ -116,11 +120,14 @@ int main(int argc, char *argv[])
     }
 
     table_out = NULL;
+    fi_in = NULL;
+    fi_out = NULL;
     /* Check input table structures */
     if (do_table) {
 	if (append->answer) {
 	    Vect_set_open_level(1);
-	    Vect_open_old_head(&OutMap, out_name, G_mapset());
+	    if (Vect_open_old_head(&OutMap, out_name, G_mapset()) < 0)
+		G_fatal_error(_("Unable to open vector map <%s>"), out_name);
 
 	    fi_out = Vect_get_field(&OutMap, 1);
 	    if (fi_out) {
@@ -132,6 +139,7 @@ int main(int argc, char *argv[])
 		    G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 				  fi_out->database, fi_out->driver);
 		}
+                db_set_error_handler_driver(driver_out);
 
 		db_set_string(&table_name_out, fi_out->table);
 		if (db_describe_table(driver_out, &table_name_out, &table_out)
@@ -148,7 +156,8 @@ int main(int argc, char *argv[])
 	while (old->answers[i]) {
 	    in_name = old->answers[i];
 	    Vect_set_open_level(1);
-	    Vect_open_old_head(&InMap, in_name, "");
+	    if (Vect_open_old_head(&InMap, in_name, "") < 0)
+		G_fatal_error(_("Unable to open vector map <%s>"), in_name);
 
 	    fi_in = Vect_get_field(&InMap, 1);
 	    table_in = NULL;
@@ -162,6 +171,7 @@ int main(int argc, char *argv[])
 		    G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 				  fi_in->database, fi_in->driver);
 		}
+                db_set_error_handler_driver(driver_in);
 
 		if (!append->answer && i == 0) {
 		    table = &table_out;
@@ -240,18 +250,25 @@ int main(int argc, char *argv[])
     }
 
     if (append->answer) {
-	Vect_open_update(&OutMap, out_name, G_mapset());
+	if (no_topo->answer)
+	    Vect_set_open_level(1);
+
+	if (Vect_open_update(&OutMap, out_name, G_mapset()) < 0)
+	    G_fatal_error(_("Unable to open vector map <%s>"), out_name);
+
 	if (out_is_3d == WITH_Z && !Vect_is_3d(&OutMap)) {
 	    G_warning(_("The output map is not 3D"));
 	}
 	maxcat = max_cat(&OutMap, 1);
     }
     else {
-	Vect_open_new(&OutMap, out_name, out_is_3d);
+	if (Vect_open_new(&OutMap, out_name, out_is_3d) < 0)
+	    G_fatal_error(_("Unable to create vector map <%s>"), out_name);
     }
 
     if (bbox_name) {
-	Vect_open_new(&BBoxMap, bbox_name, out_is_3d);	/* TODO 3D */
+	if (Vect_open_new(&BBoxMap, bbox_name, out_is_3d) < 0)	/* TODO 3D */
+	    G_fatal_error(_("Unable to create vector map <%s>"), bbox_name);
 	Vect_hist_command(&BBoxMap);
     }
 
@@ -269,11 +286,14 @@ int main(int argc, char *argv[])
 	if (fi_out) {
 	    driver_out =
 		db_start_driver_open_database(fi_out->driver,
-					      fi_out->database);
+					      Vect_subst_var(fi_out->database,
+							     &OutMap));
 	    if (!driver_out) {
 		G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 			      fi_out->database, fi_out->driver);
 	    }
+            db_set_error_handler_driver(driver_out);
+
 	    db_begin_transaction(driver_out);
 	}
 
@@ -298,6 +318,9 @@ int main(int argc, char *argv[])
 
 	    Vect_map_add_dblink(&OutMap, 1, NULL, fi_out->table,
 				fi_in->key, fi_out->database, fi_out->driver);
+
+	    /* avoid Vect_subst_var() below */
+	    fi_out = Vect_get_field(&OutMap, 1);
 	}
     }
 
@@ -306,13 +329,13 @@ int main(int argc, char *argv[])
 	int add_cat;
 
 	in_name = old->answers[i++];
-	G_important_message(_("Patching vector map <%s@%s>..."), in_name,
-			    G_find_vector2(in_name, ""));
+	G_important_message(_("Patching vector map <%s>..."), in_name);
 	if (bbox_name)
 	    Vect_set_open_level(2);	/* needed for Vect_map_box() */
 	else
 	    Vect_set_open_level(1);
-	Vect_open_old(&InMap, in_name, "");
+	if (Vect_open_old(&InMap, in_name, "") < 0)
+	    G_fatal_error(_("Unable to open vector map <%s>"), in_name);
 
 	/*first time around, copy first in head to out head */
 	if (i == 1)
@@ -336,21 +359,31 @@ int main(int argc, char *argv[])
 	if (do_table) {
 	    fi_in = Vect_get_field(&InMap, 1);
 	    if (fi_in) {
-		driver_in =
-		    db_start_driver_open_database(fi_in->driver,
-						  fi_in->database);
-		if (!driver_in) {
-		    G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
-				  fi_in->database, fi_in->driver);
+
+		/* SQLite does not like to have the same database opened twice */
+		if (strcmp(fi_in->driver, fi_out->driver) == 0
+		    && strcmp(fi_in->database, fi_out->database) == 0) {
+		    G_debug(3, "Use the same driver");
+		    driver_in = driver_out;
+		}
+		else {
+		    driver_in =
+			db_start_driver_open_database(fi_in->driver,
+						      fi_in->database);
+		    if (!driver_in) {
+			G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
+				      fi_in->database, fi_in->driver);
+		    }
+		    db_set_error_handler_driver(driver_in);
 		}
 
 		db_set_string(&table_name_in, fi_in->table);
 		copy_records(driver_in, &table_name_in,
 			     driver_out, &table_name_out, keycol, add_cat);
 
-		db_close_database_shutdown_driver(driver_in);
+		if (driver_in != driver_out)
+		    db_close_database_shutdown_driver(driver_in);
 	    }
-
 	}
 
 	Vect_close(&InMap);
@@ -365,13 +398,14 @@ int main(int argc, char *argv[])
     Vect_set_map_name(&OutMap, "Output from v.patch");
     Vect_set_person(&OutMap, G_whoami());
 
-    Vect_build(&OutMap);
+    if (!no_topo->answer)
+	Vect_build(&OutMap);
     Vect_close(&OutMap);
 
     if (bbox_name) {
 	Vect_set_map_name(&BBoxMap, "Output from v.patch (bounding boxes)");
 	Vect_set_person(&BBoxMap, G_whoami());
-	G_important_message("");
+	G_important_message(" ");
 	G_important_message(_("Building topology for vector map <%s>..."),
 			    bbox_name);
 	Vect_build(&BBoxMap);
@@ -416,8 +450,8 @@ int copy_records(dbDriver * driver_in, dbString * table_name_in,
 	char buf[2000];
 
 	if (db_fetch(&cursor, DB_NEXT, &more) != DB_OK) {
-	    G_fatal_error(_("Cannot fetch row"));
 	    db_close_cursor(&cursor);
+	    G_fatal_error(_("Cannot fetch row"));
 	}
 	if (!more)
 	    break;
@@ -518,7 +552,7 @@ int patch(struct Map_info *InMap, struct Map_info *OutMap, int add_cat,
     }
 
     if (BBoxMap) {		/* inspired by v.in.region */
-	BOUND_BOX box;
+	struct bound_box box;
 	double diff_long, mid_long;
 	static int cat;
 

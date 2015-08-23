@@ -1,4 +1,4 @@
-"""!
+"""
 @package modules.histogram
 
 Plotting histogram based on d.histogram
@@ -18,6 +18,7 @@ This program is free software under the GNU General Public License
 """
 
 import os
+import sys
 
 import wx
 
@@ -25,7 +26,7 @@ from core                 import globalvar
 from core.render          import Map
 from gui_core.forms       import GUI
 from mapdisp.gprint       import PrintOptions
-from core.utils           import GetLayerNameFromCmd
+from core.utils           import GetLayerNameFromCmd, _
 from gui_core.dialogs     import GetImageHandlers, ImageSizeDialog
 from gui_core.preferences import DefaultFontDialog
 from core.debug           import Debug
@@ -33,14 +34,14 @@ from core.gcmd            import GError
 from gui_core.toolbars    import BaseToolbar, BaseIcons
 
 class BufferedWindow(wx.Window):
-    """!A Buffered window class.
+    """A Buffered window class.
 
     When the drawing needs to change, you app needs to call the
     UpdateHist() method. Since the drawing is stored in a bitmap, you
     can also save the drawing to file by calling the
     SaveToFile(self,file_name,file_type) method.
     """
-    def __init__(self, parent, id =  wx.ID_ANY,
+    def __init__(self, parent, id = wx.ID_ANY,
                  style = wx.NO_FULL_REPAINT_ON_RESIZE,
                  Map = None, **kwargs):
         
@@ -74,7 +75,8 @@ class BufferedWindow(wx.Window):
         self.imagedict = {} # images and their PseudoDC ID's for painting and dragging
         
         self.pdc = wx.PseudoDC()
-        self._buffer = '' # will store an off screen empty bitmap for saving to file
+        # will store an off screen empty bitmap for saving to file
+        self._buffer = wx.EmptyBitmap(max(1, self.Map.width), max(1, self.Map.height))
         
         # make sure that extents are updated at init
         self.Map.region = self.Map.GetRegion()
@@ -83,7 +85,7 @@ class BufferedWindow(wx.Window):
         self.Bind(wx.EVT_ERASE_BACKGROUND, lambda x:None)
         
     def Draw(self, pdc, img = None, drawid = None, pdctype = 'image', coords = [0,0,0,0]):
-        """!Draws histogram or clears window
+        """Draws histogram or clears window
         """
         if drawid == None:
             if pdctype == 'image' :
@@ -119,7 +121,7 @@ class BufferedWindow(wx.Window):
         self.Refresh()
         
     def OnPaint(self, event):
-        """!Draw psuedo DC to buffer
+        """Draw psuedo DC to buffer
         """
         dc = wx.BufferedPaintDC(self, self._buffer)
         
@@ -138,7 +140,7 @@ class BufferedWindow(wx.Window):
         self.pdc.DrawToDCClipped(dc,r)
         
     def OnSize(self, event):
-        """!Init image size to match window size
+        """Init image size to match window size
         """
         # set size of the input image
         self.Map.width, self.Map.height = self.GetClientSize()
@@ -161,7 +163,7 @@ class BufferedWindow(wx.Window):
         self.resize = True
         
     def OnIdle(self, event):
-        """!Only re-render a histogram image from GRASS during idle
+        """Only re-render a histogram image from GRASS during idle
         time instead of multiple times during resizing.
         """
         if self.resize:
@@ -170,7 +172,7 @@ class BufferedWindow(wx.Window):
         event.Skip()
         
     def SaveToFile(self, FileName, FileType, width, height):
-        """!This will save the contents of the buffer to the specified
+        """This will save the contents of the buffer to the specified
         file. See the wx.Windows docs for wx.Bitmap::SaveFile for the
         details
         """
@@ -193,7 +195,7 @@ class BufferedWindow(wx.Window):
         busy.Destroy()
         
     def GetImage(self):
-        """!Converts files to wx.Image
+        """Converts files to wx.Image
         """
         if self.Map.mapfile and os.path.isfile(self.Map.mapfile) and \
                 os.path.getsize(self.Map.mapfile):
@@ -205,7 +207,7 @@ class BufferedWindow(wx.Window):
         return img
     
     def UpdateHist(self, img = None):
-        """!Update canvas if histogram options changes or window
+        """Update canvas if histogram options changes or window
         changes geometry
         """
         Debug.msg (2, "BufferedWindow.UpdateHist(%s): render=%s" % (img, self.render))
@@ -256,21 +258,22 @@ class BufferedWindow(wx.Window):
             os.environ["GRASS_ENCODING"] = oldencoding
         
     def EraseMap(self):
-        """!Erase the map display
+        """Erase the map display
         """
         self.Draw(self.pdc, pdctype = 'clear')
         
 class HistogramFrame(wx.Frame):
-    """!Main frame for hisgram display window. Uses d.histogram
+    """Main frame for hisgram display window. Uses d.histogram
     rendered onto canvas
     """
-    def __init__(self, parent = None, id = wx.ID_ANY,
+    def __init__(self, parent, giface, id=wx.ID_ANY,
                  title = _("GRASS GIS Histogramming Tool (d.histogram)"),
                  size = wx.Size(500, 350),
                  style = wx.DEFAULT_FRAME_STYLE, **kwargs):
         wx.Frame.__init__(self, parent, id, title, size = size, style = style, **kwargs)
-        self.SetIcon(wx.Icon(os.path.join(globalvar.ETCICONDIR, 'grass.ico'), wx.BITMAP_TYPE_ICO))
-        
+        self.SetIcon(wx.Icon(os.path.join(globalvar.ICONDIR, 'grass.ico'), wx.BITMAP_TYPE_ICO))
+
+        self._giface = giface
         self.Map   = Map()         # instance of render.Map to be associated with display
         self.layer = None          # reference to layer with histogram
         
@@ -282,15 +285,18 @@ class HistogramFrame(wx.Frame):
         self.encoding = 'ISO-8859-1' # default encoding for display fonts
         
         self.toolbar = HistogramToolbar(parent = self)
-        self.SetToolBar(self.toolbar)
+        # workaround for http://trac.wxwidgets.org/ticket/13888
+        if sys.platform != 'darwin':
+            self.SetToolBar(self.toolbar)
 
         # find selected map
+        # might by moved outside this class
+        # setting to None but honestly we do not handle no map case
+        # TODO: when self.mapname is None content of map window is showed
         self.mapname = None
-        if parent.GetName() == "MapWindow" and not parent.IsStandalone():
-            tree = parent.GetLayerManager().GetLayerTree()
-
-            if tree.layer_selected and tree.GetPyData(tree.layer_selected)[0]['type'] == 'raster':
-                self.mapname = tree.GetPyData(tree.layer_selected)[0]['maplayer'].name
+        layers = self._giface.GetLayerList().GetSelectedLayers(checkedOnly=False)
+        if len(layers) > 0:
+            self.mapname = layers[0].maplayer.name
 
         # Add statusbar
         self.statusbar = self.CreateStatusBar(number = 1, style = 0)
@@ -312,21 +318,22 @@ class HistogramFrame(wx.Frame):
         self.printopt = PrintOptions(self, self.HistWindow)
         
         # Add layer to the map
-        self.layer = self.Map.AddLayer(type = "command", name = 'histogram', command = [['d.histogram']],
-                                       l_active = False, l_hidden = False, l_opacity = 1, l_render = False)
+        self.layer = self.Map.AddLayer(ltype = "command", name = 'histogram', command = [['d.histogram']],
+                                       active = False, hidden = False, opacity = 1, render = False)
         if self.mapname:
             self.SetHistLayer(self.mapname, None)
         else:
             self.OnErase(None)
+            wx.CallAfter(self.OnOptions, None)
 
     def InitDisplay(self):
-        """!Initialize histogram display, set dimensions and region
+        """Initialize histogram display, set dimensions and region
         """
         self.width, self.height = self.GetClientSize()
         self.Map.geom = self.width, self.height
         
     def OnOptions(self, event):
-        """!Change histogram settings"""
+        """Change histogram settings"""
         cmd = ['d.histogram']
         if self.mapname != '':
             cmd.append('map=%s' % self.mapname)
@@ -334,7 +341,7 @@ class HistogramFrame(wx.Frame):
         module.ParseCommand(cmd, completed = (self.GetOptData, None, self.params))
 
     def GetOptData(self, dcmd, layer, params, propwin):
-        """!Callback method for histogram command generated by dialog
+        """Callback method for histogram command generated by dialog
         created in menuform.py
         """
         if dcmd:
@@ -351,7 +358,7 @@ class HistogramFrame(wx.Frame):
         self.HistWindow.UpdateHist()
         
     def SetHistLayer(self, name, cmd = None):
-        """!Set histogram layer
+        """Set histogram layer
         """
         self.mapname = name
         if not cmd:
@@ -363,7 +370,7 @@ class HistogramFrame(wx.Frame):
         return self.layer
 
     def SetHistFont(self, event):
-        """!Set font for histogram. If not set, font will be default
+        """Set font for histogram. If not set, font will be default
         display font.
         """
         dlg = DefaultFontDialog(parent = self, id = wx.ID_ANY,
@@ -384,21 +391,21 @@ class HistogramFrame(wx.Frame):
         self.HistWindow.UpdateHist()
 
     def OnErase(self, event):
-        """!Erase the histogram display
+        """Erase the histogram display
         """
         self.HistWindow.Draw(self.HistWindow.pdc, pdctype = 'clear')
         
     def OnRender(self, event):
-        """!Re-render histogram
+        """Re-render histogram
         """
         self.HistWindow.UpdateHist()
         
     def GetWindow(self):
-        """!Get buffered window"""
+        """Get buffered window"""
         return self.HistWindow
     
     def SaveToFile(self, event):
-        """!Save to file
+        """Save to file
         """
         filetype, ltype = GetImageHandlers(self.HistWindow.img)
         
@@ -416,7 +423,7 @@ class HistogramFrame(wx.Frame):
                             message = _("Choose a file name to save the image "
                                         "(no need to add extension)"),
                             wildcard = filetype,
-                            style=wx.SAVE | wx.FD_OVERWRITE_PROMPT)
+                            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
         
         if dlg.ShowModal() == wx.ID_OK:
             path = dlg.GetPath()
@@ -437,7 +444,7 @@ class HistogramFrame(wx.Frame):
         dlg.Destroy()
         
     def PrintMenu(self, event):
-        """!Print options and output menu
+        """Print options and output menu
         """
         point = wx.GetMousePosition()
         printmenu = wx.Menu()
@@ -463,7 +470,7 @@ class HistogramFrame(wx.Frame):
         self.Close(True)
         
     def OnCloseWindow(self, event):
-        """!Window closed
+        """Window closed
         Also remove associated rendered images
         """
         try:
@@ -472,20 +479,24 @@ class HistogramFrame(wx.Frame):
             pass
         self.Map.Clean()
         self.Destroy()
-
+        
 class HistogramToolbar(BaseToolbar):
-    """!Histogram toolbar (see histogram.py)
+    """Histogram toolbar (see histogram.py)
     """
     def __init__(self, parent):
         BaseToolbar.__init__(self, parent)
-        
+
+        # workaround for http://trac.wxwidgets.org/ticket/13888
+        if sys.platform == 'darwin':
+            parent.SetToolBar(self)
+
         self.InitToolbar(self._toolbarData())
         
         # realize the toolbar
         self.Realize()
         
     def _toolbarData(self):
-        """!Toolbar data"""
+        """Toolbar data"""
         return self._getToolbarData((('histogram', BaseIcons["histogramD"],
                                       self.parent.OnOptions),
                                      ('render', BaseIcons["display"],

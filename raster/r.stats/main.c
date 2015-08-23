@@ -3,13 +3,17 @@
  *
  * MODULE:       r.stats
  * AUTHOR(S):    Michael Shapiro, CERL (original contributor)
- *               Markus Neteler <neteler itc.it>, Brad Douglas <rez touchofmadness.com>,
- *               Huidae Cho <grass4u gmail.com>, Glynn Clements <glynn gclements.plus.com>,
+ *               Markus Neteler <neteler itc.it>,
+ *               Brad Douglas <rez touchofmadness.com>,
+ *               Huidae Cho <grass4u gmail.com>,
+ *               Glynn Clements <glynn gclements.plus.com>,
  *               Hamish Bowman <hamish_b yahoo.com>,
- *               Jachym Cepicky <jachym les-ejk.cz>, Jan-Oliver Wagner <jan intevation.de>
- * PURPOSE:      calculates the area present in each of the categories of
+ *               Jachym Cepicky <jachym les-ejk.cz>,
+ *               Jan-Oliver Wagner <jan intevation.de>,
+ *               Sort parameter by Martin Landa <landa.martin gmail.com>
+ * PURPOSE:      Calculates the area present in each of the categories of
  *               user-selected raster map layer(s)
- * COPYRIGHT:    (C) 1999-2006 by the GRASS Development Team
+ * COPYRIGHT:    (C) 1999-2006, 2013-2014 by the GRASS Development Team
  *
  *               This program is free software under the GNU General Public
  *               License (>=v2). Read the file COPYING that comes with GRASS
@@ -21,6 +25,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <grass/glocale.h>
+
 #include "global.h"
 
 char *no_data_str;
@@ -32,18 +37,15 @@ int *is_fp;
 DCELL *DMAX, *DMIN;
 
 CELL NULL_CELL;
-int (*get_row) ();
 
-char fs[2];
+char *fs;
 struct Categories *labels;
 
 int main(int argc, char *argv[])
 {
     int *fd;
     char **names;
-    char **ptr;
     char *name;
-    char *mapset;
 
     /* flags */
     int raw_data;
@@ -53,6 +55,7 @@ int main(int argc, char *argv[])
     int with_counts;
     int with_areas;
     int with_labels;
+    int do_sort;
 
     /* printf format */
     char fmt[20];
@@ -70,7 +73,6 @@ int main(int argc, char *argv[])
 	struct Flag *c;		/* cell counts */
 	struct Flag *p;		/* percents */
 	struct Flag *l;		/* with labels */
-	struct Flag *q;		/* quiet */
 	struct Flag *n;		/* Suppress reporting of any NULLs */
 	struct Flag *N;		/* Suppress reporting of NULLs when 
 				   all values are NULL */
@@ -95,18 +97,21 @@ int main(int argc, char *argv[])
 				   NOTE: when -C flag is used, and there are 
 				   explicit fp ranges in cats or when the map 
 				   is int, nsteps is ignored */
+        struct Option *sort;    /* sort by cell counts */
     } option;
 
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, statistics");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("statistics"));
     module->description =
-	_("Generates area statistics for raster map layers.");
+	_("Generates area statistics for raster map.");
 
     /* Define the different options */
 
     option.cell = G_define_standard_option(G_OPT_R_INPUTS);
+    option.cell->description = _("Name of raster map(s) to report on");
 
     option.output = G_define_standard_option(G_OPT_F_OUTPUT);
     option.output->required = NO;
@@ -114,17 +119,12 @@ int main(int argc, char *argv[])
 	_("Name for output file (if omitted or \"-\" output to stdout)");
 
     option.fs = G_define_standard_option(G_OPT_F_SEP);
-    option.fs->key_desc = "character|space|tab";
     option.fs->answer = "space";
-    option.fs->description = _("Output field separator");
+    option.fs->guisection = _("Formatting");
 
-    option.nv = G_define_option();
-    option.nv->key = "nv";
-    option.nv->type = TYPE_STRING;
-    option.nv->required = NO;
-    option.nv->multiple = NO;
+    option.nv = G_define_standard_option(G_OPT_M_NULL_VALUE);
     option.nv->answer = "*";
-    option.nv->description = _("String representing no data cell value");
+    option.nv->guisection = _("Formatting");
 
     option.nsteps = G_define_option();
     option.nsteps->key = "nsteps";
@@ -133,71 +133,88 @@ int main(int argc, char *argv[])
     option.nsteps->multiple = NO;
     option.nsteps->answer = "255";
     option.nsteps->description =
-	_("Number of fp subranges to collect stats from");
+	_("Number of floating-point subranges to collect stats from");
+    option.nsteps->guisection = _("Floating point");
+    
+    option.sort = G_define_option();
+    option.sort->key = "sort";
+    option.sort->type = TYPE_STRING;
+    option.sort->required = NO;
+    option.sort->multiple = NO;
+    option.sort->label = _("Sort output statistics by cell counts");
+    option.sort->description = _("Default: sorted by categories or intervals");
+    option.sort->options = "asc,desc";
+    G_asprintf((char **)&(option.sort->descriptions),
+               "asc;%s;desc;%s",
+               _("Sort by cell counts in ascending order"),
+               _("Sort by cell counts in descending order"));
+    option.sort->guisection = _("Formatting");
 
     /* Define the different flags */
+
+    flag.a = G_define_flag();
+    flag.a->key = 'a';
+    flag.a->description = _("Print area totals in square meters");
+    flag.a->guisection = _("Statistics");
+
+    flag.c = G_define_flag();
+    flag.c->key = 'c';
+    flag.c->description = _("Print cell counts (sortable)");
+    flag.c->guisection = _("Statistics");
+
+    flag.p = G_define_flag();
+    flag.p->key = 'p';
+    flag.p->description =
+	_("Print approximate (total percent may not be 100%) percents");
+    flag.p->guisection = _("Statistics");
+
+    flag.l = G_define_flag();
+    flag.l->key = 'l';
+    flag.l->description = _("Print category labels");
 
     flag.one = G_define_flag();
     flag.one->key = '1';
     flag.one->description = _("One cell (range) per line");
 
-    flag.A = G_define_flag();
-    flag.A->key = 'A';
-    flag.A->description = _("Print averaged values instead of intervals");
-    flag.A->guisection = _("Print");
-
-    flag.a = G_define_flag();
-    flag.a->key = 'a';
-    flag.a->description = _("Print area totals");
-    flag.a->guisection = _("Print");
-
-    flag.c = G_define_flag();
-    flag.c->key = 'c';
-    flag.c->description = _("Print cell counts");
-    flag.c->guisection = _("Print");
-
-    flag.p = G_define_flag();
-    flag.p->key = 'p';
-    flag.p->description =
-	_("Print APPROXIMATE percents (total percent may not be 100%)");
-    flag.p->guisection = _("Print");
-
-    flag.l = G_define_flag();
-    flag.l->key = 'l';
-    flag.l->description = _("Print category labels");
-    flag.l->guisection = _("Print");
-
     flag.g = G_define_flag();
     flag.g->key = 'g';
     flag.g->description = _("Print grid coordinates (east and north)");
-    flag.g->guisection = _("Print");
+    flag.g->guisection = _("Coordinates");
 
     flag.x = G_define_flag();
     flag.x->key = 'x';
     flag.x->description = _("Print x and y (column and row)");
-    flag.x->guisection = _("Print");
+    flag.x->guisection = _("Coordinates");
+
+    flag.A = G_define_flag();
+    flag.A->key = 'A';
+    flag.A->description = _("Print averaged values instead of intervals (floating-point maps only)");
+    flag.A->guisection = _("Floating point");
 
     flag.r = G_define_flag();
     flag.r->key = 'r';
-    flag.r->description = _("Print raw indexes of fp ranges (fp maps only)");
-    flag.r->guisection = _("Print");
+    flag.r->description = _("Print raw indexes of floating-point ranges (floating-point maps only)");
+    flag.r->guisection = _("Floating point");
 
     flag.n = G_define_flag();
     flag.n->key = 'n';
-    flag.n->description = _("Suppress reporting of any NULLs");
+    flag.n->description = _("Do not report no data value");
+    flag.n->guisection = _("No data");
 
     flag.N = G_define_flag();
     flag.N->key = 'N';
-    flag.N->description =
-	_("Suppress reporting of NULLs when all values are NULL");
+    flag.N->description = _("Do not report cells where all maps have no data");
+    flag.N->guisection = _("No data");
 
     flag.C = G_define_flag();
     flag.C->key = 'C';
-    flag.C->description = _("Report for cats fp ranges (fp maps only)");
+    flag.C->description = _("Report for cats floating-point ranges (floating-point maps only)");
+    flag.C->guisection = _("Floating point");
 
     flag.i = G_define_flag();
     flag.i->key = 'i';
-    flag.i->description = _("Read fp map as integer (use map's quant rules)");
+    flag.i->description = _("Read floating-point map as integer (use map's quant rules)");
+    flag.i->guisection = _("Floating point");
 
 
     if (G_parser(argc, argv))
@@ -222,8 +239,8 @@ int main(int argc, char *argv[])
     averaged = flag.A->answer;
     raw_output = flag.r->answer;
     as_int = flag.i->answer;
-    nrows = G_window_rows();
-    ncols = G_window_cols();
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
 
     fd = NULL;
     nfiles = 0;
@@ -233,6 +250,22 @@ int main(int argc, char *argv[])
     with_counts = flag.c->answer;
     with_areas = flag.a->answer;
     with_labels = flag.l->answer;
+
+    /* determine sorting method */
+    do_sort = SORT_DEFAULT; /* sort by cats by default */
+    if (option.sort->answer) {
+        switch(option.sort->answer[0]) {
+        case 'a':
+            do_sort = SORT_ASC;
+            break;
+        case 'd':
+            do_sort = SORT_DESC;
+            break;
+        default:
+            G_debug(1, "Sorting by '%s' not supported", option.sort->answer);
+            break;
+        }
+    }
 
     no_nulls = flag.n->answer;
     no_nulls_all = flag.N->answer;
@@ -245,106 +278,85 @@ int main(int argc, char *argv[])
 	raw_data = TRUE;
 
     /* get field separator */
-    strcpy(fs, " ");
-    if (option.fs->answer) {
-	if (strcmp(option.fs->answer, "space") == 0)
-	    *fs = ' ';
-	else if (strcmp(option.fs->answer, "tab") == 0)
-	    *fs = '\t';
-	else if (strcmp(option.fs->answer, "\\t") == 0)
-	    *fs = '\t';
-	else
-	    *fs = *option.fs->answer;
-    }
-
+    fs = G_option_to_separator(option.fs);
 
     /* open all raster maps */
     if (option.cell->answers[0] == NULL)
 	G_fatal_error(_("Raster map not found"));
 
     names = option.cell->answers;
-    ptr = option.cell->answers;
 
-    for (; *ptr != NULL; ptr++) {
-	name = *ptr;
-	mapset = G_find_cell2(name, "");
-	if (!mapset)
-	    G_fatal_error(_("Raster map <%s> not found"), name);
+    for (; *names != NULL; names++) {
+	name = *names;
 	fd = (int *)G_realloc(fd, (nfiles + 1) * sizeof(int));
 	is_fp = (int *)G_realloc(is_fp, (nfiles + 1) * sizeof(int));
 	DMAX = (DCELL *) G_realloc(DMAX, (nfiles + 1) * sizeof(DCELL));
 	DMIN = (DCELL *) G_realloc(DMIN, (nfiles + 1) * sizeof(DCELL));
 
-	fd[nfiles] = G_open_cell_old(name, mapset);
-	if (fd[nfiles] < 0)
-	    exit(1);
+	fd[nfiles] = Rast_open_old(name, "");
 
 	if (!as_int)
-	    is_fp[nfiles] = G_raster_map_is_fp(name, mapset);
+	    is_fp[nfiles] = Rast_map_is_fp(name, "");
 	else {
 	    is_fp[nfiles] = 0;
 	    if (cat_ranges || nsteps != 255)
 		G_warning(_("Raster map <%s> is reading as integer map! "
 			    "Flag '-%c' and/or '%s' option will be ignored."),
-			  G_fully_qualified_name(name, mapset), flag.C->key,
-			  option.nsteps->key);
+			  name, flag.C->key, option.nsteps->key);
 	}
 	if (with_labels || (cat_ranges && is_fp[nfiles])) {
 	    labels = (struct Categories *)
 		G_realloc(labels, (nfiles + 1) * sizeof(struct Categories));
-	    if (G_read_cats(name, mapset, &labels[nfiles]) < 0)
-		G_init_cats((CELL) 0, "", &labels[nfiles]);
+	    if (Rast_read_cats(name, "", &labels[nfiles]) < 0)
+		Rast_init_cats("", &labels[nfiles]);
 	}
 	if (is_fp[nfiles])
 	    /* floating point map */
 	{
-	    G_quant_init(&q);
+	    Rast_quant_init(&q);
 	    if (cat_ranges) {
-		if (!G_quant_nof_rules(&labels[nfiles].q)) {
+		if (!Rast_quant_nof_rules(&labels[nfiles].q)) {
 		    G_warning(_("Cats for raster map <%s> are either missing or have no explicit labels. "
-			       "Using %s=%d."), G_fully_qualified_name(name,
-								       mapset),
-			      option.nsteps->key, nsteps);
+			       "Using %s=%d."),
+			      name, option.nsteps->key, nsteps);
 		    cat_ranges = 0;
 		}
 		else if (nsteps != 255)
 		    G_warning(_("Flag '-%c' was given, using cats fp ranges of raster map <%s>, "
-			       "ignoring '%s' option"), flag.C->key,
-			      G_fully_qualified_name(name, mapset),
-			      option.nsteps->key);
+			       "ignoring '%s' option"),
+			      flag.C->key, name, option.nsteps->key);
 	    }
 	    if (!cat_ranges) {	/* DO NOT use else here, cat_ranges can change */
-		if (G_read_fp_range(name, mapset, &fp_range) < 0)
+		if (Rast_read_fp_range(name, "", &fp_range) < 0)
 		    G_fatal_error(_("Unable to read fp range of raster map <%s>"),
-				  G_fully_qualified_name(name, mapset));
-		G_get_fp_range_min_max(&fp_range, &DMIN[nfiles],
+				  name);
+		Rast_get_fp_range_min_max(&fp_range, &DMIN[nfiles],
 				       &DMAX[nfiles]);
 		G_debug(3, "file %2d: dmin=%f  dmax=%f", nfiles, DMIN[nfiles], 
 			DMAX[nfiles]);
 
-		G_quant_add_rule(&q, DMIN[nfiles], DMAX[nfiles], 1, nsteps+1);
+		Rast_quant_add_rule(&q, DMIN[nfiles], DMAX[nfiles], 1, nsteps+1);
 
 		/* set the quant rules for reading the map */
-		G_set_quant_rules(fd[nfiles], &q);
-		G_quant_get_limits(&q, &dmin, &dmax, &min, &max);
+		Rast_set_quant_rules(fd[nfiles], &q);
+		Rast_quant_get_limits(&q, &dmin, &dmax, &min, &max);
 		G_debug(2, "overall: dmin=%f  dmax=%f,  qmin=%d  qmax=%d",
 			dmin, dmax, min, max);
 
-		G_quant_free(&q);
+		Rast_quant_free(&q);
 	    }
 	    else {		/* cats ranges */
 
 		/* set the quant rules for reading the map */
-		G_set_quant_rules(fd[nfiles], &labels[nfiles].q);
-		G_quant_get_limits(&labels[nfiles].q, &dmin, &dmax, &min,
+		Rast_set_quant_rules(fd[nfiles], &labels[nfiles].q);
+		Rast_quant_get_limits(&labels[nfiles].q, &dmin, &dmax, &min,
 				   &max);
 	    }
 	}
 	else {
-	    if (G_read_range(name, mapset, &range) < 0)
-		G_fatal_error(_("Unable to read range for map <%s>"),
-			      G_fully_qualified_name(name, mapset));
-	    G_get_range_min_max(&range, &min, &max);
+	    if (Rast_read_range(name, "", &range) < 0)
+		G_fatal_error(_("Unable to read range for map <%s>"), name);
+	    Rast_get_range_min_max(&range, &min, &max);
 	}
 	if (!null_set) {
 	    null_set = 1;
@@ -364,8 +376,8 @@ int main(int argc, char *argv[])
     if (raw_data)
 	raw_stats(fd, with_coordinates, with_xy, with_labels);
     else
-	cell_stats(fd, with_percents, with_counts, with_areas, with_labels,
-		   fmt);
+	cell_stats(fd, with_percents, with_counts, with_areas, do_sort,
+                   with_labels, fmt);
 
     exit(EXIT_SUCCESS);
 }

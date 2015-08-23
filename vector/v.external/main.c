@@ -4,228 +4,196 @@
  * MODULE:       v.external
  * 
  * AUTHOR(S):    Radim Blazek
+ *               Updated to GRASS 7 by Martin Landa <landa.martin gmail.com>
  *               
- * PURPOSE:      Create a new vector as a link to OGR layer (read-only)
+ * PURPOSE:      Create a new vector as a link to OGR layer
  *               
- * COPYRIGHT:    (C) 2003 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2003-2011 by the GRASS Development Team
  *
- *               This program is free software under the 
- *               GNU General Public License (>=v2). 
- *               Read the file COPYING that comes with GRASS
- *               for details.
+ *               This program is free software under the GNU General
+ *               Public License (>=v2). Read the file COPYING that
+ *               comes with GRASS for details.
  *
  **************************************************************/
-#include <grass/config.h>
+
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <grass/gis.h>
 #include <grass/dbmi.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
-#include "ogr_api.h"
 
-static int cmp(const void *, const void *);
-static void list_formats(void);
-static char **format_list(int *, size_t *);
+#include <ogr_api.h>
+
+#include "local_proto.h"
 
 int main(int argc, char *argv[])
 {
-    int i;
     struct GModule *module;
-    struct Option *dsn_opt, *layer_opt, *out_opt;
-    struct Flag* format_flag;
-    char buf[2000];
-    FILE *fd;
+    struct _options options;
+    struct _flags   flags;
+
     struct Map_info Map;
-    OGRDataSourceH Ogr_ds;
-    OGRLayerH Ogr_layer;
-    OGRFeatureDefnH Ogr_featuredefn;
-    int nlayers;
-    int layer;
-    char *layer_name;
-
+    
+    FILE *fd;
+    
+    int ilayer, use_ogr;
+    char buf[GPATH_MAX], *dsn;
+    const char *output;
+    
     G_gisinit(argv[0]);
-
+    
     module = G_define_module();
-    module->keywords = _("vector, external, import");
-    module->description =
-	_("Creates a new vector as a read-only link to OGR layer.");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("import"));
+    G_add_keyword(_("external")); 
+    G_add_keyword("OGR");
+    G_add_keyword("PostGIS");
+    module->description = _("Creates a new pseudo-vector map as a link to an OGR-supported layer "
+                            "or a PostGIS feature table.");
+    parse_args(argc, argv,
+               &options, &flags);
 
-    dsn_opt = G_define_option();
-    dsn_opt->key = "dsn";
-    dsn_opt->type = TYPE_STRING;
-    dsn_opt->gisprompt = "old_file,file,dsn";
-    dsn_opt->description = "OGR datasource name. Examples:\n"
-	"\t\tESRI Shapefile: directory containing shapefiles\n"
-	"\t\tMapInfo File: directory containing mapinfo files";
+    use_ogr = TRUE;
+    G_debug(1, "GRASS_VECTOR_OGR defined? %s",
+            getenv("GRASS_VECTOR_OGR") ? "yes" : "no");
+    if(options.dsn->answer &&
+       G_strncasecmp(options.dsn->answer, "PG:", 3) == 0) {
+        /* -> PostgreSQL */
+#if defined HAVE_OGR && defined HAVE_POSTGRES
+        if (getenv("GRASS_VECTOR_OGR"))
+            use_ogr = TRUE;
+        else
+            use_ogr = FALSE;
+#else
+#ifdef HAVE_POSTGRES
+        if (getenv("GRASS_VECTOR_OGR"))
+            G_warning(_("Environment variable GRASS_VECTOR_OGR defined, "
+                        "but GRASS is compiled with OGR support. "
+                        "Using GRASS-PostGIS data driver instead."));
+        use_ogr = FALSE;
+#else /* -> force using OGR */
+        G_warning(_("GRASS is not compiled with PostgreSQL support. "
+                    "Using OGR-PostgreSQL driver instead of native "
+                    "GRASS-PostGIS data driver."));
+        use_ogr = TRUE;
+#endif /* HAVE_POSTRES */
+#endif /* HAVE_OGR && HAVE_POSTGRES */
+    }
+    
+#ifdef HAVE_OGR
+    if (use_ogr)
+        OGRRegisterAll();
+#endif
 
-    out_opt = G_define_standard_option(G_OPT_V_OUTPUT);
-    out_opt->required = NO;
-    out_opt->description =
-	_("Output vector. If not given, available layers are printed only.");
-
-    layer_opt = G_define_option();
-    layer_opt->key = "layer";
-    layer_opt->type = TYPE_STRING;
-    layer_opt->required = NO;
-    layer_opt->multiple = NO;
-    layer_opt->description =
-	_("OGR layer name. If not given, available layers are printed only. Examples:\n"
-	 "\t\tESRI Shapefile: shapefile name\n"
-	 "\t\tMapInfo File: mapinfo file name");
-
-    format_flag = G_define_flag();
-    format_flag->key = 'f';
-    format_flag->description = _("List supported formats and exit");
-    format_flag->guisection = _("Print");
-
-    if (G_parser(argc, argv))
-	exit(EXIT_FAILURE);
-
-    OGRRegisterAll();
-
-    if (format_flag->answer) {
+    if (flags.format->answer) {
         /* list formats */
-        list_formats();
+        list_formats(stdout);
         exit(EXIT_SUCCESS);
     }
 
-    if (!dsn_opt)
-	G_fatal_error(_("Name of OGR data source not specified"));
-
-    if (!out_opt->answer && layer_opt->answer)
-	G_fatal_error(_("Output vector name was not specified"));
-
-    /* Open OGR DSN */
-    Ogr_ds = OGROpen(dsn_opt->answer, FALSE, NULL);
-    if (Ogr_ds == NULL)
-	G_fatal_error(_("Cannot open data source"));
-
-    /* Make a list of available layers */
-    nlayers = OGR_DS_GetLayerCount(Ogr_ds);
-
-    if (!layer_opt->answer)
-	fprintf(stdout, "Data source contains %d layers:\n", nlayers);
-
-    layer = -1;
-    for (i = 0; i < nlayers; i++) {
-	Ogr_layer = OGR_DS_GetLayer(Ogr_ds, i);
-	Ogr_featuredefn = OGR_L_GetLayerDefn(Ogr_layer);
-	layer_name = (char *)OGR_FD_GetName(Ogr_featuredefn);
-
-	if (!layer_opt->answer) {
-	    if (i > 0)
-		fprintf(stdout, ", ");
-	    fprintf(stdout, "%s", layer_name);
-	}
-	else {
-	    if (strcmp(layer_name, layer_opt->answer) == 0) {
-		layer = i;
-	    }
-	}
+    /* be friendly, ignored 'PG:' prefix for PostGIS links */
+    dsn = NULL;
+    if (options.dsn->answer) {
+        if (!use_ogr) {
+            int i, length;
+            
+            length = strlen(options.dsn->answer);
+            dsn = (char *) G_malloc(length - 3);
+            for (i = 3; i < length; i++)
+                dsn[i-3] = options.dsn->answer[i];
+            dsn[length-3] = '\0';
+        }
+        else {
+            dsn = G_store(options.dsn->answer);
+        }
+    }
+    
+    if (flags.list->answer || flags.tlist->answer) {
+        /* list layers */
+        if (!dsn)
+            G_fatal_error(_("Required parameter <%s> not set"), options.dsn->key);
+        list_layers(stdout, dsn, NULL,
+                    flags.tlist->answer ? TRUE : FALSE, use_ogr);
+        exit(EXIT_SUCCESS);
     }
 
-    if (!layer_opt->answer) {
-	fprintf(stdout, "\n");
-	exit(EXIT_SUCCESS);
+    /* define name for output */
+    if (!options.output->answer)
+        output = options.layer->answer;
+    else
+        output = options.output->answer;
+    
+
+    /* get layer index */
+    ilayer = list_layers(NULL, dsn, options.layer->answer,
+                         FALSE, use_ogr);
+    if (ilayer == -1) {
+        G_fatal_error(_("Layer <%s> not available"), options.layer->answer);
     }
+    
+    G_debug(2, "layer '%s' was found", options.layer->answer);
 
-    if (layer == -1) {
-	G_fatal_error(_("Layer <%s> not available"), layer_opt->answer);
+    if (G_find_vector2(output, G_mapset()) && !G_check_overwrite(argc, argv)) {
+        G_fatal_error(_("option <%s>: <%s> exists."),
+                      options.output->key, output);
     }
-
-    G_debug(2, "layer '%s' was found", layer_opt->answer);
-
-    OGR_DS_Destroy(Ogr_ds);
-
-    Vect_open_new(&Map, out_opt->answer, 0);
+    
+    /* create new vector map */
+    putenv("GRASS_VECTOR_EXTERNAL_IGNORE=1");
+    if (Vect_open_new(&Map, output, WITHOUT_Z) < 0) /* dimension is set later from data source */
+	G_fatal_error(_("Unable to create vector map <%s>"), output);
+    Vect_set_error_handler_io(NULL, &Map);
+    
     Vect_hist_command(&Map);
     Vect_close(&Map);
-
-    /* Vect_open_new created 'head', 'coor', 'hist' -> delete 'coor' and create 'frmt' */
-    sprintf(buf, "%s/%s/vector/%s/coor", G_location_path(), G_mapset(),
-	    out_opt->answer);
+    
+    /* Vect_open_new created 'head', 'coor', 'hist'
+       -> delete 'coor' and create 'frmt' */
+    sprintf(buf, "%s/%s/%s/%s/coor", G_location_path(), G_mapset(),
+            GV_DIRECTORY, output);
     G_debug(2, "Delete '%s'", buf);
     if (unlink(buf) == -1) {
-	G_fatal_error("Cannot delete '%s'", buf);
+        G_fatal_error(_("Unable to delete '%s'"), buf);
     }
 
-    /* Create frmt */
-    sprintf(buf, "%s/%s", GRASS_VECT_DIRECTORY, out_opt->answer);
-    fd = G_fopen_new(buf, GRASS_VECT_FRMT_ELEMENT);
-    if (fd == NULL) {
-	G_fatal_error("Cannot open 'frmt' file.");
+    /* create frmt file */
+    sprintf(buf, "%s/%s", GV_DIRECTORY, output);
+    fd = G_fopen_new(buf, GV_FRMT_ELEMENT);
+    if (fd == NULL)
+        G_fatal_error(_("Unable to create file '%s/%s'"), buf, GV_FRMT_ELEMENT);
+    
+    if (!use_ogr) {
+        char *table_name, *schema_name;
+        
+        get_table_name(options.layer->answer, &table_name, &schema_name);
+        
+        fprintf(fd, "format: postgis\n");
+        fprintf(fd, "conninfo: %s\n", dsn);
+        if (schema_name)
+            fprintf(fd, "schema: %s\n", schema_name);
+        fprintf(fd, "table: %s\n", table_name);
+
+        G_free(table_name);
+        G_free(schema_name);
     }
-
-    fprintf(fd, "FORMAT: ogr\n");
-    fprintf(fd, "DSN: %s\n", dsn_opt->answer);
-    fprintf(fd, "LAYER: %s\n", layer_opt->answer);
-
+    else {
+        fprintf(fd, "format: ogr\n");
+        fprintf(fd, "dsn: %s\n", dsn);
+        fprintf(fd, "layer: %s\n", options.layer->answer);
+    }
     fclose(fd);
-
-    Vect_open_old(&Map, out_opt->answer, G_mapset());
-    Vect_build(&Map);
-    Vect_close(&Map);
-
-    exit(EXIT_SUCCESS);
-}
-
-void list_formats(void)
-{
-    int i, count;
-    char **list;
     
-    G_message(_("List of supported formats:"));
-
-    list = format_list(&count, NULL);
-    
-    for (i = 0; i < count; i++)
-	fprintf(stdout, "%s\n", list[i]);
-    fflush(stdout);
-
-    G_free(list);
-}
-
-char **format_list(int *count, size_t *len)
-{
-    int i;
-    char **list;
-
-    list = NULL;
-    *count = 0;
-    if (len)
-	*len = 0;
-
-    char buf[2000];
-    
-    OGRSFDriverH Ogr_driver;
-    
-    /* Open OGR DSN */
-    OGRRegisterAll();
-    G_debug(2, "driver count = %d", OGRGetDriverCount());
-    for (i = 0; i < OGRGetDriverCount(); i++) {
-	Ogr_driver = OGRGetDriver(i);
-	G_debug(2, "driver %d/%d : %s", i, OGRGetDriverCount(),
-		OGR_Dr_GetName(Ogr_driver));
-	
-	list = G_realloc(list, ((*count) + 1) * sizeof(char *));
-
-	/* chg white space to underscore in OGR driver names */
-	sprintf(buf, "%s", OGR_Dr_GetName(Ogr_driver));
-	G_strchg(buf, ' ', '_');
-	list[(*count)++] = G_store(buf);
-	if (len)
-	    *len += strlen(buf) + 1; /* + ',' */
+    if (!flags.topo->answer) {
+        Vect_set_open_level(1);
+        if (Vect_open_old(&Map, output, G_mapset()) < 0)
+	    G_fatal_error(_("Unable to open vector map <%s>"), output);
+        Vect_build(&Map);
+        Vect_close(&Map);
     }
-
-    /* order formats by name */
-    qsort(list, *count, sizeof(char *), cmp);
-
-    return list;
-}
-
-int cmp(const void *a, const void *b)
-{
-    return strcmp(*(char **)a, *(char **)b);
+    
+    G_done_msg(_("Link to vector map <%s> created."), output);
+    
+    exit(EXIT_SUCCESS);
 }

@@ -3,10 +3,9 @@
  ** Author: Radim Blazek
  */
 
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/symbol.h>
 #include "clr.h"
-#include "ps_info.h"
 #include "local_proto.h"
 #include "vector.h"
 

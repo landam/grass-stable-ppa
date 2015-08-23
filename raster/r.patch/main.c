@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "local_proto.h"
 
@@ -35,22 +36,24 @@ int main(int argc, char *argv[])
     int nfiles;
     char *rname;
     int i;
-    int ok;
     int row, nrows, ncols;
-    int ZEROFLAG;
+    int use_zero;
     char *new_name;
     char **names;
     char **ptr;
+    struct Cell_head window;
+    struct Cell_head *cellhd;
 
     struct GModule *module;
-    struct Flag *flag1;
     struct Flag *zeroflag;
     struct Option *opt1, *opt2;
 
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, geometry");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("geometry"));
+    G_add_keyword(_("mosaicking"));
     module->description =
 	_("Creates a composite raster map layer by using "
 	  "known category values from one (or more) map layer(s) "
@@ -66,32 +69,16 @@ int main(int argc, char *argv[])
 
     /* Define the different flags */
 
-    /* please, remove before GRASS 7 released */
-    flag1 = G_define_flag();
-    flag1->key = 'q';
-    flag1->description = _("Quiet");
-
     zeroflag = G_define_flag();
     zeroflag->key = 'z';
     zeroflag->description =
 	_("Use zero (0) for transparency instead of NULL");
 
-    ZEROFLAG = 0;		/* default: use NULL for transparency */
-
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    /* please, remove before GRASS 7 released */
-    if (flag1->answer) {
-	putenv("GRASS_VERBOSE=0");
-	G_warning(_("The '-q' flag is superseded and will be removed "
-		    "in future. Please use '--quiet' instead."));
-    }
+    use_zero = (zeroflag->answer);
 
-
-    ZEROFLAG = (zeroflag->answer);
-
-    ok = 1;
     names = opt1->answers;
 
     out_type = CELL_TYPE;
@@ -103,94 +90,87 @@ int main(int argc, char *argv[])
 
     infd = G_malloc(nfiles * sizeof(int));
     statf = G_malloc(nfiles * sizeof(struct Cell_stats));
+    cellhd = G_malloc(nfiles * sizeof(struct Cell_head));
 
     for (i = 0; i < nfiles; i++) {
 	const char *name = names[i];
-	const char *mapset = G_find_cell2(name, "");
 	int fd;
 
-	if (mapset == NULL) {
-	    G_warning(_("Raster map <%s> not found"), name);
-	    G_sleep(3);
-	    ok = 0;
-	}
-
-	if (!ok)
-	    continue;
-
-	fd = G_open_cell_old(name, mapset);
-	if (fd < 0) {
-	    ok = 0;
-	    continue;
-	}
+	fd = Rast_open_old(name, "");
 
 	infd[i] = fd;
 
-	map_type = G_get_raster_map_type(fd);
+	map_type = Rast_get_map_type(fd);
 	if (map_type == FCELL_TYPE && out_type == CELL_TYPE)
 	    out_type = FCELL_TYPE;
 	else if (map_type == DCELL_TYPE)
 	    out_type = DCELL_TYPE;
 
-	G_init_cell_stats(&statf[i]);
+	Rast_init_cell_stats(&statf[i]);
+
+	Rast_get_cellhd(name, "", &cellhd[i]);
     }
 
-    if (!ok)
-	G_fatal_error(_("One or more input raster maps not found"));
-
     rname = opt2->answer;
-    outfd = G_open_raster_new(new_name = rname, out_type);
-    if (outfd < 0)
-	G_fatal_error(_("Unable to create raster map <%s>"), new_name);
+    outfd = Rast_open_new(new_name = rname, out_type);
 
-    presult = G_allocate_raster_buf(out_type);
-    patch = G_allocate_raster_buf(out_type);
+    presult = Rast_allocate_buf(out_type);
+    patch = Rast_allocate_buf(out_type);
 
-    nrows = G_window_rows();
-    ncols = G_window_cols();
+    Rast_get_window(&window);
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
 
     G_verbose_message(_("Percent complete..."));
     for (row = 0; row < nrows; row++) {
+	double north_edge, south_edge;
+
 	G_percent(row, nrows, 2);
-	if (G_get_raster_row(infd[0], presult, row, out_type) < 0)
-	    G_fatal_error(_("Unable to read raster map <%s> row %d"),
-			  names[0], row);
+	Rast_get_row(infd[0], presult, row, out_type);
+
+	north_edge = Rast_row_to_northing(row, &window);
+	south_edge = north_edge - window.ns_res;
 
 	if (out_type == CELL_TYPE)
-	    G_update_cell_stats((CELL *) presult, ncols, &statf[0]);
+	    Rast_update_cell_stats((CELL *) presult, ncols, &statf[0]);
 	for (i = 1; i < nfiles; i++) {
-	    if (G_get_raster_row(infd[i], patch, row, out_type) < 0)
-		G_fatal_error(_("Unable to read raster map <%s> row %d"),
-			      names[i], row);
+	    /* check if raster i overlaps with the current row */
+	    if (south_edge >= cellhd[i].north ||
+		north_edge <= cellhd[i].south ||
+		window.west >= cellhd[i].east ||
+		window.east <= cellhd[i].west)
+		continue;
+
+	    Rast_get_row(infd[i], patch, row, out_type);
 	    if (!do_patch
-		(presult, patch, &statf[i], ncols, out_type, ZEROFLAG))
+		(presult, patch, &statf[i], ncols, out_type, use_zero))
 		break;
 	}
-	G_put_raster_row(outfd, presult, out_type);
+	Rast_put_row(outfd, presult, out_type);
     }
     G_percent(row, nrows, 2);
 
     G_free(patch);
     G_free(presult);
     for (i = 0; i < nfiles; i++)
-	G_close_cell(infd[i]);
+	Rast_close(infd[i]);
     /* 
      * build the new cats and colors. do this before closing the new
      * file, in case the new file is one of the patching files as well.
      */
-    G_message(_("Creating support files for raster map <%s>"), new_name);
+    G_verbose_message(_("Creating support files for raster map <%s>..."), new_name);
     support(names, statf, nfiles, &cats, &cats_ok, &colr, &colr_ok, out_type);
 
     /* now close (and create) the result */
-    G_close_cell(outfd);
+    Rast_close(outfd);
     if (cats_ok)
-	G_write_cats(new_name, &cats);
+	Rast_write_cats(new_name, &cats);
     if (colr_ok)
-	G_write_colors(new_name, G_mapset(), &colr);
+	Rast_write_colors(new_name, G_mapset(), &colr);
 
-    G_short_history(new_name, "raster", &history);
-    G_command_history(&history);
-    G_write_history(new_name, &history);
+    Rast_short_history(new_name, "raster", &history);
+    Rast_command_history(&history);
+    Rast_write_history(new_name, &history);
 
     exit(EXIT_SUCCESS);
 }

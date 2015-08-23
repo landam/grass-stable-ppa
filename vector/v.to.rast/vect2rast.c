@@ -1,21 +1,21 @@
 #include <string.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/dbmi.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 #include "local.h"
 
 
-int vect_to_rast(char *vector_map, char *raster_map, int field, char *column,
-		 int nrows, int use, double value, int value_type,
-		 char *rgbcolumn, char *labelcolumn, int ftype)
+int vect_to_rast(const char *vector_map, const char *raster_map, const char *field_name,
+		 const char *column, int cache_mb, int use, double value,
+		 int value_type, const char *rgbcolumn, const char *labelcolumn,
+		 int ftype, char *where, char *cats, int dense)
 {
-#ifdef DEBUG
-    int i;
-#endif
-    char *vector_mapset;
     struct Map_info Map;
     struct line_pnts *Points;
+    int i, field;
+    struct cat_list *cat_list = NULL;
     int fd;			/* for raster map */
     int nareas, nlines;		/* number of converted features */
     int nareas_all, nplines_all;	/* number of all areas, points/lines */
@@ -33,12 +33,16 @@ int vect_to_rast(char *vector_map, char *raster_map, int field, char *column,
 
     nareas = 0;
 
-    if ((vector_mapset = G_find_vector2(vector_map, "")) == NULL)
-	G_fatal_error(_("Vector map <%s> not found"), vector_map);
-
-    G_message(_("Loading data..."));
+    G_verbose_message(_("Loading data..."));
     Vect_set_open_level(2);
-    Vect_open_old(&Map, vector_map, vector_mapset);
+    if (Vect_open_old2(&Map, vector_map, "", field_name) < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), vector_map);
+
+    field = Vect_get_field_number(&Map, field_name);
+
+    if (field > 0)
+	cat_list = Vect_cats_set_constraint(&Map, field, where, cats);
+
 
     if ((use == USE_Z) && !(Vect_is_3d(&Map)))
 	G_fatal_error(_("Vector map <%s> is not 3D"),
@@ -48,13 +52,14 @@ int vect_to_rast(char *vector_map, char *raster_map, int field, char *column,
     case USE_ATTR:
 	db_CatValArray_init(&cvarr);
 	if (!(Fi = Vect_get_field(&Map, field)))
-	    G_fatal_error(_("Database connection not defined for layer %d"),
-			  field);
+	    G_fatal_error(_("Database connection not defined for layer <%s>"),
+			  field_name);
 
 	if ((Driver =
 	     db_start_driver_open_database(Fi->driver, Fi->database)) == NULL)
 	    G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 			  Fi->database, Fi->driver);
+        db_set_error_handler_driver(Driver);
 
 	/* Note do not check if the column exists in the table because it may be expression */
 
@@ -77,7 +82,6 @@ int vect_to_rast(char *vector_map, char *raster_map, int field, char *column,
 
 	db_close_database_shutdown_driver(Driver);
 
-#ifdef DEBUG
 	for (i = 0; i < cvarr.n_values; i++) {
 	    if (ctype == DB_C_TYPE_INT) {
 		G_debug(3, "cat = %d val = %d", cvarr.value[i].cat,
@@ -88,14 +92,13 @@ int vect_to_rast(char *vector_map, char *raster_map, int field, char *column,
 			cvarr.value[i].val.d);
 	    }
 	}
-#endif
-
+	
 	switch (ctype) {
 	case DB_C_TYPE_INT:
-	    format = USE_CELL;
+	    format = CELL_TYPE;
 	    break;
 	case DB_C_TYPE_DOUBLE:
-	    format = USE_DCELL;
+	    format = DCELL_TYPE;
 	    break;
 	default:
 	    G_fatal_error(_("Unable to use column <%s>"), column);
@@ -103,48 +106,36 @@ int vect_to_rast(char *vector_map, char *raster_map, int field, char *column,
 	}
 	break;
     case USE_CAT:
-	format = USE_CELL;
+	format = CELL_TYPE;
 	break;
     case USE_VAL:
 	format = value_type;
 	break;
     case USE_Z:
-	format = USE_DCELL;
+	format = DCELL_TYPE;
 	is_fp = 1;
 	break;
     case USE_D:
-	format = USE_DCELL;
+	format = DCELL_TYPE;
 	break;
     default:
 	G_fatal_error(_("Unknown use type: %d"), use);
     }
 
-    switch (format) {
-    case USE_CELL:
-	if ((fd = G_open_cell_new(raster_map)) < 0)
-	    G_fatal_error(_("Unable to create raster map <%s>"), raster_map);
-	break;
-    case USE_DCELL:
-	if ((fd = G_open_raster_new(raster_map, DCELL_TYPE)) < 0)
-	    G_fatal_error(_("Unable to create raster map <%s>"), raster_map);
-	break;
-    default:
-	G_fatal_error(_("Unknown raster map type"));
-	break;
-    }
+    fd = Rast_open_new(raster_map, format);
 
     Points = Vect_new_line_struct();
 
     if (use != USE_Z && use != USE_D && (ftype & GV_AREA)) {
-	if ((nareas = sort_areas(&Map, Points, field)) < 0)
-	    G_fatal_error(_("Unable to process areas from vector map <%s>"),
+	if ((nareas = sort_areas(&Map, Points, field, cat_list)) == 0)
+	    G_warning(_("No areas selected from vector map <%s>"),
 			  vector_map);
 
 	G_debug(1, "%d areas sorted", nareas);
     }
 
     nlines = 1;
-    npasses = begin_rasterization(nrows, format);
+    npasses = begin_rasterization(cache_mb, format, dense);
     pass = 0;
 
     nareas_all = Vect_get_num_areas(&Map);
@@ -159,7 +150,7 @@ int vect_to_rast(char *vector_map, char *raster_map, int field, char *column,
 
 	if ((use != USE_Z && use != USE_D) && nareas) {
 	    if (do_areas
-		(&Map, Points, &cvarr, ctype, field, use, value,
+		(&Map, Points, &cvarr, ctype, use, value,
 		 value_type) < 0) {
 		G_warning(_("Problem processing areas from vector map <%s>, continuing..."),
 			  vector_map);
@@ -170,8 +161,9 @@ int vect_to_rast(char *vector_map, char *raster_map, int field, char *column,
 
 	if (nlines) {
 	    if ((nlines =
-		 do_lines(&Map, Points, &cvarr, ctype, field, use, value,
-			  value_type, ftype, &nplines_all)) < 0) {
+		 do_lines(&Map, Points, &cvarr, ctype, field, cat_list, 
+		          use, value, value_type, ftype,
+			  &nplines_all, dense)) < 0) {
 		G_warning(_("Problem processing lines from vector map <%s>, continuing..."),
 			  vector_map);
 		stat = -1;
@@ -179,7 +171,7 @@ int vect_to_rast(char *vector_map, char *raster_map, int field, char *column,
 	    }
 	}
 
-	G_message(_("Writing raster map..."));
+	G_important_message(_("Writing raster map..."));
 
 	stat = output_raster(fd);
     } while (stat == 0);
@@ -190,7 +182,7 @@ int vect_to_rast(char *vector_map, char *raster_map, int field, char *column,
     Vect_destroy_line_struct(Points);
 
     if (stat < 0) {
-	G_unopen_cell(fd);
+	Rast_unopen(fd);
 
 	return 1;
     }
@@ -198,8 +190,8 @@ int vect_to_rast(char *vector_map, char *raster_map, int field, char *column,
     Vect_close(&Map);
 
     G_verbose_message(_("Creating support files for raster map..."));
-    G_close_cell(fd);
-    update_hist(raster_map, vector_map, vector_mapset, Map.head.orig_scale);
+    Rast_close(fd);
+    update_hist(raster_map, vector_map, Map.head.orig_scale);
 
     /* colors */
     if (rgbcolumn) {
@@ -224,7 +216,8 @@ int vect_to_rast(char *vector_map, char *raster_map, int field, char *column,
 		  column);
 
     if (nareas_all > 0)
-	G_message(_("Converted areas: %d of %d"), nareas, nareas_all);
+	G_message(_("Converted areas: %d of %d"), nareas,
+	          nareas_all - Vect_get_num_primitives(&Map, GV_CENTROID));
     if (nplines_all > 0)
 	G_message(_("Converted points/lines: %d of %d"), nlines, nplines_all);
 

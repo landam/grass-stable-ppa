@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 #include "point.h"
 #include "matrix.h"
@@ -32,14 +32,14 @@
 int snakes_displacement(struct Map_info *In, struct Map_info *Out,
 			double threshold, double alpha, double beta,
 			double gama, double delta, int iterations,
-			VARRAY * varray)
+			struct cat_list *cat_list, int layer)
 {
 
     int n_points;
     int n_lines;
     int i, j, index, pindex, iter, type;
     int with_z = 0;
-    struct line_pnts *Points, *Write;
+    struct line_pnts *Points;
     struct line_cats *Cats;
     MATRIX k, dx, dy, fx, fy, kinv, dx_old, dy_old;
     POINT *parray;
@@ -51,14 +51,13 @@ int snakes_displacement(struct Map_info *In, struct Map_info *Out,
 
     /* initialize structrures and read the number of points */
     Points = Vect_new_line_struct();
-    Write = Vect_new_line_struct();
     Cats = Vect_new_cats_struct();
     n_lines = Vect_get_num_lines(In);
     n_points = 0;
 
     for (i = 1; i <= n_lines; i++) {
-	type = Vect_read_line(In, Points, NULL, i);
-	if (varray && !varray->c[i])
+	type = Vect_read_line(In, Points, Cats, i);
+	if (layer > 0 && !Vect_cats_in_constraint(Cats, layer, cat_list))
 	    continue;
 	if (type & GV_LINE)
 	    n_points += Points->n_points;
@@ -81,14 +80,17 @@ int snakes_displacement(struct Map_info *In, struct Map_info *Out,
     pindex = 0;
     for (i = 1; i <= n_lines; i++) {
 	G_percent(i, n_lines, 1);
-	type = Vect_read_line(In, Points, NULL, i);
-	if (type != GV_LINE || (varray && !varray->c[i]))
+	type = Vect_read_line(In, Points, Cats, i);
+	if (type != GV_LINE)
 	    continue;
+	if (layer > 0 && !Vect_cats_in_constraint(Cats, layer, cat_list))
+	    continue;
+
 	for (j = 0; j < Points->n_points; j++) {
 	    int q, findex;
 	    POINT cur;
 
-	    point_assign(Points, j, with_z, &cur);
+	    point_assign(Points, j, with_z, &cur, 0);
 	    /* check whether we alerady have point with the same
 	     * coordinates */
 	    findex = pindex;
@@ -100,12 +102,12 @@ int snakes_displacement(struct Map_info *In, struct Map_info *Out,
 
 	    point_index[index] = findex;
 	    if (findex == pindex) {
-		point_assign(Points, j, with_z, &pset[pindex]);
+		point_assign(Points, j, with_z, &pset[pindex], 0);
 		pindex++;
 	    }
 	    first[index] = (j == 0);
 	    line_index[index] = i;
-	    point_assign(Points, j, with_z, &parray[index]);
+	    point_assign(Points, j, with_z, &parray[index], 0);
 	    index++;
 	}
     }
@@ -195,7 +197,7 @@ int snakes_displacement(struct Map_info *In, struct Map_info *Out,
 
     /*calculate the inverse */
     G_message(_("Inverting matrix..."));
-    if (!matrix_inverse(k, &kinv, 1))
+    if (!matrix_inverse(&k, &kinv, 1))
 	G_fatal_error(_("Unable to calculate the inverse matrix"));
 
     G_percent_reset();
@@ -211,8 +213,8 @@ int snakes_displacement(struct Map_info *In, struct Map_info *Out,
 	matrix_mult_scalar(0.0, &dx_old);
 	matrix_mult_scalar(0.0, &dy_old);
 
-	matrix_add(dx_old, dx, &dx_old);
-	matrix_add(dy_old, dy, &dy_old);
+	matrix_add(&dx_old, &dx, &dx_old);
+	matrix_add(&dy_old, &dy, &dy_old);
 
 	/* calculate force vectors */
 	for (i = 0; i < index; i++) {
@@ -269,11 +271,11 @@ int snakes_displacement(struct Map_info *In, struct Map_info *Out,
 	matrix_mult_scalar(gama, &dx);
 	matrix_mult_scalar(gama, &dy);
 
-	matrix_add(dx, fx, &fx);
-	matrix_add(dy, fy, &fy);
+	matrix_add(&dx, &fx, &fx);
+	matrix_add(&dy, &fy, &fy);
 
-	matrix_mult(kinv, fx, &dx);
-	matrix_mult(kinv, fy, &dy);
+	matrix_mult(&kinv, &fx, &dx);
+	matrix_mult(&kinv, &fy, &dy);
 
 	for (i = 0; i < index; i++) {
 	    if (point_index[i] == -1)
@@ -284,13 +286,13 @@ int snakes_displacement(struct Map_info *In, struct Map_info *Out,
 		dy.a[point_index[i]][0] - dy_old.a[point_index[i]][0];
 	}
 
-
     }
     index = 0;
     for (i = 1; i <= n_lines; i++) {
 	int type = Vect_read_line(In, Points, Cats, i);
 
-	if (type != GV_LINE || (varray && !varray->c[i])) {
+	if (type != GV_LINE ||
+	    (layer > 0 && !Vect_cats_in_constraint(Cats, layer, cat_list))) {
 	    Vect_write_line(Out, type, Points, Cats);
 	    continue;
 	}
@@ -310,13 +312,14 @@ int snakes_displacement(struct Map_info *In, struct Map_info *Out,
     G_free(need);
     G_free(sel);
     G_free(tmp_index);
-    matrix_free(k);
-    matrix_free(kinv);
-    matrix_free(dx);
-    matrix_free(dy);
-    matrix_free(fx);
-    matrix_free(fy);
-    matrix_free(dx_old);
-    matrix_free(dy_old);
+    matrix_free(&k);
+    matrix_free(&kinv);
+    matrix_free(&dx);
+    matrix_free(&dy);
+    matrix_free(&fx);
+    matrix_free(&fy);
+    matrix_free(&dx_old);
+    matrix_free(&dy_old);
+
     return 0;
 }

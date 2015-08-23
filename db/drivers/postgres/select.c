@@ -1,6 +1,19 @@
+/*!
+  \file db/driver/postgres/db.c
+  
+  \brief DBMI - Low Level PostgreSQL database driver - select cursor
+  
+  This program is free software under the GNU General Public License
+  (>=v2). Read the file COPYING that comes with GRASS for details.
+  
+  \author Radim Blazek
+ */
+
 #include <stdlib.h>
 #include <grass/dbmi.h>
 #include <grass/gis.h>
+#include <grass/glocale.h>
+
 #include "globals.h"
 #include "proto.h"
 
@@ -11,14 +24,12 @@ int db__driver_open_select_cursor(dbString * sel, dbCursor * dbc, int mode)
     dbTable *table;
     char *str;
 
-    init_error();
-
     /* Set datetime style */
     res = PQexec(pg_conn, "SET DATESTYLE TO ISO");
 
     if (!res || PQresultStatus(res) != PGRES_COMMAND_OK) {
-	append_error("Cannot set DATESTYLE\n");
-	report_error();
+	db_d_append_error(_("Unable set DATESTYLE"));
+	db_d_report_error();
 	PQclear(res);
 	return DB_FAILED;
     }
@@ -40,11 +51,11 @@ int db__driver_open_select_cursor(dbString * sel, dbCursor * dbc, int mode)
     c->res = PQexec(pg_conn, str);
 
     if (!c->res || PQresultStatus(c->res) != PGRES_TUPLES_OK) {
-	append_error("Cannot select: \n");
-	append_error(db_get_string(sel));
-	append_error("\n");
-	append_error(PQerrorMessage(pg_conn));
-	report_error();
+	db_d_append_error("%s\n%s\n%s",
+			  _("Unable to select:"),
+			  db_get_string(sel),
+			  PQerrorMessage(pg_conn));
+	db_d_report_error();
 	PQclear(c->res);
 	if (str)
 	    G_free(str);
@@ -55,8 +66,8 @@ int db__driver_open_select_cursor(dbString * sel, dbCursor * dbc, int mode)
 	G_free(str);
 
     if (describe_table(c->res, &table, c) == DB_FAILED) {
-	append_error("Cannot describe table\n");
-	report_error();
+	db_d_append_error(_("Unable to describe table"));
+	db_d_report_error();
 	PQclear(res);
 	return DB_FAILED;
     }

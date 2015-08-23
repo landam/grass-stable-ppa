@@ -18,6 +18,7 @@
  */
 
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include "list.h"
 #include "defs.h"
 
@@ -136,8 +137,14 @@ typedef int rli_func(int fd, char **par, struct area_entry *ad, double *result);
  * \param file name of setup file
  * \param f the function that defines the index
  * \param raster the raster file to analyze
- * \return 0 error occurs in calculating index
- * \return 1  otherwise
+ * \return 1 error occurs in calculating index
+ * \return 0 otherwise
+ *
+ * \note
+ * Unlike other function in r.li, this function returns return code
+ * usable as process return code rather than using true/false (1/0)
+ * idiom for success/failure. The interface was designed to accommodate
+ * common usage of this function in r.li modules.
  */
 
 int calculateIndex(char *file, rli_func *f,
@@ -216,8 +223,8 @@ void worker_end(void);
   * \brief adapts the mask at current raster file
   * \param mask name of mask raster file
   * \param raster the name of current raster file
-  * \param rl the lenght in rows of sample area
-  * \param cl the lenght in cols of sample area
+  * \param rl the length in rows of sample area
+  * \param cl the length in cols of sample area
   * \return the name of mask raster file to use
   */
 char *mask_preprocessing(char *mask, char *raster, struct area_entry *ad);

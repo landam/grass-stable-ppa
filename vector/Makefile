@@ -1,16 +1,20 @@
 
 MODULE_TOPDIR = ..
 
+PGM = vectorintro
+
 SUBDIRS = \
+	v.buffer \
 	v.build \
 	v.build.polylines \
 	v.category \
 	v.class \
 	v.clean \
-	v.convert \
+	v.colors \
+	v.colors.out \
 	v.db.connect \
 	v.db.select \
-	v.delaunay2 \
+	v.delaunay \
 	v.distance \
 	v.drape \
 	v.edit \
@@ -23,10 +27,12 @@ SUBDIRS = \
 	v.in.db \
 	v.in.dxf \
 	v.in.region \
-	v.in.sites \
 	v.kcv \
 	v.kernel \
 	v.label \
+	v.lidar.correction \
+	v.lidar.edgedetection \
+	v.lidar.growing \
 	v.lrs \
 	v.proj \
 	v.mkgrid \
@@ -50,24 +56,29 @@ SUBDIRS = \
 	v.normal \
 	v.out.ascii \
 	v.out.dxf \
+	v.out.postgis \
 	v.out.pov \
 	v.out.svg \
 	v.out.vtk \
+	v.outlier \
 	v.overlay \
-	v.parallel2 \
+	v.parallel \
 	v.patch \
 	v.perturb \
 	v.split \
 	v.qcount \
 	v.random \
 	v.reclass \
+	v.rectify \
 	v.sample \
 	v.segment \
 	v.select \
 	v.support \
+	v.surf.bspline \
 	v.surf.idw \
 	v.surf.rst \
 	v.transform \
+	v.timestamp \
 	v.to.3d \
 	v.to.db \
 	v.to.points \
@@ -75,51 +86,18 @@ SUBDIRS = \
 	v.to.rast3 \
 	v.type \
 	v.univar \
-	v.vect.stats \
 	v.voronoi \
 	v.what \
 	v.what.rast \
+	v.what.rast3 \
+	v.vect.stats \
 	v.vol.rst \
-	lidar
-
-include $(MODULE_TOPDIR)/include/Make/Platform.make
-
-GEOSBASED=v.buffer2
-
-#compile if GEOS present:
-
-ifneq ($(USE_GEOS),)
-    SUBDIRS += $(GEOSBASED)
-endif
-
-OGRBASED = v.out.ogr v.in.ogr v.external
-
-#compile if OGR present:
-ifneq ($(USE_OGR),)
-    SUBDIRS += $(OGRBASED)
-endif
-
-TCLTKBASED = v.digit
-
-#compile if Tcl/Tk present:
-ifneq ($(strip $(TCLTKLIBS)),)
-    SUBDIRS += $(TCLTKBASED)
-endif
-
-REQUIRESFT = v.label.sa
-
-ifneq ($(strip $(FTLIB)),)
-    SUBDIRS += $(REQUIRESFT)
-endif
-
-OPENDWGBASED = v.in.dwg
-
-#compile if OPENDWG present:
-ifneq ($(USE_OPENDWG),)
-    SUBDIRS += $(OPENDWGBASED)
-endif
-
-PGM = vectorintro
+	v.out.ogr \
+	v.in.ogr \
+	v.external \
+	v.in.dwg \
+	v.in.lidar \
+	v.external.out
 
 include $(MODULE_TOPDIR)/include/Make/Dir.make
 
@@ -127,4 +105,3 @@ default: htmldir
 
 htmldir: parsubdirs
 
-clean: cleansubdirs

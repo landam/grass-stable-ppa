@@ -1,7 +1,7 @@
 How the GRASS Webserver and related infrastructure works
 
 written by M. Neteler
-Last changed: $Date: 2013-10-19 12:02:37 +0200 (Sat, 19 Oct 2013) $
+Last changed: $Date: 2013-10-19 12:01:07 +0200 (Sat, 19 Oct 2013) $
 
 
 Related Wiki documents:

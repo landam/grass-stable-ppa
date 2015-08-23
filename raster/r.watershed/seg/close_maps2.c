@@ -1,13 +1,16 @@
 #include "Gwater.h"
 #include <unistd.h>
+#include <grass/gis.h>
+#include <grass/glocale.h>
 
 int close_array_seg(void)
 {
     struct Colors colors;
     int incr, max, red, green, blue, rd, gr, bl, flag;
     int c, r, map_fd;
-    CELL *cellrow, value;
+    CELL *cellrow;
     CSEG *theseg;
+    ASP_FLAG af;
 
     if (seg_flag || bas_flag || haf_flag) {
 	if (seg_flag)
@@ -17,6 +20,7 @@ int close_array_seg(void)
 	else
 	    theseg = &haf;
 	max = -9;
+	/*
 	for (r = 0; r < nrows; r++) {
 	    for (c = 0; c < ncols; c++) {
 		cseg_get(theseg, &value, r, c);
@@ -24,12 +28,19 @@ int close_array_seg(void)
 		    max = value;
 	    }
 	}
+	*/
+	max = n_basins;
 	G_debug(1, "%d basins created", max);
-	G_init_colors(&colors);
-	G_make_random_colors(&colors, 1, max);
+	Rast_init_colors(&colors);
+	if (max > 0)
+	    Rast_make_random_colors(&colors, 1, max);
+	else {
+	    G_warning(_("No basins were created. Verify threshold and region settings."));
+	    Rast_make_random_colors(&colors, 1, 2);
+	}
 
-	if (max < 10000) {
-	    G_set_color((CELL) 0, 0, 0, 0, &colors);
+	if (max < 1000 && max > 0) {
+	    Rast_set_c_color((CELL) 0, 0, 0, 0, &colors);
 	    r = 1;
 	    incr = 0;
 	    while (incr >= 0) {
@@ -39,12 +50,12 @@ int close_array_seg(void)
 			for (bl = 90 + incr; bl <= 255; bl += 40) {
 			    flag = 1;
 			    while (flag) {
-				G_get_color(r, &red, &green, &blue, &colors);
+				Rast_get_c_color(&r, &red, &green, &blue, &colors);
 				/* if existing rule is too dark then append a new
 				   rule to override it */
 				if ((blue * .11 + red * .30 + green * .59) <
 				    100) {
-				    G_set_color(r, rd, gr, bl, &colors);
+				    Rast_set_c_color(r, rd, gr, bl, &colors);
 				    flag = 0;
 				}
 				if (++r > max) {
@@ -72,40 +83,48 @@ int close_array_seg(void)
 
     /* stream segments map */
     if (seg_flag) {
+	G_message(_("Closing stream segments map"));
 	cellrow = (CELL *) G_malloc(ncols * sizeof(CELL));
-	map_fd = G_open_cell_new(seg_name);
+	map_fd = Rast_open_c_new(seg_name);
 	for (r = 0; r < nrows; r++) {
-	    G_set_c_null_value(cellrow, ncols);	/* reset row to all NULL */
+	    G_percent(r, nrows, 1);
+	    Rast_set_c_null_value(cellrow, ncols);	/* reset row to all NULL */
 	    for (c = 0; c < ncols; c++) {
-		bseg_get(&swale, &value, r, c);
-		if (value)
+		/* bseg_get(&swale, &cvalue, r, c); */
+		/* if (cvalue) */
+		seg_get(&aspflag, (char *)&af, r, c);
+		if (FLAG_GET(af.flag, SWALEFLAG))
 		    cseg_get(&bas, &(cellrow[c]), r, c);
 	    }
-	    G_put_raster_row(map_fd, cellrow, CELL_TYPE);
+	    Rast_put_row(map_fd, cellrow, CELL_TYPE);
 	}
+	G_percent(nrows, nrows, 1);    /* finish it */
 	G_free(cellrow);
-	G_close_cell(map_fd);
-	G_write_colors(seg_name, this_mapset, &colors);
+	Rast_close(map_fd);
+	Rast_write_colors(seg_name, this_mapset, &colors);
     }
 
     /* basins map */
     if (bas_flag) {
+	G_message(_("Closing basins map"));
 	cseg_write_cellfile(&bas, bas_name);
-	G_write_colors(bas_name, this_mapset, &colors);
+	Rast_write_colors(bas_name, this_mapset, &colors);
     }
 
     /* half.basins map */
     if (haf_flag) {
+	G_message(_("Closing half basins map"));
 	cseg_write_cellfile(&haf, haf_name);
-	G_write_colors(haf_name, this_mapset, &colors);
+	Rast_write_colors(haf_name, this_mapset, &colors);
     }
 
     if (seg_flag || bas_flag || haf_flag)
-	G_free_colors(&colors);
+	Rast_free_colors(&colors);
     cseg_close(&haf);
     cseg_close(&bas);
     if (arm_flag)
 	fclose(fp);
+
     close_maps();
 
     return 0;

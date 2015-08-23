@@ -123,8 +123,7 @@ int main(int argc, char **argv)
 		   "Report shortest distance only")
 	GNO_SWITCH("U", "unflatten", False, &fUnflatten,
 		   "Unflatten the graph before processing")
-    GNO_END if (GNO_PARSE(argc, argv) < 0)
-    {
+	GNO_END if (GNO_PARSE(argc, argv) < 0) {
 	return 1;
     }
     /* options parsed

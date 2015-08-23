@@ -16,35 +16,46 @@
  *
  *****************************************************************************/
 #include <stdlib.h>
-#include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 
-/* Init int_list */
-int dig_init_list(struct ilist *list)
+/* Init box list */
+int dig_init_boxlist(struct boxlist *list, int have_boxes)
 {
-    list->value = NULL;
+    list->id = NULL;
+    list->box = NULL;
+    list->have_boxes = have_boxes != 0;
     list->n_values = 0;
     list->alloc_values = 0;
 
     return 1;
 }
 
-/* Init add item to list */
-int dig_list_add(struct ilist *list, int val)
+/* Add item to box list, does not check for duplicates */
+int dig_boxlist_add(struct boxlist *list, int id, const struct bound_box *box)
 {
-    void *p;
-    int size;
-
     if (list->n_values == list->alloc_values) {
-	size = (list->n_values + 1000) * sizeof(int);
-	p = G_realloc((void *)list->value, size);
+	size_t size = (list->n_values + 1000) * sizeof(int);
+	void *p = G_realloc((void *)list->id, size);
+
 	if (p == NULL)
 	    return 0;
-	list->value = (int *)p;
+	list->id = (int *)p;
+
+	if (list->have_boxes) {
+	    size = (list->n_values + 1000) * sizeof(struct bound_box);
+	    p = G_realloc((void *)list->box, size);
+
+	    if (p == NULL)
+		return 0;
+	    list->box = (struct bound_box *)p;
+	}
+
 	list->alloc_values = list->n_values + 1000;
     }
 
-    list->value[list->n_values] = val;
+    list->id[list->n_values] = id;
+    if (list->have_boxes)
+	list->box[list->n_values] = *box;
     list->n_values++;
 
     return 1;

@@ -4,17 +4,18 @@
  * MODULE:       v.what
  *
  * AUTHOR(S):    Trevor Wiens - derived from d.what.vect - 15 Jan 2006
+ *               OGR support by Martin Landa <landa.martin gmail.com>
  *
  * PURPOSE:      To select and report attribute information for objects at a
  *               user specified location. This replaces d.what.vect by removing
  *               the interactive component to enable its use with the new 
  *               gis.m and future GUI.
  *
- * COPYRIGHT:    (C) 2006 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2006-2010, 2011 by the GRASS Development Team
  *
- *               This program is free software under the GNU General Public
- *              License (>=v2). Read the file COPYING that comes with GRASS
- *              for details.
+ *               This program is free software under the GNU General
+ *               Public License (>=v2). Read the file COPYING that
+ *               comes with GRASS for details.
  *
  *****************************************************************************/
 
@@ -22,28 +23,31 @@
 #include <string.h>
 #include <grass/glocale.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
-#include <grass/raster.h>
+#include <grass/vector.h>
 #include <grass/display.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
-#include <grass/config.h>
 #include "what.h"
 
-char **vect;
-int nvects;
-struct Map_info *Map;
 
 int main(int argc, char **argv)
 {
-    struct Flag *printattributes, *topo_flag, *shell_flag;
-    struct Option *opt1, *coords_opt, *maxdistance;
+    struct {
+	struct Flag *print, *topo, *shell, *json;
+    } flag;
+    struct {
+	struct Option *map, *field, *coords, *maxdist, *type;
+    } opt;
     struct Cell_head window;
     struct GModule *module;
-    char *mapset;
-    char *str;
+
+    char **vect;
+    int nvects;
+    struct Map_info *Map;
+
     char buf[2000];
-    int i, j, level, width = 0, mwidth = 0, ret;
+    int i, level, ret, type;
+    int *field;
     double xval, yval, xres, yres, maxd, x;
     double EW_DIST1, EW_DIST2, NS_DIST1, NS_DIST2;
     char nsres[30], ewres[30];
@@ -53,59 +57,79 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, querying");
-    module->description = _("Queries a vector map layer at given locations.");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("querying"));
+    G_add_keyword(_("position"));
+    module->description = _("Queries a vector map at given locations.");
 
-    opt1 = G_define_standard_option(G_OPT_V_MAP);
-    opt1->multiple = YES;
-    opt1->required = YES;
+    opt.map = G_define_standard_option(G_OPT_V_MAPS);
 
-    coords_opt = G_define_option();
-    coords_opt->key = "east_north";
-    coords_opt->type = TYPE_DOUBLE;
-    coords_opt->key_desc = "east,north";
-    coords_opt->required = NO;
-    coords_opt->multiple = YES;
-    coords_opt->label = _("Coordinates for query");
-    coords_opt->description = _("If not given reads from standard input");
+    opt.field = G_define_standard_option(G_OPT_V_FIELD_ALL);
+    opt.field->multiple = YES;
+    
+    opt.type = G_define_standard_option(G_OPT_V3_TYPE);
+    opt.type->answer = "point,line,area,face";
 
-    maxdistance = G_define_option();
-    maxdistance->type = TYPE_DOUBLE;
-    maxdistance->key = "distance";
-    maxdistance->answer = "0";
-    maxdistance->multiple = NO;
-    maxdistance->description = _("Query threshold distance");
+    opt.coords = G_define_standard_option(G_OPT_M_COORDS);
+    opt.coords->required = YES;
+    opt.coords->label = _("Coordinates for query");
+    opt.coords->description = _("'-' for standard input");
 
-    topo_flag = G_define_flag();
-    topo_flag->key = 'd';
-    topo_flag->description = _("Print topological information (debugging)");
+    opt.maxdist = G_define_option();
+    opt.maxdist->type = TYPE_DOUBLE;
+    opt.maxdist->key = "distance";
+    opt.maxdist->answer = "0";
+    opt.maxdist->multiple = NO;
+    opt.maxdist->description = _("Query threshold distance");
+    opt.maxdist->guisection = _("Threshold");
+    
+    flag.topo = G_define_flag();
+    flag.topo->key = 'd';
+    flag.topo->description = _("Print topological information (debugging)");
+    flag.topo->guisection = _("Print");
 
-    printattributes = G_define_flag();
-    printattributes->key = 'a';
-    printattributes->description = _("Print attribute information");
+    flag.print = G_define_flag();
+    flag.print->key = 'a';
+    flag.print->description = _("Print attribute information");
+    flag.print->guisection = _("Print");
 
-    shell_flag = G_define_flag();
-    shell_flag->key = 'g';
-    shell_flag->description = _("Print the stats in shell script style");
+    flag.shell = G_define_flag();
+    flag.shell->key = 'g';
+    flag.shell->description = _("Print the stats in shell script style");
+    flag.shell->guisection = _("Print");
+   
+    flag.json = G_define_flag();
+    flag.json->key = 'j';
+    flag.json->description = _("Print the stats in JSON");
+    flag.json->guisection = _("Print");
 
-    if ((argc > 1 || !vect) && G_parser(argc, argv))
+    if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    if (opt1->answers && opt1->answers[0])
-	vect = opt1->answers;
+    /* initialize variables */
+    vect = NULL;
+    Map = NULL;
+    nvects = 0;
+    field = NULL;
 
-    maxd = atof(maxdistance->answer);
+    if (opt.map->answers && opt.map->answers[0])
+	vect = opt.map->answers;
+    else
+	G_fatal_error(_("No input vector maps!"));
 
-    /*  
-     *  fprintf(stdout, maxdistance->answer);
-     *  fprintf(stdout, "Maxd is %f", maxd);
-     *  fprintf(stdout, xcoord->answer);
-     *  fprintf(stdout, "xval is %f", xval);
-     *  fprintf(stdout, ycoord->answer);
-     *  fprintf(stdout, "yval is %f", yval);
-     */
+    if (flag.shell->answer && flag.json->answer)
+        G_fatal_error(_("Flags g and j are mutually exclusive"));
+
+    maxd = atof(opt.maxdist->answer);
+    type = Vect_option_to_types(opt.type);
 
     if (maxd == 0.0) {
+	/* this code is a translation from d.what.vect which uses display
+	 * resolution to figure out a querying distance
+	 * display resolution is not available here
+	 * using raster resolution instead to determine vector querying 
+	 * distance does not really make sense
+	 * maxd = 0 can make sense */
 	G_get_window(&window);
 	x = window.proj;
 	G_format_resolution(window.ew_res, ewres, x);
@@ -131,48 +155,38 @@ int main(int argc, char **argv)
 
     /* Look at maps given on command line */
     if (vect) {
-	for (i = 0; vect[i]; i++) ;
+	for (i = 0; vect[i]; i++)
+	    ;
 	nvects = i;
-
-	Map = (struct Map_info *)G_malloc(nvects * sizeof(struct Map_info));
-
-	width = mwidth = 0;
+	
+	for (i = 0; opt.field->answers[i]; i++)
+	    ;
+	
+	if (nvects != i)
+	    G_fatal_error(_("Number of given vector maps (%d) differs from number of layers (%d)"),
+			  nvects, i);
+	
+	Map = (struct Map_info *) G_malloc(nvects * sizeof(struct Map_info));
+	field = (int *) G_malloc(nvects * sizeof(int));
+	
 	for (i = 0; i < nvects; i++) {
-	    str = strchr(vect[i], '@');
-	    if (str)
-		j = str - vect[i];
-	    else
-		j = strlen(vect[i]);
-	    if (j > width)
-		width = j;
-
-	    mapset = G_find_vector2(vect[i], "");
-	    if (!mapset)
-		G_fatal_error(_("Vector map <%s> not found"), vect[i]);
-
-	    j = strlen(mapset);
-	    if (j > mwidth)
-		mwidth = j;
-
-	    level = Vect_open_old(&Map[i], vect[i], mapset);
+	    level = Vect_open_old2(&Map[i], vect[i], "", opt.field->answers[i]);
 	    if (level < 2)
 		G_fatal_error(_("You must build topology on vector map <%s>"),
 			      vect[i]);
-
-	    G_verbose_message(_("Building spatial index..."));
-	    Vect_build_spatial_index(&Map[i]);
+	    field[i] = Vect_get_field_number(&Map[i], opt.field->answers[i]);
 	}
     }
 
-    if (!coords_opt->answer) {
-	/* if coords are not given on command line, read them from stdin */
+    if (strcmp(opt.coords->answer, "-") == 0) {
+	/* read them from stdin */
 	setvbuf(stdin, NULL, _IOLBF, 0);
 	setvbuf(stdout, NULL, _IOLBF, 0);
 	while (fgets(buf, sizeof(buf), stdin) != NULL) {
 	    ret = sscanf(buf, "%lf%c%lf", &xval, &ch, &yval);
 	    if (ret == 3 && (ch == ',' || ch == ' ' || ch == '\t')) {
-		what(xval, yval, maxd, width, mwidth, topo_flag->answer,
-		     printattributes->answer, shell_flag->answer);
+		what(Map, nvects, vect, xval, yval, maxd, type, flag.topo->answer,
+		     flag.print->answer, flag.shell->answer, flag.json->answer, field);
 	    }
 	    else {
 		G_warning(_("Unknown input format, skipping: '%s'"), buf);
@@ -182,11 +196,11 @@ int main(int argc, char **argv)
     }
     else {
 	/* use coords given on command line */
-	for (i = 0; coords_opt->answers[i] != NULL; i += 2) {
-	    xval = atof(coords_opt->answers[i]);
-	    yval = atof(coords_opt->answers[i + 1]);
-	    what(xval, yval, maxd, width, mwidth, topo_flag->answer,
-		 printattributes->answer, shell_flag->answer);
+	for (i = 0; opt.coords->answers[i] != NULL; i += 2) {
+	    xval = atof(opt.coords->answers[i]);
+	    yval = atof(opt.coords->answers[i + 1]);
+	    what(Map, nvects, vect, xval, yval, maxd, type, flag.topo->answer,
+		 flag.print->answer, flag.shell->answer, flag.json->answer, field);
 	}
     }
 

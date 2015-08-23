@@ -8,23 +8,21 @@
 
 struct colortable
 {
-    double x, y, width;
-    double min, max;
+    double x, y;	/* where */
+    double width;	/* column/table width */
+    double min, max;	/* range */
     double height;	/* fp legend height */
+    double lwidth;	/* line width for columns and tickbars */
     char *font;
     char *name;
-    char *mapset;
+    const char *mapset;
     int fontsize;
-    PSCOLOR color;
-    int cols;
+    PSCOLOR color;	/* text color, it seems */
+    int cols;		/* number of columns */
     int nodata;
     int tickbar;
     int discrete;	/* force discrete bands or continuous gradient */
     int range_override;
 };
 
-#ifdef MAIN
-struct colortable ct;
-#else
 extern struct colortable ct;
-#endif

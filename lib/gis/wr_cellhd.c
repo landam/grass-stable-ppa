@@ -1,17 +1,17 @@
 
-/**
- * \file wr_cellhd.c
+/*!
+ * \file lib/gis/wr_cellhd.c
  *
  * \brief GIS Library - Write Cell Header functions.
  *
- * (C) 2001-2008 by the GRASS Development Team
+ * (C) 2001-2014 by the GRASS Development Team
  *
  * This program is free software under the GNU General Public License
  * (>=v2). Read the file COPYING that comes with GRASS for details.
  *
  * \author GRASS GIS Development Team
  *
- * \date 1999-2008
+ * \date 1999-2014
  */
 
 #include <stdio.h>
@@ -24,11 +24,11 @@
  * \param[in,out] fd header file
  * \param[in] cellhd pointed to cell header structure
  * \param[in] is_cellhd 1 cell header; 0 window
- * \return always returns 1
+ * \return
  */
 
-int G__write_Cell_head(FILE * fd,
-		       const struct Cell_head *cellhd, int is_cellhd)
+void G__write_Cell_head(FILE * fd,
+			const struct Cell_head *cellhd, int is_cellhd)
 {
     char buf[1024];
     int fmt;
@@ -63,8 +63,6 @@ int G__write_Cell_head(FILE * fd,
 	fprintf(fd, "format:     %d\n", cellhd->format);
 	fprintf(fd, "compressed: %d\n", cellhd->compressed);
     }
-
-    return 1;
 }
 
 
@@ -74,11 +72,11 @@ int G__write_Cell_head(FILE * fd,
  * \param[in,out] fd header file
  * \param[in] cellhd pointer to cell header structure
  * \param[in] is_cellhd 1 cell header; 0 window
- * \return always returns 1
+ * \return
  */
 
-int G__write_Cell_head3(FILE * fd,
-			const struct Cell_head *cellhd, int is_cellhd)
+void G__write_Cell_head3(FILE * fd,
+			 const struct Cell_head *cellhd, int is_cellhd)
 {
     char buf[1024];
     int fmt;
@@ -102,6 +100,4 @@ int G__write_Cell_head3(FILE * fd,
 
     G_format_resolution(cellhd->tb_res, buf, -1);
     fprintf(fd, "t-b resol:  %s\n", buf);
-
-    return 1;
 }

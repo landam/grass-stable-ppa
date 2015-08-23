@@ -1,5 +1,5 @@
 /*!
-   \file trans.c
+   \file lib/ogsf/trans.c
 
    \brief OGSF library - matrix transformation (higher level functions)
 
@@ -32,7 +32,7 @@
 
 #include <grass/gis.h>
 #include <grass/glocale.h>
-#include <grass/gstypes.h>
+#include <grass/ogsf.h>
 
 #define MAX_STACK 20
 

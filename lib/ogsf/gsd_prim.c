@@ -1,5 +1,5 @@
 /*!
-   \file gsd_prim.c
+   \file lib/ogsf/gsd_prim.c
 
    \brief OGSF library - primitive drawing functions (lower level functions)
 
@@ -30,7 +30,7 @@
 #endif
 
 #include <grass/gis.h>
-#include <grass/gstypes.h>
+#include <grass/ogsf.h>
 #include <grass/glocale.h>
 
 #define USE_GL_NORMALIZE
@@ -433,7 +433,7 @@ int gsd_getshademodel(void)
 /*!
    \brief ADD
  */
-void gsd_bothbuffer(void)
+void gsd_bothbuffers(void)
 {
     /* OGLXXX frontbuffer: other possibilities include GL_FRONT_AND_BACK */
     glDrawBuffer(GL_FRONT_AND_BACK);
@@ -447,10 +447,10 @@ void gsd_bothbuffer(void)
 
    \param bool non-zero for enable otherwise disable front buffer
  */
-void gsd_frontbuffer(int bool)
+void gsd_frontbuffer(void)
 {
     /* OGLXXX frontbuffer: other possibilities include GL_FRONT_AND_BACK */
-    glDrawBuffer((bool) ? GL_FRONT : GL_BACK);
+    glDrawBuffer(GL_FRONT);
 
     return;
 }
@@ -461,10 +461,10 @@ void gsd_frontbuffer(int bool)
 
    \param bool non-zero for enable otherwise disable back buffer
  */
-void gsd_backbuffer(int bool)
+void gsd_backbuffer(void)
 {
     /* OGLXXX backbuffer: other possibilities include GL_FRONT_AND_BACK */
-    glDrawBuffer((bool) ? GL_BACK : GL_FRONT);
+    glDrawBuffer(GL_BACK);
     return;
 }
 

@@ -4,23 +4,23 @@
 #for i18N support
 PACKAGE ="grasslibs"
 
-include $(MODULE_TOPDIR)/include/Make/Platform.make
-include $(MODULE_TOPDIR)/include/Make/Grass.make
+include $(MODULE_TOPDIR)/include/Make/Vars.make
+include $(MODULE_TOPDIR)/include/Make/Rules.make
+include $(MODULE_TOPDIR)/include/Make/Html.make
+include $(MODULE_TOPDIR)/include/Make/Compile.make
 
-ifndef LIB_OBJS
-LIB_OBJS = $(subst .c,.o,$(wildcard *.c))
+ifneq ($(LIB),)
+LIB_NAME := $($(LIB)_LIBNAME)
+EXTRA_LIBS := $($(LIB)DEPS)
 endif
 
-ARCH_LIB_OBJS := $(foreach obj,$(LIB_OBJS),$(OBJDIR)/$(obj))
-
 STLIB_NAME = $(LIB_NAME)
-STLIB_OBJS = $(ARCH_LIB_OBJS)
+STLIB_OBJS = $(ARCH_OBJS)
 SHLIB_NAME = $(LIB_NAME)
-SHLIB_OBJS = $(ARCH_LIB_OBJS)
+SHLIB_OBJS = $(ARCH_OBJS)
 
-include $(MODULE_TOPDIR)/include/Make/Rules.make
 include $(MODULE_TOPDIR)/include/Make/Stlib.make
 include $(MODULE_TOPDIR)/include/Make/Shlib.make
 
 lib: $(GRASS_LIBRARY_TYPE)
-
+	if [ "$(PGM)" != "" -a -f "$(PGM)".html ] ; then $(MAKE) html ; fi

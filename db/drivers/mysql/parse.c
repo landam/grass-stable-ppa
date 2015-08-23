@@ -26,7 +26,7 @@
  *  \return DB_OK Success
  *  \return DB_FAILED Failed to parse database
  */
-int parse_conn(char *str, CONNPAR * conn)
+int parse_conn(const char *str, CONNPAR * conn)
 {
     int i;
     char **tokens, delm[2];
@@ -49,6 +49,7 @@ int parse_conn(char *str, CONNPAR * conn)
 	tokens = G_tokenize(str, delm);
 	i = 0;
 	while (tokens[i]) {
+	    G_chop(tokens[i]);
 	    G_debug(3, "token %d : %s", i, tokens[i]);
 	    if (strncmp(tokens[i], "host", 4) == 0) {
 		conn->host = G_store(tokens[i] + 5);
@@ -57,9 +58,10 @@ int parse_conn(char *str, CONNPAR * conn)
 		long port = atol(tokens[i] + 5);
 
 		if (port <= 0) {
-		    append_error(_("Wrong port number in MySQL database "
-				   "definition: "));
-		    append_error(tokens[i] + 5);
+		    db_d_append_error("%s %s",
+				      _("Wrong port number in MySQL database "
+					"definition: "),
+				      tokens[i] + 5);
 		    return DB_FAILED;
 		}
 		conn->port = (unsigned int)port;
@@ -76,9 +78,10 @@ int parse_conn(char *str, CONNPAR * conn)
 			    "is not supported, use db.login"));
 	    }
 	    else {
-		append_error(_("Unknown option in database definition for "));
-		append_error("MySQL: ");
-		append_error(tokens[i]);
+		db_d_append_error("%s %s",
+				  _("Unknown option in database definition "
+				    "for MySQL: "),
+				  tokens[i]);
 		return DB_FAILED;
 	    }
 	    i++;

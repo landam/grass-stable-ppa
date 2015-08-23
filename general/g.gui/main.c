@@ -8,7 +8,7 @@
  *
  * PURPOSE:      Start GRASS GUI from command line.
  *
- * COPYRIGHT:    (C) 2008 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2008-2015 by the GRASS Development Team
  *
  *               This program is free software under the GNU General Public
  *               License (>=v2). Read the file COPYING that comes with GRASS
@@ -25,122 +25,87 @@
 int main(int argc, char *argv[])
 {
     struct Option *type, *rc_file;
-    struct Flag *update, *nolaunch;
+    struct Flag *update_ui, *nolaunch;
     struct GModule *module;
-    char *gui_type_env;
+    const char *gui_type_env;
     char progname[GPATH_MAX];
+    char *desc;
 
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("general, gui");
-    module->description =
+    G_add_keyword(_("general"));
+    G_add_keyword(_("GUI"));
+    G_add_keyword(_("user interface"));
+        
+    module->label =
 	_("Launches a GRASS graphical user interface (GUI) session.");
+    module->description = _("Optionally updates default user interface settings.");
 
     type = G_define_option();
-    type->key = "gui";
+    type->key = "ui";
     type->type = TYPE_STRING;
-    type->label = _("GUI type");
-    type->description = _("Default value: GRASS_GUI if defined, otherwise wxpython");
-    type->descriptions = _("wxpython;wxPython based GUI - wxGUI;"
-			   "tcltk;Tcl/Tk based GUI - GIS Manager (gis.m);"
-			   "oldtcltk;Old Tcl/Tk based GUI - Display Manager (d.m);"
-			   "text;command line interface only");
-    type->options = "wxpython,tcltk,oldtcltk,text";
-
+    type->description = _("User interface");
+    desc = NULL;
+    G_asprintf(&desc,
+               "wxpython;%s;text;%s;gtext;%s;",
+               _("wxPython based GUI (wxGUI)"),
+               _("command line interface only"),
+               _("command line interface with GUI startup screen"));
+    type->descriptions = desc;
+    type->options = "wxpython,text,gtext";
+    type->answer = "wxpython";
+    type->guisection = _("Type");
+    
     rc_file = G_define_standard_option(G_OPT_F_INPUT);
     rc_file->key = "workspace";
     rc_file->required = NO;
-    rc_file->description = _("Name of workspace file");
+    rc_file->key_desc = "name.gxw";
+    rc_file->description = _("Name of workspace file to load on start-up (valid only for wxGUI)");
 
-    update = G_define_flag();
-    update->key = 'u';
-    update->description = _("Update default GUI setting");
+    update_ui = G_define_flag();
+    update_ui->key = 'd';
+    update_ui->description = _("Update default user interface settings");
+    update_ui->guisection = _("Default");
 
     nolaunch = G_define_flag();
     nolaunch->key = 'n';
     nolaunch->description =
-	_("Do not launch GUI after updating the default GUI setting");
+	_("Do not launch GUI after updating the default user interface settings");
+    nolaunch->guisection = _("Default");
 
-    if (argc > 1 && G_parser(argc, argv))
+    if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-
-    if( type->answer && strcmp(type->answer, "text") == 0
-					&& !nolaunch->answer)
-	nolaunch->answer = TRUE;
-
-    if(nolaunch->answer && !update->answer)
-	update->answer = TRUE;
-
-    gui_type_env = G__getenv("GRASS_GUI");
-
-    if (!type->answer) {
-	if (gui_type_env && strcmp(gui_type_env, "text")) {
-	    type->answer = G_store(gui_type_env);
-	}
-	else {
-	    type->answer = "wxpython";
-	}
+    gui_type_env = G_getenv_nofatal("GUI");
+    G_debug(1, "GUI: %s", gui_type_env ? gui_type_env : "unset");
+    if (update_ui->answer) {
+        if (!gui_type_env || strcmp(type->answer, gui_type_env)) {
+            G_setenv("GUI", type->answer);
+            G_message(_("<%s> is now the default GUI"), type->answer);
+        }
     }
 
-    if (((gui_type_env && update->answer) &&
-	 strcmp(gui_type_env, type->answer) != 0) || !gui_type_env) {
-	G_setenv("GRASS_GUI", type->answer);
-	G_message(_("<%s> is now the default GUI"), type->answer);
+    if(strcmp(type->answer, "wxpython") != 0 || nolaunch->answer) {
+        if (!update_ui->answer)
+            G_warning(_("Nothing to do. For setting up <%s> as default UI use -%c flag."),
+                      type->answer, update_ui->key);
+	exit(EXIT_SUCCESS);
+    }
+
+    G_message(_("Launching <%s> GUI in the background, please wait..."), type->answer);
+    sprintf(progname, "%s/gui/wxpython/wxgui.py", G_gisbase());
+    if (rc_file->answer) {
+        G_spawn_ex(getenv("GRASS_PYTHON"), getenv("GRASS_PYTHON"), progname,
+                   "--workspace", rc_file->answer, SF_BACKGROUND, NULL);
     }
     else {
-	if(update->answer)
-	    if(gui_type_env) {
-		G_debug(1, "No change: old gui_type_env=[%s], new type->ans=[%s]",
-			gui_type_env, type->answer);
-	    }
+        G_spawn_ex(getenv("GRASS_PYTHON"), getenv("GRASS_PYTHON"), progname,
+                   SF_BACKGROUND, NULL);
     }
-
-    if(nolaunch->answer)
-	exit(EXIT_SUCCESS);
-
-    G_message(_("Launching '%s' GUI in the background, please wait ..."), type->answer);
-
-    if (strcmp(type->answer, "oldtcltk") == 0) {
-#ifdef __MINGW32__
-	G_fatal_error(_("The old d.m GUI is not available for WinGRASS"));
-#endif
-	sprintf(progname, "%s/etc/dm/d.m.tcl", G_gisbase());
-	if (rc_file->answer) {
-	    G_spawn_ex(getenv("GRASS_WISH"), "d.m", progname, "-name", "d_m_tcl",
-		    rc_file->answer, SF_BACKGROUND, NULL);
-	}
-	else {
-	    G_spawn_ex(getenv("GRASS_WISH"), "d.m", progname, "-name", "d_m_tcl",
-		    SF_BACKGROUND, NULL);
-	}
-    }
-    else if (strcmp(type->answer, "tcltk") == 0) {
-	sprintf(progname, "%s/etc/gm/gm.tcl", G_gisbase());
-	if (rc_file->answer) {
-	    G_spawn_ex(getenv("GRASS_WISH"), "gis.m", progname, "-name",
-		    "gm_tcl", rc_file->answer, SF_BACKGROUND, NULL);
-	}
-	else {
-	    G_spawn_ex(getenv("GRASS_WISH"), "gis.m", progname, "-name",
-		    "gm_tcl", SF_BACKGROUND, NULL);
-	}
-    }
-    else if (strcmp(type->answer, "wxpython") == 0) {
-	sprintf(progname, "%s/etc/wxpython/wxgui.py", G_gisbase());
-	if (rc_file->answer) {
-	    G_spawn_ex(getenv("GRASS_PYTHON"), "wxgui", progname,
-		    "--workspace", rc_file->answer, SF_BACKGROUND, NULL);
-	}
-	else {
-	    G_spawn_ex(getenv("GRASS_PYTHON"), "wxgui", progname,
-		    SF_BACKGROUND, NULL);
-	}
-    }
-
-    /* stop the impatient from starting it again before the
-       splash screen comes up */
+    
+    /* stop the impatient from starting it again
+       before the splash screen comes up */
     G_sleep(3);
 
     exit(EXIT_SUCCESS);

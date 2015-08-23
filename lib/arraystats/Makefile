@@ -1,10 +1,11 @@
-
 MODULE_TOPDIR = ../..
 
-EXTRA_LIBS=$(GISLIB) $(MATHLIB)
 
-LIB_NAME = $(ARRAYSTATS_LIBNAME)
+LIB = ARRAYSTATS
 
 include $(MODULE_TOPDIR)/include/Make/Lib.make
+include $(MODULE_TOPDIR)/include/Make/Doxygen.make
 
 default: lib
+
+DOXNAME = arraystats

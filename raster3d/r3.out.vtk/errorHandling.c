@@ -6,7 +6,7 @@
 * AUTHOR(S):    Original author 
 *               Soeren Gebbert soerengebbert at gmx de
 * 		27 Feb 2006 Berlin
-* PURPOSE:      Converts 3D raster maps (G3D) into the VTK-Ascii format  
+* PURPOSE:      Converts 3D raster maps (RASTER3D) into the VTK-Ascii format  
 *
 * COPYRIGHT:    (C) 2005 by the GRASS Development Team
 *
@@ -19,7 +19,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <grass/gis.h>
-#include <grass/G3d.h>
+#include <grass/raster.h>
+#include <grass/raster3d.h>
 #include <grass/glocale.h>
 #include "globalDefs.h"
 #include "errorHandling.h"
@@ -32,14 +33,14 @@ int close_input_raster3d_map(void *map);
 /* ************************************************************************* */
 /* Error handling ********************************************************** */
 /* ************************************************************************* */
-void fatal_error(char *errorMsg, input_maps *in)
+void fatal_error(char *errorMsg, input_maps * in)
 {
     G_warning("%s", errorMsg);
 
     /*close all open maps and free memory */
     release_input_maps_struct(in);
 
-    G3d_fatalError("Break because of errors");
+    Rast3d_fatal_error("Break because of errors.");
 }
 
 /* ************************************************************************* */
@@ -48,10 +49,7 @@ void fatal_error(char *errorMsg, input_maps *in)
 int CloseInputRasterMap(int fd)
 {
     if (fd != -1)
-	if (G_close_cell(fd) < 0) {
-	    G_warning(_("Unable to close input raster map"));
-	    return 1;
-	}
+	Rast_close(fd);
 
     return 0;
 
@@ -63,7 +61,7 @@ int CloseInputRasterMap(int fd)
 int close_input_raster3d_map(void *map)
 {
     if (map != NULL) {
-	if (!G3d_closeCell(map)) {
+	if (!Rast3d_close(map)) {
 	    G_warning(_("Unable to close 3D raster map <%s>"), map);
 	    return 1;
 	}
@@ -104,7 +102,7 @@ void release_input_maps_struct(input_maps * in)
     free(in);
 
     if (error > 0)
-	G3d_fatalError(_("Unable to close input raster maps"));
+	Rast3d_fatal_error(_("Unable to close input raster maps"));
 
     return;
 }

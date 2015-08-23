@@ -1,65 +1,82 @@
-"""!
+"""
 @package gui_core.mapdisp
 
 @brief Base classes for Map display window
 
 Classes:
  - mapdisp::MapFrameBase
+ - mapdisp::SingleMapFrame
+ - mapdisp::DoubleMapFrame
 
-(C) 2009-2011 by the GRASS Development Team
+(C) 2009-2014 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
 
 @author Martin Landa <landa.martin gmail.com>
 @author Michael Barton <michael.barton@asu.edu>
+@author Vaclav Petras <wenzeslaus gmail.com>
+@author Anna Kratochvilova <kratochanna gmail.com>
 """
 
 import os
 import sys
 
 import wx
+import wx.aui
 
-from core       import globalvar
-from core.debug import Debug
+from core        import globalvar
+from core.debug  import Debug
+from core.utils import _
+from gui_core.toolbars import ToolSwitcher
 
 from grass.script import core as grass
 
+
 class MapFrameBase(wx.Frame):
-    """!Base class for map display window
+    """Base class for map display window
     
-    Derived class must use statusbarManager or override
-    GetProperty, SetProperty and HasProperty methods.
+    Derived class must use (create and initialize) \c statusbarManager
+    or override
+    GetProperty(), SetProperty() and HasProperty() methods.
+    
+    Several methods has to be overriden or
+    \c NotImplementedError("MethodName") will be raised.
+    
     If derived class enables and disables auto-rendering,
     it should override IsAutoRendered method.
+
+    It is expected that derived class will call _setUpMapWindow().
+
+    Derived class can has one or more map windows (and map renderes)
+    but implementation of MapFrameBase expects that one window and
+    one map will be current.
+    Current instances of map window and map renderer should be returned
+    by methods GetWindow() and GetMap() respectively.
+    
+    AUI manager is stored in \c self._mgr.
     """
     def __init__(self, parent = None, id = wx.ID_ANY, title = None,
-                 style = wx.DEFAULT_FRAME_STYLE, toolbars = None,
-                 Map = None, auimgr = None, name = None, **kwargs):
-        """!
-        @param toolbars array of activated toolbars, e.g. ['map', 'digit']
-        @param Map instance of render.Map
-        @param auimgs AUI manager
-        @param name frame name
-        @param kwargs wx.Frame attributes
+                 style = wx.DEFAULT_FRAME_STYLE,
+                 auimgr = None, name = None, **kwargs):
+        """
+
+        .. warning::
+            Use \a auimgr parameter only if you know what you are doing.
+        
+        :param parent: gui parent
+        :param id: wx id
+        :param title: window title
+        :param style: \c wx.Frame style
+        :param toolbars: array of activated toolbars, e.g. ['map', 'digit']
+        :param auimgr: AUI manager (if \c None, wx.aui.AuiManager is used)
+        :param name: frame name
+        :param kwargs: arguments passed to \c wx.Frame
         """
         
-
-        self.Map        = Map       # instance of render.Map
         self.parent     = parent
         
         wx.Frame.__init__(self, parent, id, title, style = style, name = name, **kwargs)
-        
-        # available cursors
-        self.cursors = {
-            # default: cross
-            # "default" : wx.StockCursor(wx.CURSOR_DEFAULT),
-            "default" : wx.StockCursor(wx.CURSOR_ARROW),
-            "cross"   : wx.StockCursor(wx.CURSOR_CROSS),
-            "hand"    : wx.StockCursor(wx.CURSOR_HAND),
-            "pencil"  : wx.StockCursor(wx.CURSOR_PENCIL),
-            "sizenwse": wx.StockCursor(wx.CURSOR_SIZENWSE)
-            }
                 
         #
         # set the size & system icon
@@ -67,7 +84,7 @@ class MapFrameBase(wx.Frame):
         self.SetClientSize(self.GetSize())
         self.iconsize = (16, 16)
 
-        self.SetIcon(wx.Icon(os.path.join(globalvar.ETCICONDIR, 'grass_map.ico'), wx.BITMAP_TYPE_ICO))
+        self.SetIcon(wx.Icon(os.path.join(globalvar.ICONDIR, 'grass_map.ico'), wx.BITMAP_TYPE_ICO))
         
         # toolbars
         self.toolbars = {}
@@ -75,39 +92,75 @@ class MapFrameBase(wx.Frame):
         #
         # Fancy gui
         #
-        self._mgr = wx.aui.AuiManager(self)
+        if auimgr == None:
+            self._mgr = wx.aui.AuiManager(self)
+        else:
+            self._mgr = auimgr
         
-    def _initMap(self, map):
-        """!Initialize map display, set dimensions and map region
+        # handles switching between tools in different toolbars
+        self._toolSwitcher = ToolSwitcher()
+        self._toolSwitcher.toggleToolChanged.connect(self._onToggleTool)
+
+        # set accelerator table for fullscreen
+        fullScreenId = wx.NewId()
+        self.Bind(wx.EVT_MENU, self.OnFullScreen, id=fullScreenId)
+        accelTable = wx.AcceleratorTable([(wx.ACCEL_NORMAL, wx.WXK_F11, fullScreenId)])
+        self.SetAcceleratorTable(accelTable)
+
+    def _initMap(self, Map):
+        """Initialize map display, set dimensions and map region
         """
-        if not grass.find_program('g.region', ['--help']):
+        if not grass.find_program('g.region', '--help'):
             sys.exit(_("GRASS module '%s' not found. Unable to start map "
                        "display window.") % 'g.region')
         
-        self.width, self.height = self.GetClientSize()
-        
         Debug.msg(2, "MapFrame._initMap():")
-        map.ChangeMapSize(self.GetClientSize())
-        map.region = map.GetRegion() # g.region -upgc
+        Map.ChangeMapSize(self.GetClientSize())
+        Map.region = Map.GetRegion() # g.region -upgc
         # self.Map.SetRegion() # adjust region to match display window
+
+    def _onToggleTool(self):
+        self.GetWindow().UnregisterAllHandlers()
+
+    def OnSize(self, event):
+        """Adjust statusbar on changing size"""
+        # reposition checkbox in statusbar
+        self.StatusbarReposition()
         
+        # update statusbar
+        self.StatusbarUpdate()
+
+    def OnFullScreen(self, event):
+        """!Switch fullscreen mode, hides also toolbars"""
+        for toolbar in self.toolbars.keys():
+            self._mgr.GetPane(self.toolbars[toolbar]).Show(self.IsFullScreen())
+        self._mgr.Update()
+        self.ShowFullScreen(not self.IsFullScreen())
+        event.Skip()
+
+    def GetToolSwitcher(self):
+        return self._toolSwitcher
+
     def SetProperty(self, name, value):
-        """!Sets property"""
+        """Sets property"""
         self.statusbarManager.SetProperty(name, value)
         
     def GetProperty(self, name):
-        """!Returns property"""
+        """Returns property"""
         return self.statusbarManager.GetProperty(name)
         
     def HasProperty(self, name):
-        """!Checks whether object has property"""
+        """Checks whether object has property"""
         return self.statusbarManager.HasProperty(name)
     
     def GetPPM(self):
-        """! Get pixel per meter
+        """Get pixel per meter
         
-        @todo now computed every time, is it necessary?
-        @todo enable user to specify ppm (and store it in UserSettings)
+        .. todo::
+            now computed every time, is it necessary?
+        
+        .. todo::
+            enable user to specify ppm (and store it in UserSettings)
         """
         # TODO: need to be fixed...
         ### screen X region problem
@@ -134,10 +187,10 @@ class MapFrameBase(wx.Frame):
         return ppm
     
     def SetMapScale(self, value, map = None):
-        """! Set current map scale
+        """Set current map scale
         
-        @param value scale value (n if scale is 1:n)
-        @param map Map instance (if none self.Map is used)
+        :param value: scale value (n if scale is 1:n)
+        :param map: Map instance (if none self.Map is used)
         """
         if not map:
             map = self.Map
@@ -155,12 +208,12 @@ class MapFrameBase(wx.Frame):
                                    region['e'], region['w'])
     
     def GetMapScale(self, map = None):
-        """! Get current map scale
+        """Get current map scale
         
-        @param map Map instance (if none self.Map is used)
+        :param map: Map instance (if none self.Map is used)
         """
         if not map:
-            map = self.Map
+            map = self.GetMap()
         
         region = map.region
         ppm = self.GetPPM()
@@ -181,27 +234,30 @@ class MapFrameBase(wx.Frame):
         return scale
         
     def GetProgressBar(self):
-        """!Returns progress bar
+        """Returns progress bar
         
         Progress bar can be used by other classes.
         """
         return self.statusbarManager.GetProgressBar()
         
     def GetMap(self):
-        """!Returns current Map instance
-        """
-        return self.Map
+        """Returns current map (renderer) instance"""
+        raise NotImplementedError("GetMap")
 
     def GetWindow(self):
-        """!Get map window"""
-        return self.MapWindow
+        """Returns current map window"""
+        raise NotImplementedError("GetWindow")
+
+    def GetWindows(self):
+        """Returns list of map windows"""
+        raise NotImplementedError("GetWindows")
         
     def GetMapToolbar(self):
-       """!Returns toolbar with zooming tools"""
-       raise NotImplementedError()
+        """Returns toolbar with zooming tools"""
+        raise NotImplementedError("GetMapToolbar")
        
     def GetToolbar(self, name):
-        """!Returns toolbar if exists else None.
+        """Returns toolbar if exists else None.
         
         Toolbars dictionary contains currently used toolbars only.
         """
@@ -211,132 +267,382 @@ class MapFrameBase(wx.Frame):
         return None
        
     def StatusbarUpdate(self):
-        """!Update statusbar content"""
+        """Update statusbar content"""
+        Debug.msg(5, "MapFrameBase.StatusbarUpdate()")
         self.statusbarManager.Update()
         
     def IsAutoRendered(self):
-        """!Check if auto-rendering is enabled"""
-        return self.GetProperty('render')
+        """Check if auto-rendering is enabled"""
+        # TODO: this is now not the right place to access this attribute
+        # TODO: add mapWindowProperties to init parameters
+        # and pass the right object in the init of derived class?
+        # or do not use this method at all, let mapwindow decide
+        return self.mapWindowProperties.autoRender
         
     def CoordinatesChanged(self):
-        """!Shows current coordinates on statusbar.
-        
-        Used in BufferedWindow to report change of map coordinates (under mouse cursor).
+        """Shows current coordinates on statusbar.
         """
-        self.statusbarManager.ShowItem('coordinates')
+        # assuming that the first mode is coordinates
+        # probably shold not be here but good solution is not available now
+        if self.statusbarManager.GetMode() == 0:
+            self.statusbarManager.ShowItem('coordinates')
         
     def StatusbarReposition(self):
-        """!Reposition items in statusbar"""
+        """Reposition items in statusbar"""
         self.statusbarManager.Reposition()
         
     def StatusbarEnableLongHelp(self, enable = True):
-        """!Enable/disable toolbars long help"""
+        """Enable/disable toolbars long help"""
         for toolbar in self.toolbars.itervalues():
             toolbar.EnableLongHelp(enable)
         
     def IsStandalone(self):
-        """!Check if Map display is standalone"""
+        """Check if map frame is standalone"""
         raise NotImplementedError("IsStandalone")
    
     def OnRender(self, event):
-        """!Re-render map composition (each map layer)
+        """Re-render map composition (each map layer)
         """
         raise NotImplementedError("OnRender")
         
     def OnDraw(self, event):
-        """!Re-display current map composition
+        """Re-display current map composition
         """
         self.MapWindow.UpdateMap(render = False)
         
     def OnErase(self, event):
-        """!Erase the canvas
+        """Erase the canvas
         """
         self.MapWindow.EraseMap()
         
     def OnZoomIn(self, event):
-        """!Zoom in the map.
-        Set mouse cursor, zoombox attributes, and zoom direction
-        """
-        toolbar = self.GetMapToolbar()
-        self._switchTool(toolbar, event)
-        
-        win = self.GetWindow()
-        self._prepareZoom(mapWindow = win, zoomType = 1)
+        """Zoom in the map."""
+        self.MapWindow.SetModeZoomIn()
         
     def OnZoomOut(self, event):
-        """!Zoom out the map.
-        Set mouse cursor, zoombox attributes, and zoom direction
-        """
-        toolbar = self.GetMapToolbar()
-        self._switchTool(toolbar, event)
-        
-        win = self.GetWindow()
-        self._prepareZoom(mapWindow = win, zoomType = -1)
-        
-    def _prepareZoom(self, mapWindow, zoomType):
-        """!Prepares MapWindow for zoom, toggles toolbar
-        
-        @param mapWindow MapWindow to prepare
-        @param zoomType 1 for zoom in, -1 for zoom out
-        """
-        mapWindow.mouse['use'] = "zoom"
-        mapWindow.mouse['box'] = "box"
-        mapWindow.zoomtype = zoomType
-        mapWindow.pen = wx.Pen(colour = 'Red', width = 2, style = wx.SHORT_DASH)
-        
-        # change the cursor
-        mapWindow.SetCursor(self.cursors["cross"])
-    
-    def _switchTool(self, toolbar, event):
-        """!Helper function to switch tools"""
-        if toolbar:
-            toolbar.OnTool(event)
-            toolbar.action['desc'] = ''
-            
+        """Zoom out the map."""
+        self.MapWindow.SetModeZoomOut()
+
+    def _setUpMapWindow(self, mapWindow):
+        """Binds map windows' zoom history signals to map toolbar."""
+        # enable or disable zoom history tool
+        mapWindow.zoomHistoryAvailable.connect(
+            lambda:
+            self.GetMapToolbar().Enable('zoomBack', enable=True))
+        mapWindow.zoomHistoryUnavailable.connect(
+            lambda:
+            self.GetMapToolbar().Enable('zoomBack', enable=False))
+        mapWindow.mouseMoving.connect(self.CoordinatesChanged)
+
     def OnPointer(self, event):
-        """!Sets mouse mode to pointer."""
-        self.MapWindow.mouse['use'] = 'pointer'
+        """Sets mouse mode to pointer."""
+        self.MapWindow.SetModePointer()
 
     def OnPan(self, event):
-        """!Panning, set mouse to drag
+        """Panning, set mouse to drag
         """
-        toolbar = self.GetMapToolbar()
-        self._switchTool(toolbar, event)
-        
-        win = self.GetWindow()
-        self._preparePan(mapWindow = win)
-    
-    def _preparePan(self, mapWindow):
-        """!Prepares MapWindow for pan, toggles toolbar
-        
-        @param mapWindow MapWindow to prepare
-        """
-        mapWindow.mouse['use'] = "pan"
-        mapWindow.mouse['box'] = "pan"
-        mapWindow.zoomtype = 0
-        
-        # change the cursor
-        mapWindow.SetCursor(self.cursors["hand"])
-        
+        self.MapWindow.SetModePan()
+
     def OnZoomBack(self, event):
-        """!Zoom last (previously stored position)
+        """Zoom last (previously stored position)
         """
         self.MapWindow.ZoomBack()
         
     def OnZoomToMap(self, event):
-        """!
+        """
         Set display extents to match selected raster (including NULLs)
         or vector map.
         """
         self.MapWindow.ZoomToMap(layers = self.Map.GetListOfLayers())
     
     def OnZoomToWind(self, event):
-        """!Set display geometry to match computational region
+        """Set display geometry to match computational region
         settings (set with g.region)
         """
         self.MapWindow.ZoomToWind()
         
     def OnZoomToDefault(self, event):
-        """!Set display geometry to match default region settings
+        """Set display geometry to match default region settings
         """
         self.MapWindow.ZoomToDefault()
+
+
+class SingleMapFrame(MapFrameBase):
+    """Frame with one map window.
+    
+    It is base class for frames which needs only one map.
+    
+    Derived class should have \c self.MapWindow or
+    it has to override GetWindow() methods.
+    
+    @note To access maps use getters only
+    (when using class or when writing class itself).
+    """
+    def __init__(self, parent = None, giface = None, id = wx.ID_ANY, title = None,
+                 style = wx.DEFAULT_FRAME_STYLE,
+                 Map = None,
+                 auimgr = None, name = None, **kwargs):
+        """
+        
+        :param parent: gui parent
+        :param id: wx id
+        :param title: window title
+        :param style: \c wx.Frame style
+        :param map: instance of render.Map
+        :param name: frame name
+        :param kwargs: arguments passed to MapFrameBase
+        """
+
+        MapFrameBase.__init__(self, parent = parent, id = id, title = title,
+                              style = style,
+                              auimgr = auimgr, name = name, **kwargs)
+
+        self.Map = Map       # instance of render.Map
+
+        #
+        # initialize region values
+        #
+        self._initMap(Map = self.Map)
+        
+    def GetMap(self):
+        """Returns map (renderer) instance"""
+        return self.Map
+
+    def GetWindow(self):
+        """Returns map window"""
+        return self.MapWindow
+        
+    def GetWindows(self):
+        """Returns list of map windows"""
+        return [self.MapWindow]
+
+    def OnRender(self, event):
+        """Re-render map composition (each map layer)
+        """
+        self.GetWindow().UpdateMap(render = True, renderVector = True)
+        
+        # update statusbar
+        self.StatusbarUpdate()
+        
+
+class DoubleMapFrame(MapFrameBase):
+    """Frame with two map windows.
+    
+    It is base class for frames which needs two maps.
+    There is no primary and secondary map. Both maps are equal.
+    However, one map is current.
+    
+    It is expected that derived class will call _bindWindowsActivation()
+    when both map windows will be initialized.
+    
+    Drived class should have method GetMapToolbar() returns toolbar
+    which has methods SetActiveMap() and Enable().
+    
+    @note To access maps use getters only
+    (when using class or when writing class itself).
+    
+    .. todo:
+        Use it in GCP manager (probably changes to both DoubleMapFrame
+        and GCP MapFrame will be neccessary).
+    """
+    def __init__(self, parent = None, id = wx.ID_ANY, title = None,
+                 style = wx.DEFAULT_FRAME_STYLE,
+                 firstMap = None, secondMap = None,
+                 auimgr = None, name = None, **kwargs):
+        """
+        
+        \a firstMap is set as active (by assign it to \c self.Map).
+        Derived class should assging to \c self.MapWindow to make one
+        map window current by dafault.
+        
+        :param parent: gui parent
+        :param id: wx id
+        :param title: window title
+        :param style: \c wx.Frame style
+        :param name: frame name
+        :param kwargs: arguments passed to MapFrameBase
+        """
+        
+        MapFrameBase.__init__(self, parent = parent, id = id, title = title,
+                              style = style,
+                              auimgr = auimgr, name = name, **kwargs)
+        
+        self.firstMap = firstMap
+        self.secondMap = secondMap
+        self.Map = firstMap
+
+        #
+        # initialize region values
+        #
+        self._initMap(Map = self.firstMap)
+        self._initMap(Map = self.secondMap)
+        self._bindRegions = False
+    
+    def _bindWindowsActivation(self):
+        self.GetFirstWindow().Bind(wx.EVT_ENTER_WINDOW, self.ActivateFirstMap)
+        self.GetSecondWindow().Bind(wx.EVT_ENTER_WINDOW, self.ActivateSecondMap)
+    
+    def _onToggleTool(self):
+        self.GetFirstWindow().UnregisterAllHandlers()
+        self.GetSecondWindow().UnregisterAllHandlers()
+
+    def GetFirstMap(self):
+        """Returns first Map instance
+        """
+        return self.firstMap
+        
+    def GetSecondMap(self):
+        """Returns second Map instance
+        """
+        return self.secondMap
+        
+    def GetFirstWindow(self):
+        """Get first map window"""
+        return self.firstMapWindow
+    
+    def GetSecondWindow(self):
+        """Get second map window"""
+        return self.secondMapWindow
+    
+    def GetMap(self):
+        """Returns current map (renderer) instance
+        
+        @note Use this method to access current map renderer.
+        (It is not guarented that current map will be stored in
+        \c self.Map in future versions.)
+        """
+        return self.Map
+    
+    def GetWindow(self):
+        """Returns current map window
+        
+        :func:`GetMap()`
+        """
+        return self.MapWindow
+    
+    def GetWindows(self):
+        """Return list of all windows"""
+        return [self.firstMapWindow, self.secondMapWindow]
+    
+    def ActivateFirstMap(self, event = None):
+        """Make first Map and MapWindow active and (un)bind regions of the two Maps."""
+        if self.MapWindow == self.firstMapWindow:
+            return
+
+        self.Map = self.firstMap
+        self.MapWindow = self.firstMapWindow
+        self.GetMapToolbar().SetActiveMap(0)
+
+        # bind/unbind regions
+        if self._bindRegions:
+            self.firstMapWindow.zoomChanged.connect(self.OnZoomChangedFirstMap)
+            self.secondMapWindow.zoomChanged.disconnect(self.OnZoomChangedSecondMap)
+
+    def ActivateSecondMap(self, event = None):
+        """Make second Map and MapWindow active and (un)bind regions of the two Maps."""
+        if self.MapWindow == self.secondMapWindow:
+            return        
+
+        self.Map = self.secondMap
+        self.MapWindow = self.secondMapWindow
+        self.GetMapToolbar().SetActiveMap(1)
+
+        if self._bindRegions:
+            self.secondMapWindow.zoomChanged.connect(self.OnZoomChangedSecondMap)
+            self.firstMapWindow.zoomChanged.disconnect(self.OnZoomChangedFirstMap)
+
+    def SetBindRegions(self, on):
+        """Set or unset binding display regions."""
+        self._bindRegions = on
+
+        if on:
+            if self.MapWindow == self.firstMapWindow:
+                self.firstMapWindow.zoomChanged.connect(self.OnZoomChangedFirstMap)
+            else:
+                self.secondMapWindow.zoomChanged.connect(self.OnZoomChangedSecondMap)
+        else:
+            if self.MapWindow == self.firstMapWindow:
+                self.firstMapWindow.zoomChanged.disconnect(self.OnZoomChangedFirstMap)
+            else:
+                self.secondMapWindow.zoomChanged.disconnect(self.OnZoomChangedSecondMap)
+
+    def OnZoomChangedFirstMap(self):
+        """Display region of the first window (Map) changed.
+
+        Synchronize the region of the second map and re-render it.
+        This is the default implementation which can be overridden.
+        """
+        region = self.GetFirstMap().GetCurrentRegion()
+        self.GetSecondMap().region.update(region)
+        self.Render(mapToRender = self.GetSecondWindow())
+
+    def OnZoomChangedSecondMap(self):
+        """Display region of the second window (Map) changed.
+
+        Synchronize the region of the second map and re-render it.
+        This is the default implementation which can be overridden.
+        """
+        region = self.GetSecondMap().GetCurrentRegion()
+        self.GetFirstMap().region.update(region)
+        self.Render(mapToRender = self.GetFirstWindow())
+
+    def OnZoomIn(self, event):
+        """Zoom in the map."""
+        self.GetFirstWindow().SetModeZoomIn()
+        self.GetSecondWindow().SetModeZoomIn()
+
+    def OnZoomOut(self, event):
+        """Zoom out the map."""
+        self.GetFirstWindow().SetModeZoomOut()
+        self.GetSecondWindow().SetModeZoomOut()
+        
+    def OnPan(self, event):
+        """Panning, set mouse to pan"""
+        self.GetFirstWindow().SetModePan()
+        self.GetSecondWindow().SetModePan()
+
+    def OnPointer(self, event):
+        """Set pointer mode (dragging overlays)"""
+        self.GetFirstWindow().SetModePointer()
+        self.GetSecondWindow().SetModePointer()
+
+    def OnQuery(self, event):
+        """Set query mode"""
+        self.GetFirstWindow().SetModeQuery()
+        self.GetSecondWindow().SetModeQuery()
+
+    def OnRender(self, event):
+        """Re-render map composition (each map layer)
+        """
+        self.Render(mapToRender = self.GetFirstWindow())
+        self.Render(mapToRender = self.GetSecondWindow())
+    
+    def Render(self, mapToRender):
+        """Re-render map composition"""
+        mapToRender.UpdateMap(render = True,
+                              renderVector = mapToRender == self.GetFirstWindow())
+        
+        # update statusbar
+        self.StatusbarUpdate()
+        
+    def OnErase(self, event):
+        """Erase the canvas
+        """
+        self.Erase(mapToErase = self.GetFirstWindow())
+        self.Erase(mapToErase = self.GetSecondWindow())
+        
+    def Erase(self, mapToErase):
+        """Erase the canvas
+        """
+        mapToErase.EraseMap()
+        
+    def OnDraw(self, event):
+        """Re-display current map composition
+        """
+        self.Draw(mapToDraw = self.GetFirstWindow())
+        self.Draw(mapToDraw = self.GetSecondWindow())
+        
+    def Draw(self, mapToDraw):
+        """Re-display current map composition
+        """
+        mapToDraw.UpdateMap(render = False)

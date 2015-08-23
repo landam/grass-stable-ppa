@@ -3,17 +3,16 @@ MODULE_TOPDIR = ../..
 include $(MODULE_TOPDIR)/include/Make/Dir.make
 
 SRCICO := $(wildcard *.ico *.png)
-SRCICONS := $(wildcard grass/*.gif grass/vdigit/*.gif grass/vdigit/*.xbm silk/*.png grass2/*.png)
-ETCICONS := $(patsubst %,$(ETC)/gui/icons/%,$(SRCICONS) $(SRCICO))
-HTMLICONS := $(patsubst grass2/%,$(HTMLDIR)/icons/%,$(wildcard grass2/*.png))
-HTMLICONS += $(patsubst grass/%,$(HTMLDIR)/icons/%,$(wildcard grass/*.gif))
+SRCICONS := $(wildcard grass/*.png)
+SRCFLAGS := $(wildcard flags/*.png)
+ETCICONS := $(patsubst %,$(GUIDIR)/icons/%,$(SRCICONS) $(SRCICO) $(SRCFLAGS))
+HTMLICONS := $(patsubst grass/%,$(HTMLDIR)/icons/%,$(SRCICONS))
 
-ETCDIRS = \
-	$(ETC)/gui \
-	$(ETC)/gui/icons/grass \
-	$(ETC)/gui/icons/grass/vdigit \
-	$(ETC)/gui/icons/silk \
-	$(ETC)/gui/icons/grass2
+DSTDIRS = \
+	$(GUIDIR) \
+	$(GUIDIR)/icons \
+	$(GUIDIR)/icons/grass \
+	$(GUIDIR)/icons/flags
 
 HTMLDIRS = \
 	$(HTMLDIR)/icons
@@ -24,14 +23,11 @@ default: $(ETCICONS) $(HTMLICONS)
 	$(MKDIR) $(ARCH_DISTDIR)/share/appdata
 	$(INSTALL_DATA) grass.appdata.xml $(ARCH_DISTDIR)/share/appdata
 
-$(ETC)/gui/icons/%: % | $(ETCDIRS)
+$(GUIDIR)/icons/%: % | $(DSTDIRS)
 	$(INSTALL_DATA) $< $@
 
 $(HTMLDIR)/icons/%: grass/% | $(HTMLDIRS)
 	$(INSTALL_DATA) $< $@
 
-$(HTMLDIR)/icons/%: grass2/% | $(HTMLDIRS)
-	$(INSTALL_DATA) $< $@
-
-$(ETCDIRS) $(HTMLDIRS): %:
+$(DSTDIRS) $(HTMLDIRS): %:
 	$(MKDIR) $@

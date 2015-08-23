@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 #include <grass/dbmi.h>
 #include <grass/neta.h>
@@ -77,11 +77,12 @@ int main(int argc, char *argv[])
     struct line_cats *Cats;
     struct GModule *module;	/* GRASS module for parsing arguments */
     struct Option *map_in, *map_out;
-    struct Option *cat_opt, *field_opt, *where_opt, *abcol, *afcol;
+    struct Option *cat_opt, *where_opt, *afield_opt, *nfield_opt, *abcol,
+                  *afcol, *ncol;
     struct Option *iter_opt, *error_opt;
     struct Flag *geo_f, *add_f;
     int chcat, with_z;
-    int layer, mask_type;
+    int afield, nfield, mask_type;
     struct varray *varray;
     dglGraph_s *graph;
     int i, geo, nnodes, nlines, j, max_cat;
@@ -92,54 +93,74 @@ int main(int argc, char *argv[])
 
     /* initialize module */
     module = G_define_module();
-    module->keywords = _("vector, network, centrality measures");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("network"));
+    G_add_keyword(_("centrality measures"));
     module->description =
 	_("Computes degree, centrality, betweeness, closeness and eigenvector "
 	 "centrality measures in the network.");
 
     /* Define the different options as defined in gis.h */
     map_in = G_define_standard_option(G_OPT_V_INPUT);
-    field_opt = G_define_standard_option(G_OPT_V_FIELD);
+
+    afield_opt = G_define_standard_option(G_OPT_V_FIELD);
+    afield_opt->key = "arc_layer";
+    afield_opt->answer = "1";
+    afield_opt->label = _("Arc layer");
+    afield_opt->guisection = _("Cost");
+
+    nfield_opt = G_define_standard_option(G_OPT_V_FIELD);
+    nfield_opt->key = "node_layer";
+    nfield_opt->answer = "2";
+    nfield_opt->label = _("Node layer");
+    nfield_opt->guisection = _("Cost");
 
     map_out = G_define_standard_option(G_OPT_V_OUTPUT);
 
     cat_opt = G_define_standard_option(G_OPT_V_CATS);
     cat_opt->guisection = _("Selection");
-    where_opt = G_define_standard_option(G_OPT_WHERE);
+    where_opt = G_define_standard_option(G_OPT_DB_WHERE);
     where_opt->guisection = _("Selection");
 
-    afcol = G_define_standard_option(G_OPT_COLUMN);
-    afcol->key = "afcolumn";
+    afcol = G_define_standard_option(G_OPT_DB_COLUMN);
+    afcol->key = "arc_column";
     afcol->required = NO;
     afcol->description =
-	_("Name of arc forward/both direction(s) cost column");
+	_("Arc forward/both direction(s) cost column (number)");
     afcol->guisection = _("Cost");
 
-    abcol = G_define_standard_option(G_OPT_COLUMN);
-    abcol->key = "abcolumn";
+    abcol = G_define_standard_option(G_OPT_DB_COLUMN);
+    abcol->key = "arc_backward_column";
     abcol->required = NO;
-    abcol->description = _("Name of arc backward direction cost column");
+    abcol->description = _("Arc backward direction cost column (number)");
     abcol->guisection = _("Cost");
 
-    deg_opt = G_define_standard_option(G_OPT_COLUMN);
+    ncol = G_define_option();
+    ncol->key = "node_column";
+    ncol->type = TYPE_STRING;
+    ncol->required = NO;
+    ncol->description = _("Node cost column (number)");
+    ncol->guisection = _("Cost");
+
+    deg_opt = G_define_standard_option(G_OPT_DB_COLUMN);
     deg_opt->key = "degree";
     deg_opt->required = NO;
     deg_opt->description = _("Name of degree centrality column");
     deg_opt->guisection = _("Columns");
 
-    close_opt = G_define_standard_option(G_OPT_COLUMN);
+    close_opt = G_define_standard_option(G_OPT_DB_COLUMN);
     close_opt->key = "closeness";
     close_opt->required = NO;
     close_opt->description = _("Name of closeness centrality column");
     close_opt->guisection = _("Columns");
 
-    betw_opt = G_define_standard_option(G_OPT_COLUMN);
+    betw_opt = G_define_standard_option(G_OPT_DB_COLUMN);
     betw_opt->key = "betweenness";
     betw_opt->required = NO;
     betw_opt->description = _("Name of betweenness centrality column");
     betw_opt->guisection = _("Columns");
 
-    eigen_opt = G_define_standard_option(G_OPT_COLUMN);
+    eigen_opt = G_define_standard_option(G_OPT_DB_COLUMN);
     eigen_opt->key = "eigenvector";
     eigen_opt->required = NO;
     eigen_opt->description = _("Name of eigenvector centrality column");
@@ -159,7 +180,7 @@ int main(int argc, char *argv[])
     error_opt->type = TYPE_DOUBLE;
     error_opt->required = NO;
     error_opt->description =
-	_("Cummulative error tolerance for eigenvector centrality");
+	_("Cumulative error tolerance for eigenvector centrality");
 
     geo_f = G_define_flag();
     geo_f->key = 'g';
@@ -180,7 +201,7 @@ int main(int argc, char *argv[])
     Cats = Vect_new_cats_struct();
 
     Vect_check_input_output_name(map_in->answer, map_out->answer,
-				 GV_FATAL_EXIT);
+				 G_FATAL_EXIT);
 
     Vect_set_open_level(2);
 
@@ -204,21 +225,27 @@ int main(int argc, char *argv[])
 	geo = 0;
 
     /* parse filter option and select appropriate lines */
-    layer = atoi(field_opt->answer);
-    chcat =
-	(NetA_initialise_varray
-	 (&In, layer, mask_type, where_opt->answer, cat_opt->answer,
-	  &varray) == 1);
+    afield = Vect_get_field_number(&In, afield_opt->answer);
+    nfield = Vect_get_field_number(&In, nfield_opt->answer);
+
+    if (where_opt->answer || cat_opt->answer) {
+	chcat = (NetA_initialise_varray(&In, afield, GV_POINT,
+	                                where_opt->answer,
+					cat_opt->answer, &varray) > 0);
+    }
+    else
+	chcat = 0;
 
     /* Create table */
     Fi = Vect_default_field_info(&Out, 1, NULL, GV_1TABLE);
-    Vect_map_add_dblink(&Out, 1, NULL, Fi->table, "cat", Fi->database,
+    Vect_map_add_dblink(&Out, 1, NULL, Fi->table, GV_KEY_COLUMN, Fi->database,
 			Fi->driver);
     db_init_string(&sql);
     driver = db_start_driver_open_database(Fi->driver, Fi->database);
     if (driver == NULL)
 	G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 		      Fi->database, Fi->driver);
+    db_set_error_handler_driver(driver);
 
     db_init_string(&tmp);
     if (deg_opt->answer)
@@ -236,11 +263,10 @@ int main(int argc, char *argv[])
     G_debug(2, db_get_string(&sql));
 
     if (db_execute_immediate(driver, &sql) != DB_OK) {
-	db_close_database_shutdown_driver(driver);
 	G_fatal_error(_("Unable to create table: '%s'"), db_get_string(&sql));
     }
 
-    if (db_create_index2(driver, Fi->table, "cat") != DB_OK)
+    if (db_create_index2(driver, Fi->table, GV_KEY_COLUMN) != DB_OK)
 	G_warning(_("Cannot create index"));
 
     if (db_grant_on_table
@@ -253,9 +279,11 @@ int main(int argc, char *argv[])
     Vect_hist_copy(&In, &Out);
     Vect_hist_command(&Out);
 
-    Vect_net_build_graph(&In, mask_type, atoi(field_opt->answer), 0,
-			 afcol->answer, abcol->answer, NULL, geo, 0);
-    graph = &(In.graph);
+    if (0 != Vect_net_build_graph(&In, mask_type, afield, nfield, afcol->answer,
+                                  abcol->answer, ncol->answer, geo, 0))
+        G_fatal_error(_("Unable to build graph for vector map <%s>"), Vect_get_full_name(&In));
+    
+    graph = Vect_net_get_graph(&In);
     nnodes = dglGet_NodeCount(graph);
 
     deg = closeness = betw = eigen = NULL;
@@ -298,7 +326,7 @@ int main(int argc, char *argv[])
 	NetA_betweenness_closeness(graph, betw, closeness);
 	if (closeness)
 	    for (i = 1; i <= nnodes; i++)
-		closeness[i] /= (double)In.cost_multip;
+		closeness[i] /= (double)In.dgraph.cost_multip;
     }
     if (eigen_opt->answer) {
 	G_message(_("Computing eigenvector centrality measure"));
@@ -317,12 +345,12 @@ int main(int argc, char *argv[])
 	if (type == GV_POINT && (!chcat || varray->c[i])) {
 	    int cat, node;
 
-	    if (!Vect_cat_get(Cats, layer, &cat))
+	    if (!Vect_cat_get(Cats, nfield, &cat))
 		continue;
 	    Vect_reset_cats(Cats);
 	    Vect_cat_set(Cats, 1, cat);
 	    Vect_write_line(&Out, type, Points, Cats);
-	    Vect_get_line_nodes(&In, i, &node, NULL);
+	    node = Vect_find_node(&In, Points->x[0], Points->y[0], Points->z[0], 0, 0);
 	    process_node(node, cat);
 	    covered[node] = 1;
 	}

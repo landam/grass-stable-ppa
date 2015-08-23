@@ -1,20 +1,27 @@
 Description: Perfer pager over more.
+ GRASS 6 used a shell script to set the GRASS_PAGER environment variable.
+ GRASS 7 reimplemented the shell script in Python.
+ .
+ The original version of this patch was made by Francesco Paolo Lovergine, and
+ ported to Python by Bas Couwenberg.
 Author: Francesco Paolo Lovergine <frankie@debian.org>
+Author: Bas Couwenberg <sebastic@xs4all.nl>
+Forwarded: not-needed
 
---- a/lib/init/init.sh
-+++ b/lib/init/init.sh
-@@ -301,10 +301,12 @@ export GRASS_LD_LIBRARY_PATH
- 
- # Set some environment variables if they are not set
- if [ ! "$GRASS_PAGER" ] ; then
--    if [ -x /bin/more ] || [ -x /usr/bin/more ] ; then
--        GRASS_PAGER=more
-+    if [ -x /usr/bin/pager ] ; then
-+      	GRASS_PAGER=pager
-     elif [ -x /bin/less ] || [ -x /usr/bin/less ] ; then
-         GRASS_PAGER=less
-+    elif [ -x /bin/more ] || [ -x /usr/bin/more ] ; then
-+         GRASS_PAGER=more
-     elif [ "$MINGW" ] ; then
-         GRASS_PAGER=more
-     else
+--- a/lib/init/grass.py
++++ b/lib/init/grass.py
+@@ -439,10 +439,12 @@ def find_exe(pgm):
+ def set_defaults():
+     # GRASS_PAGER
+     if not os.getenv('GRASS_PAGER'):
+-        if find_exe("more"):
+-            pager = "more"
++        if find_exe("pager"):
++            pager = "pager"
+         elif find_exe("less"):
+             pager = "less"
++        elif find_exe("more"):
++            pager = "more"
+         elif windows:
+             pager = "more"
+         else:

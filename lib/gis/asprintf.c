@@ -1,43 +1,26 @@
 
-/**
- * \file asprintf.c
+/*!
+ * \file lib/gis/asprintf.c
  *
  * \brief GIS Library - GRASS implementation of asprintf().
  *
  * Eric G. Miller - Thu, 2 May 2002 17:51:54 -0700
  *
- * I've got a sort of cheat for asprintf. We can't use vsnprintf for the
- * same reason we can't use snprintf ;-)  Comments welcome.
+ * Rewritten by Glynn Clements, Sat, 6 Feb 2010
+ * Assumes that vsnprintf() is available
  *
- * We cheat by printing to a tempfile via vfprintf() and then reading it
- * back in. Probably not the most efficient way.
- *
- * <b>WARNING:</b> Temporarily, the G_asprintf macro cannot be used. See 
- * explanation in gisdefs.h.
- *
- * (C) 2001-2008 by the GRASS Development Team
+ * (C) 2002-2014 by the GRASS Development Team
+ * (C) 2010 by Glynn Clements
  *
  * This program is free software under the GNU General Public License
  * (>=v2). Read the file COPYING that comes with GRASS for details.
- *
- * \author Eric Miller - egm2 at jps net
- *
- * \date 2002-2008
  */
 
 #define _GNU_SOURCE		/* enable asprintf */
-#include <grass/config.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <stdarg.h>
-#include <unistd.h>
-#include <assert.h>
+#include <string.h>
 #include <grass/gis.h>
-
-#ifdef __MINGW32__
-#include <windows.h>
-#endif /* __MINGW32__ */
-
 
 #ifndef G_asprintf
 
@@ -45,73 +28,44 @@
  * \brief Safe replacement for <i>asprintf()</i>.
  *
  * Allocate a string large enough to hold the new output, including the 
- * terminating NULL, and returns a pointer to the first parameter. The 
- * pointer should be passed to <i>G_free()</i> to release the allocated 
- * storage when it is no longer needed.
+ * terminating NULL, and return the number of characters printed. The 
+ * pointer out is set to the output string and should be passed to 
+ * <i>G_free()</i> to release the allocated storage when it is no longer 
+ * needed.
  *
  * \param[out] out
  * \param[in] fmt
+ * \param ap
  * \return number of bytes written
  */
 
+int G_vasprintf(char **out, const char *fmt, va_list ap)
+{
 #ifdef HAVE_ASPRINTF
-
-int G_vasprintf(char **out, const char *fmt, va_list ap)
-{
     return vasprintf(out, fmt, ap);
-}
-
 #else
+    size_t size = strlen(fmt) + 50;
+    char *buf = G_malloc(size);
+    int count;
 
-int G_vasprintf(char **out, const char *fmt, va_list ap)
-{
-    int ret_status = EOF;
-    char dir_name[2001];
-    char file_name[2000];
-    FILE *fp = NULL;
-    char *work = NULL;
-
-    assert(out != NULL && fmt != NULL);
-
-    /* Warning: tmpfile() does not work well on Windows (MinGW)
-     *          if user does not have write access on the drive where 
-     *          working dir is? */
-#ifdef __MINGW32__
-    /* file_name = G_tempfile(); */
-    GetTempPath(2000, dir_name);
-    GetTempFileName(dir_name, "asprintf", 0, file_name);
-    fp = fopen(file_name, "w+");
-#else
-    fp = tmpfile();
-#endif /* __MINGW32__ */
-
-    if (fp) {
-	int count;
-
-	count = vfprintf(fp, fmt, ap);
-	if (count >= 0) {
-	    work = G_calloc(count + 1, sizeof(char));
-	    if (work != NULL) {
-		rewind(fp);
-		ret_status = fread(work, sizeof(char), count, fp);
-		if (ret_status != count) {
-		    ret_status = EOF;
-		    G_free(work);
-		    work = NULL;
-		}
-	    }
-	}
-	fclose(fp);
-#ifdef __MINGW32__
-	unlink(file_name);
-#endif /* __MINGW32__ */
+    for (;;) {
+	/* BUG: according to man vsnprintf,
+	 * va_start() should be called immediately before vsnprintf(),
+	 * and va_end() immediately after vsnprintf()
+	 * otherwise there will be memory corruption */
+	count = vsnprintf(buf, size, fmt, ap);
+	if (count >= 0 && count < size)
+	    break;
+	size *= 2;
+	buf = G_realloc(buf, size);
     }
-    *out = work;
 
-    return ret_status;
-}
+    buf = G_realloc(buf, count + 1);
+    *out = buf;
 
+    return count;
 #endif /* HAVE_ASPRINTF */
+}
 
 int G_asprintf(char **out, const char *fmt, ...)
 {
@@ -126,3 +80,52 @@ int G_asprintf(char **out, const char *fmt, ...)
 }
 
 #endif /* G_asprintf */
+
+/**
+ * \brief Reallocating version of <i>asprintf()</i>.
+ *
+ * Reallocate a string large enough to hold the output, including the 
+ * terminating NULL, and return the number of characters printed.  
+ * Contrary to <i>G_asprintf()</i>, any existing buffer pointed to by 
+ * out of size osize is used to hold the output and enlarged if 
+ * necessary. This is usefull when <i>G_rasprintf</i> is called many 
+ * times in a loop.
+ *
+ * \param[out] out
+ * \param[out] osize
+ * \param[in] fmt
+ * \param ap
+ * \return number of bytes written
+ */
+
+int G_rasprintf(char **out, size_t *size, const char *fmt, ...)
+{
+    va_list ap;
+    int count;
+    char *buf = *out;
+    size_t osize = *size;
+
+    if (osize < strlen(fmt) + 50) {
+	osize = strlen(fmt) + 50;
+	buf = G_realloc(buf, osize);
+    }
+
+    for (;;) {
+	va_start(ap, fmt);
+	count = vsnprintf(buf, osize, fmt, ap);
+	va_end(ap);
+	if (count >= 0 && count < osize)
+	    break;
+	if (count > -1)
+	    osize = count + 1;
+	else
+	    osize *= 2;
+	
+	buf = G_realloc(buf, osize);
+    }
+
+    *out = buf;
+    *size = osize;
+
+    return count;
+}

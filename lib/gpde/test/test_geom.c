@@ -18,9 +18,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <grass/glocale.h>
 #include <grass/N_pde.h>
-#include <grass/G3d.h>
+#include <grass/raster3d.h>
 #include "test_gpde_lib.h"
 
 /* prototypes */
@@ -33,14 +32,14 @@ int unit_test_geom_data(void)
 {
     int sum = 0;
 
-    G_message(_("\n++ Running geom_data unit tests ++"));
+    G_message("\n++ Running geom_data unit tests ++");
 
     sum += test_geom_data();
 
     if (sum > 0)
-	G_warning(_("\n-- geom_data unit tests failure --"));
+	G_warning("\n-- geom_data unit tests failure --");
     else
-	G_message(_("\n-- geom_data unit tests finished successfully --"));
+	G_message("\n-- geom_data unit tests finished successfully --");
 
     return sum;
 }
@@ -52,7 +51,7 @@ int unit_test_geom_data(void)
 int test_geom_data(void)
 {
     struct Cell_head region2d;
-    G3D_Region region3d;
+    RASTER3D_Region region3d;
     N_geom_data *geom = NULL;
     int sum = 0, i;
     double area = 0;
@@ -60,10 +59,10 @@ int test_geom_data(void)
     G_get_set_window(&region2d);
 
     /*Set the defaults */
-    G3d_initDefaults();
+    Rast3d_init_defaults();
 
     /*get the current region */
-    G3d_getWindow(&region3d);
+    Rast3d_get_window(&region3d);
 
     geom = N_alloc_geom_data();
     if (!geom) {
@@ -111,8 +110,7 @@ int test_geom_data(void)
 	    area += N_get_geom_data_area_of_cell(geom, i);
 
 	if (area == 0) {
-	    G_warning
-		("Wrong area calculation in N_get_geom_data_area_of_cell");
+	    G_warning("Wrong area calculation in N_get_geom_data_area_of_cell");
 	    sum++;
 	}
     }
@@ -149,8 +147,7 @@ int test_geom_data(void)
 	    area += N_get_geom_data_area_of_cell(geom, i);
 
 	if (area == 0) {
-	    G_warning
-		("Wrong area calculation in N_get_geom_data_area_of_cell");
+	    G_warning("Wrong area calculation in N_get_geom_data_area_of_cell");
 	    sum++;
 	}
     }
@@ -161,8 +158,7 @@ int test_geom_data(void)
 	    area += N_get_geom_data_area_of_cell(geom, i);
 
 	if (area == 0) {
-	    G_warning
-		("Wrong area calculation in N_get_geom_data_area_of_cell");
+	    G_warning("Wrong area calculation in N_get_geom_data_area_of_cell");
 	    sum++;
 	}
     }

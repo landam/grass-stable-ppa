@@ -4,21 +4,21 @@
  * MODULE:       v.class
  * 
  * AUTHOR(S):    Moritz Lennert
- *               
+ *               OGR support by Martin Landa <landa.martin gmail.com>
+ *
  * PURPOSE:      Create data classes, mainly for thematic mapping
  *               
- * COPYRIGHT:    (C) 2004-2007 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2004-2009 by the GRASS Development Team
  *
- *               This program is free software under the 
- *               GNU General Public License (>=v2). 
- *               Read the file COPYING that comes with GRASS
- *               for details.
+ *               This program is free software under the GNU General
+ *               Public License (>=v2).  Read the file COPYING that
+ *               comes with GRASS for details.
  *
  **************************************************************/
 #include <stdlib.h>
 #include <string.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 #include <grass/arraystats.h>
@@ -29,7 +29,6 @@ int main(int argc, char *argv[])
     struct Option *map_opt, *field_opt, *col_opt, *where_opt;
     struct Option *algo_opt, *nbclass_opt;
     struct Flag *shell_flag;
-    char *mapset;
     struct Map_info Map;
     struct field_info *Fi;
     dbDriver *Driver;
@@ -40,9 +39,13 @@ int main(int argc, char *argv[])
     double finfo;
     double *classbreaks, min, max, *data;
     struct GASTATS stats;
+    char *desc;
 
     module = G_define_module();
-    module->keywords = _("vector, statistics");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("classification"));
+    G_add_keyword(_("attribute table"));
+    G_add_keyword(_("statistics"));
     module->description =
 	_("Classifies attribute data, e.g. for thematic mapping");
 
@@ -50,14 +53,11 @@ int main(int argc, char *argv[])
 
     field_opt = G_define_standard_option(G_OPT_V_FIELD);
 
-    col_opt = G_define_option();
-    col_opt->key = "column";
-    col_opt->type = TYPE_STRING;
+    col_opt = G_define_standard_option(G_OPT_DB_COLUMN);
     col_opt->required = YES;
-    col_opt->multiple = NO;
     col_opt->description = _("Column name or expression");
 
-    where_opt = G_define_standard_option(G_OPT_WHERE);
+    where_opt = G_define_standard_option(G_OPT_DB_WHERE);
 
     algo_opt = G_define_option();
     algo_opt->key = "algorithm";
@@ -66,11 +66,19 @@ int main(int argc, char *argv[])
     algo_opt->multiple = NO;
     algo_opt->options = "int,std,qua,equ,dis";
     algo_opt->description = _("Algorithm to use for classification");
-    algo_opt->descriptions = _("int;simple intervals;"
-			       "std;standard deviations;"
-			       "qua;quantiles;"
-			       "equ;equiprobable (normal distribution);");
-/*			       "dis;discontinuities"); currently disabled because of bugs*/
+    desc = NULL;
+    G_asprintf(&desc,
+	       "int;%s;"
+	       "std;%s;"
+	       "qua;%s;"
+	       "equ;%s",
+	       /* "dis;%s" */
+	       _("simple intervals"),
+	       _("standard deviations"),
+	       _("quantiles"),
+	       _("equiprobable (normal distribution)"));
+	       /* _("discontinuities"));currently disabled because of bugs */
+    algo_opt->descriptions = desc;
 
     nbclass_opt = G_define_option();
     nbclass_opt->key = "nbclasses";
@@ -87,15 +95,13 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
-
-    ofield = atoi(field_opt->answer);
-
+    
     /* open input vector */
-    if ((mapset = G_find_vector2(map_opt->answer, "")) == NULL)
-	G_fatal_error(_("Vector map <%s> not found"), map_opt->answer);
-
     Vect_set_open_level(2);
-    Vect_open_old(&Map, map_opt->answer, mapset);
+    if (Vect_open_old2(&Map, map_opt->answer, "", field_opt->answer) < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), map_opt->answer);
+
+    ofield = Vect_get_field_number(&Map, field_opt->answer);
 
     /* Read attributes */
     db_CatValArray_init(&Cvarr);
@@ -108,7 +114,7 @@ int main(int argc, char *argv[])
 
     Driver = db_start_driver_open_database(Fi->driver, Fi->database);
     if (Driver == NULL)
-	G_fatal_error("Unable to open database <%s> by driver <%s>",
+	G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
 		      Fi->database, Fi->driver);
 
     /* Note: do not check if the column exists in the table because it may be an expression */
@@ -129,7 +135,7 @@ int main(int argc, char *argv[])
 
     ret = db_CatValArray_sort_by_value(&Cvarr);
     if (ret == DB_FAILED)
-	G_fatal_error("Could not sort array of values..");
+	G_fatal_error(_("Unable to sort array of values"));
 
 
     data = (double *)G_malloc((nrec) * sizeof(double));
@@ -158,12 +164,15 @@ int main(int argc, char *argv[])
      * finfo takes any info coming from the classification algorithms
      * equ algorithm can alter number of class breaks */
     finfo =
-	class_apply_algorithm(algo_opt->answer, data, nrec, &nbreaks,
-			      classbreaks);
-
+        AS_class_apply_algorithm(AS_option_to_algorithm(algo_opt),
+                                 data, nrec, &nbreaks,
+                                 classbreaks);
+    
 
     if (G_strcasecmp(algo_opt->answer, "dis") == 0 && finfo < 3.84148)
-	G_warning(_("The discontinuities algorithm indicates that some class breaks are not statistically significant at alpha=0.05. You are advised to reduce the number of classes."));
+	G_warning(_("The discontinuities algorithm indicates that some "
+		    "class breaks are not statistically significant at "
+		    "alpha=0.05. You are advised to reduce the number of classes."));
 
     /*output to be piped to other modules ? */
     if (shell_flag->answer) {
@@ -180,9 +189,8 @@ int main(int argc, char *argv[])
 	for (i = 0; i < nbreaks + 1; i++)
 	    frequencies[i] = 0;
 
-	ret =
-	    class_frequencies(data, nrec, nbreaks, classbreaks, frequencies);
-	basic_stats(data, nrec, &stats);
+	ret = AS_class_frequencies(data, nrec, nbreaks, classbreaks, frequencies);
+	AS_basic_stats(data, nrec, &stats);
 
 	min = data[0];
 	max = data[nrec - 1];
@@ -217,11 +225,8 @@ int main(int argc, char *argv[])
 
 	fprintf(stdout, _("\nNote: Minimum of first class is including\n\n"));
     }
-
-
-
+    
     fflush(stdout);
-
-
+    
     exit(EXIT_SUCCESS);
 }

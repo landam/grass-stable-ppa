@@ -1,226 +1,263 @@
 /*!
-   \file read_nat.c
+   \file lib/vector/Vlib/read_nat.c
 
-   \brief Vector library - reading data (native format)
+   \brief Vector library - reading features (native format)
 
    Higher level functions for reading/writing/manipulating vectors.
 
-   The action of this routine can be modified by:
-   - Vect_read_constraint_region()
-   - Vect_read_constraint_type()
-   - Vect_remove_constraints()
+   (C) 2001-2009, 2011-2012 by the GRASS Development Team
 
-   (C) 2001-2008 by the GRASS Development Team
-
-   This program is free software under the 
-   GNU General Public License (>=v2). 
-   Read the file COPYING that comes with GRASS
-   for details.
+   This program is free software under the GNU General Public License
+   (>=v2). Read the file COPYING that comes with GRASS for details.
 
    \author Original author CERL, probably Dave Gerdes or Mike Higgins.
-   Update to GRASS 5.7 Radim Blazek and David D. Gray.
-
-   \date 2001
+   \author Update to GRASS 5.7 by Radim Blazek and David D. Gray.
+   \author Update to GRASS 7 by Martin Landa <landa.martin gmail.com>
  */
 
-#include <grass/gis.h>
-#include <grass/Vect.h>
+#include <sys/types.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 
-static int
-Vect__Read_line_nat(struct Map_info *,
-		    struct line_pnts *, struct line_cats *, long);
+static int read_line_nat(struct Map_info *,
+			 struct line_pnts *, struct line_cats *, off_t);
 
-/*!
- * \brief Read line from coor file on given offset.
- *
- * \param Map vector map 
- * \param Points container used to store line points within
- * \param Cats container used to store line categories within
- * \param offset given offset 
- *
- * \return line type
- * \return 0 dead line
- * \return -2 end of table (last row)
- * \return -1 out of memory
- */
-int
-V1_read_line_nat(struct Map_info *Map,
-		 struct line_pnts *Points,
-		 struct line_cats *Cats, long offset)
+/*! \brief Read vector feature on non-topological level (level 1) -
+  native format - internal use only
+
+  This function implements random access for native format,
+  constraints are ignored!
+  
+  \param Map pointer to Map_info struct 
+  \param[out] Points container used to store line points within
+  (pointer to line_pnts struct)
+  \param[out] Cats container used to store line categories within
+  (pointer to line_cats struct)
+  \param offset given offset 
+  
+  \return feature type (GV_POINT, GV_LINE, ...)
+  \return 0 dead line
+  \return -2 nothing to read
+  \return -1 on failure
+*/
+int V1_read_line_nat(struct Map_info *Map,
+		     struct line_pnts *Points,
+		     struct line_cats *Cats, off_t offset)
 {
-    return Vect__Read_line_nat(Map, Points, Cats, offset);
+    return read_line_nat(Map, Points, Cats, offset);
 }
 
-/*!
- * \brief Read next line from coor file.
- *
- * \param Map vector map layer
- * \param line_p container used to store line points within
- * \param line_c container used to store line categories within
- *
- * \return line type
- * \return 0 dead line
- * \return -2 end of table (last row)
- * \return -1 out of memory
- */
-int
-V1_read_next_line_nat(struct Map_info *Map,
-		      struct line_pnts *line_p, struct line_cats *line_c)
+/*! \brief Read next vector feature on non-topological level (level
+  1) - native format - internal use only.
+
+  This function implements sequential access, constraints are
+  reflected, see Vect_set_constraint_region(),
+  Vect_set_constraint_type(), or Vect_set_constraint_field().
+  
+  Dead features are skipped.
+  
+  Vect_rewind() can be used to reset reading.
+   
+  \param Map pointer to Map_info struct
+  \param[out] line_p container used to store line points within
+  (pointer to line_pnts struct)
+  \param[out] line_c container used to store line categories within
+  (pointer to line_cats struct)
+  
+  \return feature type (GV_POINT, GV_LINE, ...)
+  \return 0 dead line
+  \return -2 nothing to read
+  \return -1 on failure
+*/
+int V1_read_next_line_nat(struct Map_info *Map,
+			  struct line_pnts *line_p, struct line_cats *line_c)
 {
     int itype;
-    long offset;
-    BOUND_BOX lbox, mbox;
+    off_t offset;
+    struct bound_box lbox, mbox;
 
     G_debug(3, "V1_read_next_line_nat()");
 
-    if (Map->Constraint_region_flag)
+    if (Map->constraint.region_flag)
 	Vect_get_constraint_box(Map, &mbox);
 
-    while (1) {
+    while (TRUE) {
 	offset = dig_ftell(&(Map->dig_fp));
-	itype = Vect__Read_line_nat(Map, line_p, line_c, offset);
+	itype = read_line_nat(Map, line_p, line_c, offset);
 	if (itype < 0)
-	    return (itype);
+	    return itype; /* nothing to read or failure */
 
-	if (itype == 0)		/* is it DEAD? */
+	if (itype == 0)	  /* skip dead line */
 	    continue;
 
-	/* Constraint on Type of line 
-	 * Default is all of  Point, Line, Area and whatever else comes along
-	 */
-	if (Map->Constraint_type_flag) {
-	    if (!(itype & Map->Constraint_type))
+	if (Map->constraint.type_flag) {
+	    /* skip feature by type */
+	    if (!(itype & Map->constraint.type))
 		continue;
 	}
 
-	/* Constraint on specified region */
-	if (Map->Constraint_region_flag) {
+	if (line_p && Map->constraint.region_flag) {
+	    /* skip feature by region */
 	    Vect_line_box(line_p, &lbox);
-
+	    
 	    if (!Vect_box_overlap(&lbox, &mbox))
 		continue;
 	}
+	
+	if (line_c && Map->constraint.field_flag) {
+	    /* skip feature by field */
+	    if (Vect_cat_get(line_c, Map->constraint.field, NULL) == 0)
+		continue;
+	}
 
-	return (itype);
+	return itype;
     }
-    /* NOTREACHED */
+
+    return -1; /* NOTREACHED */
 }
 
-/*!
- * \brief Reads any specified line, this is NOT affected by constraints
- *
- * \param Map vector map layer
- * \param line_p container used to store line points within
- * \param line_c container used to store line categories within
- * \param line line id
- *
- * \return line type ( > 0 )
- * \return 0 dead line
- * \return -1 out of memory
- * \return -2 end of file
- */
-int
-V2_read_line_nat(struct Map_info *Map,
-		 struct line_pnts *line_p, struct line_cats *line_c, int line)
+/*! \brief Read vector feature on topological level (level 2) -
+  native format - internal use only
+
+  This function implements random access for native format,
+  constraints are ignored!
+  
+  Note: Topology must be built at level >= GV_BUILD_BASE
+  
+  \param Map pointer to Map_info struct 
+  \param[out] Points container used to store line points within (pointer to line_pnts struct)
+  \param[out] Cats container used to store line categories within (pointer to line_cats struct)
+  \param line feature id to read (starts at 1)
+  
+  \return feature type (GV_POINT, GV_LINE, ...)
+  \return -2 nothing to read
+  \return -1 on failure
+*/
+int V2_read_line_nat(struct Map_info *Map,
+		     struct line_pnts *line_p, struct line_cats *line_c, int line)
 {
-    P_LINE *Line;
+    struct P_line *Line;
 
     G_debug(3, "V2_read_line_nat(): line = %d", line);
 
-
+    if (line < 1 || line > Map->plus.n_lines) {
+        G_warning(_("Attempt to access feature with invalid id (%d)"), line);
+        return -1;
+    }
+    
     Line = Map->plus.Line[line];
+    if (Line == NULL) {
+	G_warning(_("Attempt to access dead feature %d"), line);
+	return -1;
+    }
 
-    if (Line == NULL)
-	G_fatal_error("V2_read_line_nat(): %s %d",
-		      _("Attempt to read dead line"), line);
-
-    return Vect__Read_line_nat(Map, line_p, line_c, Line->offset);
+    return read_line_nat(Map, line_p, line_c, Line->offset);
 }
 
-/*!
- * \brief Reads next unread line each time called.  Use Vect_rewind to reset.
- *
- * \param Map vector map layer
- * \param line_p container used to store line points within
- * \param line_c container used to store line categories within
- * 
- * \return line type ( > 0 )
- * \return 0 dead line
- * \return -1 out of memory
- * \return -2 end of file
- */
-int
-V2_read_next_line_nat(struct Map_info *Map,
-		      struct line_pnts *line_p, struct line_cats *line_c)
+/*! \brief Read next vector feature on topological level (level 2) -
+  native format - internal use only.
+
+  This function implements sequential access, constraints are
+  reflected, see Vect_set_constraint_region(),
+  Vect_set_constraint_type(), or Vect_set_constraint_field().
+  
+  Use Vect_rewind() to reset reading.
+
+  Dead feature are skipped.
+   
+  \param Map pointer to Map_info struct
+  \param[out] line_p container used to store line points within
+  (pointer to line_pnts struct)
+  \param[out] line_c container used to store line categories within
+  (pointer to line_cats struct)
+  
+  \return feature type (GV_POINT, GV_LINE, ...)
+  \return -2 nothing to read
+  \return -1 on error
+*/
+int V2_read_next_line_nat(struct Map_info *Map,
+			  struct line_pnts *line_p, struct line_cats *line_c)
 {
-    register int line;
-    register P_LINE *Line;
-    BOUND_BOX lbox, mbox;
+    int line, ret;
+    struct P_line *Line;
+    struct bound_box lbox, mbox;
 
     G_debug(3, "V2_read_next_line_nat()");
 
-    if (Map->Constraint_region_flag)
+    if (Map->constraint.region_flag)
 	Vect_get_constraint_box(Map, &mbox);
-
-    while (1) {
+    
+    while (TRUE) {
 	line = Map->next_line;
 
 	if (line > Map->plus.n_lines)
-	    return (-2);
+	    return -2; /* nothing to read */
 
 	Line = Map->plus.Line[line];
-	if (Line == NULL) {	/* Dead line */
+	if (Line == NULL) {
+	    /* skip dead line */
 	    Map->next_line++;
 	    continue;
 	}
 
-	if ((Map->Constraint_type_flag &&
-	     !(Line->type & Map->Constraint_type))) {
-	    Map->next_line++;
-	    continue;
-	}
-
-	if (Map->Constraint_region_flag) {
-	    Vect_get_line_box(Map, line, &lbox);
-	    if (!Vect_box_overlap(&lbox, &mbox)) {
+	if (Map->constraint.type_flag) {
+	    /* skip feature by type */
+	    if (!(Line->type & Map->constraint.type)) {
 		Map->next_line++;
 		continue;
 	    }
 	}
 
-	return V2_read_line_nat(Map, line_p, line_c, Map->next_line++);
+	Map->next_line++;
+	ret = read_line_nat(Map, line_p, line_c, Line->offset);
+	if (ret < 0)
+	    return ret;
+	
+	if (line_p && Map->constraint.region_flag) {
+	    /* skip feature by bbox */
+	    Vect_line_box(line_p, &lbox);
+	    
+	    if (!Vect_box_overlap(&lbox, &mbox))
+		continue;
+	}
+
+	if (line_c && Map->constraint.field_flag) {
+	    /* skip feature by field */
+	    if (Vect_cat_get(line_c, Map->constraint.field, NULL) == 0)
+		continue;
+	}
+	
+	return ret;
     }
-
-    /* NOTREACHED */ }
-
+    
+    return -1; /* NOTREACHED */
+}
 
 /*!  
- * \brief Read line from coor file 
- *
- * \param Map vector map layer
- * \param p container used to store line points within
- * \param c container used to store line categories within
- * \param offset given offset
- *
- * \return line type ( > 0 )
- * \return 0 dead line
- * \return -1 out of memory
- * \return -2 end of file
- */
-int
-Vect__Read_line_nat(struct Map_info *Map,
-		    struct line_pnts *p, struct line_cats *c, long offset)
+  \brief Read line from coor file 
+  
+  \param Map vector map layer
+  \param[out] p container used to store line points within
+  \param[out] c container used to store line categories within
+  \param offset given offset
+  
+  \return line type ( > 0 )
+  \return 0 dead line
+  \return -1 out of memory
+  \return -2 end of file
+*/
+int read_line_nat(struct Map_info *Map,
+		  struct line_pnts *p, struct line_cats *c, off_t offset)
 {
-    int i, dead = 0;
+    register int i, dead = 0;
     int n_points;
-    long size;
+    off_t size;
     int n_cats, do_cats;
     int type;
     char rhead, nc;
     short field;
 
-    G_debug(3, "Vect__Read_line_nat: offset = %ld", offset);
+    G_debug(3, "Vect__Read_line_nat: offset = %lu", (unsigned long) offset);
 
     Map->head.last_offset = offset;
 
@@ -249,7 +286,7 @@ Vect__Read_line_nat(struct Map_info *Map,
 	c->n_cats = 0;
 
     if (do_cats) {
-	if (Map->head.Version_Minor == 1) {	/* coor format 5.1 */
+	if (Map->head.coor_version.minor == 1) {	/* coor format 5.1 */
 	    if (0 >= dig__fread_port_I(&n_cats, 1, &(Map->dig_fp)))
 		return (-2);
 	}
@@ -264,9 +301,9 @@ Vect__Read_line_nat(struct Map_info *Map,
 	    c->n_cats = n_cats;
 	    if (n_cats > 0) {
 		if (0 > dig_alloc_cats(c, (int)n_cats + 1))
-		    return (-1);
+		    return -1;
 
-		if (Map->head.Version_Minor == 1) {	/* coor format 5.1 */
+		if (Map->head.coor_version.minor == 1) {	/* coor format 5.1 */
 		    if (0 >=
 			dig__fread_port_I(c->field, n_cats, &(Map->dig_fp)))
 			return (-2);
@@ -284,11 +321,11 @@ Vect__Read_line_nat(struct Map_info *Map,
 	    }
 	}
 	else {
-	    if (Map->head.Version_Minor == 1) {	/* coor format 5.1 */
-		size = (2 * PORT_INT) * n_cats;
+	    if (Map->head.coor_version.minor == 1) {	/* coor format 5.1 */
+		size = (off_t) (2 * PORT_INT) * n_cats;
 	    }
 	    else {		/* coor format 5.0 */
-		size = (PORT_SHORT + PORT_INT) * n_cats;
+		size = (off_t) (PORT_SHORT + PORT_INT) * n_cats;
 	    }
 
 	    dig_fseek(&(Map->dig_fp), size, SEEK_CUR);
@@ -326,17 +363,17 @@ Vect__Read_line_nat(struct Map_info *Map,
     }
     else {
 	if (Map->head.with_z)
-	    size = n_points * 3 * PORT_DOUBLE;
+	    size = (off_t) n_points * 3 * PORT_DOUBLE;
 	else
-	    size = n_points * 2 * PORT_DOUBLE;
+	    size = (off_t) n_points * 2 * PORT_DOUBLE;
 
 	dig_fseek(&(Map->dig_fp), size, SEEK_CUR);
     }
 
-    G_debug(3, "    off = %ld", dig_ftell(&(Map->dig_fp)));
+    G_debug(3, "    off = %lu", (unsigned long) dig_ftell(&(Map->dig_fp)));
 
     if (dead)
 	return 0;
 
-    return (type);
+    return type;
 }

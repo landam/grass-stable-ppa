@@ -22,6 +22,7 @@
 #include <errno.h>
 #include <math.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "enforce.h"
 
@@ -60,32 +61,29 @@ int main(int argc, char **argv)
     struct Option *width, *depth;
     struct Flag *noflat;
 
-    char *vmapset, *rmapset;
+    const char *vmapset, *rmapset;
     int infd, outfd;
     struct Map_info Map;
     struct Map_info outMap;
     struct Cell_head win;
 
-    /* please, remove before GRASS 7 released */
-    struct Flag *q_flag;
-
-
     /* start GIS engine */
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, hydrology");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("hydrology"));
     module->label = _("Generates stream channels.");
     module->description = _("Takes vector stream data, transforms it "
 			    "to raster and subtracts depth from the output DEM.");
 
     parm.inrast = G_define_standard_option(G_OPT_R_INPUT);
-    parm.inrast->key = "rast";
+    parm.inrast->key = "raster";
     parm.inrast->description = _("Name of input raster elevation map");
 
     parm.invect = G_define_standard_option(G_OPT_V_INPUT);
-    parm.invect->key = "vect";
-    parm.invect->description =
+    parm.invect->key = "vector";
+    parm.invect->label =
 	_("Name of input vector map containing stream(s)");
 
     parm.outrast = G_define_standard_option(G_OPT_R_OUTPUT);
@@ -111,28 +109,15 @@ int main(int argc, char **argv)
     noflat->key = 'n';
     noflat->description = _("No flat areas allowed in flow direction");
 
-    /* please, remove before GRASS 7 released */
-    q_flag = G_define_flag();
-    q_flag->key = 'q';
-    q_flag->description = _("Run quietly");
-
-
     /* parse options */
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    /* please, remove before GRASS 7 released */
-    if (q_flag->answer) {
-	G_putenv("GRASS_VERBOSE", "0");
-	G_warning(_("The '-q' flag is superseded and will be removed "
-		    "in future. Please use '--quiet' instead."));
-    }
-
     G_check_input_output_name(parm.inrast->answer, parm.outrast->answer,
-			      GR_FATAL_EXIT);
+			      G_FATAL_EXIT);
     if (parm.outvect->answer)
-	Vect_check_input_output_name(parm.invect->answer,
-				     parm.outvect->answer, GR_FATAL_EXIT);
+      Vect_check_input_output_name(parm.invect->answer, parm.outvect->answer,
+				   G_FATAL_EXIT);
 
     /* setup lat/lon projection and distance calculations */
     init_projection(&win, &parm.wrap);
@@ -173,22 +158,18 @@ int main(int argc, char **argv)
 	G_fatal_error(_("Vector map <%s> not found"), parm.invect->answer);
 
     Vect_set_open_level(2);
-    Vect_open_old(&Map, parm.invect->answer, vmapset);
+    if (Vect_open_old(&Map, parm.invect->answer, vmapset) < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), parm.invect->answer);
 
     if ((rmapset = G_find_file2("cell", parm.inrast->answer, "")) == NULL)
 	G_fatal_error(_("Raster map <%s> not found"), parm.inrast->answer);
 
-    if ((infd = G_open_cell_old(parm.inrast->answer, rmapset)) == -1)
-	G_fatal_error(_("Unable to open raster map <%s>"),
-		      parm.inrast->answer);
+    infd = Rast_open_old(parm.inrast->answer, rmapset);
 
-    parm.raster_type = G_get_raster_map_type(infd);
+    parm.raster_type = Rast_get_map_type(infd);
 
     /* open new map for output */
-    if ((outfd =
-	 G_open_raster_new(parm.outrast->answer, parm.raster_type)) < 0)
-	G_fatal_error(_("Unable to create raster map <%s>"),
-		      parm.outrast->answer);
+    outfd = Rast_open_new(parm.outrast->answer, parm.raster_type);
 
     /* if specified, open vector for output */
     if (parm.outvect->answer)
@@ -196,8 +177,8 @@ int main(int argc, char **argv)
 
     enforce_downstream(infd, outfd, &Map, &outMap, &parm);
 
-    G_close_cell(infd);
-    G_close_cell(outfd);
+    Rast_close(infd);
+    Rast_close(outfd);
     close_vect(&Map, 0);
 
     if (parm.outvect->answer)
@@ -229,7 +210,8 @@ static int init_projection(struct Cell_head *window, int *wrap_ncols)
 	*wrap_ncols =
 	    (360.0 - (window->east - window->west)) / window->ew_res + 1.1;
 #else
-	G_fatal_error(_("lat/lon projection not supported at this time."));
+	G_fatal_error(_("Lat/Long location is not supported by %s. Please reproject map first."),
+		      G_program_name());
 #endif
     }
     else {

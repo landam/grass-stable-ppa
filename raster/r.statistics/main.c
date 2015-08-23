@@ -18,17 +18,30 @@
 #include <string.h>
 #include <stdlib.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
-#define MAIN
 #include "method.h"
 
-/* function prototypes */
-static int is_ok(char *, char *);
+/* modify this table to add new methods */
+struct menu menu[] = {
+    {"diversity", o_divr,    "Diversity of values in specified objects in %%"},
+    {"average",   o_average, "Average of values in specified objects"},
+    {"mode",      o_mode,    "Mode of values in specified objects"},
+    {"median",    o_median,  "Median of values in specified objects"},
+    {"avedev",    o_adev,    "Average deviation of values in specified objects"},
+    {"stddev",    o_sdev,    "Standard deviation of values in specified objects"},
+    {"variance",  o_var,     "Variance of values in specified objects"},
+    {"skewness",  o_skew,    "Skewnes of values in specified objects"},
+    {"kurtosis",  o_kurt,    "Kurtosis of values in specified objects"},
+    {"min",       o_min,     "Minimum of values in specified objects"},
+    {"max",       o_max,     "Maximum of values in specified objects"},
+    {"sum",       o_sum,     "Sum of values in specified objects"},
+    {NULL,        NULL,      NULL}
+};
 
 int main(int argc, char **argv)
 {
-    char *mapset;
     int o_method;
     struct GModule *module;
     struct Option *method, *basemap, *covermap, *outputmap;
@@ -39,13 +52,20 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, statistics");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("statistics"));
     module->description =
 	_("Calculates category or object oriented statistics.");
 
     basemap = G_define_standard_option(G_OPT_R_BASE);
 
     covermap = G_define_standard_option(G_OPT_R_COVER);
+
+    method = G_define_option();
+    method->key = "method";
+    method->type = TYPE_STRING;
+    method->required = YES;
+    method->description = _("Method of object-based statistic");
 
     for (o_method = 0; menu[o_method].name; o_method++) {
 	if (o_method)
@@ -54,18 +74,22 @@ int main(int argc, char **argv)
 	    *(methods) = 0;
 	strcat(methods, menu[o_method].name);
     }
+    method->options = G_store(methods);
 
-    method = G_define_option();
-    method->key = "method";
-    method->type = TYPE_STRING;
-    method->required = YES;
-    method->description = _("Method of object-based statistic");
-    method->options = methods;
+    for (o_method = 0; menu[o_method].name; o_method++) {
+	if (o_method)
+	    strcat(methods, ";");
+	else
+	    *(methods) = 0;
+	strcat(methods, menu[o_method].name);
+	strcat(methods, ";");
+	strcat(methods, menu[o_method].text);
+    }
+    method->descriptions = G_store(methods);
 
     outputmap = G_define_standard_option(G_OPT_R_OUTPUT);
-    outputmap->description =
-	_("Resultant raster map (not used with 'distribution')");
-    outputmap->required = NO;
+    outputmap->description = _("Resultant raster map");
+    outputmap->required = YES;
 
     flag_c = G_define_flag();
     flag_c->key = 'c';
@@ -75,22 +99,15 @@ int main(int argc, char **argv)
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    if ((mapset = G_find_cell2(basemap->answer, "")) == 0)
-	G_fatal_error(_("Raster map <%s> not found"), basemap->answer);
-
-    if (G_raster_map_is_fp(basemap->answer, mapset) != 0)
+    if (Rast_map_is_fp(basemap->answer, "") != 0)
 	G_fatal_error(_("This module currently only works for integer (CELL) maps"));
 
-    if ((mapset = G_find_cell2(covermap->answer, "")) == 0)
-	G_fatal_error(_("Raster map <%s> not found"), covermap->answer);
-
-    if (G_raster_map_is_fp(covermap->answer, mapset) != 0)
+    if (Rast_map_is_fp(covermap->answer, "") != 0)
 	G_fatal_error(_("This module currently only works for integer (CELL) maps"));
 
-    if (G_read_cats(covermap->answer, mapset, &cats) < 0) {
-	G_fatal_error(_("Unable to read category file of raster map <%s@%s>"),
-		      covermap->answer, mapset);
-    }
+    if (Rast_read_cats(covermap->answer, "", &cats) < 0)
+	G_fatal_error(_("Unable to read category file of raster map <%s>"),
+		      covermap->answer);
 
     for (o_method = 0; menu[o_method].name; o_method++)
 	if (strcmp(menu[o_method].name, method->answer) == 0)
@@ -104,88 +121,10 @@ int main(int argc, char **argv)
 	exit(EXIT_FAILURE);
     }
 
-    switch (menu[o_method].val) {
-    case DISTRIB:
-	if (outputmap->answer != NULL)
-	    G_warning(_("Output map <%s> ignored"), outputmap->answer);
-
-	o_distrib(basemap->answer, covermap->answer,
-		  outputmap->answer, flag_c->answer);
-	break;
-    case AVERAGE:
-	is_ok(method->answer, outputmap->answer);
-	o_average(basemap->answer, covermap->answer,
-		  outputmap->answer, flag_c->answer, &cats);
-	break;
-    case MODE:
-	is_ok(method->answer, outputmap->answer);
-	o_mode(basemap->answer, covermap->answer,
-	       outputmap->answer, flag_c->answer, &cats);
-	break;
-    case ADEV:
-	is_ok(method->answer, outputmap->answer);
-	o_adev(basemap->answer, covermap->answer,
-	       outputmap->answer, flag_c->answer, &cats);
-	break;
-    case SDEV:
-	is_ok(method->answer, outputmap->answer);
-	o_sdev(basemap->answer, covermap->answer,
-	       outputmap->answer, flag_c->answer, &cats);
-	break;
-    case VARIANC:
-	is_ok(method->answer, outputmap->answer);
-	o_var(basemap->answer, covermap->answer,
-	      outputmap->answer, flag_c->answer, &cats);
-	break;
-    case SKEWNES:
-	is_ok(method->answer, outputmap->answer);
-	o_skew(basemap->answer, covermap->answer,
-	       outputmap->answer, flag_c->answer, &cats);
-	break;
-    case KURTOSI:
-	is_ok(method->answer, outputmap->answer);
-	o_kurt(basemap->answer, covermap->answer,
-	       outputmap->answer, flag_c->answer, &cats);
-	break;
-    case MEDIAN:
-	is_ok(method->answer, outputmap->answer);
-	o_median(basemap->answer, covermap->answer,
-		 outputmap->answer, flag_c->answer, &cats);
-	break;
-    case MIN:
-	is_ok(method->answer, outputmap->answer);
-	o_min(basemap->answer, covermap->answer,
-	      outputmap->answer, flag_c->answer, &cats);
-	break;
-    case MAX:
-	is_ok(method->answer, outputmap->answer);
-	o_max(basemap->answer, covermap->answer,
-	      outputmap->answer, flag_c->answer, &cats);
-	break;
-    case SUM:
-	is_ok(method->answer, outputmap->answer);
-	o_sum(basemap->answer, covermap->answer,
-	      outputmap->answer, flag_c->answer, &cats);
-	break;
-    case DIV:
-	is_ok(method->answer, outputmap->answer);
-	o_divr(basemap->answer, covermap->answer,
-	       outputmap->answer, flag_c->answer, &cats);
-	break;
-
-    default:
-	G_fatal_error(_("Not yet implemented!"));
-    }
+    (*menu[o_method].func)(basemap->answer, covermap->answer,
+			   outputmap->answer,
+			   flag_c->answer, &cats);
 
     return 0;
 }
 
-
-static int is_ok(char *method, char *map)
-{
-    if (map == NULL)
-	G_fatal_error(_("An output raster map needs to be defined with method '%s'"),
-		      method);
-
-    return 0;
-}

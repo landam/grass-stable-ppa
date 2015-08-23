@@ -1,23 +1,19 @@
 /*!
-   \file tin.c
+   \file lib/vector/Vlib/tin.c
 
    \brief Vector library - TIN
 
    Higher level functions for reading/writing/manipulating vectors.
 
-   (C) 2001-2008 by the GRASS Development Team
+   (C) 2001-2009 by the GRASS Development Team
 
-   This program is free software under the 
-   GNU General Public License (>=v2). 
-   Read the file COPYING that comes with GRASS
-   for details.
+   This program is free software under the GNU General Public License
+   (>=v2).  Read the file COPYING that comes with GRASS for details.
 
    \author Radim Blazek
-
-   \date 2001
  */
 
-#include <grass/Vect.h>
+#include <grass/vector.h>
 
 /*!
    \brief Calculates z coordinate for point from TIN
@@ -38,7 +34,7 @@ Vect_tin_get_z(struct Map_info *Map,
 {
     int i, area, n_points;
     struct Plus_head *Plus;
-    P_AREA *Area;
+    struct P_area *Area;
     static struct line_pnts *Points;
     static int first_time = 1;
     double *x, *y, *z;

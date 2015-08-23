@@ -1,4 +1,4 @@
-"""!
+"""
 @package gmodeler.preferences
 
 @brief wxGUI Graphical Modeler - preferences
@@ -7,7 +7,7 @@ Classes:
  - preferences::PreferencesDialog
  - preferences::PropertiesDialog
 
-(C) 2010-2012 by the GRASS Development Team
+(C) 2010-2013 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -21,13 +21,14 @@ import wx.lib.colourselect    as csel
 from core                 import globalvar
 from gui_core.preferences import PreferencesBaseDialog
 from core.settings        import UserSettings
+from core.utils import _
 
 class PreferencesDialog(PreferencesBaseDialog):
-    """!User preferences dialog"""
-    def __init__(self, parent, settings = UserSettings,
+    """User preferences dialog"""
+    def __init__(self, parent, giface, settings = UserSettings,
                  title = _("Modeler settings")):
         
-        PreferencesBaseDialog.__init__(self, parent = parent, title = title,
+        PreferencesBaseDialog.__init__(self, parent = parent, giface = giface, title = title,
                                        settings = settings)
         
         # create notebook pages
@@ -35,12 +36,13 @@ class PreferencesDialog(PreferencesBaseDialog):
         self._createActionPage(self.notebook)
         self._createDataPage(self.notebook)
         self._createLoopPage(self.notebook)
+        self._createCommentPage(self.notebook)
         
         self.SetMinSize(self.GetBestSize())
         self.SetSize(self.size)
 
     def _createGeneralPage(self, notebook):
-        """!Create notebook page for action settings"""
+        """Create notebook page for action settings"""
         panel = wx.Panel(parent = notebook, id = wx.ID_ANY)
         notebook.AddPage(page = panel, text = _("General"))
         
@@ -51,7 +53,6 @@ class PreferencesDialog(PreferencesBaseDialog):
         sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         
         gridSizer = wx.GridBagSizer (hgap = 3, vgap = 3)
-        gridSizer.AddGrowableCol(0)
         
         row = 0
         gridSizer.Add(item = wx.StaticText(parent = panel, id = wx.ID_ANY,
@@ -70,6 +71,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                       wx.ALIGN_CENTER_VERTICAL,
                       pos = (row, 1))
         
+        gridSizer.AddGrowableCol(0)
         sizer.Add(item = gridSizer, proportion = 1, flag = wx.ALL | wx.EXPAND, border = 5)
         border.Add(item = sizer, proportion = 0, flag = wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, border = 3)
 
@@ -78,9 +80,9 @@ class PreferencesDialog(PreferencesBaseDialog):
         return panel
 
     def _createActionPage(self, notebook):
-        """!Create notebook page for action settings"""
+        """Create notebook page for action settings"""
         panel = wx.Panel(parent = notebook, id = wx.ID_ANY)
-        notebook.AddPage(page = panel, text = _("Action"))
+        notebook.AddPage(page = panel, text = _("Command"))
         
         # colors
         border = wx.BoxSizer(wx.VERTICAL)
@@ -89,7 +91,6 @@ class PreferencesDialog(PreferencesBaseDialog):
         sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         
         gridSizer = wx.GridBagSizer (hgap = 3, vgap = 3)
-        gridSizer.AddGrowableCol(0)
         
         row = 0
         gridSizer.Add(item = wx.StaticText(parent = panel, id = wx.ID_ANY,
@@ -142,6 +143,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                       wx.ALIGN_CENTER_VERTICAL,
                       pos = (row, 1))
         
+        gridSizer.AddGrowableCol(0)
         sizer.Add(item = gridSizer, proportion = 1, flag = wx.ALL | wx.EXPAND, border = 5)
         border.Add(item = sizer, proportion = 0, flag = wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, border = 3)
         
@@ -151,7 +153,6 @@ class PreferencesDialog(PreferencesBaseDialog):
         sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         
         gridSizer = wx.GridBagSizer (hgap=3, vgap=3)
-        gridSizer.AddGrowableCol(0)
 
         row = 0
         gridSizer.Add(item = wx.StaticText(parent = panel, id = wx.ID_ANY,
@@ -189,6 +190,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                       wx.ALIGN_CENTER_VERTICAL,
                       pos = (row, 1))
         
+        gridSizer.AddGrowableCol(0)
         sizer.Add(item=gridSizer, proportion=1, flag=wx.ALL | wx.EXPAND, border=5)
         border.Add(item=sizer, proportion=0, flag=wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, border=3)
                 
@@ -197,7 +199,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         return panel
 
     def _createDataPage(self, notebook):
-        """!Create notebook page for data settings"""
+        """Create notebook page for data settings"""
         panel = wx.Panel(parent = notebook, id = wx.ID_ANY)
         notebook.AddPage(page = panel, text = _("Data"))
         
@@ -208,7 +210,6 @@ class PreferencesDialog(PreferencesBaseDialog):
         sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         
         gridSizer = wx.GridBagSizer (hgap = 3, vgap = 3)
-        gridSizer.AddGrowableCol(0)
         
         row = 0
         gridSizer.Add(item = wx.StaticText(parent = panel, id = wx.ID_ANY,
@@ -261,6 +262,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                       wx.ALIGN_CENTER_VERTICAL,
                       pos = (row, 1))
         
+        gridSizer.AddGrowableCol(0)
         sizer.Add(item = gridSizer, proportion = 1, flag = wx.ALL | wx.EXPAND, border = 5)
         border.Add(item = sizer, proportion = 0, flag = wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, border = 3)
 
@@ -270,7 +272,6 @@ class PreferencesDialog(PreferencesBaseDialog):
         sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         
         gridSizer = wx.GridBagSizer (hgap=3, vgap=3)
-        gridSizer.AddGrowableCol(0)
         
         row = 0
         gridSizer.Add(item = wx.StaticText(parent = panel, id = wx.ID_ANY,
@@ -308,6 +309,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                       wx.ALIGN_CENTER_VERTICAL,
                       pos = (row, 1))
         
+        gridSizer.AddGrowableCol(0)
         sizer.Add(item=gridSizer, proportion=1, flag=wx.ALL | wx.EXPAND, border=5)
         border.Add(item=sizer, proportion=0, flag=wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, border=3)
         
@@ -316,7 +318,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         return panel
 
     def _createLoopPage(self, notebook):
-        """!Create notebook page for loop settings"""
+        """Create notebook page for loop settings"""
         panel = wx.Panel(parent = notebook, id = wx.ID_ANY)
         notebook.AddPage(page = panel, text = _("Loop"))
         
@@ -327,7 +329,6 @@ class PreferencesDialog(PreferencesBaseDialog):
         sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         
         gridSizer = wx.GridBagSizer (hgap = 3, vgap = 3)
-        gridSizer.AddGrowableCol(0)
         
         row = 0
         gridSizer.Add(item = wx.StaticText(parent = panel, id = wx.ID_ANY,
@@ -346,6 +347,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                       wx.ALIGN_CENTER_VERTICAL,
                       pos = (row, 1))
         
+        gridSizer.AddGrowableCol(0)
         sizer.Add(item = gridSizer, proportion = 1, flag = wx.ALL | wx.EXPAND, border = 5)
         border.Add(item = sizer, proportion = 0, flag = wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, border = 3)
         
@@ -355,7 +357,6 @@ class PreferencesDialog(PreferencesBaseDialog):
         sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         
         gridSizer = wx.GridBagSizer (hgap=3, vgap=3)
-        gridSizer.AddGrowableCol(0)
 
         row = 0
         gridSizer.Add(item = wx.StaticText(parent = panel, id = wx.ID_ANY,
@@ -393,6 +394,92 @@ class PreferencesDialog(PreferencesBaseDialog):
                       wx.ALIGN_CENTER_VERTICAL,
                       pos = (row, 1))
         
+        gridSizer.AddGrowableCol(0)
+        sizer.Add(item=gridSizer, proportion=1, flag=wx.ALL | wx.EXPAND, border=5)
+        border.Add(item=sizer, proportion=0, flag=wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, border=3)
+                
+        panel.SetSizer(border)
+        
+        return panel
+
+    def _createCommentPage(self, notebook):
+        """Create notebook page for comment settings"""
+        panel = wx.Panel(parent = notebook, id = wx.ID_ANY)
+        notebook.AddPage(page = panel, text = _("Comment"))
+        
+        # colors
+        border = wx.BoxSizer(wx.VERTICAL)
+        box   = wx.StaticBox (parent = panel, id = wx.ID_ANY,
+                              label = " %s " % _("Color"))
+        sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
+        
+        gridSizer = wx.GridBagSizer (hgap = 3, vgap = 3)
+        
+        row = 0
+        gridSizer.Add(item = wx.StaticText(parent = panel, id = wx.ID_ANY,
+                                         label = _("Valid:")),
+                      flag = wx.ALIGN_LEFT |
+                      wx.ALIGN_CENTER_VERTICAL,
+                      pos = (row, 0))
+        vColor = csel.ColourSelect(parent = panel, id = wx.ID_ANY,
+                                   colour = self.settings.Get(group='modeler', key='comment', subkey='color'),
+                                   size = globalvar.DIALOG_COLOR_SIZE)
+        vColor.SetName('GetColour')
+        self.winId['modeler:comment:color'] = vColor.GetId()
+        
+        gridSizer.Add(item = vColor,
+                      flag = wx.ALIGN_RIGHT |
+                      wx.ALIGN_CENTER_VERTICAL,
+                      pos = (row, 1))
+        
+        gridSizer.AddGrowableCol(0)
+        sizer.Add(item = gridSizer, proportion = 1, flag = wx.ALL | wx.EXPAND, border = 5)
+        border.Add(item = sizer, proportion = 0, flag = wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, border = 3)
+        
+        # size
+        box   = wx.StaticBox (parent = panel, id = wx.ID_ANY,
+                              label = " %s " % _("Shape size"))
+        sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
+        
+        gridSizer = wx.GridBagSizer (hgap=3, vgap=3)
+
+        row = 0
+        gridSizer.Add(item = wx.StaticText(parent = panel, id = wx.ID_ANY,
+                                         label = _("Width:")),
+                      flag = wx.ALIGN_LEFT |
+                      wx.ALIGN_CENTER_VERTICAL,
+                      pos = (row, 0))
+        
+        width = wx.SpinCtrl(parent = panel, id = wx.ID_ANY,
+                            min = 0, max = 500,
+                            initial = self.settings.Get(group='modeler', key='comment', subkey=('size', 'width')))
+        width.SetName('GetValue')
+        self.winId['modeler:comment:size:width'] = width.GetId()
+        
+        gridSizer.Add(item = width,
+                      flag = wx.ALIGN_RIGHT |
+                      wx.ALIGN_CENTER_VERTICAL,
+                      pos = (row, 1))
+
+        row += 1
+        gridSizer.Add(item = wx.StaticText(parent=panel, id=wx.ID_ANY,
+                                         label=_("Height:")),
+                      flag = wx.ALIGN_LEFT |
+                      wx.ALIGN_CENTER_VERTICAL,
+                      pos=(row, 0))
+        
+        height = wx.SpinCtrl(parent = panel, id = wx.ID_ANY,
+                             min = 0, max = 500,
+                             initial = self.settings.Get(group='modeler', key='comment', subkey=('size', 'height')))
+        height.SetName('GetValue')
+        self.winId['modeler:comment:size:height'] = height.GetId()
+        
+        gridSizer.Add(item = height,
+                      flag = wx.ALIGN_RIGHT |
+                      wx.ALIGN_CENTER_VERTICAL,
+                      pos = (row, 1))
+        
+        gridSizer.AddGrowableCol(0)
         sizer.Add(item=gridSizer, proportion=1, flag=wx.ALL | wx.EXPAND, border=5)
         border.Add(item=sizer, proportion=0, flag=wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, border=3)
                 
@@ -401,21 +488,21 @@ class PreferencesDialog(PreferencesBaseDialog):
         return panel
 
     def OnApply(self, event):
-        """!Button 'Apply' pressed"""
+        """Button 'Apply' pressed"""
         PreferencesBaseDialog.OnApply(self, event)
         
         self.parent.GetModel().Update()
         self.parent.GetCanvas().Refresh()
 
     def OnSave(self, event):
-        """!Button 'Save' pressed"""
+        """Button 'Save' pressed"""
         PreferencesBaseDialog.OnSave(self, event)
         
         self.parent.GetModel().Update()
         self.parent.GetCanvas().Refresh()
 
 class PropertiesDialog(wx.Dialog):
-    """!Model properties dialog
+    """Model properties dialog
     """
     def __init__(self, parent, id = wx.ID_ANY,
                  title = _('Model properties'),
@@ -458,8 +545,6 @@ class PropertiesDialog(wx.Dialog):
     def _layout(self):
         metaSizer = wx.StaticBoxSizer(self.metaBox, wx.VERTICAL)
         gridSizer = wx.GridBagSizer(hgap = 3, vgap = 3)
-        gridSizer.AddGrowableCol(1)
-        gridSizer.AddGrowableRow(1)
         gridSizer.Add(item = wx.StaticText(parent = self, id = wx.ID_ANY,
                                          label = _("Name:")),
                       flag = wx.ALIGN_LEFT |
@@ -487,6 +572,8 @@ class PropertiesDialog(wx.Dialog):
                       flag = wx.ALIGN_LEFT |
                       wx.ALIGN_CENTER_VERTICAL | wx.EXPAND,
                       pos = (2, 1))
+        gridSizer.AddGrowableCol(1)
+        gridSizer.AddGrowableRow(1)
         metaSizer.Add(item = gridSizer, proportion = 1, flag = wx.EXPAND)
         
         cmdSizer = wx.StaticBoxSizer(self.cmdBox, wx.VERTICAL)
@@ -513,14 +600,14 @@ class PropertiesDialog(wx.Dialog):
         self.Hide()
         
     def GetValues(self):
-        """!Get values"""
+        """Get values"""
         return { 'name'        : self.name.GetValue(),
                  'description' : self.desc.GetValue(),
                  'author'      : self.author.GetValue(),
                  'overwrite'   : self.overwrite.IsChecked() }
     
     def Init(self, prop):
-        """!Initialize dialog"""
+        """Initialize dialog"""
         self.name.SetValue(prop['name'])
         self.desc.SetValue(prop['description'])
         self.author.SetValue(prop['author'])

@@ -24,8 +24,9 @@ Joint Research Centre of the European Commission, based on bits of the r.sun mod
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ * along with this program; if not, write to the
+ *   Free Software Foundation, Inc.,
+ *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <stdio.h>
@@ -33,6 +34,7 @@ Joint Research Centre of the European Commission, based on bits of the r.sun mod
 #include <string.h>
 #include <math.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/gprojects.h>
 #include <grass/glocale.h>
 
@@ -54,22 +56,21 @@ Joint Research Centre of the European Commission, based on bits of the r.sun mod
 #define DISTANCE1(x1, x2, y1, y2) (sqrt((x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2)))
 
 
-FILE *fw;
+FILE *fp;
 
-const double rad2deg = 180. / M_PI;
-const double deg2rad = M_PI / 180.;
 const double pihalf = M_PI * 0.5;
-const double twopi = 2. * M_PI;
+const double twopi = M_PI * 2.;
 const double invEarth = 1. / EARTHRADIUS;
-
+const double deg2rad = M_PI / 180.;
+const double rad2deg = 180. / M_PI;
 const double minAngle = DEG;
 
-char *elevin;
-char *latin = NULL;
-char *horizon = NULL;
-char *mapset = NULL;
-char *per;
-char shad_filename[GNAME_MAX];
+const char *elevin;
+const char *horizon = NULL;
+const char *mapset = NULL;
+const char *per;
+char *shad_filename;
+char *outfile;
 
 struct Cell_head cellhd;
 struct Key_value *in_proj_info, *in_unit_info;
@@ -106,7 +107,7 @@ void calculate(double xcoord, double ycoord, int buffer_e, int buffer_w,
 
 int ip, jp, ip100, jp100;
 int n, m, m100, n100;
-int degreeOutput = FALSE;
+int degreeOutput, compassOutput = FALSE;
 float **z, **z100, **horizon_raster;
 double stepx, stepy, stepxhalf, stepyhalf, stepxy, xp, yp, op, dp, xg0, xx0,
     yg0, yy0, deltx, delty;
@@ -118,14 +119,15 @@ double single_direction;
 double xmin, xmax, ymin, ymax, zmax = 0.;
 int d, day, tien = 0;
 
-double length, maxlength = BIG, zmult = 1.0, step = 0.0, dist;
-double fixedMaxLength = BIG;
+double length, maxlength = BIG, zmult = 1.0, dist;
+double fixedMaxLength = BIG, step = 0.0, start = 0.0, end = 0.0;
 char *tt, *lt;
 double z_orig, zp;
 double h0, tanh0, angle;
 double stepsinangle, stepcosangle, sinangle, cosangle, distsinangle,
     distcosangle;
 double TOLER;
+const char *str_step;
 
 int mode;
 int isMode()
@@ -139,6 +141,7 @@ void setMode(int val)
 
 int ll_correction = FALSE;
 double coslatsq;
+
 
 /* why not use G_distance() here which switches to geodesic/great
   circle distance as needed? */
@@ -154,7 +157,6 @@ double distance(double x1, double x2, double y1, double y2)
 }
 
 
-
 int main(int argc, char *argv[])
 {
     double xcoord, ycoord;
@@ -162,33 +164,162 @@ int main(int argc, char *argv[])
     struct GModule *module;
     struct
     {
-	struct Option *elevin, *dist, *coord, *direction, *horizon, *step,
-	    *bufferzone, *e_buff, *w_buff, *n_buff, *s_buff, *maxdistance;
+	struct Option *elevin, *dist, *coord, *direction, *horizon, 
+                      *step, *start, *end, *bufferzone, *e_buff, *w_buff, 
+                      *n_buff, *s_buff, *maxdistance, *output;
     } parm;
 
     struct
     {
-	struct Flag *degreeOutput;
+	struct Flag *degreeOutput, *compassOutput;
     }
     flag;
 
     G_gisinit(argv[0]);
     module = G_define_module();
-
-    module->keywords = _("raster, sun position");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("solar"));
+    G_add_keyword(_("sun position"));
     module->label =
-	_("Horizon angle computation from a digital elevation model.");
+	_("Computes horizon angle height from a digital elevation model.");
     module->description =
-	_("Computes horizon angle height from a digital elevation model. The module has two"
-	 " different modes of operation:  "
-	 "1. Computes the entire horizon around a single point whose coordinates are"
-	 " given with the 'coord' option. The horizon height (in radians). "
-	 "2. Computes one or more raster maps of the horizon height in a single direction. "
-	 " The input for this is the angle (in degrees), which is measured "
-	 " counterclockwise with east=0, north=90 etc. The output is the horizon height in radians.");
+	_("The module has two "
+          "different modes of operation: "
+          "1. Computes the entire horizon around a single point whose coordinates are "
+          "given with the 'coord' option. The horizon height (in radians). "
+          "2. Computes one or more raster maps of the horizon height in a single direction. "
+          "The input for this is the angle (in degrees), which is measured "
+          "counterclockwise with east=0, north=90 etc. The output is the horizon height in radians.");
 
-    if (G_get_set_window(&cellhd) == -1)
-	G_fatal_error("G_get_set_window() failed");
+    parm.elevin = G_define_standard_option(G_OPT_R_ELEV);
+    parm.elevin->guisection = _("Input");
+
+
+    parm.direction = G_define_option();
+    parm.direction->key = "direction";
+    parm.direction->type = TYPE_DOUBLE;
+    parm.direction->required = NO;
+    parm.direction->description =
+	_("Direction in which you want to know the horizon height");
+    parm.direction->guisection = _("Input");
+
+    parm.step = G_define_option();
+    parm.step->key = "step";
+    parm.step->type = TYPE_DOUBLE;
+    parm.step->required = NO;
+    parm.step->description =
+	_("Angle step size for multidirectional horizon [degrees]");
+    parm.step->guisection = _("Input");
+
+    parm.start = G_define_option();
+    parm.start->key = "start";
+    parm.start->type = TYPE_DOUBLE;
+    parm.start->answer = "0.0";
+    parm.start->required = NO;
+    parm.start->description =
+        _("Start angle for multidirectional horizon [degrees]");
+    parm.start->guisection = _("Raster mode");
+
+    parm.end = G_define_option();
+    parm.end->key = "end";
+    parm.end->type = TYPE_DOUBLE;
+    parm.end->answer = "360.0";
+    parm.end->required = NO;
+    parm.end->description =
+        _("End angle for multidirectional horizon [degrees]");
+    parm.end->guisection = _("Raster mode");
+
+    parm.bufferzone = G_define_option();
+    parm.bufferzone->key = "bufferzone";
+    parm.bufferzone->type = TYPE_DOUBLE;
+    parm.bufferzone->required = NO;
+    parm.bufferzone->description =
+	_("For horizon rasters, read from the DEM an extra buffer around the present region");
+    parm.bufferzone->guisection = _("Raster mode");
+
+    parm.e_buff = G_define_option();
+    parm.e_buff->key = "e_buff";
+    parm.e_buff->type = TYPE_DOUBLE;
+    parm.e_buff->required = NO;
+    parm.e_buff->description =
+	_("For horizon rasters, read from the DEM an extra buffer eastward the present region");
+    parm.e_buff->guisection = _("Raster mode");
+
+    parm.w_buff = G_define_option();
+    parm.w_buff->key = "w_buff";
+    parm.w_buff->type = TYPE_DOUBLE;
+    parm.w_buff->required = NO;
+    parm.w_buff->description =
+	_("For horizon rasters, read from the DEM an extra buffer westward the present region");
+    parm.w_buff->guisection = _("Raster mode");
+
+    parm.n_buff = G_define_option();
+    parm.n_buff->key = "n_buff";
+    parm.n_buff->type = TYPE_DOUBLE;
+    parm.n_buff->required = NO;
+    parm.n_buff->description =
+	_("For horizon rasters, read from the DEM an extra buffer northward the present region");
+    parm.n_buff->guisection = _("Raster mode");
+
+    parm.s_buff = G_define_option();
+    parm.s_buff->key = "s_buff";
+    parm.s_buff->type = TYPE_DOUBLE;
+    parm.s_buff->required = NO;
+    parm.s_buff->description =
+	_("For horizon rasters, read from the DEM an extra buffer southward the present region");
+    parm.s_buff->guisection = _("Raster mode");
+
+    parm.maxdistance = G_define_option();
+    parm.maxdistance->key = "maxdistance";
+    parm.maxdistance->type = TYPE_DOUBLE;
+    parm.maxdistance->required = NO;
+    parm.maxdistance->description =
+	_("The maximum distance to consider when finding the horizon height");
+    parm.maxdistance->guisection = _("Optional");
+
+
+    parm.horizon = G_define_standard_option(G_OPT_R_BASENAME_OUTPUT);
+    parm.horizon->required = NO;
+    parm.horizon->guisection = _("Raster mode");
+
+
+    parm.coord = G_define_standard_option(G_OPT_M_COORDS);
+    parm.coord->description =
+	_("Coordinate for which you want to calculate the horizon");
+    parm.coord->guisection = _("Point mode");
+
+    parm.dist = G_define_option();
+    parm.dist->key = "distance";
+    parm.dist->type = TYPE_DOUBLE;
+    parm.dist->answer = DIST;
+    parm.dist->required = NO;
+    parm.dist->description = _("Sampling distance step coefficient (0.5-1.5)");
+    parm.dist->guisection = _("Optional");
+
+    parm.output = G_define_standard_option(G_OPT_F_OUTPUT);
+    parm.output->key = "file";
+    parm.output->required = NO;
+    parm.output->answer = "-";
+    parm.output->description =
+        _("Name of file for output (use output=- for stdout)");
+    parm.output->guisection = _("Point mode");
+
+    flag.degreeOutput = G_define_flag();
+    flag.degreeOutput->key = 'd';
+    flag.degreeOutput->description =
+	_("Write output in degrees (default is radians)");
+
+    flag.compassOutput = G_define_flag();
+    flag.compassOutput->key = 'c';
+    flag.compassOutput->description =
+	_("Write output in compass orientation (default is CCW, East=0)");
+
+
+    if (G_parser(argc, argv))
+	exit(EXIT_FAILURE);
+
+    G_get_set_window(&cellhd);
+
     stepx = cellhd.ew_res;
     stepy = cellhd.ns_res;
     stepxhalf = stepx / 2.;
@@ -217,130 +348,24 @@ int main(int argc, char *argv[])
     deltx = fabs(cellhd.east - cellhd.west);
     delty = fabs(cellhd.north - cellhd.south);
 
-    parm.elevin = G_define_option();
-    parm.elevin->key = "elevin";
-    parm.elevin->type = TYPE_STRING;
-    parm.elevin->required = YES;
-    parm.elevin->gisprompt = "old,cell,raster";
-    parm.elevin->description =
-	_("Name of the input elevation raster map [meters]");
-    parm.elevin->guisection = _("Input_options");
-
-
-    parm.direction = G_define_option();
-    parm.direction->key = "direction";
-    parm.direction->type = TYPE_DOUBLE;
-    parm.direction->required = NO;
-    parm.direction->description =
-	_("Direction in which you want to know the horizon height");
-    parm.direction->guisection = _("Input_options");
-
-    parm.step = G_define_option();
-    parm.step->key = "horizonstep";
-    parm.step->type = TYPE_DOUBLE;
-    parm.step->required = NO;
-    parm.step->description =
-	_("Angle step size for multidirectional horizon [degrees]");
-    parm.step->guisection = _("Input_options");
-
-    parm.bufferzone = G_define_option();
-    parm.bufferzone->key = "bufferzone";
-    parm.bufferzone->type = TYPE_DOUBLE;
-    parm.bufferzone->required = NO;
-    parm.bufferzone->description =
-	_("For horizon rasters, read from the DEM an extra buffer around the present region");
-    parm.bufferzone->guisection = _("Input_options");
-
-    parm.e_buff = G_define_option();
-    parm.e_buff->key = "e_buff";
-    parm.e_buff->type = TYPE_DOUBLE;
-    parm.e_buff->required = NO;
-    parm.e_buff->description =
-	_("For horizon rasters, read from the DEM an extra buffer eastward the present region");
-    parm.e_buff->guisection = _("Input_options");
-
-    parm.w_buff = G_define_option();
-    parm.w_buff->key = "w_buff";
-    parm.w_buff->type = TYPE_DOUBLE;
-    parm.w_buff->required = NO;
-    parm.w_buff->description =
-	_("For horizon rasters, read from the DEM an extra buffer westward the present region");
-    parm.w_buff->guisection = _("Input_options");
-
-    parm.n_buff = G_define_option();
-    parm.n_buff->key = "n_buff";
-    parm.n_buff->type = TYPE_DOUBLE;
-    parm.n_buff->required = NO;
-    parm.n_buff->description =
-	_("For horizon rasters, read from the DEM an extra buffer northward the present region");
-    parm.n_buff->guisection = _("Input_options");
-
-    parm.s_buff = G_define_option();
-    parm.s_buff->key = "s_buff";
-    parm.s_buff->type = TYPE_DOUBLE;
-    parm.s_buff->required = NO;
-    parm.s_buff->description =
-	_("For horizon rasters, read from the DEM an extra buffer southward the present region");
-    parm.s_buff->guisection = _("Input_options");
-
-    parm.maxdistance = G_define_option();
-    parm.maxdistance->key = "maxdistance";
-    parm.maxdistance->type = TYPE_DOUBLE;
-    parm.maxdistance->required = NO;
-    parm.maxdistance->description =
-	_("The maximum distance to consider when finding the horizon height");
-    parm.maxdistance->guisection = _("Input_options");
-
-
-    parm.horizon = G_define_option();
-    parm.horizon->key = "horizon";
-    parm.horizon->type = TYPE_STRING;
-    parm.horizon->required = NO;
-    parm.horizon->gisprompt = "old,cell,raster";
-    parm.horizon->description = _("Prefix of the horizon raster output maps");
-    parm.horizon->guisection = _("Output_options");
-
-
-    parm.coord = G_define_option();
-    parm.coord->key = "coord";
-    parm.coord->type = TYPE_DOUBLE;
-    parm.coord->key_desc = "east,north";
-    parm.coord->required = NO;
-    parm.coord->description =
-	_("Coordinate for which you want to calculate the horizon");
-    parm.coord->guisection = _("Output_options");
-
-    parm.dist = G_define_option();
-    parm.dist->key = "dist";
-    parm.dist->type = TYPE_DOUBLE;
-    parm.dist->answer = DIST;
-    parm.dist->required = NO;
-    parm.dist->description = _("Sampling distance step coefficient (0.5-1.5)");
-    parm.dist->guisection = _("Output_options");
-
-
-    flag.degreeOutput = G_define_flag();
-    flag.degreeOutput->key = 'd';
-    flag.degreeOutput->description =
-	_("Write output in degrees (default is radians)");
-
-
-    if (G_parser(argc, argv))
-	exit(EXIT_FAILURE);
-
     degreeOutput = flag.degreeOutput->answer;
+    compassOutput = flag.compassOutput->answer;
 
+    if (G_projection() == PROJECTION_LL)
+        G_important_message(_("Note: In latitude-longitude coordinate system specify buffers in degree unit"));
 
     elevin = parm.elevin->answer;
 
     if (parm.coord->answer == NULL) {
+        G_debug(1, "Setting mode: WHOLE_RASTER");
 	setMode(WHOLE_RASTER);
     }
     else {
+        G_debug(1, "Setting mode: SINGLE_POINT");
 	setMode(SINGLE_POINT);
 	if (sscanf(parm.coord->answer, "%lf,%lf", &xcoord, &ycoord) != 2) {
 	    G_fatal_error(
-		_("Can't read the coordinates from the \"coord\" option."));
+		_("Can't read the coordinates from the \"coordinate\" option."));
 	}
 
 	/* Transform the coordinates to row/column */
@@ -349,6 +374,15 @@ int main(int argc, char *argv[])
 	   xcoord = (int) ((xcoord-xmin)/stepx);
 	   ycoord = (int) ((ycoord-ymin)/stepy);
 	 */
+         
+	/* Open ASCII file for output or stdout */
+	outfile = parm.output->answer;
+
+	if ((strcmp("-", outfile)) == 0) {
+	    fp = stdout;
+	}
+	else if (NULL == (fp = fopen(outfile, "w")))
+	     G_fatal_error(_("Unable to open file <%s>"), outfile);
     }
 
     if (parm.direction->answer != NULL)
@@ -366,8 +400,29 @@ int main(int argc, char *argv[])
 		_("You didn't specify a horizon raster name. Aborting."));
 	}
 	horizon = parm.horizon->answer;
-	if (parm.step->answer != NULL)
-	    sscanf(parm.step->answer, "%lf", &step);
+	if (parm.step->answer != NULL) {
+            str_step = parm.step->answer;
+            sscanf(parm.step->answer, "%lf", &step);
+	}
+	else {
+	    step = 0;
+	    str_step = "0";
+	}
+        sscanf(parm.start->answer, "%lf", &start);
+        sscanf(parm.end->answer, "%lf", &end);
+        if (start < 0.0) {
+            G_fatal_error(
+                _("Negative values of start angle are not allowed. Aborting."));
+        }
+        if (end < 0.0 || end > 360.0) {
+            G_fatal_error(
+                _("End angle is not between 0 and 360. Aborting."));
+        }
+        if (start >= end) {
+            G_fatal_error(
+                _("You specify a start grater than the end angle. Aborting."));
+        }
+        G_debug(1, "Angle step: %g, start: %g, end: %g", step, start, end);
     }
     else {
 
@@ -376,8 +431,6 @@ int main(int argc, char *argv[])
 		_("You didn't specify an angle step size. Aborting."));
 	}
 	sscanf(parm.step->answer, "%lf", &step);
-
-
     }
 
     if (step == 0.0) {
@@ -385,43 +438,39 @@ int main(int argc, char *argv[])
     }
 
     if (parm.bufferzone->answer != NULL) {
-	if (sscanf(parm.bufferzone->answer, "%lf", &bufferZone) != 1) {
+	if (sscanf(parm.bufferzone->answer, "%lf", &bufferZone) != 1)
 	    G_fatal_error(_("Could not read bufferzone size. Aborting."));
-	}
     }
 
     if (parm.e_buff->answer != NULL) {
-	if (sscanf(parm.e_buff->answer, "%lf", &ebufferZone) != 1) {
-	    G_fatal_error(_("Could not read east bufferzone size. Aborting."));
-	}
+	if (sscanf(parm.e_buff->answer, "%lf", &ebufferZone) != 1)
+	    G_fatal_error(_("Could not read %s bufferzone size. Aborting."),
+			  _("east"));
     }
 
     if (parm.w_buff->answer != NULL) {
-	if (sscanf(parm.w_buff->answer, "%lf", &wbufferZone) != 1) {
-	    G_fatal_error(_("Could not read west bufferzone size. Aborting."));
-	}
+	if (sscanf(parm.w_buff->answer, "%lf", &wbufferZone) != 1)
+	    G_fatal_error(_("Could not read %s bufferzone size. Aborting."),
+			  _("west"));
     }
 
     if (parm.s_buff->answer != NULL) {
-	if (sscanf(parm.s_buff->answer, "%lf", &sbufferZone) != 1) {
-	    G_fatal_error
-		(_("Could not read south bufferzone size. Aborting."));
-	}
+	if (sscanf(parm.s_buff->answer, "%lf", &sbufferZone) != 1)
+	    G_fatal_error(
+		_("Could not read %s bufferzone size. Aborting."),
+		_("south"));
     }
 
-
-
     if (parm.n_buff->answer != NULL) {
-	if (sscanf(parm.n_buff->answer, "%lf", &nbufferZone) != 1) {
-	    G_fatal_error
-		(_("Could not read north bufferzone size. Aborting."));
-	}
+	if (sscanf(parm.n_buff->answer, "%lf", &nbufferZone) != 1)
+	    G_fatal_error(
+		_("Could not read %s bufferzone size. Aborting."),
+		_("north"));
     }
 
     if (parm.maxdistance->answer != NULL) {
-	if (sscanf(parm.maxdistance->answer, "%lf", &fixedMaxLength) != 1) {
+	if (sscanf(parm.maxdistance->answer, "%lf", &fixedMaxLength) != 1)
 	    G_fatal_error(_("Could not read maximum distance. Aborting."));
-	}
     }
 
 
@@ -466,8 +515,7 @@ int main(int argc, char *argv[])
 	n100 = ceil(n / 100.);
 	m100 = ceil(m / 100.);
 
-	if (G_set_window(&new_cellhd) == -1)
-	    exit(EXIT_FAILURE);
+	Rast_set_window(&new_cellhd);
     }
 
     struct Key_Value *in_proj_info, *in_unit_info;
@@ -504,21 +552,6 @@ int main(int argc, char *argv[])
 	      (int)(wbufferZone / stepx), (int)(sbufferZone / stepy),
 	      (int)(nbufferZone / stepy));
 
-    if (bufferZone > 0.) {
-	/* Set the region window back to the original */
-	if (G_set_window(&cellhd) == -1)
-	    exit(EXIT_FAILURE);
-    }
-
-    /* sorry, I've moved OUTGR() to calculate() - into the loop */
-    /*      if(isMode(WHOLE_RASTER))
-       {
-       OUTGR(cellhd.rows,cellhd.cols);
-       }
-     */
-    if (G_set_window(&cellhd) == -1)
-	exit(EXIT_FAILURE);
-
     exit(EXIT_SUCCESS);
 }
 
@@ -532,7 +565,7 @@ int INPUT(void)
     int l, i, j, k;
     int lmax, kmax;
 
-    cell1 = G_allocate_f_raster_buf();
+    cell1 = Rast_allocate_f_buf();
 
     z = (float **)G_malloc(sizeof(float *) * (m));
     z100 = (float **)G_malloc(sizeof(float *) * (m100));
@@ -545,25 +578,22 @@ int INPUT(void)
     }
     /*read Z raster */
 
-    if ((mapset = G_find_cell(elevin, "")) == NULL)
-	G_fatal_error(_("Raster map <%s> not found"), elevin);
-
-    fd1 = G_open_cell_old(elevin, mapset);
+    fd1 = Rast_open_old(elevin, "");
 
     for (row = 0; row < m; row++) {
-	G_get_f_raster_row(fd1, cell1, row);
+	Rast_get_f_row(fd1, cell1, row);
 
 	for (j = 0; j < n; j++) {
 	    row_rev = m - row - 1;
 
-	    if (!G_is_f_null_value(cell1 + j))
+	    if (!Rast_is_f_null_value(cell1 + j))
 		z[row_rev][j] = (float)cell1[j];
 	    else
 		z[row_rev][j] = UNDEFZ;
 
 	}
     }
-    G_close_cell(fd1);
+    Rast_close(fd1);
 
     /* create low resolution array 100 */
     for (i = 0; i < m100; i++) {
@@ -582,7 +612,7 @@ int INPUT(void)
 		}
 	    }
 	    z100[i][j] = zmax;
-	    /* G_debug(3,"%d %d %lf\n", i, j, z100[i][j]); */
+	    G_debug(3,"%d %d %lf\n", i, j, z100[i][j]);
 	}
     }
 
@@ -607,23 +637,20 @@ int OUTGR(int numrows, int numcols)
     int fd1 = 0;
     int i, iarc, j;
 
-    if (G_set_window(&cellhd) < 0)
-	exit(EXIT_FAILURE);
+    Rast_set_window(&cellhd);
 
     if (horizon != NULL) {
-	cell1 = G_allocate_f_raster_buf();
-	fd1 = G_open_fp_cell_new(shad_filename);
-	if (fd1 < 0)
-	    G_fatal_error(_("Unable to create raster map %s"), shad_filename);
+	cell1 = Rast_allocate_f_buf();
+	fd1 = Rast_open_fp_new(shad_filename);
     }
 
-    if (numrows != G_window_rows())
+    if (numrows != Rast_window_rows())
 	G_fatal_error(_("OOPS: rows changed from %d to %d"), numrows,
-		      G_window_rows());
+		      Rast_window_rows());
 
-    if (numcols != G_window_cols())
+    if (numcols != Rast_window_cols())
 	G_fatal_error(_("OOPS: cols changed from %d to %d"), numcols,
-		      G_window_cols());
+		      Rast_window_cols());
 
     for (iarc = 0; iarc < numrows; iarc++) {
 	i = numrows - iarc - 1;
@@ -631,15 +658,15 @@ int OUTGR(int numrows, int numcols)
 	if (horizon != NULL) {
 	    for (j = 0; j < numcols; j++) {
 		if (horizon_raster[i][j] == UNDEFZ)
-		    G_set_f_null_value(cell1 + j, 1);
+		    Rast_set_f_null_value(cell1 + j, 1);
 		else
 		    cell1[j] = (FCELL) horizon_raster[i][j];
 	    }
-	    G_put_f_raster_row(fd1, cell1);
+	    Rast_put_f_row(fd1, cell1);
 	}
     }				/* End loop over rows. */
 
-    G_close_cell(fd1);
+    Rast_close(fd1);
 
     return 1;
 }
@@ -790,8 +817,8 @@ void calculate_shadow()
 
     angle = (single_direction * deg2rad) + pihalf;
 
-
     maxlength = fixedMaxLength;
+    fprintf(fp, "azimuth,horizon_height\n");
 
     for (i = 0; i < printCount; i++) {
 
@@ -839,9 +866,7 @@ void calculate_shadow()
 	stepsinangle = stepxy * delt_nor / delt_dist;
 	stepcosangle = stepxy * delt_east / delt_dist;
 
-
 	shadow_angle = horizon_height();
-
 
 	if (degreeOutput) {
 	    shadow_angle *= rad2deg;
@@ -852,7 +877,16 @@ void calculate_shadow()
 	else if (printangle >= 360.)
 	    printangle -= 360;
 
-	G_message("%lf, %lf", printangle, shadow_angle);
+	if(compassOutput ){
+	    double tmpangle;
+	    
+	    tmpangle = 360. - printangle + 90.;
+	    if (tmpangle >= 360.)
+		tmpangle = tmpangle - 360.;
+	    fprintf(fp, "%lf,%lf\n", tmpangle, shadow_angle);
+	} else {
+	    fprintf(fp, "%lf,%lf\n", printangle, shadow_angle);
+	}
 
 	angle += dfr_rad;
 
@@ -920,14 +954,14 @@ int test_low_res()
     jp100 = floor(jp / 100.);
     /*test the new position with low resolution */
     if ((ip100 != iold100) || (jp100 != jold100)) {
-	/* G_debug(3,"%d %d %d %d\n",ip,jp, iold100,jold100); */
+	G_debug(2,"ip:%d jp:%d iold100:%d jold100:%d\n",ip,jp, iold100,jold100);
 	/*  replace with approximate version
 	   curvature_diff = EARTHRADIUS*(1.-cos(length/EARTHRADIUS));
 	 */
 	curvature_diff = 0.5 * length * length * invEarth;
 	z2 = z_orig + curvature_diff + length * tanh0;
 	zp100 = z100[jp100][ip100];
-	/*G_debug(3,"%d %d %lf %lf \n",ip,jp,z2,zp100); */
+	G_debug(2,"ip:%d jp:%d z2:%lf zp100:%lf \n",ip,jp,z2,zp100);
 
 	if (zp100 <= z2)
 	    /*skip to the next lowres cell */
@@ -960,11 +994,11 @@ int test_low_res()
 	    }
 
 	    mindel = min(delx, dely);
-	    /* G_debug(3,"%d %d %d %lf %lf\n",ip, jp, mindel,xg0, yg0);*/
+	    G_debug(2,"%d %d %d %lf %lf\n",ip, jp, mindel,xg0, yg0);
 
 	    yy0 = yy0 + (mindel * stepsinangle);
 	    xx0 = xx0 + (mindel * stepcosangle);
-	    /* G_debug(3,"  %lf %lf\n",xx0,yy0);*/
+	    G_debug(2,"  %lf %lf\n",xx0,yy0);
 
 	    return (3);
 	}
@@ -1025,7 +1059,7 @@ void calculate(double xcoord, double ycoord, int buffer_e, int buffer_w,
 	       int buffer_s, int buffer_n)
 {
     int i, j, l, k = 0;
-    int numDigits;
+    size_t decimals;
 
     int xindex, yindex;
     double shadow_angle;
@@ -1038,7 +1072,6 @@ void calculate(double xcoord, double ycoord, int buffer_e, int buffer_w,
     double delt_east, delt_nor;
     double delt_dist;
 
-    char formatString[10];
     char msg_buff[256];
 
     int hor_row_start = buffer_s;
@@ -1051,7 +1084,7 @@ void calculate(double xcoord, double ycoord, int buffer_e, int buffer_w,
     int hor_numcols = n - (buffer_e + buffer_w);
 
     int arrayNumInt;
-    double dfr_rad;
+    double dfr_rad, angle_deg;
 
     xindex = (int)((xcoord - xmin) / stepx);
     yindex = (int)((ycoord - ymin) / stepy);
@@ -1085,6 +1118,7 @@ void calculate(double xcoord, double ycoord, int buffer_e, int buffer_w,
 	z_orig = zp = z[yindex][xindex];
 
 	calculate_shadow();
+        fclose(fp);
 
     }
     else {
@@ -1114,24 +1148,25 @@ void calculate(double xcoord, double ycoord, int buffer_e, int buffer_w,
 	}
 	else {
 	    dfr_rad = step * deg2rad;
-	    arrayNumInt = (int)(360. / fabs(step));
+	    arrayNumInt = (int)((end - start) / fabs(step));
 	}
 
-	numDigits = (int)(log10(1. * arrayNumInt)) + 1;
-	sprintf(formatString, "%%s_%%0%dd", numDigits);
+        decimals = G_get_num_decimals(str_step);
 
 	for (k = 0; k < arrayNumInt; k++) {
 	   struct History history; 
 
-	    if (step != 0.0)
-		sprintf(shad_filename, formatString, horizon, k);
+	    angle = (start + single_direction) * deg2rad + (dfr_rad * k);
+            angle_deg = angle * rad2deg + 0.0001;
 
-	    angle = (single_direction * deg2rad) + (dfr_rad * k);
+            if (step != 0.0)
+                 shad_filename = G_generate_basename(horizon, angle_deg, 3, decimals);
+
 	    /*              
 	       com_par(angle);
 	     */
-	    G_message(_("Calculating map %01d of %01d (angle %lf, raster map <%s>)"),
-		     (k + 1), arrayNumInt, angle * rad2deg, shad_filename);
+	    G_message(_("Calculating map %01d of %01d (angle %.2f, raster map <%s>)"),
+		     (k + 1), arrayNumInt, angle_deg, shad_filename);
 
 	    for (j = hor_row_start; j < hor_row_end; j++) {
 		G_percent(j - hor_row_start, hor_numrows - 1, 2);
@@ -1217,7 +1252,7 @@ void calculate(double xcoord, double ycoord, int buffer_e, int buffer_w,
 
 		    if (z_orig != UNDEFZ) {
 
-			/* G_debug(3,"**************new line %d %d\n", i, j); */
+			G_debug(4,"**************new line %d %d\n", i, j);
 			shadow_angle = horizon_height();
 
 			if (degreeOutput) {
@@ -1248,37 +1283,34 @@ void calculate(double xcoord, double ycoord, int buffer_e, int buffer_w,
 	    }
 
 	    /* return back the buffered region */
-	    if (bufferZone > 0.) {
-		if (G_set_window(&new_cellhd) == -1)
-		    exit(0);
-	    }
+	    if (bufferZone > 0.)
+		Rast_set_window(&new_cellhd);
 
 	    /* write metadata */
-	    G_short_history(shad_filename, "raster", &history);
+	    Rast_short_history(shad_filename, "raster", &history);
 
 	    sprintf(msg_buff,
 		    "Angular height of terrain horizon, map %01d of %01d",
 		    (k + 1), arrayNumInt);
-	    G_put_cell_title(shad_filename, msg_buff);
+	    Rast_put_cell_title(shad_filename, msg_buff);
 
 	    if (degreeOutput)
-		G_write_raster_units(shad_filename, "degrees");
+		Rast_write_units(shad_filename, "degrees");
 	    else
-		G_write_raster_units(shad_filename, "radians");
+		Rast_write_units(shad_filename, "radians");
 
-	    G_command_history(&history);
+	    Rast_command_history(&history);
 
 	    /* insert a blank line */
-	    history.edhist[history.edlinecnt][0] = '\0';
-	    history.edlinecnt++;
+	    Rast_append_history(&history, "");
 
-	    sprintf(msg_buff,
-		    "Horizon view from azimuth angle %.2f degrees CCW from East",
-		    angle * rad2deg);
-	    strcpy(history.edhist[history.edlinecnt], msg_buff);
-	    history.edlinecnt++;
+	    Rast_append_format_history(
+		&history,
+		"Horizon view from azimuth angle %.2f degrees CCW from East",
+		angle * rad2deg);
 
-	    G_write_history(shad_filename, &history);
+	    Rast_write_history(shad_filename, &history);
+            G_free(shad_filename);
 	}
     }
 }

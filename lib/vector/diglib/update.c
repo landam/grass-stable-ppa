@@ -1,6 +1,6 @@
 
 /**
- * \file update.c
+ * \file lib/vector/diglib/update.c
  *
  * \brief Vector library - update topology (lower level functions)
  *
@@ -15,8 +15,7 @@
  */
 
 #include <stdlib.h>
-#include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 
 /*!
    \brief Reset number of updated lines
@@ -25,7 +24,7 @@
  */
 void dig_line_reset_updated(struct Plus_head *Plus)
 {
-    Plus->n_uplines = 0;
+    Plus->uplist.n_uplines = 0;
 }
 
 /*!
@@ -33,28 +32,40 @@ void dig_line_reset_updated(struct Plus_head *Plus)
 
    \param Plus pointer to Plus_head structure
    \param line line id
+   \param offset line offset (negative offset is ignored)
  */
-void dig_line_add_updated(struct Plus_head *Plus, int line)
+void dig_line_add_updated(struct Plus_head *Plus, int line, off_t offset)
 {
     int i;
-
+    
     G_debug(3, "dig_line_add_updated(): line = %d", line);
 
+    /* undo/redo in the digitizer needs all steps, 
+     * disable check */
+#if 0
     /* Check if already in list */
-    for (i = 0; i < Plus->n_uplines; i++)
-	if (Plus->uplines[i] == line)
+    for (i = 0; i < Plus->uplist.n_uplines; i++) {
+	if (Plus->uplist.uplines[i] == line) {
+            G_debug(3, "\tskipped");
 	    return;
-
+        }
+    }
+#endif
+    
     /* Alloc space if needed */
-    if (Plus->n_uplines == Plus->alloc_uplines) {
-	Plus->alloc_uplines += 1000;
-	Plus->uplines =
-	    (int *)G_realloc(Plus->uplines,
-			     Plus->alloc_uplines * sizeof(int));
+    if (Plus->uplist.n_uplines == Plus->uplist.alloc_uplines) {
+	Plus->uplist.alloc_uplines += 1000;
+	Plus->uplist.uplines =
+	    (int *)G_realloc(Plus->uplist.uplines,
+			     Plus->uplist.alloc_uplines * sizeof(int));
+	Plus->uplist.uplines_offset =
+	    (off_t *)G_realloc(Plus->uplist.uplines_offset,
+			     Plus->uplist.alloc_uplines * sizeof(off_t));
     }
 
-    Plus->uplines[Plus->n_uplines] = line;
-    Plus->n_uplines++;
+    Plus->uplist.uplines[Plus->uplist.n_uplines] = line;
+    Plus->uplist.uplines_offset[Plus->uplist.n_uplines] = offset;
+    Plus->uplist.n_uplines++;
 }
 
 /*!
@@ -64,7 +75,7 @@ void dig_line_add_updated(struct Plus_head *Plus, int line)
  */
 void dig_node_reset_updated(struct Plus_head *Plus)
 {
-    Plus->n_upnodes = 0;
+    Plus->uplist.n_upnodes = 0;
 }
 
 /*!
@@ -80,18 +91,21 @@ void dig_node_add_updated(struct Plus_head *Plus, int node)
     G_debug(3, "dig_node_add_updated(): node = %d", node);
 
     /* Check if already in list */
-    for (i = 0; i < Plus->n_upnodes; i++)
-	if (Plus->upnodes[i] == node)
+    for (i = 0; i < Plus->uplist.n_upnodes; i++) {
+	if (abs(Plus->uplist.upnodes[i]) == abs(node)) {
+            G_debug(3, "\tskipped");
 	    return;
-
-    /* Alloc space if needed */
-    if (Plus->n_upnodes == Plus->alloc_upnodes) {
-	Plus->alloc_upnodes += 1000;
-	Plus->upnodes =
-	    (int *)G_realloc(Plus->upnodes,
-			     Plus->alloc_upnodes * sizeof(int));
+        }
     }
 
-    Plus->upnodes[Plus->n_upnodes] = node;
-    Plus->n_upnodes++;
+    /* Alloc space if needed */
+    if (Plus->uplist.n_upnodes == Plus->uplist.alloc_upnodes) {
+	Plus->uplist.alloc_upnodes += 1000;
+	Plus->uplist.upnodes =
+	    (int *)G_realloc(Plus->uplist.upnodes,
+			     Plus->uplist.alloc_upnodes * sizeof(int));
+    }
+
+    Plus->uplist.upnodes[Plus->uplist.n_upnodes] = node;
+    Plus->uplist.n_upnodes++;
 }

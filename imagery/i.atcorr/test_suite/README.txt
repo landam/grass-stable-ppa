@@ -11,7 +11,7 @@ ETM4_400x400_atms_corr.raw = Image output file (expected output)
 # import raw Landsat channel 4:
 r.in.gdal ETM4_400x400.raw out=ETM4_400x400.raw -o
 # set region to this map
-g.region rast=ETM4_400x400.raw
+g.region raster=ETM4_400x400.raw
 
 # create synthetic DEM, close to sea level
 r.mapcalc "atcorr_dem = 10.0"
@@ -30,9 +30,3 @@ r.mapcalc "atcorr_diff = ETM4_400x400_atms_corr - ETM4_400x400.corrected"
 r.colors atcorr_diff color=differences
 
 r.univar atcorr_diff
-
-d.mon x0
-d.rast ETM4_400x400.raw
-d.rast ETM4_400x400.corrected
-d.rast.leg atcorr_diff
-

@@ -21,17 +21,14 @@
 #include <stdio.h>
 #include "glob.h"
 #include "local_proto.h"
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 int nfiles;
 int nrows;
 int ncols;
-int NCATS = 1 << SHIFT;
-char *names[NFILES];
+const char *names[NFILES];
 struct Categories labels[NFILES];
-NODE *tree;		/* tree of values */
-int tlen;		/* allocate tree size */
-int N;			/* number of actual nodes in tree */
 RECLASS *reclass;
 CELL *table;
 
@@ -43,9 +40,9 @@ int main(int argc, char *argv[])
     int fd[NFILES];
     int outfd;
     int i;
-    char *name;
-    char *output;
-    char *mapset;
+    const char *name;
+    const char *output;
+    const char *mapset;
     int non_zero;
     struct Range range;
     CELL ncats, max_cats;
@@ -64,15 +61,13 @@ int main(int argc, char *argv[])
 	struct Flag *z;
     } flag;
 
-    /* please, remove before GRASS 7 released */
-    struct Flag *q_flag;
-
     G_gisinit(argv[0]);
 
     /* Define the different options */
 
     module = G_define_module();
-    module->keywords = _("raster, statistics");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("statistics"));
     module->description =
 	_("Creates a cross product of the category values from "
 	  "multiple raster map layers.");
@@ -94,40 +89,24 @@ int main(int argc, char *argv[])
     flag.z->key = 'z';
     flag.z->description = _("Non-zero data only");
 
-    /* please, remove before GRASS 7 released */
-    q_flag = G_define_flag();
-    q_flag->key = 'q';
-    q_flag->description = _("Run quietly");
-
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    if (q_flag->answer) {
-	G_putenv("GRASS_VERBOSE", "0");
-	G_warning(_("The '-q' flag is superseded and will be removed "
-		    "in future. Please use '--quiet' instead."));
-    }
-
-    nrows = G_window_rows();
-    ncols = G_window_cols();
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
 
     nfiles = 0;
-    non_zero = 0;
-
-
     non_zero = flag.z->answer;
 
     for (nfiles = 0; (name = parm.input->answers[nfiles]); nfiles++) {
 	if (nfiles >= NFILES)
 	    G_fatal_error(_("More than %d files not allowed"), NFILES);
-	mapset = G_find_cell2(name, "");
+	mapset = G_find_raster2(name, "");
 	if (!mapset)
 	    G_fatal_error(_("Raster map <%s> not found"), name);
 	names[nfiles] = name;
-	fd[nfiles] = G_open_cell_old(name, mapset);
-	if (fd[nfiles] < 0)
-	    G_fatal_error(_("Unable to open raster map <%s>"), name);
-	G_read_range(name, mapset, &range);
+	fd[nfiles] = Rast_open_old(name, mapset);
+	Rast_read_range(name, mapset, &range);
 	ncats = range.max - range.min;
 
 	if (nfiles == 0 || ncats > max_cats) {
@@ -139,11 +118,7 @@ int main(int argc, char *argv[])
     if (nfiles <= 1)
 	G_fatal_error(_("Must specify 2 or more input maps"));
     output = parm.output->answer;
-    outfd = G_open_cell_new(output);
-
-    if (outfd < 0)
-	G_fatal_error(_("Unable to create raster map <%s>"),
-		      parm.output->answer);
+    outfd = Rast_open_c_new(output);
 
     sprintf(buf, "Cross of %s", names[0]);
     for (i = 1; i < nfiles - 1; i++) {
@@ -152,7 +127,7 @@ int main(int argc, char *argv[])
     }
     strcat(buf, " and ");
     strcat(buf, names[i]);
-    G_init_cats((CELL) 0, buf, &pcats);
+    Rast_init_cats(buf, &pcats);
 
     /* first step is cross product, but un-ordered */
     result = cross(fd, non_zero, primary, outfd);
@@ -162,8 +137,8 @@ int main(int argc, char *argv[])
 
     /* now close all files */
     for (i = 0; i < nfiles; i++)
-	G_close_cell(fd[i]);
-    G_close_cell(outfd);
+	Rast_close(fd[i]);
+    Rast_close(outfd);
 
     if (result <= 0)
 	exit(0);
@@ -173,8 +148,8 @@ int main(int argc, char *argv[])
     qsort(reclass, result + 1, sizeof(RECLASS), cmp);
     table = (CELL *) G_calloc(result + 1, sizeof(CELL));
     for (i = 0; i < nfiles; i++) {
-	mapset = G_find_cell(names[i], "");
-	G_read_cats(names[i], mapset, &labels[i]);
+	mapset = G_find_raster2(names[i], "");
+	Rast_read_cats(names[i], mapset, &labels[i]);
     }
 
     for (ncats = 0; ncats <= result; ncats++) {
@@ -183,22 +158,22 @@ int main(int argc, char *argv[])
     }
 
     for (i = 0; i < nfiles; i++)
-	G_free_cats(&labels[i]);
+	Rast_free_cats(&labels[i]);
 
     /* reopen the output cell for reading and for writing */
-    fd[0] = G_open_cell_old(output, G_mapset());
-    outfd = G_open_cell_new(output);
+    fd[0] = Rast_open_old(output, G_mapset());
+    outfd = Rast_open_c_new(output);
 
     renumber(fd[0], outfd);
 
     G_message(_("Creating support files for <%s>..."), output);
-    G_close_cell(fd[0]);
-    G_close_cell(outfd);
-    G_write_cats(output, &pcats);
-    G_free_cats(&pcats);
+    Rast_close(fd[0]);
+    Rast_close(outfd);
+    Rast_write_cats(output, &pcats);
+    Rast_free_cats(&pcats);
     if (result > 0) {
-	G_make_random_colors(&pcolr, (CELL) 1, result);
-	G_write_colors(output, G_mapset(), &pcolr);
+	Rast_make_random_colors(&pcolr, (CELL) 1, result);
+	Rast_write_colors(output, G_mapset(), &pcolr);
     }
 
     G_message(_("%ld categories"), (long)result);

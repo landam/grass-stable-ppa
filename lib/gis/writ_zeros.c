@@ -1,17 +1,17 @@
 
-/**
- * \file writ_zeros.c
+/*!
+ * \file lib/gis/writ_zeros.c
  *
  * \brief GIS Library - Write zero functions.
  *
- * (C) 2001-2008 by the GRASS Development Team
+ * (C) 2001-2014 by the GRASS Development Team
  *
  * This program is free software under the GNU General Public License
  * (>=v2). Read the file COPYING that comes with GRASS for details.
  *
  * \author GRASS GIS Development Team
  *
- * \date 1999-2008
+ * \date 1999-2014
  */
 
 #include <unistd.h>
@@ -23,17 +23,17 @@
  *
  * \param[in] fd file descriptor
  * \param[in] n number of bytes to write
- * \return always returns 0
+ * \return
  */
 
-int G_write_zeros(int fd, size_t n)
+void G_write_zeros(int fd, size_t n)
 {
     char zeros[1024];
     char *z;
     int i;
 
     if (n <= 0)
-	return 0;
+	return;
 
     /* There is a subtle gotcha to be avoided here.
      *
@@ -61,6 +61,4 @@ int G_write_zeros(int fd, size_t n)
 	write(fd, zeros, i);
 	n -= i;
     }
-
-    return 0;
 }

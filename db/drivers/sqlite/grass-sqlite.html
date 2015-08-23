@@ -1,17 +1,6 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
-<head>
-<title>GRASS-SQLite driver</title>
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-<link rel="stylesheet" href="grassdocs.css" type="text/css">
-</head>
+<!-- meta page description: SQLite DATABASE DRIVER -->
 
-<body bgcolor="white">
-
-<img src="grass_logo.png" alt="GRASS logo"><hr align=center size=6 noshade>
-
-<!-- meta page description: SQLite driver -->
-<h1>SQLite driver in GRASS</h1>
+The SQLite driver is the default DBMI backend.
 
 <h2>Creating a SQLite database</h2>
 
@@ -28,7 +17,7 @@ is created:
 
 <div class="code"><pre>
 # example for storing DB in mapset directory (keep single quotes):
-db.connect driver=sqlite database='$GISDBASE/$LOCATION_NAME/$MAPSET/sqlite.db'
+db.connect driver=sqlite database='$GISDBASE/$LOCATION_NAME/$MAPSET/sqlite/sqlite.db'
 db.connect -p
 </pre></div>
 
@@ -50,9 +39,10 @@ To open a DB file stored within the current mapset,
 the following way is suggested (corresponds to above database connection):
 
 <div class="code"><pre>
+# fetch GRASS variables as shell environment variables:
 eval `g.gisenv`
 # use double quotes:
-sqlitebrowser "$GISDBASE/$LOCATION_NAME/$MAPSET"/sqlite.db
+sqlitebrowser "$GISDBASE/$LOCATION_NAME/$MAPSET"/sqlite/sqlite.db
 </pre></div>
 
 <!-- doesnt work yet, why?:
@@ -88,11 +78,4 @@ echo "
 </em>
 
 <p>
-<i>Last changed: $Date: 2012-09-07 10:20:29 +0200 (Fri, 07 Sep 2012) $</i>
-<hr>
-<br>
-<a href="index.html">Main index</a> -
-<a href="database.html">database index</a> -
-<a href="full_index.html">full index</a>
-</body>
-</html>
+<i>Last changed: $Date: 2014-04-20 19:54:31 +0200 (Sun, 20 Apr 2014) $</i>

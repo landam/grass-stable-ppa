@@ -1,4 +1,4 @@
-"""!
+"""
 @package wxplot.dialogs
 
 @brief Dialogs for different plotting routines
@@ -25,6 +25,7 @@ import wx.lib.scrolledpanel as scrolled
 
 from core             import globalvar
 from core.settings    import UserSettings
+from core.utils import _
 from gui_core.gselect import Select
 
 from grass.script import core  as grass
@@ -33,7 +34,7 @@ class ProfileRasterDialog(wx.Dialog):
     def __init__(self, parent, id = wx.ID_ANY, 
                  title = _("Select raster maps to profile"),
                  style = wx.DEFAULT_DIALOG_STYLE, **kwargs):
-        """!Dialog to select raster maps to profile.
+        """Dialog to select raster maps to profile.
         """
 
         wx.Dialog.__init__(self, parent, id, title, style = style, **kwargs)
@@ -96,14 +97,145 @@ class ProfileRasterDialog(wx.Dialog):
         sizer.Fit(self)
 
     def OnSelection(self, event):
-        """!Choose maps to profile. Convert these into a list
+        """Choose maps to profile. Convert these into a list
         """
         self.rasterList = self.FindWindowById(event.GetId()).GetValue().split(',')
+
+class ScatterRasterDialog(wx.Dialog):
+    def __init__(self, parent, id = wx.ID_ANY, 
+                 title = _("Select pairs of raster maps for scatterplots"),
+                 style = wx.DEFAULT_DIALOG_STYLE, **kwargs):
+        """Dialog to select raster maps to profile.
+        """
+
+        wx.Dialog.__init__(self, parent, id, title, style = style, **kwargs)
+
+        self.parent = parent 
+        self.rasterList = self.parent.rasterList
+        self.bins = self.parent.bins
+        self.scattertype = self.parent.scattertype
+        self.maptype = self.parent.maptype
+        self.spinbins = ''        
+        self.colorList = ["blue", "red", "green", "yellow", "magenta", "cyan", \
+                    "aqua", "black", "grey", "orange", "brown", "purple", "violet", \
+                    "indigo"]
         
+        self._do_layout()
+        
+    def _do_layout(self):
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        box = wx.GridBagSizer (hgap = 3, vgap = 3)
+        
+        # parse raster pair tuples 
+        rastText = ''
+        if len(self.rasterList) > 0:
+            for r in self.rasterList:
+                if isinstance(r, tuple):
+                    rastText += '%s,%s,' % r
+                else:
+                    rastText += '%s,' % r
+            rastText = rastText.rstrip(',')
+        
+        # select rasters
+        txt = _("Select pairs of raster maps for bivariate scatterplots:")
+        label = wx.StaticText(parent = self, id = wx.ID_ANY, label = txt)
+        box.Add(item = label,
+                flag = wx.ALIGN_CENTER_VERTICAL, pos = (0, 0))
+        
+        selection = Select(self, id = wx.ID_ANY,
+                           size = globalvar.DIALOG_GSELECT_SIZE,
+                           type = 'cell', multiple=True)
+        selection.SetValue(rastText)
+        selection.Bind(wx.EVT_TEXT, self.OnSelection)
+        
+        box.Add(item = selection, pos = (0, 1))
+            
+        # Nsteps for FP maps 
+        label = wx.StaticText(parent = self, id = wx.ID_ANY, 
+                              label = _("Number of bins (for FP maps)"))
+        box.Add(item = label,
+                flag = wx.ALIGN_CENTER_VERTICAL, pos = (1, 0))
+        self.spinbins = wx.SpinCtrl(parent = self, id = wx.ID_ANY, value = "", pos = (30, 50),
+                                      size = (100,-1), style = wx.SP_ARROW_KEYS)
+        self.spinbins.SetRange(1,1000)
+        self.spinbins.SetValue(self.bins)
+        box.Add(item = self.spinbins,
+                flag = wx.ALIGN_CENTER_VERTICAL, pos = (1, 1))
+
+#### TODO possibly make bubble plots with marker size proportional to cell counts
+#        # scatterplot type 
+#        label = wx.StaticText(parent = self, id = wx.ID_ANY, 
+#                              label = _("Scatterplot type"))
+#        box.Add(item = label,
+#                flag = wx.ALIGN_CENTER_VERTICAL, pos = (2, 0))
+#        types = ['normal', 'bubble']
+#        scattertype = wx.ComboBox(parent = self, id = wx.ID_ANY, size = (250, -1),
+#                                choices = types, style = wx.CB_DROPDOWN)
+#        scattertype.SetStringSelection(self.scattertype)
+#        box.Add(item = scattertype,
+#                flag = wx.ALIGN_CENTER_VERTICAL, pos = (2, 1))
+          
+        sizer.Add(item = box, proportion = 0,
+                  flag = wx.ALL, border = 10)
+
+        line = wx.StaticLine(parent = self, id = wx.ID_ANY, size = (20, -1), style = wx.LI_HORIZONTAL)
+        sizer.Add(item = line, proportion = 0,
+                  flag = wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.LEFT|wx.RIGHT, border = 5)
+
+        btnsizer = wx.StdDialogButtonSizer()
+
+        btn = wx.Button(self, wx.ID_OK)
+        btn.SetDefault()
+        btnsizer.AddButton(btn)
+
+        btn = wx.Button(self, wx.ID_CANCEL)
+        btnsizer.AddButton(btn)
+        btnsizer.Realize()
+
+        sizer.Add(item = btnsizer, proportion = 0, flag = wx.ALIGN_RIGHT | wx.ALL, border = 5)
+
+        self.spinbins.Bind(wx.EVT_TEXT, self.OnSetBins)
+        self.spinbins.Bind(wx.EVT_SPINCTRL, self.OnSetBins)
+#        scattertype.Bind(wx.EVT_TEXT, self.OnSetScattertypes)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+
+    def OnSelection(self, event):
+        """Select raster maps for scatterplot. Must select maps in pairs.
+        """
+        self.rasterList = self.FindWindowById(event.GetId()).GetValue().split(',', 1)
+        
+    def OnSetBins(self, event):
+        """Bins for histogramming FP maps (=nsteps in r.stats)
+        """
+        self.bins = self.spinbins.GetValue()
+        
+    def OnSetScattertypes(self, event):
+        self.scattertype = event.GetString()
+        
+    def GetRasterPairs(self):
+        """Get raster pairs"""
+        pairsList = list()
+        pair = list()
+        for r in self.rasterList:
+            pair.append(r)
+            if len(pair) == 2:
+                pairsList.append(tuple(pair))
+                pair = list()
+        
+        return list(pairsList)
+    
+    def GetSettings(self):
+        """Get type and bins"""
+        return self.scattertype, self.bins
+    
 class PlotStatsFrame(wx.Frame):
     def __init__(self, parent, id, message = '', title = '',
                  style = wx.DEFAULT_FRAME_STYLE, **kwargs):
-        """!Dialog to display and save statistics for plots
+        """Dialog to display and save statistics for plots
         """
         wx.Frame.__init__(self, parent, id, style = style, **kwargs)
         self.SetLabel(_("Statistics"))
@@ -175,7 +307,7 @@ class PlotStatsFrame(wx.Frame):
         sizer.Fit(self)
 
     def OnCopy(self, event):
-        """!Copy the regression stats to the clipboard
+        """Copy the regression stats to the clipboard
         """
         str = self.title + '\n'
         for item in self.message:
@@ -190,14 +322,192 @@ class PlotStatsFrame(wx.Frame):
             wx.MessageBox(_("Regression statistics copied to clipboard"))
         
     def OnClose(self, event):
-        """!Button 'Close' pressed
+        """Button 'Close' pressed
         """
         self.Close(True)
+
+class HistRasterDialog(wx.Dialog):
+    def __init__(self, parent, id = wx.ID_ANY, 
+                 title = _("Select raster map or imagery group to histogram"),
+                 style = wx.DEFAULT_DIALOG_STYLE, **kwargs):
+        """Dialog to select raster maps to histogram.
+        """
+
+        wx.Dialog.__init__(self, parent, id, title, style = style, **kwargs)
+
+        self.parent = parent
+        self.rasterList = self.parent.rasterList
+        self.group = self.parent.group
+        self.bins = self.parent.bins
+        self.histtype = self.parent.histtype
+        self.maptype = self.parent.maptype
+        self.spinbins = ''
+        
+        self._do_layout()
+        
+    def _do_layout(self):
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        box = wx.GridBagSizer (hgap = 3, vgap = 3)
+        
+        #
+        # select single raster or image group to histogram radio buttons
+        #
+        self.rasterRadio = wx.RadioButton(self, id = wx.ID_ANY, label = " %s " % _("Histogram single raster"), style = wx.RB_GROUP)
+        self.groupRadio = wx.RadioButton(self, id = wx.ID_ANY, label = " %s " % _("Histogram imagery group"))
+        if self.maptype == 'raster': 
+            self.rasterRadio.SetValue(True)
+        elif self.maptype == 'group': 
+            self.groupRadio.SetValue(True)
+        box.Add(item = self.rasterRadio, flag = wx.ALIGN_CENTER_VERTICAL, pos = (0, 0))
+        box.Add(item = self.groupRadio, flag = wx.ALIGN_CENTER_VERTICAL, pos = (0, 1))
+        
+        #
+        # Select a raster to histogram
+        #
+        label = wx.StaticText(parent = self, id = wx.ID_ANY, 
+                              label = _("Select raster map:"))
+        box.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (1, 0))
+        self.rselection = Select(self, id = wx.ID_ANY,
+                                 size = globalvar.DIALOG_GSELECT_SIZE,
+                                 type = 'cell')
+        if self.groupRadio.GetValue() == True: 
+            self.rselection.Disable()
+        else:
+            rastText = ''
+            for r in self.rasterList:
+                rastText += '%s,' % r
+            rastText = rastText.rstrip(',')
+            self.rselection.SetValue(rastText)
+        box.Add(item = self.rselection, pos = (1, 1))       
+
+        #
+        # Select an image group to histogram
+        #
+        label = wx.StaticText(parent = self, id = wx.ID_ANY, 
+                              label = _("Select image group:"))
+        box.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (2, 0))
+        self.gselection = Select(self, id = wx.ID_ANY,
+                                 size = globalvar.DIALOG_GSELECT_SIZE,
+                                 type = 'group')
+        if self.rasterRadio.GetValue() == True: 
+            self.gselection.Disable()
+        else:
+            if self.group != None: self.gselection.SetValue(self.group)
+        box.Add(item = self.gselection, pos = (2, 1))
+            
+        #
+        # Nsteps for FP maps and histogram type selection
+        #
+        label = wx.StaticText(parent = self, id = wx.ID_ANY, 
+                              label = _("Number of bins (for FP maps)"))
+        box.Add(item = label,
+                flag = wx.ALIGN_CENTER_VERTICAL, pos = (3, 0))
+        self.spinbins = wx.SpinCtrl(parent = self, id = wx.ID_ANY, value = "", pos = (30, 50),
+                                      size = (100,-1), style = wx.SP_ARROW_KEYS)
+        self.spinbins.SetRange(1,1000)
+        self.spinbins.SetValue(self.bins)
+        box.Add(item = self.spinbins,
+                flag = wx.ALIGN_CENTER_VERTICAL, pos = (3, 1))
+
+        label = wx.StaticText(parent = self, id = wx.ID_ANY, 
+                              label = _("Histogram type"))
+        box.Add(item = label,
+                flag = wx.ALIGN_CENTER_VERTICAL, pos = (4, 0))
+        types = ['count', 'percent', 'area']
+        histtype = wx.ComboBox(parent = self, id = wx.ID_ANY, size = (250, -1),
+                                choices = types, style = wx.CB_DROPDOWN)
+        histtype.SetStringSelection(self.histtype)
+        box.Add(item = histtype,
+                flag = wx.ALIGN_CENTER_VERTICAL, pos = (4, 1))
+          
+        sizer.Add(item = box, proportion = 0,
+                  flag = wx.ALL, border = 10)
+
+        line = wx.StaticLine(parent = self, id = wx.ID_ANY, size = (20, -1), style = wx.LI_HORIZONTAL)
+        sizer.Add(item = line, proportion = 0,
+                  flag = wx.GROW|wx.ALIGN_CENTER_VERTICAL|wx.LEFT|wx.RIGHT, border = 5)
+
+        btnsizer = wx.StdDialogButtonSizer()
+
+        btn = wx.Button(self, wx.ID_OK)
+        btn.SetDefault()
+        btnsizer.AddButton(btn)
+
+        btn = wx.Button(self, wx.ID_CANCEL)
+        btnsizer.AddButton(btn)
+        btnsizer.Realize()
+
+        sizer.Add(item = btnsizer, proportion = 0, flag = wx.ALIGN_RIGHT | wx.ALL, border = 5)
+
+        #
+        # bindings
+        #
+        self.Bind(wx.EVT_RADIOBUTTON, self.OnHistMap, self.rasterRadio)
+        self.Bind(wx.EVT_RADIOBUTTON, self.OnHistMap, self.groupRadio)
+        self.rselection.Bind(wx.EVT_TEXT, self.OnRasterSelection)
+        self.gselection.Bind(wx.EVT_TEXT, self.OnGroupSelection)
+        self.spinbins.Bind(wx.EVT_TEXT, self.OnSetBins)
+        self.spinbins.Bind(wx.EVT_SPINCTRL, self.OnSetBins)
+        histtype.Bind(wx.EVT_TEXT, self.OnSetHisttypes)
+
+        self.SetSizer(sizer)
+        sizer.Fit(self)
+
+    def OnHistMap(self, event):
+        """Hander for radio buttons to choose between histogramming a
+            single raster and an imagery group
+        """
+        if self.rasterRadio.GetValue() is True:
+            self.maptype = 'raster'
+            self.rselection.Enable()
+            self.gselection.Disable()
+            self.gselection.SetValue('')
+        elif self.groupRadio.GetValue() is True:
+            self.maptype = 'group'
+            self.gselection.Enable()
+            self.rselection.Disable()
+            self.rselection.SetValue('')
+        else:
+            pass
+        
+    def OnRasterSelection(self, event):
+        """Handler for selecting a single raster map
+        """
+        self.rasterList = []
+        self.rasterList.append(event.GetString())
+
+    def OnGroupSelection(self, event):
+        """Handler for selecting imagery group
+        """
+        self.rasterList = []
+        self.group = event.GetString()
+        ret = grass.read_command('i.group', 
+                                  group = '%s' % self.group, 
+                                  quiet = True,
+                                  flags = 'g').strip().split('\n')
+
+        if ret not in [None, '', ['']]:
+            self.rasterList = ret
+        else:
+            wx.MessageBox(message = _("Selected group must be in current mapset"), 
+                          caption = _('Invalid input'), 
+                          style = wx.OK | wx.ICON_ERROR)
+                                                                                            
+    def OnSetBins(self, event):
+        """Bins for histogramming FP maps (=nsteps in r.stats)
+        """
+        self.bins = self.spinbins.GetValue()
+        
+    def OnSetHisttypes(self, event):
+        self.histtype = event.GetString()
+        
 
 class TextDialog(wx.Dialog):
     def __init__(self, parent, id, title, plottype = '', 
                  style = wx.DEFAULT_DIALOG_STYLE, **kwargs):
-        """!Dialog to set plot text options: font, title
+        """Dialog to set histogram text options: font, title
         and font size, axis labels and font size
         """
         wx.Dialog.__init__(self, parent, id, title, style = style, **kwargs)
@@ -238,7 +548,7 @@ class TextDialog(wx.Dialog):
         self._do_layout()
                 
     def _do_layout(self):
-        """!Do layout"""
+        """Do layout"""
         # dialog layout
         sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -309,7 +619,6 @@ class TextDialog(wx.Dialog):
                            label = " %s " % _("Font settings"))
         boxSizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         gridSizer = wx.GridBagSizer(vgap = 5, hgap = 5)
-        gridSizer.AddGrowableCol(1)
 
         #
         # font family
@@ -354,6 +663,7 @@ class TextDialog(wx.Dialog):
 
         gridSizer.Add(item = self.fwtcb, pos = (2, 1), flag = wx.ALIGN_RIGHT)
                       
+        gridSizer.AddGrowableCol(1)
         boxSizer.Add(item = gridSizer, flag = wx.EXPAND)
         sizer.Add(item = boxSizer, flag = wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, border = 3)
 
@@ -424,33 +734,33 @@ class TextDialog(wx.Dialog):
         self.properties['font']['wxfont'].SetWeight(weight)
 
     def OnSave(self, event):
-        """!Button 'Save' pressed"""
+        """Button 'Save' pressed"""
         self.OnApply(None)
         fileSettings = {}
         UserSettings.ReadSettingsFile(settings = fileSettings)
         fileSettings[self.plottype] = UserSettings.Get(group = self.plottype)
         UserSettings.SaveToFile(fileSettings)
-        self.parent.parent.GetLayerManager().goutput.WriteLog(_('Plot text sizes saved to file \'%s\'.') % UserSettings.filePath)
+        self.parent.parent.GetLayerManager().GetLogWindow().WriteLog(_('Plot text sizes saved to file \'%s\'.') % UserSettings.filePath)
         self.EndModal(wx.ID_OK)
 
     def OnApply(self, event):
-        """!Button 'Apply' pressed"""
+        """Button 'Apply' pressed"""
         self.UpdateSettings()
         self.parent.OnPlotText(self)
         
     def OnOk(self, event):
-        """!Button 'OK' pressed"""
+        """Button 'OK' pressed"""
         self.OnApply(None)
         self.EndModal(wx.ID_OK)
 
     def OnCancel(self, event):
-        """!Button 'Cancel' pressed"""
+        """Button 'Cancel' pressed"""
         self.EndModal(wx.ID_CANCEL)
         
 class OptDialog(wx.Dialog):
     def __init__(self, parent, id, title, plottype = '', 
                  style = wx.DEFAULT_DIALOG_STYLE, **kwargs): 
-        """!Dialog to set various options for data plotted, including: line
+        """Dialog to set various options for data plotted, including: line
         width, color, style; marker size, color, fill, and style; grid
         and legend options.
         """
@@ -493,8 +803,19 @@ class OptDialog(wx.Dialog):
             
         self._do_layout()
         
+    def ConvertTuples(self, tlist):
+        """Converts tuples to strings when rasterList contains raster
+        pairs for scatterplot
+        """
+        list = []
+        for i in tlist:
+            i = str(i).strip('()')
+            list.append(i)
+            
+        return list
+
     def _do_layout(self):
-        """!Options dialog layout
+        """Options dialog layout
         """
         sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -530,7 +851,7 @@ class OptDialog(wx.Dialog):
             choicelist.append(str(i))
 
         self.mapchoice = wx.Choice(parent = self, id = wx.ID_ANY, size = (300, -1),
-                                   choices = choicelist)
+                                   choices = choicelist)        
         self.mapchoice.SetToolTipString(_("Settings for selected map"))
 
         if not self.map:
@@ -543,33 +864,34 @@ class OptDialog(wx.Dialog):
                       pos = (row, 0), span = (1, 2))
         
         #
-        # options for profile
+        # options for line plots (profiles and histograms)
         #
-        row +=1            
-        label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Line color"))
-        gridSizer.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (row, 0))
-        color = csel.ColourSelect(parent = self, id = wx.ID_ANY, colour = self.raster[self.map]['pcolor'])
-        self.wxId['pcolor'] = color.GetId()
-        gridSizer.Add(item = color, pos = (row, 1))
+        if self.plottype != 'scatter':
+            row +=1            
+            label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Line color"))
+            gridSizer.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (row, 0))
+            color = csel.ColourSelect(parent = self, id = wx.ID_ANY, colour = self.raster[self.map]['pcolor'])
+            self.wxId['pcolor'] = color.GetId()
+            gridSizer.Add(item = color, pos = (row, 1))
 
-        row += 1
-        label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Line width"))
-        gridSizer.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (row, 0))
-        width = wx.SpinCtrl(parent = self, id = wx.ID_ANY, value = "",
-                             size = (50,-1), style = wx.SP_ARROW_KEYS)
-        width.SetRange(1, 10)
-        width.SetValue(self.raster[self.map]['pwidth'])
-        self.wxId['pwidth'] = width.GetId()
-        gridSizer.Add(item = width, pos = (row, 1))
+            row += 1
+            label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Line width"))
+            gridSizer.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (row, 0))
+            width = wx.SpinCtrl(parent = self, id = wx.ID_ANY, value = "",
+                                 size = (50,-1), style = wx.SP_ARROW_KEYS)
+            width.SetRange(1, 10)
+            width.SetValue(self.raster[self.map]['pwidth'])
+            self.wxId['pwidth'] = width.GetId()
+            gridSizer.Add(item = width, pos = (row, 1))
 
-        row +=1
-        label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Line style"))
-        gridSizer.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (row, 0))
-        style = wx.Choice(parent = self, id = wx.ID_ANY, 
-                             size = (120, -1), choices = self.linestyledict.keys())
-        style.SetStringSelection(self.raster[self.map]['pstyle'])
-        self.wxId['pstyle'] = style.GetId()
-        gridSizer.Add(item = style, pos = (row, 1))
+            row +=1
+            label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Line style"))
+            gridSizer.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (row, 0))
+            style = wx.Choice(parent = self, id = wx.ID_ANY, 
+                                 size = (120, -1), choices = self.linestyledict.keys())
+            style.SetStringSelection(self.raster[self.map]['pstyle'])
+            self.wxId['pstyle'] = style.GetId()
+            gridSizer.Add(item = style, pos = (row, 1))
 
         row += 1
         label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Legend"))
@@ -583,54 +905,105 @@ class OptDialog(wx.Dialog):
         boxMainSizer.Add(item = boxSizer, flag = wx.ALL, border = 3)
 
         #
-        # segment marker settings for profiles
+        # segment marker settings for profiles only
         #       
-        box = wx.StaticBox(parent = self, id = wx.ID_ANY,
-                           label = " %s " % _("Transect segment marker settings"))
-        
-        boxSizer = wx.StaticBoxSizer(box, wx.VERTICAL)
-        
-        gridSizer = wx.GridBagSizer(vgap = 5, hgap = 5)
-        label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Color"))
-        gridSizer.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (0, 0))
-        ptcolor = csel.ColourSelect(parent = self, id = wx.ID_ANY, colour = self.properties['marker']['color'])
-        self.wxId['marker']['color'] = ptcolor.GetId()
-        gridSizer.Add(item = ptcolor, pos = (0, 1))
+        if self.plottype == 'profile':
+            box = wx.StaticBox(parent = self, id = wx.ID_ANY,
+                               label = " %s " % _("Transect segment marker settings"))
+            
+            boxSizer = wx.StaticBoxSizer(box, wx.VERTICAL)
+            
+            gridSizer = wx.GridBagSizer(vgap = 5, hgap = 5)
+            label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Color"))
+            gridSizer.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (0, 0))
+            ptcolor = csel.ColourSelect(parent = self, id = wx.ID_ANY, colour = self.properties['marker']['color'])
+            self.wxId['marker']['color'] = ptcolor.GetId()
+            gridSizer.Add(item = ptcolor, pos = (0, 1))
 
-        label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Size"))
-        gridSizer.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (1, 0))
-        ptsize = wx.SpinCtrl(parent = self, id = wx.ID_ANY, value = "",
-                             size = (50, -1), style = wx.SP_ARROW_KEYS)
-        ptsize.SetRange(1, 10)
-        ptsize.SetValue(self.properties['marker']['size'])
-        self.wxId['marker']['size'] = ptsize.GetId()
-        gridSizer.Add(item = ptsize, pos = (1, 1))
-        
-        label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Fill"))
-        gridSizer.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (2, 0))
-        ptfill = wx.Choice(parent = self, id = wx.ID_ANY, 
-                           size = (120, -1), choices = self.ptfilldict.keys())
-        ptfill.SetStringSelection(self.properties['marker']['fill'])
-        self.wxId['marker']['fill'] = ptfill.GetId()
-        gridSizer.Add(item = ptfill, pos = (2, 1))
-        
-        label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Legend"))
-        gridSizer.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (3, 0))
-        ptlegend = wx.TextCtrl(parent = self, id = wx.ID_ANY, value = "", size = (200,-1))
-        ptlegend.SetValue(self.properties['marker']['legend'])
-        self.wxId['marker']['legend'] = ptlegend.GetId()
-        gridSizer.Add(item = ptlegend, pos = (3, 1))
-                
-        label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Style"))
-        gridSizer.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (4, 0))
-        pttype = wx.Choice(parent = self, size = (200, -1), choices = self.pttypelist)
-        pttype.SetStringSelection(self.properties['marker']['type'])
-        self.wxId['marker']['type'] = pttype.GetId()
-        gridSizer.Add(item = pttype, pos = (4, 1))
+            label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Size"))
+            gridSizer.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (1, 0))
+            ptsize = wx.SpinCtrl(parent = self, id = wx.ID_ANY, value = "",
+                                 size = (50, -1), style = wx.SP_ARROW_KEYS)
+            ptsize.SetRange(1, 10)
+            ptsize.SetValue(self.properties['marker']['size'])
+            self.wxId['marker']['size'] = ptsize.GetId()
+            gridSizer.Add(item = ptsize, pos = (1, 1))
+            
+            label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Fill"))
+            gridSizer.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (2, 0))
+            ptfill = wx.Choice(parent = self, id = wx.ID_ANY,
+                                 size = (120, -1), choices = self.ptfilldict.keys())
+            ptfill.SetStringSelection(self.properties['marker']['fill'])
+            self.wxId['marker']['fill'] = ptfill.GetId()
+            gridSizer.Add(item = ptfill, pos = (2, 1))
+            
+            label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Legend"))
+            gridSizer.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (3, 0))
+            ptlegend = wx.TextCtrl(parent = self, id = wx.ID_ANY, value = "", size = (200,-1))
+            ptlegend.SetValue(self.properties['marker']['legend'])
+            self.wxId['marker']['legend'] = ptlegend.GetId()
+            gridSizer.Add(item = ptlegend, pos = (3, 1))
+                    
+            label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Style"))
+            gridSizer.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (4, 0))
+            pttype = wx.Choice(parent = self, size = (200, -1), choices = self.pttypelist)
+            pttype.SetStringSelection(self.properties['marker']['type'])
+            self.wxId['marker']['type'] = pttype.GetId()
+            gridSizer.Add(item = pttype, pos = (4, 1))
 
-        boxSizer.Add(item = gridSizer)
-        boxMainSizer.Add(item = boxSizer, flag = wx.ALL, border = 3)
-                        
+            boxSizer.Add(item = gridSizer)
+            boxMainSizer.Add(item = boxSizer, flag = wx.ALL, border = 3)
+            
+        #
+        # point options for scatterplots
+        #
+        elif self.plottype == 'scatter':
+            box = wx.StaticBox(parent = self, id = wx.ID_ANY,
+                               label = " %s " % _("Scatterplot points"))
+            
+            boxSizer = wx.StaticBoxSizer(box, wx.VERTICAL)
+            
+            gridSizer = wx.GridBagSizer(vgap = 5, hgap = 5)
+            label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Color"))
+            gridSizer.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (0, 0))
+            ptcolor = csel.ColourSelect(parent = self, id = wx.ID_ANY, colour = self.raster[self.map]['pcolor'])
+            self.wxId['pcolor'] = ptcolor.GetId()
+            gridSizer.Add(item = ptcolor, pos = (0, 1))
+
+            label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Size"))
+            gridSizer.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (1, 0))
+            ptsize = wx.SpinCtrl(parent = self, id = wx.ID_ANY, value = "",
+                                 size = (50, -1), style = wx.SP_ARROW_KEYS)
+            ptsize.SetRange(1, 10)
+            ptsize.SetValue(self.raster[self.map]['psize'])
+            self.wxId['psize'] = ptsize.GetId()
+            gridSizer.Add(item = ptsize, pos = (1, 1))
+            
+            label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Fill"))
+            gridSizer.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (2, 0))
+            ptfill = wx.Choice(parent = self, id = wx.ID_ANY,
+                               size = (120, -1), choices = self.ptfilldict.keys())
+            ptfill.SetStringSelection(self.raster[self.map]['pfill'])
+            self.wxId['pfill'] = ptfill.GetId()
+            gridSizer.Add(item = ptfill, pos = (2, 1))
+            
+            label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Legend"))
+            gridSizer.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (3, 0))
+            ptlegend = wx.TextCtrl(parent = self, id = wx.ID_ANY, value = "", size = (200,-1))
+            ptlegend.SetValue(self.raster[self.map]['plegend'])
+            self.wxId['plegend'] = ptlegend.GetId()
+            gridSizer.Add(item = ptlegend, pos = (3, 1))
+                    
+            label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Style"))
+            gridSizer.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (4, 0))
+            pttype = wx.Choice(parent = self, size = (200, -1), choices = self.pttypelist)
+            pttype.SetStringSelection(self.raster[self.map]['ptype'])
+            self.wxId['ptype'] = pttype.GetId()
+            gridSizer.Add(item = pttype, pos = (4, 1))
+
+            boxSizer.Add(item = gridSizer)
+            boxMainSizer.Add(item = boxSizer, flag = wx.ALL, border = 3)
+            
         sizer.Add(item = boxMainSizer, flag = wx.ALL | wx.EXPAND, border = 3)
 
         #
@@ -655,8 +1028,7 @@ class OptDialog(wx.Dialog):
             row = 0
             label = wx.StaticText(parent = self, id = wx.ID_ANY, label = _("Scale"))
             gridSizer.Add(item = label, flag = wx.ALIGN_CENTER_VERTICAL, pos = (row, 0))
-            type = wx.Choice(parent = self, id = wx.ID_ANY, 
-                             size = (100, -1), choices = self.axislist)
+            type = wx.Choice(parent = self, id = wx.ID_ANY, size = (100, -1), choices = self.axislist)
             type.SetStringSelection(prop['type']) 
             type.SetToolTipString(_("Automatic axis scaling, custom max and min, or scale matches data range (min)" ))
             self.wxId[atype]['type'] = type.GetId()
@@ -780,8 +1152,6 @@ class OptDialog(wx.Dialog):
         # bindings for buttons and map plot settings controls
         #
         self.mapchoice.Bind(wx.EVT_CHOICE, self.OnSetMap)
-
-        # bindings
         btnApply.Bind(wx.EVT_BUTTON, self.OnApply)
         btnOk.Bind(wx.EVT_BUTTON, self.OnOk)
         btnOk.SetDefault()
@@ -792,20 +1162,29 @@ class OptDialog(wx.Dialog):
         sizer.Fit(self)
 
     def OnSetMap(self, event):
-        """!Handler for changing map selection"""
+        """Handler for changing map selection"""
         idx = event.GetSelection()
         self.map = self.rasterList[idx]
         
         # update settings controls for all plots
         self.FindWindowById(self.wxId['pcolor']).SetColour(self.raster[self.map]['pcolor'])
         self.FindWindowById(self.wxId['plegend']).SetValue(self.raster[self.map]['plegend'])
-        self.FindWindowById(self.wxId['pwidth']).SetValue(self.raster[self.map]['pwidth'])
-        self.FindWindowById(self.wxId['pstyle']).SetStringSelection(self.raster[self.map]['pstyle'])
+
+        # update settings controls for histograms and profiles
+        if self.plottype != 'scatter':
+            self.FindWindowById(self.wxId['pwidth']).SetValue(self.raster[self.map]['pwidth'])
+            self.FindWindowById(self.wxId['pstyle']).SetStringSelection(self.raster[self.map]['pstyle'])
+
+        # update settings controls for scatterplots
+        elif self.plottype == 'scatter':
+            self.FindWindowById(self.wxId['psize']).SetValue(self.raster[self.map]['psize'])
+            self.FindWindowById(self.wxId['ptype']).SetStringSelection(self.raster[self.map]['ptype'])
+            self.FindWindowById(self.wxId['pfill']).SetStringSelection(self.raster[self.map]['pfill'])
             
         self.Refresh()
         
     def OnSetOpt(self, event):
-        """!Handler for changing any other option"""
+        """Handler for changing any other option"""
         self.map = self.rasterList[self.mapchoice.GetCurrentSelection()]
         self.UpdateSettings()
         self.parent.SetGraphStyle()
@@ -813,17 +1192,26 @@ class OptDialog(wx.Dialog):
         self.parent.DrawPlot(p)
 
     def UpdateSettings(self):
-        """!Apply settings to each map and to entire plot"""
+        """Apply settings to each map and to entire plot"""
         self.raster[self.map]['pcolor'] = self.FindWindowById(self.wxId['pcolor']).GetColour()
         self.properties['raster']['pcolor'] = self.raster[self.map]['pcolor']
         
         self.raster[self.map]['plegend'] = self.FindWindowById(self.wxId['plegend']).GetValue()
         
-        self.raster[self.map]['pwidth'] = int(self.FindWindowById(self.wxId['pwidth']).GetValue())
-        self.properties['raster']['pwidth'] = self.raster[self.map]['pwidth']
-        self.raster[self.map]['pstyle'] = self.FindWindowById(self.wxId['pstyle']).GetStringSelection()
-        self.properties['raster']['pstyle'] = self.raster[self.map]['pstyle']
+        if self.plottype != 'scatter':
+            self.raster[self.map]['pwidth'] = int(self.FindWindowById(self.wxId['pwidth']).GetValue())
+            self.properties['raster']['pwidth'] = self.raster[self.map]['pwidth']
+            self.raster[self.map]['pstyle'] = self.FindWindowById(self.wxId['pstyle']).GetStringSelection()
+            self.properties['raster']['pstyle'] = self.raster[self.map]['pstyle']
             
+        elif self.plottype == 'scatter':
+            self.raster[self.map]['psize'] = self.FindWindowById(self.wxId['psize']).GetValue()
+            self.properties['raster']['psize'] = self.raster[self.map]['psize']
+            self.raster[self.map]['ptype'] = self.FindWindowById(self.wxId['ptype']).GetStringSelection()
+            self.properties['raster']['ptype'] = self.raster[self.map]['ptype']
+            self.raster[self.map]['pfill'] = self.FindWindowById(self.wxId['pfill']).GetStringSelection()
+            self.properties['raster']['pfill'] = self.raster[self.map]['pfill']
+
         # update settings for entire plot
         for axis in ('x-axis', 'y-axis'):
             self.properties[axis]['prop']['type'] = self.FindWindowById(self.wxId[axis]['type']).GetStringSelection()
@@ -846,29 +1234,30 @@ class OptDialog(wx.Dialog):
         self.properties['font']['prop']['legendSize'] = self.FindWindowById(self.wxId['font']['legendSize']).GetValue()
         self.properties['legend']['enabled'] = self.FindWindowById(self.wxId['legend']['enabled']).IsChecked()
 
+        self.parent.UpdateLabels()
+
     def OnSave(self, event):
-        """!Button 'Save' pressed"""
+        """Button 'Save' pressed"""
         self.OnApply(None)
         fileSettings = {}
         UserSettings.ReadSettingsFile(settings = fileSettings)
         fileSettings[self.plottype] = UserSettings.Get(group = self.plottype)
         UserSettings.SaveToFile(fileSettings)
-        self.parent.parent.GetLayerManager().goutput.WriteLog(_('Plot settings saved to file \'%s\'.') % UserSettings.filePath)
+        self.parent.parent.GetLayerManager().GetLogWindow().WriteLog(_('Plot settings saved to file \'%s\'.') % UserSettings.filePath)
         self.Close()
 
     def OnApply(self, event):
-        """!Button 'Apply' pressed. Does not close dialog"""
+        """Button 'Apply' pressed. Does not close dialog"""
         self.UpdateSettings()
         self.parent.SetGraphStyle()
         p = self.parent.CreatePlotList()
         self.parent.DrawPlot(p)
 
     def OnOk(self, event):
-        """!Button 'OK' pressed"""
+        """Button 'OK' pressed"""
         self.OnApply(None)
         self.EndModal(wx.ID_OK)
         
     def OnCancel(self, event):
-        """!Button 'Cancel' pressed"""
+        """Button 'Cancel' pressed"""
         self.Close()
-     

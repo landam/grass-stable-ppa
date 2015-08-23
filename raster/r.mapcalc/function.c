@@ -8,9 +8,9 @@
 #include "func_proto.h"
 
 func_desc func_descs[] = {
-    {"add", c_binop, f_add},
+    {"add", c_varop, f_add},
     {"sub", c_binop, f_sub},
-    {"mul", c_binop, f_mul},
+    {"mul", c_varop, f_mul},
     {"div", c_binop, f_div},
     {"mod", c_binop, f_mod},
     {"pow", c_binop, f_pow},
@@ -36,9 +36,10 @@ func_desc func_descs[] = {
     {"bitand", c_logop, f_bitand},
     {"bitor", c_logop, f_bitor},
     {"xor", c_logop, f_bitxor},
-    {"shiftl", c_logop, f_shiftl},
-    {"shiftr", c_logop, f_shiftr},
-    {"shiftru", c_logop, f_shiftru},
+
+    {"shiftl", c_shiftop, f_shiftl},
+    {"shiftr", c_shiftop, f_shiftr},
+    {"shiftru", c_shiftop, f_shiftru},
 
     {"bitnot", c_not, f_bitnot},
 
@@ -67,7 +68,13 @@ func_desc func_descs[] = {
     {"median", c_varop, f_median},
     {"mode", c_varop, f_mode},
 
+    {"nmax", c_varop, f_nmax},
+    {"nmin", c_varop, f_nmin},
+    {"nmedian", c_varop, f_nmedian},
+    {"nmode", c_varop, f_nmode},
+
     {"graph", c_graph, f_graph},
+    {"graph2", c_graph, f_graph2},
 
     {"rand", c_binop, f_rand},
 
@@ -83,7 +90,7 @@ func_desc func_descs[] = {
     {"ewres", c_double0, f_ewres},
     {"nsres", c_double0, f_nsres},
     {"tbres", c_double0, f_tbres},
-    {NULL}
+    {NULL, NULL, NULL}
 };
 
 void print_function_names(void)

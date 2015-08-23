@@ -1,5 +1,4 @@
 #include <math.h>
-#include <grass/raster.h>
 #include <grass/display.h>
 #include <grass/gis.h>
 
@@ -9,17 +8,17 @@ int draw_slice(struct Colors *colors, int fill_flag, DCELL fill_color1, DCELL fi
 	       double a1, double a2	/* in degrees */
     )
 {
-    int tt, tb, tr, tl;
+    double tt, tb, tr, tl;
     int height, width;
-    int yoffset, xoffset;
-    int x[1000], y[1000];
+    double yoffset, xoffset;
+    double x[1000], y[1000];
     int lx, ly;
     int i = 1;
     char txt[512];
     double arc, arc_incr = 0.01;
     DCELL fill_color;
 
-    D_get_screen_window(&tt, &tb, &tl, &tr);
+    D_get_src(&tt, &tb, &tl, &tr);
 
     height = tb - tt;
     width = tr - tl;
@@ -29,8 +28,8 @@ int draw_slice(struct Colors *colors, int fill_flag, DCELL fill_color1, DCELL fi
     while (a2 / arc_incr > 998)
 	arc_incr *= 2;
 
-    x[0] = (int)((double)xoffset + cx * (double)width);
-    y[0] = (int)((double)yoffset - cy * (double)height);
+    x[0] = (xoffset + cx * width);
+    y[0] = (yoffset - cy * height);
 
     arc = a1;
     if (fill_flag && fill_color1 != fill_color2) {
@@ -42,7 +41,7 @@ int draw_slice(struct Colors *colors, int fill_flag, DCELL fill_color1, DCELL fi
 	    y[i] = y[0] - r * (height) * sin(arc / 57.296);
 	    if (i == 2) {
 		D_d_color(fill_color, colors);
-		R_polygon_abs(x + i - 2, y + i - 2, 3);
+		D_polygon_abs(x + i - 2, y + i - 2, 3);
 		x[i - 1] = x[i];
 		y[i - 1] = y[i];
 	    }
@@ -61,26 +60,25 @@ int draw_slice(struct Colors *colors, int fill_flag, DCELL fill_color1, DCELL fi
 	}
 
 	if (!fill_flag) {
-	    R_standard_color(txt_color);
-	    R_polyline_abs(x, y, i);
+	    D_use_color(txt_color);
+	    D_polyline_abs(x, y, i);
 	}
 	else {
 	    D_d_color(fill_color1, colors);
-	    R_polygon_abs(x, y, i);
+	    D_polygon_abs(x, y, i);
 	}
     }
 
     if (a2 > 15.0) {
 	/* draw a label */
 	arc = a1 + a2 / 2;
-	sprintf(txt, "%2.0f%s", (double)(a2 / (double)360.0) * (double)100.0,
-		percent);
-	R_get_text_box(txt, &tt, &tb, &tl, &tr);
+	sprintf(txt, "%2.0f%s", (a2 / 360.0) * 100.0, percent);
+	D_get_text_box(txt, &tt, &tb, &tl, &tr);
 	lx = x[0] + (r + 0.03) * (width) * cos(arc / 57.296) - (tr - tl) / 2;
 	ly = y[0] - (r + 0.03) * (height) * sin(arc / 57.296) + (tb - tt) / 2;
-	R_move_abs(lx, ly);
-	R_standard_color(txt_color);
-	R_text(txt);
+	D_pos_abs(lx, ly);
+	D_use_color(txt_color);
+	D_text(txt);
     }
 
     return 0;

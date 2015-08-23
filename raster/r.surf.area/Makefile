@@ -2,8 +2,8 @@ MODULE_TOPDIR = ../..
 
 PGM = r.surf.area
 
-LIBES = $(GISLIB)
-DEPENDENCIES = $(GISDEP)
+LIBES = $(RASTERLIB) $(GISLIB) $(MATHLIB)
+DEPENDENCIES = $(RASTERDEP) $(GISDEP)
 
 include $(MODULE_TOPDIR)/include/Make/Module.make
 

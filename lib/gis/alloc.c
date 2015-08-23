@@ -18,13 +18,15 @@
 /*!
  * \brief Memory allocation.
  *
- * Allocates a block of
- * memory at least <b>n</b> bytes which is aligned properly for all data
- * types. A pointer to the aligned block is returned.<br>
+ * Allocates a block of memory at least <i>n</i> bytes which is
+ * aligned properly for all data types. A pointer to the aligned block
+ * is returned.
+ *
  * Dies with error message on memory allocation fail.
  *
- * \param[in] n
- * \return void * 
+ * \param file file name
+ * \param line line number
+ * \param n number of elements
  */
 
 void *G__malloc(const char *file, int line, size_t n)
@@ -52,17 +54,19 @@ void *G__malloc(const char *file, int line, size_t n)
 /*!
  * \brief Memory allocation.
  *
- * Allocates a
- * properly aligned block of memory <b>n</b>*<b>m</b> bytes in length,
- * initializes the allocated memory to zero, and returns a pointer to the
- * allocated block of memory.<br>
- * Dies with error message on memory allocation fail.<br>
- * <b>Note:</b> Allocating memory for reading and writing raster maps is
- * discussed in Allocating_Raster_I_O_Buffers.
+ * Allocates a properly aligned block of memory <i>n</i>*<i>m</i>
+ * bytes in length, initializes the allocated memory to zero, and
+ * returns a pointer to the allocated block of memory.
  *
- * \param[in] n number of elements
- * \param[in] m element size
- * \return void * 
+ * Dies with error message on memory allocation fail.
+ *
+ * <b>Note:</b> Allocating memory for reading and writing raster maps
+ * is discussed in \ref Allocating_Raster_I_O_Buffers.
+ *
+ * \param file fine name
+ * \param line line number
+ * \param m element size
+ * \param n number of elements
  */
 
 void *G__calloc(const char *file, int line, size_t m, size_t n)
@@ -93,18 +97,21 @@ void *G__calloc(const char *file, int line, size_t m, size_t n)
 /*!
  * \brief Memory reallocation.
  *
- * Changes the
- * <b>size</b> of a previously allocated block of memory at <b>ptr</b> and
- * returns a pointer to the new block of memory. The <b>size</b> may be larger
- * or smaller than the original size. If the original block cannot be extended
- * "in place", then a new block is allocated and the original block copied to the
- * new block.<br>
- * <b>Note:</b> If <b>buf</b> is NULL, then this routine simply allocates a
- * block of <b>n</b> bytes else <b>buf</b> must point to memory that has been dynamically
- * allocated by <i>G_malloc()</i>, <i>G_calloc()</i>, <i>G_realloc()</i>,
- * malloc(3), alloc(3), or realloc(3).. This routine works around broken realloc( )
- * routines, which do not handle a NULL <b>buf</b>.
+ * Changes the <i>size</i> of a previously allocated block of memory
+ * at <i>ptr</i> and returns a pointer to the new block of memory. The
+ * <i>size</i> may be larger or smaller than the original size. If the
+ * original block cannot be extended "in place", then a new block is
+ * allocated and the original block copied to the new block.
  *
+ * <b>Note:</b> If <i>buf</i> is NULL, then this routine simply
+ * allocates a block of <i>n</i> bytes else <i>buf</i> must point to
+ * memory that has been dynamically allocated by G_malloc(),
+ * G_calloc(), G_realloc(), malloc(3), alloc(3), or realloc(3).. This
+ * routine works around broken realloc() routines, which do not
+ * handle a NULL <i>buf</i>.
+ *
+ * \param file file name
+ * \param line line number
  * \param[in,out] buf buffer holding original data
  * \param[in] n array size
  */
@@ -143,3 +150,42 @@ void G_free(void *buf)
 {
     free(buf);
 }
+
+/*!
+ * \brief Advance void pointer
+ *
+ * Advances void pointer by <i>size</i> bytes. Returns new pointer
+ * value.
+ *
+ * Useful in raster row processing loops, substitutes
+ *
+ \code
+ CELL *cell; 
+ cell += n;
+ \endcode
+ *
+ * Now 
+ \code
+ rast = G_incr_void_ptr(rast, Rast_cell_size(data_type))
+ \endcode
+ *
+ * (where rast is void* and <i>data_type</i> is RASTER_MAP_TYPE can be
+ * used instead of rast++.)
+ *
+ * Very useful to generalize the row processing - loop i.e.
+ * \code
+ *   void * buf_ptr += Rast_cell_size(data_type)
+ * \endcode
+ *
+ * \param ptr pointer
+ * \param size buffer size
+ *
+ * \return pointer to the data
+ */
+#ifndef G_incr_void_ptr
+void *G_incr_void_ptr(const void *ptr, size_t size)
+{
+    /* assuming that the size of unsigned char is 1 */
+    return (void *)((const unsigned char *)ptr + size);
+}
+#endif

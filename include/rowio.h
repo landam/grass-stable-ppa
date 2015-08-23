@@ -20,13 +20,6 @@ typedef struct
     } *rcb;
 } ROWIO;
 
-int rowio_fileno(const ROWIO *);
-void rowio_forget(ROWIO *, int);
-void *rowio_get(ROWIO *, int);
-void rowio_flush(ROWIO *);
-int rowio_put(ROWIO *, const void *, int);
-void rowio_release(ROWIO *);
-int rowio_setup(ROWIO *, int, int, int, int (*)(int, void *, int, int),
-		int (*)(int, const void *, int, int));
+#include <grass/defs/rowio.h>
 
 #endif

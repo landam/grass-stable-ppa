@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=GRASS GIS
+Name=GRASS GIS 7
 Comment=Geographic Information System
 Comment[cs]=Geografický Informační Systém
 Comment[de]=Geoinformationssystem
@@ -47,6 +47,7 @@ Comment[tr]=Coğrafi bilgi sistemi
 Comment[uk]=Геоінформаційна система
 Comment[uz]=Geografik axborot tizimi
 Categories=Education;Science;Geoscience;Geography;
-Exec=grass64
+Exec=grass7
 Icon=grass
 Terminal=true
+Keywords=wms;wfs;ogc;osgeo

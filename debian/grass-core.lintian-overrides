@@ -1,84 +1,83 @@
 # False positive, file is an executable not an image
-grass-core: image-file-in-usr-lib usr/lib/grass64/bin/r.out.png
-grass-core: image-file-in-usr-lib usr/lib/grass64/bin/r.out.tiff
-grass-core: image-file-in-usr-lib usr/lib/grass64/scripts/d.out.png
+grass-core: image-file-in-usr-lib usr/lib/grass*/bin/r.in.png
+grass-core: image-file-in-usr-lib usr/lib/grass*/bin/r.out.png
+
+# html2man doesn't include NAME.
+grass-core: manpage-has-bad-whatis-entry *
 
 # Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
 #  Fortify Source functions: no, only unprotected functions found!
 #         unprotected: read
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r.grow.distance
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r.li.dominance
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r.li.edgedensity
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r.li.mpa
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r.li.mps
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r.li.padcv
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r.li.padrange
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r.li.padsd
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r.li.patchdensity
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r.li.patchnum
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r.li.pielou
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r.li.renyi
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r.li.richness
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r.li.shannon
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r.li.shape
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r.li.simpson
-grass-core: hardening-no-fortify-functions usr/lib/grass64/etc/lock
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.grow.distance
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.dominance
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.edgedensity
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.mpa
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.mps
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.padcv
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.padrange
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.padsd
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.patchdensity
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.patchnum
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.pielou
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.renyi
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.richness
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.shannon
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.shape
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.simpson
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.thin
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/wximgview
+grass-core: hardening-no-fortify-functions usr/lib/grass*/etc/lock
 
 # Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
 #  Fortify Source functions: no, only unprotected functions found!
 #         unprotected: fread
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r.in.arc
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r.in.bin
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r3.in.bin
 
 # Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
 #  Fortify Source functions: no, only unprotected functions found!
 #         unprotected: fgets
 #         unprotected: fread
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r.in.ascii
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.in.ascii
 
 # Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
 #  Fortify Source functions: no, only unprotected functions found!
 #         unprotected: strcat
 #         unprotected: read
 #         unprotected: strcpy
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r.li.cwed
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.cwed
 
 # Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
 #  Fortify Source functions: no, only unprotected functions found!
 #         unprotected: fgets
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r.null
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r3.mask
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/v.extract
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/v.lrs.segment
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/v.segment
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.null
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/v.extract
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/v.lrs.segment
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/v.segment
 
 # Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
 #  Fortify Source functions: no, only unprotected functions found!
 #         unprotected: strncpy
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r.topidx
-grass-core: hardening-no-fortify-functions usr/lib/grass64/bin/r3.in.ascii
-grass-core: hardening-no-fortify-functions usr/lib/grass64/etc/modcats
-grass-core: hardening-no-fortify-functions usr/lib/grass64/etc/modcolr
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/i.gensig
+grass-core: hardening-no-fortify-functions usr/lib/grass*/driver/db/ogr
 
 # Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
 #  Fortify Source functions: no, only unprotected functions found!
 #         unprotected: strcpy
-grass-core: hardening-no-fortify-functions usr/lib/grass64/etc/lister/cell
-grass-core: hardening-no-fortify-functions usr/lib/grass64/etc/lister/vector
-grass-core: hardening-no-fortify-functions usr/lib/grass64/etc/modhist
+grass-core: hardening-no-fortify-functions usr/lib/grass*/etc/lister/cell
+grass-core: hardening-no-fortify-functions usr/lib/grass*/etc/lister/vector
 
 # Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
 #  Fortify Source functions: no, only unprotected functions found!
 #         unprotected: memset
 #         unprotected: read
 #         unprotected: memcpy
-grass-core: hardening-no-fortify-functions usr/lib/grass64/lib/libgrass_dgl.6.4.4.so
+grass-core: hardening-no-fortify-functions usr/lib/grass*/lib/libgrass_dgl.*.so
 
 # Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
 #  Fortify Source functions: no, only unprotected functions found!
 #         unprotected: read
 #         unprotected: memcpy
-grass-core: hardening-no-fortify-functions usr/lib/grass64/lib/libgrass_segment.6.4.4.so
+grass-core: hardening-no-fortify-functions usr/lib/grass*/lib/libgrass_segment.*.so
 
 # This license file is used by the program to show license, so needs to be
 # distributed.

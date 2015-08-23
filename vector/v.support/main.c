@@ -20,13 +20,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 
 int main(int argc, char *argv[])
 {
     struct Map_info Map;
-    char *mapset;
     struct GModule *module;
     struct Option *map, *organization, *date, *person, *map_name, *map_date,
 	*scale, *comment, *zone, *thresh, *cmdhist;
@@ -37,7 +36,8 @@ int main(int argc, char *argv[])
 
     /* initialize module */
     module = G_define_module();
-    module->keywords = _("vector, metadata");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("metadata"));
     module->description = _("Updates vector map metadata.");
 
     /* Define the different options as defined in gis.h */
@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 
     organization = G_define_option();
     organization->key = "organization";
-    organization->key_desc = "\"phrase\"";
+    organization->key_desc = "phrase";
     organization->type = TYPE_STRING;
     organization->required = NO;
     organization->description =
@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
     /* don't predefine answers to not overwrite existing information */
     date = G_define_option();
     date->key = "date";
-    date->key_desc = "\"datestring\"";
+    date->key_desc = "datestring";
     date->type = TYPE_STRING;
     date->required = NO;
     date->description =
@@ -62,21 +62,21 @@ int main(int argc, char *argv[])
 
     person = G_define_option();
     person->key = "person";
-    person->key_desc = "\"phrase\"";
+    person->key_desc = "phrase";
     person->type = TYPE_STRING;
     person->required = NO;
     person->description = _("Person who created vector map");
 
     map_name = G_define_option();
     map_name->key = "map_name";
-    map_name->key_desc = "\"phrase\"";
+    map_name->key_desc = "phrase";
     map_name->type = TYPE_STRING;
     map_name->required = NO;
     map_name->description = _("Vector map title");
 
     map_date = G_define_option();
     map_date->key = "map_date";
-    map_date->key_desc = "\"datestring\"";
+    map_date->key_desc = "datestring";
     map_date->type = TYPE_STRING;
     map_date->required = NO;
     map_date->description =
@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
     zone->description = _("Vector map projection zone");
 
     thresh = G_define_option();
-    thresh->key = "thresh";
+    thresh->key = "threshold";
     thresh->type = TYPE_DOUBLE;
     thresh->required = NO;
     thresh->description =
@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
 
     comment = G_define_option();
     comment->key = "comment";
-    comment->key_desc = "\"phrase\"";
+    comment->key_desc = "phrase";
     comment->type = TYPE_STRING;
     comment->required = NO;
     comment->description =
@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
 
     cmdhist = G_define_option();
     cmdhist->key = "cmdhist";
-    cmdhist->key_desc = "\"command\"";
+    cmdhist->key_desc = "command";
     cmdhist->type = TYPE_STRING;
     cmdhist->required = NO;
     cmdhist->description =
@@ -125,13 +125,8 @@ int main(int argc, char *argv[])
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    if ((mapset = G_find_vector2(map->answer, G_mapset())) == NULL)
-	G_fatal_error(_("Vector map <%s> not found in the current mapset"),
-		      map->answer);
-
-    Vect_set_open_level(2);
-
-    if (1 > Vect_open_old(&Map, map->answer, mapset))
+    Vect_set_open_level(1);
+    if (Vect_open_old(&Map, map->answer, "") < 1)
 	G_fatal_error(_("Unable to open vector map <%s>"), map->answer);
 
     /* modify 'head' file */
@@ -165,11 +160,11 @@ int main(int argc, char *argv[])
     if (comment->answer) {	/* apparently only one line comments allowed, so we use space to delimit */
 	char *temp;
 
-	if (r_flag->answer || strlen(Map.head.line_3) == 0) {	/* check if new/replacing or adding */
+	if (r_flag->answer || strlen(Vect_get_comment(&Map)) == 0) {	/* check if new/replacing or adding */
 	    G_asprintf(&temp, "%s", comment->answer);
 	}
 	else {
-	    G_asprintf(&temp, "%s %s", Map.head.line_3, comment->answer);
+	    G_asprintf(&temp, "%s %s", Vect_get_comment(&Map), comment->answer);
 	}
 	Vect_set_comment(&Map, temp);
     }
@@ -182,15 +177,15 @@ int main(int argc, char *argv[])
 	char buf[2000];		/* derived from Vect_hist_command() */
 
 	/* Open history file for modification */
-	sprintf(buf, "%s/%s", GRASS_VECT_DIRECTORY, Map.name);
-	Map.hist_fp = G_fopen_modify(buf, GRASS_VECT_HIST_ELEMENT);
+	sprintf(buf, "%s/%s", GV_DIRECTORY, Map.name);
+	Map.hist_fp = G_fopen_modify(buf, GV_HIST_ELEMENT);
 	if (Map.hist_fp == NULL) {
 	    G_warning(_("Unable to open history file for vector map <%s>"),
 		      Vect_get_full_name(&Map));
 	    Vect_close(&Map);
 	    exit(EXIT_FAILURE);
 	}
-	fseek(Map.hist_fp, (long)0, SEEK_END);
+	G_fseek(Map.hist_fp, (long)0, SEEK_END);
 	Vect_hist_write(&Map,
 			"---------------------------------------------------------------------------------\n");
 	Vect_hist_write(&Map, "COMMAND: ");

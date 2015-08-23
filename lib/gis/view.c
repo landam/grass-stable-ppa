@@ -1,10 +1,10 @@
 
-/**
- * \file view.c
+/*!
+ * \file lib/gis/view.c
  *
  * \brief GIS Library - 3D View functions.
  *
- * (C) 2001-2008 by the GRASS Development Team
+ * (C) 2001-2014 by the GRASS Development Team
  *
  * This program is free software under the GNU General Public License
  * (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -29,8 +29,9 @@ static void pr_winerr(int, const char *);
 static void edge_sort(float sides[4]);
 static int read_old_format(struct G_3dview *, FILE *);
 
-static int vers_major = 4;
-static int vers_minor = 1;
+static const int vers_major = 4;
+static const int vers_minor = 1;
+
 static int Suppress_warn = 0;
 
 
@@ -41,14 +42,12 @@ static int Suppress_warn = 0;
  * the window when the view was saved overlaps the current window.
  *
  * \param[in] b
- * \return always returns 0
+ * \return
  */
 
-int G_3dview_warning(int b)
+void G_3dview_warning(int b)
 {
     Suppress_warn = b ? 0 : 1;
-
-    return 0;
 }
 
 

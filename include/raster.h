@@ -1,108 +1,247 @@
-#ifndef _GRASS_RASTER_H
-#define _GRASS_RASTER_H
+#ifndef GRASS_RASTER_H
+#define GRASS_RASTER_H
 
-#include <grass/monitors.h>
+#include <grass/gis.h>
 
-/* common.c */
-void R_flush(void);
-void R_pad_perror(const char *, int);
-void R_pad_freelist(char **, int);
+/*** defines ***/
+#define RECLASS_TABLE 1
+#define RECLASS_RULES 2
+#define RECLASS_SCALE 3
 
-/* get.c */
-void R_get_location_with_box(int, int, int *, int *, int *);
-void R_get_location_with_line(int, int, int *, int *, int *);
-void R_get_location_with_pointer(int *, int *, int *);
+#define CELL_TYPE 0
+#define FCELL_TYPE 1
+#define DCELL_TYPE 2
 
-/* io.c */
-int _send_ident(int);
-int _send_char(const unsigned char *);
-int _send_char_array(int, const unsigned char *);
-int _send_int_array(int, const int *);
-int _send_float_array(int, const float *);
-int _send_int(const int *);
-int _send_float(const float *);
-int _send_text(const char *);
+/*! \brief Interpolation methods
 
-int _get_char(char *);
-int _get_int(int *);
-int _get_float(float *);
-int _get_text(char *);
-char *_get_text_2(void);
+  For G_get_raster_sample(), INTERP_TYPE
+*/
+#define INTERP_UNKNOWN   0
+#define INTERP_NEAREST   1		/* nearest neighbor interpolation  */
+#define INTERP_BILINEAR  2		/* bilinear interpolation          */
+#define INTERP_BICUBIC   3		/* bicubic interpolation           */
 
-void R__open_quiet(void);
-int sync_driver(char *name);
-void _hold_signals(int);
-void R_stabilize(void);
-void R_kill_driver(void);
-void R_close_driver(void);
-void R_release_driver(void);
+/*** typedefs ***/
+typedef int RASTER_MAP_TYPE;
 
-/* io_sock.c */
-int R_open_driver(void);
+/* for G_get_raster_sample() */
+typedef int INTERP_TYPE;
 
-/* pad.c */
-int R_pad_create(const char *);
-int R_pad_current(char *);
-int R_pad_delete(void);
-int R_pad_invent(char *);
-int R_pad_list(char ***, int *);
-int R_pad_select(const char *);
-int R_pad_append_item(const char *, const char *, int);
-int R_pad_delete_item(const char *);
-int R_pad_get_item(const char *, char ***, int *);
-int R_pad_list_items(char ***, int *);
-int R_pad_set_item(const char *, const char *);
+/*** structures ***/
+struct Reclass
+{
+    char *name;			/* name of raster map being reclassed    */
+    char *mapset;		/* mapset in which "name" is found      */
+    int type;			/* type of reclass                      */
+    int num;			/* size of reclass table                */
+    CELL min;			/* table min                            */
+    CELL max;			/* table max                            */
+    CELL *table;		/* reclass table                        */
+};
 
-/* parse_mon.c */
-struct MON_CAP *R_parse_monitorcap(int, char *);
+struct FPReclass_table
+{
+    DCELL dLow;			/* domain low */
+    DCELL dHigh;		/* domain high */
+    DCELL rLow;			/* range low */
+    DCELL rHigh;		/* range high */
+};
 
-/* protocol.c */
-int R_screen_left(void);
-int R_screen_rite(void);
-int R_screen_bot(void);
-int R_screen_top(void);
-void R_get_num_colors(int *);
+/* reclass structure from double to double used by r.recode to reclass */
+/* between types: int to double, float to int,... */
+struct FPReclass
+{
+    int defaultDRuleSet;	/* 1 if default domain rule set */
+    int defaultRRuleSet;	/* 1 if default range rule set */
+    int infiniteLeftSet;	/* 1 if negative infinite interval rule exists */
+    int infiniteRightSet;	/* 1 if positive infinite interval rule exists */
+    int rRangeSet;		/* 1 if range range (i.e. interval) is set */
+    int maxNofRules;
+    int nofRules;
+    DCELL defaultDMin;		/* default domain minimum value */
+    DCELL defaultDMax;		/* default domain maximum value */
+    DCELL defaultRMin;		/* default range minimum value */
+    DCELL defaultRMax;		/* default range maximum value */
+    DCELL infiniteDLeft;	/* neg infinite rule */
+    DCELL infiniteDRight;	/* neg infinite rule */
+    DCELL infiniteRLeft;	/* pos infinite rule */
+    DCELL infiniteRRight;	/* pos infinite rule */
+    DCELL dMin;			/* minimum domain values in rules */
+    DCELL dMax;			/* maximum domain values in rules */
+    DCELL rMin;			/* minimum range values in rules */
+    DCELL rMax;			/* maximum range values in rules */
+    struct FPReclass_table *table;
+};
 
-void R_standard_color(int);
-void R_RGB_color(unsigned char, unsigned char, unsigned char);
+struct Quant_table
+{
+    DCELL dLow;
+    DCELL dHigh;
+    CELL cLow;
+    CELL cHigh;
+};
 
-void R_line_width(int);
-void R_erase(void);
+struct Quant
+{
+    int truncate_only;
+    int round_only;
+    int defaultDRuleSet;
+    int defaultCRuleSet;
+    int infiniteLeftSet;
+    int infiniteRightSet;
+    int cRangeSet;
+    int maxNofRules;
+    int nofRules;
+    DCELL defaultDMin;
+    DCELL defaultDMax;
+    CELL defaultCMin;
+    CELL defaultCMax;
+    DCELL infiniteDLeft;
+    DCELL infiniteDRight;
+    CELL infiniteCLeft;
+    CELL infiniteCRight;
+    DCELL dMin;
+    DCELL dMax;
+    CELL cMin;
+    CELL cMax;
+    struct Quant_table *table;
 
-void R_move_abs(int, int);
-void R_move_rel(int, int);
-void R_cont_abs(int, int);
-void R_cont_rel(int, int);
-void R_polydots_abs(const int *, const int *, int);
-void R_polydots_rel(const int *, const int *, int);
-void R_polyline_abs(const int *, const int *, int);
-void R_polyline_rel(const int *, const int *, int);
-void R_polygon_abs(const int *, const int *, int);
-void R_polygon_rel(const int *, const int *, int);
-void R_box_abs(int, int, int, int);
-void R_box_rel(int, int);
+    struct
+    {
+	DCELL *vals;
 
-void R_text_size(int, int);
-void R_text_rotation(float);
-void R_set_window(int, int, int, int);
-void R_text(const char *);
-void R_get_text_box(const char *, int *, int *, int *, int *);
+	/* pointers to quant rules corresponding to the intervals btwn vals */
+	struct Quant_table **rules;
+	int nalloc;
+	int active;
+	DCELL inf_dmin;
+	DCELL inf_dmax;
+	CELL inf_min;
+	CELL inf_max;
+	/* all values smaller than inf_dmin become inf_min */
+	/* all values larger than inf_dmax become inf_max */
+	/* inf_min and/or inf_max can be NULL if there are no inf rules */
+    } fp_lookup;
+};
 
-void R_font(const char *);
-void R_charset(const char *);
-void R_font_list(char ***, int *);
-void R_font_info(char ***, int *);
+struct Categories
+{
+    CELL ncats;			/* total number of categories              */
+    CELL num;			/* the highest cell values. Only exists    
+				   for backwards compatibility = (CELL)
+				   max_fp_values in quant rules          */
+    char *title;		/* name of data layer                      */
+    char *fmt;			/* printf-like format to generate labels   */
+    float m1;			/* Multiplication coefficient 1            */
+    float a1;			/* Addition coefficient 1                  */
+    float m2;			/* Multiplication coefficient 2            */
+    float a2;			/* Addition coefficient 2                  */
+    struct Quant q;		/* rules mapping cell values to index in
+				   list of labels                        */
+    char **labels;		/* array of labels of size num             */
+    int *marks;			/* was the value with this label was used? */
+    int nalloc;
+    int last_marked_rule;
+    /* NOTE: to get a rule corresponfing to cats.labels[i], use */
+    /* G_get_ith_c/f/d_raster_cat (pcats, i, val1, val2) */
+    /* it calls */
+    /* G_quant_get_ith_rule(&cats->q, i, val1, val2, &index, &index); */
+    /* and idex ==i, because rule is added at the same time as a */
+    /* label, and quant rules are never reordered. Olga apr,95 */
+};
 
-void R_panel_save(const char *, int, int, int, int);
-void R_panel_restore(const char *);
-void R_panel_delete(const char *);
+/*! \brief Raster history info (metadata)
 
-void R_begin_scaled_raster(int, int[2][2], int[2][2]);
-int R_scaled_raster(int, int,
-		    const unsigned char *,
-		    const unsigned char *,
-		    const unsigned char *, const unsigned char *);
-void R_end_scaled_raster(void);
-void R_bitmap(int, int, int, const unsigned char *);
+  See History structure for implementation issues.
+*/
+enum History_field
+{
+    /*! \brief Raster name */
+    HIST_MAPID,
+    /*! \brief Raster title */
+    HIST_TITLE,
+    /*! \brief Raster mapset */
+    HIST_MAPSET,
+    /*! \brief User who creater raster map */
+    HIST_CREATOR,
+    /*! \brief Map type (always "raster") */
+    HIST_MAPTYPE,
+    /*! \brief Description of original data source (two lines) */
+    HIST_DATSRC_1,
+    HIST_DATSRC_2,
+    /*! \brief One-line data description */
+    HIST_KEYWRD,
 
-#endif
+    /*! \brief Number of fields to be defined in History structure */
+    HIST_NUM_FIELDS,
+};
+
+/*! \brief Raster history info (metadata) */
+struct History
+{
+    /*! \brief Array of fields (see \ref History_field for details) */
+    char *fields[HIST_NUM_FIELDS];
+    /*! \brief Number of lines in lines array */
+    int nlines;
+    /*! \brief Lines array */
+    char **lines;
+};
+
+struct Cell_stats
+{
+    struct Cell_stats_node
+    {
+	int idx;
+	long *count;
+	int left;
+	int right;
+    } *node;			/* tree of values */
+
+    int tlen;			/* allocated tree size */
+    int N;			/* number of actual nodes in tree */
+    int curp;
+    long null_data_count;
+    int curoffset;
+};
+
+struct Histogram
+{
+    int num;
+
+    struct Histogram_list
+    {
+	CELL cat;
+	long count;
+    } *list;
+};
+
+struct Range
+{
+    CELL min;
+    CELL max;
+    int first_time;		/* whether or not range was updated */
+};
+
+struct FPRange
+{
+    DCELL min;
+    DCELL max;
+    int first_time;		/* whether or not range was updated */
+};
+
+struct FP_stats {
+    int geometric;
+    int geom_abs;
+    int flip;
+    int count;
+    DCELL min, max;
+    unsigned long *stats;
+    unsigned long total;
+};
+
+struct GDAL_link;
+
+/*** prototypes ***/
+#include <grass/defs/raster.h>
+
+#endif /* GRASS_RASTER_H */

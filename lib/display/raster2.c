@@ -28,25 +28,25 @@
  *
  */
 #include <stdlib.h>
+
 #include <grass/gis.h>
-#include <grass/display.h>
 #include <grass/raster.h>
+#include <grass/display.h>
 
 int D__overlay_mode = 0;	/* external for now, but to be fixed later */
 
 
 /*!
- * \brief configure raster overlay mode
+ * \brief Configure raster overlay mode
  *
- * This routine determines if <i>D_draw_cell</i> draws in overlay mode
- * (locations with category 0 are left untouched) or not (colored with the color
- * for category 0). Set <b>flag</b> to 1 (TRUE) for overlay mode; 0 (FALSE)
- * otherwise.
+ * This routine determines if D_draw_raster() draws in overlay mode
+ * (locations with category 0 are left untouched) or not (colored with
+ * the color for category 0).
  *
- *  \param flag
- *  \return int
+ * \param n 1 (TRUE) for overlay mode; 0 (FALSE) otherwise
+ *
+ * \return 0
  */
-
 int D_set_overlay_mode(int n)
 {
     D__overlay_mode = (n != 0);
@@ -136,8 +136,8 @@ int D_color_of_type(const void *raster,
 {
     int r, g, b;
 
-    G_get_raster_color(raster, &r, &g, &b, colors, data_type);
-    R_RGB_color((unsigned char)r, (unsigned char)g, (unsigned char)b);
+    Rast_get_color(raster, &r, &g, &b, colors, data_type);
+    D_RGB_color((unsigned char)r, (unsigned char)g, (unsigned char)b);
 
     return 0;
 }

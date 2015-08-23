@@ -1,4 +1,3 @@
-
 /****************************************************************************
  *
  * MODULE:       v.build.polylines
@@ -8,7 +7,7 @@
  *               Martin Landa <landa.martin gmail.com> (cats)
  *               Markus Metz (geometry type management, cats, attributes)
  * PURPOSE:      
- * COPYRIGHT:    (C) 2002-2012 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2000-2014 by the GRASS Development Team
  *
  *               This program is free software under the GNU General Public
  *               License (>=v2). Read the file COPYING that comes with GRASS
@@ -69,15 +68,18 @@
    1) Portable
 
    ********************************************************************** */
-#define MAIN
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 #include "walk.h"
+
+int gCopy_atts;
+int gAsciiout;
+char gAscii_type;
 
 int main(int argc, char **argv)
 {
@@ -91,7 +93,7 @@ int main(int argc, char **argv)
     struct Option *output;
     struct Option *cats;
     struct Option *type_opt;
-    struct Flag *quietly;
+    char *desc;
 
     int polyline;
     int *lines_visited;
@@ -100,14 +102,18 @@ int main(int argc, char **argv)
     int nlines;
     int write_cats, copy_tables;
 
-    char *mapset;
     int type, ltype;
 
     /*  Initialize the GIS calls */
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, geometry, topology");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("topology"));
+    G_add_keyword(_("geometry"));
+    G_add_keyword(_("line"));
+    G_add_keyword(_("node"));
+    G_add_keyword(_("vertex"));
     module->description = _("Builds polylines from lines or boundaries.");
 
     /* Define the options */
@@ -120,35 +126,34 @@ int main(int argc, char **argv)
     cats->type = TYPE_STRING;
     cats->description = _("Category number mode");
     cats->options = "no,first,multi";
-    cats->descriptions = _("no;Do not assign any category number to polyline;"
-			   "first;Assign category number of first line to polyline;"
-			   "multi;Assign multiple category numbers to polyline");
+    desc = NULL;
+    G_asprintf(&desc,
+	       "no;%s;first;%s;multi;%s",
+	       _("Do not assign any category number to polyline"),
+	       _("Assign category number of first line to polyline"),
+	       _("Assign multiple category numbers to polyline"));
+    cats->descriptions = desc;
     cats->answer = "no";
 
     type_opt = G_define_standard_option(G_OPT_V_TYPE);
     type_opt->options = "line,boundary";
     type_opt->answer = "line,boundary";
 
-    quietly = G_define_flag();
-    quietly->key = 'q';
-    quietly->description = _("Unused");
-
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
     Vect_check_input_output_name(input->answer, output->answer,
-				 GV_FATAL_EXIT);
+				 G_FATAL_EXIT);
 
     /* Open binary vector map at level 2 */
-    mapset = G_find_vector2(input->answer, "");
-    if (mapset == NULL)
-	G_fatal_error(_("Vector map <%s> not found"), input->answer);
     Vect_set_open_level(2);
-    Vect_open_old(&map, input->answer, mapset);
+    if (Vect_open_old(&map, input->answer, "") < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), input->answer);
 
     /* Open new vector */
     G_find_vector2(output->answer, "");
-    Vect_open_new(&Out, output->answer, Vect_is_3d(&map));
+    if (Vect_open_new(&Out, output->answer, Vect_is_3d(&map)) < 0)
+	G_fatal_error(_("Unable to create vector map <%s>"), output->answer);
 
     /* Copy header info. */
     Vect_copy_head_data(&map, &Out);
@@ -175,7 +180,7 @@ int main(int argc, char **argv)
 	write_cats = MULTI_CATS;
 
     if (type_opt->answer)
-	Vect_option_to_types(type_opt);
+	type = Vect_option_to_types(type_opt);
     else
 	type = GV_LINES;
 
@@ -222,10 +227,14 @@ int main(int argc, char **argv)
 	polyline++;
     }
 
-    G_message(_("%d lines or boundaries found in vector map <%s@%s>"),
-	      nlines, Vect_get_name(&map), Vect_get_mapset(&map));
-    G_message(_("%d polylines stored in vector map <%s@%s>"),
-	      polyline, Vect_get_name(&Out), Vect_get_mapset(&Out));
+    G_verbose_message(n_("%d line or boundaries found in input vector map",
+                         "%d lines or boundaries found in input vector map",
+                         nlines),
+		      nlines, Vect_get_name(&map), Vect_get_mapset(&map));
+    G_verbose_message(n_("%d polyline stored in output vector map",
+                         "%d polylines stored in output vector map",
+                         polyline),
+		      polyline, Vect_get_name(&Out), Vect_get_mapset(&Out));
 
     /* Copy (all linked) tables if needed */
     if (copy_tables) {

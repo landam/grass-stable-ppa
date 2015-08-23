@@ -46,28 +46,7 @@ struct Halfedge
     struct Halfedge *PQnext;
 };
 
-#ifdef MAIN
-int triangulate, sorted, plot, debug, mode3d;
-struct Site *sites;
-int nsites;
-int siteidx;
-int sqrt_nsites;
-int nvertices;
-struct Freelist sfl;
-struct Site *bottomsite;
-int nedges;
-struct Freelist efl;
-double xmin, xmax, ymin, ymax, deltax, deltay;
-struct Freelist hfl;
-struct Halfedge *ELleftend, *ELrightend;
-int ELhashsize;
-struct Halfedge **ELhash;
-int PQhashsize;
-struct Halfedge *PQhash;
-int PQcount;
-int PQmin;
-#else
-extern int triangulate, sorted, plot, debug, mode3d;
+extern int sorted, plot, debug, mode3d;
 extern struct Site *sites;
 extern int nsites;
 extern int siteidx;
@@ -86,7 +65,13 @@ extern int PQhashsize;
 extern struct Halfedge *PQhash;
 extern int PQcount;
 extern int PQmin;
-#endif
+
+/* clean_topo.c */
+int clean_topo(void);
+
+/* skeleton.c */
+int thin_skeleton(double);
+int tie_up(void);
 
 /* sw_edgelist.c */
 int ELinitialize(void);
@@ -125,7 +110,7 @@ int PQinitialize(void);
 int scomp(const void *, const void *);
 struct Site *nextone(void);
 int readsites(void);
-struct Site *readone(void);
+int readbounds(void);
 
 /* sw_memory.c */
 int freeinit(struct Freelist *, int);
@@ -133,18 +118,14 @@ char *getfree(struct Freelist *);
 int makefree(struct Freenode *, struct Freelist *);
 char *myalloc(unsigned);
 
-/* sw_output.c */
-int openpl(void);
-int line(int, int, int, int);
-int circle(int, int, int);
-int range(int, int, int, int);
-int out_bisector(struct Edge *);
-int out_ep(struct Edge *);
-int out_vertex(struct Site *);
-int out_site(struct Site *);
-int out_triple(struct Site *, struct Site *, struct Site *);
-int plotinit(void);
-int clip_line(struct Edge *);
-
 /* sw_voronoi.c */
-int voronoi(int, struct Site *(*)(void));
+int voronoi(struct Site *(*)(void));
+
+/* vo_extend.c */
+int extend_line(double, double, double, double, double, double, double,
+		double, double, double *, double *, int);
+
+/* vo_write.c */
+int vo_write(void);
+int write_ep(struct Edge *);
+

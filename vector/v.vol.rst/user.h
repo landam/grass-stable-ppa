@@ -18,7 +18,7 @@ void crs_full();
 int COGRR1();
 int POINT();
 int LINEQS();
-void clean_fatal_error();
+void clean();
 int point_save();
 
 #endif

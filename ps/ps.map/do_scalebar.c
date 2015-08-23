@@ -1,11 +1,8 @@
-/* Function to draw scalebar on page 
- * **
- */
+/* Function to draw scalebar on page */
 
 #include <string.h>
 #include <math.h>
-#include "ps_info.h"
-#include "decorate.h"
+#include <grass/glocale.h>
 #include "local_proto.h"
 #include "distance.h"
 
@@ -56,6 +53,7 @@ int do_scalebar(void)
 	margin = 2;
     fprintf(PS.fp, "/mg %d def\n", margin);
     x = sb.x - (length / 2.);
+    set_font_name(sb.font);
     set_font_size(sb.fontsize);
     set_line_width(sb.width);
 
@@ -89,13 +87,12 @@ int do_scalebar(void)
 	    /* do text */
 	    if (i == 0 || lab == sb.numbers) {
 		sprintf(num, "%s", nice_number((sb.length / sb.segment) * i));
-		text_box_path(x1, y2 + margin, CENTER, LOWER, num,
-			      sb.fontsize, 0);
+		text_box_path(x1, y2 + margin, CENTER, LOWER, num, 0);
 		if (sb.bgcolor) {	/* TODO: take bg color, not just [white|none] */
 		    set_rgb_color(WHITE);
 		    fprintf(PS.fp, "F ");
 		}
-		set_rgb_color(BLACK);
+		set_rgb_color(sb.color);
 		fprintf(PS.fp, "TIB\n");
 		lab = 0;
 	    }
@@ -104,13 +101,12 @@ int do_scalebar(void)
 		(sb.numbers == 1 && i == seg - 1)) {
 		/* special case for last label */
 		sprintf(num, "%s", nice_number(sb.length));
-		text_box_path(x2, y2 + margin, CENTER, LOWER, num,
-			      sb.fontsize, 0);
+		text_box_path(x2, y2 + margin, CENTER, LOWER, num, 0);
 		if (sb.bgcolor) {
 		    set_rgb_color(WHITE);
 		    fprintf(PS.fp, "F ");
 		}
-		set_rgb_color(BLACK);
+		set_rgb_color(sb.color);
 		fprintf(PS.fp, "TIB\n");
 	    }
 
@@ -128,12 +124,12 @@ int do_scalebar(void)
 	fprintf(PS.fp, "%.1f %.1f %.1f %.1f L D\n", x1, y1, x2, y2);
 
 	/* draw label */
-	text_box_path(x1, y1 + margin, CENTER, LOWER, "0", sb.fontsize, 0);
+	text_box_path(x1, y1 + margin, CENTER, LOWER, "0", 0);
 	if (sb.bgcolor) {
 	    set_rgb_color(WHITE);
 	    fprintf(PS.fp, "F ");
 	}
-	set_rgb_color(BLACK);
+	set_rgb_color(sb.color);
 	fprintf(PS.fp, "TIB\n");
 
 
@@ -151,12 +147,12 @@ int do_scalebar(void)
 
 	/* draw label */
 	sprintf(num, "%s", nice_number(sb.length));
-	text_box_path(x1, y2 + margin, CENTER, LOWER, num, sb.fontsize, 0);
+	text_box_path(x1, y2 + margin, CENTER, LOWER, num, 0);
 	if (sb.bgcolor) {
 	    set_rgb_color(WHITE);
 	    fprintf(PS.fp, "F ");
 	}
-	set_rgb_color(BLACK);
+	set_rgb_color(sb.color);
 	fprintf(PS.fp, "TIB\n");
 
 
@@ -175,13 +171,12 @@ int do_scalebar(void)
 	    if (lab == sb.numbers) {
 		sprintf(num, "%s", nice_number((sb.length / sb.segment) * i));
 
-		text_box_path(x1, y3 + margin, CENTER, LOWER, num,
-			      sb.fontsize, 0);
+		text_box_path(x1, y3 + margin, CENTER, LOWER, num, 0);
 		if (sb.bgcolor) {
 		    set_rgb_color(WHITE);
 		    fprintf(PS.fp, "F ");
 		}
-		set_rgb_color(BLACK);
+		set_rgb_color(sb.color);
 		fprintf(PS.fp, "TIB\n");
 		lab = 0;
 	    }
@@ -194,24 +189,24 @@ int do_scalebar(void)
     if (sb.units == SB_UNITS_AUTO)
 	strcpy(num, G_database_unit_name(TRUE));
     else if(sb.units == SB_UNITS_METERS)
-	strcpy(num, "meters");
+	strcpy(num, _("meters"));
     else if(sb.units == SB_UNITS_KM)
-	strcpy(num, "kilometers");
+	strcpy(num, _("kilometers"));
     else if(sb.units == SB_UNITS_FEET)
-	strcpy(num, "feet");
+	strcpy(num, _("feet"));
     else if(sb.units == SB_UNITS_MILES)
-	strcpy(num, "miles");
+	strcpy(num, _("miles"));
     else if(sb.units == SB_UNITS_NMILES)
-	strcpy(num, "nautical miles");
+	strcpy(num, _("nautical miles"));
     
     text_box_path(72.0 * (x + length/2), 72.0 * (PS.page_height - (sb.y + 0.075)),
-	CENTER, UPPER, num, sb.fontsize, 0);
+	CENTER, UPPER, num, 0);
 
     if (sb.bgcolor) {
 	set_rgb_color(WHITE);
 	fprintf(PS.fp, "F ");
     }
-    set_rgb_color(BLACK);
+    set_rgb_color(sb.color);
     fprintf(PS.fp, "TIB\n");
 
 

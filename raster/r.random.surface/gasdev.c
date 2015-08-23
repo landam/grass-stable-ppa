@@ -1,5 +1,4 @@
 /* gasdev.c                                                             */
-#undef MAIN
 #include <math.h>
 #include "ransurf.h"
 #include "local_proto.h"

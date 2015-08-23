@@ -15,13 +15,13 @@
  *
  *****************************************************************************/
 
-#include <grass/gis.h>
-#include <grass/glocale.h>
-
 #include <stdlib.h>
 #include <fcntl.h>
 #include <math.h>
 
+#include <grass/gis.h>
+#include <grass/raster.h>
+#include <grass/glocale.h>
 
 #include "../r.li.daemon/defs.h"
 #include "../r.li.daemon/daemon.h"
@@ -40,13 +40,15 @@ int main(int argc, char *argv[])
     module = G_define_module();
     module->description =
 	_("Calculates mean pixel attribute index on a raster map");
-    module->keywords = _("raster, landscape structure analysis, patch index");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("landscape structure analysis"));
+    G_add_keyword(_("patch index"));
     /* define options */
 
-    raster = G_define_standard_option(G_OPT_R_MAP);
+    raster = G_define_standard_option(G_OPT_R_INPUT);
 
     conf = G_define_standard_option(G_OPT_F_INPUT);
-    conf->key = "conf";
+    conf->key = "config";
     conf->description = _("Configuration file");
     conf->required = YES;
 
@@ -136,9 +138,9 @@ int calculate(int fd, struct area_entry *ad, double *result)
 
 	for (i = 0; i < ad->cl; i++) {
 	    if (masked && mask_buf[i] == 0) {
-		G_set_c_null_value(&buf[i + ad->x], 1);
+		Rast_set_c_null_value(&buf[i + ad->x], 1);
 	    }
-	    if (!(G_is_c_null_value(&buf[i + ad->x]))) {
+	    if (!(Rast_is_c_null_value(&buf[i + ad->x]))) {
 		area++;
 		somma = somma + buf[i + ad->x];
 	    }
@@ -148,7 +150,7 @@ int calculate(int fd, struct area_entry *ad, double *result)
     if (area > 0)
 	*result = somma / area;
     else
-	G_set_d_null_value(result, 1);
+	Rast_set_d_null_value(result, 1);
 
     if (masked) {
 	close(mask_fd);
@@ -196,9 +198,9 @@ int calculateD(int fd, struct area_entry *ad, double *result)
 
 	for (i = 0; i < ad->cl; i++) {
 	    if (masked && mask_buf[i] == 0) {
-		G_set_d_null_value(&buf[i + ad->x], 1);
+		Rast_set_d_null_value(&buf[i + ad->x], 1);
 	    }
-	    if (!(G_is_d_null_value(&buf[i + ad->x]))) {
+	    if (!(Rast_is_d_null_value(&buf[i + ad->x]))) {
 		area++;
 		somma = somma + buf[i + ad->x];
 	    }
@@ -208,7 +210,7 @@ int calculateD(int fd, struct area_entry *ad, double *result)
     if (area > 0)
 	*result = somma / area;
     else
-	G_set_d_null_value(result, 1);
+	Rast_set_d_null_value(result, 1);
 
     if (masked) {
 	close(mask_fd);
@@ -255,9 +257,9 @@ int calculateF(int fd, struct area_entry *ad, double *result)
 
 	for (i = 0; i < ad->cl; i++) {
 	    if (masked && mask_buf[i] == 0) {
-		G_set_f_null_value(&buf[i + ad->x], 1);
+		Rast_set_f_null_value(&buf[i + ad->x], 1);
 	    }
-	    if (!(G_is_f_null_value(&buf[i + ad->x]))) {
+	    if (!(Rast_is_f_null_value(&buf[i + ad->x]))) {
 		area++;
 		somma = somma + buf[i + ad->x];
 	    }
@@ -267,7 +269,7 @@ int calculateF(int fd, struct area_entry *ad, double *result)
     if (area > 0)
 	*result = somma / area;
     else
-	G_set_d_null_value(result, 1);
+	Rast_set_d_null_value(result, 1);
 
     if (masked) {
 	close(mask_fd);

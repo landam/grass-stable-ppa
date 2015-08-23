@@ -7,7 +7,7 @@ int no_stream(int row, int col, CELL basin_num,
     double slope;
     CELL downdir, asp_value, hih_ele, new_ele, aspect;
     DCELL dvalue, max_drain;	/* flow acc is now DCELL */
-    SHORT updir, riteflag, leftflag, thisdir;
+    int updir, riteflag, leftflag, thisdir;
 
     while (1) {
 	bas[SEG_INDEX(bas_seg, row, col)] = basin_num;
@@ -15,12 +15,14 @@ int no_stream(int row, int col, CELL basin_num,
 	for (r = row - 1, rr = 0; r <= row + 1; r++, rr++) {
 	    for (c = col - 1, cc = 0; c <= col + 1; c++, cc++) {
 		if (r >= 0 && c >= 0 && r < nrows && c < ncols) {
+		    if (r == row && c == col)
+			continue;
 		    aspect = asp[SEG_INDEX(asp_seg, r, c)];
 		    if (aspect == drain[rr][cc]) {
 			dvalue = wat[SEG_INDEX(wat_seg, r, c)];
 			if (dvalue < 0)
 			    dvalue = -dvalue;
-			if ((dvalue - max_drain) > 5E-8f) {	/* floating point comparison problem workaround */
+			if (dvalue > max_drain) {
 			    uprow = r;
 			    upcol = c;
 			    max_drain = dvalue;
@@ -34,29 +36,29 @@ int no_stream(int row, int col, CELL basin_num,
 	    downdir = asp[SEG_INDEX(asp_seg, row, col)];
 	    if (downdir < 0)
 		downdir = -downdir;
-	    if (sides == 8) {
-		if (uprow != row && upcol != col)
-		    stream_length += diag;
-		else if (uprow != row)
-		    stream_length += window.ns_res;
-		else
-		    stream_length += window.ew_res;
-	    }
-	    else {		/* sides == 4 */
-
-		asp_value = asp[SEG_INDEX(asp_seg, uprow, upcol)];
-		if (downdir == 2 || downdir == 6) {
-		    if (asp_value == 2 || asp_value == 6)
+	    if (arm_flag) {
+		if (sides == 8) {
+		    if (uprow != row && upcol != col)
+			stream_length += diag;
+		    else if (uprow != row)
 			stream_length += window.ns_res;
 		    else
-			stream_length += diag;
-		}
-		else {		/* downdir == 4,8 */
-
-		    if (asp_value == 4 || asp_value == 8)
 			stream_length += window.ew_res;
-		    else
-			stream_length += diag;
+		}
+		else {		/* sides == 4 */
+		    asp_value = asp[SEG_INDEX(asp_seg, uprow, upcol)];
+		    if (downdir == 2 || downdir == 6) {
+			if (asp_value == 2 || asp_value == 6)
+			    stream_length += window.ns_res;
+			else
+			    stream_length += diag;
+		    }
+		    else {		/* downdir == 4,8 */
+			if (asp_value == 4 || asp_value == 8)
+			    stream_length += window.ew_res;
+			else
+			    stream_length += diag;
+		    }
 		}
 	    }
 	    riteflag = leftflag = 0;
@@ -66,18 +68,17 @@ int no_stream(int row, int col, CELL basin_num,
 			aspect = asp[SEG_INDEX(asp_seg, r, c)];
 			if (aspect == drain[rr][cc]) {
 			    thisdir = updrain[rr][cc];
-			    switch (haf_basin_side(updir,
-			                          (SHORT) downdir,
-						  thisdir)) {
-			    case RITE:
-				overland_cells(r, c, basin_num, basin_num,
-					       &new_ele);
-				riteflag++;
-				break;
+			    switch (haf_basin_side
+			            (updir, (int) downdir, thisdir)) {
 			    case LEFT:
 				overland_cells(r, c, basin_num, basin_num - 1,
 					       &new_ele);
 				leftflag++;
+				break;
+			    case RITE:
+				overland_cells(r, c, basin_num, basin_num,
+					       &new_ele);
+				riteflag++;
 				break;
 			    }
 			}

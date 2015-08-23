@@ -20,33 +20,15 @@
 #define __R_CROSS_GLOB_H__
 
 #include <grass/gis.h>
+#include <grass/raster.h>
 
 #define NFILES 30		/* maximum number of layers */
-#define SHIFT 6			/* 2^SHIFT cats per node */
-#define INCR 16
-
-#define FOUND 0
-#define LEFT  1
-#define RIGHT 2
 
 extern int nfiles;
 extern int nrows;
 extern int ncols;
-extern int NCATS;
-extern char *names[NFILES];
+extern const char *names[NFILES];
 extern struct Categories labels[NFILES];
-
-typedef struct
-{
-    CELL *cat;
-    CELL *result;
-    int left;
-    int right;
-} NODE;
-
-extern NODE *tree;		/* tree of values */
-extern int tlen;		/* allocate tree size */
-extern int N;			/* number of actual nodes in tree */
 
 typedef struct
 {

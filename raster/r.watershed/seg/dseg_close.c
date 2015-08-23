@@ -1,10 +1,10 @@
 #include <grass/gis.h>
 #include <unistd.h>
-#include "cseg.h"
+#include "Gwater.h"
 
 int dseg_close(DSEG * dseg)
 {
-    segment_release(&(dseg->seg));
+    Segment_release(&(dseg->seg));
     close(dseg->fd);
     unlink(dseg->filename);
     if (dseg->name) {

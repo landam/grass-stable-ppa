@@ -1,5 +1,5 @@
 /*!
-   \file gsd_label.c
+   \file lib/ogsf/gsd_label.c
 
    \brief OGSF library - label management (lower level functions)
 
@@ -18,7 +18,7 @@
 
 #include <grass/gis.h>
 #include <grass/glocale.h>
-#include <grass/gstypes.h>
+#include <grass/ogsf.h>
 
 #include "rgbpack.h"
 

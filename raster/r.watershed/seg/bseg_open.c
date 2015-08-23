@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <grass/segment.h>
-#include "cseg.h"
+#include "Gwater.h"
 
 
 int bseg_open(BSEG * bseg, int srows, int scols, int nsegs_in_memory)
@@ -21,8 +21,8 @@ int bseg_open(BSEG * bseg, int srows, int scols, int nsegs_in_memory)
 	G_warning("bseg_open(): unable to create segment file");
 	return -2;
     }
-    if (0 > (errflag = segment_format(fd, G_window_rows(),
-				      (G_window_cols() + 7) / 8, srows, scols,
+    if (0 > (errflag = Segment_format(fd, Rast_window_rows(),
+				      Rast_window_cols(), srows, scols,
 				      sizeof(char)))) {
 	close(fd);
 	unlink(filename);
@@ -41,7 +41,7 @@ int bseg_open(BSEG * bseg, int srows, int scols, int nsegs_in_memory)
 	G_warning("bseg_open(): unable to re-open segment file");
 	return -4;
     }
-    if (0 > (errflag = segment_init(&(bseg->seg), fd, nsegs_in_memory))) {
+    if (0 > (errflag = Segment_init(&(bseg->seg), fd, nsegs_in_memory))) {
 	close(fd);
 	unlink(filename);
 	if (errflag == -1) {

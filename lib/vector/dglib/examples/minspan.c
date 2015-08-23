@@ -59,8 +59,7 @@ int main(int argc, char **argv)
 	GNO_OPTION("g", "graph", NULL, &pszGraph, "Input Graph file")
 	GNO_OPTION("o", "graphout", NULL, &pszGraphOut, "Output Graph file")
 	GNO_OPTION("v", "vertex", NULL, &pszVertex, "Vertex Node Id")
-    GNO_END if (GNO_PARSE(argc, argv) < 0)
-    {
+	GNO_END if (GNO_PARSE(argc, argv) < 0) {
 	return 1;
     }
     /*

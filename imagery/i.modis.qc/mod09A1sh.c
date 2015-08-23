@@ -1,9 +1,9 @@
 /* MOD35 snow/ice flag unsigned int bits [12]
- * 0 -> class 0: Yes
- * 1 -> class 1: No
+ * 0 -> class 0: No
+ * 1 -> class 1: Yes
  */  
 
-#include <grass/gis.h>
+#include <grass/raster.h>
 
 CELL mod09A1sh(CELL pixel) 
 {

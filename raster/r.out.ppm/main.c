@@ -21,6 +21,7 @@
 #include <stdlib.h>
 
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 #define DEF_RED 255
@@ -33,10 +34,8 @@ int main(int argc, char *argv[])
 {
     struct GModule *module;
     struct Option *rast, *ppm_file;
-
-    /* please, remove before GRASS 7 released */
-    struct Flag *bequiet, *gscale;
-    char *cellmap, *map, *p, ofile[1000];
+    struct Flag *gscale, *header;
+    char *map, *p, ofile[1000];
     unsigned char *set, *ored, *ogrn, *oblu;
     CELL *cell_buf;
     FCELL *fcell_buf;
@@ -46,15 +45,16 @@ int main(int argc, char *argv[])
     struct Cell_head w;
     FILEDESC cellfile = 0;
     FILE *fp;
+    char *tmpstr1, *tmpstr2;
 
 
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, export");
-    module->description =
-	_("Converts a GRASS raster map to a PPM image file "
-	  "at the pixel resolution of the currently defined region.");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("export"));
+    module->description = _("Converts a GRASS raster map to a PPM image file.");
+
 
     rast = G_define_standard_option(G_OPT_R_INPUT);
 
@@ -63,25 +63,16 @@ int main(int argc, char *argv[])
     ppm_file->answer = "<rasterfilename>.ppm";
     ppm_file->description = _("Name for new PPM file (use '-' for stdout)");
 
-    /* please, remove before GRASS 7 released */
-    bequiet = G_define_flag();
-    bequiet->key = 'q';
-    bequiet->description = _("Run quietly");
-
     gscale = G_define_flag();
-    gscale->key = 'G';
+    gscale->key = 'g';
     gscale->description = _("Output greyscale instead of color");
+
+    header = G_define_flag();
+    header->key = 'h';
+    header->description = _("Suppress printing of PPM header");
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
-
-    /* please, remove before GRASS 7 released */
-    if (bequiet->answer) {
-	putenv("GRASS_VERBOSE=0");
-	G_warning(_("The '-q' flag is superseded and will be removed "
-		    "in future. Please use '--quiet' instead"));
-    }
-
 
     /* kludge to work with r.out.mpeg */
     if (rast->answer[0] == '/')
@@ -107,28 +98,23 @@ int main(int argc, char *argv[])
     /*G_get_set_window (&w); *//* 10/99 MN: check for current region */
     G_get_window(&w);
 
-    G_message(_("rows = %d, cols = %d"), w.rows, w.cols);
+    G_asprintf(&tmpstr1, n_("row = %d", "rows = %d", w.rows), w.rows);
+    G_asprintf(&tmpstr2, n_("column = %d", "columns = %d", w.cols), w.cols);
+    G_message("%s, %s", tmpstr1, tmpstr2);
+    G_free(tmpstr1);
+    G_free(tmpstr2); 
 
     /* open raster map for reading */
-    {
-	cellmap = G_find_file2("cell", rast->answer, "");
-	if (!cellmap) {
-	    G_fatal_error(_("Raster map <%s> not found"), rast->answer);
-	}
+    cellfile = Rast_open_old(rast->answer, "");
 
-	if ((cellfile = G_open_cell_old(rast->answer, cellmap)) == -1) {
-	    G_fatal_error(_("Unable to open raster map <%s>"), rast->answer);
-	}
-    }
+    cell_buf = Rast_allocate_c_buf();
+    fcell_buf = Rast_allocate_f_buf();
+    dcell_buf = Rast_allocate_d_buf();
 
-    cell_buf = G_allocate_c_raster_buf();
-    fcell_buf = G_allocate_f_raster_buf();
-    dcell_buf = G_allocate_d_raster_buf();
-
-    ored = (unsigned char *)G_malloc(w.cols * sizeof(unsigned char));
-    ogrn = (unsigned char *)G_malloc(w.cols * sizeof(unsigned char));
-    oblu = (unsigned char *)G_malloc(w.cols * sizeof(unsigned char));
-    set = (unsigned char *)G_malloc(w.cols * sizeof(unsigned char));
+    ored = G_malloc(w.cols);
+    ogrn = G_malloc(w.cols);
+    oblu = G_malloc(w.cols);
+    set  = G_malloc(w.cols);
 
     /* open ppm file for writing */
     {
@@ -139,29 +125,30 @@ int main(int argc, char *argv[])
 	}
     }
     /* write header info */
+    if (!header->answer) {
+	if (!gscale->answer)
+	    fprintf(fp, "P6\n");
+	/* Magic number meaning rawbits, 24bit color to ppm format */
+	else
+	    fprintf(fp, "P5\n");
+	/* Magic number meaning rawbits, 8bit greyscale to ppm format */
 
-    if (!gscale->answer)
-	fprintf(fp, "P6\n");
-    /* Magic number meaning rawbits, 24bit color to ppm format */
-    else
-	fprintf(fp, "P5\n");
-    /* Magic number meaning rawbits, 8bit greyscale to ppm format */
+	if (!do_stdout) {
+	    fprintf(fp, "# CREATOR: %s from GRASS raster map \"%s\"\n",
+	            G_program_name(), rast->answer);
+	    fprintf(fp, "# east-west resolution: %f\n", w.ew_res);
+	    fprintf(fp, "# north-south resolution: %f\n", w.ns_res);
+	    fprintf(fp, "# South edge: %f\n", w.south);
+	    fprintf(fp, "# West edge: %f\n", w.west);
+	    /* comments */
+	}
 
-    if (!do_stdout) {
-	fprintf(fp, "# CREATOR: %s from GRASS raster map \"%s\"\n",
-		G_program_name(), rast->answer);
-	fprintf(fp, "# east-west resolution: %f\n", w.ew_res);
-	fprintf(fp, "# north-south resolution: %f\n", w.ns_res);
-	fprintf(fp, "# South edge: %f\n", w.south);
-	fprintf(fp, "# West edge: %f\n", w.west);
-	/* comments */
+	fprintf(fp, "%d %d\n", w.cols, w.rows);
+	/* width & height */
+
+	fprintf(fp, "255\n");
+	/* max intensity val */
     }
-
-    fprintf(fp, "%d %d\n", w.cols, w.rows);
-    /* width & height */
-
-    fprintf(fp, "255\n");
-    /* max intensity val */
 
 
     G_important_message(_("Converting..."));
@@ -169,9 +156,9 @@ int main(int argc, char *argv[])
     {
 	struct Colors colors;
 
-	G_read_colors(rast->answer, cellmap, &colors);
+	Rast_read_colors(rast->answer, "", &colors);
 
-	rtype = G_get_raster_map_type(cellfile);
+	rtype = Rast_get_map_type(cellfile);
 	if (rtype == CELL_TYPE)
 	    voidc = (CELL *) cell_buf;
 	else if (rtype == FCELL_TYPE)
@@ -184,11 +171,9 @@ int main(int argc, char *argv[])
 	if (!gscale->answer) {	/* 24BIT COLOR IMAGE */
 	    for (row = 0; row < w.rows; row++) {
 		G_percent(row, w.rows, 5);
-		if (G_get_raster_row(cellfile, (void *)voidc, row, rtype) < 0)
-		    G_fatal_error(_("Unable to read raster map <%s> row %d"),
-				  rast->answer, row);
-		G_lookup_raster_colors((void *)voidc, ored, ogrn, oblu, set,
-				       w.cols, &colors, rtype);
+		Rast_get_row(cellfile, (void *)voidc, row, rtype);
+		Rast_lookup_colors((void *)voidc, ored, ogrn, oblu, set,
+				   w.cols, &colors, rtype);
 
 		for (col = 0; col < w.cols; col++) {
 		    if (set[col]) {
@@ -208,10 +193,9 @@ int main(int argc, char *argv[])
 	    for (row = 0; row < w.rows; row++) {
 
 		G_percent(row, w.rows, 5);
-		if (G_get_raster_row(cellfile, (void *)voidc, row, rtype) < 0)
-		    exit(1);
-		G_lookup_raster_colors((void *)voidc, ored, ogrn, oblu, set,
-				       w.cols, &colors, rtype);
+		Rast_get_row(cellfile, (void *)voidc, row, rtype);
+		Rast_lookup_colors((void *)voidc, ored, ogrn, oblu, set,
+				   w.cols, &colors, rtype);
 
 		for (col = 0; col < w.cols; col++) {
 
@@ -228,7 +212,7 @@ int main(int argc, char *argv[])
 	    }
 	}
 
-	G_free_colors(&colors);
+	Rast_free_colors(&colors);
 
     }
     G_free(cell_buf);
@@ -238,14 +222,14 @@ int main(int argc, char *argv[])
     G_free(ogrn);
     G_free(oblu);
     G_free(set);
-    G_close_cell(cellfile);
+    Rast_close(cellfile);
     /*
        if(!do_stdout)
      */
     fclose(fp);
 
     if (do_stdout)
-	G_done_msg("");
+	G_done_msg("%s", "");
     else
 	G_done_msg(_("File <%s> created"), ofile);
 

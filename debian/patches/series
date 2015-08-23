@@ -1,9 +1,6 @@
-htmlgen-fakeroot
-www-browser
 pager
-xterm
 instdir
-check4dev
-help_about_names
-wxpy3.0-compat.patch
-animate-wish.patch
+python-ctypes-ternary.patch
+no-fail-html.patch
+desktop.patch
+appstream.patch

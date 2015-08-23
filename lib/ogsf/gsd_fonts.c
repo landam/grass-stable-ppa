@@ -1,5 +1,5 @@
 /*!
-   \file gsd_fonts.c
+   \file lib/ogsf/gsd_fonts.c
 
    \brief OGSF library - loading and manipulating surfaces
 
@@ -21,8 +21,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include <grass/gstypes.h>
-#include <grass/ogsf_proto.h>
+#include <grass/ogsf.h>
 
 #include "rgbpack.h"
 

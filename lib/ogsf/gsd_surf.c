@@ -1,5 +1,5 @@
 /*!
-   \file gsd_surf.c
+   \file lib/ogsf/gsd_surf.c
 
    \brief OGSF library - loading and manipulating surfaces
 
@@ -20,7 +20,7 @@
 
 #include <grass/gis.h>
 #include <grass/glocale.h>
-#include <grass/gstypes.h>
+#include <grass/ogsf.h>
 
 #include "gsget.h"
 #include "rowcol.h"

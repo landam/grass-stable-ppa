@@ -49,7 +49,8 @@ int thin_lines(int iterations)
 	top = bottom;		/* line above the one we're changing */
 	bottom = get_a_row(row);	/* line we're working on now */
 	for (col = pad_size; col < n_cols - pad_size; col++) {
-	    if (bottom[col]) {	/* not background pixel */
+	    /* skip background cells */
+	    if (!Rast_is_c_null_value(&(bottom[col]))) {
 		if (col < box_left)	/* find bounding box which will */
 		    box_left = col;	/*   cover part of raster map which */
 		if (col > box_right)	/*   has lines in it */
@@ -64,8 +65,7 @@ int thin_lines(int iterations)
     }				/* row-loop */
     if (box_right < box_left || box_bottom < box_top) {
 	unlink(work_file_name);
-	G_fatal_error(_("%s: Unable to find bounding box for lines"),
-		      error_prefix);
+	G_fatal_error(_("Unable to find bounding box for lines"));
     }
     G_message(_("Bounding box:  l = %d, r = %d, t = %d, b = %d"),
 	      box_left, box_right, box_top, box_bottom);
@@ -107,11 +107,9 @@ int thin_lines(int iterations)
     N_Templ[7] = /* 00000010 */ 2;
 
     new_med = (CELL *) G_malloc(sizeof(CELL) * (n_cols));
-    for (i = 0; i < n_cols; i++)
-	new_med[i] = 0;
+    Rast_set_c_null_value(new_med, n_cols);
     row_buf = (CELL *) G_malloc(sizeof(CELL) * (n_cols));
-    for (i = 0; i < n_cols; i++)
-	row_buf[i] = 0;
+    Rast_set_c_null_value(row_buf, n_cols);
 
     deleted = 1;
     i = 1;
@@ -137,7 +135,7 @@ int thin_lines(int iterations)
 		    new_med[col] = med[col];
 		bottom = get_a_row(row + 1);
 		for (col = box_left; col <= box_right; col++) {
-		    if (med[col]) {	/* if pixel is not blank */
+		    if (!Rast_is_c_null_value(&(med[col]))) {	/* if cell is not NULL */
 			W = encode_neighbours(top, med, bottom, col, 1);
 			/* current window */
 			N_W = encode_neighbours(top, med, bottom, col, -1);
@@ -150,7 +148,7 @@ int thin_lines(int iterations)
 			     ((N_Templ[ind3] & N_W) == N_Templ[ind3]))) {
 			    /* fprintf(stdout, "col: %d,   row: %d\n", col, row); */
 			    deleted++;
-			    new_med[col] = 0;
+			    Rast_set_c_null_value(&(new_med[col]), 1);
 			}
 
 		    }		/* end blank pixel */
@@ -167,7 +165,7 @@ int thin_lines(int iterations)
 	    }			/* end row loop */
 	}			/* j-loop */
 
-	G_message(_("Deleted %d  pixels "), deleted);
+	G_message(n_("Deleted %d pixel", "Deleted %d pixels", deleted), deleted);
     }				/* while delete >0 */
 
     if ((deleted == 0) && (i <= iterations))
@@ -188,25 +186,23 @@ encode_neighbours(CELL * top, CELL * middle, CELL * bottom, int col, int neg)
 
     T = 0;
     if (neg > 0)
-	T = (((middle[col + 1] != 0) << 5) | ((top[col + 1] !=
-					       0) << 6) | ((top[col] !=
-							    0) << 7) |
-	     ((top[col - 1] != 0)) | ((middle[col - 1] !=
-				       0) << 1) | ((bottom[col - 1] !=
-						    0) << 2) | ((bottom[col]
-								 !=
-								 0) << 3) |
-	     ((bottom[col + 1] != 0) << 4));
+	T = (((!Rast_is_c_null_value(&(middle[col + 1]))) << 5) |
+	     ((!Rast_is_c_null_value(&(top[col + 1]))) << 6) |
+	     ((!Rast_is_c_null_value(&(top[col]))) << 7) |
+	     ((!Rast_is_c_null_value(&(top[col - 1])))) |
+	     ((!Rast_is_c_null_value(&(middle[col - 1]))) << 1) |
+	     ((!Rast_is_c_null_value(&(bottom[col - 1]))) << 2) |
+	     ((!Rast_is_c_null_value(&(bottom[col]))) << 3) |
+	     ((!Rast_is_c_null_value(&(bottom[col + 1]))) << 4));
     else
-	T = (((middle[col + 1] == 0) << 5) | ((top[col + 1] ==
-					       0) << 6) | ((top[col] ==
-							    0) << 7) |
-	     ((top[col - 1] == 0)) | ((middle[col - 1] ==
-				       0) << 1) | ((bottom[col - 1] ==
-						    0) << 2) | ((bottom[col]
-								 ==
-								 0) << 3) |
-	     ((bottom[col + 1] == 0) << 4));
+	T = (((Rast_is_c_null_value(&(middle[col + 1]))) << 5) |
+	     ((Rast_is_c_null_value(&(top[col + 1]))) << 6) |
+	     ((Rast_is_c_null_value(&(top[col]))) << 7) |
+	     ((Rast_is_c_null_value(&(top[col - 1])))) |
+	     ((Rast_is_c_null_value(&(middle[col - 1]))) << 1) |
+	     ((Rast_is_c_null_value(&(bottom[col - 1]))) << 2) |
+	     ((Rast_is_c_null_value(&(bottom[col]))) << 3) |
+	     ((Rast_is_c_null_value(&(bottom[col + 1]))) << 4));
 
     return (T);
 }

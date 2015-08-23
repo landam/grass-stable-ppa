@@ -21,6 +21,7 @@
 #include <math.h>
 #include <string.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include "localproto.h"
 #include <grass/glocale.h>
 
@@ -29,7 +30,6 @@ int main(int argc, char *argv[])
 {
     RASTER_MAP_TYPE out_type, map_type;
     char *name;
-    char *mapset;
     char *null_str;
     char surfer_null_str[13] = { "1.70141e+038" };
     int fd;
@@ -56,29 +56,23 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, export");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("export"));
+    G_add_keyword("ASCII");
     module->description =
-	_("Converts a raster map layer into an ASCII text file.");
+	_("Converts a raster map layer into a GRASS ASCII text file.");
 
     /* Define the different options */
 
-    parm.map = G_define_option();
-    parm.map->key = "input";
-    parm.map->type = TYPE_STRING;
-    parm.map->required = YES;
-    parm.map->gisprompt = "old,cell,raster";
-    parm.map->description = _("Name of an existing raster map");
+    parm.map = G_define_standard_option(G_OPT_R_INPUT);
 
-    parm.output = G_define_option();
-    parm.output->key = "output";
-    parm.output->type = TYPE_STRING;
+    parm.output = G_define_standard_option(G_OPT_F_OUTPUT);
     parm.output->required = NO;
-    parm.output->gisprompt = "new_file,file,output";
     parm.output->description =
 	_("Name for output ASCII grid map (use out=- for stdout)");
 
     parm.dp = G_define_option();
-    parm.dp->key = "dp";
+    parm.dp->key = "precision";
     parm.dp->type = TYPE_INTEGER;
     parm.dp->required = NO;
     parm.dp->description =
@@ -91,10 +85,7 @@ int main(int argc, char *argv[])
     parm.width->description =
 	_("Number of values printed before wrapping a line (only SURFER or MODFLOW format)");
 
-    parm.null = G_define_option();
-    parm.null->key = "null";
-    parm.null->type = TYPE_STRING;
-    parm.null->required = NO;
+    parm.null = G_define_standard_option(G_OPT_M_NULL_VALUE);
     parm.null->answer = "*";
     parm.null->description =
 	_("String to represent null cell (GRASS grid only)");
@@ -140,17 +131,11 @@ int main(int argc, char *argv[])
 	G_fatal_error(_("Use -M or -s, not both"));
 
     name = parm.map->answer;
-    mapset = G_find_cell2(name, "");
-
-    if (!mapset)
-	G_fatal_error(_("Raster map <%s> not found"), name);
 
     /* open raster map */
-    fd = G_open_cell_old(name, mapset);
-    if (fd < 0)
-	G_fatal_error(_("Unable to open raster map <%s>"), name);
+    fd = Rast_open_old(name, "");
 
-    map_type = G_get_raster_map_type(fd);
+    map_type = Rast_get_map_type(fd);
 
     if (!flag.int_out->answer)
 	out_type = map_type;
@@ -163,8 +148,8 @@ int main(int argc, char *argv[])
 	    dp = 16;
     }
 
-    nrows = G_window_rows();
-    ncols = G_window_cols();
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
 
     /* open ascii file for writing or use stdout */
     if (parm.output->answer && strcmp("-", parm.output->answer) != 0) {
@@ -177,7 +162,7 @@ int main(int argc, char *argv[])
     /* process the requested output format */
     if (flag.surfer->answer) {
 	if (!flag.noheader->answer) {
-	    if (writeGSheader(fp, name, mapset))
+	    if (writeGSheader(fp, name))
 		G_fatal_error(_("Unable to read fp range for <%s>"), name);
 	}
 	rc = write_GSGRID(fd, fp, nrows, ncols, out_type, dp, surfer_null_str,
@@ -198,7 +183,7 @@ int main(int argc, char *argv[])
     }
 
     /* tidy up and go away */
-    G_close_cell(fd);
+    Rast_close(fd);
     fclose(fp);
     exit(EXIT_SUCCESS);
 }

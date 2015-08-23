@@ -1,12 +1,13 @@
 #include <stdlib.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 
 void *read_raster(void *buf, const int fd, const RASTER_MAP_TYPE rtype)
 {
     void *tmpbuf = buf;
-    int rows = G_window_rows();
+    int rows = Rast_window_rows();
     int i;
 
     G_message(_("Reading raster map..."));
@@ -14,9 +15,9 @@ void *read_raster(void *buf, const int fd, const RASTER_MAP_TYPE rtype)
     for (i = 0; i < rows; i++) {
 	G_percent(i + 1, rows, 10);
 
-	G_get_raster_row(fd, tmpbuf, i, rtype);
+	Rast_get_row(fd, tmpbuf, i, rtype);
 	tmpbuf =
-	    G_incr_void_ptr(tmpbuf, G_raster_size(rtype) * G_window_cols());
+	    G_incr_void_ptr(tmpbuf, Rast_cell_size(rtype) * Rast_window_cols());
     }
 
     return tmpbuf;
@@ -26,7 +27,7 @@ void *read_raster(void *buf, const int fd, const RASTER_MAP_TYPE rtype)
 void *write_raster(void *buf, const int fd, const RASTER_MAP_TYPE rtype)
 {
     void *tmpbuf = buf;
-    int rows = G_window_rows();
+    int rows = Rast_window_rows();
     int i;
 
     G_message(_("Writing raster map..."));
@@ -34,9 +35,9 @@ void *write_raster(void *buf, const int fd, const RASTER_MAP_TYPE rtype)
     for (i = 0; i < rows; i++) {
 	G_percent(i, rows, 10);
 
-	G_put_raster_row(fd, tmpbuf, rtype);
+	Rast_put_row(fd, tmpbuf, rtype);
 	tmpbuf =
-	    G_incr_void_ptr(tmpbuf, G_raster_size(rtype) * G_window_cols());
+	    G_incr_void_ptr(tmpbuf, Rast_cell_size(rtype) * Rast_window_cols());
     }
 
     return tmpbuf;

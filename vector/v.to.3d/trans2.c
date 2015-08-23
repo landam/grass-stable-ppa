@@ -1,5 +1,5 @@
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 
@@ -14,14 +14,11 @@
    \param height fixed height (used only if column is NULL)
    \param field layer number
    \param column attribute column used for height
-
-   \return number of writen features
-   \return -1 on error
  */
-int trans2d(struct Map_info *In, struct Map_info *Out, int type,
-	    double height, int field, const char *column)
+void trans2d(struct Map_info *In, struct Map_info *Out, int type,
+	    double height, const char *field_name, const char *column)
 {
-    int i, ltype, line;
+    int i, ltype, line, field;
     int cat;
     int ret, ctype;
 
@@ -35,37 +32,42 @@ int trans2d(struct Map_info *In, struct Map_info *Out, int type,
 
     db_CatValArray_init(&cvarr);
 
+    field = Vect_get_field_number(In, field_name);
+    
     if (column) {
 	struct field_info *Fi;
 
 	dbDriver *driver;
 
+        if (field == -1) {
+            G_warning(_("Invalid layer number %d, assuming 1"), field);
+            field = 1;
+        }
+
 	Fi = Vect_get_field(In, field);
 	if (!Fi) {
-	    G_warning(_("Database connection not defined for layer %d"),
-		      field);
-	    return -1;
+	    G_fatal_error(_("Database connection not defined for layer <%s>"),
+                          field_name);
 	}
 
 	driver = db_start_driver_open_database(Fi->driver, Fi->database);
 	if (!driver) {
-	    G_warning(_("Unable to open database <%s> by driver <%s>"),
-		      Fi->database, Fi->driver);
-	    return -1;
+	    G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
+                          Fi->database, Fi->driver);
 	}
-
+        db_set_error_handler_driver(driver);
+        
 	/* column type must numeric */
 	ctype = db_column_Ctype(driver, Fi->table, column);
 	if (ctype == -1) {
-	    G_warning(_("Column <%s> not found in table <%s>"),
-		      column, Fi->table);
-	    return -1;
+	    G_fatal_error(_("Column <%s> not found in table <%s>"),
+                          column, Fi->table);
 	}
 	if (ctype != DB_C_TYPE_INT && ctype != DB_C_TYPE_DOUBLE) {
-	    G_warning(_("Column must be numeric"));
-	    return -1;
+	    G_fatal_error(_("Column must be numeric"));
 	}
 
+        G_message(_("Fetching height from <%s> column..."), column);
 	db_select_CatValArray(driver, Fi->table, Fi->key,
 			      column, NULL, &cvarr);
 
@@ -74,24 +76,25 @@ int trans2d(struct Map_info *In, struct Map_info *Out, int type,
 	db_close_database_shutdown_driver(driver);
     }
 
+    G_message(_("Transforming features..."));
     line = 1;
     while (1) {
 	ltype = Vect_read_next_line(In, Points, Cats);
 	if (ltype == -1) {
-	    G_warning(_("Unable to read vector map"));
-	    return -1;
+	    G_fatal_error(_("Unable to read vector map"));
 	}
 	if (ltype == -2) {	/* EOF */
 	    break;
 	}
 
-	if (G_verbose() > G_verbose_min() && (line - 1) % 1000 == 0) {
-	    fprintf(stderr, "%7d\b\b\b\b\b\b\b", (line - 1));
-	}
-
+        G_progress(line, 1000);
+        
 	if (!(ltype & type))
 	    continue;
 
+	if (field != -1 && !Vect_cat_get(Cats, field, &cat))
+	    continue;
+	
 	if (column) {
 	    Vect_cat_get(Cats, field, &cat);
 	    if (cat < 0) {
@@ -122,13 +125,8 @@ int trans2d(struct Map_info *In, struct Map_info *Out, int type,
 
 	line++;
     }
-
-    if (G_verbose() > G_verbose_min())
-	fprintf(stderr, "\r");
-
-
+    G_progress(1, 1);
+    
     Vect_destroy_line_struct(Points);
     Vect_destroy_cats_struct(Cats);
-
-    return line - 1;
 }

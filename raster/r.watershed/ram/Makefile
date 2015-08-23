@@ -1,13 +1,15 @@
 MODULE_TOPDIR = ../../..
 
-PGM = r.watershed.ram
+PGM = r.watershed/ram
+DIR = $(ETC)/r.watershed
 
-LIBES = $(GISLIB)
-DEPENDENCIES = $(GISDEP)
+LIBES = $(RASTERLIB) $(GISLIB) $(MATHLIB) $(BTREE2LIB)
+DEPENDENCIES = $(RASTERDEP) $(GISDEP)
 
-include $(MODULE_TOPDIR)/include/Make/Module.make
+include $(MODULE_TOPDIR)/include/Make/Etc.make
+include $(MODULE_TOPDIR)/include/Make/NoHtml.make
 
-default: etc 
+default: $(DIR) etc
 
-htmletc:
-	@echo "No docs to generate."
+$(DIR):
+	$(MKDIR) $@

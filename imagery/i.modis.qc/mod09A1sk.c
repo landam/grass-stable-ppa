@@ -1,9 +1,9 @@
 /* Internal Snow Mask unsigned int bits[15]
- * 0 -> class 0: Snow
- * 1 -> class 1: No snow
+ * 0 -> class 0: No snow
+ * 1 -> class 1: Snow
  */  
 
-#include <grass/gis.h>
+#include <grass/raster.h>
 
 CELL mod09A1sk(CELL pixel) 
 {

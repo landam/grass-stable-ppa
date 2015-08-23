@@ -16,17 +16,17 @@
 
 ############# nothing to configure below ############
 
-GRASS_MMVER=`cut -d . -f 1-2 "$GISBASE/etc/VERSIONNUMBER"`
-GRASSVERSION=`cat "$GISBASE/etc/VERSIONNUMBER"`
-HTMLDIR="$HOME/Library/GRASS/$GRASS_MMVER/Modules/docs/html"
-HTMLDIRG="/Library/GRASS/$GRASS_MMVER/Modules/docs/html"
-
 # $1 is current path to GRASS.app/Contents/MacOS, defaults to /Applications
 if [ "$1" != "" ] ; then
 	GISBASE=$1
 else
 	GISBASE="/Applications/GRASS-$GRASS_MMVER.app/Contents/MacOS"
 fi
+
+GRASS_MMVER=`cut -d . -f 1-2 "$GISBASE/etc/VERSIONNUMBER"`
+GRASSVERSION=`cat "$GISBASE/etc/VERSIONNUMBER"`
+HTMLDIR="$GISBASE_USER/Modules/docs/html"
+HTMLDIRG="$GISBASE_SYSTEM/Modules/docs/html"
 
 write_html_header()
 {
@@ -49,7 +49,8 @@ echo " <link rel=\"stylesheet\" href=\"grassdocs.css\" type=\"text/css\">
 </head>
 <body bgcolor=\"#FFFFFF\">
 
-<img src=\"grass_logo.png\" alt=\"GRASS logo\"><hr align=center size=6 noshade>
+<img src=\"grass_logo.png\" alt=\"GRASS logo\">
+<hr class=\"header\">
 
 <h2>GRASS GIS $GRASSVERSION Reference Manual</h2>
 
@@ -71,7 +72,7 @@ GPL'ed), image processing and geographic information system (GIS).</p>
 write_html_footer()
 {
 # $1: filename
-echo "<hr>" >> $1
+echo "<hr class=\"header\">" >> $1
 echo "<p><a href=\"$GISBASE/docs/html/index.html\">Help Index</a> | <a href=\"$GISBASE/docs/html/full_index.html\">Full Index</a> | <a href=\"$HTMLDIR/addon_index.html\">Addon Index</a><br>" >> $1
 echo "&copy; 2003-2008 <a href=\"http://grass.osgeo.org\">GRASS Development Team</a></p>" >> $1
 echo "</body>" >> $1   

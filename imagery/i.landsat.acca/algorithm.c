@@ -224,16 +224,15 @@ void acca_first(Gfile *out, Gfile band[],
 		int count[], int cold[], int warm[], double stats[])
 {
     int i, row, col, nrows, ncols;
-    char *mapset;
 
     char code;
     double pixel[5], nsdi, rat56;
 
     /* Creation of output file */
-    if ((out->fd = G_open_raster_new(out->name, CELL_TYPE)) < 0)
+    out->rast = Rast_allocate_buf(CELL_TYPE);
+    if ((out->fd = Rast_open_new(out->name, CELL_TYPE)) < 0)
 	G_fatal_error(_("Unable to create raster map <%s>"), out->name);
 
-    out->rast = G_allocate_raster_buf(CELL_TYPE);
     /* ----- ----- */
     G_important_message(_("Processing first pass..."));
 
@@ -242,21 +241,19 @@ void acca_first(Gfile *out, Gfile band[],
     stats[KMAX] = 0.;
     stats[KMIN] = 10000.;
 
-    nrows = G_window_rows();
-    ncols = G_window_cols();
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
 
     for (row = 0; row < nrows; row++) {
 	G_percent(row, nrows, 2);
 	for (i = BAND2; i <= BAND6; i++) {
-	    if (G_get_d_raster_row(band[i].fd, band[i].rast, row) < 0)
-		G_fatal_error(_("Unable to read raster map <%s> row %d"),
-			      band[i].name, row);
+	    Rast_get_d_row(band[i].fd, band[i].rast, row);
 	}
 	for (col = 0; col < ncols; col++) {
 	    code = NO_DEFINED;
 	    /* Null when null pixel in any band */
 	    for (i = BAND2; i <= BAND6; i++) {
-		if (G_is_d_null_value((void *)((DCELL *) band[i].rast + col))) {
+		if (Rast_is_d_null_value((void *)((DCELL *) band[i].rast + col))) {
 		    code = NO_CLOUD;
 		    break;
 		}
@@ -352,20 +349,18 @@ void acca_first(Gfile *out, Gfile band[],
 		/* ----------------------------------------------------- */
 	    }
 	    if (code == NO_CLOUD) {
-		G_set_c_null_value((CELL *) out->rast + col, 1);
+		Rast_set_c_null_value((CELL *) out->rast + col, 1);
 	    }
 	    else {
 		((CELL *) out->rast)[col] = code;
 	    }
 	}
-	if (G_put_raster_row(out->fd, out->rast, CELL_TYPE) < 0)
-	    G_fatal_error(_("Failed writing raster map <%s> row %d"),
-			  out->name, row);
+	Rast_put_row(out->fd, out->rast, CELL_TYPE);
     }
     G_percent(1, 1, 1);
-
+    
     G_free(out->rast);
-    G_close_cell(out->fd);
+    Rast_close(out->fd);
 
     return;
 }
@@ -375,25 +370,21 @@ void acca_second(Gfile * out, Gfile band,
 		 int review_warm, double upper, double lower)
 {
     int row, col, nrows, ncols;
-    char *mapset;
 
     int code;
     double temp;
     Gfile tmp;
 
     /* Open to read */
-    mapset = G_find_cell2(out->name, "");
-    if (mapset == NULL)
-	G_fatal_error(_("Raster map <%s> not found"), out->name);
-    if ((out->fd = G_open_cell_old(out->name, "")) < 0)
+    if ((out->fd = Rast_open_old(out->name, "")) < 0)
 	G_fatal_error(_("Unable to open raster map <%s>"), out->name);
-
-    out->rast = G_allocate_raster_buf(CELL_TYPE);
-
+    
+    out->rast = Rast_allocate_buf(CELL_TYPE);
+    
     /* Open to write */
     sprintf(tmp.name, "_%d.BBB", getpid());
-    tmp.rast = G_allocate_raster_buf(CELL_TYPE);
-    if ((tmp.fd = G_open_raster_new(tmp.name, CELL_TYPE)) < 0)
+    tmp.rast = Rast_allocate_buf(CELL_TYPE);
+    if ((tmp.fd = Rast_open_new(tmp.name, CELL_TYPE)) < 0)
 	G_fatal_error(_("Unable to create raster map <%s>"), tmp.name);
 
     if (upper == 0.)
@@ -401,22 +392,18 @@ void acca_second(Gfile * out, Gfile band,
     else
 	G_important_message(_("Pass two processing..."));
 
-    nrows = G_window_rows();
-    ncols = G_window_cols();
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
 
     for (row = 0; row < nrows; row++) {
 	G_percent(row, nrows, 2);
-
-	if (G_get_d_raster_row(band.fd, band.rast, row) < 0)
-	    G_fatal_error(_("Unable to read raster map <%s> row %d"),
-			  band.name, row);
-	if (G_get_c_raster_row(out->fd, out->rast, row) < 0)
-	    G_fatal_error(_("Unable to read raster map <%s> row %d"),
-			  out->name, row);
-
+	
+	Rast_get_d_row(band.fd, band.rast, row);
+	Rast_get_c_row(out->fd, out->rast, row);
+	
 	for (col = 0; col < ncols; col++) {
-	    if (G_is_c_null_value((void *)((CELL *) out->rast + col))) {
-		G_set_c_null_value((CELL *) tmp.rast + col, 1);
+	    if (Rast_is_c_null_value((void *)((CELL *) out->rast + col))) {
+		Rast_set_c_null_value((CELL *) tmp.rast + col, 1);
 	    }
 	    else {
 		code = (int)((CELL *) out->rast)[col];
@@ -425,7 +412,7 @@ void acca_second(Gfile * out, Gfile band,
 		    (code == WARM_CLOUD && review_warm == 1)) {
 		    temp = (double)((DCELL *) band.rast)[col];
 		    if (temp > upper) {
-			G_set_c_null_value((CELL *) tmp.rast + col, 1);
+			Rast_set_c_null_value((CELL *) tmp.rast + col, 1);
 		    }
 		    else {
 			((CELL *) tmp.rast)[col] =
@@ -444,17 +431,15 @@ void acca_second(Gfile * out, Gfile band,
 		    ((CELL *) tmp.rast)[col] = IS_SHADOW;
 	    }
 	}
-	if (G_put_raster_row(tmp.fd, tmp.rast, CELL_TYPE) < 0) {
-	    G_fatal_error(_("Cannot write to raster map <%s>"), tmp.name);
-	}
+	Rast_put_row(tmp.fd, tmp.rast, CELL_TYPE);
     }
     G_percent(1, 1, 1);
-
+    
     G_free(tmp.rast);
-    G_close_cell(tmp.fd);
+    Rast_close(tmp.fd);
 
     G_free(out->rast);
-    G_close_cell(out->fd);
+    Rast_close(out->fd);
 
     G_remove("cats", out->name);
     G_remove("cell", out->name);

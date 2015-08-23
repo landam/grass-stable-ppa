@@ -70,8 +70,8 @@ static void make_gmt_header(
     struct FPRange range;
     DCELL z_min, z_max;
 
-    G_read_fp_range(name, "", &range);
-    G_get_fp_range_min_max(&range, &z_min, &z_max);
+    Rast_read_fp_range(name, "", &range);
+    Rast_get_fp_range_min_max(&range, &z_min, &z_max);
 
     header->nx = region->cols;
     header->ny = region->rows;
@@ -206,7 +206,7 @@ static void convert_row(
     int i;
 
     for (i = 0; i < ncols; i++) {
-	DCELL x = G_is_d_null_value(&raster[i])
+	DCELL x = Rast_is_d_null_value(&raster[i])
 	    ? null_val
 	    : raster[i];
 	convert_cell(ptr, x, is_fp, bytes, swap_flag);
@@ -276,8 +276,9 @@ int main(int argc, char *argv[])
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, export");
-    module->description = _("Exports a GRASS raster map to a binary array.");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("export"));
+    module->description = _("Exports a GRASS raster to a binary array.");
 
     /* Define the different options */
 
@@ -340,7 +341,9 @@ int main(int argc, char *argv[])
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-    if (sscanf(parm.null->answer, "%lf", &null_val) != 1)
+    if (G_strcasecmp(parm.null->answer, "nan") == 0)
+	Rast_set_d_null_value(&null_val, 1);
+    else if (sscanf(parm.null->answer, "%lf", &null_val) != 1)
 	G_fatal_error(_("Invalid value for null (integers only)"));
 
     name = parm.input->answer;
@@ -363,7 +366,8 @@ int main(int argc, char *argv[])
 
     if (flag.swap->answer) {
 	if (strcmp(parm.order->answer, "native") != 0)
-	    G_fatal_error(_("order= and -s are mutually exclusive"));
+	    G_fatal_error(_("-%c and %s= are mutually exclusive"),
+			    flag.swap->key, parm.order->key);
 	order = G_is_little_endian() ? 0 : 1;
     }
 
@@ -372,16 +376,17 @@ int main(int argc, char *argv[])
     do_stdout = strcmp("-", outfile) == 0;
 
     if (flag.int_out->answer && flag.float_out->answer)
-	G_fatal_error(_("-i and -f are mutually exclusive"));
+	G_fatal_error(_("-%c and -%c are mutually exclusive"),
+			flag.int_out->key, flag.float_out->key);
 
-    fd = G_open_cell_old(name, "");
+    fd = Rast_open_old(name, "");
 
     if (flag.int_out->answer)
 	is_fp = 0;
     else if (flag.float_out->answer)
 	is_fp = 1;
     else
-	is_fp = G_get_raster_map_type(fd) != CELL_TYPE;
+	is_fp = Rast_get_map_type(fd) != CELL_TYPE;
 
     if (parm.bytes->answer)
 	bytes = atoi(parm.bytes->answer);
@@ -391,11 +396,13 @@ int main(int argc, char *argv[])
 	bytes = 2;
 
     if (is_fp && bytes < 4)
-	G_fatal_error(_("Floating-point output requires bytes=4 or bytes=8"));
+	G_fatal_error(_("Floating-point output requires %s=4 or %s=8"),
+			parm.bytes->key, parm.bytes->key);
 
 #ifndef HAVE_LONG_LONG_INT
     if (!is_fp && bytes > 4)
-	G_fatal_error(_("Integer output doesn't support bytes=8 in this build"));
+	G_fatal_error(_("Integer output doesn't support %s=8 in this build"),
+			parm.bytes->key);
 #endif
 
     G_get_window(&region);
@@ -425,19 +432,21 @@ int main(int argc, char *argv[])
     if (flag.gmt_hd->answer)
 	write_gmt_header(&header, swap_flag, fp);
 
-    nrows = G_window_rows();
-    ncols = G_window_cols();
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
 
-    in_buf = G_allocate_d_raster_buf();
+    in_buf = Rast_allocate_d_buf();
     out_buf = G_malloc(ncols * bytes);
 
     if (is_fp) {
-	G_message(_("Exporting raster as floating values (bytes=%d)"), bytes);
+	G_message(_("Exporting raster as floating values (%s=%d)"),
+			parm.bytes->key, bytes);
 	if (flag.gmt_hd->answer)
 	    G_message(_("Writing GMT float format ID=1"));
     }
     else {
-	G_message(_("Exporting raster as integer values (bytes=%d)"), bytes);
+	G_message(_("Exporting raster as integer values (%s=%d)"),
+			parm.bytes->key, bytes);
 	if (flag.gmt_hd->answer)
 	    G_message(_("Writing GMT integer format ID=2"));
     }
@@ -453,7 +462,7 @@ int main(int argc, char *argv[])
     for (row = 0; row < nrows; row++) {
 	G_percent(row, nrows, 2);
 
-	G_get_d_raster_row(fd, in_buf, row);
+	Rast_get_d_row(fd, in_buf, row);
 
 	convert_row(out_buf, in_buf, ncols, is_fp, bytes, swap_flag, null_val);
 
@@ -463,7 +472,7 @@ int main(int argc, char *argv[])
 
     G_percent(row, nrows, 2);	/* finish it off */
 
-    G_close_cell(fd);
+    Rast_close(fd);
     fclose(fp);
 
     return EXIT_SUCCESS;

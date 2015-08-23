@@ -1,5 +1,5 @@
 /*!
-   \file gs_norms.c
+   \file lib/ogsf/gs_norms.c
 
    \brief OGSF library - calculation normals (lower level functions)
 
@@ -19,7 +19,7 @@
 #include <math.h>
 
 #include <grass/gis.h>
-#include <grass/gstypes.h>
+#include <grass/ogsf.h>
 
 #include "gsget.h"
 #include "rowcol.h"

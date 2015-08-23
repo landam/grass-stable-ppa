@@ -7,7 +7,7 @@
  *               
  * PURPOSE:      Shortest path on vector network
  *               
- * COPYRIGHT:    (C) 2002 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2002, 2014 by the GRASS Development Team
  *
  *               This program is free software under the 
  *               GNU General Public License (>=v2). 
@@ -17,7 +17,7 @@
  ****************************************************************/
 #include <stdlib.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/glocale.h>
 
 int path(struct Map_info *, struct Map_info *, char *, int, double, int);
@@ -29,7 +29,6 @@ int main(int argc, char **argv)
     struct Option *max_dist, *file_opt;
     struct Flag *geo_f, *segments_f;
     struct GModule *module;
-    char *mapset;
     struct Map_info In, Out;
     int type, afield, nfield, geo;
     double maxdist;
@@ -38,7 +37,9 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, network, shortest path");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("network"));
+    G_add_keyword(_("shortest path"));
     module->description = _("Finds shortest path on vector network.");
 
     input_opt = G_define_standard_option(G_OPT_V_INPUT);
@@ -47,17 +48,17 @@ int main(int argc, char **argv)
     type_opt = G_define_standard_option(G_OPT_V_TYPE);
     type_opt->options = "line,boundary";
     type_opt->answer = "line,boundary";
-    type_opt->description = _("Arc type");
+    type_opt->label = _("Arc type");
 
     afield_opt = G_define_standard_option(G_OPT_V_FIELD);
-    afield_opt->key = "alayer";
+    afield_opt->key = "arc_layer";
     afield_opt->answer = "1";
-    afield_opt->description = _("Arc layer");
+    afield_opt->label = _("Arc layer");
 
     nfield_opt = G_define_standard_option(G_OPT_V_FIELD);
-    nfield_opt->key = "nlayer";
+    nfield_opt->key = "node_layer";
     nfield_opt->answer = "2";
-    nfield_opt->description = _("Node layer");
+    nfield_opt->label = _("Node layer");
 
     file_opt = G_define_standard_option(G_OPT_F_INPUT);
     file_opt->key = "file";
@@ -65,24 +66,26 @@ int main(int argc, char **argv)
     file_opt->description = _("Name of file containing start and end points. "
 			      "If not given, read from stdin");
 
-
     afcol = G_define_option();
-    afcol->key = "afcolumn";
+    afcol->key = "arc_column";
     afcol->type = TYPE_STRING;
     afcol->required = NO;
-    afcol->description = _("Arc forward/both direction(s) cost column");
+    afcol->description = _("Arc forward/both direction(s) cost column (number)");
+    afcol->guisection = _("Cost");
 
     abcol = G_define_option();
-    abcol->key = "abcolumn";
+    abcol->key = "arc_backward_column";
     abcol->type = TYPE_STRING;
     abcol->required = NO;
-    abcol->description = _("Arc backward direction cost column");
+    abcol->description = _("Arc backward direction cost column (number)");
+    abcol->guisection = _("Cost");
 
     ncol = G_define_option();
-    ncol->key = "ncolumn";
+    ncol->key = "node_column";
     ncol->type = TYPE_STRING;
     ncol->required = NO;
-    ncol->description = _("Node cost column");
+    ncol->description = _("Node cost column (number)");
+    ncol->guisection = _("Cost");
 
     max_dist = G_define_option();
     max_dist->key = "dmax";
@@ -123,17 +126,12 @@ int main(int argc, char **argv)
 	geo = 0;
 
     Vect_check_input_output_name(input_opt->answer, output_opt->answer,
-				 GV_FATAL_EXIT);
-
-    mapset = G_find_vector2(input_opt->answer, NULL);
-
-    if (mapset == NULL)
-	G_fatal_error(_("Vector map <%s> not found"), input_opt->answer);
+				 G_FATAL_EXIT);
 
     Vect_set_open_level(2);
-    Vect_open_old(&In, input_opt->answer, mapset);
+    if (Vect_open_old(&In, input_opt->answer, "") < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), input_opt->answer);
 
-    Vect_set_fatal_error(GV_FATAL_PRINT);
     if (1 > Vect_open_new(&Out, output_opt->answer, Vect_is_3d(&In))) {
 	Vect_close(&In);
 	G_fatal_error(_("Unable to create vector map <%s>"),

@@ -7,6 +7,13 @@ int report(void)
     int i;
     char left[20], right[20];
 
+    if (!options.print && !(options.option == O_COUNT ||
+                            options.option == O_LENGTH ||
+                            options.option == O_AREA)) {
+        G_warning(_("No totals for selected option"));
+        return 0;
+    }
+    
     switch (options.option) {
     case O_CAT:
 	if (G_verbose() > G_verbose_min())
@@ -16,98 +23,105 @@ int report(void)
 	break;
 
     case O_COUNT:
+        if (options.print) {
+            if (G_verbose() > G_verbose_min())
+                fprintf(stdout, "cat%scount\n", options.fs);
+            for (i = 0; i < vstat.rcat; i++)
+                fprintf(stdout, "%d%s%d\n", Values[i].cat, options.fs, Values[i].count1);
+        }
 	if (options.total) {
 	    int sum = 0;
 
 	    for (i = 0; i < vstat.rcat; i++) {
 		sum += Values[i].count1;
 	    }
-	    fprintf(stdout, "total count: %d\n", sum);
-	}
-	else {
-	    if (G_verbose() > G_verbose_min())
-		fprintf(stdout, "cat|count\n");
-	    for (i = 0; i < vstat.rcat; i++)
-		fprintf(stdout, "%d|%d\n", Values[i].cat, Values[i].count1);
+	    fprintf(stdout, "total count%s%d\n", options.fs, sum);
 	}
 	break;
 
     case O_AREA:
+        if (options.print) {
+            if (G_verbose() > G_verbose_min())
+                fprintf(stdout, "cat%sarea\n", options.fs);
+            for (i = 0; i < vstat.rcat; i++)
+                fprintf(stdout, "%d%s%.15g\n", Values[i].cat, options.fs, Values[i].d1);
+        }
 	if (options.total) {
 	    double sum = 0.0;
 
 	    for (i = 0; i < vstat.rcat; i++) {
 		sum += Values[i].d1;
 	    }
-	    fprintf(stdout, "total area: %.15g\n", sum);
-	}
-	else {
-	    if (G_verbose() > G_verbose_min())
-		fprintf(stdout, "cat|area\n");
-	    for (i = 0; i < vstat.rcat; i++)
-		fprintf(stdout, "%d|%.15g\n", Values[i].cat, Values[i].d1);
+	    fprintf(stdout, "total area%s%.15g\n", options.fs, sum);
 	}
 	break;
 
     case O_COMPACT:
 	if (G_verbose() > G_verbose_min())
-	    fprintf(stdout, "cat|compact\n");
+	    fprintf(stdout, "cat%scompact\n", options.fs);
 	for (i = 0; i < vstat.rcat; i++)
-	    fprintf(stdout, "%d|%.15g\n", Values[i].cat, Values[i].d1);
+	    fprintf(stdout, "%d%s%.15g\n", Values[i].cat, options.fs, Values[i].d1);
+	break;
+
+    case O_FD:
+	if (G_verbose() > G_verbose_min())
+	    fprintf(stdout, "cat%sfd\n", options.fs);
+	for (i = 0; i < vstat.rcat; i++)
+	    fprintf(stdout, "%d%s%.15g\n", Values[i].cat, options.fs, Values[i].d1);
 	break;
 
     case O_PERIMETER:
 	if (G_verbose() > G_verbose_min())
-	    fprintf(stdout, "cat|perimeter\n");
+	    fprintf(stdout, "cat%sperimeter\n", options.fs);
 	for (i = 0; i < vstat.rcat; i++)
-	    fprintf(stdout, "%d|%.15g\n", Values[i].cat, Values[i].d1);
+	    fprintf(stdout, "%d%s%.15g\n", Values[i].cat, options.fs, Values[i].d1);
 	break;
 
     case O_LENGTH:
+        if (options.print) {
+            if (G_verbose() > G_verbose_min())
+                fprintf(stdout, "cat%slength\n", options.fs);
+            for (i = 0; i < vstat.rcat; i++)
+                fprintf(stdout, "%d%s%.15g\n", Values[i].cat, options.fs, Values[i].d1);
+        }
 	if (options.total) {
 	    double sum = 0.0;
-
+            
 	    for (i = 0; i < vstat.rcat; i++) {
 		sum += Values[i].d1;
 	    }
-	    fprintf(stdout, "total length: %.15g\n", sum);
-	}
-	else {
-	    if (G_verbose() > G_verbose_min())
-		fprintf(stdout, "cat|length\n");
-	    for (i = 0; i < vstat.rcat; i++)
-		fprintf(stdout, "%d|%.15g\n", Values[i].cat, Values[i].d1);
+	    fprintf(stdout, "total length%s%.15g\n", options.fs, sum);
 	}
 	break;
     case O_SLOPE:
 	if (G_verbose() > G_verbose_min())
-	    fprintf(stdout, "cat|slope\n");
+	    fprintf(stdout, "cat%sslope\n", options.fs);
 	for (i = 0; i < vstat.rcat; i++)
-	    fprintf(stdout, "%d|%.15g\n", Values[i].cat, Values[i].d1);
+	    fprintf(stdout, "%d%s%.15g\n", Values[i].cat, options.fs, Values[i].d1);
 
 
 	break;
     case O_SINUOUS:
 	if (G_verbose() > G_verbose_min())
-	    fprintf(stdout, "cat|sinuous\n");
+	    fprintf(stdout, "cat%ssinuous\n", options.fs);
 	for (i = 0; i < vstat.rcat; i++)
-	    fprintf(stdout, "%d|%.15g\n", Values[i].cat, Values[i].d1);
+	    fprintf(stdout, "%d%s%.15g\n", Values[i].cat, options.fs, Values[i].d1);
 	break;
     case O_COOR:
     case O_START:
     case O_END:
 	if (G_verbose() > G_verbose_min())
-	    fprintf(stdout, "cat|x|y|z\n");
+	    fprintf(stdout, "cat%sx%sy%sz\n", options.fs, options.fs, options.fs);
 	for (i = 0; i < vstat.rcat; i++) {
 	    if (Values[i].count1 == 1)
-		fprintf(stdout, "%d|%.15g|%.15g|%.15g\n", Values[i].cat,
-			Values[i].d1, Values[i].d2, Values[i].d3);
+		fprintf(stdout, "%d%s%.15g%s%.15g%s%.15g\n", Values[i].cat, options.fs,
+			Values[i].d1, options.fs, Values[i].d2, options.fs, Values[i].d3);
 	}
 	break;
 
     case O_SIDES:
 	if (G_verbose() > G_verbose_min())
-	    fprintf(stdout, "cat|left|right\n");
+	    fprintf(stdout, "cat%sleft%sright\n", options.fs, options.fs);
 	for (i = 0; i < vstat.rcat; i++) {
 	    if (Values[i].count1 == 1) {
 		if (Values[i].i1 >= 0)
@@ -138,13 +152,13 @@ int report(void)
 		sprintf(right, "-");
 	    }
 
-	    fprintf(stdout, "%d|%s|%s\n", Values[i].cat, left, right);
+	    fprintf(stdout, "%d%s%s%s%s\n", Values[i].cat, options.fs, left, options.fs, right);
 	}
 	break;
 
     case O_QUERY:
 	if (G_verbose() > G_verbose_min())
-	    fprintf(stdout, "cat|query\n");
+	    fprintf(stdout, "cat%squery\n", options.fs);
 	for (i = 0; i < vstat.rcat; i++) {
 	    if (Values[i].null) {
 		fprintf(stdout, "%d|-\n", Values[i].cat);
@@ -152,13 +166,13 @@ int report(void)
 	    else {
 		switch (vstat.qtype) {
 		case (DB_C_TYPE_INT):
-		    fprintf(stdout, "%d|%d\n", Values[i].cat, Values[i].i1);
+		    fprintf(stdout, "%d%s%d\n", Values[i].cat, options.fs, Values[i].i1);
 		    break;
 		case (DB_C_TYPE_DOUBLE):
-		    fprintf(stdout, "%d|%15g\n", Values[i].cat, Values[i].d1);
+		    fprintf(stdout, "%d%s%15g\n", Values[i].cat, options.fs, Values[i].d1);
 		    break;
 		case (DB_C_TYPE_STRING):
-		    fprintf(stdout, "%d|%s\n", Values[i].cat, Values[i].str1);
+		    fprintf(stdout, "%d%s%s\n", Values[i].cat, options.fs, Values[i].str1);
 		    break;
 		}
 	    }
@@ -166,9 +180,9 @@ int report(void)
 	break;
     case O_AZIMUTH:
 	if (G_verbose() > G_verbose_min())
-	    fprintf(stdout, "cat|azimuth\n");
+	    fprintf(stdout, "cat%sazimuth\n", options.fs);
 	for (i = 0; i < vstat.rcat; i++)
-		fprintf(stdout, "%d|%.15g\n", Values[i].cat, Values[i].d1);
+		fprintf(stdout, "%d%s%.15g\n", Values[i].cat, options.fs, Values[i].d1);
 	break;
     }
 

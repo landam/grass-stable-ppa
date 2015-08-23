@@ -20,6 +20,7 @@
 #include <math.h>
 
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 #include "../r.li.daemon/daemon.h"
@@ -42,15 +43,16 @@ int main(int argc, char *argv[])
     module = G_define_module();
     module->description =
 	_("Calculates Simpson's diversity index on a raster map");
-    module->keywords =
-	_("raster, landscape structure analysis, diversity index");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("landscape structure analysis"));
+    G_add_keyword(_("diversity index"));
 
     /* define options */
 
-    raster = G_define_standard_option(G_OPT_R_MAP);
+    raster = G_define_standard_option(G_OPT_R_INPUT);
 
     conf = G_define_standard_option(G_OPT_F_INPUT);
-    conf->key = "conf";
+    conf->key = "config";
     conf->description = _("Configuration file");
     conf->required = YES;
 
@@ -121,7 +123,7 @@ int calculate(int fd, struct area_entry *ad, double *result)
     long area = 0;
 
     avl_tree albero = NULL;
-    AVL_table *array;
+    AVL_table array;
     generic_cell uc;
 
     uc.t = CELL_TYPE;
@@ -138,7 +140,7 @@ int calculate(int fd, struct area_entry *ad, double *result)
 	masked = TRUE;
     }
 
-    G_set_c_null_value(&precCell, 1);
+    Rast_set_c_null_value(&precCell, 1);
     for (j = 0; j < ad->rl; j++) {	/* for each row */
 	if (masked) {
 	    if (read(mask_fd, mask_buf, (ad->cl * sizeof(int))) < 0) {
@@ -153,20 +155,20 @@ int calculate(int fd, struct area_entry *ad, double *result)
 	    corrCell = buf[i + ad->x];
 
 	    if ((masked) && (mask_buf[i] == 0)) {
-		G_set_c_null_value(&corrCell, 1);
+		Rast_set_c_null_value(&corrCell, 1);
 	    }
 
-	    if (!(G_is_null_value(&corrCell, uc.t))) {
+	    if (!(Rast_is_null_value(&corrCell, uc.t))) {
 		/* total patch area */
 		area++;
 	    }
 
-	    if (!(G_is_null_value(&precCell, uc.t)) &&
+	    if (!(Rast_is_null_value(&precCell, uc.t)) &&
 		corrCell == precCell) {
 
 		totCorr++;
 	    }
-	    else if (!(G_is_null_value(&precCell, uc.t)) &&
+	    else if (!(Rast_is_null_value(&precCell, uc.t)) &&
 		     corrCell != precCell) {
 		
 		/* add precCell to search tree */
@@ -211,7 +213,7 @@ int calculate(int fd, struct area_entry *ad, double *result)
     }
 
     /* last closing */
-    if (area > 0 && !(G_is_null_value(&precCell, uc.t))) {
+    if (area > 0 && !(Rast_is_null_value(&precCell, uc.t))) {
 	if (albero == NULL) {
 	    uc.val.c = precCell;
 	    albero = avl_make(uc, totCorr);
@@ -267,7 +269,7 @@ int calculate(int fd, struct area_entry *ad, double *result)
 	/* calculate simpson */
 	simpson = 0;
 	for (i = 0; i < m; i++) {
-	    t = (double)(array[i]->tot);
+	    t = (double)(array[i].tot);
 	    p = t / area;
 	    simpson += (p * p);
 	}
@@ -276,7 +278,7 @@ int calculate(int fd, struct area_entry *ad, double *result)
 	*result = 1 - simpson;
     }
     else
-	G_set_d_null_value(result, 1);
+	Rast_set_d_null_value(result, 1);
 
     avl_destroy(albero);
     if (masked) {
@@ -307,7 +309,7 @@ int calculateD(int fd, struct area_entry *ad, double *result)
     long area = 0;
 
     avl_tree albero = NULL;
-    AVL_table *array;
+    AVL_table array;
     generic_cell uc;
 
     uc.t = DCELL_TYPE;
@@ -324,7 +326,7 @@ int calculateD(int fd, struct area_entry *ad, double *result)
 	masked = TRUE;
     }
 
-    G_set_d_null_value(&precCell, 1);
+    Rast_set_d_null_value(&precCell, 1);
     for (j = 0; j < ad->rl; j++) {	/* for each row */
 	if (masked) {
 	    if (read(mask_fd, mask_buf, (ad->cl * sizeof(int))) < 0) {
@@ -339,20 +341,20 @@ int calculateD(int fd, struct area_entry *ad, double *result)
 	    corrCell = buf[i + ad->x];
 
 	    if ((masked) && (mask_buf[i] == 0)) {
-		G_set_d_null_value(&corrCell, 1);
+		Rast_set_d_null_value(&corrCell, 1);
 	    }
 
-	    if (!(G_is_null_value(&corrCell, uc.t))) {
+	    if (!(Rast_is_null_value(&corrCell, uc.t))) {
 		/* total patch area */
 		area++;
 	    }
 
-	    if (!(G_is_null_value(&precCell, uc.t)) &&
+	    if (!(Rast_is_null_value(&precCell, uc.t)) &&
 		corrCell == precCell) {
 
 		totCorr++;
 	    }
-	    else if (!(G_is_null_value(&precCell, uc.t)) &&
+	    else if (!(Rast_is_null_value(&precCell, uc.t)) &&
 		     corrCell != precCell) {
 		
 		/* add precCell to search tree */
@@ -397,7 +399,7 @@ int calculateD(int fd, struct area_entry *ad, double *result)
     }
 
     /* last closing */
-    if (area > 0 && !(G_is_null_value(&precCell, uc.t))) {
+    if (area > 0 && !(Rast_is_null_value(&precCell, uc.t))) {
 	if (albero == NULL) {
 	    uc.val.dc = precCell;
 	    albero = avl_make(uc, totCorr);
@@ -453,7 +455,7 @@ int calculateD(int fd, struct area_entry *ad, double *result)
 	/* calculate simpson */
 	simpson = 0;
 	for (i = 0; i < m; i++) {
-	    t = (double)(array[i]->tot);
+	    t = (double)(array[i].tot);
 	    p = t / area;
 	    simpson += (p * p);
 	}
@@ -462,7 +464,7 @@ int calculateD(int fd, struct area_entry *ad, double *result)
 	*result = 1 - simpson;
     }
     else
-	G_set_d_null_value(result, 1);
+	Rast_set_d_null_value(result, 1);
 
     avl_destroy(albero);
     if (masked) {
@@ -493,7 +495,7 @@ int calculateF(int fd, struct area_entry *ad, double *result)
     long area = 0;
 
     avl_tree albero = NULL;
-    AVL_table *array;
+    AVL_table array;
     generic_cell uc;
 
     uc.t = FCELL_TYPE;
@@ -510,7 +512,7 @@ int calculateF(int fd, struct area_entry *ad, double *result)
 	masked = TRUE;
     }
 
-    G_set_f_null_value(&precCell, 1);
+    Rast_set_f_null_value(&precCell, 1);
     for (j = 0; j < ad->rl; j++) {	/* for each row */
 	if (masked) {
 	    if (read(mask_fd, mask_buf, (ad->cl * sizeof(int))) < 0) {
@@ -525,20 +527,20 @@ int calculateF(int fd, struct area_entry *ad, double *result)
 	    corrCell = buf[i + ad->x];
 
 	    if ((masked) && (mask_buf[i] == 0)) {
-		G_set_f_null_value(&corrCell, 1);
+		Rast_set_f_null_value(&corrCell, 1);
 	    }
 
-	    if (!(G_is_null_value(&corrCell, uc.t))) {
+	    if (!(Rast_is_null_value(&corrCell, uc.t))) {
 		/* total patch area */
 		area++;
 	    }
 
-	    if (!(G_is_null_value(&precCell, uc.t)) &&
+	    if (!(Rast_is_null_value(&precCell, uc.t)) &&
 		corrCell == precCell) {
 
 		totCorr++;
 	    }
-	    else if (!(G_is_null_value(&precCell, uc.t)) &&
+	    else if (!(Rast_is_null_value(&precCell, uc.t)) &&
 		     corrCell != precCell) {
 		
 		/* add precCell to search tree */
@@ -583,7 +585,7 @@ int calculateF(int fd, struct area_entry *ad, double *result)
     }
 
     /* last closing */
-    if (area > 0 && !(G_is_null_value(&precCell, uc.t))) {
+    if (area > 0 && !(Rast_is_null_value(&precCell, uc.t))) {
 	if (albero == NULL) {
 	    uc.val.fc = precCell;
 	    albero = avl_make(uc, totCorr);
@@ -639,7 +641,7 @@ int calculateF(int fd, struct area_entry *ad, double *result)
 	/* calculate simpson */
 	simpson = 0;
 	for (i = 0; i < m; i++) {
-	    t = (double)(array[i]->tot);
+	    t = (double)(array[i].tot);
 	    p = t / area;
 	    simpson += (p * p);
 	}
@@ -648,7 +650,7 @@ int calculateF(int fd, struct area_entry *ad, double *result)
 	*result = 1 - simpson;
     }
     else
-	G_set_d_null_value(result, 1);
+	Rast_set_d_null_value(result, 1);
 
     avl_destroy(albero);
     if (masked) {

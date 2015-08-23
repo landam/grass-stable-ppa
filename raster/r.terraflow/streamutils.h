@@ -20,7 +20,6 @@
 #define STREAMUTILS_H
 
 #include <fstream>
-using namespace std;
 
 #include <grass/iostream/ami.h>
 #include "types.h"
@@ -56,7 +55,8 @@ printStream2Grid(AMI_STREAM<T> *str,
   AMI_err ae;
   ofstream fstrm(name);
 
-  stats->comment("saving grid: ", name);
+  if (stats)
+    stats->comment("saving grid: ", name);
 
   fstrm << "rows=" << nrows << endl;
   fstrm << "cols=" << ncols << endl;
@@ -91,7 +91,8 @@ void printGridStream(AMI_STREAM<T> *str,
   AMI_err ae;
   ofstream fstrm(name);
 
-  stats->recordLength("saving grid", str);
+  if (stats)
+    stats->recordLength("saving grid", str);
   fstrm << "rows=" << nrows << endl;
   fstrm << "cols=" << ncols << endl;
 

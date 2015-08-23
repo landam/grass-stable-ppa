@@ -30,13 +30,13 @@ void *get_max_c(void *, void *);
 void *get_max_f(void *, void *);
 void *get_max_d(void *, void *);
 
-int get_row_c(int, void *, int);
-int get_row_f(int, void *, int);
-int get_row_d(int, void *, int);
+void get_row_c(int, void *, int);
+void get_row_f(int, void *, int);
+void get_row_d(int, void *, int);
 
-int put_row_c(int, void *);
-int put_row_f(int, void *);
-int put_row_d(int, void *);
+void put_row_c(int, void *);
+void put_row_f(int, void *);
+void put_row_d(int, void *);
 
 void *get_buf_c(void);
 void *get_buf_f(void);
@@ -68,31 +68,15 @@ void prod_d(void *, void *);
 
 /* to add a new multitype function, add a pointer for the function and
  * its argument list to the list below */
-#ifdef TINF_MAIN
-int (*is_null) (void *);
-void (*set_null_value) (void *, int);
-int (*bpe) ();
-void *(*get_max) (void *, void *);
-void *(*get_min) (void *, void *);
-int (*get_row) (int, void *, int);
-void *(*get_buf) ();
-int (*put_row) (int, void *);
-double (*slope) (void *, void *, double);
-void (*set_min) (void *);
-void (*set_max) (void *);
-void (*diff) (void *, void *);
-void (*sum) (void *, void *);
-void (*quot) (void *, void *);
-void (*prod) (void *, void *);
-#else
+
 extern int (*is_null) (void *);
 extern void (*set_null_value) (void *, int);
 extern int (*bpe) ();
 extern void *(*get_max) (void *, void *);
 extern void *(*get_min) (void *, void *);
-extern int (*get_row) (int, void *, int);
+extern void (*get_row) (int, void *, int);
 extern void *(*get_buf) ();
-extern int (*put_row) (int, void *);
+extern void (*put_row) (int, void *);
 extern double (*slope) (void *, void *, double);
 extern void (*set_min) (void *);
 extern void (*set_max) (void *);
@@ -100,7 +84,7 @@ extern void (*diff) (void *, void *);
 extern void (*sum) (void *, void *);
 extern void (*quot) (void *, void *);
 extern void (*prod) (void *, void *);
-#endif
+
 /* probably not something of general interest */
 
 double slope_c(void *, void *, double);
@@ -110,7 +94,7 @@ double slope_d(void *, void *, double);
 struct band3
 {
     int ns;			/* samples per line */
-    int sz;			/* bytes per line */
+    off_t sz;			/* bytes per line */
     char *b[3];			/* pointers to start of each line */
 };
 

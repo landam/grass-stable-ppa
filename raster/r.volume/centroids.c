@@ -17,6 +17,7 @@
  * col = sigma(col)/n.
  */
 #include <grass/gis.h>
+#include <grass/raster.h>
 
 int centroids(int fd,		/* File descriptor of map layer to process */
 	      /* This file is assumed to be opened before calling */
@@ -27,14 +28,14 @@ int centroids(int fd,		/* File descriptor of map layer to process */
 {				/* Highest positive cat number in map layer */
     CELL *cell_buf, v;
     int i, adjusted, numb, left, right;
-    int *count;
+    long int *count;
     int row, col, rows, cols;
 
     adjusted = 0;
 
-    cell_buf = G_allocate_cell_buf();
+    cell_buf = Rast_allocate_c_buf();
     /* space to accumulate counts */
-    count = (int *)G_malloc((max + 1) * sizeof(int));
+    count = (long int *)G_malloc((max + 1) * sizeof(long int));
 
     /* zero the count totals */
     for (i = 1; i <= max; i++) {
@@ -45,10 +46,10 @@ int centroids(int fd,		/* File descriptor of map layer to process */
 
     /* do rows and columns through window and mask */
     /*  to do counting */
-    rows = G_window_rows();
-    cols = G_window_cols();
+    rows = Rast_window_rows();
+    cols = Rast_window_cols();
     for (row = 0; row < rows; row++) {
-	G_get_map_row(fd, cell_buf, row);	/* get a row */
+	Rast_get_c_row(fd, cell_buf, row);	/* get a row */
 	for (col = 0; col < cols; col++) {
 	    v = cell_buf[col];	/* next cell value in row */
 	    if (v < 1)
@@ -78,7 +79,7 @@ int centroids(int fd,		/* File descriptor of map layer to process */
 		row = n[i];
 		col = e[i];
 		/* get cell at row,col */
-		G_get_map_row(fd, cell_buf, row);
+		Rast_get_c_row(fd, cell_buf, row);
 		v = cell_buf[col];
 		if (v > 0) {
 		    if (v == i)
@@ -96,7 +97,7 @@ int centroids(int fd,		/* File descriptor of map layer to process */
 
     /* go through map again */
     for (row = 0; row < rows; row++) {
-	G_get_map_row(fd, cell_buf, row);
+	Rast_get_c_row(fd, cell_buf, row);
 	for (col = 0; col < cols; col++) {
 	    v = cell_buf[col];
 	    if (v < 1)

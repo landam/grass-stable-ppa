@@ -32,17 +32,17 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
+#include <grass/glocale.h>
 
-#include <grass/site.h>
 #include "oct.h"
 #include "surf.h"
 #include "dataoct.h"
 #include "userextern.h"
 #include "userglobs.h"
 #include "user.h"
-#include <grass/G3d.h>
+#include <grass/raster3d.h>
 #include "points.h"
 
 int point_save(double xmm, double ymm, double zmm, double err)
@@ -77,7 +77,7 @@ int point_save(double xmm, double ymm, double zmm, double err)
     if (db_execute_immediate(driver, &sql) != DB_OK) {
 	db_close_database(driver);
 	db_shutdown_driver(driver);
-	G_fatal_error("Cannot insert new row: %s", db_get_string(&sql));
+	G_fatal_error(_("Cannot insert new row: %s"), db_get_string(&sql));
     }
     count++;
 

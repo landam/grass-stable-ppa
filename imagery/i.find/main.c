@@ -70,8 +70,8 @@ int main(int argc, char *argv[])
      */
     tempfile = G_tempfile();
 
-    G__setenv("LOCATION_NAME", argv[1]);
-    G__setenv("MAPSET", argv[2]);
+    G_setenv_nogisrc("LOCATION_NAME", argv[1]);
+    G_setenv_nogisrc("MAPSET", argv[2]);
 
     for (n = 3; n < argc; n += 2) {
 	FILE *fd;
@@ -104,20 +104,20 @@ int main(int argc, char *argv[])
 static int find(FILE * fd, char *element)
 {
     int len1 = 0, len2 = 0;
-    char *mapset;
+    const char *mapset;
     int n;
 
-    fseek(fd, 0L, SEEK_SET);
+    G_fseek(fd, 0L, SEEK_SET);
     fwrite(&len1, sizeof(len1), 1L, fd);
     fwrite(&len2, sizeof(len2), 1L, fd);
 
-    for (n = 0; ((mapset = G__mapset_name(n)) != NULL); n++) {
+    for (n = 0; ((mapset = G_get_mapset_name(n)) != NULL); n++) {
 	int len;
 	char dir[1024];
 	struct dirent *dp;
 	DIR *dfd;
 
-	G__file_name(dir, element, "", mapset);
+	G_file_name(dir, element, "", mapset);
 	if ((dfd = opendir(dir)) == NULL)
 	    continue;
 
@@ -141,7 +141,7 @@ static int find(FILE * fd, char *element)
 	return 0;
 
     fflush(fd);
-    fseek(fd, 0L, SEEK_SET);
+    G_fseek(fd, 0L, SEEK_SET);
     fwrite(&len1, sizeof(len1), 1L, fd);
     fwrite(&len2, sizeof(len2), 1L, fd);
 

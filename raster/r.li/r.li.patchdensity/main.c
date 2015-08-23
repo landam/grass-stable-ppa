@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "../r.li.daemon/daemon.h"
 #include "../r.li.daemon/GenericCell.h"
@@ -47,14 +48,16 @@ int main(int argc, char *argv[])
     module = G_define_module();
     module->description =
 	_("Calculates patch density index on a raster map, using a 4 neighbour algorithm");
-    module->keywords = _("raster, landscape structure analysis, patch index");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("landscape structure analysis"));
+    G_add_keyword(_("patch index"));
 
     /* define options */
 
-    raster = G_define_standard_option(G_OPT_R_MAP);
+    raster = G_define_standard_option(G_OPT_R_INPUT);
 
     conf = G_define_standard_option(G_OPT_F_INPUT);
-    conf->key = "conf";
+    conf->key = "config";
     conf->description = _("Configuration file");
     conf->required = YES;
 
@@ -119,10 +122,10 @@ int calculate(int fd, struct area_entry *ad, double *result)
     int mask_fd, *mask_buf, *mask_sup, *mask_tmp, masked;
     struct Cell_head hd;
 
-    G_get_window(&hd);
+    Rast_get_window(&hd);
 
-    buf_null = G_allocate_cell_buf();
-    G_set_c_null_value(buf_null, G_window_cols());
+    buf_null = Rast_allocate_c_buf();
+    Rast_set_c_null_value(buf_null, Rast_window_cols());
     buf_sup = buf_null;
 
     /* initialize patch ids */
@@ -194,7 +197,7 @@ int calculate(int fd, struct area_entry *ad, double *result)
 	pid_sup = pid_corr;
 	pid_corr = ltmp;
 
-	G_set_c_null_value(&precCell, 1);
+	Rast_set_c_null_value(&precCell, 1);
 
 	connected = 0;
 	for (j = 0; j < ad->cl; j++) {
@@ -202,25 +205,23 @@ int calculate(int fd, struct area_entry *ad, double *result)
 	    
 	    corrCell = buf[j + ad->x];
 	    if (masked && (mask_buf[j] == 0)) {
-		G_set_c_null_value(&corrCell, 1);
-	    }
-	    else {
-		/* total landscape area */
-		area++;
+		Rast_set_c_null_value(&corrCell, 1);
 	    }
 
-	    if (G_is_c_null_value(&corrCell)) {
+	    if (Rast_is_c_null_value(&corrCell)) {
 		connected = 0;
 		precCell = corrCell;
 		continue;
 	    }
 
+	    area++;
+
 	    supCell = buf_sup[j + ad->x];
 	    if (masked && (mask_sup[j] == 0)) {
-		G_set_c_null_value(&supCell, 1);
+		Rast_set_c_null_value(&supCell, 1);
 	    }
 
-	    if (!G_is_c_null_value(&precCell) && corrCell == precCell) {
+	    if (!Rast_is_c_null_value(&precCell) && corrCell == precCell) {
 		pid_corr[j] = pid_corr[j - 1];
 		connected = 1;
 		pst[pid_corr[j]].count++;
@@ -229,7 +230,7 @@ int calculate(int fd, struct area_entry *ad, double *result)
 		connected = 0;
 	    }
 
-	    if (!G_is_c_null_value(&supCell) && corrCell == supCell) {
+	    if (!Rast_is_c_null_value(&supCell) && corrCell == supCell) {
 
 		if (pid_corr[j] != pid_sup[j]) {
 		    /* connect or merge */
@@ -314,7 +315,7 @@ int calculate(int fd, struct area_entry *ad, double *result)
 	*result = (npatch / area_units) * 1000000;
     }
     else {
-	G_set_d_null_value(result, 1);
+	Rast_set_d_null_value(result, 1);
     }
 
     if (masked) {
@@ -344,10 +345,10 @@ int calculateD(int fd, struct area_entry *ad, double *result)
     int mask_fd, *mask_buf, *mask_sup, *mask_tmp, masked;
     struct Cell_head hd;
 
-    G_get_window(&hd);
+    Rast_get_window(&hd);
 
-    buf_null = G_allocate_d_raster_buf();
-    G_set_d_null_value(buf_null, G_window_cols());
+    buf_null = Rast_allocate_d_buf();
+    Rast_set_d_null_value(buf_null, Rast_window_cols());
     buf_sup = buf_null;
 
     /* initialize patch ids */
@@ -419,7 +420,7 @@ int calculateD(int fd, struct area_entry *ad, double *result)
 	pid_sup = pid_corr;
 	pid_corr = ltmp;
 
-	G_set_d_null_value(&precCell, 1);
+	Rast_set_d_null_value(&precCell, 1);
 
 	connected = 0;
 	for (j = 0; j < ad->cl; j++) {
@@ -427,25 +428,23 @@ int calculateD(int fd, struct area_entry *ad, double *result)
 	    
 	    corrCell = buf[j + ad->x];
 	    if (masked && (mask_buf[j] == 0)) {
-		G_set_d_null_value(&corrCell, 1);
-	    }
-	    else {
-		/* total landscape area */
-		area++;
+		Rast_set_d_null_value(&corrCell, 1);
 	    }
 
-	    if (G_is_d_null_value(&corrCell)) {
+	    if (Rast_is_d_null_value(&corrCell)) {
 		connected = 0;
 		precCell = corrCell;
 		continue;
 	    }
 
+	    area++;
+
 	    supCell = buf_sup[j + ad->x];
 	    if (masked && (mask_sup[j] == 0)) {
-		G_set_d_null_value(&supCell, 1);
+		Rast_set_d_null_value(&supCell, 1);
 	    }
 
-	    if (!G_is_d_null_value(&precCell) && corrCell == precCell) {
+	    if (!Rast_is_d_null_value(&precCell) && corrCell == precCell) {
 		pid_corr[j] = pid_corr[j - 1];
 		connected = 1;
 		pst[pid_corr[j]].count++;
@@ -454,7 +453,7 @@ int calculateD(int fd, struct area_entry *ad, double *result)
 		connected = 0;
 	    }
 
-	    if (!G_is_d_null_value(&supCell) && corrCell == supCell) {
+	    if (!Rast_is_d_null_value(&supCell) && corrCell == supCell) {
 
 		if (pid_corr[j] != pid_sup[j]) {
 		    /* connect or merge */
@@ -539,7 +538,7 @@ int calculateD(int fd, struct area_entry *ad, double *result)
 	*result = (npatch / area_units) * 1000000;
     }
     else {
-	G_set_d_null_value(result, 1);
+	Rast_set_d_null_value(result, 1);
     }
 
     if (masked) {
@@ -569,10 +568,10 @@ int calculateF(int fd, struct area_entry *ad, double *result)
     int mask_fd, *mask_buf, *mask_sup, *mask_tmp, masked;
     struct Cell_head hd;
 
-    G_get_window(&hd);
+    Rast_get_window(&hd);
 
-    buf_null = G_allocate_f_raster_buf();
-    G_set_f_null_value(buf_null, G_window_cols());
+    buf_null = Rast_allocate_f_buf();
+    Rast_set_f_null_value(buf_null, Rast_window_cols());
     buf_sup = buf_null;
 
     /* initialize patch ids */
@@ -644,7 +643,7 @@ int calculateF(int fd, struct area_entry *ad, double *result)
 	pid_sup = pid_corr;
 	pid_corr = ltmp;
 
-	G_set_f_null_value(&precCell, 1);
+	Rast_set_f_null_value(&precCell, 1);
 
 	connected = 0;
 	for (j = 0; j < ad->cl; j++) {
@@ -652,25 +651,23 @@ int calculateF(int fd, struct area_entry *ad, double *result)
 	    
 	    corrCell = buf[j + ad->x];
 	    if (masked && (mask_buf[j] == 0)) {
-		G_set_f_null_value(&corrCell, 1);
-	    }
-	    else {
-		/* total landscape area */
-		area++;
+		Rast_set_f_null_value(&corrCell, 1);
 	    }
 
-	    if (G_is_f_null_value(&corrCell)) {
+	    if (Rast_is_f_null_value(&corrCell)) {
 		connected = 0;
 		precCell = corrCell;
 		continue;
 	    }
 
+	    area++;
+
 	    supCell = buf_sup[j + ad->x];
 	    if (masked && (mask_sup[j] == 0)) {
-		G_set_f_null_value(&supCell, 1);
+		Rast_set_f_null_value(&supCell, 1);
 	    }
 
-	    if (!G_is_f_null_value(&precCell) && corrCell == precCell) {
+	    if (!Rast_is_f_null_value(&precCell) && corrCell == precCell) {
 		pid_corr[j] = pid_corr[j - 1];
 		connected = 1;
 		pst[pid_corr[j]].count++;
@@ -679,7 +676,7 @@ int calculateF(int fd, struct area_entry *ad, double *result)
 		connected = 0;
 	    }
 
-	    if (!G_is_f_null_value(&supCell) && corrCell == supCell) {
+	    if (!Rast_is_f_null_value(&supCell) && corrCell == supCell) {
 
 		if (pid_corr[j] != pid_sup[j]) {
 		    /* connect or merge */
@@ -764,7 +761,7 @@ int calculateF(int fd, struct area_entry *ad, double *result)
 	*result = (npatch / area_units) * 1000000;
     }
     else {
-	G_set_d_null_value(result, 1);
+	Rast_set_d_null_value(result, 1);
     }
 
     if (masked) {

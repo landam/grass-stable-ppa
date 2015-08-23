@@ -17,6 +17,7 @@
  ***************************************************************************/
 
 #include <string.h>
+#include <grass/raster.h>
 #include "glob.h"
 
 static char *get_label(CELL, struct Categories *);
@@ -48,7 +49,7 @@ int set_cat(CELL result, CELL * cat, struct Categories *pcats)
 	lbl = get_label(cat[i], &labels[i]);
 	strcat(buf, lbl);
     }
-    G_set_cat(result, buf, pcats);
+    Rast_set_c_cat(&result, &result, buf, pcats);
     return 0;
 }
 
@@ -57,7 +58,7 @@ static char *get_label(CELL cat, struct Categories *labels)
     char *lbl;
     static char temp[256];
 
-    lbl = G_get_cat(cat, labels);
+    lbl = Rast_get_c_cat(&cat, labels);
     if (*lbl == 0)
 	sprintf(lbl = temp, "category %ld", (long)cat);
     return lbl;

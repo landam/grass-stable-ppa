@@ -38,7 +38,7 @@ void interface(int argc, char **argv)
 
     /* cell of local window if selected.    */
     struct GModule *module;	/* GRASS module description */
-    char buf[128];
+    char buf[24];
 
     G_gisinit(argv[0]);		/* GRASS function which MUST be called  */
     /* first to check for valid database    */
@@ -51,7 +51,8 @@ void interface(int argc, char **argv)
     /*--------------------------------------------------------------------------*/
 
     module = G_define_module();
-    module->keywords = _("raster, geomorphology");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("geomorphology"));
     module->label = _("Extracts terrain parameters from a DEM.");
     module->description = _("Uses a multi-scale approach"
 			    " by taking fitting quadratic parameters to any size window (via least squares).");
@@ -71,31 +72,31 @@ void interface(int argc, char **argv)
     /* a 'type' (eg int, or string), and an indication whether manditory or not */
 
     rast_out->description =
-	_("Output raster layer containing morphometric parameter");
+	_("Name for output raster map containing morphometric parameter");
 
-    tol1_val->key = "s_tol";
+    tol1_val->key = "slope_tolerance";
     tol1_val->description =
 	_("Slope tolerance that defines a 'flat' surface (degrees)");
     tol1_val->type = TYPE_DOUBLE;
     tol1_val->required = NO;
     tol1_val->answer = "1.0";
 
-    tol2_val->key = "c_tol";
+    tol2_val->key = "curvature_tolerance";
     tol2_val->description =
 	_("Curvature tolerance that defines 'planar' surface");
     tol2_val->type = TYPE_DOUBLE;
     tol2_val->required = NO;
     tol2_val->answer = "0.0001";
 
-    sprintf(buf, _("Size of processing window (odd number only, max: %i)"),
-	    MAX_WSIZE);
+    sprintf(buf, "3-%i", MAX_WSIZE);
     win_size->key = "size";
-    win_size->description = G_store(buf);
+    win_size->description = _("Size of processing window (odd number only)");
     win_size->type = TYPE_INTEGER;
     win_size->required = NO;
+    win_size->options = G_store(buf);
     win_size->answer = "3";
 
-    parameter->key = "param";
+    parameter->key = "method";
     parameter->description =
 	_("Morphometric parameter in 'size' window to calculate");
     parameter->type = TYPE_STRING;
@@ -104,7 +105,7 @@ void interface(int argc, char **argv)
 	"elev,slope,aspect,profc,planc,longc,crosc,minic,maxic,feature";
     parameter->answer = "elev";
 
-    expon->key = "exp";
+    expon->key = "exponent";
     expon->description = _("Exponent for distance weighting (0.0-4.0)");
     expon->type = TYPE_DOUBLE;
     expon->required = NO;
@@ -164,27 +165,8 @@ void interface(int argc, char **argv)
 	mparam = ELEV;
     }
 
-    /*--------------------------------------------------------------------------*/
-    /*                      CHECK INPUT RASTER FILE EXISTS                      */
-
-    /*--------------------------------------------------------------------------*/
-    if ((mapset_in = G_find_cell2(rast_in_name, "")) == NULL)
-	G_fatal_error(_("Raster map <%s> not found"), rast_in_name);
-
-    /*--------------------------------------------------------------------------*/
-    /*                  CHECK OUTPUT RASTER FILE DOES NOT EXIST                 */
-
-    /*--------------------------------------------------------------------------*/
-
-    mapset_out = G_mapset();	/* Set output to current mapset.        */
-
     /* make sure input and output names are valid */
-    G_check_input_output_name(rast_in_name, rast_out_name, GR_FATAL_EXIT);
-
-    /*--------------------------------------------------------------------------*/
-    /*                 CHECK WINDOW SIZE IS NOT EVEN OR TOO LARGE               */
-
-    /*--------------------------------------------------------------------------*/
+    G_check_input_output_name(rast_in_name, rast_out_name, G_FATAL_EXIT);
 
     if ((wsize / 2 != (wsize - 1) / 2) || (wsize > MAX_WSIZE))
 	G_fatal_error(_("Inappropriate window size (too big or even)"));

@@ -26,12 +26,14 @@
 #%module
 #% label: Finds the distance between two or more points.
 #% description: If the projection is latitude-longitude, this distance is measured along the geodesic.
-#% keywords: miscellaneous, distance, measure
+#% keyword: miscellaneous
+#% keyword: distance
+#% keyword: measure
 #%end
 #%option
 #% key: coord
 #% type: string
-#% required: no
+#% required: yes
 #% multiple: yes
 #% key_desc: easting,northing
 #% description: Comma separated list of coordinate pairs
@@ -39,6 +41,7 @@
 #%flag
 #% key: i
 #% description: Read coordinate pairs from stdin
+#% suppress_required: yes
 #%end
 
 import os, sys

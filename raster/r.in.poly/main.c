@@ -12,6 +12,7 @@
  *
  *****************************************************************************/
 #include <stdlib.h>
+#include <string.h>
 #include <grass/gis.h>
 #include <grass/glocale.h>
 #include "local_proto.h"
@@ -20,13 +21,18 @@
 int main(int argc, char *argv[])
 {
     struct GModule *module;
-    struct Option *input, *output, *title, *rows;
+    struct Option *input, *output, *title, *rows, *nulls, *type;
     int n;
+    int raster_type;
+    int null_value;
+    int *null;
+    null = &null_value;
 
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("raster, import");
+    G_add_keyword(_("raster"));
+    G_add_keyword(_("import"));
     module->description =
 	_("Creates raster maps from ASCII polygon/line/point data files.");
 
@@ -38,10 +44,24 @@ int main(int argc, char *argv[])
 
     title = G_define_option();
     title->key = "title";
-    title->key_desc = "\"phrase\"";
+    title->key_desc = "phrase";
     title->type = TYPE_STRING;
     title->required = NO;
     title->description = _("Title for resultant raster map");
+
+    type = G_define_option();
+    type->key = "type";
+    type->type = TYPE_STRING;
+    type->required = NO;
+    type->description = _("Output raster type");
+    type->options = "CELL,FCELL,DCELL";
+    type->answer = "CELL";
+
+    nulls = G_define_option();
+    nulls->key = "null";
+    nulls->type = TYPE_INTEGER;
+    nulls->required = NO;
+    nulls->description = _("Integer representing NULL value data cell");
 
     rows = G_define_option();
     rows->key = "rows";
@@ -53,10 +73,23 @@ int main(int argc, char *argv[])
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
-
     sscanf(rows->answer, "%d", &n);
     if (n < 1)
 	G_fatal_error(_("Minimum number of rows to hold in memory is 1"));
 
-    exit(poly_to_rast(input->answer, output->answer, title->answer, n));
+    if (strcmp(type->answer, "CELL") == 0)
+        raster_type = CELL_TYPE;
+    else if (strcmp(type->answer, "FCELL") == 0)
+        raster_type = FCELL_TYPE;
+    else if (strcmp(type->answer, "DCELL") == 0)
+        raster_type = DCELL_TYPE;
+    else
+        G_fatal_error(_("Type doesn't exist"));
+
+    if (nulls->answer)
+        *null = atoi(nulls->answer);
+    else
+        null = NULL;
+
+    exit(poly_to_rast(input->answer, output->answer, title->answer, n, raster_type, null));
 }

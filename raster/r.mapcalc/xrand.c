@@ -3,6 +3,7 @@
 
 #include <grass/config.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include "globals.h"
 #include "expression.h"
 #include "func_proto.h"
@@ -10,11 +11,6 @@
 /****************************************************************
 rand(lo,hi) random values between a and b
 ****************************************************************/
-
-#if !defined(HAVE_DRAND48)
-#define drand48() ((double)rand()/((double)RAND_MAX + 1))
-#define mrand48() ((long)rand())
-#endif
 
 int f_rand(int argc, const int *argt, void **args)
 {
@@ -33,7 +29,7 @@ int f_rand(int argc, const int *argt, void **args)
 	    CELL *arg2 = args[2];
 
 	    for (i = 0; i < columns; i++) {
-		unsigned long x = (unsigned long)mrand48();
+		unsigned int x = (unsigned int)G_mrand48();
 		int lo = arg1[i];
 		int hi = arg2[i];
 
@@ -43,7 +39,7 @@ int f_rand(int argc, const int *argt, void **args)
 		    lo = hi;
 		    hi = tmp;
 		}
-		res[i] = (lo == hi) ? lo : lo + x % (unsigned long)(hi - lo);
+		res[i] = (lo == hi) ? lo : lo + x % (unsigned int)(hi - lo);
 	    }
 	    return 0;
 	}
@@ -54,7 +50,7 @@ int f_rand(int argc, const int *argt, void **args)
 	    FCELL *arg2 = args[2];
 
 	    for (i = 0; i < columns; i++) {
-		double x = drand48();
+		double x = G_drand48();
 		FCELL lo = arg1[i];
 		FCELL hi = arg2[i];
 
@@ -75,7 +71,7 @@ int f_rand(int argc, const int *argt, void **args)
 	    DCELL *arg2 = args[2];
 
 	    for (i = 0; i < columns; i++) {
-		double x = drand48();
+		double x = G_drand48();
 		DCELL lo = arg1[i];
 		DCELL hi = arg2[i];
 

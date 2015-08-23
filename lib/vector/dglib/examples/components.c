@@ -60,8 +60,7 @@ int main(int argc, char **argv)
     GNO_BEGIN			/* short   long                default     variable        help */
 	GNO_OPTION("g", "graph", NULL, &pszGraph, "Input Graph file")
 	GNO_OPTION("o", "graphout", NULL, &pszGraphOut, "Output Graph file")
-    GNO_END if (GNO_PARSE(argc, argv) < 0)
-    {
+	GNO_END if (GNO_PARSE(argc, argv) < 0) {
 	return 1;
     }
     /*

@@ -24,15 +24,16 @@ import wx.lib.colourselect as csel
 
 from core                 import globalvar
 from core.settings        import UserSettings
+from core.utils import _
 from gui_core.preferences import PreferencesBaseDialog
 
 class NvizPreferencesDialog(PreferencesBaseDialog):
-    """!Nviz preferences dialog"""
-    def __init__(self, parent, title = _("3D view settings"),
+    """Nviz preferences dialog"""
+    def __init__(self, parent, giface, title = _("3D view default settings"),
                  settings = UserSettings):
-        PreferencesBaseDialog.__init__(self, parent = parent, title = title,
+        PreferencesBaseDialog.__init__(self, parent = parent, title = title, giface = giface,
                                        settings = settings)
-        self.SetIcon(wx.Icon(os.path.join(globalvar.ETCICONDIR, 'grass_nviz.ico'), wx.BITMAP_TYPE_ICO))
+        self.SetIcon(wx.Icon(os.path.join(globalvar.ICONDIR, 'grass_nviz.ico'), wx.BITMAP_TYPE_ICO))
 
         self.toolWin = self.parent.nviz
         
@@ -48,7 +49,7 @@ class NvizPreferencesDialog(PreferencesBaseDialog):
         self.btnDefault.SetToolTipString(_("Revert settings to default, changes are not applied"))
         
     def _createViewPage(self, notebook):
-        """!Create notebook page for view settings"""
+        """Create notebook page for view settings"""
         panel = wx.Panel(parent = notebook, id = wx.ID_ANY)
         
         notebook.AddPage(page = panel,
@@ -63,7 +64,7 @@ class NvizPreferencesDialog(PreferencesBaseDialog):
         row = 0
         # perspective
         pvals = UserSettings.Get(group = 'nviz', key = 'view', subkey = 'persp')
-        ipvals = UserSettings.Get(group = 'nviz', key = 'view', subkey = 'persp', internal = True)
+        ipvals = UserSettings.Get(group='nviz', key='view', subkey='persp', settings_type='internal')
         gridSizer.Add(item = wx.StaticText(parent = panel, id = wx.ID_ANY,
                                          label = _("Perspective:")),
                       pos = (row, 0), flag = wx.ALIGN_CENTER_VERTICAL)
@@ -126,7 +127,7 @@ class NvizPreferencesDialog(PreferencesBaseDialog):
         
         # twist
         tvals = UserSettings.Get(group = 'nviz', key = 'view', subkey = 'twist')
-        itvals = UserSettings.Get(group = 'nviz', key = 'view', subkey = 'twist', internal = True)
+        itvals = UserSettings.Get(group='nviz', key='view', subkey='twist', settings_type='internal')
         gridSizer.Add(item = wx.StaticText(parent = panel, id = wx.ID_ANY,
                                          label = _("Twist:")),
                       pos = (row, 0), flag = wx.ALIGN_CENTER_VERTICAL)
@@ -171,7 +172,6 @@ class NvizPreferencesDialog(PreferencesBaseDialog):
                            label = " %s " % (_("Image Appearance")))
         boxSizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         gridSizer = wx.GridBagSizer(vgap = 3, hgap = 3)
-        gridSizer.AddGrowableCol(0)
         
         # background color
         gridSizer.Add(item = wx.StaticText(parent = panel, id = wx.ID_ANY,
@@ -186,6 +186,7 @@ class NvizPreferencesDialog(PreferencesBaseDialog):
         self.winId['nviz:view:background:color'] = color.GetId()
         gridSizer.Add(item = color, pos = (0, 1))
         
+        gridSizer.AddGrowableCol(0)
         boxSizer.Add(item = gridSizer, proportion = 1,
                   flag = wx.ALL | wx.EXPAND, border = 5)
         pageSizer.Add(item = boxSizer, proportion = 0,
@@ -197,7 +198,7 @@ class NvizPreferencesDialog(PreferencesBaseDialog):
         return panel
         
     def _createFlyPage(self, notebook):
-        """!Create notebook page for view settings"""
+        """Create notebook page for view settings"""
         panel = wx.Panel(parent = notebook, id = wx.ID_ANY)
         
         notebook.AddPage(page = panel,
@@ -208,7 +209,6 @@ class NvizPreferencesDialog(PreferencesBaseDialog):
                            label = " %s " % (_("Fly-through mode")))
         boxSizer = wx.StaticBoxSizer(box, wx.VERTICAL)
         gridSizer = wx.GridBagSizer(vgap = 3, hgap = 3)
-        gridSizer.AddGrowableCol(0)
         
         # move exag
         gridSizer.Add(item = wx.StaticText(parent = panel, id = wx.ID_ANY,
@@ -234,6 +234,7 @@ class NvizPreferencesDialog(PreferencesBaseDialog):
         self.winId['nviz:fly:exag:turn'] = turnExag.GetId()
         gridSizer.Add(item = turnExag, pos = (1, 1))
         
+        gridSizer.AddGrowableCol(0)
         boxSizer.Add(item = gridSizer, proportion = 1,
                   flag = wx.ALL | wx.EXPAND, border = 5)
         pageSizer.Add(item = boxSizer, proportion = 0,
@@ -245,7 +246,7 @@ class NvizPreferencesDialog(PreferencesBaseDialog):
         return panel
         
     def _createLightPage(self, notebook):
-        """!Create notebook page for light settings"""
+        """Create notebook page for light settings"""
         panel = wx.Panel(parent = notebook, id = wx.ID_ANY)
         
         notebook.AddPage(page = panel,
@@ -353,7 +354,7 @@ class NvizPreferencesDialog(PreferencesBaseDialog):
         return panel
     
     def _createSurfacePage(self, notebook):
-        """!Create notebook page for surface settings"""
+        """Create notebook page for surface settings"""
         panel = wx.Panel(parent = notebook, id = wx.ID_ANY)
         
         notebook.AddPage(page = panel,
@@ -455,7 +456,7 @@ class NvizPreferencesDialog(PreferencesBaseDialog):
         return panel
     
     def _createVectorPage(self, notebook):
-        """!Create notebook page for vector settings"""
+        """Create notebook page for vector settings"""
         panel = wx.Panel(parent = notebook, id = wx.ID_ANY)
         
         notebook.AddPage(page = panel,
@@ -531,7 +532,7 @@ class NvizPreferencesDialog(PreferencesBaseDialog):
                       pos = (row, 2), flag = wx.ALIGN_CENTER_VERTICAL)
         isym = wx.Choice (parent = panel, id = wx.ID_ANY, size = (100, -1),
                           choices = UserSettings.Get(group = 'nviz', key = 'vector',
-                                                   subkey = ['points', 'marker'], internal = True))
+                                                   subkey=['points', 'marker'], settings_type='internal'))
         isym.SetName("GetSelection")
         self.winId['nviz:vector:points:marker'] = isym.GetId()
         isym.SetSelection(UserSettings.Get(group = 'nviz', key = 'vector',
@@ -563,7 +564,7 @@ class NvizPreferencesDialog(PreferencesBaseDialog):
         return panel
 
     def OnDefault(self, event):
-        """!Button 'Set to default' pressed"""
+        """Button 'Set to default' pressed"""
         self.settings.userSettings = copy.deepcopy(self.settings.defaultSettings)
         
         # update widgets
@@ -614,7 +615,7 @@ class NvizPreferencesDialog(PreferencesBaseDialog):
         
         
     def OnSave(self, event):
-        """!Save button pressed
+        """Save button pressed
         
         Apply changes and save settings to configuration file
         """
@@ -624,7 +625,8 @@ class NvizPreferencesDialog(PreferencesBaseDialog):
         fileSettings['nviz'] = UserSettings.Get(group = 'nviz')
         
         UserSettings.SaveToFile(fileSettings)
-        self.parent.goutput.WriteLog(
+        self.parent._gconsole.WriteLog(
                 _('3D view settings saved to file <%s>.') % UserSettings.filePath)
         
         self.Destroy()
+        

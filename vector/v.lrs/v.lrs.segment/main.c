@@ -31,7 +31,7 @@
 #include <time.h>
 #include <math.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 #include "../lib/lrs.h"
@@ -55,19 +55,22 @@ int main(int argc, char **argv)
     struct Option *lfield_opt, *file_opt;
     struct Option *table_opt;
     struct GModule *module;
-    char *mapset, buf[2000];
-    const char *drv, *db;
+    const char *mapset;
+    char buf[2000];
     struct Map_info In, Out;
     struct line_cats *LCats, *SCats;
     struct line_pnts *LPoints, *SPoints, *PlPoints;
     dbDriver *rsdriver;
     dbHandle rshandle;
     dbString rsstmt;
+    char *tmpstr1;
 
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, LRS, networking");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("Linear Reference System"));
+    G_add_keyword(_("network"));
     module->description =
 	_("Creates points/segments from input lines, linear reference "
 	  "system and positions read from stdin or a file.");
@@ -89,16 +92,15 @@ int main(int argc, char **argv)
     driver_opt->type = TYPE_STRING;
     driver_opt->required = NO;
     driver_opt->description = _("Driver name for reference system table");
-    if ((drv = db_get_default_driver_name()))
-	driver_opt->answer = drv;
+    driver_opt->options = db_list_drivers();
+    driver_opt->answer = db_get_default_driver_name();
 
     database_opt = G_define_option();
     database_opt->key = "rsdatabase";
     database_opt->type = TYPE_STRING;
     database_opt->required = NO;
     database_opt->description = _("Database name for reference system table");
-    if ((db = db_get_default_database_name()))
-	database_opt->answer = db;
+    database_opt->answer = db_get_default_database_name();
 
     table_opt = G_define_option();
     table_opt->key = "rstable";
@@ -138,10 +140,12 @@ int main(int argc, char **argv)
 	G_fatal_error(_("Vector map <%s> not found"), in_opt->answer);
 
     Vect_set_open_level(2);
-    Vect_open_old(&In, in_opt->answer, mapset);
+    if (Vect_open_old(&In, in_opt->answer, mapset) < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), in_opt->answer);
 
     /* Open output segments */
-    Vect_open_new(&Out, out_opt->answer, Vect_is_3d(&In));
+    if (Vect_open_new(&Out, out_opt->answer, Vect_is_3d(&In)) < 0)
+	G_fatal_error(_("Unable to create vector map <%s>"), out_opt->answer);
 
     db_init_handle(&rshandle);
     db_init_string(&rsstmt);
@@ -149,6 +153,7 @@ int main(int argc, char **argv)
     db_set_handle(&rshandle, database_opt->answer, NULL);
     if (db_open_database(rsdriver, &rshandle) != DB_OK)
 	G_fatal_error(_("Unable to open database for reference table"));
+    db_set_error_handler_driver(rsdriver);
 
     points_read = 0;
     lines_read = 0;
@@ -334,6 +339,11 @@ int main(int argc, char **argv)
     }
 
     db_close_database(rsdriver);
+
+    Vect_copy_head_data(&In, &Out);
+    Vect_hist_copy(&In, &Out);
+    Vect_hist_command(&Out);
+
     Vect_build(&Out);
 
     /* Free, close ... */
@@ -343,12 +353,30 @@ int main(int argc, char **argv)
     if (file_opt->answer)
 	fclose(in_file);
 
-    G_message(_("[%d] points read from input"), points_read);
-    G_message(_("[%d] points written to output map (%d lost)"),
-	      points_written, points_read - points_written);
-    G_message(_("[%d] lines read from input"), lines_read);
-    G_message(_("[%d] lines written to output map (%d lost)"),
-	      lines_written, lines_read - lines_written);
+    G_message(n_("[%d] point read from input",
+                 "[%d] points read from input",
+                 points_read), points_read);
+    G_asprintf(&tmpstr1, n_("%d lost", "%d lost", 
+                            points_read - points_written), 
+               points_read - points_written);
+    /* GTC %s will be replaced with a message about lost points. */
+    G_message(n_("[%d] point written to output map (%s)",
+                 "[%d] points written to output map (%s)",
+                 points_written),
+	      points_written, tmpstr1);
+    G_free(tmpstr1);
+    G_message(n_("[%d] line read from input",
+                 "[%d] lines read from input",
+                 lines_read), lines_read);
+    G_asprintf(&tmpstr1, n_("%d lost", "%d lost",
+                            lines_read - lines_written),
+               lines_read - lines_written);
+    /* GTC %s will be replaced with a message about lost lines. */
+    G_message(n_("[%d] line written to output map (%s)",
+                 "[%d] lines written to output map (%s)",
+                 lines_written),
+	      lines_written, tmpstr1);
+    G_free(tmpstr1);
 
     exit(EXIT_SUCCESS);
 }

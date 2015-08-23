@@ -15,26 +15,25 @@
  ****************************************************************************/
 
 #include <stdlib.h>
-#include <string.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/gis.h>
 #include <grass/glocale.h>
 #include "writeVTK.h"
 #include "local_proto.h"
-#include <grass/config.h>
 
 
 /*Prototype */
 /*Formated coordinates output */
-static void write_point_coordinates(struct line_pnts *Points, int dp, double scale, FILE * ascii);
+static void write_point_coordinates(struct line_pnts *Points, int dp,
+				    double scale, FILE * ascii);
 
 
 /* ************************************************************************* */
 /* This function writes the vtk points and coordinates ********************* */
 /* ************************************************************************* */
 int write_vtk_points(FILE * ascii, struct Map_info *Map, VTKInfo * info,
-		    int *types, int typenum, int dp, double scale)
+		     int *types, int typenum, int dp, double scale)
 {
     int type, cur, i, k, centroid;
     int pointoffset = 0;
@@ -46,7 +45,7 @@ int write_vtk_points(FILE * ascii, struct Map_info *Map, VTKInfo * info,
     Points = Vect_new_line_struct();	/* init line_pnts struct */
     Cats = Vect_new_cats_struct();
 
-    G_message("Writing the coordinates");
+    G_message("Writing coordinates ...");
 
     /*For every available vector type */
     for (k = 0; k < typenum; k++) {
@@ -56,8 +55,19 @@ int write_vtk_points(FILE * ascii, struct Map_info *Map, VTKInfo * info,
 
 	    /*Get the number of the points to generate */
 	    info->typeinfo[types[k]]->pointoffset = pointoffset;
-	    info->typeinfo[types[k]]->numpoints =
-		Vect_get_num_primitives(Map, types[k]);
+
+	    /*count the number of line_nodes and lines */
+	    Vect_rewind(Map);
+	    while (1) {
+		if (-1 == (type = Vect_read_next_line(Map, Points, Cats)))
+		    break;
+		if (type == -2)	/* EOF */
+		    break;
+		if (type == types[k]) {
+		    info->typeinfo[types[k]]->numpoints++;
+		}
+	    }
+
 	    pointoffset += info->typeinfo[types[k]]->numpoints;
 
 	    info->typeinfo[types[k]]->numvertices =
@@ -104,7 +114,6 @@ int write_vtk_points(FILE * ascii, struct Map_info *Map, VTKInfo * info,
 	     * info->typeinfo[types[k]]->lineoffset);
 	     */
 	}
-
     }
 
     for (k = 0; k < typenum; k++) {
@@ -139,7 +148,6 @@ int write_vtk_points(FILE * ascii, struct Map_info *Map, VTKInfo * info,
 	     * info->typeinfo[types[k]]->polygonoffset);
 	     */
 	}
-
     }
 
     for (k = 0; k < typenum; k++) {
@@ -187,10 +195,8 @@ int write_vtk_points(FILE * ascii, struct Map_info *Map, VTKInfo * info,
     if (info->maxnumpoints == 0)
 	G_fatal_error(_("No coordinates to generate the output! Maybe an empty vector type chosen?"));
 
-
     /************************************************/
     /*Write the coordinates into the vtk ascii file */
-
     /************************************************/
 
     fprintf(ascii, "POINTS %i float\n", info->maxnumpoints);
@@ -219,7 +225,6 @@ int write_vtk_points(FILE * ascii, struct Map_info *Map, VTKInfo * info,
 		}
 		cur++;
 	    }
-
 	}
     }
 
@@ -240,7 +245,6 @@ int write_vtk_points(FILE * ascii, struct Map_info *Map, VTKInfo * info,
 		}
 		cur++;
 	    }
-
 	}
     }
 
@@ -261,7 +265,6 @@ int write_vtk_points(FILE * ascii, struct Map_info *Map, VTKInfo * info,
 		}
 		cur++;
 	    }
-
 	}
     }
 
@@ -277,7 +280,6 @@ int write_vtk_points(FILE * ascii, struct Map_info *Map, VTKInfo * info,
 		Vect_get_area_points(Map, i, Points);
 		write_point_coordinates(Points, dp, scale, ascii);
 	    }
-
 	}
     }
 
@@ -289,24 +291,24 @@ int write_vtk_points(FILE * ascii, struct Map_info *Map, VTKInfo * info,
 /* This function writes the vtk cells ************************************** */
 /* ************************************************************************* */
 int write_vtk_cells(FILE * ascii, struct Map_info *Map, VTKInfo * info,
-		   int *types, int typenum)
+		    int *types, int typenum)
 {
     int type, i, j, k, centroid;
     static struct line_pnts *Points;
     struct line_cats *Cats;
+
     /*The keywords may only be written once! */
     int vertkeyword = 1;
     int linekeyword = 1;
     int polykeyword = 1;
 
-    G_message("Writing vtk cells");
+    G_message("Writing vtk cells ...");
 
     Points = Vect_new_line_struct();	/* init line_pnts struct */
     Cats = Vect_new_cats_struct();
 
     /*For every available vector type */
     for (k = 0; k < typenum; k++) {
-
 
 	/*POINT KERNEL CENTROID */
 	if (types[k] == GV_POINT || types[k] == GV_KERNEL ||
@@ -317,7 +319,7 @@ int write_vtk_cells(FILE * ascii, struct Map_info *Map, VTKInfo * info,
 	    if (info->typeinfo[types[k]]->numpoints > 0) {
 		if (vertkeyword) {
 		    fprintf(ascii, "VERTICES %i %i\n", info->maxnumvertices,
-			    info->maxnumvertices * 2 );
+			    info->maxnumvertices * 2);
 		    vertkeyword = 0;
 		}
 		for (i = 0; i < info->typeinfo[types[k]]->numpoints; i++) {
@@ -357,7 +359,8 @@ int write_vtk_cells(FILE * ascii, struct Map_info *Map, VTKInfo * info,
 			fprintf(ascii, "%i", Points->n_points);
 			while (Points->n_points--) {
 			    fprintf(ascii, " %i",
-				    i + info->typeinfo[types[k]]->pointoffset);
+				    i +
+				    info->typeinfo[types[k]]->pointoffset);
 			    i++;
 			}
 			fprintf(ascii, "\n");
@@ -396,7 +399,8 @@ int write_vtk_cells(FILE * ascii, struct Map_info *Map, VTKInfo * info,
 			fprintf(ascii, "%i", Points->n_points);
 			while (Points->n_points--) {
 			    fprintf(ascii, " %i",
-				    i + info->typeinfo[types[k]]->pointoffset);
+				    i +
+				    info->typeinfo[types[k]]->pointoffset);
 			    i++;
 			}
 			fprintf(ascii, "\n");
@@ -451,11 +455,12 @@ int write_vtk_cells(FILE * ascii, struct Map_info *Map, VTKInfo * info,
 /* This function writes the categories as vtk cell data ******************** */
 /* ************************************************************************* */
 int write_vtk_cat_data(FILE * ascii, struct Map_info *Map, VTKInfo * info,
-		      int layer, int *types, int typenum, int dp)
+		       int layer, int *types, int typenum, int dp)
 {
     int type, cat, i, k, centroid;
     static struct line_pnts *Points;
     struct line_cats *Cats;
+
     /*The keywords may only be written once! */
     int numcelldata =
 	info->maxnumvertices + info->maxnumlines + info->maxnumpolygons;
@@ -463,7 +468,7 @@ int write_vtk_cat_data(FILE * ascii, struct Map_info *Map, VTKInfo * info,
     Points = Vect_new_line_struct();	/* init line_pnts struct */
     Cats = Vect_new_cats_struct();
 
-    G_message("Writing category cell data");
+    G_message("Writing category cell data ...");
 
     if (numcelldata > 0) {
 	/*Write the pointdata */
@@ -540,10 +545,8 @@ int write_vtk_cat_data(FILE * ascii, struct Map_info *Map, VTKInfo * info,
 		}
 	    }
 	}
-	
 	fprintf(ascii, "\n");
     }
-
 
     return 1;
 }
@@ -552,47 +555,54 @@ int write_vtk_cat_data(FILE * ascii, struct Map_info *Map, VTKInfo * info,
 /* 
    Reads the attribute field "name" for current cat and returns the value as a string 
    or NULL on error 
-   
+
    Memory for the result string is allocated by this function and must be free'd by
    the caller.
-*/
-char *get_att ( char *name, int cat, struct field_info *Fi, dbDriver *Driver, int ncol ) {
-    int      j;
-    char     buf[2000];
-    int      more;
-    dbTable  *Table;
-    dbString dbstring;
+ */
+char *get_att(char *name, int cat, struct field_info *Fi, dbDriver * Driver,
+	      int ncol)
+{
+    char buf[2000];
+    int more;
+    dbTable *Table;
+    static dbString dbstring;
     dbColumn *Column;
     dbCursor cursor;
     char *retval;
-    
-    db_init_string(&dbstring);
-    
-    sprintf ( buf, "SELECT * FROM %s WHERE %s = %d", Fi->table,  Fi->key, cat); 
-    
+    static int first = 1;
+
+    if (first) {
+	db_init_string(&dbstring);
+	first = 0;
+    }
+
+    sprintf(buf, "SELECT %s FROM %s WHERE %s = %d", name, Fi->table, Fi->key, cat);
+
     db_set_string(&dbstring, buf);
-    
-    if ( db_open_select_cursor(Driver, &dbstring, &cursor, DB_SEQUENTIAL) != DB_OK ) {
-	G_fatal_error ( _("Cannot select attributes for cat = %d"), cat);
+
+    if (db_open_select_cursor(Driver, &dbstring, &cursor, DB_SEQUENTIAL) !=
+	DB_OK) {
+	G_fatal_error(_("Cannot select attributes for cat = %d"), cat);
     }
-    
-    if(db_fetch (&cursor, DB_NEXT, &more) != DB_OK) 
-    	G_fatal_error (_("Unable to fetch data from table"));
-    
-    Table = db_get_cursor_table (&cursor);
-    
-    for (j = 0; j < ncol; j++) {
-        Column = db_get_table_column (Table, j);
-     	if ( !strcmp ( name, db_get_column_name(Column) ) ) {
-		db_convert_column_value_to_string (Column, &dbstring);		
-		retval = G_malloc ( sizeof (char) * ( strlen ( db_get_string (&dbstring )) + 1 ) );
-		retval = strdup ( db_get_string (&dbstring) );
-		return (retval);
-	}
+
+    if (db_fetch(&cursor, DB_NEXT, &more) != DB_OK)
+	G_fatal_error(_("Unable to fetch data from table"));
+
+    Table = db_get_cursor_table(&cursor);
+
+    Column = db_get_table_column(Table, 0);
+    if (!strcmp(name, db_get_column_name(Column))) {
+	db_convert_column_value_to_string(Column, &dbstring);
+	retval =
+	    G_malloc(sizeof(char) *
+		     (strlen(db_get_string(&dbstring)) + 1));
+	retval = G_store(db_get_string(&dbstring));
+	db_close_cursor(&cursor);
+	return (retval);
     }
-    
-    return ( NULL );
-    
+
+    db_close_cursor(&cursor);
+    return (NULL);
 }
 
 
@@ -600,226 +610,236 @@ char *get_att ( char *name, int cat, struct field_info *Fi, dbDriver *Driver, in
 /* This function writes numerical attribute table fields as VTK scalars **** */
 /* ************************************************************************* */
 int write_vtk_db_data(FILE * ascii, struct Map_info *Map, VTKInfo * info,
-		     int layer, int *types, int typenum, int dp)
+		      int layer, int *types, int typenum, int dp)
 {
     int type, cat, i, k, centroid;
-    static struct line_pnts *Points;
     struct line_cats *Cats;
+
     /*The keywords may only be written once! */
     int numcelldata =
 	info->maxnumvertices + info->maxnumlines + info->maxnumpolygons;
     /* attribute table info */
-    int ncol=0, colsqltype, colctype, num_atts, cur_att, progress;
-    struct field_info *Fi=NULL;
-    dbDriver *Driver=NULL;
+    int ncol = 0, colsqltype, colctype, num_atts, cur_att, progress;
+    struct field_info *Fi = NULL;
+    dbDriver *Driver = NULL;
     dbHandle handle;
     dbTable *Table;
     dbString dbstring;
     dbColumn *Column;
-    char *valbuf;    
- 
+    char *valbuf;
 
-    if ( layer < 1 ) {
-    	G_warning(_("Cannot export attribute table fields for layer < 1. Skipping export"));
+    if (layer < 1) {
+	G_warning(_("Cannot export attribute table fields for layer < 1. Skipping export"));
 	return 1;
     }
-    
+
     /* attempt to open attribute table for selected layer */
     db_init_string(&dbstring);
-    Fi = Vect_get_field( Map, layer);	
-    if ( Fi == NULL ) {
-    	G_fatal_error (_("No attribute table found"));
+    Fi = Vect_get_field(Map, layer);
+    if (Fi == NULL) {
+	G_fatal_error(_("No attribute table found"));
     }
     Driver = db_start_driver(Fi->driver);
     if (Driver == NULL)
-    	G_fatal_error(_("Unable to start driver <%s>"), Fi->driver);
+	G_fatal_error(_("Unable to start driver <%s>"), Fi->driver);
 
-    db_init_handle (&handle);
-    db_set_handle (&handle, Fi->database, NULL);
+    db_init_handle(&handle);
+    db_set_handle(&handle, Fi->database, NULL);
     if (db_open_database(Driver, &handle) != DB_OK)
-       	G_fatal_error(_("Unable to open database <%s> by driver <%s>"), Fi->database, Fi->driver);
+	G_fatal_error(_("Unable to open database <%s> by driver <%s>"),
+		      Fi->database, Fi->driver);
+    db_set_error_handler_driver(Driver);
 
     db_set_string(&dbstring, Fi->table);
-    if(db_describe_table (Driver, &dbstring, &Table) != DB_OK) 
+    if (db_describe_table(Driver, &dbstring, &Table) != DB_OK)
 	G_fatal_error(_("Unable to describe table <%s>"), Fi->table);
 
     /* analyse field structure */
-    ncol = db_get_table_number_of_columns(Table);    
+    ncol = db_get_table_number_of_columns(Table);
     num_atts = 0;
     for (i = 0; i < ncol; i++) {
-    	Column = db_get_table_column (Table, i);
+	Column = db_get_table_column(Table, i);
 	colsqltype = db_get_column_sqltype(Column);
-	colctype = db_sqltype_to_Ctype ( colsqltype );
-	if  ( ( colctype == DB_C_TYPE_INT ) || ( colctype == DB_C_TYPE_DOUBLE ) ) {
-		/* we don't want to export the category field twice */
-		if ( strcmp ( db_get_column_name(Column), "cat" ) ) {
-			num_atts ++;
-			/* fprintf ( stderr, "%i: %s\n", num_atts, db_get_column_name(Column) ); */
-		}
+	colctype = db_sqltype_to_Ctype(colsqltype);
+	if ((colctype == DB_C_TYPE_INT) || (colctype == DB_C_TYPE_DOUBLE)) {
+	    /* we don't want to export the category field twice */
+	    if (strcmp(db_get_column_name(Column), "cat")) {
+		num_atts++;
+		/* fprintf ( stderr, "%i: %s\n", num_atts, db_get_column_name(Column) ); */
+	    }
 	}
-	 
     }
-    if ( num_atts < 1 ) {
-    	G_warning(_("No numerical attributes found. Skipping export"));
+    if (num_atts < 1) {
+	G_warning(_("No numerical attributes found. Skipping export"));
 	db_close_database(Driver);
-	db_shutdown_driver(Driver);	
-	return 1;    	
+	db_shutdown_driver(Driver);
+	return 1;
     }
 
-    Points = Vect_new_line_struct();	/* init line_pnts struct */
     Cats = Vect_new_cats_struct();
 
-    G_message("Writing %i scalar variables as cell data", num_atts );
+    G_message("Writing %i scalar variables as cell data ...", num_atts);
 
     progress = 0;
-    for ( cur_att = 0; cur_att < ncol; cur_att ++ ) {
+    for (cur_att = 0; cur_att < ncol; cur_att++) {
 
-    if (numcelldata > 0) {
-	/*Write the pointdata */
-	Column = db_get_table_column (Table, cur_att);
-	colsqltype = db_get_column_sqltype(Column);
-	colctype = db_sqltype_to_Ctype ( colsqltype );
+	if (numcelldata > 0) {
+	    /*Write the pointdata */
+	    Column = db_get_table_column(Table, cur_att);
+	    colsqltype = db_get_column_sqltype(Column);
+	    colctype = db_sqltype_to_Ctype(colsqltype);
 
-	if ( 	( strcmp ( "cat", db_get_column_name(Column) ) ) &&
-		( ( colctype == DB_C_TYPE_INT ) || ( colctype == DB_C_TYPE_DOUBLE )) ) {
+	    if ((strcmp("cat", db_get_column_name(Column))) &&
+		((colctype == DB_C_TYPE_INT) ||
+		 (colctype == DB_C_TYPE_DOUBLE))) {
 
-	if ( colctype == DB_C_TYPE_INT ) {
-		/* G_message("  Writing integer scalar %s", db_get_column_name(Column) ); */
-		fprintf(ascii, "SCALARS %s int 1\n", db_get_column_name(Column) );
-	}
-	if ( colctype == DB_C_TYPE_DOUBLE ) {
-		/* *G_message("  Writing double scalar %s", db_get_column_name(Column) ); */
-		fprintf(ascii, "SCALARS %s double 1\n", db_get_column_name(Column) );
-	}
-	
-	fprintf(ascii, "LOOKUP_TABLE default\n");
-	progress ++;
+		if (colctype == DB_C_TYPE_INT) {
+		    /* G_message("  Writing integer scalar %s", db_get_column_name(Column) ); */
+		    fprintf(ascii, "SCALARS %s int 1\n",
+			    db_get_column_name(Column));
+		}
+		if (colctype == DB_C_TYPE_DOUBLE) {
+		    /* *G_message("  Writing double scalar %s", db_get_column_name(Column) ); */
+		    fprintf(ascii, "SCALARS %s double 1\n",
+			    db_get_column_name(Column));
+		}
 
-	/*For every available vector type */
-	for (k = 0; k < typenum; k++) {
-	    /*POINT KERNEL CENTROID */
-	    if (types[k] == GV_POINT || types[k] == GV_KERNEL ||
-		types[k] == GV_CENTROID) {
+		fprintf(ascii, "LOOKUP_TABLE default\n");
+		progress++;
 
-		Vect_rewind(Map);
+		/*For every available vector type */
+		for (k = 0; k < typenum; k++) {
+		    /*POINT KERNEL CENTROID */
+		    if (types[k] == GV_POINT || types[k] == GV_KERNEL ||
+			types[k] == GV_CENTROID) {
 
-		while (1) {
-		    if (-1 == (type = Vect_read_next_line(Map, Points, Cats)))
-			break;
-		    if (type == -2)	/* EOF */
-			break;
-		    if (type == types[k]) {
-			Vect_cat_get(Cats, layer, &cat);
-			valbuf = get_att ( (char*) db_get_column_name(Column), cat, Fi, Driver, ncol );
-			if ( valbuf == NULL ) {
-			    db_close_database(Driver);
-    			    db_shutdown_driver(Driver);
-			    G_fatal_error (_("Error reading value of attribute '%s'"), db_get_column_name(Column));				
+			Vect_rewind(Map);
+
+			while (1) {
+			    if (-1 ==
+				(type =
+				 Vect_read_next_line(Map, NULL, Cats)))
+				break;
+			    if (type == -2)	/* EOF */
+				break;
+			    if (type == types[k]) {
+				Vect_cat_get(Cats, layer, &cat);
+				valbuf =
+				    get_att((char *)
+					    db_get_column_name(Column), cat,
+					    Fi, Driver, ncol);
+				if (valbuf == NULL) {
+				    G_fatal_error(_("Error reading value of attribute '%s'"),
+						  db_get_column_name(Column));
+				}
+				/* DEBUG 
+				   fprintf ( stderr, "%s (%i) = %s\n", db_get_column_name(Column), cat, valbuf );
+				 */
+				fprintf(ascii, " %s", valbuf);
+				G_free(valbuf);
+			    }
 			}
-			/* DEBUG 
-			fprintf ( stderr, "%s (%i) = %s\n", db_get_column_name(Column), cat, valbuf );
-			*/
-			fprintf(ascii, " %s", valbuf);
-			G_free ( valbuf );
 		    }
 		}
-	    }
-	}
 
-	for (k = 0; k < typenum; k++) {
-	    /*LINE BOUNDARY */
-	    if (types[k] == GV_LINE || types[k] == GV_BOUNDARY) {
-		Vect_rewind(Map);
-		while (1) {
-		    if (-1 == (type = Vect_read_next_line(Map, Points, Cats)))
-			break;
-		    if (type == -2)	/* EOF */
-			break;
-		    if (type == types[k]) {
-			Vect_cat_get(Cats, layer, &cat);
-			valbuf = get_att ( (char*) db_get_column_name(Column), cat, Fi, Driver, ncol );
-			if ( valbuf == NULL ) {
-			    db_close_database(Driver);
-    			    db_shutdown_driver(Driver);
-			    G_fatal_error (_("Error reading value of attribute '%s'"), db_get_column_name(Column));			
+		for (k = 0; k < typenum; k++) {
+		    /*LINE BOUNDARY */
+		    if (types[k] == GV_LINE || types[k] == GV_BOUNDARY) {
+			Vect_rewind(Map);
+			while (1) {
+			    if (-1 ==
+				(type =
+				 Vect_read_next_line(Map, NULL, Cats)))
+				break;
+			    if (type == -2)	/* EOF */
+				break;
+			    if (type == types[k]) {
+				Vect_cat_get(Cats, layer, &cat);
+				valbuf =
+				    get_att((char *)
+					    db_get_column_name(Column), cat,
+					    Fi, Driver, ncol);
+				if (valbuf == NULL) {
+				    G_fatal_error(_("Error reading value of attribute '%s'"),
+						  db_get_column_name(Column));
+				}
+				/* DEBUG 
+				   fprintf ( stderr, "%s (%i) = %s\n", db_get_column_name(Column), cat, valbuf );
+				 */
+				fprintf(ascii, " %s", valbuf);
+				G_free(valbuf);
+			    }
 			}
-			/* DEBUG 
-			fprintf ( stderr, "%s (%i) = %s\n", db_get_column_name(Column), cat, valbuf );
-			*/
-			fprintf(ascii, " %s", valbuf);
-			G_free ( valbuf );
 		    }
 		}
-	    }
-	}
 
-	for (k = 0; k < typenum; k++) {
-	    /*FACE */
-	    if (types[k] == GV_FACE) {
-		Vect_rewind(Map);
-		while (1) {
-		    if (-1 == (type = Vect_read_next_line(Map, Points, Cats)))
-			break;
-		    if (type == -2)	/* EOF */
-			break;
-		    if (type == types[k]) {
-			Vect_cat_get(Cats, layer, &cat);
-			valbuf = get_att ( (char*) db_get_column_name(Column), cat, Fi, Driver, ncol );
-			if ( valbuf == NULL ) {
-			    db_close_database(Driver);
-    			    db_shutdown_driver(Driver);
-			    G_fatal_error (_("Error reading value of attribute '%s'"), db_get_column_name(Column));			
+		for (k = 0; k < typenum; k++) {
+		    /*FACE */
+		    if (types[k] == GV_FACE) {
+			Vect_rewind(Map);
+			while (1) {
+			    if (-1 ==
+				(type =
+				 Vect_read_next_line(Map, NULL, Cats)))
+				break;
+			    if (type == -2)	/* EOF */
+				break;
+			    if (type == types[k]) {
+				Vect_cat_get(Cats, layer, &cat);
+				valbuf =
+				    get_att((char *)
+					    db_get_column_name(Column), cat,
+					    Fi, Driver, ncol);
+				if (valbuf == NULL) {
+				    G_fatal_error(_("Error reading value of attribute '%s'"),
+						  db_get_column_name(Column));
+				}
+				/* DEBUG 
+				   fprintf ( stderr, "%s (%i) = %s\n", db_get_column_name(Column), cat, valbuf );
+				 */
+				fprintf(ascii, " %s", valbuf);
+				G_free(valbuf);
+			    }
 			}
-			/* DEBUG 
-			fprintf ( stderr, "%s (%i) = %s\n", db_get_column_name(Column), cat, valbuf );
-			*/
-			fprintf(ascii, " %s", valbuf);
-			G_free ( valbuf );
 		    }
 		}
-	    }
-	}
 
-	for (k = 0; k < typenum; k++) {
-	    /*AREA */
-	    if (types[k] == GV_AREA) {
-		Vect_rewind(Map);
-		for (i = 1; i <= info->typeinfo[types[k]]->numpolygons; i++) {
-		    centroid = Vect_get_area_centroid(Map, i);
-		    if (centroid > 0) {
-			Vect_read_line(Map, NULL, Cats, centroid);
+		for (k = 0; k < typenum; k++) {
+		    /*AREA */
+		    if (types[k] == GV_AREA) {
+			Vect_rewind(Map);
+			for (i = 1;
+			     i <= info->typeinfo[types[k]]->numpolygons;
+			     i++) {
+			    centroid = Vect_get_area_centroid(Map, i);
+			    if (centroid > 0) {
+				Vect_read_line(Map, NULL, Cats, centroid);
+			    }
+			    Vect_cat_get(Cats, layer, &cat);
+			    valbuf =
+				get_att((char *)db_get_column_name(Column),
+					cat, Fi, Driver, ncol);
+			    if (valbuf == NULL) {
+				G_fatal_error(_("Error reading value of attribute '%s'"),
+					      db_get_column_name(Column));
+			    }
+			    /* DEBUG 
+			       fprintf ( stderr, "%s (%i) = %s\n", db_get_column_name(Column), cat, valbuf );
+			     */
+			    fprintf(ascii, " %s", valbuf);
+			    G_free(valbuf);
+			}
 		    }
-		    Vect_cat_get(Cats, layer, &cat);
-		    valbuf = get_att ( (char*) db_get_column_name(Column), cat, Fi, Driver, ncol );
-		    if ( valbuf == NULL ) {
-		    	db_close_database(Driver);
-    			db_shutdown_driver(Driver);
-			G_fatal_error (_("Error reading value of attribute '%s'"), db_get_column_name(Column));				
-		    }
-		    /* DEBUG 
-		    fprintf ( stderr, "%s (%i) = %s\n", db_get_column_name(Column), cat, valbuf );
-		    */
-		    fprintf(ascii, " %s", valbuf);
-		    G_free ( valbuf );
 		}
-	    }
+		fprintf(ascii, "\n");
+	    }			/* END (do for all scalars != cat */
 	}
-	
-	fprintf(ascii, "\n");
-	
-	} /* END (do for all scalars != cat */
-	
-    }
-    
-      G_percent(progress,num_atts,1);
-      
-    } /* END (step through all numerical attributes) */
-    fprintf ( stdout, "\n" );
-    fflush ( stdout );
-
+    }				/* END (step through all numerical attributes) */
+    fprintf(stdout, "\n");
+    fflush(stdout);
 
     db_close_database(Driver);
-    db_shutdown_driver(Driver);	
+    db_shutdown_driver(Driver);
 
     return 1;
 }
@@ -829,17 +849,16 @@ int write_vtk_db_data(FILE * ascii, struct Map_info *Map, VTKInfo * info,
 /* This function writes attribute table fields as VTK labels            **** */
 /* ************************************************************************* */
 int write_vtk_db_labels(FILE * ascii, struct Map_info *Map, VTKInfo * info,
-		       int layer, int *types, int typenum, int dp) {
-
-	return 1;
-
+			int layer, int *types, int typenum, int dp)
+{
+    return 1;
 }
 
 /* ************************************************************************* */
 /* This function writes the point coordinates and the geometric feature **** */
 /* ************************************************************************* */
 int write_vtk(FILE * ascii, struct Map_info *Map, int layer, int *types,
-	     int typenum, int dp, double scale, int numatts, int labels )
+	      int typenum, int dp, double scale, int numatts, int labels)
 {
     VTKInfo *info;
     VTKTypeInfo **typeinfo;
@@ -847,7 +866,6 @@ int write_vtk(FILE * ascii, struct Map_info *Map, int layer, int *types,
     int infonum =
 	GV_POINT + GV_KERNEL + GV_CENTROID + GV_LINE + GV_BOUNDARY + GV_FACE +
 	GV_AREA;
-
 
     /*Initiate the typeinfo structure for every supported type */
     typeinfo = (VTKTypeInfo **) calloc(infonum, sizeof(VTKTypeInfo *));
@@ -884,16 +902,15 @@ int write_vtk(FILE * ascii, struct Map_info *Map, int layer, int *types,
     write_vtk_cat_data(ascii, Map, info, layer, types, typenum, dp);
 
     /*4. write the DB data: numerical attributes */
-    if ( numatts ) {
-    	write_vtk_db_data(ascii, Map, info, layer, types, typenum, dp);
+    if (numatts) {
+	write_vtk_db_data(ascii, Map, info, layer, types, typenum, dp);
     }
-    
+
     /*5. Write labels (not yet supported) 
-    if ( labels ) {
-    	write_vtk_db_labels(ascii, Map, info, layer, types, typenum, dp);
-    }
-    */
-    
+       if ( labels ) {
+       write_vtk_db_labels(ascii, Map, info, layer, types, typenum, dp);
+       }
+     */
 
     /*Release the memory */
     for (i = 0; i < infonum; i++) {
@@ -908,7 +925,8 @@ int write_vtk(FILE * ascii, struct Map_info *Map, int layer, int *types,
 /* ************************************************************************* */
 /* This function writes the point coordinates ****************************** */
 /* ************************************************************************* */
-void write_point_coordinates(struct line_pnts *Points, int dp, double scale, FILE * ascii)
+void write_point_coordinates(struct line_pnts *Points, int dp, double scale,
+			     FILE * ascii)
 {
     char *xstring = NULL, *ystring = NULL, *zstring = NULL;
     double *xptr, *yptr, *zptr;

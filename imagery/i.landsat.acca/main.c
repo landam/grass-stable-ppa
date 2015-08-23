@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 
 #include "local_proto.h"
@@ -51,15 +52,10 @@ int check_raster(char *raster_name)
 {
     RASTER_MAP_TYPE map_type;
     int raster_fd;
-    char *mapset;
     
-    mapset = G_find_cell2(raster_name, "");
-    if (mapset == NULL)
-	G_fatal_error(_("Raster map <%s> not found"), raster_name);
-    
-    if ((raster_fd = G_open_cell_old(raster_name, "")) < 0)
+    if ((raster_fd = Rast_open_old(raster_name, "")) < 0) {
 	G_fatal_error(_("Unable to open raster map <%s>"), raster_name);
-    
+    }
     /* Uncomment to work in full raster map
        if (G_get_cellhd(raster_name, mapset, &cellhd) < 0) {
        G_warning(_("Unable to read header of raster map <%s>"), raster_name);
@@ -70,10 +66,11 @@ int check_raster(char *raster_name)
        return -1;
        }
      */
-    if ((map_type = G_raster_map_type(raster_name, mapset)) != DCELL_TYPE)
+    if ((map_type = Rast_get_map_type(raster_fd)) != DCELL_TYPE) {
 	G_fatal_error(_("Input raster map <%s> is not floating point "
 			"(process DN using i.landsat.toar to radiance first)"), raster_name);
-    
+    }
+
     return raster_fd;
 }
 
@@ -93,6 +90,7 @@ int main(int argc, char *argv[])
     char *in_name, *out_name;
     struct Categories cats;
 
+    CELL cell_shadow = IS_SHADOW, cell_cold_cloud = IS_COLD_CLOUD, cell_warm_cloud = IS_WARM_CLOUD;
     Gfile band[5], out;
 
     char title[1024];
@@ -104,14 +102,14 @@ int main(int argc, char *argv[])
     module = G_define_module();
     module->description =
 	_("Performs Landsat TM/ETM+ Automatic Cloud Cover Assessment (ACCA).");
-    module->keywords = _("imagery, landsat, acca");
+    G_add_keyword(_("imagery"));
+    G_add_keyword(_("Landsat"));
+    G_add_keyword("ACCA");
+    G_add_keyword(_("cloud detection"));
     
-    band_prefix = G_define_option();
-    band_prefix->key = "input_prefix";
+    band_prefix = G_define_standard_option(G_OPT_R_BASENAME_INPUT);
     band_prefix->label = _("Base name of input raster bands");
     band_prefix->description = _("Example: 'B.' for B.1, B.2, ...");
-    band_prefix->type = TYPE_STRING;
-    band_prefix->required = YES;
     
     output = G_define_standard_option(G_OPT_R_OUTPUT);
 
@@ -179,7 +177,7 @@ int main(int argc, char *argv[])
 	sprintf(band[i].name, "%s%d%c", in_name, i + 2,
 		 (i == BAND6 && !sat5->answer ? '1' : '\0'));
 	band[i].fd = check_raster(band[i].name);
-	band[i].rast = G_allocate_raster_buf(DCELL_TYPE);
+	band[i].rast = Rast_allocate_buf(DCELL_TYPE);
     }
 
     out_name = output->answer;
@@ -200,26 +198,29 @@ int main(int argc, char *argv[])
 
     for (i = BAND2; i <= BAND6; i++) {
 	G_free(band[i].rast);
-	G_close_cell(band[i].fd);
+	Rast_close(band[i].fd);
     }
 
     /* write out map title and category labels */
-    G_init_cats((CELL) 0, "", &cats);
+    Rast_init_cats("", &cats);
     sprintf(title, "LANDSAT-%s Automatic Cloud Cover Assessment",
 	    sat5->answer ? "5 TM" : "7 ETM+");
-    G_set_cats_title(title, &cats);
+    Rast_set_cats_title(title, &cats);
 
-    G_set_cat(IS_SHADOW, "Shadow", &cats);
-    G_set_cat(IS_COLD_CLOUD, "Cold cloud", &cats);
-    G_set_cat(IS_WARM_CLOUD, "Warm cloud", &cats);
-    
-    G_write_cats(out.name, &cats);
-    G_free_cats(&cats);
+    Rast_set_c_cat(&cell_shadow, &cell_shadow,
+		   "Shadow", &cats);
+    Rast_set_c_cat(&cell_cold_cloud, &cell_cold_cloud,
+		   "Cold cloud", &cats);
+    Rast_set_c_cat(&cell_warm_cloud, &cell_warm_cloud,
+		   "Warm cloud", &cats);
+
+    Rast_write_cats(out.name, &cats);
+    Rast_free_cats(&cats);
 
     /* write out command line opts */
-    G_short_history(out.name, "raster", &history);
-    G_command_history(&history);
-    G_write_history(out.name, &history);
+    Rast_short_history(out.name, "raster", &history);
+    Rast_command_history(&history);
+    Rast_write_history(out.name, &history);
 
     exit(EXIT_SUCCESS);
 }

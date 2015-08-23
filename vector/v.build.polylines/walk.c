@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include "walk.h"
 
 /* find next line for given line and node 
@@ -96,6 +96,7 @@ int walk_forward_and_pick_up_coords(struct Map_info *map,
     }
     else {
 	cats_tmp = NULL;
+	Vect_reset_cats(Cats);
     }
 
     Vect_reset_line(points);

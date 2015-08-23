@@ -1,3 +1,9 @@
+#include <grass/raster.h>
+
+#include "group.h"
+#include "ps_info.h"
+#include "decorate.h"
+
 /* box.c */
 int box_path(double, double, double, double);
 int box_clip(double, double, double, double);
@@ -5,7 +11,7 @@ int box_fill(double, double, double, double, int);
 int box_draw(double, double, double, double);
 
 /* catval.c */
-#if defined GRASS_VECT_H && defined GRASS_DBMI_H
+#if defined GRASS_VECTOR_H && defined GRASS_DBMI_H
 int load_catval_array_rgb(struct Map_info *, int, dbCatValArray *);
 int load_catval_array_rot(struct Map_info *, int, dbCatValArray *);
 int load_catval_array_size(struct Map_info *, int, dbCatValArray *);
@@ -30,15 +36,14 @@ int do_geogrid(void);
 int do_geogrid_numbers(void);
 
 /* do_header.c */
-int do_map_header(char *);
-int read_header_file(char *);
+int do_map_header(const char *);
+int read_header_file(const char *);
 
 /* do_labels.c */
 int do_labels(int);
 
-#ifdef _STDIO_H
 int do_label(FILE *, int);
-#endif
+
 /* do_masking.c */
 int do_masking(void);
 
@@ -56,7 +61,7 @@ int do_vectors(int);
 int do_vpoints(int);
 
 /* error.c */
-int error(char *, char *, char *);
+int error(const char *, const char *, const char *);
 
 /* fit_map.c */
 int fit_map_to_box(void);
@@ -108,7 +113,7 @@ int multi_lines(char *);
 int o_io_init(void);
 int o_read_row(void *);
 
-#ifdef GRASS_GIS_H
+#ifdef GRASS_RASTER_H
 RASTER_MAP_TYPE o_open_file(char *);
 #endif
 int o_close_file(void);
@@ -168,9 +173,9 @@ int ps_write_mask_row(register CELL *);
 /* ps_vlegend.c */
 int PS_vlegend(void);
 
-#ifdef GRASS_VECT_H
+#ifdef GRASS_VECTOR_H
 /* ps_vpoints.c */
-int PS_vpoints_plot(struct Map_info *, int, int);
+int PS_vpoints_plot(struct Map_info *, int);
 
 /* ps_vlines.c */
 int PS_vlines_plot(struct Map_info *, int, int);
@@ -206,6 +211,9 @@ int read_header(void);
 
 /* r_info.c */
 int read_info(void);
+
+/* r_instructions.c */
+void read_instructions(int, int);
 
 /* r_labels.c */
 int read_labels(char *, char *);
@@ -262,22 +270,21 @@ int add_to_session(int, char *);
 int accept(void);
 int reject(void);
 
-#ifdef _STDIO_H
 int print_session(FILE *);
-#endif
+
 /* show_scale.c */
 int show_scale(void);
 
 /* symbol.c */
 int symbol_draw(char *, double, double, double, double, double);
 
-#ifdef GRASS_SYMB_H
+#ifdef GRASS_SYMBOL_H
 #ifdef PS_COLOR_H
 int symbol_save(SYMBOL *, PSCOLOR *, PSCOLOR *, char *);
 #endif
 #endif
 /* textbox.c */
-int text_box_path(double, double, int, int, char *, int, float);
+int text_box_path(double, double, int, int, char *, float);
 
 /* vector.c */
 void vector_init(void);
@@ -290,9 +297,8 @@ int yesno(char *, char *);
 int eps_bbox(char *, double *, double *, double *, double *);
 int eps_trans(double, double, double, double, double, double, double, double,
 	      double *, double *);
-#ifdef _STDIO_H
+
 int eps_save(FILE *, char *, char *);
-int eps_draw_saved(FILE *, char *, double, double, double, double);
+int eps_draw_saved(char *, double, double, double, double);
 int eps_draw(FILE *, char *, double, double, double, double);
 int pat_save(FILE *, char *, char *);
-#endif

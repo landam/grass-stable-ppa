@@ -13,41 +13,31 @@
 
 /*****************************************************************************/
 
+#include <grass/raster.h>
 #include "param.h"
 
 
 void write_cols(void)
 {
-
-    /*------------------------------------------------------------------------*/
-    /*                            INITIALISE                                  */
-
-    /*------------------------------------------------------------------------*/
-
     struct Colors colours;
+    CELL val1, val2;
+    Rast_init_colors(&colours);
 
-    G_init_colors(&colours);
+    val1 = FLAT;
+    val2 = PIT;
+    Rast_add_c_color_rule(&val1, 180, 180, 180,	/* White      */
+			  &val2, 0, 0, 0, &colours);	/* Black      */
+    val1 = CHANNEL;
+    val2 = PASS;
+    Rast_add_c_color_rule(&val1, 0, 0, 255,	/* Blue       */
+			  &val2, 0, 255, 0, &colours);	/* Green      */
+    val1 = RIDGE;
+    val2 = PEAK;
+    Rast_add_c_color_rule(&val1, 255, 255, 0,	/* Yellow     */
+			  &val2, 255, 0, 0, &colours);	/* Red        */
 
-    /*------------------------------------------------------------------------*/
-    /*                       FILL OUT COLORS STRUCTURE                        */
+    Rast_write_colors(rast_out_name, G_mapset(), &colours);
 
-    /*------------------------------------------------------------------------*/
-
-    G_add_color_rule(FLAT, 180, 180, 180,	/* White      */
-		     PIT, 0, 0, 0, &colours);	/* Black      */
-    G_add_color_rule(CHANNEL, 0, 0, 255,	/* Blue       */
-		     PASS, 0, 255, 0, &colours);	/* Green      */
-    G_add_color_rule(RIDGE, 255, 255, 0,	/* Yellow     */
-		     PEAK, 255, 0, 0, &colours);	/* Red        */
-
-
-    /*------------------------------------------------------------------------*/
-    /*                       WRITE OUT COLORS STRUCTURE                       */
-
-    /*------------------------------------------------------------------------*/
-
-    G_write_colors(rast_out_name, mapset_out, &colours);
-
-    G_free_colors(&colours);
+    Rast_free_colors(&colours);
 
 }

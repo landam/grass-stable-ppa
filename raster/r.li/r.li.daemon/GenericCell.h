@@ -11,7 +11,7 @@
 #define GENERICCELL_H
 
 #include <grass/gis.h>
-#include <grass/glocale.h>
+#include <grass/raster.h>
 
 #define GC_HIGHER 1
 #define GC_EQUAL 2

@@ -4,11 +4,12 @@
  * MODULE:       r.clump
  *
  * AUTHOR(S):    Michael Shapiro - CERL
+ *               Markus Metz
  *
  * PURPOSE:      Recategorizes data in a raster map layer by grouping cells
  *               that form physically discrete areas into unique categories.
  *
- * COPYRIGHT:    (C) 2006 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2006-2014 by the GRASS Development Team
  *
  *               This program is free software under the GNU General Public
  *               License (>=v2). Read the file COPYING that comes with GRASS
@@ -16,241 +17,279 @@
  *
  ***************************************************************************/
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <time.h>
 #include <grass/gis.h>
+#include <grass/raster.h>
 #include <grass/glocale.h>
 #include "local_proto.h"
 
 #define INCR 1024
 
-
-CELL clump(int in_fd, int out_fd)
+CELL clump(int in_fd, int out_fd, int diag, int print)
 {
     register int col;
-    register CELL *prev_clump, *cur_clump;
-    register CELL *index;
     register int n;
-    CELL *prev_in, *cur_in;
-    CELL *temp_cell, *temp_clump, *out_cell;
-    CELL X, UP, LEFT, NEW, OLD;
+    CELL NEW, OLD;
+    CELL *temp_cell, *temp_clump;
+    CELL *prev_in, *cur_in, *out_cell;
+    CELL *prev_clump, *cur_clump;
+    CELL X, LEFT;
+    CELL *index, *renumber;
     CELL label;
     int nrows, ncols;
     int row;
     int len;
-    int pass;
     int nalloc;
     long cur_time;
-    int column;
+    char *cname;
+    int cfd, csize;
+    CELL cat;
 
+    nrows = Rast_window_rows();
+    ncols = Rast_window_cols();
 
-    nrows = G_window_rows();
-    ncols = G_window_cols();
-
-    /* allocate reclump index */
+    /* allocate clump index */
     nalloc = INCR;
     index = (CELL *) G_malloc(nalloc * sizeof(CELL));
     index[0] = 0;
+    renumber = NULL;
 
-    /* allocate CELL buffers one column larger than current window */
-    len = (ncols + 1) * sizeof(CELL);
+    /* allocate CELL buffers two columns larger than current window */
+    len = (ncols + 2) * sizeof(CELL);
     prev_in = (CELL *) G_malloc(len);
     cur_in = (CELL *) G_malloc(len);
     prev_clump = (CELL *) G_malloc(len);
     cur_clump = (CELL *) G_malloc(len);
     out_cell = (CELL *) G_malloc(len);
 
-/******************************** PASS 1 ************************************
- * first pass thru the input simulates the clump to determine
- * the reclumping index.
- * second pass does the clumping for real
- */
+    /* temp file for initial clump IDs */
+    cname = G_tempfile();
+    if ((cfd = open(cname, O_RDWR | O_CREAT | O_EXCL, 0600)) < 0)
+	G_fatal_error(_("Unable to open temp file"));
+    csize = ncols * sizeof(CELL);
+
     time(&cur_time);
-    for (pass = 1; pass <= 2; pass++) {
-	/* second pass must generate a renumbering scheme */
-	if (pass == 2) {
-	    CELL cat, *renumber;
 
-	    renumber = (CELL *) G_malloc((label + 1) * sizeof(CELL));
-	    cat = 1;
-	    for (n = 1; n <= label; n++)
-		renumber[n] = 0;
-	    for (n = 1; n <= label; n++)
-		renumber[index[n]] = 1;
-	    for (n = 1; n <= label; n++)
-		if (renumber[n])
-		    renumber[n] = cat++;
-	    for (n = 1; n <= label; n++)
-		index[n] = renumber[index[n]];
-	    G_free(renumber);
-	}
+    /* fake a previous row which is all NULL */
+    Rast_set_c_null_value(prev_in, ncols + 2);
 
-	/* fake a previous row which is all zero */
-	G_zero(prev_in, len);
-	G_zero(prev_clump, len);
+    /* set left and right edge to NULL */
+    Rast_set_c_null_value(&cur_in[0], 1);
+    Rast_set_c_null_value(&cur_in[ncols + 1], 1);
 
-	/* create a left edge of zero */
-	cur_in[0] = 0;
-	cur_clump[0] = 0;
+    /* initialize clump labels */
+    G_zero(cur_clump, len);
+    G_zero(prev_clump, len);
+    label = 0;
 
-	/* initialize clump labels */
-	label = 0;
+    /****************************************************
+     *                      PASS 1                      *
+     * pass thru the input, create initial clump labels *
+     ****************************************************/
 
-	G_message(_("Pass %d..."), pass);
-	for (row = 0; row < nrows; row++) {
-	    if (G_get_map_row(in_fd, cur_in + 1, row) < 0)
-		G_fatal_error(_("Unable to read raster map row %d "),
-			      row);
-	    
-	    G_percent(row+1, nrows, 2);
-	    X = 0;
-	    for (col = 1; col <= ncols; col++) {
-		LEFT = X;
-		X = cur_in[col];
-		if (X == 0) {	/* don't clump zero data */
-		    cur_clump[col] = 0;
-		    continue;
+    G_message(_("Pass 1 of 2..."));
+    for (row = 0; row < nrows; row++) {
+	Rast_get_c_row(in_fd, cur_in + 1, row);
+
+	G_percent(row, nrows, 2);
+	Rast_set_c_null_value(&X, 1);
+	for (col = 1; col <= ncols; col++) {
+	    LEFT = X;
+	    X = cur_in[col];
+	    if (Rast_is_c_null_value(&X)) {	/* don't clump NULL data */
+		cur_clump[col] = 0;
+		continue;
+	    }
+
+	    /*
+	     * if the cell value is different to the left and above
+	     * (diagonal: and above left and above right)
+	     * then we must start a new clump
+	     *
+	     * this new clump may eventually collide with another
+	     * clump and will have to be merged
+	     */
+
+	    /* try to connect the current cell to an existing clump */
+	    OLD = NEW = 0;
+	    /* same clump as to the left */
+	    if (X == LEFT) {
+		OLD = cur_clump[col] = cur_clump[col - 1];
+	    }
+
+	    if (diag) {
+		/* check above right, center, left, in that order */
+		n = 2;
+		temp_clump = prev_clump + col + 1;
+		temp_cell = prev_in + col + 1;
+		do {
+		    if (X == *temp_cell) {
+			cur_clump[col] = *temp_clump;
+			if (OLD == 0) {
+			    OLD = *temp_clump;
+			    }
+			else {
+			    NEW = *temp_clump;
+			    break;
+			}
+		    }
+		    temp_cell--;
+		    temp_clump--;
+		} while (n-- > 0);
+	    }
+	    else {
+		/* check above */
+		if (X == prev_in[col]) {
+		    temp_clump = prev_clump + col;
+		    cur_clump[col] = *temp_clump;
+		    if (OLD == 0) {
+			OLD = *temp_clump;
+			}
+		    else {
+			NEW = *temp_clump;
+		    }
 		}
+	    }
 
-		UP = prev_in[col];
-
-		/*
-		 * if the cell value is different above and to the left
-		 * then we must start a new clump
-		 *
-		 * this new clump may eventually collide with another
-		 * clump and have to be merged
-		 */
-		if (X != LEFT && X != UP) {	/* start a new clump */
+	    if (NEW == 0 || OLD == NEW) {	/* ok */
+		if (OLD == 0) {
+		    /* start a new clump */
 		    label++;
 		    cur_clump[col] = label;
-		    if (pass == 1) {
-			if (label >= nalloc) {
-			    nalloc += INCR;
-			    index =
-				(CELL *) G_realloc(index,
-						   nalloc * sizeof(CELL));
-			}
-			index[label] = label;
+		    if (label >= nalloc) {
+			nalloc += INCR;
+			index =
+			    (CELL *) G_realloc(index,
+					       nalloc * sizeof(CELL));
 		    }
-		    continue;
+		    index[label] = label;
 		}
-		if (X == LEFT && X != UP) {	/* same clump as to the left */
-		    cur_clump[col] = cur_clump[col - 1];
-		    continue;
-		}
-		if (X == UP && X != LEFT) {	/* same clump as above */
-		    cur_clump[col] = prev_clump[col];
-		    continue;
-		}
-
-		/*
-		 * at this point the cell value X is the same as LEFT and UP
-		 * so it should go into the same clump. It is possible for
-		 * the clump value on the left to differ from the clump value
-		 * above. If this happens we have a conflict and one of the
-		 * LEFT or UP needs to be reclumped
-		 */
-		if (cur_clump[col - 1] == prev_clump[col]) {	/* ok */
-		    cur_clump[col] = prev_clump[col];
-		    continue;
-		}
-
-		/* conflict! preserve the clump from above and change the left.
-		 * Must also go back to the left in the current row and to the right
-		 * in the previous row to change all the clump values as well.
-		 *
-		 */
-
-		NEW = prev_clump[col];
-		OLD = cur_clump[col - 1];
-		cur_clump[col] = NEW;
-
-		/* to left
-		   for (n = 1; n < col; n++)
-		   if (cur_clump[n] == OLD)
-		   cur_clump[n] = NEW;
-		 */
-
-		temp_cell = cur_clump++;
-		n = col - 1;
-		while (n-- > 0)
-		    if (*cur_clump == OLD)
-			*cur_clump++ = NEW;
-		    else
-			cur_clump++;
-		cur_clump = temp_cell;
-
-		/* to right
-		   for (n = col+1; n <= ncols; n++)
-		   if (prev_clump[n] == OLD)
-		   prev_clump[n] = NEW;
-		 */
-
-		temp_cell = prev_clump;
-		prev_clump += col + 1;
-		n = ncols - col;
-		while (n-- > 0)
-		    if (*prev_clump == OLD)
-			*prev_clump++ = NEW;
-		    else
-			prev_clump++;
-		prev_clump = temp_cell;
-
-		/* modify the indexes
-		   if (pass == 1)
-		   for (n = 1; n <= label; n++)
-		   if (index[n] == OLD)
-		   index[n] = NEW;
-		 */
-
-		if (pass == 1) {
-		    temp_cell = index++;
-		    n = label;
-		    while (n-- > 0)
-			if (*index == OLD)
-			    *index++ = NEW;
-			else
-			    index++;
-		    index = temp_cell;
-		}
+		continue;
 	    }
 
-	    if (pass == 2) {
-		/*
-		   for (col = 1; col <= ncols; col++)
-		   out_cell[col] = index[cur_clump[col]];
+	    /* conflict! preserve NEW clump ID and change OLD clump ID.
+	     * Must go back to the left in the current row and to the right
+	     * in the previous row to change all the clump values as well.
+	     */
 
-		   if (G_put_raster_row (out_fd, out_cell+1, CELL_TYPE) < 0)
-		   G_fatal_error (_("Unable to properly write output raster map"));
-		 */
-		col = ncols;
-		temp_clump = cur_clump + 1;	/* skip left edge */
-		temp_cell = out_cell;
-
-		while (col-- > 0)
-		    *temp_cell++ = index[*temp_clump++];
-
-		for (column = 0; column < ncols; column++) {
-		    if (out_cell[column] == 0)
-			G_set_null_value(&out_cell[column], 1, CELL_TYPE);
-		}
-		if (G_put_raster_row(out_fd, out_cell, CELL_TYPE) < 0)
-		    G_fatal_error(_("Failed writing raster map row %d"),
-				  row);
-	    }
-
-	    /* switch the buffers so that the current buffer becomes the previous */
-	    temp_cell = cur_in;
-	    cur_in = prev_in;
-	    prev_in = temp_cell;
-
+	    /* left of the current row from 1 to col - 1 */
 	    temp_clump = cur_clump;
-	    cur_clump = prev_clump;
-	    prev_clump = temp_clump;
+	    n = col - 1;
+	    while (n-- > 0) {
+		temp_clump++;	/* skip left edge */
+		if (*temp_clump == OLD)
+		    *temp_clump = NEW;
+	    }
+
+	    /* right of previous row from col + 1 to ncols */
+	    temp_clump = prev_clump;
+	    temp_clump += col;
+	    n = ncols - col;
+	    while (n-- > 0) {
+		temp_clump++;	/* skip col */
+		if (*temp_clump == OLD)
+		    *temp_clump = NEW;
+	    }
+
+	    /* modify the OLD index */
+	    index[OLD] = NEW;
 	}
 
-	print_time(&cur_time);
+	/* write initial clump IDs */
+	/* this works also with writing out cur_clump, but only 
+	 * prev_clump is complete and will not change any more */
+	if (row > 0) {
+	    if (write(cfd, prev_clump + 1, csize) != csize)
+		G_fatal_error(_("Unable to write to temp file"));
+	}
+
+	/* switch the buffers so that the current buffer becomes the previous */
+	temp_cell = cur_in;
+	cur_in = prev_in;
+	prev_in = temp_cell;
+
+	temp_clump = cur_clump;
+	cur_clump = prev_clump;
+	prev_clump = temp_clump;
     }
+    /* write last row with initial clump IDs */
+    if (write(cfd, prev_clump + 1, csize) != csize)
+	G_fatal_error(_("Unable to write to temp file"));
+    G_percent(1, 1, 1);
+
+    /* generate a renumbering scheme */
+    G_message(_("Generating renumbering scheme..."));
+    G_debug(1, "%d initial labels", label);
+    /* allocate final clump ID */
+    renumber = (CELL *) G_malloc((label + 1) * sizeof(CELL));
+    renumber[0] = 0;
+    cat = 1;
+    G_percent(0, label, 1);
+    for (n = 1; n <= label; n++) {
+	G_percent(n, label, 1);
+	OLD = n;
+	NEW = index[n];
+	if (OLD != NEW) {
+	    renumber[n] = 0;
+	    /* find valid clump ID */
+	    while (OLD != NEW) {
+		OLD = NEW;
+		NEW = index[OLD];
+	    }
+	    index[n] = NEW;
+	}
+	else
+	    /* set final clump id */
+	    renumber[n] = cat++;
+    }
+    
+    /* rewind temp file */
+    lseek(cfd, 0, SEEK_SET);
+
+    if (print) {
+	fprintf(stdout, "clumps=%d\n", cat - 1);
+    }
+    else {
+	/****************************************************
+	 *                      PASS 2                      *
+	 * apply renumbering scheme to initial clump labels *
+	 ****************************************************/
+
+	/* the input raster is no longer needed, 
+	 * using instead the temp file with initial clump labels */
+
+	G_message(_("Pass 2 of 2..."));
+	for (row = 0; row < nrows; row++) {
+
+	    G_percent(row, nrows, 2);
+	
+	    if (read(cfd, cur_clump, csize) != csize)
+		G_fatal_error(_("Unable to read from temp file"));
+
+	    temp_clump = cur_clump;
+	    temp_cell = out_cell;
+
+	    for (col = 0; col < ncols; col++) {
+		*temp_cell = renumber[index[*temp_clump]];
+		if (*temp_cell == 0)
+		    Rast_set_c_null_value(temp_cell, 1);
+		temp_clump++;
+		temp_cell++;
+	    }
+	    Rast_put_row(out_fd, out_cell, CELL_TYPE);
+	}
+	G_percent(1, 1, 1);
+    }
+
+    close(cfd);
+    unlink(cname);
+
+    print_time(&cur_time);
+
     return 0;
 }
 

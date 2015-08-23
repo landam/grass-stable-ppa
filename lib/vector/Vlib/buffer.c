@@ -1,11 +1,13 @@
 /*!
-   \file buffer.c
+   \file lib/vector/Vlib/buffer.c
 
    \brief Vector library - nearest, adjust, parallel lines
 
    Higher level functions for reading/writing/manipulating vectors.
 
-   (C) 2001-2008 by the GRASS Development Team
+   See buffer2.c for replacement.
+
+   (C) 2001-2009 by the GRASS Development Team
 
    This program is free software under the 
    GNU General Public License (>=v2). 
@@ -13,14 +15,11 @@
    for details.
 
    \author Radim Blazek
-
-   \date 2001-2008
  */
 
 #include <stdlib.h>
 #include <math.h>
-#include <grass/Vect.h>
-#include <grass/gis.h>
+#include <grass/vector.h>
 
 #define LENGTH(DX, DY)  (  sqrt( (DX*DX)+(DY*DY) )  )
 #define PI M_PI
@@ -53,7 +52,7 @@ static void vect(double x1, double y1, double x2, double y2, double *x,
 static int find_cross(struct line_pnts *Points, int s1, int s2, int s3,
 		      int s4, int *s5, int *s6)
 {
-    int i, j, np, ret;
+    int i, j, ret;
     double *x, *y;
 
     G_debug(5,
@@ -62,8 +61,7 @@ static int find_cross(struct line_pnts *Points, int s1, int s2, int s3,
 
     x = Points->x;
     y = Points->y;
-    np = Points->n_points;
-
+    
     for (i = s1; i <= s2; i++) {
 	for (j = s3; j <= s4; j++) {
 	    if (j == i) {
@@ -342,6 +340,8 @@ static void parallel_line(struct line_pnts *Points, double d, double tol,
 /*!
    \brief Create parrallel line
 
+   This function is replaced by Vect_line_parallel2().
+
    \param InPoints input line
    \param distance create parrallel line in distance
    \param tolerance maximum distance between theoretical arc and polygon segments
@@ -368,8 +368,10 @@ Vect_line_parallel(struct line_pnts *InPoints, double distance,
 /*!
    \brief Create buffer around the line line.
 
-   Buffer is closed counter clockwise polygon.
-   Warning: output line may contain loops!
+   This function is replaced by Vect_line_buffer().
+
+   Buffer is closed counter clockwise polygon. Warning: output line
+   may contain loops!
 
    \param InPoints input line
    \param distance create buffer in distance
@@ -377,7 +379,7 @@ Vect_line_parallel(struct line_pnts *InPoints, double distance,
    \param[out] OutPoints output line
  */
 void
-Vect_line_buffer(struct line_pnts *InPoints, double distance,
+Vect_line_buffer(const struct line_pnts *InPoints, double distance,
 		 double tolerance, struct line_pnts *OutPoints)
 {
     double dangle;

@@ -30,12 +30,12 @@
 #include <time.h>
 #include <math.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
 #include "../lib/lrs.h"
 
-# define PI    3.1415926535897932384626433832795029L
+#define PI M_PI
 
 typedef struct
 {
@@ -78,8 +78,8 @@ int main(int argc, char **argv)
     struct Option *Opaque;
 
     struct GModule *module;
-    char *mapset, buf[2000];
-    const char *drv, *db;
+    const char *mapset;
+    char buf[2000];
     struct Map_info In, Out;
     struct line_cats *LCats, *SCats;
     struct line_pnts *LPoints, *SPoints;
@@ -99,9 +99,11 @@ int main(int argc, char **argv)
     G_gisinit(argv[0]);
 
     module = G_define_module();
-    module->keywords = _("vector, LRS, networking");
+    G_add_keyword(_("vector"));
+    G_add_keyword(_("Linear Reference System"));
+    G_add_keyword(_("network"));
     module->description = _("Creates stationing from input lines, "
-			    "and linear reference system");
+			    "and linear reference system.");
 
     in_opt = G_define_standard_option(G_OPT_V_INPUT);
     in_opt->description = _("Input vector map containing lines");
@@ -120,16 +122,15 @@ int main(int argc, char **argv)
     driver_opt->type = TYPE_STRING;
     driver_opt->required = NO;
     driver_opt->description = _("Driver name for reference system table");
-    if ((drv = db_get_default_driver_name()))
-	driver_opt->answer = drv;
+    driver_opt->options = db_list_drivers();
+    driver_opt->answer = db_get_default_driver_name();
 
     database_opt = G_define_option();
     database_opt->key = "rsdatabase";
     database_opt->type = TYPE_STRING;
     database_opt->required = NO;
     database_opt->description = _("Database name for reference system table");
-    if ((db = db_get_default_database_name()))
-	database_opt->answer = db;
+    database_opt->answer = db_get_default_database_name();
 
     table_opt = G_define_option();
     table_opt->key = "rstable";
@@ -188,14 +189,8 @@ int main(int argc, char **argv)
     Size->answer = "100";
     Size->options = "1-1000";
 
-    Color = G_define_option();
-    Color->key = "color";
-    Color->description = _("Text color");
-    Color->type = TYPE_STRING;
-    Color->answer = "black";
-    Color->options =
-	"aqua,black,blue,brown,cyan,gray,green,grey,indigo,magenta,"
-	"orange,purple,red,violet,white,yellow";
+    Color = G_define_standard_option(G_OPT_C);
+    Color->label = _("Text color");
 
     Width = G_define_option();
     Width->key = "width";
@@ -205,41 +200,28 @@ int main(int argc, char **argv)
     Width->answer = "1";
     Width->options = "1-100";
 
-    Hcolor = G_define_option();
-    Hcolor->key = "hcolor";
+    Hcolor = G_define_standard_option(G_OPT_CN);
+    Hcolor->key = "highlight_color";
     Hcolor->label = _("Highlight color for text");
-    Hcolor->description = _("Only for d.label output");
-    Hcolor->type = TYPE_STRING;
     Hcolor->answer = "none";
-    Hcolor->options =
-	"none,aqua,black,blue,brown,cyan,gray,green,grey,indigo,magenta,"
-	"orange,purple,red,violet,white,yellow";
 
     Hwidth = G_define_option();
-    Hwidth->key = "hwidth";
+    Hwidth->key = "highlight_width";
     Hwidth->label = _("Line width of highlight color");
     Hwidth->description = _("Only for d.label output");
     Hwidth->type = TYPE_INTEGER;
     Hwidth->answer = "0";
     Hwidth->options = "0-100";
 
-    Bcolor = G_define_option();
-    Bcolor->key = "background";
-    Bcolor->description = _("Background color");
-    Bcolor->type = TYPE_STRING;
+    Bcolor = G_define_standard_option(G_OPT_CN);
+    Bcolor->key = "bgcolor";
+    Bcolor->label = _("Background color");
     Bcolor->answer = "none";
-    Bcolor->options =
-	"none,aqua,black,blue,brown,cyan,gray,green,grey,indigo,magenta,"
-	"orange,purple,red,violet,white,yellow";
 
-    Border = G_define_option();
+    Border = G_define_standard_option(G_OPT_CN);
     Border->key = "border";
-    Border->description = _("Border color");
-    Border->type = TYPE_STRING;
+    Border->label = _("Border color");
     Border->answer = "none";
-    Border->options =
-	"none,aqua,black,blue,brown,cyan,gray,green,grey,indigo,magenta,"
-	"orange,purple,red,violet,white,yellow";
 
     Opaque = G_define_option();
     Opaque->key = "opaque";
@@ -286,10 +268,12 @@ int main(int argc, char **argv)
 	G_fatal_error(_("Vector map <%s> not found"), in_opt->answer);
 
     Vect_set_open_level(2);
-    Vect_open_old(&In, in_opt->answer, mapset);
+    if (Vect_open_old(&In, in_opt->answer, mapset) < 0)
+	G_fatal_error(_("Unable to open vector map <%s>"), in_opt->answer);
 
     /* Open output segments */
-    Vect_open_new(&Out, out_opt->answer, Vect_is_3d(&In));
+    if (Vect_open_new(&Out, out_opt->answer, Vect_is_3d(&In)) < 0)
+	G_fatal_error(_("Unable to create vector map <%s>"), out_opt->answer);
 
     /* open labels */
     labels = NULL;
@@ -318,7 +302,7 @@ int main(int argc, char **argv)
     nlines = Vect_get_num_lines(&In);
     /* for ( line = 19; line <= 19; line++ ) { */
     for (line = 1; line <= nlines; line++) {
-	G_debug(0, "  line = %d / %d", line, nlines);
+	G_debug(3, "  line = %d / %d", line, nlines);
 	type = Vect_read_line(&In, LPoints, LCats, line);
 	if (!(type & GV_LINE))
 	    continue;
@@ -390,7 +374,7 @@ int main(int argc, char **argv)
 	    nrseg++;
 	}
 
-	G_debug(0, "    %d reference segments selected", nrseg);
+	G_debug(3, "    %d reference segments selected", nrseg);
 	if (nrseg == 0)
 	    continue;
 
@@ -513,6 +497,11 @@ int main(int argc, char **argv)
     }
 
     db_close_database(rsdriver);
+
+    Vect_copy_head_data(&In, &Out);
+    Vect_hist_copy(&In, &Out);
+    Vect_hist_command(&Out);
+
     Vect_build(&Out);
 
     /* Free, close ... */

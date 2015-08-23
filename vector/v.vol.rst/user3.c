@@ -25,24 +25,25 @@
  *               for details.
  *
  *****************************************************************************/
-
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <math.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <grass/gis.h>
-#include <grass/Vect.h>
+#include <grass/raster.h>
+#include <grass/vector.h>
 #include <grass/dbmi.h>
+#include <grass/glocale.h>
 
-#include <grass/site.h>
 #include "oct.h"
 #include "surf.h"
 #include "dataoct.h"
 #include "userextern.h"
 #include "userglobs.h"
 #include "user.h"
-#include <grass/G3d.h>
+#include <grass/raster3d.h>
 #include "points.h"
 #include <grass/bitmap.h>
 
@@ -246,7 +247,7 @@ COGRR1(double x_or, double y_or, double z_or, int n_rows, int n_cols,
     int POINT();
     int ind, ind1;
     static int first_time_z = 1;
-    int offset, offset1, offset2;
+    off_t offset, offset1, offset2;
     int bmask = 1;
     static FCELL *cell = NULL;
 
@@ -267,20 +268,26 @@ COGRR1(double x_or, double y_or, double z_or, int n_rows, int n_cols,
     stepiz = tb_res / dnorm;
 
     if (!w2) {
-	if (!(w2 = (double *)G_malloc(sizeof(double) * (KMAX2 + 1))))
-	    clean_fatal_error("Cannot allocate w2");
+	if (!(w2 = (double *)G_malloc(sizeof(double) * (KMAX2 + 1)))) {
+	    clean();
+	    G_fatal_error(_("Not enough memory for %s"), "w2");
+	}
     }
     if (!wz2) {
-	if (!(wz2 = (double *)G_malloc(sizeof(double) * (KMAX2 + 1))))
-	    clean_fatal_error("Cannot allocate wz2");
+	if (!(wz2 = (double *)G_malloc(sizeof(double) * (KMAX2 + 1)))) {
+	    clean();
+	    G_fatal_error(_("Not enough memory for %s"), "wz2");
+	}
     }
     if (!wz1) {
-	if (!(wz1 = (double *)G_malloc(sizeof(double) * (KMAX2 + 1))))
-	    clean_fatal_error("Cannot allocate wz1");
+	if (!(wz1 = (double *)G_malloc(sizeof(double) * (KMAX2 + 1)))) {
+	    clean();
+	    G_fatal_error(_("Not enough memory for %s"), "wz1");
+	}
     }
 
     if (cell == NULL)
-	cell = G_allocate_f_raster_buf();
+	cell = Rast_allocate_f_buf();
 
     for (i = 1; i <= n_points; i++) {
 	points[i - 1].x = (points[i - 1].x - x_or) / dnorm;
@@ -417,11 +424,9 @@ COGRR1(double x_or, double y_or, double z_or, int n_rows, int n_cols,
 		    w[m] = wm;
 		    w2[m] = wm * wm;
 		}
-		if ((cellinp != NULL) && (cellout != NULL) && (i == ngstl)) {
-		    if (G_get_f_raster_row(fdcell, cell, n_rows_in - k) < 0)	/* fix by JH 04/24/02 */
-			G_fatal_error
-			    ("Could not get row (eventually WIND3 does not match WIND)");
-		}
+		if ((cellinp != NULL) && (cellout != NULL) && (i == ngstl))
+		    Rast_get_f_row(fdcell, cell, n_rows_in - k);
+
 		for (l = ngstc; l <= nszc; l++) {
 		    LSIZE = LSIZE + 1;
 		    if (maskmap != NULL)
@@ -438,7 +443,9 @@ COGRR1(double x_or, double y_or, double z_or, int n_rows, int n_cols,
 		    dyy = 0.;
 		    dyz = 0.;
 		    dzz = 0.;
-		    if (bmask == 1) {	/* compute everything for area which is not masked out */
+		    /* compute everything for area which is not masked out
+		       and where cross_input map doesn't have nulls */
+		    if (bmask == 1 && !(cell && Rast_is_f_null_value(&cell[l - 1]))) {
 			h = b[n1];
 			hcell = b[n1];
 			for (m = 1; m <= n_points; m++) {
@@ -537,8 +544,10 @@ COGRR1(double x_or, double y_or, double z_or, int n_rows, int n_cols,
 			(aspect2 != NULL)
 			|| (ncurv != NULL) || (gcurv != NULL) ||
 			(mcurv != NULL))
-			if (!(secpar_loop(ngstc, nszc, l)))
-			    clean_fatal_error("Secpar_loop failed");
+			if (!(secpar_loop(ngstc, nszc, l))) {
+			    clean();
+			    G_fatal_error(_("Secpar_loop failed"));
+			}
 		    if ((cellinp != NULL) && (cellout != NULL) &&
 			(i == ngstl)) {
 			zero_array_cell[l - 1] = (FCELL) (wwcell);
@@ -570,92 +579,92 @@ COGRR1(double x_or, double y_or, double z_or, int n_rows, int n_cols,
 		offset2 = offset + ind;	/* rows*cols offset */
 
 		if ((cellinp != NULL) && (cellout != NULL) && (i == ngstl)) {
-		    if (fseek(Tmp_fd_cell, (long)(ind * sizeof(FCELL)), 0) ==
-			-1)
-			return 0;
+		    G_fseek(Tmp_fd_cell, ((off_t)ind * sizeof(FCELL)), 0);
 		    if (!
 			(fwrite
 			 (zero_array_cell + ind1, sizeof(FCELL),
-			  nszc - ngstc + 1, Tmp_fd_cell)))
-			clean_fatal_error
-			    ("Not enough disk space--cannot write files");
+			  nszc - ngstc + 1, Tmp_fd_cell))) {
+			clean();
+			G_fatal_error
+			    (_("Not enough disk space--cannot write files"));
+		    }
 		}
 		if (outz != NULL) {
-		    if (fseek(Tmp_fd_z, (long)(offset2 * sizeof(float)), 0) ==
-			-1)
-			return 0;
+		    G_fseek(Tmp_fd_z, (off_t)(offset2 * sizeof(float)), 0);
 		    if (!
 			(fwrite
 			 (zero_array1 + ind1, sizeof(float), nszc - ngstc + 1,
-			  Tmp_fd_z)))
-			clean_fatal_error
-			    ("Not enough disk space--cannot write files");
+			  Tmp_fd_z))) {
+			clean();
+			G_fatal_error
+			    (_("Not enough disk space--cannot write files"));
+		    }
 		}
 		if (gradient != NULL) {
-		    if (fseek(Tmp_fd_dx, (long)(offset2 * sizeof(float)), 0)
-			== -1)
-			return 0;
+		    G_fseek(Tmp_fd_dx, (off_t)(offset2 * sizeof(float)), 0);
 		    if (!
 			(fwrite
 			 (zero_array2 + ind1, sizeof(float), nszc - ngstc + 1,
-			  Tmp_fd_dx)))
-			clean_fatal_error
-			    ("Not enough disk space--cannot write files");
+			  Tmp_fd_dx))) {
+			clean();
+			G_fatal_error
+			    (_("Not enough disk space--cannot write files"));
+		    }
 		}
 		if (aspect1 != NULL) {
-		    if (fseek(Tmp_fd_dy, (long)(offset2 * sizeof(float)), 0)
-			== -1)
-			return 0;
+		    G_fseek(Tmp_fd_dy, (off_t)(offset2 * sizeof(float)), 0);
 		    if (!
 			(fwrite
 			 (zero_array3 + ind1, sizeof(float), nszc - ngstc + 1,
-			  Tmp_fd_dy)))
-			clean_fatal_error
-			    ("Not enough disk space--cannot write files");
+			  Tmp_fd_dy))) {
+			clean();
+			G_fatal_error
+			    (_("Not enough disk space--cannot write files"));
+		    }
 		}
 		if (aspect2 != NULL) {
-		    if (fseek(Tmp_fd_dz, (long)(offset2 * sizeof(float)), 0)
-			== -1)
-			return 0;
+		    G_fseek(Tmp_fd_dz, (off_t)(offset2 * sizeof(float)), 0);
 		    if (!
 			(fwrite
 			 (zero_array4 + ind1, sizeof(float), nszc - ngstc + 1,
-			  Tmp_fd_dz)))
-			clean_fatal_error
-			    ("Not enough disk space--cannot write files");
+			  Tmp_fd_dz))) {
+			clean();
+			G_fatal_error
+			    (_("Not enough disk space--cannot write files"));
+		    }
 		}
 		if (ncurv != NULL) {
-		    if (fseek(Tmp_fd_xx, (long)(offset2 * sizeof(float)), 0)
-			== -1)
-			return 0;
+		    G_fseek(Tmp_fd_xx, (off_t)(offset2 * sizeof(float)), 0);
 		    if (!
 			(fwrite
 			 (zero_array5 + ind1, sizeof(float), nszc - ngstc + 1,
-			  Tmp_fd_xx)))
-			clean_fatal_error
-			    ("Not enough disk space--cannot write files");
+			  Tmp_fd_xx))) {
+			clean();
+			G_fatal_error
+			    (_("Not enough disk space--cannot write files"));
+		    }
 		}
 		if (gcurv != NULL) {
-		    if (fseek(Tmp_fd_yy, (long)(offset2 * sizeof(float)), 0)
-			== -1)
-			return 0;
+		    G_fseek(Tmp_fd_yy, (off_t)(offset2 * sizeof(float)), 0);
 		    if (!
 			(fwrite
 			 (zero_array6 + ind1, sizeof(float), nszc - ngstc + 1,
-			  Tmp_fd_yy)))
-			clean_fatal_error
-			    ("Not enough disk space--cannot write files");
+			  Tmp_fd_yy))) {
+			clean();
+			G_fatal_error
+			    (_("Not enough disk space--cannot write files"));
+		    }
 		}
 		if (mcurv != NULL) {
-		    if (fseek(Tmp_fd_xy, (long)(offset2 * sizeof(float)), 0)
-			== -1)
-			return 0;
+		    G_fseek(Tmp_fd_xy, (off_t)(offset2 * sizeof(float)), 0);
 		    if (!
 			(fwrite
 			 (zero_array7 + ind1, sizeof(float), nszc - ngstc + 1,
-			  Tmp_fd_xy)))
-			clean_fatal_error
-			    ("Not enough disk space--cannot write files");
+			  Tmp_fd_xy))) {
+			clean();
+			G_fatal_error
+			    (_("Not enough disk space--cannot write files"));
+		    }
 		}
 
 	    }
@@ -680,10 +689,7 @@ int POINT(int n_points, struct quadruple *points, struct point_3d skip_point)
     double errmax, h, xx, yy, r2, hz, zz, ww, err, xmm, ymm,
 	zmm, wmm, r, etar;
     int n1, mm, m, mmax, inside;
-    Site *site;
 
-    if ((site = G_site_new_struct(-1, 3, 0, 1)) == NULL)
-	G_fatal_error("Memory error for site struct");
     errmax = .0;
     n1 = n_points + 1;
     if (!cv) {

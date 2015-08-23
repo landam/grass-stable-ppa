@@ -2,10 +2,12 @@ MODULE_TOPDIR = ../..
 
 PGM = d.graph
 
-LIBES     = $(SYMBLIB) $(DISPLAYLIB) $(RASTERLIB) $(GISLIB)
-DEPENDENCIES= $(SYMBDEP) $(DISPLAYDEP) $(RASTERDEP) $(GISDEP)
+LIBES = $(DISPLAYLIB) $(SYMBLIB) $(GISLIB)
+DEPENDENCIES = $(DISPLAYDEP) $(SYMBDEP) $(GISDEP)
 
 include $(MODULE_TOPDIR)/include/Make/Module.make
 
-default: cmd
-	$(INSTALL_DATA) grass_logo.txt $(GISBASE)/docs/html
+default: cmd $(HTMLDIR)/grass_logo.txt
+
+$(HTMLDIR)/%.txt: %.txt
+	$(INSTALL_DATA) $< $@

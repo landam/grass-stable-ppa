@@ -1,16 +1,14 @@
 MODULE_TOPDIR = ..
 
-SUBDIRS = timer mkftcap
+SUBDIRS = timer g.html2man
 
 include $(MODULE_TOPDIR)/include/Make/Dir.make
+include $(MODULE_TOPDIR)/include/Make/Compile.make
 
-default: parsubdirs $(TOOLSDIR)/g.echo$(EXE)
+default: parsubdirs $(TOOLSDIR)/mkhtml.py $(TOOLSDIR)/g.echo$(EXE)
 
-clean: cleansubdirs
+$(TOOLSDIR)/mkhtml.py: mkhtml.py
+	$(INSTALL) $< $@
 
 $(TOOLSDIR)/g.echo$(EXE): $(OBJDIR)/g.echo.o
-	$(MAKE) $(TOOLSDIR)
-	$(CC) $(LDFLAGS) $(OBJDIR)/g.echo.o -o $@
-
-$(TOOLSDIR):
-	$(MKDIR) $@
+	$(call linker_base,$(LINK),$(LDFLAGS) $(EXTRA_LDFLAGS),$(MANIFEST_OBJ))

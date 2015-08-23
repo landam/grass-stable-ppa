@@ -1,11 +1,11 @@
 #include <grass/gis.h>
 #include <unistd.h>
 #include <grass/segment.h>
-#include "cseg.h"
+#include "Gwater.h"
 
 int cseg_close(CSEG * cseg)
 {
-    segment_release(&(cseg->seg));
+    Segment_release(&(cseg->seg));
     close(cseg->fd);
     unlink(cseg->filename);
     if (cseg->name) {

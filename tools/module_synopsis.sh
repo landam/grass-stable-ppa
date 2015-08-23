@@ -14,6 +14,8 @@
 #############################################################################
 #
 # PDF output requires the Palatino font.
+# Run this script from the tools/ directory in the souce code.
+#   (TeX needs to be able to find grasslogo_vector.pdf)
 #
 
 if  [ -z "$GISBASE" ] ; then
@@ -56,6 +58,47 @@ OLDDIR="`pwd`"
 cd "$GISBASE"
 
 
+### generate menu hierarchy
+
+#### fixme: no longer exists
+MDPY="$GISBASE/etc/wxpython/gui_modules/menudata.py"
+
+# python menudata.py commands
+# python menudata.py tree
+# python menudata.py strings
+python "$MDPY" commands | sed -e 's/ | /|/' -e 's/[ -].*|/|/' \
+  | sort -u > "$TMP.menu_hierarchy"
+
+# for running with GRASS 6.4 after generating with GRASS 6.5.
+#\cp "$TMP.menu_hierarchy" "$GISBASE/etc/gui/menu_hierarchy.txt"
+#\cp "$GISBASE/etc/gui/menu_hierarchy.txt" "$TMP.menu_hierarchy"
+
+### given a module name return where it is in the menu tree
+find_menu_hierarchy()
+{
+  MODL=$1
+
+  # unwrap wrapper scripts
+  if [ "$MODL" = "g.gui" ] ; then
+    MODL="g.change.gui.py"
+  elif  [ "$MODL" = "v.type" ] ; then
+    MODL="v.type_wrapper.py"
+  fi
+
+  PLACEMENT=`grep "^$MODL|" "$TMP.menu_hierarchy" | cut -f2 -d'|' | head -n 1`
+
+  # combine some modules which are listed twice
+  if [ "$MODL" = "g.region" ] ; then
+      PLACEMENT=`echo "$PLACEMENT" | sed -e 's/Display/Set or Display/'`
+  elif  [ "$MODL" = "r.reclass" ] || [ "$MODL" = "v.reclass" ] ; then
+      PLACEMENT=`echo "$PLACEMENT" | sed -e 's/Reclassify.*$/Reclassify/'`
+  fi
+
+  echo "$PLACEMENT"
+}
+
+
+### execute the loop for all modules
 for DIR in bin scripts ; do
   cd $DIR
 
@@ -65,20 +108,32 @@ for DIR in bin scripts ; do
 #    echo "[$MODULE]"
 
     case "$MODULE" in
-      g.parser | r.mapcalc | r3.mapcalc | mkftcap | p.out.vrml| d.paint.labels | r.cats)
+      g.parser | "r3.*" | g.module_to_skip)
 	continue
 	;;
     esac
 
-    eval `$MODULE --tcltk | head -n 3 | tail -n 2 |  tr '"' "'" | \
-        sed -e 's/^ //' -e 's/ {/="/' -e 's/}$/"/'`
+    eval `$MODULE --interface-description | head -n 5 | tail -n 1 | \
+        tr '"' "'" | sed -e 's/^[ \t]./desc="/' -e 's/$/"/' -e 's/[^\."]"$/&./'`
+
     if [ -z "$label" ] && [ -z "$desc" ] ; then
 	continue
     fi
+
+    MODULE_MENU_LOC=`find_menu_hierarchy "$MODULE"`
+
+    BUFF=""
     if [ -z "$label" ] ; then
-	echo "$MODULE: $desc" >> "$TMP"
+	BUFF="$MODULE: $desc"
     else
-	echo "$MODULE: $label" >> "$TMP"
+	BUFF="$MODULE: $label"
+    fi
+    if [ -n "$MODULE_MENU_LOC" ] ; then
+        BUFF="$BUFF {$MODULE_MENU_LOC}"
+    fi
+    if [ -n "$BUFF" ] ; then
+       #echo "$BUFF"
+       echo "$BUFF" >> "$TMP"
     fi
   done
 
@@ -90,15 +145,27 @@ for MODULE in ps.map ; do
     unset label
     unset desc
 
-    eval `$MODULE --tcltk | head -n 3 | tail -n 2 |  tr '"' "'" | \
-	sed -e 's/^ //' -e 's/ {/="/' -e 's/}$/"/'`
+    eval `$MODULE --interface-description | head -n 5 | tail -n 1 | \
+        tr '"' "'" | sed -e 's/^[ \t]./desc="/' -e 's/$/"/' -e 's/[^\."]"$/&./'`
+
     if [ -z "$label" ] && [ -z "$desc" ] ; then
 	continue
     fi
+
+    MODULE_MENU_LOC=`find_menu_hierarchy "$MODULE"`
+
+    BUFF=""
     if [ -z "$label" ] ; then
-	echo "$MODULE: $desc" >> "$TMP"
+	BUFF="$MODULE: $desc"
     else
-	echo "$MODULE: $label" >> "$TMP"
+	BUFF="$MODULE: $label"
+    fi
+    if [ -n "$MODULE_MENU_LOC" ] ; then
+        BUFF="$BUFF {$MODULE_MENU_LOC}"
+    fi
+    if [ -n "$BUFF" ] ; then
+       #echo "$BUFF"
+       echo "$BUFF" >> "$TMP"
     fi
 done
 
@@ -106,15 +173,13 @@ done
 # these don't use the parser at all.
 cat << EOF >> "$TMP"
 g.parser: Full parser support for GRASS scripts.
-r.mapcalc: Performs arithmetic on raster map layers.
-r3.mapcalc: Performs arithmetic on 3D grid volume data.
-i.photo.2image: Marks fiducial or reseau points on an image to be ortho-rectified and then computes the image-to-photo coordinate transformation parameters.
-i.photo.2target: Create control points on an image to be ortho-rectified.
-i.photo.camera: Creates or modifies entries in a camera reference file.
-i.photo.elev: Selects target elevation model for ortho-rectification.
-i.photo.init: Creates or modifies entries in a camera initial exposure station file for imagery group referenced by a sub-block.
-i.photo.rectify: Rectifies an image by using the image to photo coordinate transformation matrix created by i.photo.2image and the rectification parameters created by i.photo.2target.
-i.photo.target: Selects target location and mapset for ortho-rectification.
+photo.2image: Marks fiducial or reseau points on an image to be ortho-rectified and then computes the image-to-photo coordinate transformation parameters.
+photo.2target: Create control points on an image to be ortho-rectified.
+photo.camera: Creates or modifies entries in a camera reference file.
+photo.elev: Selects target elevation model for ortho-rectification.
+photo.init: Creates or modifies entries in a camera initial exposure station file for imagery group referenced by a sub-block.
+photo.rectify: Rectifies an image by using the image to photo coordinate transformation matrix created by photo.2image and the rectification parameters created by photo.2target.
+photo.target: Selects target location and mapset for ortho-rectification.
 EOF
 
 ## with --dictionary-order db.* ends up in the middle of the d.* cmds
@@ -122,11 +187,7 @@ EOF
 sort "$TMP" > "$SYNOP"
 \rm -f "$TMP"
 
-
-
-# add missing periods at end of descriptions
-sed -e 's/[^\.]$/&./' "$SYNOP" > "${TMP}.txt"
-
+cp "$SYNOP" "${TMP}.txt"
 
 ####### create HTML source #######
 # poor cousin to full_index.html from tools/build_html_index.sh
@@ -144,28 +205,48 @@ cat << EOF > "${TMP}.html"
 </head>
 <body bgcolor="white">
 
-<img src="grass_logo.png" alt="_\|/_ GRASS logo"><hr align=center size=6 noshade>
+<img src="grass_logo.png" alt="_\|/_ GRASS logo">
+<hr class="header">
+
+<!-- prettier:
+<BR><BR><BR><BR>
+<center>
+<img src="../../images/grasslogo.gif" alt="_\|/_ GRASS logo">
+<BR><BR>
+<hr width="450" align=center size=6 noshade>
+-->
 
 <center>
-<h1>`g.version | cut -f1 -d'('` Command list</h1>
+<H1>`g.version | cut -f1 -d'('` Command list</H1>
 <h3>`date "+%e %B %Y"`</h3>
 </center>
-<br><br><br>
+<BR><BR><BR>
+
+<!--
+<i><font size="-1" color="#778877">
+   Menu position follows description if applicable.</font></i>
+<BR><BR>
+-->
+
+<!--
+# so it works from $WEB/gdp/grassmanuals/
+#   untested:
+sed -i -e 's+\(a href="\)\([^#\.h]\)+\1../../grass64/manuals/html64_user/\2+'
+-->
 
 <h4>Command types:</h4>
 <ul>
-<li> d.* - <a href="#d">display commands</a>
-<li> db.* - <a href="#db">database</a> commands
-<li> g.* - <a href="#g">general</a> commands
-<li> i.* - <a href="#i">imagery</a> commands
-<li> m.* - <a href="#m">miscellanous</a> commands
-<li> ps.* - <a href="#ps">PostScript</a> commands
-<li> r.* - <a href="#r">raster</a> commands
-<li> r3.* - <a href="#r3">raster3D</a> commands
-<li> v.* - <a href="#v">vector</a> commands
-<li> gis.m - GUI frontend (Tcl/Tk)
-<li> nviz - visualization suite
-<li> xganim - raster map slideshow
+  <li> d.* - <a href="#d">display commands</a>
+  <li> db.* - <a href="#db">database</a> commands
+  <li> g.* - <a href="#g">general</a> commands
+  <li> i.* - <a href="#i">imagery</a> commands
+  <li> m.* - <a href="#m">miscellanous</a> commands
+  <li> ps.* - <a href="#ps">PostScript</a> commands
+  <li> r.* - <a href="#r">raster</a> commands
+  <li> r3.* - <a href="#r3">raster3D</a> commands
+  <li> v.* - <a href="#v">vector</a> commands
+  <li> <a href="wxGUI.html">wxGUI</a> - GUI frontend (wxPython)
+  <li> <a href="nviz.html">NVIZ</a> - <i>n</i>-dimensional visualization suite
 EOF
 
 
@@ -198,10 +279,10 @@ for SECTION in d db g i m ps r r3 v ; do
 
     cat << EOF >> "${TMP}.html"
 </ul>
-<br>
+<BR>
 
 <a name="$SECTION"></a>
-<h3>$SEC_NAME $SEC_TYPE:</h3>
+<H3>$SEC_NAME $SEC_TYPE:</H3>
 
 <ul>
 EOF
@@ -209,7 +290,10 @@ EOF
     grep "^${SECTION}\." "${TMP}.txt" | \
       sed -e 's/: /| /' -e 's/^.*|/<li> <a href="&.html">&<\/a>:/' \
 	  -e 's/|.html">/.html">/' -e 's+|</a>:+</a>:+' \
-	  -e 's/&/\&amp;/g' >> "${TMP}.html"
+	  -e 's/&/\&amp;/g' \
+	  -e 's+ {+\n     <BR><font size="-2" color="#778877"><i>+' \
+	  -e 's+}+</i></font>+' \
+	  -e 's+ > + \&rarr; +g'  >> "${TMP}.html"
 
     if [ "$SECTION" = "i" ] ; then
 	# include imagery photo subsection
@@ -224,7 +308,10 @@ EOF
 	grep "^photo\." "${TMP}.txt" | \
 	  sed -e 's/: /| /' -e 's/^.*|/<li> <a href="&.html">&<\/a>:/' \
 	      -e 's/|.html">/.html">/' -e 's+|</a>:+</a>:+' \
-	      -e 's/&/\&amp;/g' >> "${TMP}.html"
+	      -e 's/&/\&amp;/g' \
+	      -e 's+ {+\n     <BR><font size="-2" color="#778877"><i>+' \
+	      -e 's+}+</i></font>+' \
+	      -e 's+ > + \&rarr; +g'  >> "${TMP}.html"
     fi
 
 done
@@ -234,14 +321,14 @@ done
 cat << EOF >> "${TMP}.html"
 </ul>
 
-<hr>
+<hr class="header">
 <p>
 <a href="index.html">Help Index</a><br>
-&copy; 2007-2014 <a href="http://grass.osgeo.org">GRASS Development Team</a>
+&copy; 2007-2010 <a href="http://grass.osgeo.org">GRASS Development Team</a>
 </p>
 
-</body>
-</html>
+</BODY>
+</HTML>
 EOF
 
 \mv "${TMP}.html" "$GISBASE/docs/html/module_synopsis.html"
@@ -260,6 +347,8 @@ cat << EOF > "${TMP}.tex"
 \usepackage[latin1]{inputenc}
 \usepackage{a4wide}
 \usepackage{graphicx}
+\usepackage{color}
+\definecolor{DarkSeaGreen3}{rgb}{0.412,0.545,0.412}
 
 \makeatletter
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Textclass specific LaTeX commands.
@@ -296,9 +385,8 @@ cat << EOF > "${TMP}.tex"
 \item [r.{*}]raster commands
 \item [r3.{*}]raster3D commands
 \item [v.{*}]vector commands
-\item [gis.m]GUI frontend (Tcl/Tk)
-\item [nviz]visualization suite
-\item [xganim]raster map slideshow
+\item [wxGUI]GUI frontend (wxPython)
+\item [NVIZ]$n$-dimensional visualization suite
 EOF
 
 
@@ -340,20 +428,29 @@ EOF
 
     grep "^${SECTION}\." "${TMP}.txt" | \
       sed -e 's/^/\\item [/' -e 's/: /]/' \
+          -e 's+ {+ \\\\\n$+' -e 's/}$/$/' \
+	  -e 's+ > +\\,\\triangleright\\,|+g' \
           -e 's/\*/{*}/g' -e 's/_/\\_/g' -e 's/&/\\\&/g' \
-	  >> "${TMP}.tex"
+	| awk '/^\$/ { STR=$0; \
+		       gsub(" ", "\\: ", STR); \
+		       gsub(/\|/, " ", STR); \
+		       sub(/^/, "  \\textcolor{DarkSeaGreen3}{\\footnotesize ", STR); \
+		       sub(/$/, "}", STR); \
+		       print STR \
+		     } ;
+	       /^\\/ {print}' >> "${TMP}.tex"
 
     if [ "$SECTION" = "i" ] ; then
-	# include imagery i.photo subsection
+	# include imagery photo subsection
 	cat << EOF >> "${TMP}.tex"
 \end{lyxlist}
 
-\subsubsection*{Imagery i.photo.{*} commands:}
+\subsubsection*{Imagery photo.{*} commands:}
 
 \begin{lyxlist}{00.00.0000}
 EOF
 
-	grep "^i.photo\." "${TMP}.txt" | \
+	grep "^photo\." "${TMP}.txt" | \
 	  sed -e 's/^/\\item [/' -e 's/: /]/' >> "${TMP}.tex"
     fi
 
@@ -372,6 +469,12 @@ EOF
 \rm -f "${TMP}.txt"
 
 
+##### FIXME
+# post generation tidy-up
+# - sort order isn't ideal. try 'sort -n'??
+#     fix: *.univar.sh, r.surf.idw2, v.to.rast3, r.out.ppm3, others..
+#####
+
 
 g.message "Converting LaTeX to PDF (writing to \$GISBASE/docs/pdf/) ..."
 
@@ -384,7 +487,7 @@ for PGM in pdflatex ; do
 done
 
 TMPDIR="`dirname "$TMP"`"
-cp "$OLDDIR/grasslogo_vector.pdf" "$TMPDIR"
+cp "$OLDDIR/../man/grasslogo_vector.pdf" "$TMPDIR"
 cd "$TMPDIR"
 
 #once working nicely make it quieter

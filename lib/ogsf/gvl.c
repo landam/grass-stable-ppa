@@ -1,5 +1,5 @@
 /*!
-   \file gvl.c
+   \file lib/ogsf/gvl.c
 
    \brief OGSF library - loading and manipulating volumes (lower level functions)
 
@@ -20,7 +20,7 @@
 #include <stdlib.h>
 
 #include <grass/gis.h>
-#include <grass/gstypes.h>
+#include <grass/ogsf.h>
 
 #include "gsget.h"
 
@@ -212,6 +212,7 @@ int gvl_init_vol(geovol * gvl, double ox, double oy, double oz,
     gvl->zrange = gvl->zmax - gvl->zmin;
 
     gvl->x_trans = gvl->y_trans = gvl->z_trans = 0.0;
+    gvl->draw_wire = 0;
 
     gvl->n_isosurfs = 0;
     G_zero(gvl->isosurf, sizeof(geovol_isosurf *) * MAX_ISOSURFS);
@@ -578,8 +579,7 @@ geovol_isosurf *gvl_isosurf_get_isosurf(int id, int isosurf_id)
 {
     geovol *gvl;
 
-    G_debug(5, "gvl_isosurf_get_isosurf(): id=%d isosurf=%d",
-	    id, isosurf_id);
+    G_debug(5, "gvl_isosurf_get_isosurf(): id=%d isosurf=%d", id, isosurf_id);
     
     gvl = gvl_get_vol(id);
 
@@ -695,7 +695,7 @@ int gvl_isosurf_set_att_map(geovol_isosurf * isosurf, int desc,
     G_debug(5, "gvl_isosurf_set_att_map(): att=%d map=%s", desc, filename);
 
     if (isosurf) {
-	if (0 > (hfile = gvl_file_newh(filename, VOL_FTYPE_G3D)))
+	if (0 > (hfile = gvl_file_newh(filename, VOL_FTYPE_RASTER3D)))
 	    return (-1);
 
 	gvl_isosurf_set_att_src(isosurf, desc, MAP_ATT);

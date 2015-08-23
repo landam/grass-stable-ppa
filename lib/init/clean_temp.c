@@ -1,3 +1,4 @@
+#include <grass/config.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <unistd.h>
@@ -30,8 +31,6 @@
 #else
 #define BUF_MAX 4096
 #endif
-
-extern int errno;
 
 #define SLEEP 30		/* 30 seconds */
 
@@ -119,7 +118,7 @@ void clean_dir(const char *pathname, uid_t uid, pid_t pid, time_t now,
 
 int main(int argc, char *argv[])
 {
-    char *mapset;
+    const char *mapset;
     char element[GNAME_MAX];
     char tmppath[BUF_MAX];
     pid_t ppid;
@@ -135,8 +134,8 @@ int main(int argc, char *argv[])
 	sscanf(argv[1], "%d", &ppid);
 
     /* Get the mapset temp directory */
-    G__temp_element(element);
-    G__file_name(tmppath, element, "", mapset = G_mapset());
+    G_temp_element(element);
+    G_file_name(tmppath, element, "", mapset = G_mapset());
 
     /* get user id and current time in seconds */
 #ifdef __MINGW32__

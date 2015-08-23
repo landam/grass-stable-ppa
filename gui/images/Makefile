@@ -1,32 +1,35 @@
 MODULE_TOPDIR = ../..
 
-include $(MODULE_TOPDIR)/include/Make/Platform.make
-include $(MODULE_TOPDIR)/include/Make/Grass.make
-include $(MODULE_TOPDIR)/include/Make/Rules.make
+include $(MODULE_TOPDIR)/include/Make/Other.make
 
-ETCDIR = $(ETC)/gui/images
+DSTDIR = $(GUIDIR)/images
 
-FILES := $(wildcard *.png)
-FILES += $(wildcard *.gif)
+# images
+IMGSRC := $(wildcard *.png)
+IMGDST := $(patsubst %,$(DSTDIR)/%,$(IMGSRC))
 
-default: $(patsubst %,$(ETCDIR)/%,$(FILES)) symbol_thumbnails
+# symbols
+CATEGORIES = basic demo extra geology n_arrows
+SYMSRC := $(foreach dir,$(CATEGORIES),$(wildcard symbols/$(dir)/*.png))
+SYMDST := $(patsubst symbols/%,$(DSTDIR)/symbols/%,$(SYMSRC))
 
-$(ETCDIR)/%.png: %.png | $(ETCDIR)
+default: $(IMGDST) $(SYMDST)
+
+define symbols_rule
+$(DSTDIR)/symbols/$(1)/%.png: symbols/$(1)/%.png | $(DSTDIR)/symbols/$(1)
+	$(INSTALL_DATA) $$< $$@
+
+$(DSTDIR)/symbols/$(1): | $(DSTDIR)/symbols
+	$(MKDIR) $$@
+endef
+
+$(foreach category,$(CATEGORIES),$(eval $(call symbols_rule,$(category))))
+
+$(DSTDIR)/%.png: %.png | $(DSTDIR)
 	$(INSTALL_DATA) $< $@
 
-$(ETCDIR)/%.gif: %.gif | $(ETCDIR)
-	$(INSTALL_DATA) $< $@
+$(DSTDIR):
+	$(MKDIR) $@
 
-symbol_thumbnails: $(ETCDIR)
-	if [ ! -d $(ETCDIR)/symbols ]; then $(MKDIR) $(ETCDIR)/symbols ; fi
-	for category in basic demo extra geology ; do \
-		if [ ! -d $(ETCDIR)/symbols/$$category ] ; then \
-			$(MKDIR) $(ETCDIR)/symbols/$$category ; \
-		fi ; \
-		for file in symbols/$$category/*.png ; do \
-			$(INSTALL_DATA) $$file $(ETCDIR)/symbols/$$category ; \
-		done ; \
-	done
-
-$(ETCDIR):
+$(DSTDIR)/symbols: $(DSTDIR)
 	$(MKDIR) $@

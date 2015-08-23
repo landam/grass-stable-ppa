@@ -6,7 +6,7 @@
 * AUTHOR(S):    Original author 
 *               Soeren Gebbert soerengebbert at gmx de
 * 		27 Feb 2006 Berlin
-* PURPOSE:      Converts 3D raster maps (G3D) into the VTK-Ascii format  
+* PURPOSE:      Converts 3D raster maps (RASTER3D) into the VTK-Ascii format  
 *
 * COPYRIGHT:    (C) 2005 by the GRASS Development Team
 *
@@ -27,7 +27,7 @@ void set_params()
     param.input = G_define_standard_option(G_OPT_R3_INPUTS);
     param.input->required = NO;
     param.input->description =
-	_("G3D map(s) to be converted to VTK-ASCII data format");
+	_("3D raster map(s) to be converted to VTK-ASCII data format");
 
     param.output = G_define_standard_option(G_OPT_F_OUTPUT);
     param.output->required = NO;
@@ -53,7 +53,7 @@ void set_params()
     param.top->gisprompt = "old,cell,raster";
     param.top->multiple = NO;
     param.top->guisection = "Surface options";
-    param.top->description = _("top surface 2D raster map");
+    param.top->description = _("Top surface 2D raster map");
 
     param.bottom = G_define_option();
     param.bottom->key = "bottom";
@@ -62,38 +62,33 @@ void set_params()
     param.bottom->gisprompt = "old,cell,raster";
     param.bottom->multiple = NO;
     param.bottom->guisection = "Surface options";
-    param.bottom->description = _("bottom surface 2D raster map");
+    param.bottom->description = _("Bottom surface 2D raster map");
 
     param.structgrid = G_define_flag();
     param.structgrid->key = 's';
     param.structgrid->guisection = "Surface options";
     param.structgrid->description =
-	_("Create 3d elevation output with a top and a bottom surface, both raster maps are required.");
+	_("Create 3D elevation output with a top and a bottom surface, both raster maps are required.");
 
 
-    param.rgbmaps = G_define_option();
+    param.rgbmaps = G_define_standard_option(G_OPT_R3_INPUT);
     param.rgbmaps->key = "rgbmaps";
-    param.rgbmaps->type = TYPE_STRING;
     param.rgbmaps->required = NO;
-    param.rgbmaps->gisprompt = "old,grid3,3d-raster";
     param.rgbmaps->multiple = YES;
     param.rgbmaps->guisection = "Advanced options";
     param.rgbmaps->description =
 	_("Three (R,G,B) 3D raster maps to create RGB values [redmap,greenmap,bluemap]");
 
-    param.vectormaps = G_define_option();
+    param.vectormaps = G_define_standard_option(G_OPT_V_OUTPUT);
     param.vectormaps->key = "vectormaps";
-    param.vectormaps->type = TYPE_STRING;
     param.vectormaps->required = NO;
-    param.vectormaps->gisprompt = "old,grid3,3d-raster";
     param.vectormaps->multiple = YES;
     param.vectormaps->guisection = "Advanced options";
     param.vectormaps->description =
 	_("Three (x,y,z) 3D raster maps to create vector values [xmap,ymap,zmap]");
 
-
     param.elevscale = G_define_option();
-    param.elevscale->key = "elevscale";
+    param.elevscale->key = "zscale";
     param.elevscale->type = TYPE_DOUBLE;
     param.elevscale->required = NO;
     param.elevscale->description = _("Scale factor for elevation");
@@ -101,7 +96,7 @@ void set_params()
     param.elevscale->answer = "1.0";
 
     param.decimals = G_define_option();
-    param.decimals->key = "dp";
+    param.decimals->key = "precision";
     param.decimals->type = TYPE_INTEGER;
     param.decimals->required = NO;
     param.decimals->multiple = NO;
@@ -119,13 +114,20 @@ void set_params()
     param.origin = G_define_flag();
     param.origin->key = 'o';
     param.origin->guisection = "Advanced options";
-    param.origin->description = _("Scale factor effects the origin");
+    param.origin->description = _("Scale factor affects the origin");
 
     param.coorcorr = G_define_flag();
     param.coorcorr->key = 'c';
     param.coorcorr->guisection = "Advanced options";
     param.coorcorr->description =
-	_("Correct the coordinates to fit the VTK-OpenGL precision");
+	_("Correct the coordinates to match the VTK-OpenGL precision");
+
+    param.scalell = G_define_flag();
+    param.scalell->key = 'l';
+    param.scalell->guisection = "Advanced options";
+    param.scalell->description =
+	_("Do not convert the top-bottom resolution in case of lat long projection to meters");
+
 
     /* Maybe needed in the future
      * param.xml = G_define_flag ();

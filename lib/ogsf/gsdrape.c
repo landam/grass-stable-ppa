@@ -1,5 +1,5 @@
 /*!
-   \file gsdrape.c
+   \file lib/ogsf/gsdrape.c
 
    \brief OGSF library - functions to intersect line segments with edges of surface polygons
 
@@ -49,7 +49,7 @@
 
 #include <stdlib.h>
 
-#include <grass/gstypes.h>
+#include <grass/ogsf.h>
 #include <grass/glocale.h>
 
 #include "gsget.h"
