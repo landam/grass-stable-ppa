@@ -1,9 +1,9 @@
-grass (7.0.1-1) UNRELEASED; urgency=medium
+grass (7.0.1-1) unstable; urgency=medium
 
   * Move from experimental to unstable.
   * Add patches for various typos.
 
- -- Bas Couwenberg <sebastic@debian.org>  Sun, 23 Aug 2015 18:57:45 +0200
+ -- Bas Couwenberg <sebastic@debian.org>  Mon, 24 Aug 2015 00:50:05 +0200
 
 grass (7.0.1-1~exp1) experimental; urgency=medium
 
