@@ -1,0 +1,518 @@
+Description: Fix 'optionaly' typo, replace with 'optionally'.
+Author: Bas Couwenberg <sebastic@debian.org>
+
+--- a/lib/symbol/README
++++ b/lib/symbol/README
+@@ -64,7 +64,7 @@ END
+ 
+ ARC X Y R A1 A2 [C]
+  Arc specified by center (X Y), radius (R), start/end angle in degrees (A1/A2)
+- and optionaly direction (C for clockwise, default counter clockwise)
++ and optionally direction (C for clockwise, default counter clockwise)
+  Note degrees are polar theta not navigational, i.e. 0 is east and 
+  values increase counter-clockwise from there. Reducing the angle
+  from a full circle does not make it draw like a pacman but rather
+--- a/locale/po/grassmods_ar.po
++++ b/locale/po/grassmods_ar.po
+@@ -6763,7 +6763,7 @@ msgid "Creates topology for vector map."
+ msgstr "اسم الخريطة الراسترية المدخلة"
+ 
+ #: ../vector/v.build/main.c:40
+-msgid "Optionaly also checks for topological errors."
++msgid "Optionally also checks for topological errors."
+ msgstr ""
+ 
+ #: ../vector/v.build/main.c:44
+--- a/locale/po/grassmods_cs.po
++++ b/locale/po/grassmods_cs.po
+@@ -6780,7 +6780,7 @@ msgid "Creates topology for vector map."
+ msgstr "Vytvoří topologii vektorové vrstvy."
+ 
+ #: ../vector/v.build/main.c:40
+-msgid "Optionaly also checks for topological errors."
++msgid "Optionally also checks for topological errors."
+ msgstr ""
+ 
+ #: ../vector/v.build/main.c:44
+--- a/locale/po/grassmods_de.po
++++ b/locale/po/grassmods_de.po
+@@ -6672,7 +6672,7 @@ msgid "Creates topology for vector map."
+ msgstr "Erzeugt Topologie für GRASS Vektorkarten."
+ 
+ #: ../vector/v.build/main.c:40
+-msgid "Optionaly also checks for topological errors."
++msgid "Optionally also checks for topological errors."
+ msgstr ""
+ 
+ #: ../vector/v.build/main.c:44
+--- a/locale/po/grassmods_el.po
++++ b/locale/po/grassmods_el.po
+@@ -6513,7 +6513,7 @@ msgid "Creates topology for vector map."
+ msgstr "Αδυναμία ανάγνωσης διανυσματικού χάρτη"
+ 
+ #: ../vector/v.build/main.c:40
+-msgid "Optionaly also checks for topological errors."
++msgid "Optionally also checks for topological errors."
+ msgstr ""
+ 
+ #: ../vector/v.build/main.c:44
+--- a/locale/po/grassmods_es.po
++++ b/locale/po/grassmods_es.po
+@@ -6769,7 +6769,7 @@ msgid "Creates topology for vector map."
+ msgstr "Crea topología para mapa vectorial."
+ 
+ #: ../vector/v.build/main.c:40
+-msgid "Optionaly also checks for topological errors."
++msgid "Optionally also checks for topological errors."
+ msgstr "Opcionalmente revisa también errores topologícos."
+ 
+ #: ../vector/v.build/main.c:44
+--- a/locale/po/grassmods_fr.po
++++ b/locale/po/grassmods_fr.po
+@@ -7037,7 +7037,7 @@ msgid "Creates topology for vector map."
+ msgstr "Créer des icones pour le fichier vecteur GRASS et les attributs liés"
+ 
+ #: ../vector/v.build/main.c:40
+-msgid "Optionaly also checks for topological errors."
++msgid "Optionally also checks for topological errors."
+ msgstr ""
+ 
+ #: ../vector/v.build/main.c:44
+--- a/locale/po/grassmods_it.po
++++ b/locale/po/grassmods_it.po
+@@ -6668,7 +6668,7 @@ msgid "Creates topology for vector map."
+ msgstr "Crea etichette per vettoriali GRASS e attributi associati"
+ 
+ #: ../vector/v.build/main.c:40
+-msgid "Optionaly also checks for topological errors."
++msgid "Optionally also checks for topological errors."
+ msgstr ""
+ 
+ #: ../vector/v.build/main.c:44
+--- a/locale/po/grassmods_ja.po
++++ b/locale/po/grassmods_ja.po
+@@ -6688,7 +6688,7 @@ msgid "Creates topology for vector map."
+ msgstr "ベクトルマップのカテゴリーを編集，構築します"
+ 
+ #: ../vector/v.build/main.c:40
+-msgid "Optionaly also checks for topological errors."
++msgid "Optionally also checks for topological errors."
+ msgstr ""
+ 
+ #: ../vector/v.build/main.c:44
+--- a/locale/po/grassmods_ko.po
++++ b/locale/po/grassmods_ko.po
+@@ -6531,7 +6531,7 @@ msgid "Creates topology for vector map."
+ msgstr "출력할 격자지도"
+ 
+ #: ../vector/v.build/main.c:40
+-msgid "Optionaly also checks for topological errors."
++msgid "Optionally also checks for topological errors."
+ msgstr ""
+ 
+ #: ../vector/v.build/main.c:44
+--- a/locale/po/grassmods_lv.po
++++ b/locale/po/grassmods_lv.po
+@@ -6767,7 +6767,7 @@ msgid "Creates topology for vector map."
+ msgstr "Vektorkartes nosaukums"
+ 
+ #: ../vector/v.build/main.c:40
+-msgid "Optionaly also checks for topological errors."
++msgid "Optionally also checks for topological errors."
+ msgstr ""
+ 
+ #: ../vector/v.build/main.c:44
+--- a/locale/po/grassmods_pl.po
++++ b/locale/po/grassmods_pl.po
+@@ -6704,7 +6704,7 @@ msgid "Creates topology for vector map."
+ msgstr "Tworzy topologię dla wektorowej mapy GRASS."
+ 
+ #: ../vector/v.build/main.c:40
+-msgid "Optionaly also checks for topological errors."
++msgid "Optionally also checks for topological errors."
+ msgstr ""
+ 
+ #: ../vector/v.build/main.c:44
+--- a/locale/po/grassmods_pt.po
++++ b/locale/po/grassmods_pt.po
+@@ -6857,7 +6857,7 @@ msgstr ""
+ "relacionados."
+ 
+ #: ../vector/v.build/main.c:40
+-msgid "Optionaly also checks for topological errors."
++msgid "Optionally also checks for topological errors."
+ msgstr ""
+ 
+ #: ../vector/v.build/main.c:44
+--- a/locale/po/grassmods_pt_br.po
++++ b/locale/po/grassmods_pt_br.po
+@@ -6850,7 +6850,7 @@ msgstr ""
+ "relacionados."
+ 
+ #: ../vector/v.build/main.c:40
+-msgid "Optionaly also checks for topological errors."
++msgid "Optionally also checks for topological errors."
+ msgstr ""
+ 
+ #: ../vector/v.build/main.c:44
+--- a/locale/po/grassmods_ro.po
++++ b/locale/po/grassmods_ro.po
+@@ -6296,7 +6296,7 @@ msgid "Creates topology for vector map."
+ msgstr ""
+ 
+ #: ../vector/v.build/main.c:40
+-msgid "Optionaly also checks for topological errors."
++msgid "Optionally also checks for topological errors."
+ msgstr ""
+ 
+ #: ../vector/v.build/main.c:44
+--- a/locale/po/grassmods_ru.po
++++ b/locale/po/grassmods_ru.po
+@@ -6750,7 +6750,7 @@ msgid "Creates topology for vector map."
+ msgstr "Создать топологию для векторного слоя GRASS."
+ 
+ #: ../vector/v.build/main.c:40
+-msgid "Optionaly also checks for topological errors."
++msgid "Optionally also checks for topological errors."
+ msgstr ""
+ 
+ #: ../vector/v.build/main.c:44
+--- a/locale/po/grassmods_sl.po
++++ b/locale/po/grassmods_sl.po
+@@ -6790,7 +6790,7 @@ msgid "Creates topology for vector map."
+ msgstr "Ime vhodnega rastrskega sloja"
+ 
+ #: ../vector/v.build/main.c:40
+-msgid "Optionaly also checks for topological errors."
++msgid "Optionally also checks for topological errors."
+ msgstr ""
+ 
+ #: ../vector/v.build/main.c:44
+--- a/locale/po/grassmods_th.po
++++ b/locale/po/grassmods_th.po
+@@ -1017,7 +1017,7 @@ msgid ""
+ "Either 'from_table' (optionally with 'where') can be used or 'select' "
+ "option, but not 'from_table' and 'select' at the same time."
+ msgstr ""
+-"คัดลอกตาราง. โดยใช้คำสั่ง 'from_table' (optionaly with 'where') หรือ 'select' "
++"คัดลอกตาราง. โดยใช้คำสั่ง 'from_table' (optionally with 'where') หรือ 'select' "
+ "option, แต่ไม่ใช่  'from_table' และ 'select' พร้อมกัน"
+ 
+ #: ../db/db.copy/main.c:46
+@@ -6750,7 +6750,7 @@ msgid "Creates topology for vector map."
+ msgstr "สร้าง topology สำหรับ แผนที่เชิงเส้น GRASS."
+ 
+ #: ../vector/v.build/main.c:40
+-msgid "Optionaly also checks for topological errors."
++msgid "Optionally also checks for topological errors."
+ msgstr ""
+ 
+ #: ../vector/v.build/main.c:44
+--- a/locale/po/grassmods_tr.po
++++ b/locale/po/grassmods_tr.po
+@@ -6666,7 +6666,7 @@ msgid "Creates topology for vector map."
+ msgstr "GRASS vektör dosyası için topoloji oluşturur."
+ 
+ #: ../vector/v.build/main.c:40
+-msgid "Optionaly also checks for topological errors."
++msgid "Optionally also checks for topological errors."
+ msgstr ""
+ 
+ #: ../vector/v.build/main.c:44
+--- a/locale/po/grassmods_vi.po
++++ b/locale/po/grassmods_vi.po
+@@ -6755,7 +6755,7 @@ msgid "Creates topology for vector map."
+ msgstr "Tạo tôpô cho bản đồ vector của GRASS."
+ 
+ #: ../vector/v.build/main.c:40
+-msgid "Optionaly also checks for topological errors."
++msgid "Optionally also checks for topological errors."
+ msgstr ""
+ 
+ #: ../vector/v.build/main.c:44
+--- a/locale/po/grassmods_zh.po
++++ b/locale/po/grassmods_zh.po
+@@ -6755,7 +6755,7 @@ msgid "Creates topology for vector map."
+ msgstr "为 GRASS 矢量文件和附加属性创建标签。"
+ 
+ #: ../vector/v.build/main.c:40
+-msgid "Optionaly also checks for topological errors."
++msgid "Optionally also checks for topological errors."
+ msgstr ""
+ 
+ #: ../vector/v.build/main.c:44
+--- a/locale/po/grasswxpy_cs.po
++++ b/locale/po/grasswxpy_cs.po
+@@ -11733,7 +11733,7 @@ msgstr "Vytvořit nebo přebudovat topol
+ 
+ #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
+ msgid ""
+-"Creates topology for vector map. Optionaly also checks for topological "
++"Creates topology for vector map. Optionally also checks for topological "
+ "errors."
+ msgstr ""
+ "Vytvoří topologii vektorové vrstvy. Volitelně také zkontroluje topologické "
+--- a/locale/po/grasswxpy_de.po
++++ b/locale/po/grasswxpy_de.po
+@@ -11593,7 +11593,7 @@ msgstr "Topologie erzeugen/wiederherstel
+ 
+ #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
+ msgid ""
+-"Creates topology for vector map. Optionaly also checks for topological "
++"Creates topology for vector map. Optionally also checks for topological "
+ "errors."
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_el.po
++++ b/locale/po/grasswxpy_el.po
+@@ -10930,7 +10930,7 @@ msgstr ""
+ 
+ #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
+ msgid ""
+-"Creates topology for vector map. Optionaly also checks for topological "
++"Creates topology for vector map. Optionally also checks for topological "
+ "errors."
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_es.po
++++ b/locale/po/grasswxpy_es.po
+@@ -11790,7 +11790,7 @@ msgstr "Crear o reconstruir topología."
+ 
+ #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
+ msgid ""
+-"Creates topology for vector map. Optionaly also checks for topological "
++"Creates topology for vector map. Optionally also checks for topological "
+ "errors."
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_fr.po
++++ b/locale/po/grasswxpy_fr.po
+@@ -10605,7 +10605,7 @@ msgid "Create or rebuild topology"
+ msgstr "Créer ou reconstruire la topologie"
+ 
+ #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
+-msgid "Creates topology for vector map. Optionaly also checks for topological errors."
++msgid "Creates topology for vector map. Optionally also checks for topological errors."
+ msgstr "Créer la topologie pour la carte vecteur. En option, vérifie les erreurs de topologie."
+ 
+ #: ../gui/wxpython/menustrings.py:561 ../gui/wxpython/menustrings.py:1460
+--- a/locale/po/grasswxpy_id.po
++++ b/locale/po/grasswxpy_id.po
+@@ -11934,7 +11934,7 @@ msgstr "Buat/bangun-ulang topologi"
+ 
+ #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
+ msgid ""
+-"Creates topology for vector map. Optionaly also checks for topological "
++"Creates topology for vector map. Optionally also checks for topological "
+ "errors."
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_it.po
++++ b/locale/po/grasswxpy_it.po
+@@ -11142,7 +11142,7 @@ msgstr "Crea o ricrea topologia"
+ 
+ #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
+ msgid ""
+-"Creates topology for vector map. Optionaly also checks for topological "
++"Creates topology for vector map. Optionally also checks for topological "
+ "errors."
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_ja.po
++++ b/locale/po/grasswxpy_ja.po
+@@ -11527,7 +11527,7 @@ msgstr "トポロジーの作成/再ビ�
+ 
+ #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
+ msgid ""
+-"Creates topology for vector map. Optionaly also checks for topological "
++"Creates topology for vector map. Optionally also checks for topological "
+ "errors."
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_ko.po
++++ b/locale/po/grasswxpy_ko.po
+@@ -10632,7 +10632,7 @@ msgstr ""
+ 
+ #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
+ msgid ""
+-"Creates topology for vector map. Optionaly also checks for topological "
++"Creates topology for vector map. Optionally also checks for topological "
+ "errors."
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_lv.po
++++ b/locale/po/grasswxpy_lv.po
+@@ -10863,7 +10863,7 @@ msgstr ""
+ 
+ #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
+ msgid ""
+-"Creates topology for vector map. Optionaly also checks for topological "
++"Creates topology for vector map. Optionally also checks for topological "
+ "errors."
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_ml.po
++++ b/locale/po/grasswxpy_ml.po
+@@ -11298,7 +11298,7 @@ msgstr ""
+ 
+ #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
+ msgid ""
+-"Creates topology for vector map. Optionaly also checks for topological "
++"Creates topology for vector map. Optionally also checks for topological "
+ "errors."
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_pl.po
++++ b/locale/po/grasswxpy_pl.po
+@@ -11326,7 +11326,7 @@ msgstr "Utwórz/przebuduj topologię"
+ 
+ #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
+ msgid ""
+-"Creates topology for vector map. Optionaly also checks for topological "
++"Creates topology for vector map. Optionally also checks for topological "
+ "errors."
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_pt.po
++++ b/locale/po/grasswxpy_pt.po
+@@ -12117,7 +12117,7 @@ msgstr "Crear/reconstruir topología"
+ 
+ #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
+ msgid ""
+-"Creates topology for vector map. Optionaly also checks for topological "
++"Creates topology for vector map. Optionally also checks for topological "
+ "errors."
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_pt_br.po
++++ b/locale/po/grasswxpy_pt_br.po
+@@ -12403,7 +12403,7 @@ msgstr "Crear/reconstruir topología"
+ 
+ #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
+ msgid ""
+-"Creates topology for vector map. Optionaly also checks for topological "
++"Creates topology for vector map. Optionally also checks for topological "
+ "errors."
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_ro.po
++++ b/locale/po/grasswxpy_ro.po
+@@ -11646,7 +11646,7 @@ msgstr "Crează sau reconstruiește topo
+ 
+ #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
+ msgid ""
+-"Creates topology for vector map. Optionaly also checks for topological "
++"Creates topology for vector map. Optionally also checks for topological "
+ "errors."
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_ru.po
++++ b/locale/po/grasswxpy_ru.po
+@@ -11874,7 +11874,7 @@ msgstr "Создать/построит�
+ 
+ #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
+ msgid ""
+-"Creates topology for vector map. Optionaly also checks for topological "
++"Creates topology for vector map. Optionally also checks for topological "
+ "errors."
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_th.po
++++ b/locale/po/grasswxpy_th.po
+@@ -11387,7 +11387,7 @@ msgstr ""
+ 
+ #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
+ msgid ""
+-"Creates topology for vector map. Optionaly also checks for topological "
++"Creates topology for vector map. Optionally also checks for topological "
+ "errors."
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_tr.po
++++ b/locale/po/grasswxpy_tr.po
+@@ -11812,7 +11812,7 @@ msgstr "Topoloji oluştur/yeniden kur"
+ 
+ #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
+ msgid ""
+-"Creates topology for vector map. Optionaly also checks for topological "
++"Creates topology for vector map. Optionally also checks for topological "
+ "errors."
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_vi.po
++++ b/locale/po/grasswxpy_vi.po
+@@ -11935,7 +11935,7 @@ msgstr "Tạo hoặc dựng lại tôpô
+ 
+ #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
+ msgid ""
+-"Creates topology for vector map. Optionaly also checks for topological "
++"Creates topology for vector map. Optionally also checks for topological "
+ "errors."
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_zh.po
++++ b/locale/po/grasswxpy_zh.po
+@@ -11451,7 +11451,7 @@ msgstr "创建或重建拓扑"
+ 
+ #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
+ msgid ""
+-"Creates topology for vector map. Optionaly also checks for topological "
++"Creates topology for vector map. Optionally also checks for topological "
+ "errors."
+ msgstr ""
+ 
+--- a/scripts/r.pack/r.pack.html
++++ b/scripts/r.pack/r.pack.html
+@@ -9,7 +9,7 @@ by <em><a href="r.unpack.html">r.unpack<
+ <h2>NOTES</h2>
+ 
+ Name of the pack file is determined by default from <b>input</b>
+-parameter. Optionaly the name can be given by <b>output</b> parameter.
++parameter. Optionally the name can be given by <b>output</b> parameter.
+ 
+ Currently only 2D raster maps are supported.
+ 
+--- a/scripts/r.unpack/r.unpack.html
++++ b/scripts/r.unpack/r.unpack.html
+@@ -5,7 +5,7 @@
+ <h2>NOTES</h2>
+ 
+ Name of the raster map is determined by default from pack file
+-internals. Optionaly the name can be given by <b>output</b> parameter.
++internals. Optionally the name can be given by <b>output</b> parameter.
+ 
+ Currently only 2D raster maps are supported.
+ 
+--- a/scripts/v.pack/v.pack.html
++++ b/scripts/v.pack/v.pack.html
+@@ -10,7 +10,7 @@ by <em><a href="v.unpack.html">v.unpack<
+ <h2>NOTES</h2>
+ 
+ Name of the pack file is determined by default from <b>input</b>
+-parameter. Optionaly the name can be given by <b>output</b> parameter.
++parameter. Optionally the name can be given by <b>output</b> parameter.
+ 
+ 
+ <h2>EXAMPLE</h2>
+--- a/scripts/v.unpack/v.unpack.html
++++ b/scripts/v.unpack/v.unpack.html
+@@ -5,7 +5,7 @@
+ <h2>NOTES</h2>
+ 
+ Name of the vector map is determined by default from pack file
+-internals. Optionaly the name can be given by <b>output</b> parameter.
++internals. Optionally the name can be given by <b>output</b> parameter.
+ 
+ <h2>EXAMPLE</h2>
+ 
+--- a/vector/v.build/main.c
++++ b/vector/v.build/main.c
+@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
+     G_add_keyword(_("topology"));
+     G_add_keyword(_("geometry"));
+     module->label = _("Creates topology for vector map.");
+-    module->description = _("Optionaly also checks for topological errors.");
++    module->description = _("Optionally also checks for topological errors.");
+ 
+     map_opt = G_define_standard_option(G_OPT_V_MAP);
+     map_opt->label = NULL;
