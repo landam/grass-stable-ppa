@@ -1,5 +1,6 @@
 Description: Fix 'lauched' typo, replace with 'launched'.
 Author: Bas Couwenberg <sebastic@debian.org>
+Forwarded: https://trac.osgeo.org/grass/ticket/2725
 
 --- a/scripts/d.polar/d.polar.html
 +++ b/scripts/d.polar/d.polar.html

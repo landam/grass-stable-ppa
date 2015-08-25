@@ -1,5 +1,6 @@
 Description: Fix 'optionaly' typo, replace with 'optionally'.
 Author: Bas Couwenberg <sebastic@debian.org>
+Forwarded: https://trac.osgeo.org/grass/ticket/2725
 
 --- a/lib/symbol/README
 +++ b/lib/symbol/README

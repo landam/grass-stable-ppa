@@ -1,5 +1,6 @@
 Description: Fix 'mantained' typo, replace with 'maintained'.
 Author: Bas Couwenberg <sebastic@debian.org>
+Forwarded: https://trac.osgeo.org/grass/ticket/2725
 
 --- a/scripts/v.krige/v.krige.html
 +++ b/scripts/v.krige/v.krige.html
