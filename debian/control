@@ -49,7 +49,7 @@ Build-Depends: autoconf2.13,
                zlib1g-dev,
                liblas-c-dev (>= 1.8.0-3~)
 Standards-Version: 3.9.6
-Vcs-Browser: http://anonscm.debian.org/cgit/pkg-grass/grass.git
+Vcs-Browser: https://anonscm.debian.org/cgit/pkg-grass/grass.git
 Vcs-Git: git://anonscm.debian.org/pkg-grass/grass.git
 Homepage: http://grass.osgeo.org/
 
