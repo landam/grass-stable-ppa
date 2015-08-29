@@ -3,6 +3,7 @@ grass (7.0.1-2) UNRELEASED; urgency=medium
   * Update Vcs-Browser URL to use HTTPS.
   * Drop .0 from LGPL licese shortname in copyright file.
   * Drop obsolete TODO file.
+  * Enable parallel builds.
 
  -- Bas Couwenberg <sebastic@debian.org>  Sat, 29 Aug 2015 13:24:27 +0200
 

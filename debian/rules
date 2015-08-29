@@ -20,7 +20,7 @@ versions:
 	@echo "ABI: $(ABI)"
 
 %:
-	dh $@ --with autotools_dev,python2
+	dh $@ --with autotools_dev,python2 --parallel
 
 override_dh_clean:
 	dh_clean
