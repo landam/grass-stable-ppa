@@ -56,7 +56,7 @@ Files: imagery/i.landsat.toar/earth_sun.c
  imagery/i.landsat.toar/earth_sun.h
 Copyright: 2006, E. Jorge Tizado
       2000-2005, Liam Girdwood
-License: LGPL-2.0+
+License: LGPL-2+
 
 Files: lib/external/ccmath/*
 Copyright: 2000, Daniel A. Atkinson
@@ -68,7 +68,7 @@ Files: lib/external/shapelib/dbfopen.c
  lib/external/shapelib/shpopen.c
  raster/r.external/list.c
 Copyright: 1999, 2001, 2007, Frank Warmerdam
-License: MIT or LGPL-2.0+
+License: MIT or LGPL-2+
 
 Files: lib/python/imaging/images2avi.py
  lib/python/imaging/images2ims.py
@@ -188,7 +188,7 @@ License: GPL-2+
  On Debian systems, the complete text of version 2 of the GNU General
  Public License can be found in `/usr/share/common-licenses/GPL-2'.
 
-License: LGPL-2.0+
+License: LGPL-2+
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Library General Public
  License as published by the Free Software Foundation; either
