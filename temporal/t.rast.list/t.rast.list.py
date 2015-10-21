@@ -20,6 +20,7 @@
 #% keyword: map management
 #% keyword: raster
 #% keyword: list
+#% keyword: time
 #%end
 
 #%option G_OPT_STRDS_INPUT
@@ -70,7 +71,7 @@
 #%end
 
 #%option G_OPT_F_SEP
-#% description: Field separator character between the output columns
+#% label: Field separator character between the output columns
 #% guisection: Formatting
 #%end
 

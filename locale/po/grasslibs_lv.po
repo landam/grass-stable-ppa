@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: grasslibs_lv\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-07-20 21:44+0200\n"
+"POT-Creation-Date: 2015-08-18 12:56+0200\n"
 "PO-Revision-Date: 2014-09-10 12:12+0300\n"
 "Last-Translator: Maris Nartiss <maris.kde@gmail.com>\n"
 "Language-Team: Latvian\n"
@@ -3500,7 +3500,7 @@ msgstr "Vektors '%s' jau eksistē un tiks pārrakstīts."
 
 #: ../lib/python/pygrass/raster/__init__.py:432
 #, fuzzy, python-brace-format
-msgid "Raster map <{0}> does not exists"
+msgid "Raster map <{0}> does not exist"
 msgstr "Nevar atvērt vēsturi vektoram '%s'"
 
 #: ../lib/python/pygrass/raster/abstract.py:274
@@ -3555,7 +3555,7 @@ msgstr "nezināns interpolācijas tips"
 
 #: ../lib/python/temporal/open_stds.py:66
 #, fuzzy, python-format
-msgid "Space time %(sp)s dataset <%(name)s> no found"
+msgid "Space time %(sp)s dataset <%(name)s> not found"
 msgstr "Ieejas vektors '%s' nav atrasts"
 
 #: ../lib/python/temporal/open_stds.py:105
@@ -5649,7 +5649,8 @@ msgstr ""
 msgid "WARNING: "
 msgstr "BRĪDINĀJUMS:"
 
-#: ../lib/gis/error.c:362
+#: ../lib/gis/error.c:362 ../lib/gis/parser.c:1472
+#, c-format
 msgid "ERROR: "
 msgstr "KĻŪDA: "
 
@@ -6824,37 +6825,42 @@ msgstr ""
 "\n"
 "Kļūda: opcija/pazīme <%s> ir jabūt paredzētai daudzskaitlīgi no %d\n"
 
-#: ../lib/gis/parser.c:1473
-#, fuzzy, c-format
-msgid "ERROR: option <%s>: <%s> exists.\n"
-msgstr "Kļūda: opcija/pazīme <%s>: <%s> jau eksistē.\n"
+#: ../lib/gis/parser.c:1474
+#, c-format
+msgid "option <%s>: <%s> exists. To overwrite, use the --overwrite flag"
+msgstr ""
 
-#: ../lib/gis/parser.c:1587
+#: ../lib/gis/parser.c:1479
+#, c-format
+msgid "GRASS_INFO_ERROR(%d,1): "
+msgstr ""
+
+#: ../lib/gis/parser.c:1591
 #, fuzzy, c-format
 msgid "%s= is not a separator option"
 msgstr "Atvainojiet, <%s> nav derīgs parametrs"
 
-#: ../lib/gis/parser.c:1590
+#: ../lib/gis/parser.c:1594
 #, fuzzy, c-format
 msgid "No separator given for %s="
 msgstr "Nav norādīts atdalītājs"
 
-#: ../lib/gis/parser.c:1652 ../lib/gis/parser.c:1669
+#: ../lib/gis/parser.c:1656 ../lib/gis/parser.c:1673
 #, fuzzy, c-format
 msgid "%s= is not a file option"
 msgstr "Atvainojiet, <%s> nav derīgs parametrs"
 
-#: ../lib/gis/parser.c:1654
+#: ../lib/gis/parser.c:1658
 #, fuzzy, c-format
 msgid "Opening multiple files not supported for %s="
 msgstr "Parametrs <%s> nav atbalstīts"
 
-#: ../lib/gis/parser.c:1660
+#: ../lib/gis/parser.c:1664
 #, fuzzy, c-format
 msgid "Unable to open %s file <%s>"
 msgstr "Neiespējami atvērt failu %s iekš %s"
 
-#: ../lib/gis/parser.c:1666
+#: ../lib/gis/parser.c:1670
 #, fuzzy, c-format
 msgid "Unable to create %s file <%s>"
 msgstr "Neiespējami atvērt failu %s iekš %s"
@@ -9170,6 +9176,10 @@ msgstr ""
 #, fuzzy, c-format
 msgid "%s: out of memory"
 msgstr "Neiespējami piešķirt atmiņu\n"
+
+#, fuzzy
+#~ msgid "ERROR: option <%s>: <%s> exists.\n"
+#~ msgstr "Kļūda: opcija/pazīme <%s>: <%s> jau eksistē.\n"
 
 #~ msgid "Hit RETURN to continue"
 #~ msgstr "Spied ENTER, lai turpinātu"

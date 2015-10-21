@@ -21,6 +21,7 @@
 #% keyword: list
 #% keyword: raster3d
 #% keyword: voxel
+#% keyword: time
 #%end
 
 #%option G_OPT_STR3DS_INPUT
@@ -62,7 +63,7 @@
 #%end
 
 #%option G_OPT_F_SEP
-#% description: Field separator character between the output columns
+#% label: Field separator character between the output columns
 #% guisection: Formatting
 #%end
 

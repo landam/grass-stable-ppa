@@ -71,12 +71,6 @@ int main(int argc, char *argv[])
 
     /* set up the options and flags for the command line parser */
 
-    mapopt = G_define_standard_option(G_OPT_V_INPUT);
-    mapopt->required = NO;
-    mapopt->label = _("Name of input vector map to re-project");
-    mapopt->description = NULL;
-    mapopt->guisection = _("Source");
-    
     ilocopt = G_define_standard_option(G_OPT_M_LOCATION);
     ilocopt->required = YES;
     ilocopt->label = _("Location containing input vector map");
@@ -87,10 +81,15 @@ int main(int argc, char *argv[])
     isetopt->description = _("Default: name of current mapset");
     isetopt->guisection = _("Source");
 
+    mapopt = G_define_standard_option(G_OPT_V_INPUT);
+    mapopt->required = NO;
+    mapopt->label = _("Name of input vector map to re-project");
+    mapopt->description = NULL;
+    mapopt->guisection = _("Source");
+    
     ibaseopt = G_define_standard_option(G_OPT_M_DBASE);
     ibaseopt->label = _("Path to GRASS database of input location");
-    ibaseopt->guisection = _("Source");
-
+    
     smax = G_define_option();
     smax->key = "smax";
     smax->type = TYPE_DOUBLE;
@@ -141,7 +140,7 @@ int main(int argc, char *argv[])
 	omap_name = map_name;
     if (omap_name && !flag.list->answer && !overwrite &&
 	G_find_vector2(omap_name, G_mapset()))
-	G_fatal_error(_("option <%s>: <%s> exists."), omapopt->key,
+	G_fatal_error(_("option <%s>: <%s> exists. To overwrite, use the --overwrite flag"), omapopt->key,
 		      omap_name);
     if (isetopt->answer)
 	iset_name = isetopt->answer;

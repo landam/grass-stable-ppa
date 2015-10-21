@@ -629,13 +629,10 @@ class TaskFrame(wx.Frame):
         if event:
             event.Skip()
 
-    def OnDone(self, cmd, returncode):
+    def OnDone(self, event):
         """This function is launched from OnRun() when command is
         finished
-
-        :param returncode: command's return code (0 for success)
         """
-
         if hasattr(self, "btn_cancel"):
             self.btn_cancel.Enable(True)
 
@@ -652,7 +649,7 @@ class TaskFrame(wx.Frame):
                     self.get_dcmd is None and \
                     hasattr(self, "closebox") and \
                     self.closebox.IsChecked() and \
-                    (returncode == 0):
+                    (event.returncode == 0):
             # was closed also when aborted but better is leave it open
             wx.FutureCall(2000, self.Close)
 
@@ -1178,12 +1175,8 @@ class CmdPanel(wx.Panel):
                         mapsets = None
                     if self.task.name in ('r.proj', 'v.proj') \
                             and p.get('name', '') == 'input':
-                        if self.task.name == 'r.proj':
-                            isRaster = True
-                        else:
-                            isRaster = False
                         selection = gselect.ProjSelect(parent = which_panel,
-                                                       isRaster = isRaster)
+                                                       isRaster = self.task.name == 'r.proj')
                         p['wxId'] = [ selection.GetId(), ]
                         selection.Bind(wx.EVT_COMBOBOX, self.OnSetValue)
                         selection.Bind(wx.EVT_TEXT, self.OnUpdateSelection)
@@ -1787,8 +1780,9 @@ class CmdPanel(wx.Panel):
             pLocation['wxId-bind'] = pMapset['wxId']
         
         if pLocation and pMapset and pMap:
-            pLocation['wxId-bind'] +=  pMap['wxId']
+            # pLocation['wxId-bind'] +=  pMap['wxId']
             pMapset['wxId-bind'] = pMap['wxId']
+        
         #
         # determine panel size
         #
@@ -2366,6 +2360,8 @@ class GUI:
             cmd_validated = [cmd[0]]
             for option in cmd[1:]:
                 if option[0] == '-': # flag
+                    if len(option) == 1:  # catch typo like 'g.proj - w'
+                        raise gcmd.GException, _("Unable to parse command '%s'") % ' '.join(cmd)
                     if option[1] == '-':
                         self.grass_task.set_flag(option[2:], True)
                     else:

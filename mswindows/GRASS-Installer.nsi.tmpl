@@ -3,7 +3,7 @@
 ;GRASS GIS Installer for Windows
 ;Written by Marco Pasetti
 ;Updated for OSGeo4W by Colin Nielsen, Helmut Kudrnovsky, and Martin Landa
-;Last Update: $Id: GRASS-Installer.nsi.tmpl 65576 2015-07-11 14:04:13Z neteler $
+;Last Update: $Id: GRASS-Installer.nsi.tmpl 66294 2015-09-22 15:44:38Z hellik $
 ;Mail to: grass-dev@lists.osgeo.org 
 
 ;----------------------------------------------------------------------------------------------------------------------------
@@ -528,6 +528,15 @@ Section "GRASS" SecGRASS
 	SetOutPath "$INSTALL_DIR"
 	File /r ${PACKAGE_FOLDER}\*.*
 
+	;grant $INSTDIR\etc read write accessible and show if succeeded: error if it failed
+	AccessControl::GrantOnFile "$INSTDIR\etc" "(S-1-5-32-545)" "FullAccess"
+	Pop $R0
+	DetailPrint $R0	
+	;grant modifying/overwriting fontcap file and show if succeeded: error if it failed	
+	AccessControl::GrantOnFile "$INSTDIR\etc\fontcap" "(S-1-5-32-545)" "FullAccess"
+	Pop $R0
+	DetailPrint $R0	
+	
 	;create run_gmkfontcap.bat
 	ClearErrors
 	FileOpen $0 $INSTALL_DIR\etc\run_gmkfontcap.bat w
@@ -576,7 +585,7 @@ Section "GRASS" SecGRASS
 	FileWrite $0 '    <security>$\r$\n'
 	FileWrite $0 '      <requestedPrivileges>$\r$\n'
 	FileWrite $0 '        <requestedExecutionLevel$\r$\n'
-	FileWrite $0 '          level="asInvoker"$\r$\n'
+	FileWrite $0 '          level="requireAdministrator"$\r$\n'
 	FileWrite $0 '          uiAccess="false"/>$\r$\n'
 	FileWrite $0 '        </requestedPrivileges>$\r$\n'
 	FileWrite $0 '       </security>$\r$\n'
@@ -587,6 +596,9 @@ Section "GRASS" SecGRASS
 	
 	;Run g.mkfontcap outside a grass session during installation to catch all fonts
 	ExecWait '"$INSTALL_DIR\etc\run_gmkfontcap.bat"'
+
+	;set $INSTDIR\etc back to read accessible
+	AccessControl::SetOnFile "$INSTDIR\etc" "(S-1-5-32-545)" "GenericRead + GenericExecute"	
 	
 	;Install demolocation into the GIS_DATABASE directory
 	SetOutPath "$GIS_DATABASE\demolocation"
@@ -1059,10 +1071,10 @@ Section /O "South Dakota (Spearfish County) Data Set" SecSpearfishSDB
 	AddSize 42171
 	
 	StrCpy $HTTP_PATH "http://grass.osgeo.org/sampledata"
-	StrCpy $ARCHIVE_NAME "spearfish_grass60data-0.3.tar.gz"
+	StrCpy $ARCHIVE_NAME "spearfish_grass70data-0.3.tar.gz"
 	StrCpy $EXTENDED_ARCHIVE_NAME "South Dakota (Spearfish County)"
-	StrCpy $ORIGINAL_UNTAR_FOLDER "spearfish60"
-	StrCpy $CUSTOM_UNTAR_FOLDER "Spearfish60"
+	StrCpy $ORIGINAL_UNTAR_FOLDER "spearfish60_grass7"
+	StrCpy $CUSTOM_UNTAR_FOLDER "Spearfish60_grass7"
 	
 	Call DownloadDataSet
 
@@ -1116,7 +1128,7 @@ SectionEnd
 	!insertmacro MUI_DESCRIPTION_TEXT ${SecGRASS} "Install GRASS ${VERSION_NUMBER}"
 	!insertmacro MUI_DESCRIPTION_TEXT ${SecMSRuntime} "Some software included in this installer (e.g. GDAL, Python) may need Microsoft's Visual C++ redistributable system libraries.$\r$\nDownload and install the Redistributable Package. (12 MB)"
 	!insertmacro MUI_DESCRIPTION_TEXT ${SecNorthCarolinaSDB} "Download and install the North Carolina (Wake County) sample data set. (141 MB)"
-	!insertmacro MUI_DESCRIPTION_TEXT ${SecSpearfishSDB} "Download and install the South Dakota (Spearfish County) sample data set. (20 MB)"
+	!insertmacro MUI_DESCRIPTION_TEXT ${SecSpearfishSDB} "Download and install the South Dakota (Spearfish County) sample data set. (22 MB)"
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 ;--------------------------------------------------------------------------

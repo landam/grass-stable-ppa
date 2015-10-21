@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: grasslibs_ml\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-07-20 21:44+0200\n"
+"POT-Creation-Date: 2015-08-18 12:56+0200\n"
 "PO-Revision-Date: 2010-08-24 11:31+0530\n"
 "Last-Translator: Mohammed Rashad <rashadkm@gmail.com>\n"
 "Language-Team: GRASS Malayalam Translation Team <rashadkm@gmail.com>\n"
@@ -3441,7 +3441,7 @@ msgstr "ഈ ടേബിൾ <%s> ഡേറ്റാബേയ്സിൽ ഉണ�
 
 #: ../lib/python/pygrass/raster/__init__.py:432
 #, fuzzy, python-brace-format
-msgid "Raster map <{0}> does not exists"
+msgid "Raster map <{0}> does not exist"
 msgstr "ഗ്രൂപ്പ് <%s> കാലിയാണ്‌ \n"
 
 #: ../lib/python/pygrass/raster/abstract.py:274
@@ -3496,7 +3496,7 @@ msgstr "വെക്റ്റർ മാപ്പ് വായിക്കാൻ 
 
 #: ../lib/python/temporal/open_stds.py:66
 #, fuzzy, python-format
-msgid "Space time %(sp)s dataset <%(name)s> no found"
+msgid "Space time %(sp)s dataset <%(name)s> not found"
 msgstr "റാസ്റ്റെർ മാപ്പ് <%s> കണ്മാനില്ല"
 
 #: ../lib/python/temporal/open_stds.py:105
@@ -5551,7 +5551,8 @@ msgstr "റാസ്റ്റെർ മാപ്പ് തുറക്കാൻ 
 msgid "WARNING: "
 msgstr ""
 
-#: ../lib/gis/error.c:362
+#: ../lib/gis/error.c:362 ../lib/gis/parser.c:1472
+#, c-format
 msgid "ERROR: "
 msgstr ""
 
@@ -6677,37 +6678,42 @@ msgid ""
 "\tYou provided %d item(s): %s"
 msgstr ""
 
-#: ../lib/gis/parser.c:1473
+#: ../lib/gis/parser.c:1474
 #, c-format
-msgid "ERROR: option <%s>: <%s> exists.\n"
+msgid "option <%s>: <%s> exists. To overwrite, use the --overwrite flag"
 msgstr ""
 
-#: ../lib/gis/parser.c:1587
+#: ../lib/gis/parser.c:1479
+#, c-format
+msgid "GRASS_INFO_ERROR(%d,1): "
+msgstr ""
+
+#: ../lib/gis/parser.c:1591
 #, c-format
 msgid "%s= is not a separator option"
 msgstr ""
 
-#: ../lib/gis/parser.c:1590
+#: ../lib/gis/parser.c:1594
 #, c-format
 msgid "No separator given for %s="
 msgstr ""
 
-#: ../lib/gis/parser.c:1652 ../lib/gis/parser.c:1669
+#: ../lib/gis/parser.c:1656 ../lib/gis/parser.c:1673
 #, c-format
 msgid "%s= is not a file option"
 msgstr ""
 
-#: ../lib/gis/parser.c:1654
+#: ../lib/gis/parser.c:1658
 #, fuzzy, c-format
 msgid "Opening multiple files not supported for %s="
 msgstr "റാസ്റ്റെർ മാപ്പ് <%s> കണ്മാനില്ല"
 
-#: ../lib/gis/parser.c:1660
+#: ../lib/gis/parser.c:1664
 #, fuzzy, c-format
 msgid "Unable to open %s file <%s>"
 msgstr "ഫയൽ തുറക്കൻ പറ്റുന്നില്ല %s"
 
-#: ../lib/gis/parser.c:1666
+#: ../lib/gis/parser.c:1670
 #, fuzzy, c-format
 msgid "Unable to create %s file <%s>"
 msgstr "ടേബിൾ ഉണ്ടാക്കാൻ പറ്റുന്നില്ല <%s>"

@@ -20,17 +20,20 @@
 #% keyword: import
 #% keyword: copying
 #%end
-#%option G_OPT_F_INPUT
+#%option G_OPT_F_BIN_INPUT
 #% description: Name of input pack file
+#% key_desc: name.pack
 #%end
 #%option G_OPT_V_OUTPUT
 #% label: Name for output vector map
 #% description: Default: taken from input file internals
 #% required : no
+#% guisection: Output settings
 #%end
 #%flag
 #% key: o
 #% description: Override projection check (use current location's projection)
+#% guisection: Output settings
 #%end
 
 import os
@@ -97,11 +100,11 @@ def main():
 
     # extract data
     tar.extractall()
-    if os.path.exists(os.path.join(map_name, 'coor')):
+    if os.path.exists(os.path.join(data_name, 'coor')):
         pass
-    elif os.path.exists(os.path.join(map_name, 'cell')):
+    elif os.path.exists(os.path.join(data_name, 'cell')):
         grass.fatal(_("This GRASS GIS pack file contains raster data. Use "
-                      "r.unpack to unpack <%s>" % map_name))
+                      "v.unpack to unpack <%s>" % map_name))
     else:
         grass.fatal(_("Pack file unreadable"))
 
@@ -109,32 +112,39 @@ def main():
     loc_proj = os.path.join(mset_dir, '..', 'PERMANENT', 'PROJ_INFO')
     loc_proj_units = os.path.join(mset_dir, '..', 'PERMANENT', 'PROJ_UNITS')
 
-    diff_result_1 = diff_result_2 = None
-    if not grass.compare_key_value_text_files(filename_a=os.path.join(tmp_dir, 'PROJ_INFO'),
-                                              filename_b=loc_proj, proj=True):
-        diff_result_1 = diff_files(os.path.join(tmp_dir, 'PROJ_INFO'),
-                                         loc_proj)
+    skip_projection_check = False
+    if not os.path.exists(os.path.join(tmp_dir, 'PROJ_INFO')):
+        if os.path.exists(loc_proj):
+            grass.fatal(_("PROJ_INFO file is missing, unpack vector map in XY (unprojected) location."))
+        skip_projection_check = True  # XY location
 
-    if not grass.compare_key_value_text_files(filename_a=os.path.join(tmp_dir, 'PROJ_UNITS'),
-                                              filename_b=loc_proj_units,
-                                              units=True):
-        diff_result_2 = diff_files(os.path.join(tmp_dir, 'PROJ_UNITS'),
-                                         loc_proj_units)
-
-    if diff_result_1 or diff_result_2:
-        if flags['o']:
-            grass.warning(_("Projection information does not match. Proceeding..."))
-        else:
-            if diff_result_1:
-                grass.warning(_("Difference between PROJ_INFO file of packed map "
-                                "and of current location:\n{diff}").format(diff=''.join(diff_result_1)))
-            if diff_result_2:
-                grass.warning(_("Difference between PROJ_UNITS file of packed map "
-                                "and of current location:\n{diff}").format(diff=''.join(diff_result_2)))
-            grass.fatal(_("Projection of dataset does not appear to match current location."
-                          " In case of no significant differences in the projection definitions,"
-                          " use the -o flag to ignore them and use"
-                          " current location definition."))
+    if not skip_projection_check:
+        diff_result_1 = diff_result_2 = None
+        if not grass.compare_key_value_text_files(filename_a=os.path.join(tmp_dir, 'PROJ_INFO'),
+                                                  filename_b=loc_proj, proj=True):
+            diff_result_1 = diff_files(os.path.join(tmp_dir, 'PROJ_INFO'),
+                                             loc_proj)
+    
+        if not grass.compare_key_value_text_files(filename_a=os.path.join(tmp_dir, 'PROJ_UNITS'),
+                                                  filename_b=loc_proj_units,
+                                                  units=True):
+            diff_result_2 = diff_files(os.path.join(tmp_dir, 'PROJ_UNITS'),
+                                             loc_proj_units)
+    
+        if diff_result_1 or diff_result_2:
+            if flags['o']:
+                grass.warning(_("Projection information does not match. Proceeding..."))
+            else:
+                if diff_result_1:
+                    grass.warning(_("Difference between PROJ_INFO file of packed map "
+                                    "and of current location:\n{diff}").format(diff=''.join(diff_result_1)))
+                if diff_result_2:
+                    grass.warning(_("Difference between PROJ_UNITS file of packed map "
+                                    "and of current location:\n{diff}").format(diff=''.join(diff_result_2)))
+                grass.fatal(_("Projection of dataset does not appear to match current location."
+                              " In case of no significant differences in the projection definitions,"
+                              " use the -o flag to ignore them and use"
+                              " current location definition."))
 
     # new db
     fromdb = os.path.join(tmp_dir, 'db.sqlite')

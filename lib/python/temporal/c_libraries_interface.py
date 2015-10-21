@@ -133,7 +133,7 @@ def _get_database_name(lock, conn, data):
         # This behavior is in conjunction with db.connect
         dbstring = dbstring.replace("$GISDBASE", libgis.G_gisdbase())
         dbstring = dbstring.replace("$LOCATION_NAME", libgis.G_location())
-        dbstring = dbstring.replace("$MAPSET", libgis.G_mapset())
+        dbstring = dbstring.replace("$MAPSET", mapset)
     conn.send(dbstring)
 
 ###############################################################################
@@ -148,20 +148,31 @@ def _available_mapsets(lock, conn, data):
 
        :returns: Names of available mapsets as list of strings
     """
-    
+
     count = 0
     mapset_list = []
     try:
+        # Initialize the accessable mapset list, this is bad C design!!!
+        libgis.G_get_mapset_name(0)
         mapsets = libgis.G_get_available_mapsets()
         while mapsets[count]:
             char_list = ""
             mapset = mapsets[count]
-            if libgis.G_mapset_permissions(mapset) > 0:
-                c = 0
-                while mapset[c] != "\x00":
-                    char_list += mapset[c]
-                    c += 1
+            
+            permission = libgis.G_mapset_permissions(mapset)
+            in_search_path = libgis.G_is_mapset_in_search_path(mapset)
+            
+            c = 0
+            while mapset[c] != "\x00":
+                char_list += mapset[c]
+                c += 1
+            
+            if permission >= 0 and in_search_path == 1:
                 mapset_list.append(char_list)
+
+            libgis.G_debug(1, "c_library_server._available_mapsets: \n  mapset:  %s\n"\
+                              "  has permission %i\n  in search path: %i"%(char_list,
+                              permission, in_search_path))
             count += 1
 
         # We need to sort the mapset list, but the first one should be
