@@ -1,9 +1,5 @@
 pager
 instdir
-python-ctypes-ternary.patch
 no-fail-html.patch
 desktop.patch
 appstream.patch
-optionally-typo.patch
-maintained-typo.patch
-launched-typo.patch

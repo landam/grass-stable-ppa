@@ -1,16 +1,14 @@
-Description: Fix Exec & Icon for Debian.
-Author: Bas Couwenberg <sebastic@xs4all.nl>
+Description: Fix desktop file for Debian.
+Author: Bas Couwenberg <sebastic@debian.org>
 Forwarded: not-needed
 
 --- a/gui/icons/grass.desktop
 +++ b/gui/icons/grass.desktop
-@@ -47,7 +47,7 @@ Comment[tr]=Coğrafi bilgi sistemi
- Comment[uk]=Геоінформаційна система
+@@ -48,6 +48,6 @@ Comment[uk]=Геоінформаційн
  Comment[uz]=Geografik axborot tizimi
  Categories=Education;Science;Geoscience;Geography;
--Exec=grass7
+ Exec=grass70
 -Icon=grass
-+Exec=grass70
 +Icon=grass70
  Terminal=true
- Keywords=wms;wfs;ogc;osgeo
+ Keywords=wms;wfs;ogc;osgeo;gis;
