@@ -244,6 +244,13 @@ override_dh_auto_install-indep:
 	rm -f debian/tmp/programming-manual/html/jquery.js
 
 override_dh_install-arch:
+	# Strip binaries
+	strip debian/tmp/usr/lib/$(BASE_NAME)/bin/r.in.png
+	strip debian/tmp/usr/lib/$(BASE_NAME)/bin/r.out.png
+
+	strip --remove-section=.comment debian/tmp/usr/lib/$(BASE_NAME)/bin/r.in.png
+	strip --remove-section=.comment debian/tmp/usr/lib/$(BASE_NAME)/bin/r.out.png
+
 	dh_install --arch --list-missing
 
 	# delete duplicated grass-gui stuff from grass-core package

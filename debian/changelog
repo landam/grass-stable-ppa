@@ -4,6 +4,7 @@ grass (7.0.2~rc1-1) UNRELEASED; urgency=medium
   * Update copyright years in copyright file.
   * Drop patches applied upstream, refresh remaining patches.
   * Add patch to fix various new typos.
+  * Strip r.in.png & r.out.png
 
  -- Bas Couwenberg <sebastic@debian.org>  Wed, 21 Oct 2015 22:07:29 +0200
 
