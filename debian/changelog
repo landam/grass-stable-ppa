@@ -1,3 +1,9 @@
+grass (7.0.2~rc1-1) UNRELEASED; urgency=medium
+
+  * New upstream release candidate.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Wed, 21 Oct 2015 22:07:29 +0200
+
 grass (7.0.1-2) unstable; urgency=medium
 
   * Update Vcs-Browser URL to use HTTPS.
