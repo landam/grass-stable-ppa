@@ -17,6 +17,8 @@ category number falls into different <b>query_map</b> polygons.
 <p>When transferring attributes from a point map to a polygon map, usually <b>dmax</b>
 has to be larger than zero (determined by distance between query points and
 polygon centroids).
+<p>In case that one or both input vector maps are 3D, features need to touch also
+in the 3rd dimension (z coordinate) in order to transfer attributes.
 
 <h2>EXAMPLES</h2>
 
@@ -68,4 +70,4 @@ v.what.vect corine_code111_112_cities query_map=geonames_IT_cities column=gnamei
 
 Markus Neteler
 
-<p><i>Last changed: $Date: 2014-11-28 17:25:40 +0100 (Fri, 28 Nov 2014) $</i>
+<p><i>Last changed: $Date: 2015-10-07 10:15:43 +0200 (Wed, 07 Oct 2015) $</i>

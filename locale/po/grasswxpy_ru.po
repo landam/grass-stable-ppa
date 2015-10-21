@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: grasswxpy_ru\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-07-20 21:44+0200\n"
+"POT-Creation-Date: 2015-08-18 12:56+0200\n"
 "PO-Revision-Date: 2008-10-10 19:44-0600\n"
 "Last-Translator: Maxim Dubinin <sim@gis-lab.info>\n"
 "Language-Team: Russian <grass-translations@lists.osgeo.org>\n"
@@ -1464,7 +1464,7 @@ msgstr ""
 
 #: ../gui/wxpython/gcp/manager.py:2411 ../gui/wxpython/vnet/dialogs.py:1193
 #: ../gui/wxpython/gui_core/dialogs.py:1689
-#: ../gui/wxpython/gui_core/dialogs.py:2019
+#: ../gui/wxpython/gui_core/dialogs.py:2053
 #: ../gui/wxpython/web_services/dialogs.py:132
 #: ../gui/wxpython/web_services/dialogs.py:827
 #: ../gui/wxpython/iscatt/dialogs.py:361
@@ -2614,7 +2614,7 @@ msgid "Python editor"
 msgstr ""
 
 #: ../gui/wxpython/gmodeler/frame.py:132
-#: ../gui/wxpython/gui_core/forms.py:1830
+#: ../gui/wxpython/gui_core/forms.py:1827
 #: ../gui/wxpython/modules/vkrige.py:102
 msgid "Command output"
 msgstr "Результат команды"
@@ -2903,7 +2903,7 @@ msgid "mapset"
 msgstr "Набор"
 
 #: ../gui/wxpython/gmodeler/frame.py:1458
-#: ../gui/wxpython/gui_core/forms.py:1524
+#: ../gui/wxpython/gui_core/forms.py:1520
 #, fuzzy
 msgid "file"
 msgstr "Профиль"
@@ -3051,7 +3051,7 @@ msgstr "Индекс формы"
 #: ../gui/wxpython/gmodeler/preferences.py:363
 #: ../gui/wxpython/gmodeler/preferences.py:448
 #: ../gui/wxpython/psmap/dialogs.py:2723
-#: ../gui/wxpython/gui_core/dialogs.py:2423
+#: ../gui/wxpython/gui_core/dialogs.py:2457
 #: ../gui/wxpython/nviz/preferences.py:476
 msgid "Width:"
 msgstr "Ширина:"
@@ -3062,7 +3062,7 @@ msgstr "Ширина:"
 #: ../gui/wxpython/gmodeler/preferences.py:466
 #: ../gui/wxpython/psmap/dialogs.py:2735 ../gui/wxpython/psmap/dialogs.py:2873
 #: ../gui/wxpython/psmap/dialogs.py:3476
-#: ../gui/wxpython/gui_core/dialogs.py:2427 ../gui/wxpython/nviz/tools.py:284
+#: ../gui/wxpython/gui_core/dialogs.py:2461 ../gui/wxpython/nviz/tools.py:284
 #: ../gui/wxpython/nviz/tools.py:1043 ../gui/wxpython/nviz/tools.py:1770
 msgid "Height:"
 msgstr "Высота:"
@@ -3206,7 +3206,7 @@ msgstr "Векторные точки"
 
 #: ../gui/wxpython/gmodeler/model.py:1056
 #: ../gui/wxpython/gmodeler/model.py:1153
-#: ../gui/wxpython/gui_core/ghelp.py:212 ../gui/wxpython/core/gconsole.py:617
+#: ../gui/wxpython/gui_core/ghelp.py:212 ../gui/wxpython/core/gconsole.py:616
 msgid "unknown"
 msgstr "неизвестно"
 
@@ -4179,9 +4179,9 @@ msgstr "WKT файл:"
 #: ../gui/wxpython/animation/dialogs.py:952
 #: ../gui/wxpython/animation/dialogs.py:969
 #: ../gui/wxpython/animation/dialogs.py:992
-#: ../gui/wxpython/gui_core/forms.py:1525
-#: ../gui/wxpython/gui_core/forms.py:1589
-#: ../gui/wxpython/gui_core/dialogs.py:2091
+#: ../gui/wxpython/gui_core/forms.py:1521
+#: ../gui/wxpython/gui_core/forms.py:1585
+#: ../gui/wxpython/gui_core/dialogs.py:2125
 #: ../gui/wxpython/gui_core/gselect.py:1077
 #: ../gui/wxpython/gui_core/gselect.py:1389
 #: ../gui/wxpython/gui_core/gselect.py:1402
@@ -4689,7 +4689,7 @@ msgstr "Цвет линии"
 
 #: ../gui/wxpython/psmap/dialogs.py:4604 ../gui/wxpython/psmap/dialogs.py:4619
 #: ../gui/wxpython/psmap/dialogs.py:4858 ../gui/wxpython/psmap/dialogs.py:4879
-#: ../gui/wxpython/gui_core/dialogs.py:2276
+#: ../gui/wxpython/gui_core/dialogs.py:2310
 msgid "transparent"
 msgstr "прозрачный"
 
@@ -6505,11 +6505,11 @@ msgid "Do you really want to activate snapping and overwrite it?"
 msgstr ""
 
 #: ../gui/wxpython/vnet/vnet_core.py:1040
-#, python-format
+#, fuzzy, python-format
 msgid ""
 "Temporary map '%s' was changed outside vector analysis tool.\n"
 "Do you really want to activate snapping and overwrite it? "
-msgstr ""
+msgstr "Файл региона <%s> уже существует. Перезаписать?"
 
 #: ../gui/wxpython/vnet/vnet_core.py:1045
 #, fuzzy
@@ -6761,7 +6761,7 @@ msgstr "Загрузка данных..."
 
 #: ../gui/wxpython/vnet/dialogs.py:798
 #, fuzzy
-msgid "Input vector map does not exists."
+msgid "Input vector map does not exist."
 msgstr "Слой <%s> не найден."
 
 #: ../gui/wxpython/vnet/dialogs.py:816
@@ -8340,14 +8340,14 @@ msgstr ""
 
 #: ../gui/wxpython/lmgr/layertree.py:56 ../gui/wxpython/menustrings.py:32
 #: ../gui/wxpython/menustrings.py:1009
-#: ../gui/wxpython/gui_core/dialogs.py:1866
+#: ../gui/wxpython/gui_core/dialogs.py:1884
 #, fuzzy
 msgid "Import raster data"
 msgstr "Импортировать растровый слой"
 
 #: ../gui/wxpython/lmgr/layertree.py:58 ../gui/wxpython/menustrings.py:151
 #: ../gui/wxpython/menustrings.py:1128
-#: ../gui/wxpython/gui_core/dialogs.py:1864
+#: ../gui/wxpython/gui_core/dialogs.py:1882
 #, fuzzy
 msgid "Link external raster data"
 msgstr "Загрузка растрового слоя"
@@ -8365,14 +8365,14 @@ msgstr "Выбрать шрифт"
 
 #: ../gui/wxpython/lmgr/layertree.py:64 ../gui/wxpython/menustrings.py:60
 #: ../gui/wxpython/menustrings.py:1037
-#: ../gui/wxpython/gui_core/dialogs.py:1860
+#: ../gui/wxpython/gui_core/dialogs.py:1878
 #, fuzzy
 msgid "Import vector data"
 msgstr "Импорт векторного слоя"
 
 #: ../gui/wxpython/lmgr/layertree.py:66 ../gui/wxpython/menustrings.py:153
 #: ../gui/wxpython/menustrings.py:1130
-#: ../gui/wxpython/gui_core/dialogs.py:1858
+#: ../gui/wxpython/gui_core/dialogs.py:1876
 #, fuzzy
 msgid "Link external vector data"
 msgstr "Основные векторные метаданные"
@@ -8725,7 +8725,7 @@ msgstr "Импортировать растровый слой"
 msgid "Raster Map Calculator"
 msgstr "3D растровый калькулятор"
 
-#: ../gui/wxpython/lmgr/toolbars.py:140 ../gui/wxpython/gui_core/forms.py:1205
+#: ../gui/wxpython/lmgr/toolbars.py:140 ../gui/wxpython/gui_core/forms.py:1198
 #, fuzzy
 msgid "Graphical Modeler"
 msgstr "Помощь ГИС GRASS"
@@ -11874,7 +11874,7 @@ msgstr "Создать/построить топологию"
 
 #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
 msgid ""
-"Creates topology for vector map. Optionaly also checks for topological "
+"Creates topology for vector map. Optionally also checks for topological "
 "errors."
 msgstr ""
 
@@ -14506,7 +14506,7 @@ msgstr "Цвет каркаса:"
 
 #: ../gui/wxpython/gui_core/preferences.py:973
 #: ../gui/wxpython/gui_core/preferences.py:995
-#: ../gui/wxpython/gui_core/forms.py:1494
+#: ../gui/wxpython/gui_core/forms.py:1490
 msgid "Transparent"
 msgstr "Прозрачный"
 
@@ -14842,99 +14842,99 @@ msgid ""
 "Preferences dialog ('Command' tab)."
 msgstr ""
 
-#: ../gui/wxpython/gui_core/forms.py:753
+#: ../gui/wxpython/gui_core/forms.py:750
 #, python-format
 msgid "'%s' copied to clipboard"
 msgstr "'%s' скопировано в буфер обмена"
 
-#: ../gui/wxpython/gui_core/forms.py:824 ../gui/wxpython/gui_core/forms.py:837
+#: ../gui/wxpython/gui_core/forms.py:821 ../gui/wxpython/gui_core/forms.py:834
 msgid "Required"
 msgstr "Необходимо"
 
-#: ../gui/wxpython/gui_core/forms.py:827 ../gui/wxpython/gui_core/forms.py:837
+#: ../gui/wxpython/gui_core/forms.py:824 ../gui/wxpython/gui_core/forms.py:834
 msgid "Optional"
 msgstr "Опционный"
 
-#: ../gui/wxpython/gui_core/forms.py:906
-#: ../gui/wxpython/gui_core/forms.py:1654
+#: ../gui/wxpython/gui_core/forms.py:903
+#: ../gui/wxpython/gui_core/forms.py:1650
 #, fuzzy
 msgid "Parameterized in model"
 msgstr "Параметр не найден: %s"
 
-#: ../gui/wxpython/gui_core/forms.py:969
+#: ../gui/wxpython/gui_core/forms.py:966
 msgid "This option is required"
 msgstr ""
 
-#: ../gui/wxpython/gui_core/forms.py:986
+#: ../gui/wxpython/gui_core/forms.py:983
 msgid "[multiple]"
 msgstr "[множественный]"
 
-#: ../gui/wxpython/gui_core/forms.py:1036
+#: ../gui/wxpython/gui_core/forms.py:1033
 #, fuzzy
 msgid "valid range"
 msgstr "Правильный диапазон"
 
-#: ../gui/wxpython/gui_core/forms.py:1301
+#: ../gui/wxpython/gui_core/forms.py:1294
 msgid "Show graphical representation of temporal extent of dataset(s) ."
 msgstr ""
 
-#: ../gui/wxpython/gui_core/forms.py:1461 ../gui/wxpython/core/utils.py:998
+#: ../gui/wxpython/gui_core/forms.py:1454 ../gui/wxpython/core/utils.py:998
 msgid "Select Color"
 msgstr "Выбрать цвет"
 
-#: ../gui/wxpython/gui_core/forms.py:1523
-#: ../gui/wxpython/gui_core/forms.py:1587
+#: ../gui/wxpython/gui_core/forms.py:1519
+#: ../gui/wxpython/gui_core/forms.py:1583
 #, python-format
 msgid "Choose %s"
 msgstr "Выбрать %s"
 
-#: ../gui/wxpython/gui_core/forms.py:1552
+#: ../gui/wxpython/gui_core/forms.py:1548
 #: ../gui/wxpython/modules/mcalc_builder.py:143
 #, fuzzy
 msgid "&Load"
 msgstr "Загрузить"
 
-#: ../gui/wxpython/gui_core/forms.py:1553
+#: ../gui/wxpython/gui_core/forms.py:1549
 #, fuzzy
 msgid "Load and edit content of a file"
 msgstr "Переименовать область"
 
-#: ../gui/wxpython/gui_core/forms.py:1555
+#: ../gui/wxpython/gui_core/forms.py:1551
 #, fuzzy
 msgid "&Save as"
 msgstr "Сохранить изменения"
 
-#: ../gui/wxpython/gui_core/forms.py:1556
+#: ../gui/wxpython/gui_core/forms.py:1552
 msgid "Save content to a file for further use"
 msgstr ""
 
-#: ../gui/wxpython/gui_core/forms.py:1561
+#: ../gui/wxpython/gui_core/forms.py:1557
 #, fuzzy
 msgid "or enter values directly:"
 msgstr "Интерактивная перекодировка"
 
-#: ../gui/wxpython/gui_core/forms.py:1563
+#: ../gui/wxpython/gui_core/forms.py:1559
 msgid ""
 "Enter file content directly instead of specifying a file. Temporary file "
 "will be automatically created."
 msgstr ""
 
-#: ../gui/wxpython/gui_core/forms.py:1588
+#: ../gui/wxpython/gui_core/forms.py:1584
 #: ../gui/wxpython/gui_core/gselect.py:1320
 #, fuzzy
 msgid "Directory"
 msgstr "Направление"
 
-#: ../gui/wxpython/gui_core/forms.py:1839
+#: ../gui/wxpython/gui_core/forms.py:1836
 msgid "Manual"
 msgstr "Вручную"
 
-#: ../gui/wxpython/gui_core/forms.py:1880
+#: ../gui/wxpython/gui_core/forms.py:1877
 #, fuzzy
 msgid "Nothing to load."
 msgstr "Нечего не выбрано."
 
-#: ../gui/wxpython/gui_core/forms.py:1888
+#: ../gui/wxpython/gui_core/forms.py:1885
 #, fuzzy, python-format
 msgid ""
 "Unable to load file.\n"
@@ -14942,38 +14942,38 @@ msgid ""
 "Reason: %s"
 msgstr "Невозможно прочитать коды EPSG: %s"
 
-#: ../gui/wxpython/gui_core/forms.py:1914
+#: ../gui/wxpython/gui_core/forms.py:1911
 #: ../gui/wxpython/modules/colorrules.py:610
 #, fuzzy
 msgid "Nothing to save."
 msgstr "Нечего не выбрано."
 
-#: ../gui/wxpython/gui_core/forms.py:1918
+#: ../gui/wxpython/gui_core/forms.py:1915
 #, fuzzy
 msgid "Save input as..."
 msgstr "Сохранить файл как..."
 
-#: ../gui/wxpython/gui_core/forms.py:2227
+#: ../gui/wxpython/gui_core/forms.py:2224
 #, fuzzy
 msgid "No dataset given."
 msgstr "Слои для выборки не выбраны."
 
-#: ../gui/wxpython/gui_core/forms.py:2266 ../gui/wxpython/core/gcmd.py:701
+#: ../gui/wxpython/gui_core/forms.py:2263 ../gui/wxpython/core/gcmd.py:701
 #, python-format
 msgid "Error in %s"
 msgstr "Ошибка в %s"
 
-#: ../gui/wxpython/gui_core/forms.py:2380
+#: ../gui/wxpython/gui_core/forms.py:2377
 #, fuzzy, python-format
 msgid "Unable to parse command '%s'"
 msgstr "Невозможно обработать команду %s"
 
-#: ../gui/wxpython/gui_core/forms.py:2386
+#: ../gui/wxpython/gui_core/forms.py:2383
 #, python-format
 msgid "%(cmd)s: parameter '%(key)s' not available"
 msgstr ""
 
-#: ../gui/wxpython/gui_core/forms.py:2478
+#: ../gui/wxpython/gui_core/forms.py:2475
 msgid "Try to set up GRASS_ADDON_PATH or GRASS_ADDON_BASE variable."
 msgstr ""
 
@@ -15276,123 +15276,120 @@ msgid "Encoding"
 msgstr ""
 
 #: ../gui/wxpython/gui_core/dialogs.py:1692
-#: ../gui/wxpython/gui_core/dialogs.py:1886
+#: ../gui/wxpython/gui_core/dialogs.py:1901
 msgid "&Import"
 msgstr "&Импорт"
 
 #: ../gui/wxpython/gui_core/dialogs.py:1693
-#: ../gui/wxpython/gui_core/dialogs.py:1887
+#: ../gui/wxpython/gui_core/dialogs.py:1902
 msgid "Import selected layers"
 msgstr "Импортировать выбранные слои"
 
-#: ../gui/wxpython/gui_core/dialogs.py:1872
-msgid "this might not work for multiple bands"
-msgstr ""
-
-#: ../gui/wxpython/gui_core/dialogs.py:1874
-#, fuzzy, python-brace-format
-msgid "Add linked layers into layer tree ({mightNotWork})"
+#: ../gui/wxpython/gui_core/dialogs.py:1891
+#, fuzzy
+msgid "Add linked layers into layer tree"
 msgstr "Добавить импортированные слои в содержание"
 
-#: ../gui/wxpython/gui_core/dialogs.py:1877
-#, fuzzy, python-brace-format
-msgid "Add imported layers into layer tree ({mightNotWork})"
+#: ../gui/wxpython/gui_core/dialogs.py:1893
+#: ../gui/wxpython/gui_core/dialogs.py:2130
+msgid "Add imported layers into layer tree"
 msgstr "Добавить импортированные слои в содержание"
 
-#: ../gui/wxpython/gui_core/dialogs.py:1883
+#: ../gui/wxpython/gui_core/dialogs.py:1898
 #, fuzzy
 msgid "&Link"
 msgstr "Линия"
 
-#: ../gui/wxpython/gui_core/dialogs.py:1884
+#: ../gui/wxpython/gui_core/dialogs.py:1899
 #, fuzzy
 msgid "Link selected layers"
 msgstr "Изменить выбранный слой"
 
-#: ../gui/wxpython/gui_core/dialogs.py:1896
+#: ../gui/wxpython/gui_core/dialogs.py:1911
 #, fuzzy
 msgid "No layers selected. Operation canceled."
 msgstr "Не выбран слой. Операция прервана."
 
-#: ../gui/wxpython/gui_core/dialogs.py:2011
+#: ../gui/wxpython/gui_core/dialogs.py:1965
+#, fuzzy
+msgid "Unable to determine number of raster bands"
+msgstr "Невозможно создать профиль растрового слоя."
+
+#: ../gui/wxpython/gui_core/dialogs.py:2045
 #, fuzzy
 msgid "Define output format for vector data"
 msgstr "Импорт векторного слоя"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2013
+#: ../gui/wxpython/gui_core/dialogs.py:2047
 #, fuzzy
 msgid "Define output format for raster data"
 msgstr "Импортировать растровый слой"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2021
+#: ../gui/wxpython/gui_core/dialogs.py:2055
 #, fuzzy
 msgid "Set external format and close dialog"
 msgstr "Игнорировать изменения и закрыть диалог"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2073
+#: ../gui/wxpython/gui_core/dialogs.py:2107
 #, fuzzy
 msgid "No data source selected."
 msgstr "Слои для выборки не выбраны."
 
-#: ../gui/wxpython/gui_core/dialogs.py:2086
+#: ../gui/wxpython/gui_core/dialogs.py:2120
 msgid "Import DXF layers"
 msgstr "Импорт слоев DXF"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2090
+#: ../gui/wxpython/gui_core/dialogs.py:2124
 msgid "Choose DXF file to import"
 msgstr "Выберите импортируемый файл DXF"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2096
-msgid "Add imported layers into layer tree"
-msgstr "Добавить импортированные слои в содержание"
-
-#: ../gui/wxpython/gui_core/dialogs.py:2110
+#: ../gui/wxpython/gui_core/dialogs.py:2144
 #, fuzzy
 msgid "No layers selected."
 msgstr "Слои для выборки не выбраны."
 
-#: ../gui/wxpython/gui_core/dialogs.py:2251
+#: ../gui/wxpython/gui_core/dialogs.py:2285
 msgid "Set Map Layer Opacity"
 msgstr "Установить непрозрачность слоя"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2279
+#: ../gui/wxpython/gui_core/dialogs.py:2313
 msgid "opaque"
 msgstr "непрозрачный"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2375
+#: ../gui/wxpython/gui_core/dialogs.py:2409
 msgid "Set image size"
 msgstr ""
 
-#: ../gui/wxpython/gui_core/dialogs.py:2384
+#: ../gui/wxpython/gui_core/dialogs.py:2418
 #, fuzzy
 msgid "Image size"
 msgstr "Размер иконки:"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2431
+#: ../gui/wxpython/gui_core/dialogs.py:2465
 msgid "Template:"
 msgstr ""
 
-#: ../gui/wxpython/gui_core/dialogs.py:2469
+#: ../gui/wxpython/gui_core/dialogs.py:2503
 #, fuzzy
 msgid "GRASS GIS SQL Query Utility"
 msgstr "GRASS GIS - Окно слоя"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2480
+#: ../gui/wxpython/gui_core/dialogs.py:2514
 #, fuzzy
 msgid " SQL statement "
 msgstr "Оператор SQL"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2525
+#: ../gui/wxpython/gui_core/dialogs.py:2559
 #, fuzzy
 msgid "Symbols"
 msgstr "символ:"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2552
+#: ../gui/wxpython/gui_core/dialogs.py:2586
 #, fuzzy
 msgid "Symbol directory:"
 msgstr "Настройки символа"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2560
+#: ../gui/wxpython/gui_core/dialogs.py:2594
 #, fuzzy
 msgid "Symbol name:"
 msgstr "Настройки символа"
@@ -17314,7 +17311,7 @@ msgstr "Дуплицировать атрибуты"
 msgid "Unable to create file '%s'\n"
 msgstr "Невозможно прочитать коды EPSG: %s"
 
-#: ../gui/wxpython/core/gconsole.py:489
+#: ../gui/wxpython/core/gconsole.py:488
 #, python-format
 msgid ""
 "Unable to run command:\n"
@@ -17323,17 +17320,17 @@ msgid ""
 "Option <%(opt)s>: read from standard input is not supported by wxGUI"
 msgstr ""
 
-#: ../gui/wxpython/core/gconsole.py:610
+#: ../gui/wxpython/core/gconsole.py:609
 #, python-format
 msgid "%d sec"
 msgstr ""
 
-#: ../gui/wxpython/core/gconsole.py:613
+#: ../gui/wxpython/core/gconsole.py:612
 #, python-format
 msgid "%(min)d min %(sec)d sec"
 msgstr ""
 
-#: ../gui/wxpython/core/gconsole.py:621
+#: ../gui/wxpython/core/gconsole.py:620
 #, fuzzy
 msgid ""
 "Please note that the data are left in inconsistent state and may be corrupted"
@@ -17341,11 +17338,11 @@ msgstr ""
 "Обратите внимание, что данные оставлены в неправильном состоянии и возможно "
 "повреждены"
 
-#: ../gui/wxpython/core/gconsole.py:623
+#: ../gui/wxpython/core/gconsole.py:622
 msgid "Command aborted"
 msgstr "Операция прервана"
 
-#: ../gui/wxpython/core/gconsole.py:625
+#: ../gui/wxpython/core/gconsole.py:624
 msgid "Command finished"
 msgstr "Операция завершена"
 
@@ -19248,6 +19245,29 @@ msgid "Remove selected class"
 msgstr "Переименовать выбранный набор"
 
 #, fuzzy
+#~ msgid "Add linked layers into layer tree ({mightNotWork})"
+#~ msgstr "Добавить импортированные слои в содержание"
+
+#, fuzzy
+#~ msgid "Add imported layers into layer tree ({mightNotWork})"
+#~ msgstr "Добавить импортированные слои в содержание"
+
+#, fuzzy
+#~ msgid "Vector map %s already exists. "
+#~ msgstr "Слой <%s> не найден."
+
+#, fuzzy
+#~ msgid ""
+#~ "Creates a raster map from LAS LiDAR points using univariate statistics."
+#~ msgstr ""
+#~ "Создать растровый слой из набора координат используя одномерную "
+#~ "статистику."
+
+#, fuzzy
+#~ msgid "Converts LAS LiDAR point clouds to a GRASS vector map with libLAS."
+#~ msgstr "Конвертировать векторные слои Convert OGR в векторные слои GRASS."
+
+#, fuzzy
 #~ msgid "Unpacks a vector map packed with v.pack."
 #~ msgstr "Основные векторные метаданные"
 
@@ -19443,17 +19463,6 @@ msgstr "Переименовать выбранный набор"
 #, fuzzy
 #~ msgid "Surface generation program."
 #~ msgstr "Программа генерирования поверхности из растеризованных изолиний."
-
-#, fuzzy
-#~ msgid ""
-#~ "Creates a raster map from LAS LiDAR points using univariate statistics."
-#~ msgstr ""
-#~ "Создать растровый слой из набора координат используя одномерную "
-#~ "статистику."
-
-#, fuzzy
-#~ msgid "Converts LAS LiDAR point clouds to a GRASS vector map with libLAS."
-#~ msgstr "Конвертировать векторные слои Convert OGR в векторные слои GRASS."
 
 #~ msgid "Compares bit patterns with a raster map."
 #~ msgstr "Сравнить битовые шаблоны с растровым слоем."

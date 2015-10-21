@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: grasslibs_zh\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-07-20 21:44+0200\n"
+"POT-Creation-Date: 2015-08-18 12:56+0200\n"
 "PO-Revision-Date: 2014-04-16 12:27+0100\n"
 "Last-Translator: YusiJi <jiyusi0001@gmail.com>\n"
 "Language-Team: Simplified Chinese <translations@grass.itc.it>\n"
@@ -3553,7 +3553,7 @@ msgstr "矢量'%s'已经存在，它将会被覆盖。"
 
 #: ../lib/python/pygrass/raster/__init__.py:432
 #, fuzzy, python-brace-format
-msgid "Raster map <{0}> does not exists"
+msgid "Raster map <{0}> does not exist"
 msgstr "无法打开矢量'%s'的历史记录"
 
 #: ../lib/python/pygrass/raster/abstract.py:274
@@ -3608,7 +3608,7 @@ msgstr "未知矢量类型"
 
 #: ../lib/python/temporal/open_stds.py:66
 #, fuzzy, python-format
-msgid "Space time %(sp)s dataset <%(name)s> no found"
+msgid "Space time %(sp)s dataset <%(name)s> not found"
 msgstr "输入矢量'%s'未找到"
 
 #: ../lib/python/temporal/open_stds.py:105
@@ -5701,7 +5701,8 @@ msgstr "为%s指定了无效的时间戳，地图%s 地图集%s"
 msgid "WARNING: "
 msgstr "警告："
 
-#: ../lib/gis/error.c:362
+#: ../lib/gis/error.c:362 ../lib/gis/parser.c:1472
+#, c-format
 msgid "ERROR: "
 msgstr "错误："
 
@@ -6918,37 +6919,42 @@ msgstr ""
 "\n"
 "错误：选项<%s>必须乘以%d\n"
 
-#: ../lib/gis/parser.c:1473
+#: ../lib/gis/parser.c:1474
 #, c-format
-msgid "ERROR: option <%s>: <%s> exists.\n"
-msgstr "错误：选项<%s>：<%s>已存在。\n"
+msgid "option <%s>: <%s> exists. To overwrite, use the --overwrite flag"
+msgstr ""
 
-#: ../lib/gis/parser.c:1587
+#: ../lib/gis/parser.c:1479
+#, c-format
+msgid "GRASS_INFO_ERROR(%d,1): "
+msgstr ""
+
+#: ../lib/gis/parser.c:1591
 #, fuzzy, c-format
 msgid "%s= is not a separator option"
 msgstr "对不起，<%s>不是有效的选项\n"
 
-#: ../lib/gis/parser.c:1590
+#: ../lib/gis/parser.c:1594
 #, fuzzy, c-format
 msgid "No separator given for %s="
 msgstr "字段分隔符"
 
-#: ../lib/gis/parser.c:1652 ../lib/gis/parser.c:1669
+#: ../lib/gis/parser.c:1656 ../lib/gis/parser.c:1673
 #, fuzzy, c-format
 msgid "%s= is not a file option"
 msgstr "对不起，<%s>不是有效的选项\n"
 
-#: ../lib/gis/parser.c:1654
+#: ../lib/gis/parser.c:1658
 #, fuzzy, c-format
 msgid "Opening multiple files not supported for %s="
 msgstr "不支持的 OGR 要素类型 %d"
 
-#: ../lib/gis/parser.c:1660
+#: ../lib/gis/parser.c:1664
 #, fuzzy, c-format
 msgid "Unable to open %s file <%s>"
 msgstr "无法打开文件 %s 在 %s 中"
 
-#: ../lib/gis/parser.c:1666
+#: ../lib/gis/parser.c:1670
 #, fuzzy, c-format
 msgid "Unable to create %s file <%s>"
 msgstr "无法打开文件 %s 在 %s 中"
@@ -9347,6 +9353,9 @@ msgstr ""
 #, fuzzy, c-format
 msgid "%s: out of memory"
 msgstr "G_malloc：内存溢出"
+
+#~ msgid "ERROR: option <%s>: <%s> exists.\n"
+#~ msgstr "错误：选项<%s>：<%s>已存在。\n"
 
 #, fuzzy
 #~ msgid "Vector map <%s> is not opened on topology level"

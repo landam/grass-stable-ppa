@@ -12,7 +12,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: grasslibs_de\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-07-20 21:44+0200\n"
+"POT-Creation-Date: 2015-08-18 12:56+0200\n"
 "PO-Revision-Date: 2014-08-13 11:57+0200\n"
 "Last-Translator: Robert Nuske <robert.nuske nw-fva.de>\n"
 "Language-Team: German <grass-translations@lists.osgeo.org>\n"
@@ -3552,7 +3552,7 @@ msgstr "Vektorkarte <%s> existiert bereits und wird überschrieben."
 
 #: ../lib/python/pygrass/raster/__init__.py:432
 #, fuzzy, python-brace-format
-msgid "Raster map <{0}> does not exists"
+msgid "Raster map <{0}> does not exist"
 msgstr "Tabelle <%s> verknüpft mit Vektorkarte <%s> existiert nicht."
 
 #: ../lib/python/pygrass/raster/abstract.py:274
@@ -3607,7 +3607,7 @@ msgstr "Unbekannter Vektortyp."
 
 #: ../lib/python/temporal/open_stds.py:66
 #, fuzzy, python-format
-msgid "Space time %(sp)s dataset <%(name)s> no found"
+msgid "Space time %(sp)s dataset <%(name)s> not found"
 msgstr "Rasterkarte <%s> wurde nicht gefunden."
 
 #: ../lib/python/temporal/open_stds.py:105
@@ -5716,7 +5716,8 @@ msgstr "Ungültiger Zeitstempel für %s Karte %s in Mapset %s spezifiziert."
 msgid "WARNING: "
 msgstr "WARNUNG: "
 
-#: ../lib/gis/error.c:362
+#: ../lib/gis/error.c:362 ../lib/gis/parser.c:1472
+#, c-format
 msgid "ERROR: "
 msgstr "FEHLER: "
 
@@ -6893,37 +6894,42 @@ msgstr ""
 "\n"
 "FEHLER: Option <%s> muss als Vielfaches von %d angegeben werden.\n"
 
-#: ../lib/gis/parser.c:1473
+#: ../lib/gis/parser.c:1474
 #, c-format
-msgid "ERROR: option <%s>: <%s> exists.\n"
-msgstr "FEHLER: Option <%s>: <%s> existiert bereits.\n"
+msgid "option <%s>: <%s> exists. To overwrite, use the --overwrite flag"
+msgstr ""
 
-#: ../lib/gis/parser.c:1587
+#: ../lib/gis/parser.c:1479
+#, c-format
+msgid "GRASS_INFO_ERROR(%d,1): "
+msgstr ""
+
+#: ../lib/gis/parser.c:1591
 #, fuzzy, c-format
 msgid "%s= is not a separator option"
 msgstr "Tut mir leid, <%s> ist keine gültige Option"
 
-#: ../lib/gis/parser.c:1590
+#: ../lib/gis/parser.c:1594
 #, fuzzy, c-format
 msgid "No separator given for %s="
 msgstr "Feld-Trennzeichen"
 
-#: ../lib/gis/parser.c:1652 ../lib/gis/parser.c:1669
+#: ../lib/gis/parser.c:1656 ../lib/gis/parser.c:1673
 #, fuzzy, c-format
 msgid "%s= is not a file option"
 msgstr "Tut mir leid, <%s> ist keine gültige Option"
 
-#: ../lib/gis/parser.c:1654
+#: ../lib/gis/parser.c:1658
 #, fuzzy, c-format
 msgid "Opening multiple files not supported for %s="
 msgstr "OGR Objekttyp %d wird nicht unterstützt."
 
-#: ../lib/gis/parser.c:1660
+#: ../lib/gis/parser.c:1664
 #, fuzzy, c-format
 msgid "Unable to open %s file <%s>"
 msgstr "Kann Datei %s nicht öffnen."
 
-#: ../lib/gis/parser.c:1666
+#: ../lib/gis/parser.c:1670
 #, fuzzy, c-format
 msgid "Unable to create %s file <%s>"
 msgstr "Kann die Tabelle <%s> nicht anlegen."
@@ -9324,6 +9330,9 @@ msgstr ""
 #, fuzzy, c-format
 msgid "%s: out of memory"
 msgstr "Nicht genügend Arbeitsspeicher."
+
+#~ msgid "ERROR: option <%s>: <%s> exists.\n"
+#~ msgstr "FEHLER: Option <%s>: <%s> existiert bereits.\n"
 
 #, fuzzy
 #~ msgid "Hit RETURN to continue"

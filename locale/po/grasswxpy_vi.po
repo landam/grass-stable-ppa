@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: grasswxpy_vi\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-07-20 21:44+0200\n"
+"POT-Creation-Date: 2015-08-18 12:56+0200\n"
 "PO-Revision-Date: 2010-08-27 16:40+0700\n"
 "Last-Translator: \n"
 "Language-Team: American English <kde-i18n-doc@kde.org>\n"
@@ -1480,7 +1480,7 @@ msgstr ""
 
 #: ../gui/wxpython/gcp/manager.py:2411 ../gui/wxpython/vnet/dialogs.py:1193
 #: ../gui/wxpython/gui_core/dialogs.py:1689
-#: ../gui/wxpython/gui_core/dialogs.py:2019
+#: ../gui/wxpython/gui_core/dialogs.py:2053
 #: ../gui/wxpython/web_services/dialogs.py:132
 #: ../gui/wxpython/web_services/dialogs.py:827
 #: ../gui/wxpython/iscatt/dialogs.py:361
@@ -2622,7 +2622,7 @@ msgid "Python editor"
 msgstr ""
 
 #: ../gui/wxpython/gmodeler/frame.py:132
-#: ../gui/wxpython/gui_core/forms.py:1830
+#: ../gui/wxpython/gui_core/forms.py:1827
 #: ../gui/wxpython/modules/vkrige.py:102
 msgid "Command output"
 msgstr "Đầu ra của lệnh"
@@ -2925,7 +2925,7 @@ msgid "mapset"
 msgstr "Tập bản đồ"
 
 #: ../gui/wxpython/gmodeler/frame.py:1458
-#: ../gui/wxpython/gui_core/forms.py:1524
+#: ../gui/wxpython/gui_core/forms.py:1520
 #, fuzzy
 msgid "file"
 msgstr "Mặt cắt"
@@ -3076,7 +3076,7 @@ msgstr "Chỉ mục hình dạng"
 #: ../gui/wxpython/gmodeler/preferences.py:363
 #: ../gui/wxpython/gmodeler/preferences.py:448
 #: ../gui/wxpython/psmap/dialogs.py:2723
-#: ../gui/wxpython/gui_core/dialogs.py:2423
+#: ../gui/wxpython/gui_core/dialogs.py:2457
 #: ../gui/wxpython/nviz/preferences.py:476
 msgid "Width:"
 msgstr "Rộng"
@@ -3087,7 +3087,7 @@ msgstr "Rộng"
 #: ../gui/wxpython/gmodeler/preferences.py:466
 #: ../gui/wxpython/psmap/dialogs.py:2735 ../gui/wxpython/psmap/dialogs.py:2873
 #: ../gui/wxpython/psmap/dialogs.py:3476
-#: ../gui/wxpython/gui_core/dialogs.py:2427 ../gui/wxpython/nviz/tools.py:284
+#: ../gui/wxpython/gui_core/dialogs.py:2461 ../gui/wxpython/nviz/tools.py:284
 #: ../gui/wxpython/nviz/tools.py:1043 ../gui/wxpython/nviz/tools.py:1770
 msgid "Height:"
 msgstr "Cao:"
@@ -3232,7 +3232,7 @@ msgstr "Các điểm véc tơ"
 
 #: ../gui/wxpython/gmodeler/model.py:1056
 #: ../gui/wxpython/gmodeler/model.py:1153
-#: ../gui/wxpython/gui_core/ghelp.py:212 ../gui/wxpython/core/gconsole.py:617
+#: ../gui/wxpython/gui_core/ghelp.py:212 ../gui/wxpython/core/gconsole.py:616
 msgid "unknown"
 msgstr "không biết"
 
@@ -4206,9 +4206,9 @@ msgstr "Tập tin WKT:"
 #: ../gui/wxpython/animation/dialogs.py:952
 #: ../gui/wxpython/animation/dialogs.py:969
 #: ../gui/wxpython/animation/dialogs.py:992
-#: ../gui/wxpython/gui_core/forms.py:1525
-#: ../gui/wxpython/gui_core/forms.py:1589
-#: ../gui/wxpython/gui_core/dialogs.py:2091
+#: ../gui/wxpython/gui_core/forms.py:1521
+#: ../gui/wxpython/gui_core/forms.py:1585
+#: ../gui/wxpython/gui_core/dialogs.py:2125
 #: ../gui/wxpython/gui_core/gselect.py:1077
 #: ../gui/wxpython/gui_core/gselect.py:1389
 #: ../gui/wxpython/gui_core/gselect.py:1402
@@ -4717,7 +4717,7 @@ msgstr "Màu đường"
 
 #: ../gui/wxpython/psmap/dialogs.py:4604 ../gui/wxpython/psmap/dialogs.py:4619
 #: ../gui/wxpython/psmap/dialogs.py:4858 ../gui/wxpython/psmap/dialogs.py:4879
-#: ../gui/wxpython/gui_core/dialogs.py:2276
+#: ../gui/wxpython/gui_core/dialogs.py:2310
 msgid "transparent"
 msgstr "trong suốt"
 
@@ -6519,11 +6519,11 @@ msgid "Do you really want to activate snapping and overwrite it?"
 msgstr ""
 
 #: ../gui/wxpython/vnet/vnet_core.py:1040
-#, python-format
+#, fuzzy, python-format
 msgid ""
 "Temporary map '%s' was changed outside vector analysis tool.\n"
 "Do you really want to activate snapping and overwrite it? "
-msgstr ""
+msgstr "Tập tin vùng <%s> đã có. Bạn có muốn ghi đè không?"
 
 #: ../gui/wxpython/vnet/vnet_core.py:1045
 #, fuzzy
@@ -6773,7 +6773,7 @@ msgstr "Đang nạp dữ liệu..."
 
 #: ../gui/wxpython/vnet/dialogs.py:798
 #, fuzzy
-msgid "Input vector map does not exists."
+msgid "Input vector map does not exist."
 msgstr "Không tìm thấy bản đồ <%s>."
 
 #: ../gui/wxpython/vnet/dialogs.py:816
@@ -8358,13 +8358,13 @@ msgstr ""
 
 #: ../gui/wxpython/lmgr/layertree.py:56 ../gui/wxpython/menustrings.py:32
 #: ../gui/wxpython/menustrings.py:1009
-#: ../gui/wxpython/gui_core/dialogs.py:1866
+#: ../gui/wxpython/gui_core/dialogs.py:1884
 msgid "Import raster data"
 msgstr "Nhập dữ liệu raster"
 
 #: ../gui/wxpython/lmgr/layertree.py:58 ../gui/wxpython/menustrings.py:151
 #: ../gui/wxpython/menustrings.py:1128
-#: ../gui/wxpython/gui_core/dialogs.py:1864
+#: ../gui/wxpython/gui_core/dialogs.py:1882
 #, fuzzy
 msgid "Link external raster data"
 msgstr "Liên kết dữ liệu raster"
@@ -8382,13 +8382,13 @@ msgstr "Chọn phông"
 
 #: ../gui/wxpython/lmgr/layertree.py:64 ../gui/wxpython/menustrings.py:60
 #: ../gui/wxpython/menustrings.py:1037
-#: ../gui/wxpython/gui_core/dialogs.py:1860
+#: ../gui/wxpython/gui_core/dialogs.py:1878
 msgid "Import vector data"
 msgstr "Nhập dữ liệu véc-tơ"
 
 #: ../gui/wxpython/lmgr/layertree.py:66 ../gui/wxpython/menustrings.py:153
 #: ../gui/wxpython/menustrings.py:1130
-#: ../gui/wxpython/gui_core/dialogs.py:1858
+#: ../gui/wxpython/gui_core/dialogs.py:1876
 #, fuzzy
 msgid "Link external vector data"
 msgstr "Liên kết dữ liệu vec-tơ"
@@ -8741,7 +8741,7 @@ msgstr "Nhập dữ liệu raster"
 msgid "Raster Map Calculator"
 msgstr "Trình tính toán cho bản đồ raster 3 chiều"
 
-#: ../gui/wxpython/lmgr/toolbars.py:140 ../gui/wxpython/gui_core/forms.py:1205
+#: ../gui/wxpython/lmgr/toolbars.py:140 ../gui/wxpython/gui_core/forms.py:1198
 #, fuzzy
 msgid "Graphical Modeler"
 msgstr "Trợ giúp GRASS GIS"
@@ -11935,7 +11935,7 @@ msgstr "Tạo hoặc dựng lại tôpô"
 
 #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
 msgid ""
-"Creates topology for vector map. Optionaly also checks for topological "
+"Creates topology for vector map. Optionally also checks for topological "
 "errors."
 msgstr ""
 
@@ -14577,7 +14577,7 @@ msgstr "Màu lưới:"
 
 #: ../gui/wxpython/gui_core/preferences.py:973
 #: ../gui/wxpython/gui_core/preferences.py:995
-#: ../gui/wxpython/gui_core/forms.py:1494
+#: ../gui/wxpython/gui_core/forms.py:1490
 msgid "Transparent"
 msgstr "Trong suốt"
 
@@ -14912,98 +14912,98 @@ msgid ""
 "Preferences dialog ('Command' tab)."
 msgstr ""
 
-#: ../gui/wxpython/gui_core/forms.py:753
+#: ../gui/wxpython/gui_core/forms.py:750
 #, python-format
 msgid "'%s' copied to clipboard"
 msgstr "'%s' được chép vào bộ nhớ"
 
-#: ../gui/wxpython/gui_core/forms.py:824 ../gui/wxpython/gui_core/forms.py:837
+#: ../gui/wxpython/gui_core/forms.py:821 ../gui/wxpython/gui_core/forms.py:834
 msgid "Required"
 msgstr "Bắt buộc"
 
-#: ../gui/wxpython/gui_core/forms.py:827 ../gui/wxpython/gui_core/forms.py:837
+#: ../gui/wxpython/gui_core/forms.py:824 ../gui/wxpython/gui_core/forms.py:834
 msgid "Optional"
 msgstr "Tùy chọn"
 
-#: ../gui/wxpython/gui_core/forms.py:906
-#: ../gui/wxpython/gui_core/forms.py:1654
+#: ../gui/wxpython/gui_core/forms.py:903
+#: ../gui/wxpython/gui_core/forms.py:1650
 #, fuzzy
 msgid "Parameterized in model"
 msgstr "Không thấy tham số: %s"
 
-#: ../gui/wxpython/gui_core/forms.py:969
+#: ../gui/wxpython/gui_core/forms.py:966
 msgid "This option is required"
 msgstr ""
 
-#: ../gui/wxpython/gui_core/forms.py:986
+#: ../gui/wxpython/gui_core/forms.py:983
 msgid "[multiple]"
 msgstr "[nhiều]"
 
-#: ../gui/wxpython/gui_core/forms.py:1036
+#: ../gui/wxpython/gui_core/forms.py:1033
 #, fuzzy
 msgid "valid range"
 msgstr "Miền hợp lệ"
 
-#: ../gui/wxpython/gui_core/forms.py:1301
+#: ../gui/wxpython/gui_core/forms.py:1294
 msgid "Show graphical representation of temporal extent of dataset(s) ."
 msgstr ""
 
-#: ../gui/wxpython/gui_core/forms.py:1461 ../gui/wxpython/core/utils.py:998
+#: ../gui/wxpython/gui_core/forms.py:1454 ../gui/wxpython/core/utils.py:998
 msgid "Select Color"
 msgstr "Chọn Màu"
 
-#: ../gui/wxpython/gui_core/forms.py:1523
-#: ../gui/wxpython/gui_core/forms.py:1587
+#: ../gui/wxpython/gui_core/forms.py:1519
+#: ../gui/wxpython/gui_core/forms.py:1583
 #, python-format
 msgid "Choose %s"
 msgstr "Chọn %s"
 
-#: ../gui/wxpython/gui_core/forms.py:1552
+#: ../gui/wxpython/gui_core/forms.py:1548
 #: ../gui/wxpython/modules/mcalc_builder.py:143
 #, fuzzy
 msgid "&Load"
 msgstr "Nạp"
 
-#: ../gui/wxpython/gui_core/forms.py:1553
+#: ../gui/wxpython/gui_core/forms.py:1549
 #, fuzzy
 msgid "Load and edit content of a file"
 msgstr "Đổi tên vị trí"
 
-#: ../gui/wxpython/gui_core/forms.py:1555
+#: ../gui/wxpython/gui_core/forms.py:1551
 #, fuzzy
 msgid "&Save as"
 msgstr "Lưu thành..."
 
-#: ../gui/wxpython/gui_core/forms.py:1556
+#: ../gui/wxpython/gui_core/forms.py:1552
 msgid "Save content to a file for further use"
 msgstr ""
 
-#: ../gui/wxpython/gui_core/forms.py:1561
+#: ../gui/wxpython/gui_core/forms.py:1557
 #, fuzzy
 msgid "or enter values directly:"
 msgstr "Mã hoá lại tương tác"
 
-#: ../gui/wxpython/gui_core/forms.py:1563
+#: ../gui/wxpython/gui_core/forms.py:1559
 msgid ""
 "Enter file content directly instead of specifying a file. Temporary file "
 "will be automatically created."
 msgstr ""
 
-#: ../gui/wxpython/gui_core/forms.py:1588
+#: ../gui/wxpython/gui_core/forms.py:1584
 #: ../gui/wxpython/gui_core/gselect.py:1320
 msgid "Directory"
 msgstr "Thư mục"
 
-#: ../gui/wxpython/gui_core/forms.py:1839
+#: ../gui/wxpython/gui_core/forms.py:1836
 msgid "Manual"
 msgstr "Sổ tay tra cứu"
 
-#: ../gui/wxpython/gui_core/forms.py:1880
+#: ../gui/wxpython/gui_core/forms.py:1877
 #, fuzzy
 msgid "Nothing to load."
 msgstr "Không có gì để xóa."
 
-#: ../gui/wxpython/gui_core/forms.py:1888
+#: ../gui/wxpython/gui_core/forms.py:1885
 #, fuzzy, python-format
 msgid ""
 "Unable to load file.\n"
@@ -15011,38 +15011,38 @@ msgid ""
 "Reason: %s"
 msgstr "Không thể nạp sắc thái biểu tượng..."
 
-#: ../gui/wxpython/gui_core/forms.py:1914
+#: ../gui/wxpython/gui_core/forms.py:1911
 #: ../gui/wxpython/modules/colorrules.py:610
 #, fuzzy
 msgid "Nothing to save."
 msgstr "Không có gì để xóa."
 
-#: ../gui/wxpython/gui_core/forms.py:1918
+#: ../gui/wxpython/gui_core/forms.py:1915
 #, fuzzy
 msgid "Save input as..."
 msgstr "Lưu tập tin thành..."
 
-#: ../gui/wxpython/gui_core/forms.py:2227
+#: ../gui/wxpython/gui_core/forms.py:2224
 #, fuzzy
 msgid "No dataset given."
 msgstr "Không có lớp bản đồ nào được chọn"
 
-#: ../gui/wxpython/gui_core/forms.py:2266 ../gui/wxpython/core/gcmd.py:701
+#: ../gui/wxpython/gui_core/forms.py:2263 ../gui/wxpython/core/gcmd.py:701
 #, python-format
 msgid "Error in %s"
 msgstr "Lỗi trong %s"
 
-#: ../gui/wxpython/gui_core/forms.py:2380
+#: ../gui/wxpython/gui_core/forms.py:2377
 #, fuzzy, python-format
 msgid "Unable to parse command '%s'"
 msgstr "Không thể phân giải lệnh %s"
 
-#: ../gui/wxpython/gui_core/forms.py:2386
+#: ../gui/wxpython/gui_core/forms.py:2383
 #, python-format
 msgid "%(cmd)s: parameter '%(key)s' not available"
 msgstr ""
 
-#: ../gui/wxpython/gui_core/forms.py:2478
+#: ../gui/wxpython/gui_core/forms.py:2475
 msgid "Try to set up GRASS_ADDON_PATH or GRASS_ADDON_BASE variable."
 msgstr ""
 
@@ -15348,121 +15348,118 @@ msgid "Encoding"
 msgstr ""
 
 #: ../gui/wxpython/gui_core/dialogs.py:1692
-#: ../gui/wxpython/gui_core/dialogs.py:1886
+#: ../gui/wxpython/gui_core/dialogs.py:1901
 msgid "&Import"
 msgstr "&Nhập"
 
 #: ../gui/wxpython/gui_core/dialogs.py:1693
-#: ../gui/wxpython/gui_core/dialogs.py:1887
+#: ../gui/wxpython/gui_core/dialogs.py:1902
 msgid "Import selected layers"
 msgstr "Nhập các lớp đã chọn"
 
-#: ../gui/wxpython/gui_core/dialogs.py:1872
-msgid "this might not work for multiple bands"
-msgstr ""
-
-#: ../gui/wxpython/gui_core/dialogs.py:1874
-#, fuzzy, python-brace-format
-msgid "Add linked layers into layer tree ({mightNotWork})"
-msgstr "Thêm các lớp được liên kết vào sơ đồ lớp hình cây"
-
-#: ../gui/wxpython/gui_core/dialogs.py:1877
-#, fuzzy, python-brace-format
-msgid "Add imported layers into layer tree ({mightNotWork})"
+#: ../gui/wxpython/gui_core/dialogs.py:1891
+#, fuzzy
+msgid "Add linked layers into layer tree"
 msgstr "Thêm các lớp đã nhập vào sơ đồ lớp hình cây"
 
-#: ../gui/wxpython/gui_core/dialogs.py:1883
+#: ../gui/wxpython/gui_core/dialogs.py:1893
+#: ../gui/wxpython/gui_core/dialogs.py:2130
+msgid "Add imported layers into layer tree"
+msgstr "Thêm các lớp đã nhập vào sơ đồ lớp hình cây"
+
+#: ../gui/wxpython/gui_core/dialogs.py:1898
 msgid "&Link"
 msgstr "&Liên kết"
 
-#: ../gui/wxpython/gui_core/dialogs.py:1884
+#: ../gui/wxpython/gui_core/dialogs.py:1899
 msgid "Link selected layers"
 msgstr "Liên kết các lớp đã chọn"
 
-#: ../gui/wxpython/gui_core/dialogs.py:1896
+#: ../gui/wxpython/gui_core/dialogs.py:1911
 #, fuzzy
 msgid "No layers selected. Operation canceled."
 msgstr "Không có lớp bản đồ nào được chọn. Thao tác bị hủy."
 
-#: ../gui/wxpython/gui_core/dialogs.py:2011
+#: ../gui/wxpython/gui_core/dialogs.py:1965
+#, fuzzy
+msgid "Unable to determine number of raster bands"
+msgstr "Không thể tạo mặt cắt của bản đồ raster."
+
+#: ../gui/wxpython/gui_core/dialogs.py:2045
 #, fuzzy
 msgid "Define output format for vector data"
 msgstr "Nhập một lúc nhiều dữ liệu véc-tơ"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2013
+#: ../gui/wxpython/gui_core/dialogs.py:2047
 #, fuzzy
 msgid "Define output format for raster data"
 msgstr "Nhập một lúc nhiều dữ liệu raster"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2021
+#: ../gui/wxpython/gui_core/dialogs.py:2055
 #, fuzzy
 msgid "Set external format and close dialog"
 msgstr "Bỏ qua thay đổi và đóng hộp thoại lại"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2073
+#: ../gui/wxpython/gui_core/dialogs.py:2107
 #, fuzzy
 msgid "No data source selected."
 msgstr "Không có lớp bản đồ nào được chọn"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2086
+#: ../gui/wxpython/gui_core/dialogs.py:2120
 msgid "Import DXF layers"
 msgstr "Nhập các lớp DXF"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2090
+#: ../gui/wxpython/gui_core/dialogs.py:2124
 msgid "Choose DXF file to import"
 msgstr "Chọn tệp DXF để nhập"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2096
-msgid "Add imported layers into layer tree"
-msgstr "Thêm các lớp đã nhập vào sơ đồ lớp hình cây"
-
-#: ../gui/wxpython/gui_core/dialogs.py:2110
+#: ../gui/wxpython/gui_core/dialogs.py:2144
 #, fuzzy
 msgid "No layers selected."
 msgstr "Không có lớp bản đồ nào được chọn"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2251
+#: ../gui/wxpython/gui_core/dialogs.py:2285
 msgid "Set Map Layer Opacity"
 msgstr "Thiết lập Độ đục của lớp bản đồ"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2279
+#: ../gui/wxpython/gui_core/dialogs.py:2313
 msgid "opaque"
 msgstr "đục"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2375
+#: ../gui/wxpython/gui_core/dialogs.py:2409
 msgid "Set image size"
 msgstr ""
 
-#: ../gui/wxpython/gui_core/dialogs.py:2384
+#: ../gui/wxpython/gui_core/dialogs.py:2418
 #, fuzzy
 msgid "Image size"
 msgstr "Kích thước biểu tượng:"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2431
+#: ../gui/wxpython/gui_core/dialogs.py:2465
 msgid "Template:"
 msgstr ""
 
-#: ../gui/wxpython/gui_core/dialogs.py:2469
+#: ../gui/wxpython/gui_core/dialogs.py:2503
 #, fuzzy
 msgid "GRASS GIS SQL Query Utility"
 msgstr "GRASS GIS - Trình bày bản đồ"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2480
+#: ../gui/wxpython/gui_core/dialogs.py:2514
 #, fuzzy
 msgid " SQL statement "
 msgstr "Câu lệnh SQL"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2525
+#: ../gui/wxpython/gui_core/dialogs.py:2559
 #, fuzzy
 msgid "Symbols"
 msgstr "ký hiệu:"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2552
+#: ../gui/wxpython/gui_core/dialogs.py:2586
 #, fuzzy
 msgid "Symbol directory:"
 msgstr "Thiết lập về ký hiệu"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2560
+#: ../gui/wxpython/gui_core/dialogs.py:2594
 #, fuzzy
 msgid "Symbol name:"
 msgstr "Thiết lập về ký hiệu"
@@ -17373,7 +17370,7 @@ msgstr "Nhân bản các thuộc tính"
 msgid "Unable to create file '%s'\n"
 msgstr "Không thể đọc tập tin EPSG: '%s'"
 
-#: ../gui/wxpython/core/gconsole.py:489
+#: ../gui/wxpython/core/gconsole.py:488
 #, python-format
 msgid ""
 "Unable to run command:\n"
@@ -17382,28 +17379,28 @@ msgid ""
 "Option <%(opt)s>: read from standard input is not supported by wxGUI"
 msgstr ""
 
-#: ../gui/wxpython/core/gconsole.py:610
+#: ../gui/wxpython/core/gconsole.py:609
 #, python-format
 msgid "%d sec"
 msgstr ""
 
-#: ../gui/wxpython/core/gconsole.py:613
+#: ../gui/wxpython/core/gconsole.py:612
 #, python-format
 msgid "%(min)d min %(sec)d sec"
 msgstr ""
 
-#: ../gui/wxpython/core/gconsole.py:621
+#: ../gui/wxpython/core/gconsole.py:620
 #, fuzzy
 msgid ""
 "Please note that the data are left in inconsistent state and may be corrupted"
 msgstr ""
 "Lưu ý rằng dữ liệu bị để ở trình trạng không nhất quán và có thể bị hỏng"
 
-#: ../gui/wxpython/core/gconsole.py:623
+#: ../gui/wxpython/core/gconsole.py:622
 msgid "Command aborted"
 msgstr "Lệnh bị hủy"
 
-#: ../gui/wxpython/core/gconsole.py:625
+#: ../gui/wxpython/core/gconsole.py:624
 msgid "Command finished"
 msgstr "Lệnh đã kết thúc"
 
@@ -19315,6 +19312,29 @@ msgid "Remove selected class"
 msgstr "Đổi tên tập bản đồ đã chọn"
 
 #, fuzzy
+#~ msgid "Add linked layers into layer tree ({mightNotWork})"
+#~ msgstr "Thêm các lớp được liên kết vào sơ đồ lớp hình cây"
+
+#, fuzzy
+#~ msgid "Add imported layers into layer tree ({mightNotWork})"
+#~ msgstr "Thêm các lớp đã nhập vào sơ đồ lớp hình cây"
+
+#, fuzzy
+#~ msgid "Vector map %s already exists. "
+#~ msgstr "Không tìm thấy bản đồ <%s>."
+
+#, fuzzy
+#~ msgid ""
+#~ "Creates a raster map from LAS LiDAR points using univariate statistics."
+#~ msgstr ""
+#~ "Tạo một bản đồ raster từ việc tổ hợp nhiều tọa độ bằng cách dùng thống kê "
+#~ "một biến"
+
+#, fuzzy
+#~ msgid "Converts LAS LiDAR point clouds to a GRASS vector map with libLAS."
+#~ msgstr "Chuyển đổi các lớp vec-tơ OGR thành bản đồ vec-tơ GRASS."
+
+#, fuzzy
 #~ msgid "Unpacks a vector map packed with v.pack."
 #~ msgstr "Cập nhật đặc tả dữ liệu bản đồ vec-tơ."
 
@@ -19520,17 +19540,6 @@ msgstr "Đổi tên tập bản đồ đã chọn"
 
 #~ msgid "Surface generation program."
 #~ msgstr "Chương trình tạo bề mặt."
-
-#, fuzzy
-#~ msgid ""
-#~ "Creates a raster map from LAS LiDAR points using univariate statistics."
-#~ msgstr ""
-#~ "Tạo một bản đồ raster từ việc tổ hợp nhiều tọa độ bằng cách dùng thống kê "
-#~ "một biến"
-
-#, fuzzy
-#~ msgid "Converts LAS LiDAR point clouds to a GRASS vector map with libLAS."
-#~ msgstr "Chuyển đổi các lớp vec-tơ OGR thành bản đồ vec-tơ GRASS."
 
 #~ msgid "Compares bit patterns with a raster map."
 #~ msgstr "So sánh kiểu bit với một bản đồ raster."

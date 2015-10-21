@@ -195,12 +195,12 @@ int main(int argc, char **argv)
     flag_o = G_define_flag();
     flag_o->key = 'o';
     flag_o->description =
-	_("Try to calculate an optimal standard deviation with 'stddeviation' taken as maximum (experimental)");
+	_("Try to calculate an optimal radius with given 'radius' taken as maximum (experimental)");
 
     flag_q = G_define_flag();
     flag_q->key = 'q';
     flag_q->description =
-	_("Only calculate optimal standard deviation and exit (no map is written)");
+	_("Only calculate optimal radius and exit (no map is written)");
 
     flag_normalize = G_define_flag();
     flag_normalize->key = 'n';
@@ -219,22 +219,23 @@ int main(int argc, char **argv)
 	exit(EXIT_FAILURE);
 
     if (net_opt->answer) {
-	if (G_find_vector2(out_opt->answer, G_mapset()))
+	if (G_find_vector2(out_opt->answer, G_mapset())) {
             if (overwrite)
                 G_warning(_("Vector map <%s> already exists and will be overwritten"),
                           out_opt->answer);
             else
                 G_fatal_error(_("Vector map <%s> already exists"),
                               out_opt->answer);
-    }
-    else {
-	if (G_find_raster(out_opt->answer, G_mapset()))
+        }
+    } else {
+	if (G_find_raster(out_opt->answer, G_mapset())) {
             if (overwrite)
                 G_warning(_("Raster map <%s> already exists and will be overwritten"),
                           out_opt->answer);
             else
                 G_fatal_error(_("Raster map <%s> already exists"),
                               out_opt->answer);
+        }
     }
 
     /*read options */
@@ -299,8 +300,13 @@ int main(int argc, char **argv)
     G_asprintf(&tmpstr1, n_("%d row", "%d rows", window.rows), window.rows);
     G_asprintf(&tmpstr2, n_("%d column", "%d columns", window.cols), window.cols);
     /* GTC First argument is resolution, second - number of rows as a text, third - number of columns as a text. */
-    G_verbose_message(_("Output raster map: resolution: %f\t%s\t%s"),
+    if (G_verbose() > G_verbose_std()) {
+       G_verbose_message(_("Output raster map: resolution: %f\t%s\t%s"), /* mhh, this assumes square pixels */
                       window.ew_res, tmpstr1, tmpstr2);
+    } else {
+       G_message(_("Output raster map resolution: %f"), window.ew_res); /* mhh, this assumes square pixels */
+    }
+
     G_free(tmpstr1);
     G_free(tmpstr2); 
     
@@ -369,8 +375,8 @@ int main(int argc, char **argv)
     /* valutazione distanza ottimale */
     if (flag_o->answer) {
 	/* Note: sigmaOptimal calculates using ALL points (also those outside the region) */
-	G_message(_("Automatic choice of smoothing parameter (standard deviation), maximum possible "
-		   "value of standard deviation is set to %f"), sigma);
+	G_message(_("Automatic choice of smoothing parameter (radius), maximum possible "
+		   "value of radius is set to %f"), sigma);
 
 	/* maximum distance 4*sigma (3.9*sigma ~ 1.0000), keep it small, otherwise it takes 
 	 * too much points and calculation on network becomes slow */

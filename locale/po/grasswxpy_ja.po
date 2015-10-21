@@ -11,7 +11,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: grasswxpy_ja\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-07-20 21:44+0200\n"
+"POT-Creation-Date: 2015-08-18 12:56+0200\n"
 "PO-Revision-Date: 2012-03-08 17:45+0900\n"
 "Last-Translator: taniguchi <taniguti@apptec.co.jp>\n"
 "Language-Team: Japanese <grass-translations@lists.osgeo.org>\n"
@@ -1466,7 +1466,7 @@ msgstr ""
 
 #: ../gui/wxpython/gcp/manager.py:2411 ../gui/wxpython/vnet/dialogs.py:1193
 #: ../gui/wxpython/gui_core/dialogs.py:1689
-#: ../gui/wxpython/gui_core/dialogs.py:2019
+#: ../gui/wxpython/gui_core/dialogs.py:2053
 #: ../gui/wxpython/web_services/dialogs.py:132
 #: ../gui/wxpython/web_services/dialogs.py:827
 #: ../gui/wxpython/iscatt/dialogs.py:361
@@ -2608,7 +2608,7 @@ msgid "Python editor"
 msgstr "Pythonシェル"
 
 #: ../gui/wxpython/gmodeler/frame.py:132
-#: ../gui/wxpython/gui_core/forms.py:1830
+#: ../gui/wxpython/gui_core/forms.py:1827
 #: ../gui/wxpython/modules/vkrige.py:102
 msgid "Command output"
 msgstr "コマンド出力 "
@@ -2884,7 +2884,7 @@ msgid "mapset"
 msgstr "マップセット"
 
 #: ../gui/wxpython/gmodeler/frame.py:1458
-#: ../gui/wxpython/gui_core/forms.py:1524
+#: ../gui/wxpython/gui_core/forms.py:1520
 #, fuzzy
 msgid "file"
 msgstr "プロファイル"
@@ -3023,7 +3023,7 @@ msgstr "形状サイズ"
 #: ../gui/wxpython/gmodeler/preferences.py:363
 #: ../gui/wxpython/gmodeler/preferences.py:448
 #: ../gui/wxpython/psmap/dialogs.py:2723
-#: ../gui/wxpython/gui_core/dialogs.py:2423
+#: ../gui/wxpython/gui_core/dialogs.py:2457
 #: ../gui/wxpython/nviz/preferences.py:476
 msgid "Width:"
 msgstr "幅："
@@ -3034,7 +3034,7 @@ msgstr "幅："
 #: ../gui/wxpython/gmodeler/preferences.py:466
 #: ../gui/wxpython/psmap/dialogs.py:2735 ../gui/wxpython/psmap/dialogs.py:2873
 #: ../gui/wxpython/psmap/dialogs.py:3476
-#: ../gui/wxpython/gui_core/dialogs.py:2427 ../gui/wxpython/nviz/tools.py:284
+#: ../gui/wxpython/gui_core/dialogs.py:2461 ../gui/wxpython/nviz/tools.py:284
 #: ../gui/wxpython/nviz/tools.py:1043 ../gui/wxpython/nviz/tools.py:1770
 msgid "Height:"
 msgstr "高さ："
@@ -3171,7 +3171,7 @@ msgstr "ベクトルマップ"
 
 #: ../gui/wxpython/gmodeler/model.py:1056
 #: ../gui/wxpython/gmodeler/model.py:1153
-#: ../gui/wxpython/gui_core/ghelp.py:212 ../gui/wxpython/core/gconsole.py:617
+#: ../gui/wxpython/gui_core/ghelp.py:212 ../gui/wxpython/core/gconsole.py:616
 msgid "unknown"
 msgstr "不明"
 
@@ -4094,9 +4094,9 @@ msgstr "WKTファイル："
 #: ../gui/wxpython/animation/dialogs.py:952
 #: ../gui/wxpython/animation/dialogs.py:969
 #: ../gui/wxpython/animation/dialogs.py:992
-#: ../gui/wxpython/gui_core/forms.py:1525
-#: ../gui/wxpython/gui_core/forms.py:1589
-#: ../gui/wxpython/gui_core/dialogs.py:2091
+#: ../gui/wxpython/gui_core/forms.py:1521
+#: ../gui/wxpython/gui_core/forms.py:1585
+#: ../gui/wxpython/gui_core/dialogs.py:2125
 #: ../gui/wxpython/gui_core/gselect.py:1077
 #: ../gui/wxpython/gui_core/gselect.py:1389
 #: ../gui/wxpython/gui_core/gselect.py:1402
@@ -4565,7 +4565,7 @@ msgstr "ライン色"
 
 #: ../gui/wxpython/psmap/dialogs.py:4604 ../gui/wxpython/psmap/dialogs.py:4619
 #: ../gui/wxpython/psmap/dialogs.py:4858 ../gui/wxpython/psmap/dialogs.py:4879
-#: ../gui/wxpython/gui_core/dialogs.py:2276
+#: ../gui/wxpython/gui_core/dialogs.py:2310
 msgid "transparent"
 msgstr "透過 "
 
@@ -6354,11 +6354,11 @@ msgid "Do you really want to activate snapping and overwrite it?"
 msgstr ""
 
 #: ../gui/wxpython/vnet/vnet_core.py:1040
-#, python-format
+#, fuzzy, python-format
 msgid ""
 "Temporary map '%s' was changed outside vector analysis tool.\n"
 "Do you really want to activate snapping and overwrite it? "
-msgstr ""
+msgstr "領域<%s>がすでに存在します。上書きしてよろしいですか? "
 
 #: ../gui/wxpython/vnet/vnet_core.py:1045
 #, fuzzy
@@ -6608,7 +6608,7 @@ msgstr "データ ロード中... "
 
 #: ../gui/wxpython/vnet/dialogs.py:798
 #, fuzzy
-msgid "Input vector map does not exists."
+msgid "Input vector map does not exist."
 msgstr "ベクトルマップ <%s> が見つかりません"
 
 #: ../gui/wxpython/vnet/dialogs.py:816
@@ -8182,13 +8182,13 @@ msgstr ""
 
 #: ../gui/wxpython/lmgr/layertree.py:56 ../gui/wxpython/menustrings.py:32
 #: ../gui/wxpython/menustrings.py:1009
-#: ../gui/wxpython/gui_core/dialogs.py:1866
+#: ../gui/wxpython/gui_core/dialogs.py:1884
 msgid "Import raster data"
 msgstr "ラスターデータのインポート "
 
 #: ../gui/wxpython/lmgr/layertree.py:58 ../gui/wxpython/menustrings.py:151
 #: ../gui/wxpython/menustrings.py:1128
-#: ../gui/wxpython/gui_core/dialogs.py:1864
+#: ../gui/wxpython/gui_core/dialogs.py:1882
 msgid "Link external raster data"
 msgstr "外部ラスターデータへのリンク"
 
@@ -8205,13 +8205,13 @@ msgstr "出力フォントの選択 "
 
 #: ../gui/wxpython/lmgr/layertree.py:64 ../gui/wxpython/menustrings.py:60
 #: ../gui/wxpython/menustrings.py:1037
-#: ../gui/wxpython/gui_core/dialogs.py:1860
+#: ../gui/wxpython/gui_core/dialogs.py:1878
 msgid "Import vector data"
 msgstr "ベクトルデータのインポート "
 
 #: ../gui/wxpython/lmgr/layertree.py:66 ../gui/wxpython/menustrings.py:153
 #: ../gui/wxpython/menustrings.py:1130
-#: ../gui/wxpython/gui_core/dialogs.py:1858
+#: ../gui/wxpython/gui_core/dialogs.py:1876
 msgid "Link external vector data"
 msgstr "外部ベクトルデータへのリンク"
 
@@ -8540,7 +8540,7 @@ msgstr "ラスターマップのインポート "
 msgid "Raster Map Calculator"
 msgstr "ラスターマップカリキュレータ"
 
-#: ../gui/wxpython/lmgr/toolbars.py:140 ../gui/wxpython/gui_core/forms.py:1205
+#: ../gui/wxpython/lmgr/toolbars.py:140 ../gui/wxpython/gui_core/forms.py:1198
 msgid "Graphical Modeler"
 msgstr "描画モデラー"
 
@@ -11527,7 +11527,7 @@ msgstr "トポロジーの作成/再ビルド"
 
 #: ../gui/wxpython/menustrings.py:560 ../gui/wxpython/menustrings.py:1459
 msgid ""
-"Creates topology for vector map. Optionaly also checks for topological "
+"Creates topology for vector map. Optionally also checks for topological "
 "errors."
 msgstr ""
 
@@ -14066,7 +14066,7 @@ msgstr "ワイヤー色"
 
 #: ../gui/wxpython/gui_core/preferences.py:973
 #: ../gui/wxpython/gui_core/preferences.py:995
-#: ../gui/wxpython/gui_core/forms.py:1494
+#: ../gui/wxpython/gui_core/forms.py:1490
 msgid "Transparent"
 msgstr "透過 "
 
@@ -14392,95 +14392,95 @@ msgstr ""
 "コマンドが成功した場合はダイアログを閉じます. ダイアログ（'コマンド'タブ）で"
 "この設定を変更します."
 
-#: ../gui/wxpython/gui_core/forms.py:753
+#: ../gui/wxpython/gui_core/forms.py:750
 #, python-format
 msgid "'%s' copied to clipboard"
 msgstr "'%s' クリップボードにコピーしました"
 
-#: ../gui/wxpython/gui_core/forms.py:824 ../gui/wxpython/gui_core/forms.py:837
+#: ../gui/wxpython/gui_core/forms.py:821 ../gui/wxpython/gui_core/forms.py:834
 msgid "Required"
 msgstr "必須"
 
-#: ../gui/wxpython/gui_core/forms.py:827 ../gui/wxpython/gui_core/forms.py:837
+#: ../gui/wxpython/gui_core/forms.py:824 ../gui/wxpython/gui_core/forms.py:834
 msgid "Optional"
 msgstr "オプション"
 
-#: ../gui/wxpython/gui_core/forms.py:906
-#: ../gui/wxpython/gui_core/forms.py:1654
+#: ../gui/wxpython/gui_core/forms.py:903
+#: ../gui/wxpython/gui_core/forms.py:1650
 msgid "Parameterized in model"
 msgstr "モデルのパラメータ化"
 
-#: ../gui/wxpython/gui_core/forms.py:969
+#: ../gui/wxpython/gui_core/forms.py:966
 msgid "This option is required"
 msgstr ""
 
-#: ../gui/wxpython/gui_core/forms.py:986
+#: ../gui/wxpython/gui_core/forms.py:983
 msgid "[multiple]"
 msgstr "[複数] "
 
-#: ../gui/wxpython/gui_core/forms.py:1036
+#: ../gui/wxpython/gui_core/forms.py:1033
 msgid "valid range"
 msgstr "有効範囲 "
 
-#: ../gui/wxpython/gui_core/forms.py:1301
+#: ../gui/wxpython/gui_core/forms.py:1294
 msgid "Show graphical representation of temporal extent of dataset(s) ."
 msgstr ""
 
-#: ../gui/wxpython/gui_core/forms.py:1461 ../gui/wxpython/core/utils.py:998
+#: ../gui/wxpython/gui_core/forms.py:1454 ../gui/wxpython/core/utils.py:998
 msgid "Select Color"
 msgstr "カラー選択 "
 
-#: ../gui/wxpython/gui_core/forms.py:1523
-#: ../gui/wxpython/gui_core/forms.py:1587
+#: ../gui/wxpython/gui_core/forms.py:1519
+#: ../gui/wxpython/gui_core/forms.py:1583
 #, python-format
 msgid "Choose %s"
 msgstr "選択 %s "
 
-#: ../gui/wxpython/gui_core/forms.py:1552
+#: ../gui/wxpython/gui_core/forms.py:1548
 #: ../gui/wxpython/modules/mcalc_builder.py:143
 msgid "&Load"
 msgstr "ロード(&L)"
 
-#: ../gui/wxpython/gui_core/forms.py:1553
+#: ../gui/wxpython/gui_core/forms.py:1549
 #, fuzzy
 msgid "Load and edit content of a file"
 msgstr "ロケーション名の変更"
 
-#: ../gui/wxpython/gui_core/forms.py:1555
+#: ../gui/wxpython/gui_core/forms.py:1551
 #, fuzzy
 msgid "&Save as"
 msgstr "別名で保存 "
 
-#: ../gui/wxpython/gui_core/forms.py:1556
+#: ../gui/wxpython/gui_core/forms.py:1552
 msgid "Save content to a file for further use"
 msgstr ""
 
-#: ../gui/wxpython/gui_core/forms.py:1561
+#: ../gui/wxpython/gui_core/forms.py:1557
 #, fuzzy
 msgid "or enter values directly:"
 msgstr "または対話的に値を入力します"
 
-#: ../gui/wxpython/gui_core/forms.py:1563
+#: ../gui/wxpython/gui_core/forms.py:1559
 msgid ""
 "Enter file content directly instead of specifying a file. Temporary file "
 "will be automatically created."
 msgstr ""
 
-#: ../gui/wxpython/gui_core/forms.py:1588
+#: ../gui/wxpython/gui_core/forms.py:1584
 #: ../gui/wxpython/gui_core/gselect.py:1320
 msgid "Directory"
 msgstr "ディレクトリ"
 
-#: ../gui/wxpython/gui_core/forms.py:1839
+#: ../gui/wxpython/gui_core/forms.py:1836
 msgid "Manual"
 msgstr "マニュアル "
 
-#: ../gui/wxpython/gui_core/forms.py:1880
+#: ../gui/wxpython/gui_core/forms.py:1877
 #, fuzzy
 msgid "Nothing to load."
 msgstr "保存するものがありません"
 
-#: ../gui/wxpython/gui_core/forms.py:1888
+#: ../gui/wxpython/gui_core/forms.py:1885
 #, fuzzy, python-format
 msgid ""
 "Unable to load file.\n"
@@ -14488,37 +14488,37 @@ msgid ""
 "Reason: %s"
 msgstr "アイコンテーマがロード出来ません 理由: %s"
 
-#: ../gui/wxpython/gui_core/forms.py:1914
+#: ../gui/wxpython/gui_core/forms.py:1911
 #: ../gui/wxpython/modules/colorrules.py:610
 msgid "Nothing to save."
 msgstr "保存するものがありません"
 
-#: ../gui/wxpython/gui_core/forms.py:1918
+#: ../gui/wxpython/gui_core/forms.py:1915
 #, fuzzy
 msgid "Save input as..."
 msgstr "名前を付けて保存する..."
 
-#: ../gui/wxpython/gui_core/forms.py:2227
+#: ../gui/wxpython/gui_core/forms.py:2224
 #, fuzzy
 msgid "No dataset given."
 msgstr "マップレイヤーが選択されていません "
 
-#: ../gui/wxpython/gui_core/forms.py:2266 ../gui/wxpython/core/gcmd.py:701
+#: ../gui/wxpython/gui_core/forms.py:2263 ../gui/wxpython/core/gcmd.py:701
 #, python-format
 msgid "Error in %s"
 msgstr "%s でエラー "
 
-#: ../gui/wxpython/gui_core/forms.py:2380
+#: ../gui/wxpython/gui_core/forms.py:2377
 #, python-format
 msgid "Unable to parse command '%s'"
 msgstr "コマンドを解析することができません '%s'"
 
-#: ../gui/wxpython/gui_core/forms.py:2386
+#: ../gui/wxpython/gui_core/forms.py:2383
 #, python-format
 msgid "%(cmd)s: parameter '%(key)s' not available"
 msgstr "%(cmd)s: パラメーター '%(key)s' は利用できません"
 
-#: ../gui/wxpython/gui_core/forms.py:2478
+#: ../gui/wxpython/gui_core/forms.py:2475
 msgid "Try to set up GRASS_ADDON_PATH or GRASS_ADDON_BASE variable."
 msgstr ""
 
@@ -14816,120 +14816,117 @@ msgid "Encoding"
 msgstr ""
 
 #: ../gui/wxpython/gui_core/dialogs.py:1692
-#: ../gui/wxpython/gui_core/dialogs.py:1886
+#: ../gui/wxpython/gui_core/dialogs.py:1901
 msgid "&Import"
 msgstr "インポート(&I)"
 
 #: ../gui/wxpython/gui_core/dialogs.py:1693
-#: ../gui/wxpython/gui_core/dialogs.py:1887
+#: ../gui/wxpython/gui_core/dialogs.py:1902
 msgid "Import selected layers"
 msgstr "選択レイヤーをインポート"
 
-#: ../gui/wxpython/gui_core/dialogs.py:1872
-msgid "this might not work for multiple bands"
-msgstr ""
-
-#: ../gui/wxpython/gui_core/dialogs.py:1874
-#, fuzzy, python-brace-format
-msgid "Add linked layers into layer tree ({mightNotWork})"
-msgstr "レイヤーツリーにレイヤーを追加 "
-
-#: ../gui/wxpython/gui_core/dialogs.py:1877
-#, fuzzy, python-brace-format
-msgid "Add imported layers into layer tree ({mightNotWork})"
+#: ../gui/wxpython/gui_core/dialogs.py:1891
+#, fuzzy
+msgid "Add linked layers into layer tree"
 msgstr "レイヤーツリーにインポートレイヤーを追加 "
 
-#: ../gui/wxpython/gui_core/dialogs.py:1883
+#: ../gui/wxpython/gui_core/dialogs.py:1893
+#: ../gui/wxpython/gui_core/dialogs.py:2130
+msgid "Add imported layers into layer tree"
+msgstr "レイヤーツリーにインポートレイヤーを追加 "
+
+#: ../gui/wxpython/gui_core/dialogs.py:1898
 msgid "&Link"
 msgstr "リンク(&L)"
 
-#: ../gui/wxpython/gui_core/dialogs.py:1884
+#: ../gui/wxpython/gui_core/dialogs.py:1899
 msgid "Link selected layers"
 msgstr "選択レイヤーのリンク"
 
-#: ../gui/wxpython/gui_core/dialogs.py:1896
+#: ../gui/wxpython/gui_core/dialogs.py:1911
 #, fuzzy
 msgid "No layers selected. Operation canceled."
 msgstr "マップレイヤーが選択されていません 処理はキャンセルされました "
 
-#: ../gui/wxpython/gui_core/dialogs.py:2011
+#: ../gui/wxpython/gui_core/dialogs.py:1965
+#, fuzzy
+msgid "Unable to determine number of raster bands"
+msgstr "ラスターマップの断面を作成できません "
+
+#: ../gui/wxpython/gui_core/dialogs.py:2045
 #, fuzzy
 msgid "Define output format for vector data"
 msgstr "ベクトルマップのインポート "
 
-#: ../gui/wxpython/gui_core/dialogs.py:2013
+#: ../gui/wxpython/gui_core/dialogs.py:2047
 #, fuzzy
 msgid "Define output format for raster data"
 msgstr "ラスターマップのインポート "
 
-#: ../gui/wxpython/gui_core/dialogs.py:2021
+#: ../gui/wxpython/gui_core/dialogs.py:2055
 #, fuzzy
 msgid "Set external format and close dialog"
 msgstr "変更を行わずにダイアログを閉じる"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2073
+#: ../gui/wxpython/gui_core/dialogs.py:2107
 #, fuzzy
 msgid "No data source selected."
 msgstr "マップレイヤーが選択されていません "
 
-#: ../gui/wxpython/gui_core/dialogs.py:2086
+#: ../gui/wxpython/gui_core/dialogs.py:2120
 msgid "Import DXF layers"
 msgstr "DXFレイヤーのインポート "
 
-#: ../gui/wxpython/gui_core/dialogs.py:2090
+#: ../gui/wxpython/gui_core/dialogs.py:2124
 msgid "Choose DXF file to import"
 msgstr "インポートするDXFファイルを選択"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2096
-msgid "Add imported layers into layer tree"
-msgstr "レイヤーツリーにインポートレイヤーを追加 "
-
-#: ../gui/wxpython/gui_core/dialogs.py:2110
+#: ../gui/wxpython/gui_core/dialogs.py:2144
 #, fuzzy
 msgid "No layers selected."
 msgstr "マップレイヤーが選択されていません "
 
-#: ../gui/wxpython/gui_core/dialogs.py:2251
+#: ../gui/wxpython/gui_core/dialogs.py:2285
 msgid "Set Map Layer Opacity"
 msgstr "レイヤーの透過度設定"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2279
+#: ../gui/wxpython/gui_core/dialogs.py:2313
 msgid "opaque"
 msgstr "不透明"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2375
+#: ../gui/wxpython/gui_core/dialogs.py:2409
 msgid "Set image size"
 msgstr "イメージサイズの設定"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2384
+#: ../gui/wxpython/gui_core/dialogs.py:2418
 msgid "Image size"
 msgstr "イメージサイズ"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2431
+#: ../gui/wxpython/gui_core/dialogs.py:2465
 msgid "Template:"
 msgstr "テンプレート:"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2469
+#: ../gui/wxpython/gui_core/dialogs.py:2503
 #, fuzzy
 msgid "GRASS GIS SQL Query Utility"
 msgstr "GRASS GIS - マップ ディスプレイ "
 
-#: ../gui/wxpython/gui_core/dialogs.py:2480
+#: ../gui/wxpython/gui_core/dialogs.py:2514
 #, fuzzy
 msgid " SQL statement "
 msgstr "SQL文"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2525
+#: ../gui/wxpython/gui_core/dialogs.py:2559
 #, fuzzy
 msgid "Symbols"
 msgstr "シンボル"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2552
+#: ../gui/wxpython/gui_core/dialogs.py:2586
 #, fuzzy
 msgid "Symbol directory:"
 msgstr "シンボルサイズ:"
 
-#: ../gui/wxpython/gui_core/dialogs.py:2560
+#: ../gui/wxpython/gui_core/dialogs.py:2594
 #, fuzzy
 msgid "Symbol name:"
 msgstr "シンボルサイズ:"
@@ -16782,7 +16779,7 @@ msgstr "重複する属性"
 msgid "Unable to create file '%s'\n"
 msgstr " EPGSコードが読めません: %s"
 
-#: ../gui/wxpython/core/gconsole.py:489
+#: ../gui/wxpython/core/gconsole.py:488
 #, python-format
 msgid ""
 "Unable to run command:\n"
@@ -16795,26 +16792,26 @@ msgstr ""
 "\n"
 "オプション <%(opt)s>: wxGUIでは標準入力からの読込はサポートされていません"
 
-#: ../gui/wxpython/core/gconsole.py:610
+#: ../gui/wxpython/core/gconsole.py:609
 #, python-format
 msgid "%d sec"
 msgstr ""
 
-#: ../gui/wxpython/core/gconsole.py:613
+#: ../gui/wxpython/core/gconsole.py:612
 #, python-format
 msgid "%(min)d min %(sec)d sec"
 msgstr ""
 
-#: ../gui/wxpython/core/gconsole.py:621
+#: ../gui/wxpython/core/gconsole.py:620
 msgid ""
 "Please note that the data are left in inconsistent state and may be corrupted"
 msgstr "データが矛盾した状態か破損して残っていますので注意してください"
 
-#: ../gui/wxpython/core/gconsole.py:623
+#: ../gui/wxpython/core/gconsole.py:622
 msgid "Command aborted"
 msgstr "コマンド中止"
 
-#: ../gui/wxpython/core/gconsole.py:625
+#: ../gui/wxpython/core/gconsole.py:624
 msgid "Command finished"
 msgstr "コマンド終了"
 
@@ -18703,6 +18700,31 @@ msgid "Remove selected class"
 msgstr "選択したマップセット名を変更する "
 
 #, fuzzy
+#~ msgid "Add linked layers into layer tree ({mightNotWork})"
+#~ msgstr "レイヤーツリーにレイヤーを追加 "
+
+#, fuzzy
+#~ msgid "Add imported layers into layer tree ({mightNotWork})"
+#~ msgstr "レイヤーツリーにインポートレイヤーを追加 "
+
+#, fuzzy
+#~ msgid "Vector map %s already exists. "
+#~ msgstr "ファイルはすでに存在します"
+
+#, fuzzy
+#~ msgid "Temporary map %s  already exists.\n"
+#~ msgstr "ファイルはすでに存在します"
+
+#, fuzzy
+#~ msgid ""
+#~ "Creates a raster map from LAS LiDAR points using univariate statistics."
+#~ msgstr "複数の単変量統計情報の座標系を集約しラスターマップを作成 "
+
+#, fuzzy
+#~ msgid "Converts LAS LiDAR point clouds to a GRASS vector map with libLAS."
+#~ msgstr "OGRベクトルレイヤーからGRASSベクトルマップへ変換"
+
+#, fuzzy
 #~ msgid "Unpacks a vector map packed with v.pack."
 #~ msgstr "ベクトルマップメタデータ更新"
 
@@ -18894,15 +18916,6 @@ msgstr "選択したマップセット名を変更する "
 
 #~ msgid "Surface generation program."
 #~ msgstr "曲面作成プログラム"
-
-#, fuzzy
-#~ msgid ""
-#~ "Creates a raster map from LAS LiDAR points using univariate statistics."
-#~ msgstr "複数の単変量統計情報の座標系を集約しラスターマップを作成 "
-
-#, fuzzy
-#~ msgid "Converts LAS LiDAR point clouds to a GRASS vector map with libLAS."
-#~ msgstr "OGRベクトルレイヤーからGRASSベクトルマップへ変換"
 
 #~ msgid "Compares bit patterns with a raster map."
 #~ msgstr "ラスターマップのビットパターン比較"
