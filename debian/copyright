@@ -4,52 +4,52 @@ Upstream-Contact: GRASS Development Team <grass-dev@lists.osgeo.org>
 Source: http://grass.osgeo.org/
 
 Files: *
-Copyright:          1989-2015, the GRASS Development Team
-                    1993-2014, James Darrell McCauley <darrell@mccauley-usa.com>
-                    2003-2014, Glynn Clements
-                    2003-2014, Markus Neteler
-                    2003-2014, Per Henrik Johansen
-                    2006-2014, Hamish Bowman
-                    2006-2014, Martin Landa
-                    2007-2014, Lars Ahlzen
-                    2011-2014, Soeren Gebbert
-                    2011-2013, Anna Kratochvilova
-                         2013, GKX Associates Inc.
-                         2013, Vaclav Petras
-              2009-2010, 2012, Daniel Bundala
-                    2011-2012, Markus Metz
-                         2012, Eric Momsen
-                         2012, Luca Delucchi
-                         2012, Stepan Turek
-                    2001-2011, Frank Warmerdam
-                         2011, Tom Kralidis
-                    2007-2010, E. Jorge Tizado
-                   2007, 2010, Laura Toma
-                    2006-2009, Cedric Shoc
-                         2009, Gabor Grothendieck
-                    2007-2008, Martin Schroeder
-                    2005-2006, Politecnico di Milano
-                    2004-2005, GDF Hannover
-                    2002-2003, University of Sannio (BN) - Italy
-                         2003, Christo Zietsman
- 1989, 1993, 1995, 2000, 2002, L. Mitas
-                   1995, 2002, J. Hofierka
-                    1998-2002, Free Software Foundation, Inc
-                         2002, Jaro Hofierka
-                         2002, Roberto Micarelli
-                    1996-2000, Brian Gough
-              1992-1995, 2002, H. Mitasova
-                         2000, David D.Gray <ddgray@armadce.demon.co.uk>
-                         1995, Bill Brown <brown@gis.uiuc.edu> & Michael Shapiro
-                         1995, M. Ruesink
-                         1995, J. Caplan,
-                         1995, M. Zlocha
-                   1993, 1995, D. McCauley 
-              1992-1993, 1995, D. Gerdes 
-              1992-1993, 1995, I. Kosinovsky, 
-                         1994, Bill Brown, USACERL
-                         1993, RMIT
-                         1992, USA-CERL
+Copyright:   1989-2015, GRASS Development Team
+             1993-2014, James Darrell McCauley <darrell@mccauley-usa.com>
+             2003-2014, Glynn Clements
+             2003-2014, Markus Neteler
+             2003-2014, Per Henrik Johansen
+             2006-2014, Hamish Bowman
+             2006-2014, Martin Landa
+             2007-2014, Lars Ahlzen
+             2011-2014, Soeren Gebbert
+             2011-2013, Anna Kratochvilova
+                  2013, GKX Associates Inc.
+                  2013, Vaclav Petras
+       2009-2010, 2012, Daniel Bundala
+             2011-2012, Markus Metz
+                  2012, Eric Momsen
+                  2012, Luca Delucchi
+                  2012, Stepan Turek
+             2001-2011, Frank Warmerdam
+                  2011, Tom Kralidis
+             2007-2010, E. Jorge Tizado
+            2007, 2010, Laura Toma
+             2006-2009, Cedric Shoc
+                  2009, Gabor Grothendieck
+             2007-2008, Martin Schroeder
+             1992-2006, Helena Mitasova
+             2005-2006, Politecnico di Milano
+             2004-2005, GDF Hannover
+             2002-2003, University of Sannio (BN) - Italy
+                  2003, Christo Zietsman
+ 1989, 1993-2000, 2002, Lubos Mitas
+            1995, 2002, J. Hofierka
+             1998-2002, Free Software Foundation, Inc
+                  2002, Jaro Hofierka
+                  2002, Roberto Micarelli
+             1996-2000, Brian Gough
+                  2000, David D.Gray <ddgray@armadce.demon.co.uk>
+                  1995, Bill Brown <brown@gis.uiuc.edu> & Michael Shapiro
+                  1995, M. Ruesink
+                  1995, J. Caplan,
+                  1995, M. Zlocha
+            1993, 1995, D. McCauley
+       1992-1993, 1995, D. Gerdes
+       1992-1993, 1995, I. Kosinovsky
+                  1994, Bill Brown, USACERL
+                  1993, RMIT
+                  1992, USA-CERL
 License: GPL-2+
 
 Files: imagery/i.landsat.toar/earth_sun.c
