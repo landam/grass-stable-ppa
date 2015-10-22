@@ -1,4 +1,4 @@
-grass (7.0.2~rc1-1) UNRELEASED; urgency=medium
+grass (7.0.2~rc1-1~exp1) experimental; urgency=medium
 
   * New upstream release candidate.
   * Update copyright years in copyright file.
@@ -6,7 +6,7 @@ grass (7.0.2~rc1-1) UNRELEASED; urgency=medium
   * Add patch to fix various new typos.
   * Strip r.in.png & r.out.png
 
- -- Bas Couwenberg <sebastic@debian.org>  Wed, 21 Oct 2015 22:07:29 +0200
+ -- Bas Couwenberg <sebastic@debian.org>  Thu, 22 Oct 2015 09:49:17 +0200
 
 grass (7.0.1-2) unstable; urgency=medium
 
