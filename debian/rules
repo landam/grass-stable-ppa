@@ -120,7 +120,7 @@ override_dh_auto_install-arch:
 
 	# delete extra license files
 	$(RM) debian/tmp/usr/lib/$(BASE_NAME)/etc/license
-	
+
 	# delete python compiled bytecode files (maybe dh_python2 takes care of this for us?)
 	find debian/tmp/ -type f -name "*.pyc" -delete
 
@@ -150,28 +150,16 @@ override_dh_auto_install-arch:
 	# install pkg-config file
 	install -m 644 grass.pc debian/$(PKG_NAME)-dev/usr/share/pkgconfig/$(BASE_NAME).pc
 
-	# install icon file for debian menu system
-	install -d debian/tmp/usr/share/icons \
-		debian/tmp/usr/share/applications \
-		debian/tmp/usr/bin
-	# is there a better way to make these exist?
-	mkdir -p debian/tmp/usr/share/icons/hicolor/32x32/apps
-	mkdir -p debian/tmp/usr/share/icons/hicolor/48x48/apps
-	mkdir -p debian/tmp/usr/share/icons/hicolor/64x64/apps
+	# install icons and desktop file
+	mkdir -p debian/tmp/usr/share/icons
+	mv debian/tmp/usr/lib/$(BASE_NAME)/share/icons/hicolor debian/tmp/usr/share/icons
+
 	mkdir -p debian/tmp/usr/share/applications
-	install -m 644 debian/grass.xpm \
-		debian/tmp/usr/share/icons/hicolor/32x32/apps/$(BASE_NAME).xpm
-	install -m 644 gui/icons/grass-48x48.png \
-		debian/tmp/usr/share/icons/hicolor/48x48/apps/$(BASE_NAME).png
-	install -m 644 gui/icons/grass-64x64.png \
-		debian/tmp/usr/share/icons/hicolor/64x64/apps/$(BASE_NAME).png
-	install -m 644 gui/icons/grass.desktop \
-		debian/tmp/usr/share/applications/$(BASE_NAME).desktop
+	mv debian/tmp/usr/lib/$(BASE_NAME)/share/applications/grass.desktop debian/tmp/usr/share/applications/$(BASE_NAME).desktop
 
 	# install AppStream metadata
-	mkdir -p debian/tmp/usr/share/appdata/
-	install -m 644 gui/icons/grass.appdata.xml \
-		debian/tmp/usr/share/appdata/$(BASE_NAME).appdata.xml
+	mkdir -p debian/tmp/usr/share/appdata
+	mv debian/tmp/usr/lib/$(BASE_NAME)/share/appdata/grass.appdata.xml debian/tmp/usr/share/appdata/$(BASE_NAME).appdata.xml
 
 	# install grass wrapper scripts
 	install -m 755 debian/x-grass7 debian/tmp/usr/bin/x-$(BASE_NAME)
@@ -193,8 +181,6 @@ override_dh_auto_install-arch:
 	         debian/tmp/usr/lib/$(BASE_NAME)/contributors_extra.csv \
 	         debian/tmp/usr/lib/$(BASE_NAME)/translation_status.json \
 	         debian/tmp/usr/lib/$(BASE_NAME)/translators.csv \
-	         debian/tmp/usr/lib/$(BASE_NAME)/share/appdata/grass.appdata.xml \
-	         debian/tmp/usr/lib/$(BASE_NAME)/share/applications/grass.desktop \
 	         debian/tmp/usr/lib/$(BASE_NAME)/demolocation/
 
 	# Move image files from /usr/lib/$(BASE_NAME) to /usr/share/$(BASE_NAME)
