@@ -3,7 +3,7 @@
 ;GRASS GIS Installer for Windows
 ;Written by Marco Pasetti
 ;Updated for OSGeo4W by Colin Nielsen, Helmut Kudrnovsky, and Martin Landa
-;Last Update: $Id: GRASS-Installer.nsi.tmpl 66294 2015-09-22 15:44:38Z hellik $
+;Last Update: $Id: GRASS-Installer.nsi.tmpl 66717 2015-11-02 14:10:15Z hellik $
 ;Mail to: grass-dev@lists.osgeo.org 
 
 ;----------------------------------------------------------------------------------------------------------------------------
@@ -557,7 +557,7 @@ Section "GRASS" SecGRASS
 	FileWrite $0 'rem set path to freetype dll$\r$\n'
 	FileWrite $0 'set FREETYPEBASE=$INSTALL_DIR\extrabin;$INSTALL_DIR\msys\bin;$INSTALL_DIR\lib$\r$\n'
 	FileWrite $0 '$\r$\n'
-	FileWrite $0 'rem set dependecies path$\r$\n'
+	FileWrite $0 'rem set dependencies path$\r$\n'
 	FileWrite $0 'set PATH=%FREETYPEBASE%;%PATH%$\r$\n'
 	FileWrite $0 '$\r$\n'
 	FileWrite $0 'rem GISRC must be set$\r$\n'

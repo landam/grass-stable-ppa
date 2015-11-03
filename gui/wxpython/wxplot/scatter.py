@@ -79,11 +79,15 @@ class ScatterFrame(BasePlotFrame):
         """
         self.SetCursor(wx.StockCursor(wx.CURSOR_ARROW))
         self.SetGraphStyle()
+        wx.BeginBusyCursor()
+        wx.SafeYield()
         self.SetupScatterplot()
         p = self.CreatePlotList()
         if p:
             self.DrawPlot(p)
+            wx.EndBusyCursor()
         else:
+            wx.EndBusyCursor()
             GMessage(_("Nothing to plot."), parent = self)
 
     def OnSelectRaster(self, event):
@@ -243,8 +247,8 @@ class ScatterFrame(BasePlotFrame):
             rast1 = rast1.split('@')[0] 
             rast2 = rast2.split('@')[0] 
             ret = grass.parse_command('r.regression.line', 
-                                      map1 = rast1, 
-                                      map2 = rast2, 
+                                      mapx = rast1, 
+                                      mapy = rast2, 
                                       flags = 'g', quiet = True,
                                       parse = (grass.parse_key_val, { 'sep' : '=' }))
             eqtitle = _('Regression equation for raster map <%(rast1)s> vs. <%(rast2)s>:\n\n') % \
