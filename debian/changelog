@@ -1,10 +1,10 @@
-grass (7.0.2~rc2-1~exp1) UNRELEASED; urgency=medium
+grass (7.0.2~rc2-1~exp1) experimental; urgency=medium
 
   * New upstream release candidate.
   * Use desktop file in favor of menu file per CTTE #741573.
   * Drop various-typos.patch, applied upstream.
 
- -- Bas Couwenberg <sebastic@debian.org>  Tue, 03 Nov 2015 12:11:52 +0100
+ -- Bas Couwenberg <sebastic@debian.org>  Tue, 03 Nov 2015 12:42:11 +0100
 
 grass (7.0.2~rc1-1~exp1) experimental; urgency=medium
 
