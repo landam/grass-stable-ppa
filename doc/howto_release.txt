@@ -1,6 +1,6 @@
 How to release GRASS GIS binaries and source code
 
-$Date: 2015-06-14 22:22:23 +0200 (Sun, 14 Jun 2015) $
+$Date: 2015-10-29 09:40:50 +0100 (Thu, 29 Oct 2015) $
 
 Note: This text contains *some* rules only applicable to the
       development coordinator (currently Markus Neteler, PSC Chair).
@@ -125,8 +125,8 @@ Contents
 
 
  o Store the source tarball (twice) in (use scp -p FILES grass:):
-    SERVER1=grass.osgeo.org:/osgeo/grass/grass-cms/grass$MAJOR$MINOR/source/
-    SERVER2=download.osgeo.org:/osgeo/download/grass/grass$MAJOR$MINOR/source/
+    SERVER1=grass.osgeo.org:/var/www/grass/grass-cms/grass$MAJOR$MINOR/source/
+    SERVER2=upload.osgeo.org:/osgeo/download/grass/grass$MAJOR$MINOR/source/
     echo $SERVER1
     echo $SERVER2
 
@@ -155,7 +155,7 @@ Contents
       -  cd dist.$ARCH/docs/html
          echo www/grass$MAJOR$MINOR/manuals/
          scp -r * neteler@grass.osgeo.org:/osgeo/grass/grass-cms/grass$MAJOR$MINOR/manuals/
-         scp -r * neteler@download.osgeo.org:/osgeo/download/grass/grass$MAJOR$MINOR/manuals/
+         scp -r * neteler@upload.osgeo.org:/osgeo/download/grass/grass$MAJOR$MINOR/manuals/
 
  o stable release: update cronjob 'cron_grass_HEAD_src_snapshot.sh' to next but one
                    release tag for the differences
@@ -261,7 +261,7 @@ Contents
            svn switch https://svn.osgeo.org/grass/grass/branches/releasebranch_7_0 .
 
 ----------
-GRASS GIS 7.0 release branch creation
+Example: GRASS GIS 7.0 release branch creation
 
 svn copy https://svn.osgeo.org/grass/grass/trunk/ \
     https://svn.osgeo.org/grass/grass/branches/releasebranch_7_0 \
