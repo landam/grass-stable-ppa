@@ -4,3 +4,4 @@ no-fail-html.patch
 desktop.patch
 appstream.patch
 ctte-741573.patch
+various-typos.patch

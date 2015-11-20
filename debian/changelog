@@ -1,6 +1,7 @@
 grass (7.0.2-1) UNRELEASED; urgency=medium
 
   * New upstream release.
+  * Add patch for various typos.
 
  -- Bas Couwenberg <sebastic@debian.org>  Fri, 20 Nov 2015 00:23:31 +0100
 

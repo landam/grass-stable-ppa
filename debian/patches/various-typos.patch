@@ -1,0 +1,80 @@
+Description: Fix various typos.
+ preceeded -> preceded
+ occurence -> occurrence
+Author: Bas Couwenberg <sebastic@debian.org>
+
+--- a/scripts/g.extension/g.extension.html
++++ b/scripts/g.extension/g.extension.html
+@@ -14,7 +14,7 @@ Two types of extensions are supported:
+ <li>Source code (mostly written in C programming language; may also be written
+     in C++, Fortran or other languages): while on MS-Windows systems the requested
+     GRASS GIS extension is downloaded pre-compiled from the GRASS GIS site, on Unix
+-    based systems the installation is preceeded by the automated download of the
++    based systems the installation is preceded by the automated download of the
+     extension's source code along with subsequent compilation and installation.
+     This requires a compiler environment to be present on the user's computer.</li>
+ </ul>
+--- a/lib/gis/strings.c
++++ b/lib/gis/strings.c
+@@ -206,7 +206,7 @@ char *G_str_replace(const char *buffer,
+ 	return G_store(buffer);
+ 
+     if (strlen(new_str) > strlen(old_str)) {
+-	/* Count occurences of old_str */
++	/* Count occurrences of old_str */
+ 	count = 0;
+ 	len = strlen(old_str);
+ 	B = buffer;
+--- a/lib/python/temporal/temporal_algebra.py
++++ b/lib/python/temporal/temporal_algebra.py
+@@ -1101,7 +1101,7 @@ class TemporalAlgebraParser(object):
+                 stds = dataset_factory(stds_type, id_input)
+             else:
+                 stds = dataset_factory(self.stdstype, id_input)
+-            # Check for occurence of space time dataset.
++            # Check for occurrence of space time dataset.
+             if stds.is_in_db(dbif=self.dbif) == False:
+                 raise FatalError(_("Space time %s dataset <%s> not found") %
+                     (stds.get_new_map_instance(None).get_type(), id_input))
+@@ -2207,7 +2207,7 @@ class TemporalAlgebraParser(object):
+                     id_input = input + "@" + self.mapset
+                 # Create empty map dataset.
+                 map_i = dataset_factory(self.maptype, id_input)
+-                # Check for occurence of space time dataset.
++                # Check for occurrence of space time dataset.
+                 if map_i.map_exists() == False:
+                     raise FatalError(_("%s map <%s> not found in GRASS spatial database") %
+                         (map_i.get_type(), id_input))
+--- a/lib/python/temporal/temporal_raster_base_algebra.py
++++ b/lib/python/temporal/temporal_raster_base_algebra.py
+@@ -650,7 +650,7 @@ class TemporalRasterBaseAlgebraParser(Te
+                     id_input = input + "@" + self.mapset
+                 # Create empty map dataset.
+                 map_i = dataset_factory(self.maptype, id_input)
+-                # Check for occurence of space time dataset.
++                # Check for occurrence of space time dataset.
+                 if map_i.map_exists() == False:
+                     raise FatalError(_("%s map <%s> not found in GRASS spatial database") %
+                         (map_i.get_type(), id_input))
+--- a/lib/vector/Vlib/cindex.c
++++ b/lib/vector/Vlib/cindex.c
+@@ -38,7 +38,7 @@ static void check_index(const struct Map
+         G_fatal_error(_("Layer index out of range"));
+ }
+ 
+-/* search for first occurence of cat in cat index, starting at first */
++/* search for first occurrence of cat in cat index, starting at first */
+ static int ci_search_cat(struct Cat_index *ci, int first, int cat)
+ {
+     int lo, hi, mid;
+--- a/raster/r.in.xyz/r.in.xyz.html
++++ b/raster/r.in.xyz/r.in.xyz.html
+@@ -197,7 +197,7 @@ v.surf.rst in=lidar_min_pt elev=lidar_mi
+ <h3>Import of x,y,string data</h3>
+ 
+ <em>r.in.xyz</em> is expecting numeric values as z column. In order to 
+-perform a occurence count operation even on x,y data with non-numeric 
++perform a occurrence count operation even on x,y data with non-numeric 
+ attribute(s), the data can be imported using either the x or y 
+ coordinate as a fake z column for <b>method</b>=<tt>n</tt> (count 
+ number of points per grid cell), the z values are ignored anyway.
