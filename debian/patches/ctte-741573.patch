@@ -17,6 +17,7 @@ Description: Drop menu file in favor of desktop file.
  is also installed to have an icon for all size besides 48x48 & 64x64.
 Author: Bas Couwenberg <sebastic@debian.org>
 Forwarded: https://trac.osgeo.org/grass/ticket/2777
+Applied-Upstream: https://trac.osgeo.org/grass/changeset/66875
 
 --- a/gui/icons/grass.menu
 +++ /dev/null

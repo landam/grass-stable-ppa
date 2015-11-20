@@ -1,6 +1,7 @@
 Description: Fix desktop file for Debian.
 Author: Bas Couwenberg <sebastic@debian.org>
 Forwarded: not-needed
+Applied-Upstream: https://trac.osgeo.org/grass/changeset/66866
 
 --- a/gui/icons/grass.desktop
 +++ b/gui/icons/grass.desktop
