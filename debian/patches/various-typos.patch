@@ -2,6 +2,7 @@ Description: Fix various typos.
  preceeded -> preceded
  occurence -> occurrence
 Author: Bas Couwenberg <sebastic@debian.org>
+Forwarded: https://trac.osgeo.org/grass/ticket/2803
 
 --- a/scripts/g.extension/g.extension.html
 +++ b/scripts/g.extension/g.extension.html
