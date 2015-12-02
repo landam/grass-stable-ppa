@@ -228,6 +228,7 @@ override_dh_auto_install-indep:
 	install -m 644 -d debian/tmp/programming-manual/html
 	cp -r lib/html/* debian/tmp/programming-manual/html/
 	rm -f debian/tmp/programming-manual/html/jquery.js
+	rm -f debian/tmp/programming-manual/html/*.md5
 
 override_dh_install-arch:
 	# Strip binaries
