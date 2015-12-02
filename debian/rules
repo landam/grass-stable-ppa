@@ -148,6 +148,7 @@ override_dh_auto_install-arch:
 		debian/tmp/usr/lib/$(BASE_NAME)/include/Make/Platform.make
 
 	# install pkg-config file
+	mkdir -p debian/$(PKG_NAME)-dev/usr/share/pkgconfig
 	install -m 644 grass.pc debian/$(PKG_NAME)-dev/usr/share/pkgconfig/$(BASE_NAME).pc
 
 	# install icons and desktop file
