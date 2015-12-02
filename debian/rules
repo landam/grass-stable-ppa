@@ -100,7 +100,7 @@ override_dh_auto_build-arch:
 	dh_auto_build
 	chmod 755 debian/fixpaths.sh
 
-override_dh_auto_build-indep:
+override_dh_auto_build-indep: override_dh_auto_build-arch
 	# generate the Programmers' manual (in HTML)
 	$(MAKE) htmldocs-single
 
