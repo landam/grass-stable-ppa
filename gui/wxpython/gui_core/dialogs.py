@@ -21,6 +21,7 @@ List of classes:
  - :class:`ImageSizeDialog`
  - :class:`SqlQueryFrame`
  - :class:`SymbolDialog`
+ - :class:`QuitDialog`
 
 (C) 2008-2015 by the GRASS Development Team
 
@@ -2786,3 +2787,57 @@ class HyperlinkDialog(wx.Dialog):
     
         self.SetSizer(sizer)
         sizer.Fit(self)
+
+class QuitDialog(wx.Dialog):
+    def __init__(self, parent, title=_("Quit GRASS GIS"), id=wx.ID_ANY,
+                 style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
+                 size=(350, 150), **kwargs):
+        """Dialog to quit GRASS
+        
+        :param parent: window
+        """
+        wx.Dialog.__init__(self, parent, id, title, style=style, **kwargs)
+        self.panel = wx.Panel(parent = self, id = wx.ID_ANY)
+
+        self.informLabel = wx.StaticText(parent=self.panel, id=wx.ID_ANY,
+                                         label=_("Do you want to quit GRASS including shell "
+                                                 "prompt or just close the GUI?"))
+        self.btnCancel = wx.Button(parent = self.panel, id = wx.ID_CANCEL)
+        self.btnClose = wx.Button(parent = self.panel, id = wx.ID_NO,
+                                   label=_("Close GUI"))
+        self.btnQuit = wx.Button(parent = self.panel, id = wx.ID_YES,
+                                   label=_("Quit GRASS GIS"))
+        self.btnQuit.SetMinSize((130, self.btnQuit.GetSize()[1]))
+        self.btnQuit.SetForegroundColour(wx.Colour(35, 142, 35))
+        self.btnQuit.SetDefault()
+        
+        self.btnClose.Bind(wx.EVT_BUTTON, self.OnClose)
+        self.btnQuit.Bind(wx.EVT_BUTTON, self.OnQuit)
+        
+        self.__layout()
+        self.SetSize(size)
+
+    def __layout(self):
+        """Do layout"""
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        
+        btnSizer = wx.BoxSizer(wx.HORIZONTAL)
+        btnSizer.Add(item=self.btnCancel, flag=wx.RIGHT, border=5)
+        btnSizer.Add(item=self.btnClose, flag=wx.RIGHT, border=5)
+        btnSizer.Add(item=self.btnQuit, flag=wx.RIGHT, border=5)
+        
+        sizer.Add(item = self.informLabel, proportion = 1,
+                  flag = wx.EXPAND | wx.ALL, border = 25)
+        sizer.Add(item = btnSizer, proportion = 0,
+                  flag = wx.ALL | wx.ALIGN_RIGHT, border = 5)
+
+        self.panel.SetSizer(sizer)
+        sizer.Fit(self.panel)
+        self.Layout()
+        
+    def OnClose(self, event):
+        self.EndModal(wx.ID_NO)
+
+    def OnQuit(self, event):
+        self.EndModal(wx.ID_YES)
+        

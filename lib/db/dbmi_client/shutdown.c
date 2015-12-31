@@ -37,10 +37,8 @@ int db_shutdown_driver(dbDriver * driver)
 {
     int status;
 
-#ifdef __MINGW32__
     db__set_protocol_fds(driver->send, driver->recv);
     DB_START_PROCEDURE_CALL(DB_PROC_SHUTDOWN_DRIVER);
-#endif
 
     /* close the communication FILEs */
     fclose(driver->send);
@@ -57,6 +55,9 @@ int db_shutdown_driver(dbDriver * driver)
 
     driver->pid = 0;
 
+    /* remove also error handler if defined */
+    db_unset_error_handler_driver(driver);
+    
     /* free the driver structure. THIS IS GOOFY */
     db_free(driver);
 
