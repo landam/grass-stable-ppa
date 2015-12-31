@@ -1,0 +1,1577 @@
+Description: Fix various typos.
+ * None the less -> Nonetheless
+ * widht         -> width
+ * preferrable   -> preferable
+ * interger      -> integer
+ * unitialized   -> uninitialized
+ * occured       -> occurred
+ * propogate     -> propagate
+Author: Bas Couwenberg <sebastic@debian.org>
+Forwarded: https://trac.osgeo.org/grass/ticket/2841
+
+--- a/general/g.message/g.message.html
++++ b/general/g.message/g.message.html
+@@ -41,7 +41,7 @@ dollar sign of its special variable-expa
+ While it is known that the interactive Bash instances may treat the
+ exclamation mark '<tt>!</tt>' character specifically (making single quoting
+ of it necessary), it shouldn't be the case for the non-interactive
+-instances of Bash. None the less, to avoid context-based confusion later on
++instances of Bash. Nonetheless, to avoid context-based confusion later on
+ you are enouraged to single-quote messages that do not require
+ <tt>$VARIABLE</tt> expansion.
+ 
+--- a/scripts/r.fillnulls/r.fillnulls.html
++++ b/scripts/r.fillnulls/r.fillnulls.html
+@@ -13,7 +13,7 @@ linear spline interpolation with Tykhono
+ Each area boundary buffer is set to three times the map resolution to get nominally
+ three points around the edge. This way the algorithm interpolates into the hole with
+ a trained slope and curvature at the edges, in order to avoid that such a flat plane
+-is generated in a hole. The widht of edge area can be adjusted by 
++is generated in a hole. The width of edge area can be adjusted by 
+ changing the edge parameter.
+ <p>During the interpolation following warning may occur when using the RST method:<p>
+ <tt>
+--- a/raster/r.out.gdal/r.out.gdal.html
++++ b/raster/r.out.gdal/r.out.gdal.html
+@@ -3,7 +3,7 @@
+ <em>r.out.gdal</em> allows a user to export a GRASS raster map layer
+ into any GDAL supported raster map format. If a GRASS raster map is
+ exported for a particular application, the application's native format
+-would be preferrable. GeoTIFF is supported by a wide range of
++would be preferable. GeoTIFF is supported by a wide range of
+ applications (see also <b>NOTES</b> on GeoTIFF below).
+ <p>To specify multiple creation options use a comma separated list
+ (<em>createopt="TFW=YES,COMPRESS=DEFLATE"</em>).
+--- a/lib/ogsf/gs.c
++++ b/lib/ogsf/gs.c
+@@ -358,7 +358,7 @@ void print_realto(float *rt)
+ }
+ 
+ /*!
+-   \brief Debugging, 256 interger values from buffer
++   \brief Debugging, 256 integer values from buffer
+ 
+    \todo G_debug ?
+ 
+--- a/raster/r.statistics/r.statistics.html
++++ b/raster/r.statistics/r.statistics.html
+@@ -29,7 +29,7 @@ The available methods are the following
+ The calculations will be performed on each area of data of the
+ cover layers which fall within each unique value, or category, of the base layer.
+ <p>Setting the <em>-c</em> flag the category lables of the covering raster
+-layer will be used.  This is nice to avoid the GRASS limitation to interger
++layer will be used.  This is nice to avoid the GRASS limitation to integer
+ in raster maps because using category values floating point numbers can be
+ stored.
+ 
+--- a/locale/po/grassmods_ar.po
++++ b/locale/po/grassmods_ar.po
+@@ -37352,7 +37352,7 @@ msgstr "%-5d تم تخطى فئات ال
+ 
+ #: ../vector/v.out.ascii/main.c:163
+ #, fuzzy
+-msgid "An error occured, nothing to be exported"
++msgid "An error occurred, nothing to be exported"
+ msgstr "%-5d تم تخطى فئات النقط الميت\n"
+ 
+ #: ../vector/v.out.dxf/main.c:58
+@@ -38646,11 +38646,11 @@ msgid "Cannot get db link info"
+ msgstr "لم بمكن قراءة معلومات الحقل"
+ 
+ #: ../vector/v.perturb/normalrs.c:31
+-msgid "normalsv: restoration of unitialized block"
++msgid "normalsv: restoration of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.perturb/normalsv.c:29
+-msgid "normalsv: save of unitialized block"
++msgid "normalsv: save of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.proj/main.c:70
+--- a/locale/po/grassmods_cs.po
++++ b/locale/po/grassmods_cs.po
+@@ -37737,7 +37737,7 @@ msgstr "Žádné prvky nejsou vybrány,
+ 
+ #: ../vector/v.out.ascii/main.c:163
+ #, fuzzy
+-msgid "An error occured, nothing to be exported"
++msgid "An error occurred, nothing to be exported"
+ msgstr "Žádné prvky nejsou vybrány, není co editovat"
+ 
+ #: ../vector/v.out.dxf/main.c:58
+@@ -39061,11 +39061,11 @@ msgid "Cannot get db link info"
+ msgstr "Nelze dostat informace o odkazu na databázi"
+ 
+ #: ../vector/v.perturb/normalrs.c:31
+-msgid "normalsv: restoration of unitialized block"
++msgid "normalsv: restoration of uninitialized block"
+ msgstr "normalsv: obnovení neiniciovaného bloku"
+ 
+ #: ../vector/v.perturb/normalsv.c:29
+-msgid "normalsv: save of unitialized block"
++msgid "normalsv: save of uninitialized block"
+ msgstr "normalsv: uložení neiniciovaného bloku"
+ 
+ #: ../vector/v.proj/main.c:70
+--- a/locale/po/grassmods_de.po
++++ b/locale/po/grassmods_de.po
+@@ -37864,7 +37864,7 @@ msgstr "Keine Feature selektiert, nix zu
+ 
+ #: ../vector/v.out.ascii/main.c:163
+ #, fuzzy
+-msgid "An error occured, nothing to be exported"
++msgid "An error occurred, nothing to be exported"
+ msgstr "Keine Feature selektiert, nix zu editieren."
+ 
+ #: ../vector/v.out.dxf/main.c:58
+@@ -39226,11 +39226,11 @@ msgid "Cannot get db link info"
+ msgstr "Kann die Informationen zu Datenbankverbindung nicht lesen."
+ 
+ #: ../vector/v.perturb/normalrs.c:31
+-msgid "normalsv: restoration of unitialized block"
++msgid "normalsv: restoration of uninitialized block"
+ msgstr "normalsv: Restaurierung eines uninitialisierten Blocks."
+ 
+ #: ../vector/v.perturb/normalsv.c:29
+-msgid "normalsv: save of unitialized block"
++msgid "normalsv: save of uninitialized block"
+ msgstr "normalsv: Speichere uninitialisierten Block."
+ 
+ #: ../vector/v.proj/main.c:70
+--- a/locale/po/grassmods_el.po
++++ b/locale/po/grassmods_el.po
+@@ -35867,7 +35867,7 @@ msgid "No features found, nothing to be
+ msgstr ""
+ 
+ #: ../vector/v.out.ascii/main.c:163
+-msgid "An error occured, nothing to be exported"
++msgid "An error occurred, nothing to be exported"
+ msgstr ""
+ 
+ #: ../vector/v.out.dxf/main.c:58
+@@ -37115,11 +37115,11 @@ msgid "Cannot get db link info"
+ msgstr ""
+ 
+ #: ../vector/v.perturb/normalrs.c:31
+-msgid "normalsv: restoration of unitialized block"
++msgid "normalsv: restoration of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.perturb/normalsv.c:29
+-msgid "normalsv: save of unitialized block"
++msgid "normalsv: save of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.proj/main.c:70
+--- a/locale/po/grassmods_es.po
++++ b/locale/po/grassmods_es.po
+@@ -37972,7 +37972,7 @@ msgstr "Ningún elemento seleccionado, n
+ 
+ #: ../vector/v.out.ascii/main.c:163
+ #, fuzzy
+-msgid "An error occured, nothing to be exported"
++msgid "An error occurred, nothing to be exported"
+ msgstr "Ningún elemento seleccionado, nada que editar"
+ 
+ #: ../vector/v.out.dxf/main.c:58
+@@ -39343,11 +39343,11 @@ msgid "Cannot get db link info"
+ msgstr "No se puede obtener leer la información del enlace a la base de datos"
+ 
+ #: ../vector/v.perturb/normalrs.c:31
+-msgid "normalsv: restoration of unitialized block"
++msgid "normalsv: restoration of uninitialized block"
+ msgstr "normalsv: restauración de bloque no inicializado"
+ 
+ #: ../vector/v.perturb/normalsv.c:29
+-msgid "normalsv: save of unitialized block"
++msgid "normalsv: save of uninitialized block"
+ msgstr "normalsv: guardar bloque no inicializado"
+ 
+ #: ../vector/v.proj/main.c:70
+--- a/locale/po/grassmods_fi.po
++++ b/locale/po/grassmods_fi.po
+@@ -34431,7 +34431,7 @@ msgid "No features found, nothing to be
+ msgstr ""
+ 
+ #: ../vector/v.out.ascii/main.c:163
+-msgid "An error occured, nothing to be exported"
++msgid "An error occurred, nothing to be exported"
+ msgstr ""
+ 
+ #: ../vector/v.out.dxf/main.c:58
+@@ -35642,11 +35642,11 @@ msgid "Cannot get db link info"
+ msgstr ""
+ 
+ #: ../vector/v.perturb/normalrs.c:31
+-msgid "normalsv: restoration of unitialized block"
++msgid "normalsv: restoration of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.perturb/normalsv.c:29
+-msgid "normalsv: save of unitialized block"
++msgid "normalsv: save of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.proj/main.c:70
+--- a/locale/po/grassmods_fr.po
++++ b/locale/po/grassmods_fr.po
+@@ -39662,7 +39662,7 @@ msgstr "%d points sans catégorie"
+ # c-format
+ #: ../vector/v.out.ascii/main.c:163
+ #, fuzzy
+-msgid "An error occured, nothing to be exported"
++msgid "An error occurred, nothing to be exported"
+ msgstr "%d points sans catégorie"
+ 
+ #: ../vector/v.out.dxf/main.c:58
+@@ -41120,11 +41120,11 @@ msgid "Cannot get db link info"
+ msgstr "Impossible de lire les informations de liaison à la base de données"
+ 
+ #: ../vector/v.perturb/normalrs.c:31
+-msgid "normalsv: restoration of unitialized block"
++msgid "normalsv: restoration of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.perturb/normalsv.c:29
+-msgid "normalsv: save of unitialized block"
++msgid "normalsv: save of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.proj/main.c:70
+--- a/locale/po/grassmods_it.po
++++ b/locale/po/grassmods_it.po
+@@ -37154,7 +37154,7 @@ msgstr "%d punti senza categoria non con
+ 
+ #: ../vector/v.out.ascii/main.c:163
+ #, fuzzy
+-msgid "An error occured, nothing to be exported"
++msgid "An error occurred, nothing to be exported"
+ msgstr "%d punti senza categoria non considerati"
+ 
+ #: ../vector/v.out.dxf/main.c:58
+@@ -38469,11 +38469,11 @@ msgid "Cannot get db link info"
+ msgstr ""
+ 
+ #: ../vector/v.perturb/normalrs.c:31
+-msgid "normalsv: restoration of unitialized block"
++msgid "normalsv: restoration of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.perturb/normalsv.c:29
+-msgid "normalsv: save of unitialized block"
++msgid "normalsv: save of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.proj/main.c:70
+--- a/locale/po/grassmods_ja.po
++++ b/locale/po/grassmods_ja.po
+@@ -37195,7 +37195,7 @@ msgstr "出力ファイルの上書き"
+ 
+ #: ../vector/v.out.ascii/main.c:163
+ #, fuzzy
+-msgid "An error occured, nothing to be exported"
++msgid "An error occurred, nothing to be exported"
+ msgstr "出力ファイルの上書き"
+ 
+ #: ../vector/v.out.dxf/main.c:58
+@@ -38514,11 +38514,11 @@ msgid "Cannot get db link info"
+ msgstr "dbリンク情報を取得できません"
+ 
+ #: ../vector/v.perturb/normalrs.c:31
+-msgid "normalsv: restoration of unitialized block"
++msgid "normalsv: restoration of uninitialized block"
+ msgstr "normalsv: 初期化解除されたブロックの修復"
+ 
+ #: ../vector/v.perturb/normalsv.c:29
+-msgid "normalsv: save of unitialized block"
++msgid "normalsv: save of uninitialized block"
+ msgstr "normalsv: 初期化されていないブロックの保存"
+ 
+ #: ../vector/v.proj/main.c:70
+--- a/locale/po/grassmods_ko.po
++++ b/locale/po/grassmods_ko.po
+@@ -36072,7 +36072,7 @@ msgid "No features found, nothing to be
+ msgstr ""
+ 
+ #: ../vector/v.out.ascii/main.c:163
+-msgid "An error occured, nothing to be exported"
++msgid "An error occurred, nothing to be exported"
+ msgstr ""
+ 
+ #: ../vector/v.out.dxf/main.c:58
+@@ -37331,11 +37331,11 @@ msgid "Cannot get db link info"
+ msgstr ""
+ 
+ #: ../vector/v.perturb/normalrs.c:31
+-msgid "normalsv: restoration of unitialized block"
++msgid "normalsv: restoration of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.perturb/normalsv.c:29
+-msgid "normalsv: save of unitialized block"
++msgid "normalsv: save of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.proj/main.c:70
+--- a/locale/po/grassmods_lv.po
++++ b/locale/po/grassmods_lv.po
+@@ -37175,7 +37175,7 @@ msgstr "%-5d mirušo/neizmantoto punktu
+ 
+ #: ../vector/v.out.ascii/main.c:163
+ #, fuzzy
+-msgid "An error occured, nothing to be exported"
++msgid "An error occurred, nothing to be exported"
+ msgstr "%-5d mirušo/neizmantoto punktu kategorijas izlaistas\n"
+ 
+ #: ../vector/v.out.dxf/main.c:58
+@@ -38509,11 +38509,11 @@ msgid "Cannot get db link info"
+ msgstr "Nevar nolasīt faila informāciju"
+ 
+ #: ../vector/v.perturb/normalrs.c:31
+-msgid "normalsv: restoration of unitialized block"
++msgid "normalsv: restoration of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.perturb/normalsv.c:29
+-msgid "normalsv: save of unitialized block"
++msgid "normalsv: save of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.proj/main.c:70
+--- a/locale/po/grassmods_pl.po
++++ b/locale/po/grassmods_pl.po
+@@ -37263,7 +37263,7 @@ msgstr "Edytować plik kategorii dla [%s
+ 
+ #: ../vector/v.out.ascii/main.c:163
+ #, fuzzy
+-msgid "An error occured, nothing to be exported"
++msgid "An error occurred, nothing to be exported"
+ msgstr "Edytować plik kategorii dla [%s]? "
+ 
+ #: ../vector/v.out.dxf/main.c:58
+@@ -38552,11 +38552,11 @@ msgid "Cannot get db link info"
+ msgstr "Nie można pobrać informacji o odnośniku do bazy danych"
+ 
+ #: ../vector/v.perturb/normalrs.c:31
+-msgid "normalsv: restoration of unitialized block"
++msgid "normalsv: restoration of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.perturb/normalsv.c:29
+-msgid "normalsv: save of unitialized block"
++msgid "normalsv: save of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.proj/main.c:70
+--- a/locale/po/grassmods_pt.po
++++ b/locale/po/grassmods_pt.po
+@@ -38344,7 +38344,7 @@ msgstr "%d pontos sem categoria"
+ 
+ #: ../vector/v.out.ascii/main.c:163
+ #, fuzzy
+-msgid "An error occured, nothing to be exported"
++msgid "An error occurred, nothing to be exported"
+ msgstr "%d pontos sem categoria"
+ 
+ #: ../vector/v.out.dxf/main.c:58
+@@ -39736,11 +39736,11 @@ msgid "Cannot get db link info"
+ msgstr "N�o consegui obter informa��es sobre a liga��o ao BD"
+ 
+ #: ../vector/v.perturb/normalrs.c:31
+-msgid "normalsv: restoration of unitialized block"
++msgid "normalsv: restoration of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.perturb/normalsv.c:29
+-msgid "normalsv: save of unitialized block"
++msgid "normalsv: save of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.proj/main.c:70
+--- a/locale/po/grassmods_pt_br.po
++++ b/locale/po/grassmods_pt_br.po
+@@ -38252,7 +38252,7 @@ msgstr "%d pontos sem categoria"
+ 
+ #: ../vector/v.out.ascii/main.c:163
+ #, fuzzy
+-msgid "An error occured, nothing to be exported"
++msgid "An error occurred, nothing to be exported"
+ msgstr "%d pontos sem categoria"
+ 
+ #: ../vector/v.out.dxf/main.c:58
+@@ -39643,11 +39643,11 @@ msgid "Cannot get db link info"
+ msgstr "N�o consegui obter informa��es sobre a liga��o ao BD"
+ 
+ #: ../vector/v.perturb/normalrs.c:31
+-msgid "normalsv: restoration of unitialized block"
++msgid "normalsv: restoration of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.perturb/normalsv.c:29
+-msgid "normalsv: save of unitialized block"
++msgid "normalsv: save of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.proj/main.c:70
+--- a/locale/po/grassmods_ro.po
++++ b/locale/po/grassmods_ro.po
+@@ -34972,7 +34972,7 @@ msgid "No features found, nothing to be
+ msgstr ""
+ 
+ #: ../vector/v.out.ascii/main.c:163
+-msgid "An error occured, nothing to be exported"
++msgid "An error occurred, nothing to be exported"
+ msgstr ""
+ 
+ #: ../vector/v.out.dxf/main.c:58
+@@ -36193,11 +36193,11 @@ msgid "Cannot get db link info"
+ msgstr ""
+ 
+ #: ../vector/v.perturb/normalrs.c:31
+-msgid "normalsv: restoration of unitialized block"
++msgid "normalsv: restoration of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.perturb/normalsv.c:29
+-msgid "normalsv: save of unitialized block"
++msgid "normalsv: save of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.proj/main.c:70
+--- a/locale/po/grassmods_ru.po
++++ b/locale/po/grassmods_ru.po
+@@ -37891,7 +37891,7 @@ msgstr "Объекты не выделе
+ 
+ #: ../vector/v.out.ascii/main.c:163
+ #, fuzzy
+-msgid "An error occured, nothing to be exported"
++msgid "An error occurred, nothing to be exported"
+ msgstr "Объекты не выделены, нечего редактировать"
+ 
+ #: ../vector/v.out.dxf/main.c:58
+@@ -39228,11 +39228,11 @@ msgid "Cannot get db link info"
+ msgstr "Невозможно получить информацию о связи с БД"
+ 
+ #: ../vector/v.perturb/normalrs.c:31
+-msgid "normalsv: restoration of unitialized block"
++msgid "normalsv: restoration of uninitialized block"
+ msgstr "normalsv: восстановление неиннициализированного блока"
+ 
+ #: ../vector/v.perturb/normalsv.c:29
+-msgid "normalsv: save of unitialized block"
++msgid "normalsv: save of uninitialized block"
+ msgstr "normalsv: сохранение неиннициализированного блока"
+ 
+ #: ../vector/v.proj/main.c:70
+--- a/locale/po/grassmods_sl.po
++++ b/locale/po/grassmods_sl.po
+@@ -37627,7 +37627,7 @@ msgstr "%-5d mrtvih kategorij to�k presk
+ 
+ #: ../vector/v.out.ascii/main.c:163
+ #, fuzzy
+-msgid "An error occured, nothing to be exported"
++msgid "An error occurred, nothing to be exported"
+ msgstr "%-5d mrtvih kategorij to�k presko�enih\n"
+ 
+ #: ../vector/v.out.dxf/main.c:58
+@@ -38922,11 +38922,11 @@ msgid "Cannot get db link info"
+ msgstr "Ne morem prebrati informacije polja"
+ 
+ #: ../vector/v.perturb/normalrs.c:31
+-msgid "normalsv: restoration of unitialized block"
++msgid "normalsv: restoration of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.perturb/normalsv.c:29
+-msgid "normalsv: save of unitialized block"
++msgid "normalsv: save of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.proj/main.c:70
+--- a/locale/po/grassmods_th.po
++++ b/locale/po/grassmods_th.po
+@@ -37472,7 +37472,7 @@ msgstr "ไม่มีข้อมู�
+ 
+ #: ../vector/v.out.ascii/main.c:163
+ #, fuzzy
+-msgid "An error occured, nothing to be exported"
++msgid "An error occurred, nothing to be exported"
+ msgstr "ไม่มีข้อมูลถูกเลือก, ไม่มีอะไรจะแก้ไข"
+ 
+ #: ../vector/v.out.dxf/main.c:58
+@@ -38773,12 +38773,12 @@ msgid "Cannot get db link info"
+ msgstr "ไม่สามารถอ่าน ข้อมูล db link"
+ 
+ #: ../vector/v.perturb/normalrs.c:31
+-msgid "normalsv: restoration of unitialized block"
+-msgstr "normalsv: restoration of unitialized block"
++msgid "normalsv: restoration of uninitialized block"
++msgstr "normalsv: restoration of uninitialized block"
+ 
+ #: ../vector/v.perturb/normalsv.c:29
+-msgid "normalsv: save of unitialized block"
+-msgstr "normalsv: save of unitialized block"
++msgid "normalsv: save of uninitialized block"
++msgstr "normalsv: save of uninitialized block"
+ 
+ #: ../vector/v.proj/main.c:70
+ #, fuzzy
+--- a/locale/po/grassmods_tr.po
++++ b/locale/po/grassmods_tr.po
+@@ -36734,7 +36734,7 @@ msgstr "Hiç obje seçilmedi, hiçbirşe
+ 
+ #: ../vector/v.out.ascii/main.c:163
+ #, fuzzy
+-msgid "An error occured, nothing to be exported"
++msgid "An error occurred, nothing to be exported"
+ msgstr "Hiç obje seçilmedi, hiçbirşey düzenlenmeyecek"
+ 
+ #: ../vector/v.out.dxf/main.c:58
+@@ -38002,11 +38002,11 @@ msgid "Cannot get db link info"
+ msgstr "Veritabanı bağlantı bilgisi alınamıyor"
+ 
+ #: ../vector/v.perturb/normalrs.c:31
+-msgid "normalsv: restoration of unitialized block"
++msgid "normalsv: restoration of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.perturb/normalsv.c:29
+-msgid "normalsv: save of unitialized block"
++msgid "normalsv: save of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.proj/main.c:70
+--- a/locale/po/grassmods_vi.po
++++ b/locale/po/grassmods_vi.po
+@@ -37887,7 +37887,7 @@ msgstr "Không có đối tượng nào
+ 
+ #: ../vector/v.out.ascii/main.c:163
+ #, fuzzy
+-msgid "An error occured, nothing to be exported"
++msgid "An error occurred, nothing to be exported"
+ msgstr "Không có đối tượng nào được chọn, không có gì để chỉnh sửa"
+ 
+ #: ../vector/v.out.dxf/main.c:58
+@@ -39235,11 +39235,11 @@ msgid "Cannot get db link info"
+ msgstr "Không thể lấy thông tin liên kết csdl"
+ 
+ #: ../vector/v.perturb/normalrs.c:31
+-msgid "normalsv: restoration of unitialized block"
++msgid "normalsv: restoration of uninitialized block"
+ msgstr "normalsv: phục hồi các khối không được khởi tạo"
+ 
+ #: ../vector/v.perturb/normalsv.c:29
+-msgid "normalsv: save of unitialized block"
++msgid "normalsv: save of uninitialized block"
+ msgstr "normalsv: lưu các khối không được khởi tạo"
+ 
+ #: ../vector/v.proj/main.c:70
+--- a/locale/po/grassmods_zh.po
++++ b/locale/po/grassmods_zh.po
+@@ -37529,7 +37529,7 @@ msgstr "%d 个点没有类别，将被�
+ 
+ #: ../vector/v.out.ascii/main.c:163
+ #, fuzzy
+-msgid "An error occured, nothing to be exported"
++msgid "An error occurred, nothing to be exported"
+ msgstr "%d 个点没有类别，将被忽略"
+ 
+ #: ../vector/v.out.dxf/main.c:58
+@@ -38851,11 +38851,11 @@ msgid "Cannot get db link info"
+ msgstr "无法读取字段信息"
+ 
+ #: ../vector/v.perturb/normalrs.c:31
+-msgid "normalsv: restoration of unitialized block"
++msgid "normalsv: restoration of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.perturb/normalsv.c:29
+-msgid "normalsv: save of unitialized block"
++msgid "normalsv: save of uninitialized block"
+ msgstr ""
+ 
+ #: ../vector/v.proj/main.c:70
+--- a/raster3d/r3.in.v5d/v5d.c
++++ b/raster3d/r3.in.v5d/v5d.c
+@@ -2866,7 +2866,7 @@ int v5dcreate
+ 
+     for (i = 0; i < *numvars; i++) {
+ 	if (copy_string2(names[i], varname[i], 10) == 0) {
+-	    printf("Error: unitialized varname(%d)\n", i + 1);
++	    printf("Error: uninitialized varname(%d)\n", i + 1);
+ 	    return 0;
+ 	}
+     }
+--- a/raster3d/r3.out.v5d/v5d.c
++++ b/raster3d/r3.out.v5d/v5d.c
+@@ -2868,7 +2868,7 @@ int v5dcreate
+ 
+     for (i = 0; i < *numvars; i++) {
+ 	if (copy_string2(names[i], varname[i], 10) == 0) {
+-	    printf("Error: unitialized varname(%d)\n", i + 1);
++	    printf("Error: uninitialized varname(%d)\n", i + 1);
+ 	    return 0;
+ 	}
+     }
+--- a/vector/v.perturb/normalrs.c
++++ b/vector/v.perturb/normalrs.c
+@@ -28,7 +28,7 @@ int normalrs(double *svbox)
+     zufallrs(svbox);
+     klotz1_1.first = (int)svbox[608];
+     if (klotz1_1.first == 0)
+-	G_warning(_("normalsv: restoration of unitialized block"));
++	G_warning(_("normalsv: restoration of uninitialized block"));
+     klotz1_1.xptr = (int)svbox[609];
+     k = 609;
+     for (i = 0; i < 1024; ++i)
+--- a/vector/v.perturb/normalsv.c
++++ b/vector/v.perturb/normalsv.c
+@@ -26,7 +26,7 @@ int normalsv(double *svbox)
+     /* Parameter adjustments */
+ 
+     if (klotz1_1.first == 0)
+-	G_warning(_("normalsv: save of unitialized block"));
++	G_warning(_("normalsv: save of uninitialized block"));
+ 
+     /* save zufall block klotz0 */
+     zufallsv(svbox);
+--- a/binaryInstall.src
++++ b/binaryInstall.src
+@@ -193,7 +193,7 @@ if [ ! -d "$BINDIR" ] ; then
+     mkdir -p $BINDIR
+     
+     if [ $? -ne 0 ] ; then
+-	echo "An error occured trying to create $BINDIR ! Exiting."
++	echo "An error occurred trying to create $BINDIR ! Exiting."
+ 	exit
+     fi
+ fi
+@@ -227,7 +227,7 @@ if [ ! -d "$DESTDIR" ] ; then
+     mkdir -p $DESTDIR
+     
+     if [ $? -ne 0 ] ; then
+-    	echo "An error occured trying to create $DESTDIR! Exiting."
++    	echo "An error occurred trying to create $DESTDIR! Exiting."
+     	exit
+     fi
+ else
+@@ -273,7 +273,7 @@ echo "Uncompressing the package and extr
+ PACK_FILE=`echo $PACKAGE_DIR/$PACKAGE_NAME | sed 's+^//+/+g'`
+ cd $DESTDIR; $UNPACK -c $PACK_FILE | tar -xf -
+ if [ $? -eq 1 ] ; then
+-    echo "An error occured or user break while installing binaries! Exiting."
++    echo "An error occurred or user break while installing binaries! Exiting."
+     exit
+ fi
+ 
+@@ -288,7 +288,7 @@ echo "$BINDIR/$GRASSPRG -> $BINDIR/grass
+ sed -e "s#@GISBASE@#$DESTDIR#g" \
+     $DESTDIR/$GRASSPRG.tmp > $BINDIR/grass-$NAME_VER
+ if [ $? -eq 1 ] ; then
+-  echo "An error occured trying to create the grass start script! Exiting."
++  echo "An error occurred trying to create the grass start script! Exiting."
+   echo "You probably do not have permission to install into $BINDIR."
+   echo "You may need to be the root user to install in that directory."
+   exit
+@@ -298,7 +298,7 @@ ln -sf $BINDIR/grass-$NAME_VER $BINDIR/$
+ chmod ugo+x $BINDIR/grass-$NAME_VER
+ 
+ if [ $? -eq 1 ] ; then
+-    echo "An error occured trying to create the grass start script! Exiting."
++    echo "An error occurred trying to create the grass start script! Exiting."
+     echo "You probably do not have permission to install into $BINDIR."
+     echo "You may need to be the root user to install in that directory."
+     exit
+--- a/gui/wxpython/iscatt/controllers.py
++++ b/gui/wxpython/iscatt/controllers.py
+@@ -430,7 +430,7 @@ class ScattsManager:
+ 
+         self.render_mgr.RunningProcessDone()
+         if event.exception:
+-            GError(_("Error occured during computation of scatter plot category:\n%s"), 
++            GError(_("Error occurred during computation of scatter plot category:\n%s"), 
+                       parent = self.guiparent, showTraceback = False)
+ 
+         cat_id = event.ret
+--- a/gui/wxpython/mapwin/base.py
++++ b/gui/wxpython/mapwin/base.py
+@@ -192,7 +192,7 @@ class MapWindowBase(object):
+             except:
+                 handlers.remove(handler)
+                 GError(parent=self,
+-                       message=_("Error occured during calling of handler: %s \n"
++                       message=_("Error occurred during calling of handler: %s \n"
+                                  "Handler was unregistered.") % handler.__name__)
+ 
+         event.Skip() 
+@@ -272,7 +272,7 @@ class MapWindowBase(object):
+                     handlers.remove(handler)
+                 except:
+                     GError(parent = self,
+-                           message = _("Error occured during unregistration of handler: %s \n \
++                           message = _("Error occurred during unregistration of handler: %s \n \
+                                        Handler was unregistered.") % handler.__name__)
+                     handlers.remove(handler)
+         
+@@ -305,7 +305,7 @@ class MapWindowBase(object):
+                                       % handler.__name__)
+             except:
+                 GError(parent = self,
+-                       message = _("Error occured during unregistration of handler: %s \n \
++                       message = _("Error occurred during unregistration of handler: %s \n \
+                                        Handler was unregistered") % handler.__name__)
+                 handlers.remove(handler) 
+         
+--- a/lib/python/ctypes/ctypesgencore/parser/cparser.py
++++ b/lib/python/ctypes/ctypesgencore/parser/cparser.py
+@@ -120,7 +120,7 @@ class CParser(object):
+     # ----------------------------------------------------------------------
+ 
+     def handle_error(self, message, filename, lineno):
+-        '''A parse error occured.  
++        '''A parse error occurred.  
+         
+         The default implementation prints `lineno` and `message` to stderr.
+         The parser will try to recover from errors by synchronising at the
+--- a/lib/python/imaging/images2avi.py
++++ b/lib/python/imaging/images2avi.py
+@@ -113,7 +113,7 @@ def writeAvi(filename, images, duration=
+     outPut = S.stdout.read()
+ 
+     if S.wait():
+-        # An error occured, show
++        # An error occurred, show
+         print(outPut)
+         print(S.stderr.read())
+         # Clean up
+@@ -158,7 +158,7 @@ def readAvi(filename, asNumpy=True):
+     outPut = S.stdout.read()
+ 
+     if S.wait():
+-        # An error occured, show
++        # An error occurred, show
+         print(outPut)
+         print(S.stderr.read())
+         # Clean up
+--- a/lib/vector/Vlib/box.c
++++ b/lib/vector/Vlib/box.c
+@@ -125,7 +125,7 @@ int Vect_box_extend(struct bound_box *A,
+  *  \param c_x,c_y coordinates (s, n)
+  *  \param Box boundary box
+  *
+- *  \return 1 if any clipping occured
++ *  \return 1 if any clipping occurred
+  *  \return 0 otherwise
+  */
+ int Vect_box_clip(double *x, double *y, double *c_x, double *c_y, const struct bound_box *Box)
+--- a/locale/po/grasswxpy_cs.po
++++ b/locale/po/grasswxpy_cs.po
+@@ -5836,7 +5836,7 @@ msgstr ""
+ #: ../gui/wxpython/iscatt/controllers.py:433
+ #, python-format
+ msgid ""
+-"Error occured during computation of scatter plot category:\n"
++"Error occurred during computation of scatter plot category:\n"
+ "%s"
+ msgstr ""
+ 
+@@ -7950,14 +7950,14 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:195
+ #, python-format
+ msgid ""
+-"Error occured during calling of handler: %s \n"
++"Error occurred during calling of handler: %s \n"
+ "Handler was unregistered."
+ msgstr ""
+ 
+ #: ../gui/wxpython/mapwin/base.py:275
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered."
+ msgstr ""
+ 
+@@ -7969,7 +7969,7 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:308
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered"
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_de.po
++++ b/locale/po/grasswxpy_de.po
+@@ -5820,7 +5820,7 @@ msgstr ""
+ #: ../gui/wxpython/iscatt/controllers.py:433
+ #, python-format
+ msgid ""
+-"Error occured during computation of scatter plot category:\n"
++"Error occurred during computation of scatter plot category:\n"
+ "%s"
+ msgstr ""
+ 
+@@ -7943,14 +7943,14 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:195
+ #, python-format
+ msgid ""
+-"Error occured during calling of handler: %s \n"
++"Error occurred during calling of handler: %s \n"
+ "Handler was unregistered."
+ msgstr ""
+ 
+ #: ../gui/wxpython/mapwin/base.py:275
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered."
+ msgstr ""
+ 
+@@ -7962,7 +7962,7 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:308
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered"
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_el.po
++++ b/locale/po/grasswxpy_el.po
+@@ -5585,7 +5585,7 @@ msgstr ""
+ #: ../gui/wxpython/iscatt/controllers.py:433
+ #, python-format
+ msgid ""
+-"Error occured during computation of scatter plot category:\n"
++"Error occurred during computation of scatter plot category:\n"
+ "%s"
+ msgstr ""
+ 
+@@ -7608,14 +7608,14 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:195
+ #, python-format
+ msgid ""
+-"Error occured during calling of handler: %s \n"
++"Error occurred during calling of handler: %s \n"
+ "Handler was unregistered."
+ msgstr ""
+ 
+ #: ../gui/wxpython/mapwin/base.py:275
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered."
+ msgstr ""
+ 
+@@ -7627,7 +7627,7 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:308
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered"
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_es.po
++++ b/locale/po/grasswxpy_es.po
+@@ -5904,7 +5904,7 @@ msgstr ""
+ #: ../gui/wxpython/iscatt/controllers.py:433
+ #, python-format
+ msgid ""
+-"Error occured during computation of scatter plot category:\n"
++"Error occurred during computation of scatter plot category:\n"
+ "%s"
+ msgstr ""
+ 
+@@ -8067,14 +8067,14 @@ msgstr "Área: {area} {unit}\n"
+ #: ../gui/wxpython/mapwin/base.py:195
+ #, python-format
+ msgid ""
+-"Error occured during calling of handler: %s \n"
++"Error occurred during calling of handler: %s \n"
+ "Handler was unregistered."
+ msgstr ""
+ 
+ #: ../gui/wxpython/mapwin/base.py:275
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered."
+ msgstr ""
+ 
+@@ -8086,7 +8086,7 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:308
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered"
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_fi.po
++++ b/locale/po/grasswxpy_fi.po
+@@ -5427,7 +5427,7 @@ msgstr ""
+ #: ../gui/wxpython/iscatt/controllers.py:433
+ #, python-format
+ msgid ""
+-"Error occured during computation of scatter plot category:\n"
++"Error occurred during computation of scatter plot category:\n"
+ "%s"
+ msgstr ""
+ 
+@@ -7378,14 +7378,14 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:195
+ #, python-format
+ msgid ""
+-"Error occured during calling of handler: %s \n"
++"Error occurred during calling of handler: %s \n"
+ "Handler was unregistered."
+ msgstr ""
+ 
+ #: ../gui/wxpython/mapwin/base.py:275
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered."
+ msgstr ""
+ 
+@@ -7397,7 +7397,7 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:308
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered"
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_fr.po
++++ b/locale/po/grasswxpy_fr.po
+@@ -5774,7 +5774,7 @@ msgstr ""
+ #: ../gui/wxpython/iscatt/controllers.py:433
+ #, python-format
+ msgid ""
+-"Error occured during computation of scatter plot category:\n"
++"Error occurred during computation of scatter plot category:\n"
+ "%s"
+ msgstr ""
+ "Une erreur est survenue lors du calcul de la catégorie du nuage de points :\n"
+@@ -7861,14 +7861,14 @@ msgstr "Surface : {area} {unit}\n"
+ #: ../gui/wxpython/mapwin/base.py:195
+ #, python-format
+ msgid ""
+-"Error occured during calling of handler: %s \n"
++"Error occurred during calling of handler: %s \n"
+ "Handler was unregistered."
+ msgstr ""
+ 
+ #: ../gui/wxpython/mapwin/base.py:275
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered."
+ msgstr ""
+ 
+@@ -7880,7 +7880,7 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:308
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered"
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_id.po
++++ b/locale/po/grasswxpy_id.po
+@@ -6048,7 +6048,7 @@ msgstr ""
+ #: ../gui/wxpython/iscatt/controllers.py:433
+ #, python-format
+ msgid ""
+-"Error occured during computation of scatter plot category:\n"
++"Error occurred during computation of scatter plot category:\n"
+ "%s"
+ msgstr ""
+ 
+@@ -8204,14 +8204,14 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:195
+ #, python-format
+ msgid ""
+-"Error occured during calling of handler: %s \n"
++"Error occurred during calling of handler: %s \n"
+ "Handler was unregistered."
+ msgstr ""
+ 
+ #: ../gui/wxpython/mapwin/base.py:275
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered."
+ msgstr ""
+ 
+@@ -8223,7 +8223,7 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:308
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered"
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_it.po
++++ b/locale/po/grasswxpy_it.po
+@@ -5655,7 +5655,7 @@ msgstr ""
+ #: ../gui/wxpython/iscatt/controllers.py:433
+ #, python-format
+ msgid ""
+-"Error occured during computation of scatter plot category:\n"
++"Error occurred during computation of scatter plot category:\n"
+ "%s"
+ msgstr ""
+ "Un errore è occorso durante la creazione della categoria dello scatter "
+@@ -7690,14 +7690,14 @@ msgstr "Area: {area} {unit}\n"
+ #: ../gui/wxpython/mapwin/base.py:195
+ #, python-format
+ msgid ""
+-"Error occured during calling of handler: %s \n"
++"Error occurred during calling of handler: %s \n"
+ "Handler was unregistered."
+ msgstr ""
+ 
+ #: ../gui/wxpython/mapwin/base.py:275
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered."
+ msgstr ""
+ 
+@@ -7709,7 +7709,7 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:308
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered"
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_ja.po
++++ b/locale/po/grasswxpy_ja.po
+@@ -5861,7 +5861,7 @@ msgstr ""
+ #: ../gui/wxpython/iscatt/controllers.py:433
+ #, python-format
+ msgid ""
+-"Error occured during computation of scatter plot category:\n"
++"Error occurred during computation of scatter plot category:\n"
+ "%s"
+ msgstr ""
+ 
+@@ -7975,14 +7975,14 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:195
+ #, python-format
+ msgid ""
+-"Error occured during calling of handler: %s \n"
++"Error occurred during calling of handler: %s \n"
+ "Handler was unregistered."
+ msgstr ""
+ 
+ #: ../gui/wxpython/mapwin/base.py:275
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered."
+ msgstr ""
+ 
+@@ -7994,7 +7994,7 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:308
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered"
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_ko.po
++++ b/locale/po/grasswxpy_ko.po
+@@ -5425,7 +5425,7 @@ msgstr ""
+ #: ../gui/wxpython/iscatt/controllers.py:433
+ #, python-format
+ msgid ""
+-"Error occured during computation of scatter plot category:\n"
++"Error occurred during computation of scatter plot category:\n"
+ "%s"
+ msgstr ""
+ 
+@@ -7376,14 +7376,14 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:195
+ #, python-format
+ msgid ""
+-"Error occured during calling of handler: %s \n"
++"Error occurred during calling of handler: %s \n"
+ "Handler was unregistered."
+ msgstr ""
+ 
+ #: ../gui/wxpython/mapwin/base.py:275
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered."
+ msgstr ""
+ 
+@@ -7395,7 +7395,7 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:308
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered"
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_lv.po
++++ b/locale/po/grasswxpy_lv.po
+@@ -5546,7 +5546,7 @@ msgstr ""
+ #: ../gui/wxpython/iscatt/controllers.py:433
+ #, python-format
+ msgid ""
+-"Error occured during computation of scatter plot category:\n"
++"Error occurred during computation of scatter plot category:\n"
+ "%s"
+ msgstr ""
+ 
+@@ -7554,14 +7554,14 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:195
+ #, python-format
+ msgid ""
+-"Error occured during calling of handler: %s \n"
++"Error occurred during calling of handler: %s \n"
+ "Handler was unregistered."
+ msgstr ""
+ 
+ #: ../gui/wxpython/mapwin/base.py:275
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered."
+ msgstr ""
+ 
+@@ -7573,7 +7573,7 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:308
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered"
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_ml.po
++++ b/locale/po/grasswxpy_ml.po
+@@ -5767,7 +5767,7 @@ msgstr ""
+ #: ../gui/wxpython/iscatt/controllers.py:433
+ #, python-format
+ msgid ""
+-"Error occured during computation of scatter plot category:\n"
++"Error occurred during computation of scatter plot category:\n"
+ "%s"
+ msgstr ""
+ 
+@@ -7865,14 +7865,14 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:195
+ #, python-format
+ msgid ""
+-"Error occured during calling of handler: %s \n"
++"Error occurred during calling of handler: %s \n"
+ "Handler was unregistered."
+ msgstr ""
+ 
+ #: ../gui/wxpython/mapwin/base.py:275
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered."
+ msgstr ""
+ 
+@@ -7884,7 +7884,7 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:308
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered"
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_pl.po
++++ b/locale/po/grasswxpy_pl.po
+@@ -5729,7 +5729,7 @@ msgstr ""
+ #: ../gui/wxpython/iscatt/controllers.py:433
+ #, python-format
+ msgid ""
+-"Error occured during computation of scatter plot category:\n"
++"Error occurred during computation of scatter plot category:\n"
+ "%s"
+ msgstr ""
+ 
+@@ -7810,14 +7810,14 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:195
+ #, python-format
+ msgid ""
+-"Error occured during calling of handler: %s \n"
++"Error occurred during calling of handler: %s \n"
+ "Handler was unregistered."
+ msgstr ""
+ 
+ #: ../gui/wxpython/mapwin/base.py:275
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered."
+ msgstr ""
+ 
+@@ -7829,7 +7829,7 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:308
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered"
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_pt.po
++++ b/locale/po/grasswxpy_pt.po
+@@ -6044,7 +6044,7 @@ msgstr ""
+ #: ../gui/wxpython/iscatt/controllers.py:433
+ #, python-format
+ msgid ""
+-"Error occured during computation of scatter plot category:\n"
++"Error occurred during computation of scatter plot category:\n"
+ "%s"
+ msgstr ""
+ 
+@@ -8210,14 +8210,14 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:195
+ #, python-format
+ msgid ""
+-"Error occured during calling of handler: %s \n"
++"Error occurred during calling of handler: %s \n"
+ "Handler was unregistered."
+ msgstr ""
+ 
+ #: ../gui/wxpython/mapwin/base.py:275
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered."
+ msgstr ""
+ 
+@@ -8229,7 +8229,7 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:308
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered"
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_pt_br.po
++++ b/locale/po/grasswxpy_pt_br.po
+@@ -6172,7 +6172,7 @@ msgstr ""
+ #: ../gui/wxpython/iscatt/controllers.py:433
+ #, python-format
+ msgid ""
+-"Error occured during computation of scatter plot category:\n"
++"Error occurred during computation of scatter plot category:\n"
+ "%s"
+ msgstr ""
+ 
+@@ -8396,14 +8396,14 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:195
+ #, python-format
+ msgid ""
+-"Error occured during calling of handler: %s \n"
++"Error occurred during calling of handler: %s \n"
+ "Handler was unregistered."
+ msgstr ""
+ 
+ #: ../gui/wxpython/mapwin/base.py:275
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered."
+ msgstr ""
+ 
+@@ -8415,7 +8415,7 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:308
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered"
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_ro.po
++++ b/locale/po/grasswxpy_ro.po
+@@ -5849,7 +5849,7 @@ msgstr ""
+ #: ../gui/wxpython/iscatt/controllers.py:433
+ #, python-format
+ msgid ""
+-"Error occured during computation of scatter plot category:\n"
++"Error occurred during computation of scatter plot category:\n"
+ "%s"
+ msgstr ""
+ 
+@@ -7979,14 +7979,14 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:195
+ #, python-format
+ msgid ""
+-"Error occured during calling of handler: %s \n"
++"Error occurred during calling of handler: %s \n"
+ "Handler was unregistered."
+ msgstr ""
+ 
+ #: ../gui/wxpython/mapwin/base.py:275
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered."
+ msgstr ""
+ 
+@@ -7998,7 +7998,7 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:308
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered"
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_ru.po
++++ b/locale/po/grasswxpy_ru.po
+@@ -6003,7 +6003,7 @@ msgstr ""
+ #: ../gui/wxpython/iscatt/controllers.py:433
+ #, python-format
+ msgid ""
+-"Error occured during computation of scatter plot category:\n"
++"Error occurred during computation of scatter plot category:\n"
+ "%s"
+ msgstr ""
+ 
+@@ -8154,14 +8154,14 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:195
+ #, python-format
+ msgid ""
+-"Error occured during calling of handler: %s \n"
++"Error occurred during calling of handler: %s \n"
+ "Handler was unregistered."
+ msgstr ""
+ 
+ #: ../gui/wxpython/mapwin/base.py:275
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered."
+ msgstr ""
+ 
+@@ -8173,7 +8173,7 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:308
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered"
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_th.po
++++ b/locale/po/grasswxpy_th.po
+@@ -5753,7 +5753,7 @@ msgstr ""
+ #: ../gui/wxpython/iscatt/controllers.py:433
+ #, python-format
+ msgid ""
+-"Error occured during computation of scatter plot category:\n"
++"Error occurred during computation of scatter plot category:\n"
+ "%s"
+ msgstr ""
+ 
+@@ -7807,14 +7807,14 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:195
+ #, python-format
+ msgid ""
+-"Error occured during calling of handler: %s \n"
++"Error occurred during calling of handler: %s \n"
+ "Handler was unregistered."
+ msgstr ""
+ 
+ #: ../gui/wxpython/mapwin/base.py:275
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered."
+ msgstr ""
+ 
+@@ -7826,7 +7826,7 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:308
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered"
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_tr.po
++++ b/locale/po/grasswxpy_tr.po
+@@ -6005,7 +6005,7 @@ msgstr ""
+ #: ../gui/wxpython/iscatt/controllers.py:433
+ #, python-format
+ msgid ""
+-"Error occured during computation of scatter plot category:\n"
++"Error occurred during computation of scatter plot category:\n"
+ "%s"
+ msgstr ""
+ 
+@@ -8164,14 +8164,14 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:195
+ #, python-format
+ msgid ""
+-"Error occured during calling of handler: %s \n"
++"Error occurred during calling of handler: %s \n"
+ "Handler was unregistered."
+ msgstr ""
+ 
+ #: ../gui/wxpython/mapwin/base.py:275
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered."
+ msgstr ""
+ 
+@@ -8183,7 +8183,7 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:308
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered"
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_vi.po
++++ b/locale/po/grasswxpy_vi.po
+@@ -5994,7 +5994,7 @@ msgstr ""
+ #: ../gui/wxpython/iscatt/controllers.py:433
+ #, python-format
+ msgid ""
+-"Error occured during computation of scatter plot category:\n"
++"Error occurred during computation of scatter plot category:\n"
+ "%s"
+ msgstr ""
+ 
+@@ -8158,14 +8158,14 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:195
+ #, python-format
+ msgid ""
+-"Error occured during calling of handler: %s \n"
++"Error occurred during calling of handler: %s \n"
+ "Handler was unregistered."
+ msgstr ""
+ 
+ #: ../gui/wxpython/mapwin/base.py:275
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered."
+ msgstr ""
+ 
+@@ -8177,7 +8177,7 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:308
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered"
+ msgstr ""
+ 
+--- a/locale/po/grasswxpy_zh.po
++++ b/locale/po/grasswxpy_zh.po
+@@ -5848,7 +5848,7 @@ msgstr ""
+ #: ../gui/wxpython/iscatt/controllers.py:433
+ #, python-format
+ msgid ""
+-"Error occured during computation of scatter plot category:\n"
++"Error occurred during computation of scatter plot category:\n"
+ "%s"
+ msgstr ""
+ "计算散点图类别时发生错误：\n"
+@@ -7955,14 +7955,14 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:195
+ #, python-format
+ msgid ""
+-"Error occured during calling of handler: %s \n"
++"Error occurred during calling of handler: %s \n"
+ "Handler was unregistered."
+ msgstr ""
+ 
+ #: ../gui/wxpython/mapwin/base.py:275
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered."
+ msgstr ""
+ 
+@@ -7974,7 +7974,7 @@ msgstr ""
+ #: ../gui/wxpython/mapwin/base.py:308
+ #, python-format
+ msgid ""
+-"Error occured during unregistration of handler: %s \n"
++"Error occurred during unregistration of handler: %s \n"
+ "                                        Handler was unregistered"
+ msgstr ""
+ 
+--- a/vector/v.out.ascii/main.c
++++ b/vector/v.out.ascii/main.c
+@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
+ 	}
+     }
+     else if (ret < 0) {
+-	G_warning(_("An error occured, nothing to be exported"));
++	G_warning(_("An error occurred, nothing to be exported"));
+     }
+     
+     if (ascii != NULL)
+--- a/lib/init/grass7.html
++++ b/lib/init/grass7.html
+@@ -102,7 +102,7 @@ shell environment variables.
+ <p>Note that you will need to set these variables using the
+ appropriate method required for the UNIX shell that you use (e.g. in a
+ Bash shell you must <tt>export</tt> the variables for them to
+-propogate).
++propagate).
+ 
+ <h3>User Interface Environment Variable</h3>
+ 
+--- a/raster/r.basins.fill/main.c
++++ b/raster/r.basins.fill/main.c
+@@ -17,7 +17,7 @@
+ ****************************************************************************/
+ 
+ /*====================================================================*/
+-/* program to propogate the link label into the hillslope areas;      */
++/* program to propagate the link label into the hillslope areas;      */
+ /* processes CELL files only and works on window derived from link    */
+ /* label map                                                          */
+ 
