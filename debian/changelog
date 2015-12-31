@@ -1,6 +1,9 @@
 grass (7.0.3~rc1-1) UNRELEASED; urgency=medium
 
   * New upstream release candidate.
+  * Update copyright file, changes:
+    - Add license & copyright for new mapcalc.tab.{c,h} files
+    - Update copyright years for Luca Delucchi
 
  -- Bas Couwenberg <sebastic@debian.org>  Thu, 31 Dec 2015 01:29:11 +0100
 
