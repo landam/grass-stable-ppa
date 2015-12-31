@@ -9,7 +9,7 @@ Classes:
  - ghelp::HelpWindow
  - ghelp::HelpPanel
 
-(C) 2008-2014 by the GRASS Development Team
+(C) 2008-2015 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -112,7 +112,7 @@ class AboutWindow(wx.Frame):
                       flag = wx.ALL | wx.ALIGN_CENTER, border = 20)
         
         infoLabel = 'GRASS GIS %s' % vInfo.get('version', _('unknown version'))
-        if '64' in vInfo.get('build_platform', ''):
+        if 'x86_64' in vInfo.get('build_platform', ''):
             infoLabel += ' (64bit)'
         info = wx.StaticText(parent = infoTxt, id = wx.ID_ANY,
                              label = infoLabel + os.linesep)

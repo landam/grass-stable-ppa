@@ -38,8 +38,8 @@
 static const char *GRASS_copyright __attribute__ ((unused))
     = "GRASS GNU GPL licensed Software";
 
-#define GIS_H_VERSION "$Revision: 64733 $"
-#define GIS_H_DATE    "$Date: 2015-02-25 01:56:29 +0100 (Wed, 25 Feb 2015) $"
+#define GIS_H_VERSION "$Revision: 67364 $"
+#define GIS_H_DATE    "$Date: 2015-12-24 16:07:44 +0100 (Thu, 24 Dec 2015) $"
 
 #define G_gisinit(pgm) G__gisinit(GIS_H_VERSION, (pgm))
 #define G_no_gisinit() G__no_gisinit(GIS_H_VERSION)
@@ -59,7 +59,13 @@ static const char *GRASS_copyright __attribute__ ((unused))
 #define PRI_OFF_T	"ld"
 #endif
 
+/*! \brief Cross-platform Newline Character */
 #define NEWLINE     '\n'
+#ifdef __MINGW32__
+#  define HOST_NEWLINE "\r\n"
+#else
+#  define HOST_NEWLINE "\n"
+#endif
 
 /*!
   \brief List of units

@@ -32,7 +32,7 @@ pythonw on a Mac.
 .. todo::
     verify option value types
 
-Copyright(C) 2000-2013 by the GRASS Development Team
+Copyright(C) 2000-2015 by the GRASS Development Team
 
 This program is free software under the GPL(>=v2) Read the file
 COPYING coming with GRASS for details.
@@ -625,7 +625,8 @@ class TaskFrame(wx.Frame):
         
     def updateValuesHook(self, event = None):
         """Update status bar data"""
-        self.SetStatusText(' '.join(map(gcmd.DecodeString, self.notebookpanel.createCmd(ignoreErrors = True))))
+        self.SetStatusText(' '.join([gcmd.DecodeString(each) if isinstance(each, str) else each
+                                     for each in self.notebookpanel.createCmd(ignoreErrors=True)]))
         if event:
             event.Skip()
 
@@ -919,9 +920,11 @@ class CmdPanel(wx.Panel):
                     f['value'] = True
             
             if f['name'] == 'overwrite':
-                f['value'] = UserSettings.Get(group = 'cmd', key = 'overwrite', subkey = 'enabled')
-                chk.SetValue(f['value'])
-                
+                value = UserSettings.Get(group = 'cmd', key = 'overwrite', subkey = 'enabled')
+                if value: # override only when enabled
+                    f['value'] = value
+                    chk.SetValue(f['value'])
+        
         #
         # parameters
         #
@@ -2179,6 +2182,10 @@ class CmdPanel(wx.Panel):
         else:
             if isinstance(me, wx.SpinCtrl):
                 porf['value'] = str(me.GetValue())
+            elif isinstance(me, wx.ComboBox):
+                porf['value'] = me.GetValue()
+            elif isinstance(me, wx.Choice):
+                porf['value'] = me.GetStringSelection()                    
             else:
                 porf['value'] = me.GetValue()
         
@@ -2259,7 +2266,7 @@ class CmdPanel(wx.Panel):
                                    ignoreRequired = ignoreRequired)
         except ValueError as err:
             dlg = wx.MessageDialog(parent = self,
-                                   message = unicode(err),
+                                   message = gcmd.DecodeString(str(err)),
                                    caption = _("Error in %s") % self.task.name,
                                    style = wx.OK | wx.ICON_ERROR | wx.CENTRE)
             dlg.ShowModal()

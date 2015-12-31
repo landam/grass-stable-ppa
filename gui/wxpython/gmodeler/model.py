@@ -296,7 +296,7 @@ class Model(object):
         try:
             gxmXml = ProcessModelFile(etree.parse(filename))
         except StandardError as e:
-            raise GException(e)
+            raise GException(unicode(e))
         
         if self.canvas:
             win = self.canvas.parent
@@ -450,8 +450,13 @@ class Model(object):
                 key, value = opt.split('=', 1)
                 sval = pattern.search(value)
                 if sval:
-                    var = sval.group(2).strip()[1:] # ignore '%'
-                    if var not in variables:
+                    var = sval.group(2).strip()[1:] # strip '%' from beginning
+                    found = False
+                    for v in variables:
+                        if var.startswith(v):
+                            found = True
+                            break
+                    if not found:
                         report = True
                         for item in filter(lambda x: isinstance(x, ModelLoop), action.GetBlock()):
                             if var in item.GetLabel():
@@ -602,6 +607,7 @@ class Model(object):
         delInterData = False
         if params:
             dlg = ModelParamDialog(parent = parent,
+                                   model = self,
                                    params = params)
             dlg.CenterOnParent()
             
@@ -768,7 +774,7 @@ class Model(object):
                                     'idx'    : idx }
             for name, values in self.variables.iteritems():
                 gtype = values.get('type', 'string')
-                if gtype in ('raster', 'vector', 'mapset', 'file', 'region'):
+                if gtype in ('raster', 'vector', 'mapset', 'file', 'region', 'dir'):
                     gisprompt = True
                     prompt = gtype
                     if gtype == 'raster':
@@ -1185,17 +1191,16 @@ class ModelAction(ModelObject, ogl.DividedShape):
         :param options: dictionary with flags and params (gtask)
         """
         self.isValid = True
-        self.isParameterized = False
-        
+
         for f in options['flags']:
             if f.get('parameterized', False):
-                self.IsParameterized = True
+                self.isParameterized = True
                 break
-        
+
         for p in options['params']:
             if self.isValid and p.get('required', False) and \
-                    p.get('value', '') == '' and \
-                    p.get('default', '') == '':
+               p.get('value', '') == '' and \
+               p.get('default', '') == '':
                 self.isValid = False
             if not self.isParameterized and p.get('parameterized', False):
                 self.isParameterized = True
@@ -1211,7 +1216,23 @@ class ModelAction(ModelObject, ogl.DividedShape):
     def IsParameterized(self):
         """Check if action is parameterized"""
         return self.isParameterized
-    
+
+    def GetParameterizedParams(self):
+        """Return parameterized flags and options"""
+        param = { 'flags': [], 'params' : [] }
+        
+        options = self.GetParams()
+        
+        for f in options['flags']:
+            if f.get('parameterized', False):
+                param['flags'].append(f)
+        
+        for p in options['params']:
+            if p.get('parameterized', False):
+                param['params'].append(p)
+        
+        return param
+        
     def FindData(self, name):
         """Find data item by name"""
         for rel in self.GetRelations():
@@ -1328,10 +1349,10 @@ class ModelData(ModelObject, ogl.EllipseShape):
                     action = rel.GetTo()
                 else:
                     action = rel.GetFrom()
-                
+
                 task = GUI(show = None).ParseCommand(cmd = action.GetLog(string = False))
                 task.set_param(rel.GetLabel(), self.value)
-                action.SetParams(params = task.get_options())
+                action.MergeParams(task.get_options())
         
     def GetPropDialog(self):
         """Get properties dialog"""
@@ -2267,6 +2288,8 @@ class WritePythonFile:
             return 'G_OPT_M_MAPSET'
         elif string == 'file':
             return 'G_OPT_F_INPUT'
+        elif string == 'dir':
+            return 'G_OPT_M_DIR'
         elif string == 'region':
             return 'G_OPT_M_REGION'
         
@@ -2508,11 +2531,12 @@ if __name__ == "__main__":
 
 
 class ModelParamDialog(wx.Dialog):
-    def __init__(self, parent, params, id = wx.ID_ANY, title = _("Model parameters"),
+    def __init__(self, parent, model, params, id = wx.ID_ANY, title = _("Model parameters"),
                  style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER, **kwargs):
         """Model parameters dialog
         """
         self.parent = parent
+        self._model  = model
         self.params = params
         self.tasks  = list() # list of tasks/pages
         
@@ -2527,7 +2551,7 @@ class ModelParamDialog(wx.Dialog):
         # intermediate data?
         self.interData = wx.CheckBox(parent = self, label = _("Delete intermediate data when finish"))
         self.interData.SetValue(True)
-        rast, vect, rast3d, msg = self.parent.GetModel().GetIntermediateData()
+        rast, vect, rast3d, msg = self._model.GetIntermediateData()
         if not rast and not vect and not rast3d:
             self.interData.Hide()
         
@@ -2592,7 +2616,7 @@ class ModelParamDialog(wx.Dialog):
         task.params = params['params']
         
         panel = CmdPanel(parent = self, id = wx.ID_ANY, task = task,
-                         giface = GraphicalModelerGrassInterface(self.parent.GetModel()))
+                         giface = GraphicalModelerGrassInterface(self._model))
         self.tasks.append(task)
         
         return panel

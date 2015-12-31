@@ -119,7 +119,7 @@ static void check_multiple_opts(void);
 static int check_overwrite(void);
 static void define_keywords(void);
 static void split_gisprompt(const char *, char *, char *, char *);
-static void module_gui_wx(void);
+static int module_gui_wx(void);
 static void append_error(const char *);
 static const char *get_renamed_option(const char *);
 
@@ -330,6 +330,7 @@ int G_parser(int argc, char **argv)
     st->pgm_path = tmp_name;
     st->n_errors = 0;
     st->error = NULL;
+    st->module_info.verbose = G_verbose_std();
     i = strlen(tmp_name);
     while (--i >= 0) {
 	if (G_is_dirsep(tmp_name[i])) {
@@ -433,10 +434,11 @@ int G_parser(int argc, char **argv)
 
     if (argc < 2 && (st->has_required || G__has_required_rule())
         && !st->no_interactive && isatty(0)) {
-	module_gui_wx();
-	return -1;
+	if (module_gui_wx() == 0)
+            return -1;
     }
-    else if (argc < 2 && st->has_required && isatty(0)) {
+    
+    if (argc < 2 && st->has_required && isatty(0)) {
       	G_usage();
 	return -1;
     }
@@ -573,7 +575,8 @@ int G_parser(int argc, char **argv)
 
     /* Run the gui if it was specifically requested */
     if (force_gui) {
-	module_gui_wx();
+	if (module_gui_wx() != 0)
+            G_fatal_error(_("Your installation doesn't include GUI, exiting."));
 	return -1;
     }
 
@@ -642,6 +645,34 @@ char *G_recreate_command(void)
     cur = buff;
     strcpy(cur, tmp);
     cur += len;
+
+    if (st->overwrite) {
+        slen = strlen(" --overwrite");
+        if (len + slen >= nalloced) {
+            nalloced += (1024 > len) ? 1024 : len + 1;
+            buff = G_realloc(buff, nalloced);
+        }
+        strcpy(cur, " --overwrite");
+        cur += slen;
+        len += slen;
+    }
+
+    if (st->module_info.verbose != G_verbose_std()) {
+        char *sflg;
+        if (st->module_info.verbose == G_verbose_max())
+            sflg = " --verbose";
+        else
+            sflg = " --quiet";
+
+        slen = strlen(sflg);
+        if (len + slen >= nalloced) {
+            nalloced += (1024 > len) ? 1024 : len + 1;
+            buff = G_realloc(buff, nalloced);
+        }
+        strcpy(cur, sflg);
+        cur += slen;
+        len += slen;
+    }
 
     if (st->n_flags) {
 	flag = &st->first_flag;
@@ -826,7 +857,7 @@ void define_keywords(void)
 /*!
   \brief Invoke GUI dialog
 */
-void module_gui_wx(void)
+int module_gui_wx(void)
 {
     char script[GPATH_MAX];
 
@@ -836,8 +867,14 @@ void module_gui_wx(void)
 	G_fatal_error(_("Unable to determine program name"));
 
     sprintf(script, "%s/gui/wxpython/gui_core/forms.py",
-	    getenv("GISBASE"));
-    G_spawn(getenv("GRASS_PYTHON"), getenv("GRASS_PYTHON"), script, G_recreate_command(), NULL);
+            getenv("GISBASE"));
+    if (access(script, F_OK) != -1)
+        G_spawn(getenv("GRASS_PYTHON"), getenv("GRASS_PYTHON"),
+                script, G_recreate_command(), NULL);
+    else
+        return -1;
+
+    return 0;
 }
 
 void set_flag(int f)

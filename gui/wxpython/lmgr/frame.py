@@ -8,7 +8,7 @@ control for display management and access to command console.
 Classes:
  - frame::GMFrame
 
-(C) 2006-2014 by the GRASS Development Team
+(C) 2006-2015 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -57,7 +57,7 @@ from core.gconsole         import GConsole, EVT_IGNORED_CMD_RUN
 from core.giface           import Notification
 from gui_core.goutput      import GConsoleWindow, GC_SEARCH, GC_PROMPT
 from gui_core.dialogs      import GdalOutputDialog, DxfImportDialog, GdalImportDialog, MapLayersDialog
-from gui_core.dialogs      import LocationDialog, MapsetDialog, CreateNewVector, GroupDialog
+from gui_core.dialogs      import LocationDialog, MapsetDialog, CreateNewVector, GroupDialog, QuitDialog
 from modules.colorrules    import RasterColorTable, VectorColorTable
 from gui_core.menu         import Menu, SearchModuleWindow
 from gmodeler.model        import Model
@@ -176,7 +176,7 @@ class GMFrame(wx.Frame):
             
         self._auimgr.GetPane('toolbarNviz').Hide()
         # bindings
-        self.Bind(wx.EVT_CLOSE,    self.OnCloseWindow)
+        self.Bind(wx.EVT_CLOSE,    self.OnCloseWindowOrExit)
         self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
 
         self._giface.mapCreated.connect(self.OnMapCreated)
@@ -744,7 +744,7 @@ class GMFrame(wx.Frame):
         
         # check list of dummy commands for GUI modules that do not have GRASS
         # bin modules or scripts. 
-        if cmd in ['vcolors', 'r.mapcalc', 'r3.mapcalc']:
+        if cmd in ['vcolors', 'r.mapcalc', 'r3.mapcalc', 'v.krige']:
             return cmdlist
 
         try:
@@ -1616,6 +1616,16 @@ class GMFrame(wx.Frame):
         frame = TimelineFrame(None)
         frame.Show()
 
+    def OnTplotTool(self, event=None, cmd=None):
+        """Launch Temporal Plot Tool"""
+        try:
+            from tplot.frame import TplotFrame
+        except ImportError:
+            GError(parent=self, message=_("Unable to start Temporal Plot Tool."))
+            return
+        frame = TplotFrame(parent=self, giface=self._giface)
+        frame.Show()
+          
     def OnHistogram(self, event):
         """Init histogram display canvas and tools
         """
@@ -2180,6 +2190,23 @@ class GMFrame(wx.Frame):
 
     def OnCloseWindow(self, event):
         """Cleanup when wxGUI is quitted"""
+        self._closeWindow(event)
+
+    def OnCloseWindowOrExit(self, event):
+        """Cleanup when wxGUI is quitted
+
+        Ask user also to quit GRASS including terminal
+        """
+        dlg = QuitDialog(self)
+        ret = dlg.ShowModal()
+        dlg.Destroy()
+        if ret != wx.ID_CANCEL:
+            self._closeWindow(event)
+            if ret == wx.ID_YES:
+                self._quitGRASS()
+        
+    def _closeWindow(self, event):
+        """Close wxGUI"""
         # save command protocol if actived
         if self.goutput.btnCmdProtocol.GetValue():
             self.goutput.CmdProtocolSave()
@@ -2207,6 +2234,7 @@ class GMFrame(wx.Frame):
                                        style = wx.YES_NO | wx.YES_DEFAULT |
                                        wx.CANCEL | wx.ICON_QUESTION | wx.CENTRE)
                 ret = dlg.ShowModal()
+                dlg.Destroy()
                 if ret == wx.ID_YES:
                     if not self.workspaceFile:
                         self.OnWorkspaceSaveAs()
@@ -2216,9 +2244,7 @@ class GMFrame(wx.Frame):
                     # when called from menu, it gets CommandEvent and not CloseEvent
                     if hasattr(event, 'Veto'):
                         event.Veto()
-                    dlg.Destroy()
                     return
-                dlg.Destroy()
         
         # don't ask any more...
         UserSettings.Set(group = 'manager', key = 'askOnQuit', subkey = 'enabled',
@@ -2227,9 +2253,21 @@ class GMFrame(wx.Frame):
         self.OnDisplayCloseAll()
         
         self.notebookLayers.DeleteAllPages()
-        
         self._auimgr.UnInit()
         self.Destroy()
+        
+    def _quitGRASS(self):
+        """Quit GRASS terminal"""
+        try:
+            shellPid = int(grass.gisenv()['PID'])
+            print >> sys.stderr, grass.gisenv()
+        except:
+            grass.warning(_("Unable to exit GRASS shell: unknown PID"))
+            return
+
+        Debug.msg(1, "Exiting shell with pid={}".format(shellPid))
+        import signal
+        os.kill(shellPid, signal.SIGTERM)
         
     def MsgNoLayerSelected(self):
         """Show dialog message 'No layer selected'"""

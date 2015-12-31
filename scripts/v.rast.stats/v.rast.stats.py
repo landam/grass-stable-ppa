@@ -124,7 +124,7 @@ def main():
         grass.fatal(_("Raster map <%s> not found") % raster)
 
     # check presence of raster MASK, put it aside
-    mask_found = bool(grass.find_file('MASK', 'cell')['file'])
+    mask_found = bool(grass.find_file('MASK', 'cell', mapset)['file'])
     if mask_found:
         grass.message(_("Raster MASK found, temporarily disabled"))
         grass.run_command('g.rename', raster=('MASK', tmpname + "_origmask"),
@@ -138,8 +138,9 @@ def main():
     grass.run_command('g.region', align=raster)
 
     # prepare raster MASK
+    grass.message(_("Preprocessing input data..."))
     try:
-        grass.run_command('v.to.rast', input=vector, output=rastertmp,
+        grass.run_command('v.to.rast', input=vector, layer=layer, output=rastertmp,
                           use='cat', quiet=True)
     except CalledModuleError:
         grass.fatal(_("An error occurred while converting vector to raster"))
@@ -237,7 +238,7 @@ def main():
             grass.fatal(_("Adding columns failed. Exiting."))
 
     # calculate statistics:
-    grass.message(_("Processing data (%d categories)...") % number)
+    grass.message(_("Processing input data (%d categories)...") % number)
 
     # get rid of any earlier attempts
     grass.try_remove(sqltmp)
@@ -250,8 +251,7 @@ def main():
 
     first_line = 1
 
-    if not dbfdriver:
-        f.write("BEGIN TRANSACTION\n")
+    f.write("{}\n".format(grass.db_begin_transaction(fi['driver'])))
     for line in p.stdout:
         if first_line:
             first_line = 0
@@ -262,7 +262,7 @@ def main():
         f.write("UPDATE %s SET" % fi['table'])
         first_var = 1
         for colname in colnames:
-            variable = colname.replace("%s_" % colprefix, '')
+            variable = colname.replace("%s_" % colprefix, '', 1)
             if dbfdriver:
                 variable = variables_dbf[variable]
             i = variables[variable]
@@ -277,8 +277,7 @@ def main():
             f.write(" %s=%s" % (colname, value))
 
         f.write(" WHERE %s=%s;\n" % (fi['key'], vars[0]))
-    if not dbfdriver:
-        f.write("COMMIT\n")
+    f.write("{}\n".format(grass.db_commit_transaction(fi['driver'])))
     p.wait()
     f.close()
 
