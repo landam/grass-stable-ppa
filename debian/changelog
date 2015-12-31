@@ -6,6 +6,7 @@ grass (7.0.3~rc1-1) UNRELEASED; urgency=medium
     - Update copyright years for Luca Delucchi
   * Drop patches appplied upstream.
   * Add patch to fix various typos.
+  * Move new tplot.png to usr/share too.
 
  -- Bas Couwenberg <sebastic@debian.org>  Thu, 31 Dec 2015 01:29:11 +0100
 

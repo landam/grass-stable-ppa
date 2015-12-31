@@ -221,6 +221,9 @@ override_dh_auto_install-arch:
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/timeline
 	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/timeline/timeline_2D.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/timeline/
 
+	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/tplot
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/tplot/tplot.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/tplot/
+
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/vdigit
 	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/vdigit/vdigit_toolbar.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/vdigit/
 

@@ -17,4 +17,5 @@ usr/share/grass@VERSION@/gui/wxpython/rlisetup/g_gui_rlisetup_7.png            u
 usr/share/grass@VERSION@/gui/wxpython/rlisetup/g_gui_rlisetup_8.png            usr/lib/grass@VERSION@/gui/wxpython/rlisetup/g_gui_rlisetup_8.png
 usr/share/grass@VERSION@/gui/wxpython/rlisetup/g_gui_rlisetup_sample_areas.png usr/lib/grass@VERSION@/gui/wxpython/rlisetup/g_gui_rlisetup_sample_areas.png
 usr/share/grass@VERSION@/gui/wxpython/timeline/timeline_2D.jpg                 usr/lib/grass@VERSION@/gui/wxpython/timeline/timeline_2D.jpg
+usr/share/grass@VERSION@/gui/wxpython/tplot/tplot.png                          usr/lib/grass@VERSION@/gui/wxpython/tplot/tplot.png
 usr/share/grass@VERSION@/gui/wxpython/vdigit/vdigit_toolbar.jpg                usr/lib/grass@VERSION@/gui/wxpython/vdigit/vdigit_toolbar.jpg
