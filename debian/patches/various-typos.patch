@@ -8,6 +8,7 @@ Description: Fix various typos.
  * propogate     -> propagate
 Author: Bas Couwenberg <sebastic@debian.org>
 Forwarded: https://trac.osgeo.org/grass/ticket/2841
+Applied-Upstream: https://trac.osgeo.org/grass/changeset/67447
 
 --- a/general/g.message/g.message.html
 +++ b/general/g.message/g.message.html
