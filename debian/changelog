@@ -1,3 +1,13 @@
+grass (7.0.3~rc1-1~exp2) UNRELEASED; urgency=medium
+
+  * Fix build with `dpkg-buildpackage -A`. Add dependency on
+    override_dh_auto_install-arch target to 
+    override_dh_auto_install-indep target. The HTML documentation is
+    built along with the code in the build-arch target.
+    (closes: #806620)
+
+ -- Bas Couwenberg <sebastic@debian.org>  Thu, 07 Jan 2016 22:38:50 +0100
+
 grass (7.0.3~rc1-1~exp1) experimental; urgency=medium
 
   * New upstream release candidate.

@@ -23,7 +23,7 @@ versions:
 	dh $@ --with autotools_dev,python2 --parallel
 
 override_dh_clean:
-	dh_clean
+	dh_clean build-arch-stamp install-arch-stamp
 
 	$(RM) lib/proj/nad2bin
 	$(RM) tools/timer/main.o
@@ -96,11 +96,13 @@ override_dh_auto_configure: templates
 
 # This target generates arch-dep stuff, unfortunately most doc requires working bins to 
 # be properly generated...
-override_dh_auto_build-arch:
+override_dh_auto_build-arch: build-arch-stamp
+build-arch-stamp:
 	dh_auto_build
 	chmod 755 debian/fixpaths.sh
+	touch $@
 
-override_dh_auto_build-indep: override_dh_auto_build-arch
+override_dh_auto_build-indep: build-arch-stamp
 	# generate the Programmers' manual (in HTML)
 	$(MAKE) htmldocs-single
 
@@ -109,7 +111,8 @@ override_dh_auto_build-indep: override_dh_auto_build-arch
 	##	optipng -o5 $$file ; \
 	##done
 
-override_dh_auto_install-arch:
+override_dh_auto_install-arch: install-arch-stamp
+install-arch-stamp:
 	# install grass core into debian/tmp
 	dh_auto_install -- \
 		INST_DIR=$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME) \
@@ -227,7 +230,9 @@ override_dh_auto_install-arch:
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/vdigit
 	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/vdigit/vdigit_toolbar.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/vdigit/
 
-override_dh_auto_install-indep:
+	touch $@
+
+override_dh_auto_install-indep: install-arch-stamp
 	install -m 644 -d debian/tmp
 	install -m 644 -d debian/tmp/programming-manual/html
 	cp -r lib/html/* debian/tmp/programming-manual/html/
