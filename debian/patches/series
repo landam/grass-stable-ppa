@@ -2,4 +2,3 @@ pager
 instdir
 no-fail-html.patch
 appstream.patch
-various-typos.patch
