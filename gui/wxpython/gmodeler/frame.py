@@ -40,7 +40,7 @@ from core.gconsole        import GConsole, \
 from gui_core.goutput     import GConsoleWindow
 from core.debug           import Debug
 from core.gcmd            import GMessage, GException, GWarning, GError, RunCommand
-from gui_core.dialogs     import GetImageHandlers
+from gui_core.dialogs     import GetImageHandlers, TextEntryDialog
 from gui_core.ghelp       import ShowAboutDialog
 from gui_core.preferences import PreferencesBaseDialog
 from core.settings        import UserSettings
@@ -742,8 +742,9 @@ class ModelFrame(wx.Frame):
 
     def OnAddComment(self, event):
         """Add comment to the model"""
-        dlg = wx.TextEntryDialog(parent = self, message = _("Comment:"), caption = _("Add comment"),
-                                 style = wx.OK | wx.CANCEL | wx.CENTRE | wx.TE_MULTILINE)
+        dlg = TextEntryDialog(parent = self, message = _("Comment:"), caption = _("Add comment"),
+                              textStyle = wx.TE_MULTILINE, textSize = (300, 75))
+        
         if dlg.ShowModal() == wx.ID_OK:
             comment = dlg.GetValue()
             if not comment:
@@ -1365,8 +1366,9 @@ class ModelEvtHandler(ogl.ShapeEvtHandler):
     
     def OnSetComment(self, event):
         shape = self.GetShape()
-        dlg = wx.TextEntryDialog(parent = self.frame, message = _("Comment:"), caption = _("Set comment"),
-                                 defaultValue = shape.GetComment(), style = wx.OK | wx.CANCEL | wx.CENTRE | wx.TE_MULTILINE)
+        dlg = TextEntryDialog(parent = self.frame, message = _("Comment:"), caption = _("Set comment"),
+                              defaultValue = shape.GetComment(),
+                              textStyle = wx.TE_MULTILINE, textSize = (300, 75))
         if dlg.ShowModal() == wx.ID_OK:
             comment = dlg.GetValue()
             shape.SetComment(comment)
@@ -1748,7 +1750,7 @@ class PythonPanel(wx.Panel):
         filename = ''
         dlg = wx.FileDialog(parent = self,
                             message = _("Choose file to save"),
-                            defaultFile = self.parent.GetModelFile(ext=False) + '.py',
+                            defaultFile = os.path.basename(self.parent.GetModelFile(ext=False)),
                             defaultDir = os.getcwd(),
                             wildcard = _("Python script (*.py)|*.py"),
                             style = wx.FD_SAVE)
