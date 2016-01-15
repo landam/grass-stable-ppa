@@ -1,3 +1,9 @@
+grass (7.0.3~rc2-1) UNRELEASED; urgency=medium
+
+  * New upstream release candidate.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Fri, 15 Jan 2016 14:33:31 +0100
+
 grass (7.0.3~rc1-1~exp2) experimental; urgency=medium
 
   * Fix build with `dpkg-buildpackage -A`. Add dependency on
