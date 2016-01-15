@@ -1,10 +1,10 @@
-grass (7.0.3~rc2-1) UNRELEASED; urgency=medium
+grass (7.0.3~rc2-1~exp1) experimental; urgency=medium
 
   * New upstream release candidate.
   * Update copyright years for GRASS Development Team in copyright file.
   * Drop various-typos.patch, applied upstream.
 
- -- Bas Couwenberg <sebastic@debian.org>  Fri, 15 Jan 2016 14:33:31 +0100
+ -- Bas Couwenberg <sebastic@debian.org>  Fri, 15 Jan 2016 14:39:20 +0100
 
 grass (7.0.3~rc1-1~exp2) experimental; urgency=medium
 
