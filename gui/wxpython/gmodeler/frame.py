@@ -40,7 +40,7 @@ from core.gconsole        import GConsole, \
 from gui_core.goutput     import GConsoleWindow
 from core.debug           import Debug
 from core.gcmd            import GMessage, GException, GWarning, GError, RunCommand
-from gui_core.dialogs     import GetImageHandlers
+from gui_core.dialogs     import GetImageHandlers, TextEntryDialog
 from gui_core.ghelp       import ShowAboutDialog
 from gui_core.preferences import PreferencesBaseDialog
 from core.settings        import UserSettings
@@ -201,7 +201,9 @@ class ModelFrame(wx.Frame):
                 self.SetStatusText(_('Python script contains local modifications'), 0)
             else:
                 self.SetStatusText(_('Python script is up-to-date'), 0)
-        
+        elif page == self.notebook.GetPageIndexByName('items'):
+            self.itemPanel.Update()
+            
         event.Skip()
 
     def OnVariables(self, event):
@@ -503,7 +505,7 @@ class ModelFrame(wx.Frame):
         """Run entire model"""
         self.model.Run(self._gconsole, self.OnDone, parent = self)
         
-    def OnDone(self, cmd, returncode):
+    def OnDone(self, event):
         """Computation finished
 
         .. todo::
@@ -740,8 +742,9 @@ class ModelFrame(wx.Frame):
 
     def OnAddComment(self, event):
         """Add comment to the model"""
-        dlg = wx.TextEntryDialog(parent = self, message = _("Comment:"), caption = _("Add comment"),
-                                 style = wx.OK | wx.CANCEL | wx.CENTRE | wx.TE_MULTILINE)
+        dlg = TextEntryDialog(parent = self, message = _("Comment:"), caption = _("Add comment"),
+                              textStyle = wx.TE_MULTILINE, textSize = (300, 75))
+        
         if dlg.ShowModal() == wx.ID_OK:
             comment = dlg.GetValue()
             if not comment:
@@ -1363,8 +1366,9 @@ class ModelEvtHandler(ogl.ShapeEvtHandler):
     
     def OnSetComment(self, event):
         shape = self.GetShape()
-        dlg = wx.TextEntryDialog(parent = self.frame, message = _("Comment:"), caption = _("Set comment"),
-                                 defaultValue = shape.GetComment(), style = wx.OK | wx.CANCEL | wx.CENTRE | wx.TE_MULTILINE)
+        dlg = TextEntryDialog(parent = self.frame, message = _("Comment:"), caption = _("Set comment"),
+                              defaultValue = shape.GetComment(),
+                              textStyle = wx.TE_MULTILINE, textSize = (300, 75))
         if dlg.ShowModal() == wx.ID_OK:
             comment = dlg.GetValue()
             shape.SetComment(comment)
@@ -1455,7 +1459,8 @@ class VariablePanel(wx.Panel):
                                          _("vector"),
                                          _("region"),
                                          _("mapset"),
-                                         _("file")])
+                                         _("file"),
+                                         _("dir")])
         self.type.SetSelection(2) # string
         self.value = wx.TextCtrl(parent = self, id = wx.ID_ANY)
         self.desc = wx.TextCtrl(parent = self, id = wx.ID_ANY)
@@ -1585,17 +1590,19 @@ class ItemPanel(wx.Panel):
                                     label=" %s " % _("List of items - right-click to delete"))
         
         self.list = ItemListCtrl(parent = self,
-                                 columns = [_("Label"), _("In loop"),
+                                 columns = [_("Label"), _("In loop"), _("Parameterized"),
                                             _("Command")],
-                                 columnsNotEditable = [1, 2],
+                                 columnsNotEditable = [1, 2, 3],
                                  frame = self.parent)
         
         self.btnMoveUp = wx.Button(parent=self, id=wx.ID_UP)
         self.btnMoveDown = wx.Button(parent=self, id=wx.ID_DOWN)
+        self.btnRefresh = wx.Button(parent=self, id=wx.ID_REFRESH)
         
         self.btnMoveUp.Bind(wx.EVT_BUTTON, self.OnMoveItemsUp)
         self.btnMoveDown.Bind(wx.EVT_BUTTON, self.OnMoveItemsDown)
-        
+        self.btnRefresh.Bind(wx.EVT_BUTTON, self.list.OnReload)
+                
         self._layout()
 
     def _layout(self):
@@ -1607,6 +1614,8 @@ class ItemPanel(wx.Panel):
         manageSizer = wx.BoxSizer(wx.VERTICAL)
         manageSizer.Add(item=self.btnMoveUp, border = 5, flag = wx.ALL)
         manageSizer.Add(item=self.btnMoveDown, border = 5,
+                        flag = wx.LEFT | wx.RIGHT | wx.BOTTOM)
+        manageSizer.Add(item=self.btnRefresh, border = 5,
                         flag = wx.LEFT | wx.RIGHT)
         
         mainSizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -1728,7 +1737,7 @@ class PythonPanel(wx.Panel):
         
         event.Skip()
 
-    def OnDone(self, cmd, returncode):
+    def OnDone(self, event):
         """Python script finished"""
         try_remove(self.filename)
         self.filename = None
@@ -1741,7 +1750,7 @@ class PythonPanel(wx.Panel):
         filename = ''
         dlg = wx.FileDialog(parent = self,
                             message = _("Choose file to save"),
-                            defaultFile = self.parent.GetModelFile(ext=False) + '.py',
+                            defaultFile = os.path.basename(self.parent.GetModelFile(ext=False)),
                             defaultDir = os.getcwd(),
                             wildcard = _("Python script (*.py)|*.py"),
                             style = wx.FD_SAVE)

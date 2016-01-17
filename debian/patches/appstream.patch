@@ -1,5 +1,5 @@
 Description: Fix desktop filename.
-Author: Bas Couwenberg <sebastic@xs4all.nl>
+Author: Bas Couwenberg <sebastic@debian.org>
 Forwarded: not-needed
 
 --- a/gui/icons/grass.appdata.xml

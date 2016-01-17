@@ -19,6 +19,7 @@
 #% keyword: temporal
 #% keyword: import
 #% keyword: vector
+#% keyword: time
 #%end
 
 #%option G_OPT_F_INPUT
@@ -72,7 +73,8 @@
 
 #%flag
 #% key: o
-#% description: Override projection (use location's projection)
+#% label: Override projection check (use current location's projection)
+#% description: Assume that the dataset has same projection as the current location
 #%end
 
 #%flag

@@ -166,8 +166,8 @@ r"""
 
 --------------
 
-:doc:`Help Index <index>` \| :doc:`Full Index <full_index>`
- 2003-2015 `GRASS Development Team <http://grass.osgeo.org>`_, GRASS GIS ${grass_version} Reference Manual
+:doc:`Manual main page <index>` \| :doc:`Full Index <full_index>`
+ 2003-2016 `GRASS Development Team <http://grass.osgeo.org>`_, GRASS GIS ${grass_version} Reference Manual
 """)
 
 cmd1_tmpl = string.Template(\

@@ -29,7 +29,7 @@ t.create type=strds temporaltype=absolute \
          description="Dataset with monthly precipitation"
 
 t.register type=raster input=precipitation_monthly \
-           maps=`g.list type=raster patt=2012*precip sep=,` \
+           maps=`g.list type=raster pattern="2012*precip" sep=comma` \
            start=2012-01-01 increment="1 months"
 
 # please take attention to "Temporal type of maps" value
@@ -197,5 +197,5 @@ t.rast.list input=precipitation_daily
 
 S&ouml;ren Gebbert, Th&uuml;nen Institute of Climate-Smart Agriculture
 
-<p><i>Last changed: $Date: 2014-12-27 00:50:11 +0100 (Sat, 27 Dec 2014) $</i>
+<p><i>Last changed: $Date: 2015-08-24 18:27:10 +0200 (Mon, 24 Aug 2015) $</i>
 

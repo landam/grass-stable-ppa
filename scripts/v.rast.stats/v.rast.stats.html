@@ -43,7 +43,7 @@ g.copy vect=zipcodes_wake,myzipcodes_wake
 g.region raster=elevation -p
 # calculate DEM statistics, upload to vector map table:
 v.rast.stats myzipcodes_wake raster=elevation \
-  column_prefix=elev method=minimum,maximum,average,stddev,percentile \
+  column_prefix=elev method=minimum,maximum,average,range,stddev,percentile \
   percentile=95
 # verify results:
 v.info -c myzipcodes_wake
@@ -66,4 +66,4 @@ v.univar myzipcodes_wake column=elev_range type=centroid
 
 Markus Neteler, CEA (for the <a href="http://www.eden-fp6project.net/">EDEN EU/FP6 Project</a>)
 
-<p><i>Last changed: $Date: 2014-12-19 22:55:37 +0100 (Fri, 19 Dec 2014) $</i>
+<p><i>Last changed: $Date: 2015-12-31 16:14:52 +0100 (Thu, 31 Dec 2015) $</i>
