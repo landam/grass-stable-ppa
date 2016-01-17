@@ -20,10 +20,10 @@ versions:
 	@echo "ABI: $(ABI)"
 
 %:
-	dh $@ --with autotools_dev,python2
+	dh $@ --with autotools_dev,python2 --parallel
 
 override_dh_clean:
-	dh_clean
+	dh_clean build-arch-stamp install-arch-stamp
 
 	$(RM) lib/proj/nad2bin
 	$(RM) tools/timer/main.o
@@ -96,11 +96,13 @@ override_dh_auto_configure: templates
 
 # This target generates arch-dep stuff, unfortunately most doc requires working bins to 
 # be properly generated...
-override_dh_auto_build-arch:
+override_dh_auto_build-arch: build-arch-stamp
+build-arch-stamp:
 	dh_auto_build
 	chmod 755 debian/fixpaths.sh
+	touch $@
 
-override_dh_auto_build-indep:
+override_dh_auto_build-indep: build-arch-stamp
 	# generate the Programmers' manual (in HTML)
 	$(MAKE) htmldocs-single
 
@@ -109,7 +111,8 @@ override_dh_auto_build-indep:
 	##	optipng -o5 $$file ; \
 	##done
 
-override_dh_auto_install-arch:
+override_dh_auto_install-arch: install-arch-stamp
+install-arch-stamp:
 	# install grass core into debian/tmp
 	dh_auto_install -- \
 		INST_DIR=$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME) \
@@ -120,7 +123,7 @@ override_dh_auto_install-arch:
 
 	# delete extra license files
 	$(RM) debian/tmp/usr/lib/$(BASE_NAME)/etc/license
-	
+
 	# delete python compiled bytecode files (maybe dh_python2 takes care of this for us?)
 	find debian/tmp/ -type f -name "*.pyc" -delete
 
@@ -148,30 +151,19 @@ override_dh_auto_install-arch:
 		debian/tmp/usr/lib/$(BASE_NAME)/include/Make/Platform.make
 
 	# install pkg-config file
+	mkdir -p debian/$(PKG_NAME)-dev/usr/share/pkgconfig
 	install -m 644 grass.pc debian/$(PKG_NAME)-dev/usr/share/pkgconfig/$(BASE_NAME).pc
 
-	# install icon file for debian menu system
-	install -d debian/tmp/usr/share/icons \
-		debian/tmp/usr/share/applications \
-		debian/tmp/usr/bin
-	# is there a better way to make these exist?
-	mkdir -p debian/tmp/usr/share/icons/hicolor/32x32/apps
-	mkdir -p debian/tmp/usr/share/icons/hicolor/48x48/apps
-	mkdir -p debian/tmp/usr/share/icons/hicolor/64x64/apps
+	# install icons and desktop file
+	mkdir -p debian/tmp/usr/share/icons
+	mv debian/tmp/usr/lib/$(BASE_NAME)/share/icons/hicolor debian/tmp/usr/share/icons
+
 	mkdir -p debian/tmp/usr/share/applications
-	install -m 644 debian/grass.xpm \
-		debian/tmp/usr/share/icons/hicolor/32x32/apps/$(BASE_NAME).xpm
-	install -m 644 gui/icons/grass-48x48.png \
-		debian/tmp/usr/share/icons/hicolor/48x48/apps/$(BASE_NAME).png
-	install -m 644 gui/icons/grass-64x64.png \
-		debian/tmp/usr/share/icons/hicolor/64x64/apps/$(BASE_NAME).png
-	install -m 644 gui/icons/grass.desktop \
-		debian/tmp/usr/share/applications/$(BASE_NAME).desktop
+	mv debian/tmp/usr/lib/$(BASE_NAME)/share/applications/grass.desktop debian/tmp/usr/share/applications/$(BASE_NAME).desktop
 
 	# install AppStream metadata
-	mkdir -p debian/tmp/usr/share/appdata/
-	install -m 644 gui/icons/grass.appdata.xml \
-		debian/tmp/usr/share/appdata/$(BASE_NAME).appdata.xml
+	mkdir -p debian/tmp/usr/share/appdata
+	mv debian/tmp/usr/lib/$(BASE_NAME)/share/appdata/grass.appdata.xml debian/tmp/usr/share/appdata/$(BASE_NAME).appdata.xml
 
 	# install grass wrapper scripts
 	install -m 755 debian/x-grass7 debian/tmp/usr/bin/x-$(BASE_NAME)
@@ -193,8 +185,6 @@ override_dh_auto_install-arch:
 	         debian/tmp/usr/lib/$(BASE_NAME)/contributors_extra.csv \
 	         debian/tmp/usr/lib/$(BASE_NAME)/translation_status.json \
 	         debian/tmp/usr/lib/$(BASE_NAME)/translators.csv \
-	         debian/tmp/usr/lib/$(BASE_NAME)/share/appdata/grass.appdata.xml \
-	         debian/tmp/usr/lib/$(BASE_NAME)/share/applications/grass.desktop \
 	         debian/tmp/usr/lib/$(BASE_NAME)/demolocation/
 
 	# Move image files from /usr/lib/$(BASE_NAME) to /usr/share/$(BASE_NAME)
@@ -203,47 +193,60 @@ override_dh_auto_install-arch:
 	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/images/ debian/tmp/usr/share/$(BASE_NAME)/gui/
 
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/animation
-	mv debian/tmp/usr/lib/grass70/gui/wxpython/animation/wxGUI_animation_tool.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/animation/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/animation/wxGUI_animation_tool.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/animation/
 	
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/dbmgr
-	mv debian/tmp/usr/lib/grass70/gui/wxpython/dbmgr/dbmgr_frame.jpg  debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/dbmgr/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/dbmgr/dbmgr_frame.jpg  debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/dbmgr/
 
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler
-	mv debian/tmp/usr/lib/grass70/gui/wxpython/gmodeler/gmodeler_frame.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/gmodeler_frame.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
 
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/iclass
-	mv debian/tmp/usr/lib/grass70/gui/wxpython/iclass/iclass_frame.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/iclass/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/iclass/iclass_frame.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/iclass/
 
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/mapswipe
-	mv debian/tmp/usr/lib/grass70/gui/wxpython/mapswipe/mapswipe_tsunami.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/mapswipe/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/mapswipe/mapswipe_tsunami.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/mapswipe/
 
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/psmap
-	mv debian/tmp/usr/lib/grass70/gui/wxpython/psmap/psmap_frame.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/psmap/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/psmap/psmap_frame.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/psmap/
 
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup
-	mv debian/tmp/usr/lib/grass70/gui/wxpython/rlisetup/g_gui_rlisetup_1.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
-	mv debian/tmp/usr/lib/grass70/gui/wxpython/rlisetup/g_gui_rlisetup_2.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
-	mv debian/tmp/usr/lib/grass70/gui/wxpython/rlisetup/g_gui_rlisetup_3.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
-	mv debian/tmp/usr/lib/grass70/gui/wxpython/rlisetup/g_gui_rlisetup_4.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
-	mv debian/tmp/usr/lib/grass70/gui/wxpython/rlisetup/g_gui_rlisetup_5.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
-	mv debian/tmp/usr/lib/grass70/gui/wxpython/rlisetup/g_gui_rlisetup_6.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
-	mv debian/tmp/usr/lib/grass70/gui/wxpython/rlisetup/g_gui_rlisetup_7.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
-	mv debian/tmp/usr/lib/grass70/gui/wxpython/rlisetup/g_gui_rlisetup_8.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
-	mv debian/tmp/usr/lib/grass70/gui/wxpython/rlisetup/g_gui_rlisetup_sampleAreas.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/rlisetup/g_gui_rlisetup_1.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/rlisetup/g_gui_rlisetup_2.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/rlisetup/g_gui_rlisetup_3.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/rlisetup/g_gui_rlisetup_4.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/rlisetup/g_gui_rlisetup_5.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/rlisetup/g_gui_rlisetup_6.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/rlisetup/g_gui_rlisetup_7.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/rlisetup/g_gui_rlisetup_8.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/rlisetup/g_gui_rlisetup_sample_areas.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/rlisetup/
 
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/timeline
-	mv debian/tmp/usr/lib/grass70/gui/wxpython/timeline/timeline_2D.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/timeline/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/timeline/timeline_2D.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/timeline/
+
+	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/tplot
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/tplot/tplot.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/tplot/
 
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/vdigit
-	mv debian/tmp/usr/lib/grass70/gui/wxpython/vdigit/vdigit_toolbar.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/vdigit/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/vdigit/vdigit_toolbar.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/vdigit/
 
-override_dh_auto_install-indep:
+	touch $@
+
+override_dh_auto_install-indep: install-arch-stamp
 	install -m 644 -d debian/tmp
 	install -m 644 -d debian/tmp/programming-manual/html
-	cp -r debian/tmp/usr/lib/$(BASE_NAME)/docs/html/* debian/tmp/programming-manual/html/
+	cp -r lib/html/* debian/tmp/programming-manual/html/
 	rm -f debian/tmp/programming-manual/html/jquery.js
+	rm -f debian/tmp/programming-manual/html/*.md5
 
 override_dh_install-arch:
+	# Strip binaries
+	strip debian/tmp/usr/lib/$(BASE_NAME)/bin/r.in.png
+	strip debian/tmp/usr/lib/$(BASE_NAME)/bin/r.out.png
+
+	strip --remove-section=.comment debian/tmp/usr/lib/$(BASE_NAME)/bin/r.in.png
+	strip --remove-section=.comment debian/tmp/usr/lib/$(BASE_NAME)/bin/r.out.png
+
 	dh_install --arch --list-missing
 
 	# delete duplicated grass-gui stuff from grass-core package

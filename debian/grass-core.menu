@@ -1,5 +1,0 @@
-?package(grass-core):needs="text"\
-  section="Applications/Science/Geoscience"\
-  title="GRASS GIS"\
-  command="/usr/bin/grass"\
-  icon="/usr/share/icons/hicolor/32x32/apps/grass70.xpm"

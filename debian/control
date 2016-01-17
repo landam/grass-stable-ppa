@@ -31,12 +31,12 @@ Build-Depends: autoconf2.13,
                proj-bin,
                libreadline-dev,
                libsqlite3-dev,
-               libwxgtk3.0-dev,
+               libwxgtk2.8-dev,
                libxmu-dev,
 # install optipng if compressing the PNG images in the programmers' manual
 #              optipng,
                python,
-               python-wxgtk3.0,
+               python-wxgtk2.8,
                python-dev,
                python-numpy,
                python-ply,
@@ -49,8 +49,8 @@ Build-Depends: autoconf2.13,
                zlib1g-dev,
                liblas-c-dev (>= 1.8.0-3~)
 Standards-Version: 3.9.6
-Vcs-Browser: http://anonscm.debian.org/cgit/pkg-grass/grass.git
-Vcs-Git: git://anonscm.debian.org/pkg-grass/grass.git -b experimental
+Vcs-Browser: https://anonscm.debian.org/cgit/pkg-grass/grass.git
+Vcs-Git: git://anonscm.debian.org/pkg-grass/grass.git -b ubuntugis/trusty
 Homepage: http://grass.osgeo.org/
 
 Package: grass
@@ -106,7 +106,7 @@ Suggests: grass-doc,
 Breaks: grass (<< 6.4.2-1~)
 Conflicts: grass70-core,
            grass7-core
-Provides: grass701,
+Provides: grass703-2,
           grass70-core,
           grass7-core
 Replaces: grass70-core,
@@ -126,7 +126,7 @@ Package: grass-gui
 Architecture: any
 Depends: grass-core,
          ${python:Depends},
-         python-wxgtk3.0,
+         python-wxgtk2.8,
 # pyGL needed for wxNviz
          python-opengl,
          xterm | x-terminal-emulator,

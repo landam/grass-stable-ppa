@@ -6,6 +6,13 @@ This module is intended for reinterpolation of continuous data
 to a different resolution rather than for interpolation from scattered data
 (use the <em>v.surf.*</em> modules for that purpose).
 
+<p>
+The extent of all resulting raster maps is taken from the settings of the
+actual computational region (which may differ from the extent of the input
+raster map). The resolution of the computational region however has to be
+aligned to the resolution of the input map to avoid artefacts.
+
+<p>
 Reinterpolation (resampling) is done to higher, same or lower resolution 
 specified by the <i>ew_res</i> and <i>ns_res</i> parameters.
 <p>All resulting raster maps are created using the settings of the current
@@ -146,4 +153,4 @@ analysis, Mathematical Geology No.25 p.657-667.
 of data, Journal of Computational Physics , 23, pp 93-123.
 <p>Wahba, G., 1990. Spline models for observational data, CNMS-NSF Regional
 Conference series in applied mathematics, 59, SIAM, Philadelphia, Pennsylvania.
-<p><i>Last changed: $Date: 2014-12-19 22:55:37 +0100 (Fri, 19 Dec 2014) $</i>
+<p><i>Last changed: $Date: 2015-09-10 16:55:17 +0200 (Thu, 10 Sep 2015) $</i>

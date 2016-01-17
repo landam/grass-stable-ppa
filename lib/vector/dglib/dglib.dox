@@ -1,4 +1,4 @@
-/*! \page dglib Directed Graph Library
+/*! \page dglib GRASS Directed Graph Library
 
 by GRASS Development Team (http://grass.osgeo.org)
 
@@ -317,6 +317,6 @@ Nitin K Dhiman, AINN group, CAIR  <nitinkdhiman@gmail.com> (code walkthrough doc
 
 GRASS 6 Vector Architecture \ref vectorlib 
 
-Last change: $Date: 2012-11-28 00:28:26 -0800 (Wed, 28 Nov 2012) $
+Last change: $Date: 2015-09-16 17:44:00 +0200 (Wed, 16 Sep 2015) $
 */
 

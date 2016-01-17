@@ -1,6 +1,4 @@
 pager
 instdir
-python-ctypes-ternary.patch
 no-fail-html.patch
-desktop.patch
 appstream.patch

@@ -21,8 +21,9 @@ List of classes:
  - :class:`ImageSizeDialog`
  - :class:`SqlQueryFrame`
  - :class:`SymbolDialog`
+ - :class:`QuitDialog`
 
-(C) 2008-2011 by the GRASS Development Team
+(C) 2008-2015 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -46,7 +47,7 @@ from grass.script import task as gtask
 from grass.pydispatch.signal import Signal
 
 from core import globalvar
-from core.gcmd import GError, RunCommand, GMessage
+from core.gcmd import GError, RunCommand, GMessage, GWarning
 from gui_core.gselect import LocationSelect, MapsetSelect, Select, \
                              OgrTypeSelect, GdalSelect, MapsetSelect, \
                              SubGroupSelect
@@ -1695,7 +1696,7 @@ class ImportDialog(wx.Dialog):
         self.btn_run.Bind(wx.EVT_BUTTON, self.OnRun)
 
         self.Bind(wx.EVT_CLOSE, lambda evt: self.Destroy())
-
+        
     def doLayout(self):
         """Do layout"""
         dialogSizer = wx.BoxSizer(wx.VERTICAL)
@@ -1786,7 +1787,7 @@ class ImportDialog(wx.Dialog):
         """Import/Link data (each layes as separate vector map)"""
         pass
 
-    def AddLayers(self, returncode, cmd = None):
+    def AddLayers(self, returncode, cmd = None, userData = None):
         """Add imported/linked layers into layer tree"""
         if not self.add.IsChecked() or returncode != 0:
             return
@@ -1808,14 +1809,32 @@ class ImportDialog(wx.Dialog):
         # connect to this signal
         llist = self._giface.GetLayerList()
         if self.importType == 'gdal':
-            cmd = ['d.rast',
-                   'map=%s' % name]
+            if userData:
+                nBands = int(userData.get('nbands', 1))
+            else:
+                nBands = 1
+            
             if UserSettings.Get(group = 'rasterLayer', key = 'opaque', subkey = 'enabled'):
-                cmd.append('-n')
-
-            llist.AddLayer(ltype='raster',
-                           name=name, checked=True,
-                           cmd=cmd)
+                nFlag = True
+            else:
+                nFlag = False
+            
+            for i in range(1, nBands+1):
+                nameOrig = name
+                if nBands > 1:
+                    mapName, mapsetName = name.split('@')
+                    mapName += '.%d' % i
+                    name = mapName + '@' + mapsetName
+                    
+                cmd = ['d.rast',
+                       'map=%s' % name]
+                if nFlag:
+                    cmd.append('-n')
+                
+                llist.AddLayer(ltype='raster',
+                               name=name, checked=True,
+                               cmd=cmd)
+                name = nameOrig
         else:
             llist.AddLayer(ltype='vector',
                            name=name, checked=True,
@@ -1832,7 +1851,7 @@ class ImportDialog(wx.Dialog):
         """
         pass
 
-    def OnCmdDone(self, cmd, returncode):
+    def OnCmdDone(self, event):
         """Do what has to be done after importing"""
         pass
 
@@ -1869,13 +1888,10 @@ class GdalImportDialog(ImportDialog):
                                    ogr = ogr, link = link)
         self.dsnInput.reloadDataRequired.connect(lambda data: self.list.LoadData(data))
 
-        mightNotWork = _("this might not work for multiple bands")
         if link:
-            self.add.SetLabel(_("Add linked layers into layer tree"
-                                " ({mightNotWork})".format(mightNotWork=mightNotWork)))
+            self.add.SetLabel(_("Add linked layers into layer tree"))
         else:
-            self.add.SetLabel(_("Add imported layers into layer tree"
-                                " ({mightNotWork})".format(mightNotWork=mightNotWork)))
+            self.add.SetLabel(_("Add imported layers into layer tree"))
         
         self.add.SetValue(UserSettings.Get(group = 'cmd', key = 'addNewLayer', subkey = 'enabled'))
 
@@ -1885,7 +1901,7 @@ class GdalImportDialog(ImportDialog):
         else:
             self.btn_run.SetLabel(_("&Import"))
             self.btn_run.SetToolTipString(_("Import selected layers"))
-        
+
         self.doLayout()
 
     def OnRun(self, event):
@@ -1910,6 +1926,7 @@ class GdalImportDialog(ImportDialog):
             os.environ['GRASS_VECTOR_OGR'] = '1'
         
         for layer, output in data:
+            userData = {}
             if self.importType == 'ogr':
                 if ext and layer.rfind(ext) > -1:
                     layer = layer.replace('.' + ext, '')
@@ -1934,7 +1951,23 @@ class GdalImportDialog(ImportDialog):
                     idsn = os.path.join(dsn, layer)
                 else:
                     idsn = dsn
-                
+
+                # check number of bands
+                nBandsStr = RunCommand('r.in.gdal',
+                                       flags = 'p',
+                                       input = idsn, read = True)
+                nBands = -1
+                if nBandsStr:
+                    try:
+                        nBands = int(nBandsStr.rstrip('\n'))
+                    except:
+                        pass
+                if nBands < 0:
+                    GWarning(_("Unable to determine number of raster bands"),
+                             parent = self)
+                    nBands = 1
+
+                userData['nbands'] = nBands
                 if self.link:
                     cmd = ['r.external',
                            'input=%s' % idsn,
@@ -1943,6 +1976,8 @@ class GdalImportDialog(ImportDialog):
                     cmd = ['r.in.gdal',
                            'input=%s' % idsn,
                            'output=%s' % output]
+                    if nBands > 1:
+                        cmd.append('-k')
             
             if self.overwrite.IsChecked():
                 cmd.append('--overwrite')
@@ -1960,19 +1995,19 @@ class GdalImportDialog(ImportDialog):
                 cmd.append('--overwrite')
             
             # run in Layer Manager
-            self._giface.RunCmd(cmd, onDone=self.OnCmdDone)
+            self._giface.RunCmd(cmd, onDone = self.OnCmdDone, userData = userData)
 
-    def OnCmdDone(self, cmd, returncode):
+    def OnCmdDone(self, event):
         """Load layers and close if required"""
         if not hasattr(self, 'AddLayers'):
             return
 
-        self.AddLayers(cmd, returncode)
+        self.AddLayers(event.returncode, event.cmd, event.userData)
 
         if self.popOGR:
             os.environ.pop('GRASS_VECTOR_OGR')
 
-        if returncode == 0 and self.closeOnFinish.IsChecked():
+        if event.returncode == 0 and self.closeOnFinish.IsChecked():
             self.Close()
 
     def _getCommand(self):
@@ -2132,12 +2167,12 @@ class DxfImportDialog(ImportDialog):
             # run in Layer Manager
             self._giface.RunCmd(cmd, onDone=self.OnCmdDone)
 
-    def OnCmdDone(self, cmd, returncode):
+    def OnCmdDone(self, event):
         """Load layers and close if required"""
         if not hasattr(self, 'AddLayers'):
             return
 
-        self.AddLayers(cmd, returncode)
+        self.AddLayers(event.returncode, event.cmd)
 
         if self.closeOnFinish.IsChecked():
             self.Close()
@@ -2695,8 +2730,9 @@ class TextEntryDialog(wx.Dialog):
     It differs from wx.TextEntryDialog because it allows adding validator.
     """
     def __init__(self, parent, message, caption='',
-                 defaultValue='', validator=wx.DefaultValidator,
-                 style=wx.OK | wx.CANCEL, **kwargs):
+                 defaultValue='', validator=wx.DefaultValidator, 
+                 style=wx.OK | wx.CANCEL | wx.CENTRE, textStyle=0, textSize=(300, -1),
+                 **kwargs):
         wx.Dialog.__init__(self, parent=parent, id=wx.ID_ANY, title=caption, **kwargs)
 
         vbox = wx.BoxSizer(wx.VERTICAL)
@@ -2704,8 +2740,10 @@ class TextEntryDialog(wx.Dialog):
         stline = wx.StaticText(self, id=wx.ID_ANY, label=message)
         vbox.Add(item=stline, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
-        self._textCtrl = wx.TextCtrl(self, id=wx.ID_ANY, size = (300, -1),
-                                     value=defaultValue, validator=validator)
+        self._textCtrl = wx.TextCtrl(self, id=wx.ID_ANY,
+                                     value=defaultValue, validator=validator, style=textStyle)
+        self._textCtrl.SetInitialSize(textSize)
+        
         vbox.Add(item=self._textCtrl, proportion=0, flag=wx.EXPAND | wx.LEFT | wx.RIGHT, border=10)
         self._textCtrl.SetFocus()
 
@@ -2752,3 +2790,57 @@ class HyperlinkDialog(wx.Dialog):
     
         self.SetSizer(sizer)
         sizer.Fit(self)
+
+class QuitDialog(wx.Dialog):
+    def __init__(self, parent, title=_("Quit GRASS GIS"), id=wx.ID_ANY,
+                 style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
+                 size=(350, 150), **kwargs):
+        """Dialog to quit GRASS
+        
+        :param parent: window
+        """
+        wx.Dialog.__init__(self, parent, id, title, style=style, **kwargs)
+        self.panel = wx.Panel(parent = self, id = wx.ID_ANY)
+
+        self.informLabel = wx.StaticText(parent=self.panel, id=wx.ID_ANY,
+                                         label=_("Do you want to quit GRASS including shell "
+                                                 "prompt or just close the GUI?"))
+        self.btnCancel = wx.Button(parent = self.panel, id = wx.ID_CANCEL)
+        self.btnClose = wx.Button(parent = self.panel, id = wx.ID_NO,
+                                   label=_("Close GUI"))
+        self.btnQuit = wx.Button(parent = self.panel, id = wx.ID_YES,
+                                   label=_("Quit GRASS GIS"))
+        self.btnQuit.SetMinSize((130, self.btnQuit.GetSize()[1]))
+        self.btnQuit.SetForegroundColour(wx.Colour(35, 142, 35))
+        self.btnQuit.SetDefault()
+        
+        self.btnClose.Bind(wx.EVT_BUTTON, self.OnClose)
+        self.btnQuit.Bind(wx.EVT_BUTTON, self.OnQuit)
+        
+        self.__layout()
+        self.SetSize(size)
+
+    def __layout(self):
+        """Do layout"""
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        
+        btnSizer = wx.BoxSizer(wx.HORIZONTAL)
+        btnSizer.Add(item=self.btnCancel, flag=wx.RIGHT, border=5)
+        btnSizer.Add(item=self.btnClose, flag=wx.RIGHT, border=5)
+        btnSizer.Add(item=self.btnQuit, flag=wx.RIGHT, border=5)
+        
+        sizer.Add(item = self.informLabel, proportion = 1,
+                  flag = wx.EXPAND | wx.ALL, border = 25)
+        sizer.Add(item = btnSizer, proportion = 0,
+                  flag = wx.ALL | wx.ALIGN_RIGHT, border = 5)
+
+        self.panel.SetSizer(sizer)
+        sizer.Fit(self.panel)
+        self.Layout()
+        
+    def OnClose(self, event):
+        self.EndModal(wx.ID_NO)
+
+    def OnQuit(self, event):
+        self.EndModal(wx.ID_YES)
+        

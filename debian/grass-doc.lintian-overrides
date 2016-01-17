@@ -1,4 +1,4 @@
-# html2man doesn't include NAME.
+# html2man doesn't include NAME (see also: #379913)
 grass-doc: manpage-has-bad-whatis-entry *
 
 # html2man deficiency

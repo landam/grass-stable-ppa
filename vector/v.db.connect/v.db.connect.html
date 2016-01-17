@@ -6,9 +6,16 @@ layer.
 
 <h2>NOTE</h2>
 
+Connection information (driver, database, table, key) is stored for
+each map, in the file
+<div class="code"><pre>
+&lt;database&gt;/&lt;location&gt;/&lt;mapset&gt;/vector/&lt;map&gt;/dbln
+</pre></div>
+
+<p>
 If parameters for database connection are already set with 
 <a href="db.connect.html">db.connect</a>, they are taken as default values and
-do not need to be spcified each time.
+do not need to be specified each time.
 
 <p>When printing database connection (<em>p</em> or <em>g</em> flag) the parameter
 <em>layer</em> is ignored, i.e. <b>all</b> connections are printed to the
@@ -201,4 +208,4 @@ v.db.connect map=mytable driver=pg database="host=localhost,dbname=meteo" \
 
 Radim Blazek, ITC-Irst, Trento, Italy
 
-<p><i>Last changed: $Date: 2014-03-26 14:51:12 +0100 (Wed, 26 Mar 2014) $</i>
+<p><i>Last changed: $Date: 2015-10-01 23:15:07 +0200 (Thu, 01 Oct 2015) $</i>

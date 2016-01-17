@@ -32,7 +32,7 @@ if hasattr(etree, 'ParseError'):
 else:
     ETREE_EXCEPTIONS = (expat.ExpatError)
 
-from utils import decode
+from utils import encode, decode
 from core import *
 
 
@@ -200,7 +200,7 @@ class grassTask:
                     if not desc:
                         desc = p['description']
                     errorList.append(_("Parameter '%(name)s' (%(desc)s) is missing.") % \
-                                     {'name': p['name'], 'desc': desc})
+                                     {'name': p['name'], 'desc': encode(desc)})
 
         return errorList
 
@@ -493,7 +493,7 @@ def get_interface_description(cmd):
 
         if p.returncode != 0:
             raise ScriptError, _("Unable to fetch interface description for command '%(cmd)s'."
-                                 "\n\nDetails: %(det)s") % {'cmd': cmd, 'det': decode(cmderr)}
+                                 "\n\nDetails: %(det)s") % {'cmd': cmd, 'det': cmderr}
 
     except OSError as e:
         raise ScriptError, _("Unable to fetch interface description for command '%(cmd)s'."

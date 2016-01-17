@@ -5,7 +5,7 @@ Description: Perfer pager over more.
  The original version of this patch was made by Francesco Paolo Lovergine, and
  ported to Python by Bas Couwenberg.
 Author: Francesco Paolo Lovergine <frankie@debian.org>
-Author: Bas Couwenberg <sebastic@xs4all.nl>
+Author: Bas Couwenberg <sebastic@debian.org>
 Forwarded: not-needed
 
 --- a/lib/init/grass.py

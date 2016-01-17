@@ -19,6 +19,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <errno.h>
 
 #include <grass/config.h>
 #include <grass/gis.h>
@@ -213,6 +214,12 @@ int Rast__open_old(const char *name, const char *mapset)
 	if (CELL_nbytes < 1)
 	    G_fatal_error(_("Raster map <%s@%s>: format field in header file invalid"),
 			  r_name, r_mapset);
+    }
+
+    /* test if compressor type is supported */
+    if (cellhd.compressed > 2) {
+	G_fatal_error(_("Raster map <%s@%s>: unsupported compression type %d"),
+		      r_name, r_mapset, cellhd.compressed);
     }
 
     if (cellhd.proj != R__.rd_window.proj)

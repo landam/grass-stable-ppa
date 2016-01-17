@@ -5,7 +5,7 @@ Description: Don't fail the build if HTML generation fails.
  .
  This single documentation error fails the entire build, to prevent this HTML
  description errors are ignored.
-Author: Bas Couwenberg <sebastic@xs4all.nl>
+Author: Bas Couwenberg <sebastic@debian.org>
 Forwarded: not-needed
 
 --- a/include/Make/Html.make

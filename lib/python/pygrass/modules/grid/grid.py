@@ -2,6 +2,7 @@
 from __future__ import (nested_scopes, generators, division, absolute_import,
                         with_statement, print_function, unicode_literals)
 import os
+import sys
 import multiprocessing as mltp
 import subprocess as sub
 import shutil as sht
@@ -115,7 +116,7 @@ def read_gisrc(gisrc):
     """
     with open(gisrc, 'r') as gfile:
         gis = dict([(k.strip(), v.strip())
-                    for k, v in [row.split(':') for row in gfile]])
+                    for k, v in [row.split(':', 1) for row in gfile]])
     return gis['MAPSET'], gis['LOCATION_NAME'], gis['GISDBASE']
 
 
@@ -250,7 +251,7 @@ def copy_rasters(rasters, gisrc_src, gisrc_dst, region=None):
         mpclc(expression="%s=%s" % (name, rast), overwrite=True, env_=env)
         file_dst = "%s.pack" % os.path.join(path_dst, name)
         rpck(input=name, output=file_dst, overwrite=True, env_=env)
-        remove(flags='f', type='rast', name=name, env_=env)
+        remove(flags='f', type='raster', name=name, env_=env)
         # change gisdbase to dst
         env['GISRC'] = gisrc_dst
         rupck(input=file_dst, output=rast_clean, overwrite=True, env_=env)
@@ -284,7 +285,7 @@ def copy_vectors(vectors, gisrc_src, gisrc_dst):
         name = nam % vect
         file_dst = "%s.pack" % os.path.join(path_dst, name)
         vpck(input=name, output=file_dst, overwrite=True, env_=env)
-        remove(flags='f', type='vect', name=name, env_=env)
+        remove(flags='f', type='vector', name=name, env_=env)
         # change gisdbase to dst
         env['GISRC'] = gisrc_dst
         vupck(input=file_dst, output=vect, overwrite=True, env_=env)
@@ -316,7 +317,7 @@ def get_cmd(cmdd):
                 if not isinstance(v, list)))
     cmd.extend(("%s=%s" % (k, ','.join([repr(v) for v in vals]))
                 for k, vals in cmdd['outputs'] if isinstance(vals, list)))
-    cmd.extend(("%s" % (flg) for flg in cmdd['flags'] if len(flg) == 1))
+    cmd.extend(("-%s" % (flg) for flg in cmdd['flags'] if len(flg) == 1))
     cmd.extend(("--%s" % (flg[0]) for flg in cmdd['flags'] if len(flg) > 1))
     return cmd
 
@@ -346,6 +347,7 @@ def cmd_exe(args):
     src, dst = get_mapset(gisrc_src, gisrc_dst)
     env = os.environ.copy()
     env['GISRC'] = gisrc_dst
+    shell = True if sys.platform == 'win32' else False
     if mapnames:
         inputs = dict(cmd['inputs'])
         # reset the inputs to
@@ -353,16 +355,16 @@ def cmd_exe(args):
             inputs[key] = mapnames[key]
         cmd['inputs'] = inputs.items()
         # set the region to the tile
-        sub.Popen(['g,region', 'raster=%s' % key], env=env).wait()
+        sub.Popen(['g.region', 'raster=%s' % key], shell=shell, env=env).wait()
     else:
         # set the computational region
         lcmd = ['g.region', ]
         lcmd.extend(["%s=%s" % (k, v) for k, v in bbox.items()])
-        sub.Popen(lcmd, env=env).wait()
+        sub.Popen(lcmd, shell=shell, env=env).wait()
     if groups:
         copy_groups(groups, gisrc_src, gisrc_dst)
     # run the grass command
-    sub.Popen(get_cmd(cmd), env=env).wait()
+    sub.Popen(get_cmd(cmd), shell=shell, env=env).wait()
     # remove temp GISRC
     os.remove(gisrc_dst)
 
@@ -383,6 +385,8 @@ class GridModule(object):
                       of processor available.
     :param split: if True use r.tile to split all the inputs.
     :type split: bool
+    :param mapset_prefix: if specified created mapsets start with this prefix
+    :type mapset_prefix: str
     :param run_: if False only instantiate the object
     :type run_: bool
     :param args: give all the parameters to the command
@@ -397,7 +401,7 @@ class GridModule(object):
     """
     def __init__(self, cmd, width=None, height=None, overlap=0, processes=None,
                  split=False, debug=False, region=None, move=None, log=False,
-                 start_row=0, start_col=0, out_prefix='',
+                 start_row=0, start_col=0, out_prefix='', mapset_prefix=None,
                  *args, **kargs):
         kargs['run_'] = False
         self.mset = Mapset()
@@ -433,7 +437,10 @@ class GridModule(object):
         self.bboxes = split_region_tiles(region=region,
                                          width=width, height=height,
                                          overlap=overlap)
-        self.msetstr = cmd.replace('.', '') + "_%03d_%03d"
+        if mapset_prefix:
+            self.msetstr = mapset_prefix + "_%03d_%03d"
+        else:
+            self.msetstr = cmd.replace('.', '') + "_%03d_%03d"
         self.inlist = None
         if split:
             self.split()
@@ -470,7 +477,7 @@ class GridModule(object):
                   width=self.width, height=self.height,
                   overlap=self.overlap)
             patt = '%s-*' % inm.value
-            inlist[inm.value] = sorted(self.mset.glist(type='rast',
+            inlist[inm.value] = sorted(self.mset.glist(type='raster',
                                                        pattern=patt))
         self.inlist = inlist
 
@@ -534,6 +541,8 @@ class GridModule(object):
             pool = mltp.Pool(processes=self.processes)
             result = pool.map_async(cmd_exe, self.get_works())
             result.wait()
+            pool.close()
+            pool.join()
             if not result.successful():
                 raise RuntimeError(_("Execution of subprocesses was not successful"))
 
@@ -598,4 +607,4 @@ class GridModule(object):
         if self.inlist:
             grm = Module('g.remove')
             for key in self.inlist:
-                grm(flags='f', type='rast', name=self.inlist[key])
+                grm(flags='f', type='raster', name=self.inlist[key])

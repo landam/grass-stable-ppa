@@ -1,3 +1,17 @@
+grass (7.0.3~rc2-1~exp1~vivid1) vivid; urgency=medium
+
+  * New upstream release candidate.
+
+ -- Martin Landa <landa.martin@gmail.com>  Sun, 17 Jan 2016 18:56:24 +0100
+
+grass (7.0.3~rc2-1~exp1) wily; urgency=medium
+
+  * New upstream release candidate.
+  * Update copyright years for GRASS Development Team in copyright file.
+  * Drop various-typos.patch, applied upstream.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Fri, 15 Jan 2016 14:39:20 +0100
+
 grass (7.0.1-1~exp1~vivid1) vivid; urgency=medium
 
   * vivid build
