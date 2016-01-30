@@ -1,6 +1,6 @@
 How to release GRASS GIS binaries and source code
 
-$Date: 2016-01-10 13:40:07 +0100 (Sun, 10 Jan 2016) $
+$Date: 2016-01-18 16:57:27 +0100 (Mon, 18 Jan 2016) $
 
 Note: This text contains *some* rules only applicable to the
       development coordinator (currently Markus Neteler, PSC Chair).
@@ -152,6 +152,9 @@ Contents
      write announcement
       - store in trac: http://trac.osgeo.org/grass/wiki/Release/7.XX.YY-News
       - store in Web as announces/announce_grass$MAJOR$MINOR$RELEASE.html <- how? with protected PHP upload page?
+
+     full release:
+      - update trac milesstone/add next: https://trac.osgeo.org/grass/admin/ticket/milestones
 
  o upload user HTML manual in case of *final release* from compiled English
    version at (warning: needs stuff to be compiled).

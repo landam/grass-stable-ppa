@@ -1,44 +1,32 @@
+grass (7.0.3-1~wily1) wily; urgency=medium
+
+  * New upstream release.
+  * Update copyright file, changes:
+    - Update copyright years for Markus Neteler
+    - Drop license & copyright for removed mapcalc.tab Bison files
+  * Add patch for various typos.
+  * Move from experimental to unstable.
+
+ -- Martin Landa <landa.martin@gmail.com>  Sat, 30 Jan 2016 11:59:29 +0100
+
 grass (7.0.3~rc2-1~exp1~wily1) wily; urgency=medium
-
-  * New upstream release candidate. 
-
- -- Martin Landa <landa.martin@gmail.com>  Sun, 17 Jan 2016 14:31:45 +0100
-
-grass (7.0.3~rc2-1~exp1) wily; urgency=medium
 
   * New upstream release candidate.
   * Update copyright years for GRASS Development Team in copyright file.
   * Drop various-typos.patch, applied upstream.
- 
- -- Bas Couwenberg <sebastic@debian.org>  Fri, 15 Jan 2016 14:39:20 +0100
+
+ -- Martin Landa <landa.martin@gmail.com>  Sun, 17 Jan 2016 14:31:45 +0100
 
 grass (7.0.3~rc1-1~exp1~wily1) wily; urgency=medium
 
   * New upstream release candidate.
-
- -- Martin Landa <landa.martin@gmail.com>  Tue, 12 Jan 2016 20:57:45 +0100
-
-grass (7.0.3~rc1-1~exp2) experimental; urgency=medium
-
   * Fix build with `dpkg-buildpackage -A`. Add dependency on
-    override_dh_auto_install-arch target to 
+    override_dh_auto_install-arch target to
     override_dh_auto_install-indep target. The HTML documentation is
     built along with the code in the build-arch target.
     (closes: #806620)
 
- -- Bas Couwenberg <sebastic@debian.org>  Thu, 07 Jan 2016 23:12:38 +0100
-
-grass (7.0.3~rc1-1~exp1) experimental; urgency=medium
-
-  * New upstream release candidate.
-  * Update copyright file, changes:
-    - Add license & copyright for new mapcalc.tab.{c,h} files
-    - Update copyright years for Luca Delucchi
-  * Drop patches appplied upstream.
-  * Add patch to fix various typos.
-  * Move new tplot.png to usr/share too.
-
- -- Bas Couwenberg <sebastic@debian.org>  Thu, 31 Dec 2015 02:54:59 +0100
+ -- Martin Landa <landa.martin@gmail.com>  Tue, 12 Jan 2016 20:57:45 +0100
 
 grass (7.0.2-2) unstable; urgency=medium
 
