@@ -1,9 +1,9 @@
-grass (7.0.3-2) UNRELEASED; urgency=medium
+grass (7.0.3-2~exp1) experimental; urgency=medium
 
   * Bump Standards-Version to 3.9.7, no changes.
   * Require at least libgdal-dev 2.0 for experimental builds.
 
- -- Bas Couwenberg <sebastic@debian.org>  Sun, 07 Feb 2016 12:45:44 +0100
+ -- Bas Couwenberg <sebastic@debian.org>  Fri, 19 Feb 2016 15:29:10 +0100
 
 grass (7.0.3-1) unstable; urgency=medium
 
