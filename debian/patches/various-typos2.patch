@@ -9,6 +9,7 @@ Description: Fix various typos.
  errorneous -> erroneous
  containg   -> containing
 Author: Bas Couwenberg <sebastic@debian.org>
+Forwarded: https://trac.osgeo.org/grass/ticket/2950
 
 --- a/imagery/i.fft/i.fft.html
 +++ b/imagery/i.fft/i.fft.html
