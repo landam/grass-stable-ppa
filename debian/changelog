@@ -1,9 +1,10 @@
-grass (7.0.3-2~exp2) UNRELEASED; urgency=medium
+grass (7.0.3-2) unstable; urgency=medium
 
   * Require at least liblas 1.8.0-8 for GDAL 2.0 transition.
   * Add patch for various typos.
+  * Move from experimental to unstable.
 
- -- Bas Couwenberg <sebastic@debian.org>  Wed, 02 Mar 2016 14:32:43 +0100
+ -- Bas Couwenberg <sebastic@debian.org>  Wed, 02 Mar 2016 14:36:07 +0100
 
 grass (7.0.3-2~exp1) experimental; urgency=medium
 
