@@ -10,6 +10,7 @@ Description: Fix various typos.
  containg   -> containing
 Author: Bas Couwenberg <sebastic@debian.org>
 Forwarded: https://trac.osgeo.org/grass/ticket/2950
+Applied-Upstream: https://trac.osgeo.org/grass/changeset/68016
 
 --- a/imagery/i.fft/i.fft.html
 +++ b/imagery/i.fft/i.fft.html
