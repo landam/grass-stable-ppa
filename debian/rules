@@ -19,6 +19,11 @@ versions:
 	@echo "Version: $(VERSION)"
 	@echo "ABI: $(ABI)"
 
+templates:
+	for TEMPLATE in $(TEMPLATES) ; do \
+	    sed -e 's/@VERSION@/$(VERSION)/g' -e 's/@ABI@/$(ABI)/g' $$TEMPLATE > `echo $$TEMPLATE | sed 's/.in$$//'` ; \
+	done
+
 %:
 	dh $@ --with autotools_dev,python2 --parallel
 
@@ -53,11 +58,6 @@ override_dh_clean:
 		vector/dglib ; \
 	do \
 		$(RM) -r lib/$$LIBRARY/html lib/$$LIBRARY/latex ; \
-	done
-
-templates:
-	for TEMPLATE in $(TEMPLATES) ; do \
-	    sed -e 's/@VERSION@/$(VERSION)/g' -e 's/@ABI@/$(ABI)/g' $$TEMPLATE > `echo $$TEMPLATE | sed 's/.in$$//'` ; \
 	done
 
 override_dh_auto_clean:
