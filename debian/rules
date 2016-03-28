@@ -266,6 +266,7 @@ override_dh_installman:
 override_dh_python2:
 	dh_python2
 	dh_python2 /usr/lib/$(BASE_NAME)/gui/ /usr/lib/$(BASE_NAME)/tools/
+	dh_numpy
 
 override_dh_shlibdeps:
 	dh_shlibdeps -l$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME)/lib

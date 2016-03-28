@@ -1,3 +1,9 @@
+grass (7.0.3-3) UNRELEASED; urgency=medium
+
+  * Update dh_python2 override to call dh_numpy too.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Mon, 28 Mar 2016 14:13:24 +0200
+
 grass (7.0.3-2) unstable; urgency=medium
 
   * Require at least liblas 1.8.0-8 for GDAL 2.0 transition.
