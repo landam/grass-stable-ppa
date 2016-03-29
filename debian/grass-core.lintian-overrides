@@ -81,6 +81,7 @@ grass-core: hardening-no-fortify-functions usr/lib/grass*/lib/libgrass_segment.*
 
 # This license file is used by the program to show license, so needs to be
 # distributed.
+grass-core: extra-license-file usr/lib/grass*/etc/license
 grass-core: extra-license-file usr/share/doc/grass-core/COPYING
 
 # PIE breaks the build

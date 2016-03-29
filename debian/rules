@@ -125,9 +125,6 @@ install-arch-stamp:
 	# fix links
 	debian/fixpaths.sh $(CURDIR)/debian/tmp debian/tmp
 
-	# delete extra license files
-	$(RM) debian/tmp/usr/lib/$(BASE_NAME)/etc/license
-
 	# delete python compiled bytecode files (maybe dh_python2 takes care of this for us?)
 	find debian/tmp/ -type f -name "*.pyc" -delete
 
