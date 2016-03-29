@@ -3,6 +3,7 @@ Description: Fix various typos.
  * cummulative -> cumulative
 Author: Bas Couwenberg <sebastic@debian.org>
 Forwarded: https://trac.osgeo.org/grass/ticket/2971
+Applied-Upstream: https://trac.osgeo.org/grass/changeset/68174
 
 --- a/raster/r.stream.extract/r.stream.extract.html
 +++ b/raster/r.stream.extract/r.stream.extract.html
