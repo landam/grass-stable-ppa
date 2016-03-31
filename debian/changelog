@@ -1,3 +1,13 @@
+grass (7.0.3-2~vivid1) vivid; urgency=medium
+
+  * Update dh_python2 override to call dh_numpy too.
+  * Enable all hardening buildflags, except PIE (causes build failure).
+  * Add patch to fix various spelling errors.
+  * Don't delete /usr/lib/grass70/etc/license, not an extra license file
+    and required for `grass --version`.
+
+ -- Martin Landa <landa.martin@gmail.com>  Fri, 01 Apr 2016 00:55:57 +0200
+
 grass (7.0.3-1~vivid1) vivid; urgency=medium
 
   * New upstream release.

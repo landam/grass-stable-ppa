@@ -1,0 +1,62 @@
+Description: Fix various typos.
+ * modifed     -> modified
+ * cummulative -> cumulative
+Author: Bas Couwenberg <sebastic@debian.org>
+Forwarded: https://trac.osgeo.org/grass/ticket/2971
+Applied-Upstream: https://trac.osgeo.org/grass/changeset/68174
+
+--- a/raster/r.stream.extract/r.stream.extract.html
++++ b/raster/r.stream.extract/r.stream.extract.html
+@@ -25,7 +25,7 @@ recommended to use internally computed f
+ depression map is provided.
+ 
+ <p>
+-Option <b>threshold</b> defines the minimum (optionally modifed) flow
++Option <b>threshold</b> defines the minimum (optionally modified) flow
+ accumulation value that will initiate a new stream. If Montgomery's
+ method for channel initiation is used, the cell value of the
+ accumulation input map is multiplied by <tt>(tan(local
+--- a/raster/r.watershed/ram/do_flatarea.c
++++ b/raster/r.watershed/ram/do_flatarea.c
+@@ -6,7 +6,7 @@
+  * The assignment of drainage direction over flat surfaces in raster
+  * digital elevation models. J. Hydrol 193, 204-213.
+  *
+- * the method is modifed for speed, only one pass is necessary to get
++ * the method is modified for speed, only one pass is necessary to get
+  * the gradient away from higher terrain
+  * 
+  *********************************************************************/
+--- a/raster/r.cost/main.c
++++ b/raster/r.cost/main.c
+@@ -678,7 +678,7 @@ int main(int argc, char *argv[])
+ 	    Rast_get_row(fd, cell2, row, data_type2);
+ 	    ptr2 = cell2;
+ 	    for (col = 0; col < ncols; col++) {
+-		/* Did I understand that concept of cummulative cost map? - (pmx) 12 april 2000 */
++		/* Did I understand that concept of cumulative cost map? - (pmx) 12 april 2000 */
+ 		if (!Rast_is_null_value(ptr2, data_type2)) {
+ 		    double cellval;
+ 
+--- a/raster/r.walk/main.c
++++ b/raster/r.walk/main.c
+@@ -813,7 +813,7 @@ int main(int argc, char *argv[])
+ 	    Rast_get_row(fd, cell2, row, data_type2);
+ 	    ptr2 = cell2;
+ 	    for (col = 0; col < ncols; col++) {
+-		/* Did I understand that concept of cummulative cost map? - (pmx) 12 april 2000 */
++		/* Did I understand that concept of cumulative cost map? - (pmx) 12 april 2000 */
+ 		if (!Rast_is_null_value(ptr2, data_type2)) {
+ 		    double cellval;
+ 
+--- a/vector/v.net.centrality/v.net.centrality.html
++++ b/vector/v.net.centrality/v.net.centrality.html
+@@ -21,7 +21,7 @@ Betweenness measure is not normalised. I
+ values (between 0 and 1), each number needs to be divided by <em>N 
+ choose 2=N*(N-1)/2</em> where N is the number of nodes in the 
+ connected component. Computation of eigenvector measure terminates 
+-if the given number of iterations is reached or the cummulative <em>
++if the given number of iterations is reached or the cumulative <em>
+ squared</em> error between the successive iterations is less than <b>
+ error</b>.
+ 
