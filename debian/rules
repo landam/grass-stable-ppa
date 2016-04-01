@@ -3,6 +3,10 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
+# Enable hardening build flags, except:
+#  pie: causes build failure
+export DEB_BUILD_MAINT_OPTIONS=hardening=+all,-pie
+
 VERSION=$(shell echo `head -2 $(CURDIR)/include/VERSION` | sed -e 's/ //')
 ABI=$(shell echo `head -3 $(CURDIR)/include/VERSION` | sed -e 's/ //g' -e 's/RC/-/')
 BASE_NAME=grass$(VERSION)
@@ -18,6 +22,11 @@ TEMPLATES=$(wildcard debian/*.in)
 versions: 
 	@echo "Version: $(VERSION)"
 	@echo "ABI: $(ABI)"
+
+templates:
+	for TEMPLATE in $(TEMPLATES) ; do \
+	    sed -e 's/@VERSION@/$(VERSION)/g' -e 's/@ABI@/$(ABI)/g' $$TEMPLATE > `echo $$TEMPLATE | sed 's/.in$$//'` ; \
+	done
 
 %:
 	dh $@ --with autotools_dev,python2 --parallel
@@ -53,11 +62,6 @@ override_dh_clean:
 		vector/dglib ; \
 	do \
 		$(RM) -r lib/$$LIBRARY/html lib/$$LIBRARY/latex ; \
-	done
-
-templates:
-	for TEMPLATE in $(TEMPLATES) ; do \
-	    sed -e 's/@VERSION@/$(VERSION)/g' -e 's/@ABI@/$(ABI)/g' $$TEMPLATE > `echo $$TEMPLATE | sed 's/.in$$//'` ; \
 	done
 
 override_dh_auto_clean:
@@ -120,9 +124,6 @@ install-arch-stamp:
 
 	# fix links
 	debian/fixpaths.sh $(CURDIR)/debian/tmp debian/tmp
-
-	# delete extra license files
-	$(RM) debian/tmp/usr/lib/$(BASE_NAME)/etc/license
 
 	# delete python compiled bytecode files (maybe dh_python2 takes care of this for us?)
 	find debian/tmp/ -type f -name "*.pyc" -delete
@@ -266,6 +267,7 @@ override_dh_installman:
 override_dh_python2:
 	dh_python2
 	dh_python2 /usr/lib/$(BASE_NAME)/gui/ /usr/lib/$(BASE_NAME)/tools/
+	dh_numpy
 
 override_dh_shlibdeps:
 	dh_shlibdeps -l$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME)/lib
