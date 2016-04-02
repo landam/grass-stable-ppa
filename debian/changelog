@@ -1,3 +1,9 @@
+grass (7.0.3-3~wily1) wily; urgency=medium
+
+  * Fix broken build of package 7.0.3
+
+ -- Martin Landa <landa.martin@gmail.com>  Sat, 02 Apr 2016 23:55:50 +0200
+
 grass (7.0.3-2~wily1) wily; urgency=medium
 
   * Update dh_python2 override to call dh_numpy too.
