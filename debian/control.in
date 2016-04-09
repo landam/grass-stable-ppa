@@ -83,8 +83,6 @@ Package: grass-core
 Architecture: any
 Depends: ${shlibs:Depends},
          ${python:Depends},
-# numpy used by the GRASS Python Library
-         python-numpy,
          ${misc:Depends}
 Recommends: gdal-bin,
 # cs2cs used by m.proj, gdalinfo+gdal_translate used by a number of scripts
