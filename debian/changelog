@@ -13,6 +13,7 @@ grass (7.1.svn20160409-1) UNRELEASED; urgency=medium
   * Use packaged jQuery in HTML documentation.
   * Add jquery.fixedheadertable.js to missing-sources.
   * Remove empty files (class_graphical).
+  * Enable bzip2 support.
 
  -- Bas Couwenberg <sebastic@debian.org>  Sat, 09 Apr 2016 12:50:12 +0200
 

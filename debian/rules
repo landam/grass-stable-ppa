@@ -72,6 +72,7 @@ override_dh_auto_configure: templates
                     --prefix=/usr/lib \
                     --enable-socket \
                     --enable-shared \
+                    --with-bzlib \
                     --with-postgres \
                     --with-mysql \
                     --with-cxx \
