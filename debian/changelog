@@ -5,6 +5,7 @@ grass (7.2.0~rc1-1) UNRELEASED; urgency=medium
   * Update watch file for 7.2.x releases.
   * Drop Conflicts/Provides/Replaces for old upstream GRASS 7.0 packages.
   * Refresh patches.
+  * Enable bzip2 support.
 
  -- Bas Couwenberg <sebastic@debian.org>  Fri, 28 Oct 2016 12:44:55 +0200
 

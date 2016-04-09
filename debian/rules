@@ -79,6 +79,7 @@ override_dh_auto_configure: templates
                     --enable-socket \
                     --enable-shared \
                     --with-blas \
+                    --with-bzlib \
                     --with-cairo \
                     --with-cxx \
                     --with-freetype \
