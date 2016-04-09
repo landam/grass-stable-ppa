@@ -61,11 +61,11 @@ Depends: grass-core,
          ${misc:Depends}
 Recommends: grass-doc
 Suggests: grass-dev
-Conflicts: grass70,
+Conflicts: grass71,
            grass7
-Provides: grass70,
+Provides: grass71,
           grass7
-Replaces: grass70,
+Replaces: grass71,
           grass7
 Description: Geographic Resources Analysis Support System (GRASS GIS)
  Commonly referred to as GRASS, this is a Geographic Information
@@ -104,12 +104,12 @@ Suggests: grass-doc,
 # used by v.kridge
           python-rpy2
 Breaks: grass (<< 6.4.2-1~)
-Conflicts: grass70-core,
+Conflicts: grass71-core,
            grass7-core
-Provides: grass703,
-          grass70-core,
+Provides: grass71svn,
+          grass71-core,
           grass7-core
-Replaces: grass70-core,
+Replaces: grass71-core,
           grass7-core,
           grass (<< 6.4.2-1~)
 Description: GRASS GIS core components
@@ -137,12 +137,12 @@ Recommends:
 # PIL needed for wxPsmap preview
             python-imaging
 Breaks: grass (<< 6.4.2-1~)
-Conflicts: grass70-gui,
+Conflicts: grass71-gui,
            grass7-gui
-Provides: grass70-gui,
+Provides: grass71-gui,
           grass7-gui
 Replaces: grass (<< 6.4.2-1~),
-          grass70-gui,
+          grass71-gui,
           grass7-gui
 Description: GRASS GIS graphical user interfaces
  Commonly referred to as GRASS, this is a Geographic Information
@@ -160,11 +160,11 @@ Architecture: all
 Depends: ${misc:Depends}
 Suggests: grass,
           grass-dev-doc
-Conflicts: grass70-doc,
+Conflicts: grass71-doc,
            grass7-doc
-Provides: grass70-doc,
+Provides: grass71-doc,
           grass7-doc
-Replaces: grass70-doc,
+Replaces: grass71-doc,
           grass7-doc
 Description: GRASS GIS user documentation
  Commonly referred to as GRASS, this is a Geographic Information
@@ -182,11 +182,11 @@ Architecture: all
 Depends: ${misc:Depends},
          libjs-jquery
 Suggests: grass
-Conflicts: grass70-dev-doc,
+Conflicts: grass71-dev-doc,
            grass7-dev-doc
-Provides: grass70-dev-doc,
+Provides: grass71-dev-doc,
           grass7-dev-doc
-Replaces: grass70-dev-doc,
+Replaces: grass71-dev-doc,
           grass7-dev-doc
 Description: GRASS GIS Programmers' Manual
  Commonly referred to as GRASS, this is a Geographic Information
@@ -215,11 +215,11 @@ Depends: grass-core (= ${binary:Version}),
 Recommends: subversion
 Suggests: grass-dev-doc,
           pkg-config
-Conflicts: grass70-dev,
+Conflicts: grass71-dev,
            grass7-dev
-Provides: grass70-dev,
+Provides: grass71-dev,
           grass7-dev
-Replaces: grass70-dev,
+Replaces: grass71-dev,
           grass7-dev
 Description: GRASS GIS development files
  Commonly referred to as GRASS, this is a Geographic Information
