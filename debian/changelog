@@ -12,6 +12,7 @@ grass (7.2.0~rc1-1) UNRELEASED; urgency=medium
     - Add new copyright holders
     - Add license & copyright for lz4.{c,h} & jquery.fixedheadertable
     - Rename MIT license shortname to Expat
+  * Add jquery.fixedheadertable.js to missing-sources.
 
  -- Bas Couwenberg <sebastic@debian.org>  Fri, 28 Oct 2016 12:44:55 +0200
 
