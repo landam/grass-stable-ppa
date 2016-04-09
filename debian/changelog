@@ -1,6 +1,7 @@
 grass (7.0.3-4) UNRELEASED; urgency=medium
 
   * Update watch file for SVN snapshots.
+  * Exclude .svn directory from upstream tarball.
 
  -- Bas Couwenberg <sebastic@debian.org>  Sat, 09 Apr 2016 12:20:34 +0200
 
