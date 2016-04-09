@@ -1,6 +1,6 @@
 version=3
 opts=\
-uversionmangle=s/(\d)[_\.\-\+]?((RC|rc|pre|dev|beta|alpha)\d*)$/$1~$2/;s/RC/rc/,\
+uversionmangle=s/(\d)[_\.\-\+]?((RC|rc|pre|dev|beta|alpha)\d*)$/$1~$2/;s/RC/rc/;s/_src_snapshot_//;s/_//g;,\
 dversionmangle=s/\+(debian|dfsg|ds|deb)\d*$// \
-http://grass.osgeo.org/grass70/source/ \
-grass-([\d\.]*(?:(?:RC|rc|pre|dev|beta|alpha)?\d*))\.(?:tgz|tbz|txz|(?:tar\.(?:gz|bz2|xz)))
+https://grass.osgeo.org/grass71/source/snapshot/ \
+grass-([\d\.]\S+\d+_\d+_\d+)\.(?:tgz|tbz|txz|(?:tar\.(?:gz|bz2|xz)))
