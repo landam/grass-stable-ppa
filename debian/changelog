@@ -3,6 +3,7 @@ grass (7.1.svn20160409-1) UNRELEASED; urgency=medium
   * New upstream SVN snapshot.
   * Update watch file for SVN snapshots.
   * Exclude .svn directory from upstream tarball.
+  * Drop typo patches, applied upstream. Refresh remaining patches.
 
  -- Bas Couwenberg <sebastic@debian.org>  Sat, 09 Apr 2016 12:50:12 +0200
 
