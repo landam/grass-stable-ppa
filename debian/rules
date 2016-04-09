@@ -190,17 +190,61 @@ install-arch-stamp:
 
 	# Move image files from /usr/lib/$(BASE_NAME) to /usr/share/$(BASE_NAME)
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui
-	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/icons/ debian/tmp/usr/share/$(BASE_NAME)/gui/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/icons/  debian/tmp/usr/share/$(BASE_NAME)/gui/
 	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/images/ debian/tmp/usr/share/$(BASE_NAME)/gui/
 
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/animation
 	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/animation/wxGUI_animation_tool.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/animation/
 	
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/dbmgr
-	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/dbmgr/dbmgr_frame.jpg  debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/dbmgr/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/dbmgr/dbmgr_frame.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/dbmgr/
 
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler
-	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/gmodeler_frame.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_avg_map.png              debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_avg_run.png              debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_comment.png              debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_db.png                   debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_dlg_module.png           debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_intermediate_data.png    debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_items.png                debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_loop.png                 debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_loop_dlg.png             debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_loop_final.png           debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_lower_toolbar.png        debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_mcomment.png             debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_mdb.png                  debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_mloop.png                debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_mmodule.png              debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_mmodulex.png             debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_model_avg.png            debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_model_classification.png debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_model_landslides.png     debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_model_properties.png     debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_model_usle.png           debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_modis_1.png              debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_modis_1o.png             debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_modis_2.png              debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_modis_2o.png             debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_modis_3.png              debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_modis_3o.png             debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_modul.png                debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_modulex.png              debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_mraster.png              debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_mraster3d.png            debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_mrelation.png            debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_mvector.png              debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_parameter.png            debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_python.png               debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_python_code.png          debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_python_code_result.png   debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_raster.png               debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_raster3d.png             debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_relation.png             debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_toolbar.png              debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_variables.png            debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_variables_raster.png     debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_variables_run.png        debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
+	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/gmodeler/g_gui_gmodeler_vector.png               debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/gmodeler/
 
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/iclass
 	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/iclass/iclass_frame.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/iclass/
