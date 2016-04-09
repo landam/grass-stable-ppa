@@ -1,65 +1,14 @@
+#!/bin/sh
+
+cat <<DIRS
 usr/share/grass71/gui/icons  usr/lib/grass71/gui/icons
 usr/share/grass71/gui/images usr/lib/grass71/gui/images
+DIRS
 
-usr/share/grass71/gui/wxpython/animation/wxGUI_animation_tool.jpg               usr/lib/grass71/gui/wxpython/animation/wxGUI_animation_tool.jpg
-usr/share/grass71/gui/wxpython/dbmgr/dbmgr_frame.jpg                            usr/lib/grass71/gui/wxpython/dbmgr/dbmgr_frame.jpg
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_avg_map.png              usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_avg_map.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_avg_run.png              usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_avg_run.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_comment.png              usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_comment.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_db.png                   usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_db.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_dlg_module.png           usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_dlg_module.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_intermediate_data.png    usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_intermediate_data.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_items.png                usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_items.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_loop.png                 usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_loop.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_loop_dlg.png             usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_loop_dlg.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_loop_final.png           usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_loop_final.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_lower_toolbar.png        usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_lower_toolbar.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_mcomment.png             usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_mcomment.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_mdb.png                  usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_mdb.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_mloop.png                usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_mloop.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_mmodule.png              usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_mmodule.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_mmodulex.png             usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_mmodulex.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_model_avg.png            usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_model_avg.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_model_classification.png usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_model_classification.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_model_landslides.png     usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_model_landslides.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_model_properties.png     usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_model_properties.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_model_usle.png           usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_model_usle.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_modis_1.png              usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_modis_1.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_modis_1o.png             usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_modis_1o.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_modis_2.png              usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_modis_2.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_modis_2o.png             usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_modis_2o.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_modis_3.png              usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_modis_3.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_modis_3o.png             usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_modis_3o.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_modul.png                usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_modul.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_modulex.png              usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_modulex.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_mraster.png              usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_mraster.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_mraster3d.png            usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_mraster3d.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_mrelation.png            usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_mrelation.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_mvector.png              usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_mvector.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_parameter.png            usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_parameter.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_python.png               usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_python.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_python_code.png          usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_python_code.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_python_code_result.png   usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_python_code_result.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_raster.png               usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_raster.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_raster3d.png             usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_raster3d.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_relation.png             usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_relation.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_toolbar.png              usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_toolbar.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_variables.png            usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_variables.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_variables_raster.png     usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_variables_raster.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_variables_run.png        usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_variables_run.png
-usr/share/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_vector.png               usr/lib/grass71/gui/wxpython/gmodeler/g_gui_gmodeler_vector.png
-usr/share/grass71/gui/wxpython/iclass/iclass_frame.jpg                          usr/lib/grass71/gui/wxpython/iclass/iclass_frame.jpg
-usr/share/grass71/gui/wxpython/mapswipe/mapswipe_tsunami.jpg                    usr/lib/grass71/gui/wxpython/mapswipe/mapswipe_tsunami.jpg
-usr/share/grass71/gui/wxpython/psmap/psmap_frame.jpg                            usr/lib/grass71/gui/wxpython/psmap/psmap_frame.jpg
-usr/share/grass71/gui/wxpython/rlisetup/g_gui_rlisetup_1.png                    usr/lib/grass71/gui/wxpython/rlisetup/g_gui_rlisetup_1.png
-usr/share/grass71/gui/wxpython/rlisetup/g_gui_rlisetup_2.png                    usr/lib/grass71/gui/wxpython/rlisetup/g_gui_rlisetup_2.png
-usr/share/grass71/gui/wxpython/rlisetup/g_gui_rlisetup_3.png                    usr/lib/grass71/gui/wxpython/rlisetup/g_gui_rlisetup_3.png
-usr/share/grass71/gui/wxpython/rlisetup/g_gui_rlisetup_4.png                    usr/lib/grass71/gui/wxpython/rlisetup/g_gui_rlisetup_4.png
-usr/share/grass71/gui/wxpython/rlisetup/g_gui_rlisetup_5.png                    usr/lib/grass71/gui/wxpython/rlisetup/g_gui_rlisetup_5.png
-usr/share/grass71/gui/wxpython/rlisetup/g_gui_rlisetup_6.png                    usr/lib/grass71/gui/wxpython/rlisetup/g_gui_rlisetup_6.png
-usr/share/grass71/gui/wxpython/rlisetup/g_gui_rlisetup_7.png                    usr/lib/grass71/gui/wxpython/rlisetup/g_gui_rlisetup_7.png
-usr/share/grass71/gui/wxpython/rlisetup/g_gui_rlisetup_8.png                    usr/lib/grass71/gui/wxpython/rlisetup/g_gui_rlisetup_8.png
-usr/share/grass71/gui/wxpython/rlisetup/g_gui_rlisetup_sample_areas.png         usr/lib/grass71/gui/wxpython/rlisetup/g_gui_rlisetup_sample_areas.png
-usr/share/grass71/gui/wxpython/timeline/timeline_2D.jpg                         usr/lib/grass71/gui/wxpython/timeline/timeline_2D.jpg
-usr/share/grass71/gui/wxpython/tplot/tplot.png                                  usr/lib/grass71/gui/wxpython/tplot/tplot.png
-usr/share/grass71/gui/wxpython/vdigit/vdigit_toolbar.jpg                        usr/lib/grass71/gui/wxpython/vdigit/vdigit_toolbar.jpg
+if [ -e debian/grass-gui.image-file-in-usr-lib.list ]; then \
+        while read file; do \
+		share=`echo "$file" | sed 's/debian\/tmp\/usr\/lib\//usr\/share\//'` ; \
+		lib=`echo "$file" | sed 's/debian\/tmp\///'` ; \
+		echo "$share $lib" ; \
+	done < debian/grass-gui.image-file-in-usr-lib.list ; \
+fi
