@@ -8,12 +8,12 @@ for details.
 """
 
 import datetime
-import os
-import grass.script
 import grass.temporal as tgis
-import grass.gunittest as gunittest
+from grass.gunittest.case import TestCase
+from grass.gunittest.main import test
 
-class TestTemporalRasterAlgebra(gunittest.TestCase):
+
+class TestTemporalRasterAlgebra(TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -55,7 +55,7 @@ class TestTemporalRasterAlgebra(gunittest.TestCase):
         tgis.register_maps_in_space_time_dataset(type="raster", name="D", maps="d1,d2,d3",
                                                  start="2001-01-03", increment="1 day", interval=True)                                                 
         tgis.register_maps_in_space_time_dataset(type="raster", name=None,  maps="singletmap", 
-                                                start="2001-01-03", end="2001-01-04", interval=True)
+                                                start="2001-01-03", end="2001-01-04")
         
     def tearDown(self):
         self.runModule("t.remove", flags="rf", inputs="R", quiet=True)
@@ -707,5 +707,6 @@ class TestTemporalRasterAlgebra(gunittest.TestCase):
         self.assertEqual( D.check_temporal_topology(),  True)
         self.assertEqual(D.get_granularity(),  u'1 day')
 
+
 if __name__ == '__main__':
-    gunittest.test()
+    test()

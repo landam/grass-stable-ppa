@@ -57,9 +57,9 @@ int main(int argc, char *argv[])
     parm.lcolor->label = _("Line color");
 
 #ifdef CAN_DO_DISTANCES
-    parm.tcolor = G_define_standard_option(G_OPT_C_FG);
+    parm.tcolor = G_define_standard_option(G_OPT_C);
     parm.tcolor->key = "text_color";
-    parm.tcolor->label = _("Text color or \"none\"");
+    parm.tcolor->label = _("Text color");
     parm.tcolor->answer = NULL;
 
     parm.units = G_define_standard_option(G_OPT_M_UNITS);

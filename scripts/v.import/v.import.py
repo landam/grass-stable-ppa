@@ -22,8 +22,12 @@
 #% keyword: import
 #% keyword: projection
 #%end
-#%option G_OPT_F_BIN_INPUT
+#%option
+#% key: input
+#% type: string
+#% required: yes
 #% description: Name of OGR datasource to be imported
+#% gisprompt: old,datasource,datasource
 #% guisection: Input
 #%end
 #%option
@@ -32,6 +36,7 @@
 #% multiple: yes
 #% description: OGR layer name. If not given, all available layers are imported
 #% guisection: Input
+#% gisprompt: old,datasource_layer,datasource_layer
 #%end
 #%option G_OPT_V_OUTPUT
 #% description: Name for output vector map (default: input)
@@ -86,7 +91,11 @@
 #% key: l
 #% description: List available OGR layers in data source and exit
 #%end
-
+#%flag
+#% key: o
+#% label: Override projection check (use current location's projection)
+#% description: Assume that the dataset has the same projection as the current location
+#%end
 
 import sys
 import os
@@ -111,6 +120,7 @@ def cleanup():
 
 def main():
     global TMPLOC, SRCGISRC, GISDBASE
+    overwrite = grass.overwrite()
 
     # list formats and exit
     if flags['f']:
@@ -129,9 +139,12 @@ def main():
     output = options['output']
     layers = options['layer']
 
-    vflags = None
+    vflags = ''
     if options['extent'] == 'region':
-        vflags = 'r'
+        vflags += 'r'
+    if flags['o']:
+        vflags += 'o'
+
     vopts = {}
     if options['encoding']:
         vopts['encoding'] = options['encoding']
@@ -171,7 +184,7 @@ def main():
     vopts['snap'] = options['snap']
     try:
         grass.run_command('v.in.ogr', input=OGRdatasource,
-                          location=TMPLOC, flags='i', quiet=True, **vopts)
+                          location=TMPLOC, flags='i', quiet=True, overwrite=overwrite, **vopts)
     except CalledModuleError:
         grass.fatal(_("Unable to create location from OGR datasource <%s>") % OGRdatasource)
 
@@ -188,11 +201,11 @@ def main():
     os.environ['GISRC'] = str(tgtgisrc)
 
     # try v.in.ogr directly
-    if grass.run_command('v.in.ogr', input=OGRdatasource, flags='j',
-                         errors='status', quiet=True) == 0:
+    if flags['o'] or grass.run_command('v.in.ogr', input=OGRdatasource, flags='j',
+                                       errors='status', quiet=True, overwrite=overwrite) == 0:
         try:
             grass.run_command('v.in.ogr', input=OGRdatasource,
-                              flags=vflags, **vopts)
+                              flags=vflags, overwrite=overwrite, **vopts)
             grass.message(_("Input <%s> successfully imported without reprojection") % OGRdatasource)
             return 0
         except CalledModuleError:
@@ -225,7 +238,7 @@ def main():
         os.environ['GISRC'] = str(SRCGISRC)
         try:
             grass.run_command('v.proj', input=vreg, output=vreg,
-                              location=tgtloc, mapset=tgtmapset, quiet=True)
+                              location=tgtloc, mapset=tgtmapset, quiet=True, overwrite=overwrite)
         except CalledModuleError:
             grass.fatal(_("Unable to reproject to source location"))
 
@@ -237,7 +250,7 @@ def main():
     grass.message(_("Importing <%s> ...") % OGRdatasource)
     try:
         grass.run_command('v.in.ogr', input=OGRdatasource,
-                          flags=vflags, **vopts)
+                          flags=vflags, overwrite=overwrite, **vopts)
     except CalledModuleError:
         grass.fatal(_("Unable to import OGR datasource <%s>") % OGRdatasource)
 
@@ -261,7 +274,7 @@ def main():
     grass.message(_("Reprojecting <%s>...") % output)
     try:
         grass.run_command('v.proj', location=TMPLOC,
-                          mapset='PERMANENT', input=output)
+                          mapset='PERMANENT', input=output, overwrite=overwrite)
     except CalledModuleError:
         grass.fatal(_("Unable to to reproject vector <%s>") % output)
 

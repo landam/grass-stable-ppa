@@ -82,6 +82,9 @@ from grass.pydispatch.signal import Signal
 from grass.script import core as grass
 from grass.script import task as gtask
 
+from grass.script.setup import set_gui_path
+set_gui_path()
+
 from core import globalvar
 from gui_core.widgets import StaticWrapText, ScrolledPanel, ColorTablesComboBox, \
                              BarscalesComboBox, NArrowsComboBox
@@ -93,6 +96,7 @@ from core.utils import _
 from core.settings    import UserSettings
 from gui_core.widgets import FloatValidator, GNotebook, FormNotebook, FormListbook
 from core.giface import Notification
+from gui_core.widgets import LayersList
 
 wxUpdateDialog, EVT_DIALOG_UPDATE = NewEvent()
 
@@ -560,7 +564,7 @@ class TaskFrame(wx.Frame):
             addLayer = False
             for p in self.task.params:
                 if p.get('age', 'old') == 'new' and \
-                   p.get('prompt', '') in ('raster', 'vector', '3d-raster'):
+                   p.get('prompt', '') in ('raster', 'vector', 'raster_3d'):
                     addLayer = True
             
             if addLayer:
@@ -1107,46 +1111,47 @@ class CmdPanel(wx.Panel):
                 and p.get('prompt','') !=  'color'):
 
                 title_txt.SetLabel(title + ':')
+                
                 if p.get('multiple', False) or \
                         p.get('type', 'string') == 'string' or \
                         len(p.get('key_desc', [])) > 1:
-                    txt3 = wx.TextCtrl(parent = which_panel, value = p.get('default',''))
+                    win = wx.TextCtrl(parent = which_panel, value = p.get('default',''))
                     
                     value = self._getValue(p)
                     if value:
                         # parameter previously set
-                        txt3.SetValue(str(value))
-                    
-                    txt3.Bind(wx.EVT_TEXT, self.OnSetValue)
+                        win.SetValue(str(value))
+                        
+                    win.Bind(wx.EVT_TEXT, self.OnSetValue)
                     style = wx.EXPAND | wx.BOTTOM | wx.LEFT | wx.RIGHT
                 elif p.get('type', '') == 'integer':
                     minValue = -1e9
                     maxValue = 1e9
                     value = self._getValue(p)
                     
-                    txt3 = wx.SpinCtrl(parent = which_panel, value = p.get('default', ''),
+                    win = wx.SpinCtrl(parent = which_panel, value = p.get('default', ''),
                                        size = globalvar.DIALOG_SPIN_SIZE,
                                        min = minValue, max = maxValue)
                     if value:
-                        txt3.SetValue(int(value)) # parameter previously set
-                        txt3.Bind(wx.EVT_SPINCTRL, self.OnSetValue)
+                        win.SetValue(int(value)) # parameter previously set
+                        win.Bind(wx.EVT_SPINCTRL, self.OnSetValue)
 
                     style = wx.BOTTOM | wx.LEFT | wx.RIGHT
                 else: # float
-                    txt3 = wx.TextCtrl(parent = which_panel, value = p.get('default',''),
+                    win = wx.TextCtrl(parent = which_panel, value = p.get('default',''),
                                        validator = FloatValidator())
                     style = wx.EXPAND | wx.BOTTOM | wx.LEFT | wx.RIGHT
                     
                     value = self._getValue(p)
                     if value:
-                        txt3.SetValue(str(value)) # parameter previously set
+                        win.SetValue(str(value)) # parameter previously set
                 
-                txt3.Bind(wx.EVT_TEXT, self.OnSetValue)
+                win.Bind(wx.EVT_TEXT, self.OnSetValue)
                 
-                which_sizer.Add(item = txt3, proportion = 0,
+                which_sizer.Add(item = win, proportion = 0,
                                 flag = style, border = 5)
-                p['wxId'] = [ txt3.GetId(), ]
-
+                p['wxId'] = [win.GetId()]
+            
             #
             # element selection tree combobox (maps, icons, regions, etc.)
             #
@@ -1154,6 +1159,8 @@ class CmdPanel(wx.Panel):
                 title_txt.SetLabel(title + ':')
                 # GIS element entry
                 if p.get('prompt','') not in ('color',
+                                              'cat',
+                                              'cats',
                                               'subgroup',
                                               'sigfile',
                                               'separator',
@@ -1170,7 +1177,9 @@ class CmdPanel(wx.Panel):
                                               'dir',
                                               'colortable',
                                               'barscale',
-                                              'northarrow'):
+                                              'northarrow',
+                                              'datasource',
+                                              'datasource_layer'):
                     multiple = p.get('multiple', False)
                     if p.get('age', '') == 'new':
                         mapsets = [grass.gisenv()['MAPSET'],]
@@ -1196,11 +1205,20 @@ class CmdPanel(wx.Panel):
                                 if maps_param and orig_elem == 'stds':
                                     element_dict = {'raster': 'strds', 'vector': 'stvds', 'raster_3d': 'str3ds'}
                                     elem = element_dict[type_param.get('default')]
-                        
-                        if self._giface and hasattr(self._giface, "_model"):
-                            extraItems = {_('Graphical Modeler') : self._giface.GetLayerList(p.get('prompt'))}
-                        else:
-                            extraItems = None
+
+                        extraItems = None
+                        if self._giface:
+                            if hasattr(self._giface, "_model"):
+                                extraItems = {_('Graphical Modeler') : self._giface.GetLayerList(p.get('prompt'))}
+                            else:
+                                layers = self._giface.GetLayerList()
+                                if len(layers) > 0:
+                                    mapList = []
+                                    extraItems = {_('Map Display') : mapList}
+                                    for layer in layers:
+                                        if layer.type != p.get('prompt'):
+                                            continue
+                                        mapList.append(str(layer))
                         selection = gselect.Select(parent = which_panel, id = wx.ID_ANY,
                                                    size = globalvar.DIALOG_GSELECT_SIZE,
                                                    type = elem, multiple = multiple, nmaps = len(p.get('key_desc', [])),
@@ -1623,6 +1641,30 @@ class CmdPanel(wx.Panel):
                                     proportion = 0,
                                     flag = wx.EXPAND | wx.BOTTOM | wx.LEFT | wx.RIGHT, 
                                     border = 5)
+
+                elif prompt in ('cat', 'cats'):
+                    # interactive selection of vector categories if layer manager is accessible
+                    if self._giface:
+                        win = gselect.VectorCategorySelect(parent = which_panel, giface = self._giface, task=self.task)
+                        
+                        p['wxId'] = [win.GetTextWin().GetId()]
+                        win.GetTextWin().Bind(wx.EVT_TEXT, self.OnSetValue)
+                        # bind closing event because destructor is not working properly
+                        if hasattr(self.parent, 'dialogClosing'):
+                            self.parent.dialogClosing.connect(win.OnClose)
+                    # normal text field
+                    else:
+                        win = wx.TextCtrl(parent = which_panel)
+                        value = self._getValue(p)
+                        win.SetValue(value)
+                        p['wxId'] = [win.GetId()]
+                        win.Bind(wx.EVT_TEXT, self.OnSetValue)
+                    
+                    which_sizer.Add(item = win,
+                                    proportion = 0,
+                                    flag = wx.EXPAND | wx.BOTTOM | wx.LEFT | wx.RIGHT,
+                                    border = 5)
+                    
                 elif prompt in ('colortable', 'barscale', 'northarrow'):
                     if prompt == 'colortable':
                         cb = ColorTablesComboBox(parent=which_panel, value=p.get('default',''),
@@ -1648,6 +1690,43 @@ class CmdPanel(wx.Panel):
                     if p.get('guidependency', ''):
                         cb.Bind(wx.EVT_COMBOBOX, self.OnUpdateSelection)
 
+                elif prompt == 'datasource':
+                    win = gselect.GdalSelect(parent = parent, panel = which_panel,
+                                             ogr = True)
+                    win.Bind(wx.EVT_TEXT, self.OnSetValue)
+                    win.Bind(wx.EVT_CHOICE, self.OnSetValue)
+                    p['wxId'] = [win.GetId(),
+                                 win.fileWidgets['browse'].GetChildren()[1].GetId(),
+                                 win.dirWidgets['browse'].GetChildren()[1].GetId(),
+                                 win.dbWidgets['choice'].GetId()]
+                    value = self._getValue(p)
+                    if value:
+                        win.fileWidgets['browse'].GetChildren()[1].SetValue(value) # parameter previously set
+                    which_sizer.Add(item = win, proportion = 0,
+                                    flag = wx.EXPAND)
+
+                elif prompt == 'datasource_layer':
+                    self.win1 = LayersList(parent = which_panel, columns = [_('Layer id'),
+                                                                            _('Layer name'),
+                                                                            _('Feature type'),
+                                                                            _('Projection match')])
+                    which_sizer.Add(item = self.win1, proportion = 0,
+                                    flag = wx.EXPAND | wx.ALL, border = 3)
+                    porf = self.task.get_param('input', element = 'name', raiseError = False)
+                    if porf and 'wxId' in porf:
+                        winDataSource = self.FindWindowById(porf['wxId'][0])
+                        winDataSource.reloadDataRequired.connect(lambda listData: self.win1.LoadData(listData, False))
+                        p['wxId'] = [self.win1.GetId()]
+                        def OnCheckItem(index, flag):
+                            layers = list()
+                            for layer, match, listId in self.win1.GetLayers():
+                                layers.append(layer)
+                            porf = self.task.get_param('layer', element = 'name', raiseError = False)
+                            porf['value'] = ','.join(layers)
+                            self.OnUpdateValues() # TODO: replace by signal
+
+                        self.win1.OnCheckItem = OnCheckItem
+                          
             if self.parent.GetName() == 'MainFrame' and (self._giface and hasattr(self._giface, "_model")):
                 parChk = wx.CheckBox(parent = which_panel, id = wx.ID_ANY,
                                      label = _("Parameterized in model"))
@@ -2168,6 +2247,7 @@ class CmdPanel(wx.Panel):
         for porf in self.task.params + self.task.flags:
             if 'wxId' not in porf:
                 continue
+            
             if myId in porf['wxId']:
                 found = True
                 break
@@ -2179,6 +2259,12 @@ class CmdPanel(wx.Panel):
             porf['value'] = event.dsn
         elif name == 'ModelParam':
             porf['parameterized'] = me.IsChecked()
+        elif name == 'GdalSelectDataSource':
+            win = self.FindWindowById(porf['wxId'][0])
+            porf['value'] = win.GetDsn()
+            pLayer = self.task.get_param('layer', element = 'name', raiseError = False)
+            if pLayer:
+                pLayer['value'] = ''
         else:
             if isinstance(me, wx.SpinCtrl):
                 porf['value'] = str(me.GetValue())
@@ -2393,20 +2479,6 @@ class GUI:
                                        { 'cmd' : cmd[0],
                                          'key' : key })
                         continue
-                    multiple = task['multiple']
-                    element = task['element']
-                    # to filter out g.copy, g.rename
-                    key_desc = task['key_desc']
-                    # do we need to find mapset for each of multiple maps?
-                    if element in ['cell', 'vector'] and not multiple and len(key_desc) != 2:
-                        # mapname -> mapname@mapset
-                        try:
-                            name, mapset = value.split('@')
-                        except ValueError:
-                            mapset = grass.find_file(value, element)['mapset']
-                            curr_mapset = grass.gisenv()['MAPSET']
-                            if mapset and mapset !=  curr_mapset:
-                                value = value + '@' + mapset
                     
                     self.grass_task.set_param(key, value)
                     cmd_validated.append(key + '=' + value)
@@ -2466,7 +2538,7 @@ class GUI:
                     element = p.get('element', '') 
                     if age == 'old' and \
                             element in ('cell', 'grid3', 'vector') and \
-                            prompt in ('raster', '3d-raster', 'vector'):
+                            prompt in ('raster', 'raster_3d', 'vector'):
                         return p.get('name', None)
         return None
 

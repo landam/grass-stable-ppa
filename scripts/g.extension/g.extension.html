@@ -55,6 +55,58 @@ The place where the extensions are installed can be customized by
 the option <b>prefix</b>. Ensuring that these extensions will be accessible
 in GRASS GIS is then responsibility of the user.
 
+
+<h3>Source code sources and repositories</h3>
+
+By default, <em>g.extension</em> installs extensions from the official
+GRASS GIS Addons repository. However, different source can be specified
+using the <b>url</b> option.
+
+<p>
+New extension can be also installed from a source code placed
+in a local directory on disk. This is advantageous when developing
+a new module.
+To keep the directory clean, the directory content is copied
+to a temporary directory and the compilation happens there.
+
+<p>
+New extension can be also installed from a ZIP file
+or an archive file from the TAR family (e.g., <tt>.tar.gz</tt> or <tt>.bz2</tt>).
+The file can be a file on disk (specified a path), which was probably downloaded
+at some point, or a file on web (specified by an URL).
+
+<p>
+For well known general hosting services, namely GitHub, GitLab and Bitbucket,
+<em>g.extension</em> supports download of a repository as a ZIP file
+when user needs to provide only a basic URL to the repository web page
+(with or without the <tt>https://</tt> part).
+For GitLab and Bitbucket, the latest source code in the default branch is downloaded,
+for GitHub, the latest source code in the master branch is downloaded.
+Of course, user can still specify full URL of a ZIP file
+and install a specific branch or release in this way (ZIP file mechanism will be applied).
+
+<p>
+Individual extensions can be also installed by providing a URL to
+source code on OSGeo Trac. This, however, works only for certain directories
+where download of a downloads a ZIP file was enabled by project administrators.
+
+<p>
+When none of the above sources is identified, <em>g.extension</em> assumes
+that the source is a Subversion repository and uses <em>svn</em> command line tool
+to obtain the source code. The expected structure of the repository
+should be the same as the one of the official repository.
+
+<p>
+For the official repository, <em>g.extension</em> supports listing available
+extensions (addons) and few other metadata-related operations which
+depend on a specific infrastructure.
+For other sources and repositories, this is not supported because it is assumed
+that other sources contain only one extension, typically a module or group of modules.
+
+<p>
+Non-official sources are supported on all operating systems except for MS Windows.
+
+
 <h3>Compilation and installation</h3>
 
 On MS Windows systems, where compilation tools not readily available,
@@ -121,6 +173,49 @@ Removal of a locally installed extension:
 g.extension extension=r.stream.distance operation=remove
 </pre></div>
 
+<h3>Installing from various repositories online</h3>
+
+Simple URL to GitHub, GitLab, Bitbucket repositories:
+
+<div class="code"><pre>
+g.extension r.example url=github.com/johnsmith/r.example
+</pre></div>
+
+Simple URL to OSGeo Trac (downloads a ZIP file, requires download to be enabled in Trac):
+
+<div class="code"><pre>
+g.extension r.example url=trac.osgeo.org/.../r.example
+</pre></div>
+
+In general, when a ZIP file or other archive is provided, the full URL can be used:
+
+<div class="code"><pre>
+g.extension r.example url=http://example.com/.../r.example?format=zip
+</pre></div>
+
+Note that because of MS Windows operating system architecture,
+only official repository is supported on this platform.
+
+
+<h3>Installing when writing a module</h3>
+
+Having source code of a GRASS module in a directory on disk
+one can install it using:
+
+<div class="code"><pre>
+g.extension r.example url=/local/directory/r.example/
+</pre></div>
+
+
+<h2>KNOWN ISSUES</h2>
+
+Toolboxes in the official repository cannot be downloaded.
+<p>
+On MS Windows, only the official repository is working
+because there is no way of compiling the modules
+<!-- what does it mean? -->
+(a Python replacement for Python scripts should be implemented).
+
 <h2>TROUBLESHOOTING</h2>
 
 Since extensions have to be compiled on Unix based systems (Linux, Mac OSX etc.)
@@ -148,7 +243,8 @@ with the version number) must be installed.
 <h2>AUTHORS</h2>
 
 Markus Neteler (original shell script)<br>
-Martin Landa, Czech Technical University in Prague, Czech Republic (Python rewrite)
+Martin Landa, Czech Technical University in Prague, Czech Republic (Python rewrite)<br>
+Vaclav Petras, <a href="http://gis.ncsu.edu/osgeorel/">NCSU OSGeoREL</a> (support for general sources, partial refactoring)
 
 <p>
-<i>Last changed: $Date: 2015-11-20 12:34:12 +0100 (Fri, 20 Nov 2015) $</i>
+<i>Last changed: $Date: 2015-11-20 03:33:21 -0800 (Fri, 20 Nov 2015) $</i>

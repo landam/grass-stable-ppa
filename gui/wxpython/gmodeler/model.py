@@ -18,7 +18,7 @@ Classes:
  - model::WritePythonFile
  - model::ModelParamDialog
 
-(C) 2010-2014 by the GRASS Development Team
+(C) 2010-2016 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -120,14 +120,17 @@ class Model(object):
             item = self.items.pop(oldIdx)
             items.append(item)
             self.items.insert(newIdx, item)
-            nextItem = self.items[newIdx+1]
-            items.append(nextItem)
-            x = item.GetX()
-            y = item.GetY()
-            item.SetX(nextItem.GetX())
-            item.SetY(nextItem.GetY())
-            nextItem.SetX(x)
-            nextItem.SetY(y)
+            # try:
+            #     nextItem = self.items[newIdx+1]
+            # except IndexError:
+            #     continue # newIdx is the last item in the list
+            # items.append(nextItem)
+            # x = item.GetX()
+            # y = item.GetY()
+            # item.SetX(nextItem.GetX())
+            # item.SetY(nextItem.GetY())
+            # nextItem.SetX(x)
+            # nextItem.SetY(y)
 
         dc = wx.ClientDC(self.canvas)
         for item in items:
@@ -189,16 +192,18 @@ class Model(object):
         """Reset model"""
         self.items = list()
 
-    def RemoveItem(self, item):
+    def RemoveItem(self, item, reference=None):
         """Remove item from model
         
+        :item: item to be removed
+        :reference: reference item valid for deletion
+
         :return: list of related items to remove/update
         """
         relList = list()
         upList = list()
-        
-        self.items.remove(item)
-        
+        doRemove = True
+
         if isinstance(item, ModelAction):
             for rel in item.GetRelations():
                 relList.append(rel)
@@ -210,17 +215,24 @@ class Model(object):
             
         elif isinstance(item, ModelData):
             for rel in item.GetRelations():
+                otherItem = rel.GetTo() if rel.GetFrom() == item else rel.GetFrom()
+                if reference and reference != otherItem:
+                    doRemove = False
+                    continue # avoid recursive deletion
                 relList.append(rel)
-                if rel.GetFrom() == self:
-                    relList.append(rel.GetTo())
-                else:
-                    relList.append(rel.GetFrom())
-        
+                if reference and reference != otherItem:
+                    relList.append(otherItem)
+            if not doRemove:
+                upList.append(item)
+
         elif isinstance(item, ModelLoop):
             for rel in item.GetRelations():
                 relList.append(rel)
             for action in self.GetItems():
                 action.UnSetBlock(item)
+
+        if doRemove and item in self.items:
+            self.items.remove(item)
         
         return relList, upList
     
@@ -552,7 +564,7 @@ class Model(object):
         :param onPrepare: on-prepare method
         :param statusbar: wx.StatusBar instance or None
         """
-        name = item.GetLabel()
+        name = '({0}) {1}'.format(item.GetId(), item.GetLabel())
         if name in params:
             paramsOrig = item.GetParams(dcopy = True)
             item.MergeParams(params[name])
@@ -676,7 +688,7 @@ class Model(object):
                 vlist = list()
                 if condText[0] == '`' and condText[-1] == '`':
                     # run command
-                    cmd, dcmd = utils.CmdToTuple(condText[1:-1].split(' '))
+                    cmd, dcmd = gtask.cmdlist_to_tuple(condText[1:-1].split(' '))
                     ret = RunCommand(cmd,
                                      read = True,
                                      **dcmd)
@@ -811,11 +823,13 @@ class Model(object):
         for action in self.GetItems(objType = ModelAction):
             if not action.IsEnabled():
                 continue
-            name   = action.GetLabel()
+            name   = '({0}) {1}'.format(action.GetId(), action.GetLabel())
             params = action.GetParams()
+            increment = False
             for f in params['flags']:
                 if f.get('parameterized', False):
                     if name not in result:
+                        increment = True
                         result[name] = { 'flags' : list(),
                                          'params': list(),
                                          'idx'   : idx }
@@ -823,11 +837,12 @@ class Model(object):
             for p in params['params']:
                 if p.get('parameterized', False):
                     if name not in result:
+                        increment = True
                         result[name] = { 'flags' : list(),
                                          'params': list(),
                                          'idx'   : idx }
                     result[name]['params'].append(p)
-            if name in result:
+            if increment:
                 idx += 1
         
         self.variablesParams = result # record parameters
@@ -1068,17 +1083,27 @@ class ModelAction(ModelObject, ogl.DividedShape):
 
     def SetComment(self, comment):
         """Set comment"""
+        self.comment = comment
+
         if self.regionComment is None:
             self.regionComment = ogl.ShapeRegion()
             self.regionComment.SetFormatMode(ogl.FORMAT_CENTRE_HORIZ)
             font = wx.SystemSettings_GetFont(wx.SYS_DEFAULT_GUI_FONT)
             font.SetStyle(wx.ITALIC)
             self.regionComment.SetFont(font)
+
+        ### clear doesn't work
+        ### self.regionComment.ClearText()
+        self.regionComment.SetText(comment)
+
+        self.ClearRegions()
+        self.AddRegion(self.regionLabel)
+        self.regionLabel.SetProportions(0.0, 1.0)
+
+        if self.comment:
             self.AddRegion(self.regionComment)
             self.regionLabel.SetProportions(0.0, 0.4)
-            
-        self.comment = comment
-        self.regionComment.SetText(comment)
+
         self.SetRegionSizes()
         self.ReformatRegions()
 
@@ -1367,12 +1392,15 @@ class ModelData(ModelObject, ogl.EllipseShape):
         if self.prompt == 'raster':
             color = UserSettings.Get(group = 'modeler', key = 'data',
                                      subkey = ('color', 'raster'))
-        elif self.prompt == 'raster3d':
+        elif self.prompt == 'raster_3d':
             color = UserSettings.Get(group = 'modeler', key = 'data',
                                      subkey = ('color', 'raster3d'))
         elif self.prompt == 'vector':
             color = UserSettings.Get(group = 'modeler', key = 'data',
                                      subkey = ('color', 'vector'))
+        elif self.prompt == 'dbtable':
+            color = UserSettings.Get(group = 'modeler', key = 'data',
+                                     subkey = ('color', 'dbtable'))
         else:
             color = UserSettings.Get(group = 'modeler', key = 'action',
                                      subkey = ('color', 'invalid'))
@@ -2515,15 +2543,15 @@ if __name__ == "__main__":
         """
         result = ''
         ss = re.split("\w*(%"+variable+")w*", string)
-
-        if not ss[0]:
+        
+        if not ss[0] and not ss[-1]:
             if data:
                 return "options['%s']" % variable
             else:
                 return variable
         
         for s in ss:
-            if s == '"':
+            if not s or s == '"':
                 continue
             
             if s == '%' + variable:
@@ -2532,7 +2560,9 @@ if __name__ == "__main__":
                 else:
                     result += '+%s+' % variable
             else:
-                result += '"' + s + '"'
+                result += '"' + s
+                if not s.endswith(']'): # options
+                    result += '"'
         
         return result.strip('+')
 

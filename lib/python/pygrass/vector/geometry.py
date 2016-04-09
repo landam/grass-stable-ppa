@@ -14,11 +14,13 @@ import numpy as np
 import grass.lib.gis as libgis
 import grass.lib.vector as libvect
 
-from grass.pygrass.errors import GrassError
+from grass.pygrass.errors import GrassError, mapinfo_must_be_set
 
 from grass.pygrass.vector.basic import Ilist, Bbox, Cats
 from grass.pygrass.vector import sql
 
+# For test purposes
+test_vector_name = "geometry_doctest_map"
 
 LineDist = namedtuple('LineDist', 'point dist spdist sldist')
 
@@ -133,12 +135,12 @@ def get_xyz(pnt):
 
 
 class Attrs(object):
-    def __init__(self, cat, table, writable=False):
+    def __init__(self, cat, table, writeable=False):
         self._cat = None
         self.cond = ''
         self.table = table
         self.cat = cat
-        self.writable = writable
+        self.writeable = writeable
 
     def _get_cat(self):
         return self._cat
@@ -152,51 +154,61 @@ class Attrs(object):
     cat = property(fget=_get_cat, fset=_set_cat,
                    doc="Set and obtain cat value")
 
-    def __getitem__(self, key):
+    def __getitem__(self, keys):
         """Return the value stored in the attribute table.
 
         >>> from grass.pygrass.vector import VectorTopo
-        >>> schools = VectorTopo('schools')
-        >>> schools.open('r')
-        >>> school = schools[1]
-        >>> attrs = Attrs(school.cat, schools.table)
-        >>> attrs['TAG']
-        u'568'
+        >>> test_vect = VectorTopo(test_vector_name)
+        >>> test_vect.open('r')
+        >>> v1 = test_vect[1]
+        >>> v1.attrs['name']
+        u'point'
+        >>> v1.attrs['name', 'value']
+        (u'point', 1.0)
+        >>> test_vect.close()
 
         """
-        #SELECT {cols} FROM {tname} WHERE {condition};
-        try:
-            cur = self.table.execute(sql.SELECT_WHERE.format(cols=key,
-                                                         tname=self.table.name,
-                                                         condition=self.cond))
-        except:
-            import ipdb; ipdb.set_trace()
+        sqlcode = sql.SELECT_WHERE.format(cols=(keys if np.isscalar(keys)
+                                                else ', '.join(keys)),
+                                          tname=self.table.name,
+                                          condition=self.cond)
+        cur = self.table.execute(sqlcode)
         results = cur.fetchone()
         if results is not None:
             return results[0] if len(results) == 1 else results
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, keys, values):
         """Set value of a given column of a table attribute.
 
         >>> from grass.pygrass.vector import VectorTopo
-        >>> from grass.pygrass.utils import copy, remove
-        >>> copy('schools', 'myschools', 'vect')
-        >>> schools = VectorTopo('myschools')
-        >>> schools.open('r')
-        >>> school = schools[1]
-        >>> attrs = Attrs(school.cat, schools.table, True)
-        >>> attrs['TAG'] = 'New Label'
-        >>> attrs['TAG']
-        u'New Label'
-        >>> attrs.table.conn.close()
-        >>> remove('myschools','vect')
+        >>> test_vect = VectorTopo(test_vector_name)
+        >>> test_vect.open('r')
+        >>> v1 = test_vect[1]
+        >>> v1.attrs['name']
+        u'point'
+
+        >>> v1.attrs['name'] = "new_point_1"
+        >>> v1.attrs['name']
+        u'new_point_1'
+
+        >>> v1.attrs['name', 'value'] = "new_point_2", 100.
+        >>> v1.attrs['name', 'value']
+        (u'new_point_2', 100.0)
+        >>> v1.attrs['name', 'value'] = "point", 1.
+        >>> v1.attrs.table.conn.commit()
+        >>> test_vect.close()
+
         """
-        if self.writable:
-            #UPDATE {tname} SET {new_col} = {old_col} WHERE {condition}
-            values = '%s=%r' % (key, value)
-            self.table.execute(sql.UPDATE_WHERE.format(tname=self.table.name,
-                                                       values=values,
-                                                       condition=self.cond))
+        if self.writeable:
+            if np.isscalar(keys):
+                keys, values = (keys, ), (values, )
+
+            vals = ','.join(['%s=%r' % (k, v) for k, v in zip(keys, values)])
+            # "UPDATE {tname} SET {values} WHERE {condition};"
+            sqlcode = sql.UPDATE_WHERE.format(tname=self.table.name,
+                                              values=vals,
+                                              condition=self.cond)
+            self.table.execute(sqlcode)
             #self.table.conn.commit()
         else:
             str_err = "You can only read the attributes if the map is in another mapset"
@@ -211,15 +223,14 @@ class Attrs(object):
 
     def values(self):
         """Return the values of the attribute table row.
+
            >>> from grass.pygrass.vector import VectorTopo
-           >>> schools = VectorTopo('schools')
-           >>> schools.open('r')
-           >>> school = schools[1]
-           >>> attrs = Attrs(school.cat, schools.table)
-           >>> attrs.values()       # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
-           (1,
-           ...
-           None)
+           >>> test_vect = VectorTopo(test_vector_name)
+           >>> test_vect.open('r')
+           >>> v1 = test_vect[1]
+           >>> v1.attrs.values()
+           (1, u'point', 1.0)
+            >>> test_vect.close()
 
         """
         #SELECT {cols} FROM {tname} WHERE {condition}
@@ -230,15 +241,15 @@ class Attrs(object):
 
     def keys(self):
         """Return the column name of the attribute table.
+
            >>> from grass.pygrass.vector import VectorTopo
-           >>> schools = VectorTopo('schools')
-           >>> schools.open('r')
-           >>> school = schools[1]
-           >>> attrs = Attrs(school.cat, schools.table)
-           >>> attrs.keys()         # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
-           [u'cat',
-           ...
-           u'NOTES']
+           >>> test_vect = VectorTopo(test_vector_name)
+           >>> test_vect.open('r')
+           >>> v1 = test_vect[1]
+           >>> v1.attrs.keys()
+           [u'cat', u'name', u'value']
+            >>> test_vect.close()
+
         """
         return self.table.columns.names()
 
@@ -249,54 +260,102 @@ class Attrs(object):
 
 class Geo(object):
     """
-    >>> geo0 = Geo()
-    >>> points = ctypes.pointer(libvect.line_pnts())
-    >>> cats = ctypes.pointer(libvect.line_cats())
-    >>> geo1 = Geo(c_points=points, c_cats=cats)
+    Base object for different feature types
     """
     gtype = None
 
     def __init__(self, v_id=0, c_mapinfo=None, c_points=None, c_cats=None,
-                 table=None, writable=False, is2D=True):
+                 table=None, writeable=False, is2D=True, free_points=False,
+                 free_cats=False):
+        """Constructor of a geometry object
+
+            :param v_id:      The vector feature id
+            :param c_mapinfo: A pointer to the vector mapinfo structure
+            :param c_points:  A pointer to a libvect.line_pnts structure, this
+                              is optional, if not set an internal structure will
+                              be allocated and free'd at object destruction
+            :param c_cats:    A pointer to a libvect.line_cats structure, this
+                              is optional, if not set an internal structure will
+                              be allocated and free'd at object destruction
+            :param table:     The attribute table to select attributes for
+                              this feature
+            :param writeable: Not sure what this is for?
+            :param is2D:      If True this feature has two dimensions, False if
+                              this feature has three dimensions
+            :param free_points: Set this True if the provided c_points structure
+                                should be free'd at object destruction, be aware
+                                that no other object should free them, otherwise
+                                you can expect a double free corruption segfault
+            :param free_cats:   Set this True if the provided c_cats structure
+                                should be free'd at object destruction, be aware
+                                that no other object should free them, otherwise
+                                you can expect a double free corruption segfault
+
+        """
         self.id = v_id  # vector id
         self.c_mapinfo = c_mapinfo
         self.is2D = (is2D if is2D is not None else
                      bool(libvect.Vect_is_3d(self.c_mapinfo) != 1))
 
+        # Set True if cats and points are allocated by this object
+        # to free the cats and points structures on destruction
+        self._free_points = False
+        self._free_cats = False
+
         read = False
         # set c_points
         if c_points is None:
             self.c_points = ctypes.pointer(libvect.line_pnts())
+            self._free_points = True
             read = True
         else:
             self.c_points = c_points
+            self._free_points = free_points
 
         # set c_cats
         if c_cats is None:
             self.c_cats = ctypes.pointer(libvect.line_cats())
+            self._free_cats = free_cats
             read = True
         else:
             self.c_cats = c_cats
-
-        # set the attributes
-        self.attrs = None
-        if table is not None:
-            self.attrs = Attrs(self.cat, table, writable)
+            self._free_cats = True
 
         if self.id and self.c_mapinfo is not None and read:
             self.read()
+
+        # set the attributes as last thing to do
+        self.attrs = None
+        if table is not None and self.cat is not None:
+            self.attrs = Attrs(self.cat, table, writeable)
+
+    def __del__(self):
+        """Take care of the allocated line_pnts and line_cats allocation
+        """
+        if self._free_points == True and self.c_points:
+            if self.c_points.contents.alloc_points > 0:
+                #print("G_free(points) [%i]"%(self.c_points.contents.alloc_points))
+                libgis.G_free(self.c_points.contents.x)
+                libgis.G_free(self.c_points.contents.y)
+                if self.c_points.contents.z:
+                    libgis.G_free(self.c_points.contents.z)
+        if self._free_cats == True and self.c_cats:
+            if self.c_cats.contents.alloc_cats > 0:
+                #print("G_free(cats) [%i]"%(self.c_cats.contents.alloc_cats))
+                libgis.G_free(self.c_cats.contents.cat)
 
     @property
     def cat(self):
         if self.c_cats.contents.cat:
             return self.c_cats.contents.cat.contents.value
 
-    def is_with_topology(self):
+    def has_topology(self):
         if self.c_mapinfo is not None:
             return self.c_mapinfo.contents.level == 2
         else:
             return False
 
+    @mapinfo_must_be_set
     def read(self):
         """Read and set the coordinates of the centroid from the vector map,
         using the centroid_id and calling the Vect_read_line C function"""
@@ -304,6 +363,29 @@ class Geo(object):
                                                        self.c_points,
                                                        self.c_cats)
 
+    def to_wkt(self):
+        """Return a "well know text" (WKT) geometry string, this method uses
+           the GEOS implementation in the vector library. ::
+
+            >>> pnt = Point(10, 100)
+            >>> pnt.to_wkt()
+            'POINT (10.0000000000000000 100.0000000000000000)'
+        """
+        return libvect.Vect_line_to_wkt(self.c_points, self.gtype, not self.is2D)
+
+    def to_wkb(self):
+        """Return a "well know binary" (WKB) geometry byte array, this method uses
+           the GEOS implementation in the vector library. ::
+
+            >>> pnt = Point(10, 100)
+            >>> wkb = pnt.to_wkb()
+            >>> len(wkb)
+            21
+        """
+        size = ctypes.c_size_t()
+        barray = libvect.Vect_line_to_wkb(self.c_points, self.gtype,
+                                          not self.is2D, ctypes.byref(size))
+        return(ctypes.string_at(barray, size.value))
 
 class Point(Geo):
     """Instantiate a Point object that could be 2 or 3D, default
@@ -327,7 +409,20 @@ class Point(Geo):
         >>> pnt
         Point(0.000000, 0.000000, 0.000000)
         >>> print(pnt)
-        POINT(0.000000 0.000000 0.000000)
+        POINT Z (0.0000000000000000 0.0000000000000000 0.0000000000000000)
+
+
+        >>> c_points = ctypes.pointer(libvect.line_pnts())
+        >>> c_cats = ctypes.pointer(libvect.line_cats())
+        >>> p = Point(c_points = c_points, c_cats=c_cats)
+        >>> del p
+
+
+        >>> c_points = ctypes.pointer(libvect.line_pnts())
+        >>> c_cats = ctypes.pointer(libvect.line_cats())
+        >>> p = Point(c_points=c_points, c_cats=c_cats, free_points=True,
+        ...           free_cats=True)
+        >>> del p
 
     ..
     """
@@ -378,7 +473,7 @@ class Point(Geo):
                  doc="Set and obtain z coordinate")
 
     def __str__(self):
-        return self.get_wkt()
+        return self.to_wkt()
 
     def __repr__(self):
         return "Point(%s)" % ', '.join(['%f' % coor for coor in self.coords()])
@@ -427,11 +522,11 @@ class Point(Geo):
         else:
             return self.x, self.y, self.z
 
-    def get_wkt(self):
-        """Return a "well know text" (WKT) geometry string. ::
+    def to_wkt_p(self):
+        """Return a "well know text" (WKT) geometry string Python implementation. ::
 
             >>> pnt = Point(10, 100)
-            >>> pnt.get_wkt()
+            >>> pnt.to_wkt_p()
             'POINT(10.000000 100.000000)'
 
         .. warning::
@@ -441,16 +536,6 @@ class Point(Geo):
         """
         return "POINT(%s)" % ' '.join(['%f' % coord
                                       for coord in self.coords()])
-
-    def get_wkb(self):
-        """Return a "well know binary" (WKB) geometry buffer
-
-        .. warning::
-
-            Not implemented yet.
-
-        """
-        pass
 
     def distance(self, pnt):
         """Calculate distance of 2 points, using the Vect_points_distance
@@ -499,13 +584,11 @@ class Point(Geo):
         :returns: the buffer as Area object
 
         >>> pnt = Point(0, 0)
-        >>> area = pnt.buffer(10)
-        >>> area.boundary                              #doctest: +ELLIPSIS
+        >>> boundary, centroid = pnt.buffer(10)
+        >>> boundary                              #doctest: +ELLIPSIS
         Line([Point(10.000000, 0.000000),...Point(10.000000, 0.000000)])
-        >>> area.centroid
+        >>> centroid
         Point(0.000000, 0.000000)
-        >>> area.isles
-        []
 
         """
         if dist is not None:
@@ -519,7 +602,7 @@ class Point(Geo):
                                    dist_x, dist_y,
                                    angle, int(round_), tol,
                                    p_points)
-        return Area(boundary=bound, centroid=self)
+        return (bound, self)
 
 
 class Line(Geo):
@@ -603,23 +686,23 @@ class Line(Geo):
         return self.c_points.contents.n_points
 
     def __str__(self):
-        return self.get_wkt()
+        return self.to_wkt()
 
     def __repr__(self):
         return "Line([%s])" % ', '.join([repr(pnt) for pnt in self.__iter__()])
 
-    def get_pnt(self, distance, angle=0, slope=0):
+    def point_on_line(self, distance, angle=0, slope=0):
         """Return a Point object on line in the specified distance, using the
         `Vect_point_on_line` C function.
         Raise a ValueError If the distance exceed the Line length. ::
 
             >>> line = Line([(0, 0), (1, 1)])
-            >>> line.get_pnt(5)      #doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+            >>> line.point_on_line(5)      #doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
             Traceback (most recent call last):
                 ...
             ValueError: The distance exceed the length of the line,
             that is: 1.414214
-            >>> line.get_pnt(1)
+            >>> line.point_on_line(1)
             Point(0.707107, 0.707107)
 
         ..
@@ -638,6 +721,13 @@ class Line(Geo):
             raise ValueError("Vect_point_on_line give an error.")
         pnt.is2D = self.is2D
         return pnt
+
+    @mapinfo_must_be_set
+    def alive(self):
+        """Return True if this line is alive or False if this line is
+           dead or its index is out of range.
+        """
+        return(bool(libvect.Vect_line_alive(self.c_mapinfo, self.id)))
 
     def append(self, pnt):
         """Appends one point to the end of a line, using the
@@ -802,7 +892,8 @@ class Line(Geo):
         point.is2D = self.is2D
         return LineDist(point, dist.value, sp_dist.value, lp_dist.value)
 
-    def get_first_cat(self):
+    @mapinfo_must_be_set
+    def first_cat(self):
         """Fetches FIRST category number for given vector line and field, using
         the ``Vect_get_line_cat`` C function.
 
@@ -811,7 +902,7 @@ class Line(Geo):
             Not implemented yet.
         """
         # TODO: add this method.
-        libvect.Vect_get_line_cat(self.map, self.id, self.field)
+        # libvect.Vect_get_line_cat(self.c_mapinfo, self.id, self.field)
         pass
 
     def pop(self, indx):
@@ -822,9 +913,9 @@ class Line(Geo):
 
             >>> line = Line([(0, 0), (1, 1), (2, 2)])
             >>> midle_pnt = line.pop(1)
-            >>> midle_pnt
+            >>> midle_pnt                #doctest: +NORMALIZE_WHITESPACE
             Point(1.000000, 1.000000)
-            >>> line
+            >>> line                     #doctest: +NORMALIZE_WHITESPACE
             Line([Point(0.000000, 0.000000), Point(2.000000, 2.000000)])
 
         """
@@ -843,7 +934,7 @@ class Line(Geo):
 
             >>> line = Line([(0, 0), (1, 1), (2, 2)])
             >>> line.delete(-1)
-            >>> line
+            >>> line                     #doctest: +NORMALIZE_WHITESPACE
             Line([Point(0.000000, 0.000000), Point(1.000000, 1.000000)])
 
         """
@@ -897,7 +988,7 @@ class Line(Geo):
 
             >>> line = Line([(0, 0), (1, 1), (2, 2)])
             >>> line.remove((2, 2))
-            >>> line[-1]
+            >>> line[-1]                     #doctest: +NORMALIZE_WHITESPACE
             Point(1.000000, 1.000000)
 
         ..
@@ -951,22 +1042,22 @@ class Line(Geo):
         libvect.Vect_line_segment(self.c_points, start, end, line.c_points)
         return line
 
-    def tolist(self):
+    def to_list(self):
         """Return a list of tuple. ::
 
             >>> line = Line([(0, 0), (1, 1), (2, 0), (1, -1)])
-            >>> line.tolist()
+            >>> line.to_list()
             [(0.0, 0.0), (1.0, 1.0), (2.0, 0.0), (1.0, -1.0)]
 
         ..
         """
         return [pnt.coords() for pnt in self.__iter__()]
 
-    def toarray(self):
+    def to_array(self):
         """Return an array of coordinates. ::
 
             >>> line = Line([(0, 0), (1, 1), (2, 0), (1, -1)])
-            >>> line.toarray()                 #doctest: +NORMALIZE_WHITESPACE
+            >>> line.to_array()                 #doctest: +NORMALIZE_WHITESPACE
             array([[ 0.,  0.],
                    [ 1.,  1.],
                    [ 2.,  0.],
@@ -974,13 +1065,13 @@ class Line(Geo):
 
         ..
         """
-        return np.array(self.tolist())
+        return np.array(self.to_list())
 
-    def get_wkt(self):
+    def to_wkt_p(self):
         """Return a Well Known Text string of the line. ::
 
             >>> line = Line([(0, 0), (1, 1), (1, 2)])
-            >>> line.get_wkt()                 #doctest: +ELLIPSIS
+            >>> line.to_wkt_p()                 #doctest: +ELLIPSIS
             'LINESTRING(0.000000 0.000000, ..., 1.000000 2.000000)'
 
         ..
@@ -1012,15 +1103,6 @@ class Line(Geo):
         else:
             return None
 
-    def get_wkb(self):
-        """Return a WKB buffer.
-
-        .. warning::
-
-            Not implemented yet.
-        """
-        pass
-
     def buffer(self, dist=None, dist_x=None, dist_y=None,
                angle=0, round_=True, caps=True, tol=0.1):
         """Return the buffer area around the line, using the
@@ -1042,12 +1124,12 @@ class Line(Geo):
         :returns: the buffer as Area object
 
         >>> line = Line([(0, 0), (0, 2)])
-        >>> area = line.buffer(10)
-        >>> area.boundary                              #doctest: +ELLIPSIS
+        >>> boundary, centroid, isles = line.buffer(10)
+        >>> boundary                              #doctest: +ELLIPSIS
         Line([Point(-10.000000, 0.000000),...Point(-10.000000, 0.000000)])
-        >>> area.centroid
+        >>> centroid                     #doctest: +NORMALIZE_WHITESPACE
         Point(0.000000, 0.000000)
-        >>> area.isles
+        >>> isles
         []
 
         ..
@@ -1065,10 +1147,10 @@ class Line(Geo):
                                   dist_x, dist_y, angle,
                                   int(round_), int(caps), tol,
                                   p_bound, pp_isle, n_isles)
-        return Area(boundary=Line(c_points=p_bound.contents),
-                    centroid=self[0],
-                    isles=[Line(c_points=pp_isle[i].contents)
-                           for i in range(n_isles.contents.value)])
+        boundary = Line(c_points=p_bound.contents)
+        isles = [Line(c_points=pp_isle[i].contents)
+                 for i in range(n_isles.contents.value) if pp_isle[i]]
+        return(boundary, self[0], isles)
 
     def reset(self):
         """Reset line, using `Vect_reset_line` C function. ::
@@ -1086,9 +1168,16 @@ class Line(Geo):
         """
         libvect.Vect_reset_line(self.c_points)
 
+    @mapinfo_must_be_set
     def nodes(self):
-        """Return the nodes in the line"""
-        if self.is_with_topology():
+        """Return the start and end nodes of the line
+
+           This method requires topology build.
+
+           return: A tuple of Node objects that represent the
+                   start and end point of this line.
+        """
+        if self.has_topology():
             n1 = ctypes.c_int()
             n2 = ctypes.c_int()
             libvect.Vect_get_line_nodes(self.c_mapinfo, self.id,
@@ -1099,9 +1188,30 @@ class Line(Geo):
 
 
 class Node(object):
-    def __init__(self, v_id, c_mapinfo):
+    """Node class for topological analysis of line neighbors.
+
+       Objects of this class will be returned by the node() function
+       of a Line object.
+
+       All methods in this class require a proper setup of the Node
+       objects. Hence, the correct id and a valid pointer to a mapinfo
+       object must be provided in the constructions. Otherwise a segfault
+       may happen.
+
+    """
+    def __init__(self, v_id, c_mapinfo, **kwords):
+        """Construct a Node object
+
+           param v_id: The unique node id
+           param c_mapinfo: A valid pointer to the mapinfo object
+           param **kwords: Ignored
+        """
         self.id = v_id  # vector id
         self.c_mapinfo = c_mapinfo
+        self._setup()
+
+    @mapinfo_must_be_set
+    def _setup(self):
         self.is2D = bool(libvect.Vect_is_3d(self.c_mapinfo) != 1)
         self.nlines = libvect.Vect_get_node_n_lines(self.c_mapinfo, self.id)
 
@@ -1114,6 +1224,14 @@ class Node(object):
     def __repr__(self):
         return "Node(%d)" % self.id
 
+    @mapinfo_must_be_set
+    def alive(self):
+        """Return True if this node is alive or False if this node is
+           dead or its index is out of range.
+        """
+        return(bool(libvect.Vect_node_alive(self.c_mapinfo, self.id)))
+
+    @mapinfo_must_be_set
     def coords(self):
         """Return a tuple with the node coordinates."""
         x = ctypes.c_double()
@@ -1122,6 +1240,19 @@ class Node(object):
         libvect.Vect_get_node_coor(self.c_mapinfo, self.id, ctypes.byref(x),
                                    ctypes.byref(y), ctypes.byref(z))
         return (x.value, y.value) if self.is2D else (x.value, y.value, z.value)
+
+    def to_wkt(self):
+        """Return a "well know text" (WKT) geometry string. ::
+        """
+        return "POINT(%s)" % ' '.join(['%f' % coord
+                                      for coord in self.coords()])
+
+    def to_wkb(self):
+        """Return a "well know binary" (WKB) geometry array. ::
+
+           TODO: Must be implemented
+        """
+        raise Exception("Not implemented")
 
     def ilines(self, only_in=False, only_out=False):
         """Return a generator with all lines id connected to a node.
@@ -1138,6 +1269,7 @@ class Node(object):
             if (not only_in and lid > 0) or (not only_out and lid < 0):
                 yield lid
 
+    @mapinfo_must_be_set
     def lines(self, only_in=False, only_out=False):
         """Return a generator with all lines connected to a node.
 
@@ -1149,6 +1281,7 @@ class Node(object):
         for iline in self.ilines(only_in, only_out):
             yield Line(v_id=abs(iline), c_mapinfo=self.c_mapinfo)
 
+    @mapinfo_must_be_set
     def angles(self):
         """Return a generator with all lines angles in a node."""
         for iline in range(self.nlines):
@@ -1162,27 +1295,29 @@ class Boundary(Line):
     # geometry type
     gtype = libvect.GV_BOUNDARY
 
-    def __init__(self, lines=None, left=None, right=None,
-                 **kargs):
+    def __init__(self, **kargs):
+        super(Boundary, self).__init__(**kargs)
+
         v_id = kargs.get('v_id', 0)
         self.dir = libvect.GV_FORWARD if v_id > 0 else libvect.GV_BACKWARD
-        super(Boundary, self).__init__(**kargs)
         self.c_left = ctypes.pointer(ctypes.c_int())
         self.c_right = ctypes.pointer(ctypes.c_int())
-        #self.get_left_right()
 
     @property
-    def left_id(self):
+    def left_area_id(self):
+        """Left side area id, only available after read_area_ids() was called"""
         return self.c_left.contents.value
 
     @property
-    def right_id(self):
+    def right_area_id(self):
+        """Right side area id, only available after read_area_ids() was called"""
         return self.c_right.contents.value
 
     def __repr__(self):
-        return "Boundary(v_id=%r)" % self.id
+        return "Boundary([%s])" % ', '.join([repr(pnt) for pnt in self.__iter__()])
 
-    def _get_centroid(self, side, idonly=False):
+    @mapinfo_must_be_set
+    def _centroid(self, side, idonly=False):
         if side > 0:
             v_id = libvect.Vect_get_area_centroid(self.c_mapinfo, side)
             v_id = v_id if v_id else None
@@ -1192,24 +1327,25 @@ class Boundary(Line):
                 cntr = Centroid(v_id=v_id, c_mapinfo=self.c_mapinfo)
                 return cntr
 
-    def get_left_centroid(self, idonly=False):
-        """Return left value
+    def left_centroid(self, idonly=False):
+        """Return left centroid
 
         :param idonly: True to return only the cat of feature
         :type idonly: bool
         """
-        return self._get_centroid(self.left_id, idonly)
+        return self._centroid(self.c_left.contents.value, idonly)
 
-    def get_right_centroid(self, idonly=False):
-        """Return right value
+    def right_centroid(self, idonly=False):
+        """Return right centroid
 
         :param idonly: True to return only the cat of feature
         :type idonly: bool
         """
-        return self._get_centroid(self.left_id, idonly)
+        return self._centroid(self.c_right.contents.value, idonly)
 
-    def get_left_right(self):
-        """Return left and right value"""
+    @mapinfo_must_be_set
+    def read_area_ids(self):
+        """Read and return left and right area ids of the boundary"""
 
         libvect.Vect_get_line_areas(self.c_mapinfo, self.id,
                                     self.c_left, self.c_right)
@@ -1239,11 +1375,12 @@ class Centroid(Point):
         >>> centroid
         Centoid(0.000000, 10.000000)
         >>> from grass.pygrass.vector import VectorTopo
-        >>> geo = VectorTopo('geology')
-        >>> geo.open(mode='r')
-        >>> centroid = Centroid(v_id=1, c_mapinfo=geo.c_mapinfo)
+        >>> test_vect = VectorTopo(test_vector_name)
+        >>> test_vect.open(mode='r')
+        >>> centroid = Centroid(v_id=18, c_mapinfo=test_vect.c_mapinfo)
         >>> centroid
-        Centoid(893202.874416, 297339.312795)
+        Centoid(3.500000, 3.500000)
+        >>> test_vect.close()
 
     ..
     """
@@ -1254,9 +1391,9 @@ class Centroid(Point):
         super(Centroid, self).__init__(**kargs)
         self.area_id = area_id
         if self.id and self.c_mapinfo and self.area_id is None:
-            self.area_id = self.get_area_id()
+            self.area_id = self._area_id()
         elif self.c_mapinfo and self.area_id and self.id is None:
-            self.id = self.get_centroid_id()
+            self.id = self._centroid_id()
         if self.area_id is not None:
             self.read()
 
@@ -1265,7 +1402,8 @@ class Centroid(Point):
     def __repr__(self):
         return "Centoid(%s)" % ', '.join(['%f' % co for co in self.coords()])
 
-    def get_centroid_id(self):
+    @mapinfo_must_be_set
+    def _centroid_id(self):
         """Return the centroid_id, using the c_mapinfo and an area_id
         attributes of the class, and calling the Vect_get_area_centroid
         C function, if no centroid_id were found return None"""
@@ -1273,9 +1411,10 @@ class Centroid(Point):
                                                      self.area_id)
         return centroid_id if centroid_id != 0 else None
 
-    def get_area_id(self):
+    @mapinfo_must_be_set
+    def _area_id(self):
         """Return the area_id, using the c_mapinfo and an centroid_id
-        attributes of the class, and calling the Vect_get_centroid_area
+        attributes of the class, and calling the Vect_centroid_area
         C function, if no area_id were found return None"""
         area_id = libvect.Vect_get_centroid_area(self.c_mapinfo,
                                                  self.id)
@@ -1292,6 +1431,7 @@ class Isle(Geo):
     def __repr__(self):
         return "Isle(%d)" % (self.id)
 
+    @mapinfo_must_be_set
     def boundaries(self):
         """Return a list of boundaries"""
         ilist = Ilist()
@@ -1299,31 +1439,55 @@ class Isle(Geo):
                                          ilist.c_ilist)
         return ilist
 
+    @mapinfo_must_be_set
     def bbox(self, bbox=None):
         """Return bounding box of Isle"""
         bbox = bbox if bbox else Bbox()
         libvect.Vect_get_isle_box(self.c_mapinfo, self.id, bbox.c_bbox)
         return bbox
 
+    @mapinfo_must_be_set
     def points(self):
         """Return a Line object with the outer ring points"""
         line = Line()
         libvect.Vect_get_isle_points(self.c_mapinfo, self.id, line.c_points)
         return line
 
+    def to_wkt(self):
+        """Return a Well Known Text string of the isle. ::
+
+            For now the outer ring is returned
+
+            TODO: Implement inner rings detected from isles
+        """
+        line = self.points()
+
+        return "Polygon((%s))" % ', '.join([
+               ' '.join(['%f' % coord for coord in pnt])
+               for pnt in line.to_list()])
+
+    def to_wkb(self):
+        """Return a "well know text" (WKB) geometry array. ::
+        """
+        raise Exception("Not implemented")
+
+    @mapinfo_must_be_set
     def points_geos(self):
         """Return a Line object with the outer ring points
         """
         return libvect.Vect_get_isle_points_geos(self.c_mapinfo, self.id)
 
+    @mapinfo_must_be_set
     def area_id(self):
         """Returns area id for isle."""
         return libvect.Vect_get_isle_area(self.c_mapinfo, self.id)
 
+    @mapinfo_must_be_set
     def alive(self):
         """Check if isle is alive or dead (topology required)"""
         return bool(libvect.Vect_isle_alive(self.c_mapinfo, self.id))
 
+    @mapinfo_must_be_set
     def contain_pnt(self, pnt):
         """Check if point is in area.
 
@@ -1356,9 +1520,10 @@ class Isles(object):
         self._isles_id = None
         self._isles = None
         if area_id:
-            self._isles_id = self.get_isles_id()
-            self._isles = self.get_isles()
+            self._isles_id = self.isles_ids()
+            self._isles = self.isles()
 
+    @mapinfo_must_be_set
     def __len__(self):
         return libvect.Vect_get_area_num_isles(self.c_mapinfo, self.area_id)
 
@@ -1367,28 +1532,20 @@ class Isles(object):
 
     def __getitem__(self, key):
         if self._isles is None:
-            self.get_isles()
+            self.isles()
         return self._isles[key]
 
-    def get_isles_id(self):
+    @mapinfo_must_be_set
+    def isles_ids(self):
         """Return the id of isles"""
         return [libvect.Vect_get_area_isle(self.c_mapinfo, self.area_id, i)
                 for i in range(self.__len__())]
 
-    def get_isles(self):
+    @mapinfo_must_be_set
+    def isles(self):
         """Return isles"""
         return [Isle(v_id=isle_id, c_mapinfo=self.c_mapinfo)
                 for isle_id in self._isles_id]
-
-    def select_by_bbox(self, bbox):
-        """Vect_select_isles_by_box
-
-        .. warning::
-
-            Not implemented yet.
-
-        """
-        pass
 
 
 class Area(Geo):
@@ -1397,7 +1554,7 @@ class Area(Geo):
     Vect_find_area,
     Vect_get_area_box,
     Vect_get_area_points_geos,
-    Vect_get_centroid_area,
+    Vect_centroid_area,
 
     Vect_get_isle_area,
     Vect_get_line_areas,
@@ -1415,34 +1572,23 @@ class Area(Geo):
     # geometry type
     gtype = libvect.GV_AREA
 
-    def __init__(self, boundary=None, centroid=None, isles=None, **kargs):
+    def __init__(self, **kargs):
         super(Area, self).__init__(**kargs)
-        self.boundary = None
-        self.centroid = None
-        self.isles = None
-        if boundary and centroid:
-            self.boundary = boundary
-            self.centroid = centroid
-            self.isles = isles if isles else []
 
         # set the attributes
-        if self.attrs and self.cat:
-            self.attrs.cat = self.cat
+        #if self.attrs and self.cat:
+        #    self.attrs.cat = self.cat
 
     def __repr__(self):
         return "Area(%d)" % self.id if self.id else "Area( )"
 
-    def init_from_id(self, area_id=None):
-        """Return an Area object"""
-        if area_id is None and self.id is None:
-            raise ValueError("You need to give or set the area_id")
-        self.id = area_id if area_id is not None else self.id
-        # get boundary
-        self.get_points()
-        # get isles
-        self.get_isles()
+    @property
+    def cat(self):
+        centroid = self.centroid()
+        return centroid.cat if centroid else None
 
-    def get_points(self, line=None):
+    @mapinfo_must_be_set
+    def points(self, line=None):
         """Return a Line object with the outer ring
 
         :param line: a Line object to fill with info from points of area
@@ -1452,7 +1598,8 @@ class Area(Geo):
         libvect.Vect_get_area_points(self.c_mapinfo, self.id, line.c_points)
         return line
 
-    def get_centroid(self, centroid=None):
+    @mapinfo_must_be_set
+    def centroid(self):
         """Return the centroid
 
         :param centroid: a Centroid object to fill with info from centroid of area
@@ -1460,34 +1607,35 @@ class Area(Geo):
         """
         centroid_id = libvect.Vect_get_area_centroid(self.c_mapinfo, self.id)
         if centroid_id:
-            if centroid:
-                centroid.id = centroid_id
-                centroid.read()
-                return centroid
             return Centroid(v_id=centroid_id, c_mapinfo=self.c_mapinfo,
                             area_id=self.id)
 
+    @mapinfo_must_be_set
     def num_isles(self):
         return libvect.Vect_get_area_num_isles(self.c_mapinfo, self.id)
 
-    def get_isles(self, isles=None):
-        """Instantiate the boundary attribute reading area_id"""
+    @mapinfo_must_be_set
+    def isles(self, isles=None):
+        """Return a list of islands located in this area"""
         if isles is not None:
             isles.area_id = self.id
             return isles
         return Isles(self.c_mapinfo, self.id)
 
+    @mapinfo_must_be_set
     def area(self):
         """Returns area of area without areas of isles.
         double Vect_get_area_area (const struct Map_info \*Map, int area)
         """
         return libvect.Vect_get_area_area(self.c_mapinfo, self.id)
 
+    @mapinfo_must_be_set
     def alive(self):
         """Check if area is alive or dead (topology required)
         """
         return bool(libvect.Vect_area_alive(self.c_mapinfo, self.id))
 
+    @mapinfo_must_be_set
     def bbox(self, bbox=None):
         """Return the Bbox of area
 
@@ -1498,6 +1646,7 @@ class Area(Geo):
         libvect.Vect_get_area_box(self.c_mapinfo, self.id, bbox.c_bbox)
         return bbox
 
+    @mapinfo_must_be_set
     def buffer(self, dist=None, dist_x=None, dist_y=None,
                angle=0, round_=True, caps=True, tol=0.1):
         """Return the buffer area around the area, using the
@@ -1516,9 +1665,10 @@ class Area(Geo):
         :param tol: fix the maximum distance between theoretical arc and
                     output segments
         :type tol: float
-        :returns: the buffer as Area object
+        :returns: the buffer as line, centroid, isles object tuple
 
         """
+
         if dist is not None:
             dist_x = dist
             dist_y = dist
@@ -1532,11 +1682,12 @@ class Area(Geo):
                                   dist_x, dist_y, angle,
                                   int(round_), int(caps), tol,
                                   p_bound, pp_isle, n_isles)
-        return Area(boundary=Line(c_points=p_bound.contents),
-                    centroid=self.centroid,
-                    isles=[Line(c_points=pp_isle[i].contents)
-                           for i in range(n_isles.contents.value)])
+        return (Line(c_points=p_bound.contents),
+                self.centroid,
+                [Line(c_points=pp_isle[i].contents)
+                 for i in range(n_isles.contents.value)])
 
+    @mapinfo_must_be_set
     def boundaries(self, ilist=False):
         """Creates list of boundaries for given area.
 
@@ -1550,6 +1701,22 @@ class Area(Geo):
             return ilist
         return [Boundary(v_id=abs(v_id), c_mapinfo=self.c_mapinfo) for v_id in ilst]
 
+    def to_wkt(self):
+        """Return a "well know text" (WKT) area string, this method uses
+           the GEOS implementation in the vector library. ::
+        """
+        return libvect.Vect_read_area_to_wkt(self.c_mapinfo, self.id)
+
+    def to_wkb(self):
+        """Return a "well know binary" (WKB) area byte array, this method uses
+           the GEOS implementation in the vector library. ::
+        """
+        size = ctypes.c_size_t()
+        barray = libvect.Vect_read_area_to_wkb(self.c_mapinfo, self.id,
+                                              ctypes.byref(size))
+        return(ctypes.string_at(barray, size.value))
+
+    @mapinfo_must_be_set
     def cats(self, cats=None):
         """Get area categories.
 
@@ -1564,38 +1731,37 @@ class Area(Geo):
         """Find FIRST category of given field and area.
 
         int Vect_get_area_cat(const struct Map_info \*Map, int area, int field)
+
+        ..warning: Not implemented
         """
         pass
 
-    def contain_pnt(self, pnt, bbox=None):
+    @mapinfo_must_be_set
+    def contains_point(self, point, bbox=None):
         """Check if point is in area.
 
-        :param pnt: the point to analyze
-        :type pnt: a Point object or a tuple with the coordinates
+        :param point: the point to analyze
+        :type point: a Point object or a tuple with the coordinates
         :param bbox: the bounding box where run the analysis
         :type bbox: a Bbox object
         """
         bbox = bbox if bbox else self.bbox()
-        return bool(libvect.Vect_point_in_area(pnt.x, pnt.y,
+        return bool(libvect.Vect_point_in_area(point.x, point.y,
                                                self.c_mapinfo, self.id,
                                                bbox.c_bbox))
 
+    @mapinfo_must_be_set
     def perimeter(self):
         """Calculate area perimeter.
 
         :return: double Vect_area_perimeter (const struct line_pnts \*Points)
 
         """
-        border = self.get_points()
+        border = self.points()
         return libvect.Vect_line_geodesic_length(border.c_points)
 
-    def read(self, line=None, centroid=None, isles=None):
-        self.boundary = self.get_points(line)
-        self.centroid = self.get_centroid(centroid)
-        #self.isles = self.get_isles(isles)
-        if self.centroid:
-            libvect.Vect_read_line(self.c_mapinfo, None, self.c_cats,
-                                   self.centroid.id)
+    def read(self):
+        pass
 
 
 #
@@ -1615,6 +1781,7 @@ GEOOBJ = {"areas": Area,
           "dblinks": None,
           "faces": None,
           "holes": None,
+          "boundaries": Boundary,
           "islands": Isle,
           "kernels": None,
           "line_points": None,
@@ -1635,16 +1802,27 @@ def c_read_next_line(c_mapinfo, c_points, c_cats):
     return ftype, v_id, c_points, c_cats
 
 
-def read_next_line(c_mapinfo, table=None, writable=False,
+def read_next_line(c_mapinfo, table=None, writeable=False,
                    c_points=None, c_cats=None, is2D=True):
     """Return the next geometry feature of a vector map."""
+
+    # Take care of good memory management
+    free_points = False
+    if c_points == None:
+        free_points = True
+
+    free_cats = False
+    if c_cats == None:
+        free_cats = True
+
     c_points = c_points if c_points else ctypes.pointer(libvect.line_pnts())
     c_cats = c_cats if c_cats else ctypes.pointer(libvect.line_cats())
     ftype, v_id, c_points, c_cats = c_read_next_line(c_mapinfo, c_points,
                                                      c_cats)
     return GV_TYPE[ftype]['obj'](v_id=v_id, c_mapinfo=c_mapinfo,
                                  c_points=c_points, c_cats=c_cats,
-                                 table=table, writable=writable, is2D=is2D)
+                                 table=table, writeable=writeable, is2D=is2D,
+                                 free_points=free_points, free_cats=free_cats)
 
 
 def c_read_line(feature_id, c_mapinfo, c_points, c_cats):
@@ -1660,10 +1838,19 @@ def c_read_line(feature_id, c_mapinfo, c_points, c_cats):
         raise ValueError('The index must be >0, %r given.' % feature_id)
 
 
-def read_line(feature_id, c_mapinfo, table=None, writable=False,
+def read_line(feature_id, c_mapinfo, table=None, writeable=False,
               c_points=None, c_cats=None, is2D=True):
     """Return a geometry object given the feature id and the c_mapinfo.
     """
+    # Take care of good memory management
+    free_points = False
+    if c_points == None:
+        free_points = True
+
+    free_cats = False
+    if c_cats == None:
+        free_cats = True
+
     c_points = c_points if c_points else ctypes.pointer(libvect.line_pnts())
     c_cats = c_cats if c_cats else ctypes.pointer(libvect.line_cats())
     feature_id, ftype, c_points, c_cats = c_read_line(feature_id, c_mapinfo,
@@ -1671,7 +1858,21 @@ def read_line(feature_id, c_mapinfo, table=None, writable=False,
     if GV_TYPE[ftype]['obj'] is not None:
         return GV_TYPE[ftype]['obj'](v_id=feature_id, c_mapinfo=c_mapinfo,
                                      c_points=c_points, c_cats=c_cats,
-                                     table=table, writable=writable, is2D=is2D)
+                                     table=table, writeable=writeable, is2D=is2D,
+                                     free_points=free_points,
+                                     free_cats=free_cats)
+
+if __name__ == "__main__":
+    import doctest
+    from grass.pygrass import utils
+    utils.create_test_vector_map(test_vector_name)
+    doctest.testmod()
 
 
+    """Remove the generated vector map, if exist"""
+    from grass.pygrass.utils import get_mapset_vector
+    from grass.script.core import run_command
+    mset = get_mapset_vector(test_vector_name, mapset='')
+    if mset:
+        run_command("g.remove", flags='f', type='vector', name=test_vector_name)
 

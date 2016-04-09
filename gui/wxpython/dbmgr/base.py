@@ -1522,11 +1522,11 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
         table    = self.dbMgrData['mapDBInfo'].layers[self.selLayer]["table"]
         key      = self.dbMgrData['mapDBInfo'].layers[self.selLayer]["key"]
         
-        indeces = []
+        indices = []
         # collect SQL statements
         while item != -1:
             index = dlist.itemIndexMap[item]
-            indeces.append(index)
+            indices.append(index)
             
             cat = dlist.itemCatsMap[index]
             
@@ -1557,7 +1557,7 @@ class DbMgrBrowsePage(DbMgrNotebookBase):
         
         i = 0
         for index in indexTemp:
-            if index in indeces:
+            if index in indices:
                 continue
             dlist.itemIndexMap.append(i)
             dlist.itemDataMap[i] = dataTemp[index]
@@ -2789,6 +2789,7 @@ class LayerBook(wx.Notebook):
         self.addLayerWidgets['database'][1].SetValue(self.defaultConnect['database'])
         self.addLayerWidgets['table'][1].SetSelection(0)
         self.addLayerWidgets['key'][1].SetSelection(0)
+        self.addLayerWidgets['addCat'][0].SetValue(True)
         # events
         self.addLayerWidgets['driver'][1].Bind(wx.EVT_CHOICE, self.OnDriverChanged)
         self.addLayerWidgets['database'][1].Bind(wx.EVT_TEXT_ENTER, self.OnDatabaseChanged)

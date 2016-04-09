@@ -166,6 +166,7 @@ result = x@PERMANENT / y@SOILS
 GRASS commands, not just <em>r3.mapcalc</em>.)
 <p>
 
+
 <h3>The neighborhood modifier</h3>
 
 3D grids are data base files stored in voxel format, i.e., three-dimensional
@@ -240,15 +241,18 @@ xor(x,y)                exclusive-or (XOR) of x and y                   I
 
 <div class="code"><pre>
 Internal variables:
- row()                  current row of moving window
- col()                  current col of moving window
- depth()                return current depth
- x()                    current x-coordinate of moving window
- y()                    current y-coordinate of moving window
- z()                    return current z value
- ewres()                current east-west resolution
- nsres()                current north-south resolution
- tbres()                current top-bottom resolution
+ row()                  current row of moving window                    I
+ col()                  current col of moving window                    I
+ depth()                return current depth                            I
+ nrows()                number of rows in computation region            I
+ ncols()                number of columns in computation region         I
+ ndepths()              number of depth levels in computation region    I
+ x()                    current x-coordinate of moving window           F
+ y()                    current y-coordinate of moving window           F
+ z()                    return current z value                          F
+ ewres()                current east-west resolution                    F
+ nsres()                current north-south resolution                  F
+ tbres()                current top-bottom resolution                   F
  null()                 NULL value
 </pre></div>
 Note, that the row(), col() and depth() indexing starts with 1. 
@@ -517,9 +521,9 @@ To mask 3D grid <em>b</em> by 3D grid <em>a</em>:
 <div class="code"><pre>
 result = if(a,b)
 </pre></div>
-To change all values below 5 to NULL:
+To change all values below 5 to NULL, keep otherwise:
 <div class="code"><pre>
-newmap = if(map&lt;5, null(), 5)
+newmap = if(map &lt; 5, null(), map)
 </pre></div>
 The graph() function allows users to specify a x-y conversion using 
 pairs of x,y coordinates.
@@ -600,4 +604,4 @@ Tomas Paudits &amp; Jaro Hofierka, funded by GeoModel s.r.o., Slovakia
 <p>Glynn Clements
 
 <p>
-<i>Last changed: $Date: 2015-10-25 11:02:36 +0100 (Sun, 25 Oct 2015) $</i>
+<i>Last changed: $Date: 2016-02-08 05:11:20 -0800 (Mon, 08 Feb 2016) $</i>

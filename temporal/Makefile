@@ -1,9 +1,5 @@
 MODULE_TOPDIR = ..
 
-#	t.rast.algebra \
-#	t.rast3d.algebra \
-#	t.vect.algebra \
-
 SUBDIRS = \
 	t.connect \
 	t.create \
@@ -21,10 +17,12 @@ SUBDIRS = \
 	t.rast.aggregate \
 	t.rast.aggregate.ds \
 	t.rast.colors \
+	t.rast.contour \
 	t.rast.to.rast3 \
 	t.rast.univar \
 	t.rast.list \
 	t.rast.mapcalc \
+	t.rast.algebra \
 	t.rast.neighbors \
 	t.rast.series \
 	t.rast.export \
@@ -32,9 +30,12 @@ SUBDIRS = \
 	t.rast.import \
 	t.rast.gapfill \
 	t.rast.extract \
+	t.rast.to.vect \
+	t.rast.what \
 	t.rast3d.list \
 	t.rast3d.extract \
 	t.rast3d.mapcalc \
+	t.rast3d.algebra \
 	t.rast3d.univar \
 	t.rename \
 	t.select \
@@ -44,6 +45,7 @@ SUBDIRS = \
 	t.vect.db.select \
 	t.vect.export \
 	t.vect.extract \
+	t.vect.algebra \
 	t.vect.import \
 	t.vect.what.strds \
 	t.vect.observe.strds \

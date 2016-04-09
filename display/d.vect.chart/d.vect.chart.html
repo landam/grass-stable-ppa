@@ -28,17 +28,32 @@ plot if <b>chart_type</b> is <em>bar</em> (See Example 2).
 
 <h3>Example 1</h3>
 
-Pie-chart of monthly winter precipitation (North Carolina sample dataset):
+Pie-charts of monthly winter precipitation (North Carolina sample dataset):
+
+<!-- might be good to add this to example:
+v.voronoi input=precip_30ynormals output=precip_stations_voronoi
+d.vect precip_stations_voronoi type=boundary
+-->
 
 <div class="code"><pre>
 g.region vector=nc_state -p
 d.vect nc_state
 d.vect.chart precip_30ynormals chart_type=pie columns=nov,dec,jan,feb -l
+
+# show pie chart as 3D
+d.erase
+d.vect nc_state
+d.vect.chart precip_30ynormals chart_type=pie columns=nov,dec,jan,feb -l -3
 </pre></div>
 
 <center>
 <img src="d_vect_chart_pie_2d.png" alt="d.vect.chart 2D pie chart"><br>
 2D pie-chart of monthly winter precipitation in North Carolina
+</center>
+<p>
+<center>
+<img src="d_vect_chart_pie_3d.png" alt="d.vect.chart 3D pie chart"><br>
+3D pie-chart of monthly winter precipitation in North Carolina
 </center>
 
 <h3>Example 2</h3>
@@ -83,4 +98,4 @@ Bar charts of an erodibiliy index (spatial subset)
 
 Radim Blazek, ITC-Irst, Trento, Italy
 
-<p><i>Last changed: $Date: 2015-03-15 21:22:17 +0100 (Sun, 15 Mar 2015) $</i>
+<p><i>Last changed: $Date: 2015-08-20 03:55:47 -0700 (Thu, 20 Aug 2015) $</i>

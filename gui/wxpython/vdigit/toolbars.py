@@ -6,7 +6,7 @@
 List of classes:
  - toolbars::VDigitToolbar
 
-(C) 2007-2014 by the GRASS Development Team
+(C) 2007-2015 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -77,7 +77,7 @@ class VDigitToolbar(BaseToolbar):
         
         # list of available vector maps
         self.UpdateListOfLayers(updateTool = True)
-        
+
         for tool in ('addPoint', 'addLine', 'addBoundary', 'addCentroid', 'addArea',
                      'addVertex', 'deleteLine', 'deleteArea', 'displayAttr', 'displayCats',
                      'editLine', 'moveLine', 'moveVertex', 'removeVertex', 'additionalTools'):
@@ -799,7 +799,7 @@ class VDigitToolbar(BaseToolbar):
                 if self._giface.GetLayerTree():
                     mapName = dlg.GetName() + '@' + grass.gisenv()['MAPSET']
                     self._giface.GetLayerList().AddLayer(ltype='vector',
-                                                         name=mapName,
+                                                         name=mapName, checked=True,
                                                          cmd=['d.vect', 'map=%s' % mapName])
                     
                     vectLayers = self.UpdateListOfLayers(updateTool = True)
@@ -1005,8 +1005,8 @@ class VDigitToolbar(BaseToolbar):
                 self.parent.dialogs[dialog].Close()
                 self.parent.dialogs[dialog] = None
         
-        del self.digit
-        del self.MapWindow.digit
+        self.digit = None
+        self.MapWindow.digit = None
 
         self.editingStopped.emit(layerItem = item)
         

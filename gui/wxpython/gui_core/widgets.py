@@ -14,6 +14,12 @@ Classes:
  - widgets::CoordinatesValidator
  - widgets::IntegerValidator
  - widgets::FloatValidator
+ - widgets::EmailValidator
+ - widgets::TimeISOValidator
+ - widgets::MapValidator
+ - widgets::NTCValidator
+ - widgets::SimpleValidator
+ - widgets::GenericValidator
  - widgets::GListCtrl
  - widgets::SearchModuleWidget
  - widgets::ManageSettingsWidget
@@ -21,6 +27,10 @@ Classes:
  - widgets::ColorTablesComboBox
  - widgets::BarscalesComboBox
  - widgets::NArrowsComboBox
+ - widgets::LayersList
+
+@todo:
+ - move validators to a separate file gui_core/validators.py
 
 (C) 2008-2014 by the GRASS Development Team
 
@@ -31,11 +41,15 @@ This program is free software under the GNU General Public License
 @author Enhancements by Michael Barton <michael.barton asu.edu>
 @author Anna Kratochvilova <kratochanna gmail.com> (Google SoC 2011)
 @author Stepan Turek <stepan.turek seznam.cz> (ManageSettingsWidget - created from GdalSelect)
+@author Matej Krejci <matejkrejci gmail.com> (Google GSoC 2014; EmailValidator, TimeISOValidator)
 """
 
 import os
 import sys
 import string
+import re
+from bisect import bisect
+from datetime import datetime
 
 import wx
 import wx.lib.mixins.listctrl as listmix
@@ -55,6 +69,8 @@ try:
     import wx.lib.agw.customtreectrl as CT
 except ImportError:
     import wx.lib.customtreectrl as CT
+
+from grass.script import core as grass
 
 from grass.pydispatch.signal import Signal
 
@@ -103,7 +119,12 @@ class NotebookController:
         if 'name' in kwargs:
             self.notebookPages[kwargs['name']] = kwargs['page']
             del kwargs['name']
-        self.classObject.InsertPage(self.widget, **kwargs)
+        try:
+            self.classObject.InsertPage(self.widget, **kwargs)
+        except TypeError, e:  # documentation says 'index', but certain versions of wx require 'n'
+            kwargs['n'] = kwargs['index']
+            del kwargs['index']
+            self.classObject.InsertPage(self.widget, **kwargs)
 
     def DeletePage(self, page):
         """Delete page
@@ -213,6 +234,16 @@ class FlatNotebookController(NotebookController):
             return -1
 
         return self.classObject.GetPageIndex(self.widget, self.notebookPages[page])
+
+    def InsertPage(self, **kwargs):
+        """Insert a new page
+        """
+        if 'name' in kwargs:
+            self.notebookPages[kwargs['name']] = kwargs['page']
+            del kwargs['name']
+        kwargs['indx'] = kwargs['index']
+        del kwargs['index']
+        self.classObject.InsertPage(self.widget, **kwargs)
 
 
 class GNotebook(FN.FlatNotebook):
@@ -602,6 +633,52 @@ class FloatValidator(BaseValidator):
         """Clone validator"""
         return FloatValidator()
 
+
+class EmailValidator(BaseValidator):
+    """Validator for email input"""
+    def __init__(self):
+        BaseValidator.__init__(self)
+
+    def Validate(self):
+        """Validate input"""
+        textCtrl = self.GetWindow()
+        text = textCtrl.GetValue()
+        if text:
+            if re.match(r'\b[\w.-]+@[\w.-]+.\w{2,4}\b', text) is None:
+                self._notvalid()
+                return False
+
+        self._valid()
+        return True
+
+    def Clone(self):
+        """Clone validator"""
+        return EmailValidator()
+
+
+class TimeISOValidator(BaseValidator):
+    """Validator for time ISO format (YYYY-MM-DD) input"""
+    def __init__(self):
+        BaseValidator.__init__(self)
+
+    def Validate(self):
+        """Validate input"""
+        textCtrl = self.GetWindow()
+        text = textCtrl.GetValue()
+        if text:
+            try:
+                datetime.strptime(text, '%Y-%m-%d')
+            except:
+                self._notvalid()
+                return False
+
+        self._valid()
+        return True
+
+    def Clone(self):
+        """Clone validator"""
+        return TimeISOValidator()
+
 class NTCValidator(wx.PyValidator):
     """validates input in textctrls, taken from wxpython demo"""
     def __init__(self, flag=None):
@@ -716,7 +793,22 @@ class GenericValidator(wx.PyValidator):
         """
         return True # Prevent wxDialog from complaining.
 
+class MapValidator(GenericValidator):
+    """Validator for map name input
 
+    See G_legal_filename()
+    """
+    def __init__(self):
+        def _mapNameValidationFailed(ctrl):
+            message = _("Name <%(name)s> is not a valid name for GRASS map. "
+                        "Please use only ASCII characters excluding %(chars)s "
+                        "and space.") % {'name': ctrl.GetValue(), 'chars': '/"\'@,=*~'}
+            GError(message, caption=_("Invalid name"))
+        
+        GenericValidator.__init__(self,
+                                  grass.legal_name,
+                                  _mapNameValidationFailed)
+       
 class SingleSymbolPanel(wx.Panel):
     """Panel for displaying one symbol.
 
@@ -844,6 +936,50 @@ class GListCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin, listmix.CheckListCt
 
         event.Skip()
 
+    def GetData(self, checked=None):
+        """Get list data"""
+        data = []
+        checkedList = []
+        
+        item = -1
+        while True:
+            
+            row = []
+            item = self.GetNextItem(item)
+            if item == -1:
+                break
+
+            isChecked = self.IsChecked(item)
+            if checked is not None and  checked != isChecked:
+                continue
+
+            checkedList.append(isChecked)
+
+            for i in range(self.GetColumnCount()):
+                row.append(self.GetItem(item, i).GetText())
+            
+            row.append(item)
+            data.append(tuple(row))
+
+        if checked is not None:
+            return tuple(data)
+        else:
+            return (tuple(data), tuple(checkedList))
+
+    def LoadData(self, data=None, selectOne=True):
+        """Load data into list"""
+        self.DeleteAllItems()
+        if data is None:
+            return
+        
+        for item in data:
+            index = self.InsertStringItem(sys.maxint, str(item[0]))
+            for i in range(1, self.GetColumnCount()):
+                self.SetStringItem(index, i, item[i])
+        
+        # check by default only on one item
+        if len(data) == 1 and selectOne:
+            self.CheckItem(index, True)
 
 class SearchModuleWidget(wx.Panel):
     """Search module widget (used e.g. in SearchModuleWindow)
@@ -1021,7 +1157,7 @@ class ManageSettingsWidget(wx.Panel):
         wx.Panel.__init__(self, parent=parent, id=wx.ID_ANY)
 
         self.settingsBox = wx.StaticBox(parent=self, id=wx.ID_ANY,
-                                        label=" %s " % _("Settings"))
+                                        label=" %s " % _("Profiles"))
 
         self.settingsChoice = wx.Choice(parent=self, id=wx.ID_ANY)
         self.settingsChoice.Bind(wx.EVT_CHOICE, self.OnSettingsChanged)
@@ -1050,7 +1186,7 @@ class ManageSettingsWidget(wx.Panel):
 
         self.settingsSizer = wx.StaticBoxSizer(self.settingsBox, wx.HORIZONTAL)
         self.settingsSizer.Add(item=wx.StaticText(parent=self, id=wx.ID_ANY,
-                                                  label=_("Load settings:")),
+                                                  label=_("Load:")),
                                flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.LEFT,
                                border=5)
         self.settingsSizer.Add(item=self.settingsChoice,
@@ -1374,3 +1510,62 @@ class NArrowsComboBox(PictureComboBox):
 
     def OnMeasureItem(self, item):
         return 32
+
+class LayersList(GListCtrl, listmix.TextEditMixin):
+    """List of layers to be imported (dxf, shp...)"""
+    def __init__(self, parent, columns, log = None):
+        GListCtrl.__init__(self, parent)
+        
+        self.log = log
+        
+        # setup mixins
+        listmix.TextEditMixin.__init__(self)
+        
+        for i in range(len(columns)):
+            self.InsertColumn(i, columns[i])
+        
+        if len(columns) == 4:
+            width = (65, 200, 90)
+        else:
+            width = (65, 180, 90, 70)
+        
+        for i in range(len(width)):
+            self.SetColumnWidth(col = i, width = width[i])
+                
+    def OnLeftDown(self, event):
+        """Allow editing only output name
+        
+        Code taken from TextEditMixin class.
+        """
+        x, y = event.GetPosition()
+        
+        colLocs = [0]
+        loc = 0
+        for n in range(self.GetColumnCount()):
+            loc = loc + self.GetColumnWidth(n)
+            colLocs.append(loc)
+        
+        col = bisect(colLocs, x + self.GetScrollPos(wx.HORIZONTAL)) - 1
+        
+        if col == self.GetColumnCount() - 1:
+            listmix.TextEditMixin.OnLeftDown(self, event)
+        else:
+            event.Skip()
+        
+    def GetLayers(self):
+        """Get list of layers (layer name, output name, list id)"""
+        layers = []
+
+        data = self.GetData(checked=True);
+
+        for itm in data:
+
+            layer = itm[1]
+            ftype = itm[2]
+            if '/' in ftype:
+                layer += '|%s' % ftype.split('/', 1)[0]
+            output = itm[self.GetColumnCount() - 1]
+            layers.append((layer, output, itm[-1]))
+
+        return layers
+

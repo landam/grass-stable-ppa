@@ -119,7 +119,7 @@ log dll.to.a
 dll_to_a $OSGEO4W_ROOT_MSYS/bin/proj.dll        mswindows/osgeo4w/lib/libproj
 dll_to_a $OSGEO4W_ROOT_MSYS/bin/zlib1.dll       mswindows/osgeo4w/lib/libz
 dll_to_a $OSGEO4W_ROOT_MSYS/bin/iconv.dll       mswindows/osgeo4w/lib/libiconv
-dll_to_a $OSGEO4W_ROOT_MSYS/bin/gdal111.dll     mswindows/osgeo4w/lib/libgdal
+dll_to_a $OSGEO4W_ROOT_MSYS/bin/gdal200.dll     mswindows/osgeo4w/lib/libgdal
 dll_to_a $OSGEO4W_ROOT_MSYS/bin/liblas_c.dll    mswindows/osgeo4w/lib/liblas_c
 dll_to_a $OSGEO4W_ROOT_MSYS/bin/geos_c.dll      mswindows/osgeo4w/lib/libgeos_c
 dll_to_a $OSGEO4W_ROOT_MSYS/bin/libtiff.dll     mswindows/osgeo4w/lib/libtiff
@@ -184,7 +184,7 @@ if ! [ -f mswindows/osgeo4w/configure-stamp ]; then
 	        --with-cairo \
                 --with-postgres \
 	        --with-opengl=windows
-        
+	
 	touch mswindows/osgeo4w/configure-stamp
 fi
 
@@ -254,6 +254,7 @@ if [ -n "$PACKAGE_PATCH" ]; then
 	/mingw${MINGW_POSTFIX}/bin/libsystre-0.dll \
 	/mingw${MINGW_POSTFIX}/bin/libtre-5.dll \
         /mingw${MINGW_POSTFIX}/bin/zlib1.dll \
+        /mingw${MINGW_POSTFIX}/bin/libstdc++-6.dll \
 	apps/grass/grass-$VERSION/bin
     cp -uv /mingw${MINGW_POSTFIX}/etc/fonts/fonts.conf \
 	apps/grass/grass-$VERSION/etc

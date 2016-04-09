@@ -100,6 +100,7 @@ int Rast_cell_stats_histo_eq(struct Cell_stats *, CELL, CELL, CELL, CELL, int,
 void Rast_close(int);
 void Rast_unopen(int);
 void Rast__unopen_all(void);
+void Rast__close_null(int);
 
 /* color_compat.c */
 void Rast_make_ryg_colors(struct Colors *, CELL, CELL);
@@ -266,7 +267,9 @@ void Rast_abs_log_colors(struct Colors *, struct Colors *, int);
 /* format.c */
 int Rast__check_format(int);
 int Rast__read_row_ptrs(int);
+int Rast__read_null_row_ptrs(int, int);
 int Rast__write_row_ptrs(int);
+int Rast__write_null_row_ptrs(int, int);
 
 /* fpreclass.c */
 void Rast_fpreclass_clear(struct FPReclass *);
@@ -326,6 +329,7 @@ void Rast_get_c_row(int, CELL *, int);
 void Rast_get_f_row(int, FCELL *, int);
 void Rast_get_d_row(int, DCELL *, int);
 void Rast_get_null_value_row(int, char *, int);
+int Rast__read_null_bits(int, int, unsigned char *);
 
 /* get_row_colr.c */
 void Rast_get_row_colors(int, int, struct Colors *,
@@ -452,6 +456,7 @@ RASTER_MAP_TYPE Rast_get_map_type(int);
 int Rast_open_new(const char *, RASTER_MAP_TYPE);
 int Rast_open_new_uncompressed(const char *, RASTER_MAP_TYPE);
 void Rast_set_quant_rules(int, struct Quant *);
+int Rast__open_null_write(const char *);
 
 /* put_cellhd.c */
 void Rast_put_cellhd(const char *, struct Cell_head *);
@@ -461,8 +466,7 @@ void Rast_put_row(int, const void *, RASTER_MAP_TYPE);
 void Rast_put_c_row(int, const CELL *);
 void Rast_put_f_row(int, const FCELL *);
 void Rast_put_d_row(int, const DCELL *);
-int Rast__open_null_write(int);
-void Rast__write_null_bits(int, const unsigned char *, int, int, int);
+void Rast__write_null_bits(int, const unsigned char *);
 
 /* put_title.c */
 int Rast_put_cell_title(const char *, const char *);
@@ -539,6 +543,9 @@ char *Rast_read_units(const char *, const char *);
 char *Rast_read_vdatum(const char *, const char *);
 void Rast_write_units(const char *, const char *);
 void Rast_write_vdatum(const char *, const char *);
+
+/* rast_to_img_string.c */
+int Rast_map_to_img_str(char *, int, unsigned char*);
 
 /* reclass.c */
 int Rast_is_reclass(const char *, const char *, char *, char *);

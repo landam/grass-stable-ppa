@@ -53,16 +53,21 @@ class ModelDataDialog(SimpleDialog):
         SimpleDialog.__init__(self, parent, title)
                 
         self.element = Select(parent = self.panel,
+                              type = self.shape.GetPrompt(),
                               validator = SimpleValidator(callback = self.ValidatorCallback))
-        self.element.SetValue(shape.GetValue())
+        if shape.GetValue():
+            self.element.SetValue(shape.GetValue())
         
         self.Bind(wx.EVT_BUTTON, self.OnOK,     self.btnOK)
         self.Bind(wx.EVT_BUTTON, self.OnCancel, self.btnCancel)
         if self.etype:
             self.typeSelect = ElementSelect(parent = self.panel,
+                                            elements = ['raster', 'raster_3d', 'vector'],
                                             size = globalvar.DIALOG_GSELECT_SIZE)
             self.typeSelect.Bind(wx.EVT_CHOICE, self.OnType)
-        
+            self.typeSelect.SetSelection(0)
+            self.element.SetType('raster')
+            
         if shape.GetValue():
             self.btnOK.Enable()
         
@@ -118,7 +123,9 @@ class ModelDataDialog(SimpleDialog):
             if elem == 'raster':
                 self.shape.SetPrompt('raster')
             elif elem == 'vector':
-                self.shape.SetPrompt('raster')
+                self.shape.SetPrompt('vector')
+            elif elem == 'raster_3d':
+                self.shape.SetPrompt('raster_3d')
         
         self.parent.canvas.Refresh()
         self.parent.SetStatusText('', 0)
@@ -884,7 +891,7 @@ class ItemListCtrl(ModelListCtrl):
             self.DeleteItem(item)
             del self.itemDataMap[item]
             
-            action = model.GetItem(item+1) # action indeces starts at 1
+            action = model.GetItem(item+1) # action indices starts at 1
             if not action:
                 item = self.GetFirstSelected()
                 continue

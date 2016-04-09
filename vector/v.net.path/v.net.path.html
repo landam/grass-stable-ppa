@@ -67,6 +67,22 @@ The attribute table will contain the following attributes:
     <li><tt>tdist</tt> - the distance from the network to second point</li>
 </ul>
 
+<p>
+
+Application of flag <b>-t</b> enables a turntable support. 
+This flag requires additional parameters <b>turn_layer</b> and <b>turn_cat_layer</b> 
+that are otherwise ignored.
+ The turntable allows 
+to model e.g. trafic code, where some turns may be prohibited. 
+This means that the input layer is expanded by 
+turntable with costs of every possible turn on any possible node 
+(intersection) in both directions. 
+ Turntable can be created by 
+ the <em><a href="v.net.html">v.net</a></em> module. 
+For more information about turns in the vector network analyses see
+<a href="http://grasswiki.osgeo.org/wiki/Turns_in_the_vector_network_analysis">wiki page</a>.
+
+
 <h2>NOTES</h2>
 Nodes and arcs can be closed using <tt>cost = -1</tt>. 
 <p>If the cost columns <b>arc_column</b>, <b>arc_backward_column</b> and <b>node_column</b> are not
@@ -176,5 +192,14 @@ d.vect startend disp=cat type=point lsize=14 layer=2
 Radim Blazek, ITC-Irst, Trento, Italy<br>
 Documentation: Markus Neteler, Markus Metz
 
+<h3>TURNS SUPPORT</h3>
+
+The turns support was implemnented as part of GRASS GIS turns cost project at Czech Technical University in Prague, Czech Republic.
+
 <p>
-<i>Last changed: $Date: 2014-12-24 15:53:17 +0100 (Wed, 24 Dec 2014) $</i>
+Implementation: Stepan Turek<br>
+Documentation: Lukas Bocan, Eliska Kyzlikova, Viera Bejdova<br>
+Mentor: Martin Landa
+
+<p>
+<i>Last changed: $Date: 2014-12-24 06:51:58 -0800 (Wed, 24 Dec 2014) $</i>

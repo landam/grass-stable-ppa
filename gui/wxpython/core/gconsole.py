@@ -9,7 +9,7 @@ Classes:
  - goutput::GStderr
  - goutput::GConsole
 
-(C) 2007-2014 by the GRASS Development Team
+(C) 2007-2015 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -116,7 +116,7 @@ class CmdThread(threading.Thread):
         os.environ['GRASS_MESSAGE_FORMAT'] = 'gui'
         while True:
             requestId, args, kwds = self.requestQ.get()
-            for key in ('callable', 'onDone', 'onPrepare', 'userData', 'notification'):
+            for key in ('callable', 'onDone', 'onPrepare', 'userData', 'addLayer', 'notification'):
                 if key in kwds:
                     vars()[key] = kwds[key]
                     del kwds[key]
@@ -202,6 +202,7 @@ class CmdThread(threading.Thread):
                                   pid=requestId,
                                   onDone=vars()['onDone'],
                                   userData=vars()['userData'],
+                                  addLayer=vars()['addLayer'],
                                   notification=vars()['notification'])
 
                 # send event
@@ -381,7 +382,7 @@ class GConsole(wx.EvtHandler):
     def Redirect(self):
         """Redirect stdout/stderr
         """
-        if Debug.GetLevel() == 0 and int(grass.gisenv().get('DEBUG', 0)) == 0:
+        if Debug.GetLevel() == 0 and grass.debug_level(force=True) == 0:
             # don't redirect when debugging is enabled
             sys.stdout = self.cmdStdOut
             sys.stderr = self.cmdStdErr
@@ -424,7 +425,8 @@ class GConsole(wx.EvtHandler):
         self.writeError.emit(text=text)
 
     def RunCmd(self, command, compReg=True, skipInterface=False,
-               onDone=None, onPrepare=None, userData=None, notification=Notification.MAKE_VISIBLE):
+               onDone=None, onPrepare=None, userData=None, addLayer=None,
+               notification=Notification.MAKE_VISIBLE):
         """Run command typed into console command prompt (GPrompt).
 
         .. todo::
@@ -445,6 +447,7 @@ class GConsole(wx.EvtHandler):
                                    given
         :param onDone: function to be called when command is finished
         :param onPrepare: function to be called before command is launched
+        :param addLayer: to be passed in the mapCreated signal
         :param userData: data defined for the command
         """
         if len(command) == 0:
@@ -491,15 +494,34 @@ class GConsole(wx.EvtHandler):
                                                                       'opt': p.get('name', '')})
                             return
 
-                if len(command) == 1 and hasParams and \
-                        command[0] != 'v.krige':
-                    # no arguments given
-                    try:
-                        GUI(parent=self._guiparent, giface=self._giface).ParseCommand(command)
-                    except GException as e:
-                        print >> sys.stderr, e
-                    return
-
+                if len(command) == 1:
+                    if command[0].startswith('g.gui.'):
+                        import imp
+                        import inspect
+                        pyFile = command[0]
+                        if sys.platform == 'win32':
+                            pyFile += '.py'
+                        pyPath = os.path.join(os.environ['GISBASE'], 'scripts', pyFile)
+                        if not os.path.exists(pyPath):
+                            pyPath = os.path.join(os.environ['GRASS_ADDON_BASE'], 'scripts', pyFile)
+                        if not os.path.exists(pyPath):
+                            GError(parent=self._guiparent,
+                                   message=_("Module <%s> not found.") % command[0])
+                        pymodule = imp.load_source(command[0].replace('.', '_'), pyPath)
+                        pymain = inspect.getargspec(pymodule.main)
+                        if pymain and 'giface' in pymain.args:
+                            pymodule.main(self._giface)
+                            return
+                    
+                    if hasParams and command[0] != 'v.krige':
+                        # no arguments given
+                        try:
+                            GUI(parent=self._guiparent, giface=self._giface).ParseCommand(command)
+                        except GException as e:
+                            print >> sys.stderr, e
+                        
+                        return
+                
                 # activate computational region (set with g.region)
                 # for all non-display commands.
                 if compReg:
@@ -512,7 +534,7 @@ class GConsole(wx.EvtHandler):
                                       stdout=self.cmdStdOut,
                                       stderr=self.cmdStdErr,
                                       onDone=onDone, onPrepare=onPrepare,
-                                      userData=userData,
+                                      userData=userData, addLayer=addLayer,
                                       env=os.environ.copy(),
                                       notification=notification)
                 self.cmdOutputTimer.Start(50)
@@ -564,7 +586,7 @@ class GConsole(wx.EvtHandler):
                                       stdout=self.cmdStdOut,
                                       stderr=self.cmdStdErr,
                                       onDone=onDone, onPrepare=onPrepare,
-                                      userData=userData,
+                                      userData=userData, addLayer=addLayer,
                                       notification=notification)
             self.cmdOutputTimer.Start(50)
 
@@ -654,7 +676,7 @@ class GConsole(wx.EvtHandler):
         name = task.get_name()
         for p in task.get_options()['params']:
             prompt = p.get('prompt', '')
-            if prompt in ('raster', 'vector', '3d-raster') and p.get('value', None):
+            if prompt in ('raster', 'vector', 'raster_3d') and p.get('value', None):
                 if p.get('age', 'old') == 'new' or \
                         name in ('r.colors', 'r3.colors', 'v.colors', 'v.proj', 'r.proj'):
                     # if multiple maps (e.g. r.series.interp), we need add each
@@ -670,7 +692,7 @@ class GConsole(wx.EvtHandler):
                         if '@' not in lname:
                             lname += '@' + grass.gisenv()['MAPSET']
                         if grass.find_file(lname, element=p.get('element'))['fullname']:
-                            self.mapCreated.emit(name=lname, ltype=prompt)
+                            self.mapCreated.emit(name=lname, ltype=prompt, add=event.addLayer)
         if name == 'r.mask':
             self.updateMap.emit()
         

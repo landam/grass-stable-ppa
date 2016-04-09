@@ -101,12 +101,19 @@ import tempfile as tmpfile
 
 def write_gisrc(dbase, location, mapset):
     """Write the ``gisrc`` file and return its path."""
-    fd, gisrc = tmpfile.mkstemp()
-    os.write(fd, "GISDBASE: %s\n" % dbase)
-    os.write(fd, "LOCATION_NAME: %s\n" % location)
-    os.write(fd, "MAPSET: %s\n" % mapset)
-    os.close(fd)
+    gisrc = tmpfile.mktemp()
+    with open(gisrc, 'w') as rc:
+        rc.write("GISDBASE: %s\n" % dbase)
+        rc.write("LOCATION_NAME: %s\n" % location)
+        rc.write("MAPSET: %s\n" % mapset)
     return gisrc
+
+
+def set_gui_path():
+    """Insert wxPython GRASS path to sys.path."""
+    gui_path = os.path.join(os.environ['GISBASE'], 'gui', 'wxpython')
+    if gui_path and gui_path not in sys.path:
+        sys.path.insert(0, gui_path)
 
 
 # TODO: there should be a function to do the clean up
@@ -141,6 +148,7 @@ def init(gisbase, dbase='', location='demolocation', mapset='PERMANENT'):
     :param dbase: path to GRASS database (default: '')
     :param location: location name (default: 'demolocation')
     :param mapset: mapset within given location (default: 'PERMANENT')
+    
     :returns: path to ``gisrc`` file (to be deleted later)
     """
     # TODO: why we don't set GISBASE?

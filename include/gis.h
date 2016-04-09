@@ -38,8 +38,8 @@
 static const char *GRASS_copyright __attribute__ ((unused))
     = "GRASS GNU GPL licensed Software";
 
-#define GIS_H_VERSION "$Revision: 67364 $"
-#define GIS_H_DATE    "$Date: 2015-12-24 16:07:44 +0100 (Thu, 24 Dec 2015) $"
+#define GIS_H_VERSION "$Revision: 67275 $"
+#define GIS_H_DATE    "$Date: 2015-12-20 04:50:48 -0800 (Sun, 20 Dec 2015) $"
 
 #define G_gisinit(pgm) G__gisinit(GIS_H_VERSION, (pgm))
 #define G_no_gisinit() G__no_gisinit(GIS_H_VERSION)

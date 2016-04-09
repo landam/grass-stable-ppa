@@ -9,11 +9,12 @@ for details.
 
 import grass.script
 import grass.temporal as tgis
-import grass.gunittest
+from grass.gunittest.case import TestCase
+from grass.gunittest.main import test
 import datetime
 import os
 
-class TestTemporalAlgebra(grass.gunittest.TestCase):
+class TestTemporalAlgebra(TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -55,7 +56,7 @@ class TestTemporalAlgebra(grass.gunittest.TestCase):
         tgis.register_maps_in_space_time_dataset(type="raster", name="D", maps="d1,d2,d3",
                                                  start="2001-01-03", increment="1 day", interval=True)
         tgis.register_maps_in_space_time_dataset(type="raster", name=None,  maps="singletmap", 
-                                                start="2001-01-03", end="2001-01-04", interval=True)
+                                                 start="2001-01-03", end="2001-01-04")
 
     def tearDown(self):
         self.runModule("t.remove", inputs="R", quiet=True)
@@ -350,5 +351,39 @@ class TestTemporalAlgebra(grass.gunittest.TestCase):
         self.assertEqual( D.check_temporal_topology(),  True)
         self.assertEqual(D.get_granularity(),  u'1 day')
 
+    def test_merge_function1(self):
+        """Testing the merge function. """
+        ta = tgis.TemporalAlgebraParser(run = True, debug = True)
+        ta.parse(expression='R = merge(A,D)',  stdstype = 'strds', basename="r", overwrite=True)
+
+        D = tgis.open_old_stds("R", type="strds")
+        D.select()
+        maplist = D.get_registered_maps_as_objects()
+        self.assertEqual(D.metadata.get_number_of_maps(), 7)
+        self.assertEqual(D.metadata.get_min_min(), 1) 
+        self.assertEqual(D.metadata.get_max_max(), 10) 
+        start, end = D.get_absolute_time()
+        self.assertEqual(start, datetime.datetime(2001, 1, 1))
+        self.assertEqual(end, datetime.datetime(2001, 1, 6))
+        self.assertEqual( D.check_temporal_topology(),  False)
+        self.assertEqual(D.get_granularity(),  u'1 day')
+
+    def test_merge_function2(self):
+        """Testing the merge function. """
+        ta = tgis.TemporalAlgebraParser(run = True, debug = True)
+        ta.parse(expression='R = merge(A, B {!:,contains} A)',  stdstype = 'strds', basename="r", overwrite=True)
+
+        D = tgis.open_old_stds("R", type="strds")
+        D.select()
+        maplist = D.get_registered_maps_as_objects()
+        self.assertEqual(D.metadata.get_number_of_maps(), 4)
+        self.assertEqual(D.metadata.get_min_min(), 1) 
+        self.assertEqual(D.metadata.get_max_max(), 4) 
+        start, end = D.get_absolute_time()
+        self.assertEqual(start, datetime.datetime(2001, 1, 1))
+        self.assertEqual(end, datetime.datetime(2001, 1, 5))
+        self.assertEqual( D.check_temporal_topology(),  True)
+        self.assertEqual(D.get_granularity(),  u'1 day')
+
 if __name__ == '__main__':
-    grass.gunittest.test()
+    test()

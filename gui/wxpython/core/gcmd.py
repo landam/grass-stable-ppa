@@ -60,15 +60,6 @@ except IOError:
         return string
     _ = null_gettext
 
-def GetRealCmd(cmd):
-    """Return real command name - only for MS Windows
-    """
-    if sys.platform == 'win32':
-        for ext in globalvar.grassScripts.keys():
-            if cmd in globalvar.grassScripts[ext]:
-                return cmd + ext
-    
-    return cmd
 
 def DecodeString(string):
     """Decode string using system encoding
@@ -168,7 +159,36 @@ class Popen(subprocess.Popen):
     def __init__(self, args, **kwargs):
         if subprocess.mswindows:
             args = map(EncodeString, args)
-        
+
+            # The Windows shell (cmd.exe) requires some special characters to
+            # be escaped by preceding them with 3 carets (^^^). cmd.exe /?
+            # mentions <space> and &()[]{}^=;!'+,`~. A quick test revealed that
+            # only ^|&<> need to be escaped. A single quote can be escaped by
+            # enclosing it with double quotes and vice versa.
+            for i in range(2, len(args)):
+                # "^" must be the first character in the list to avoid double
+                # escaping.
+                for c in ("^", "|", "&", "<", ">"):
+                    if c in args[i]:
+                        if "=" in args[i]:
+                            a = args[i].split("=")
+                            k = a[0] + "="
+                            v = "=".join(a[1:len(a)])
+                        else:
+                            k = ""
+                            v = args[i]
+
+                        # If there are spaces, the argument was already
+                        # esscaped with double quotes, so don't escape it
+                        # again.
+                        if c in v and not " " in v:
+                            # Here, we escape each ^ in ^^^ with ^^ and a
+                            # <special character> with ^ + <special character>,
+                            # so we need 7 carets.
+
+                            v = v.replace(c, "^^^^^^^" + c)
+                            args[i] = k + v
+
         subprocess.Popen.__init__(self, args, **kwargs)
         
     def recv(self, maxsize = None):
@@ -669,7 +689,6 @@ def RunCommand(prog, flags = "", overwrite = False, quiet = False,
         messageFormat = os.getenv('GRASS_MESSAGE_FORMAT', 'gui')
         os.environ['GRASS_MESSAGE_FORMAT'] = 'standard'
     
-    Debug.msg(2, "gcmd.RunCommand(): command started")
     start = time.time()
     
     ps = grass.start_command(prog, flags, overwrite, quiet, verbose, **kwargs)
@@ -679,7 +698,6 @@ def RunCommand(prog, flags = "", overwrite = False, quiet = False,
         ps.stdin.close()
         ps.stdin = None
     
-    Debug.msg(3, "gcmd.RunCommand(): decoding string")
     stdout, stderr = map(DecodeString, ps.communicate())
     
     if parent: # restore previous settings
@@ -689,7 +707,6 @@ def RunCommand(prog, flags = "", overwrite = False, quiet = False,
     Debug.msg(1, "gcmd.RunCommand(): get return code %d (%.6f sec)" % \
                   (ret, (time.time() - start)))
     
-    Debug.msg(3, "gcmd.RunCommand(): print error")
     if ret != 0:
         if stderr:
             Debug.msg(2, "gcmd.RunCommand(): error %s" % stderr)
@@ -701,7 +718,6 @@ def RunCommand(prog, flags = "", overwrite = False, quiet = False,
                    caption = _("Error in %s") % prog,
                    message = stderr)
     
-    Debug.msg(3, "gcmd.RunCommand(): print read error")
     if not read:
         if not getErrorMsg:
             return ret
@@ -709,9 +725,9 @@ def RunCommand(prog, flags = "", overwrite = False, quiet = False,
             return ret, _formatMsg(stderr)
 
     if stdout:
-        Debug.msg(2, "gcmd.RunCommand(): return stdout\n'%s'" % stdout)
+        Debug.msg(3, "gcmd.RunCommand(): return stdout\n'%s'" % stdout)
     else:
-        Debug.msg(2, "gcmd.RunCommand(): return stdout = None")
+        Debug.msg(3, "gcmd.RunCommand(): return stdout = None")
     
     if parse:
         stdout = parse(stdout)
@@ -719,11 +735,9 @@ def RunCommand(prog, flags = "", overwrite = False, quiet = False,
     if not getErrorMsg:
         return stdout
     
-    Debug.msg(2, "gcmd.RunCommand(): return ret, stdout")
     if read and getErrorMsg:
         return ret, stdout, _formatMsg(stderr)
     
-    Debug.msg(2, "gcmd.RunCommand(): return result")
     return stdout, _formatMsg(stderr)
 
 def GetDefaultEncoding(forceUTF8 = False):

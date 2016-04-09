@@ -28,6 +28,7 @@ for details.
 
 :author: Soeren Gebbert
 """
+#import traceback
 import os
 # i18N
 import gettext
@@ -36,6 +37,7 @@ gettext.install('grasslibs', os.path.join(os.getenv("GISBASE"), 'locale'))
 import grass.script as gscript
 from datetime import datetime
 from c_libraries_interface import *
+from grass.pygrass import messages
 # Import all supported database backends
 # Ignore import errors since they are checked later
 try:
@@ -238,8 +240,8 @@ def _init_tgis_message_interface(raise_on_error=False):
                               a fatal error, call sys.exit(1) otherwise
     """
     global message_interface
-    from grass.pygrass import messages
-    message_interface = messages.get_msgr(raise_on_error=raise_on_error)
+    if message_interface is None:
+        message_interface = messages.get_msgr(raise_on_error=raise_on_error)
 
 
 def get_tgis_message_interface():
@@ -266,7 +268,8 @@ def _init_tgis_c_library_interface():
        libraster, libraster3d and libvector functions
     """
     global c_library_interface
-    c_library_interface = CLibrariesInterface()
+    if c_library_interface is None:
+        c_library_interface = CLibrariesInterface()
 
 
 def get_tgis_c_library_interface():
@@ -435,6 +438,7 @@ def get_available_temporal_mapsets():
                   database) are the values
     """
     global c_library_interface
+    global message_interface
 
     mapsets = c_library_interface.available_mapsets()
 
@@ -443,9 +447,23 @@ def get_available_temporal_mapsets():
     for mapset in mapsets:
         driver = c_library_interface.get_driver_name(mapset)
         database = c_library_interface.get_database_name(mapset)
+        
+        message_interface.debug(1, "get_available_temporal_mapsets: "\
+                                   "\n  mapset %s\n  driver %s\n  database %s"%(mapset,
+                                   driver, database))
 
         if driver and database:
-            tgis_mapsets[mapset] = (driver,  database)
+            # Check if the temporal sqlite database exists
+            # We need to set non-existing databases in case the mapset is the current mapset
+            # to create it
+            if (driver == "sqlite" and os.path.exists(database)) or mapset == get_current_mapset() :
+                tgis_mapsets[mapset] = (driver,  database)
+
+            # We need to warn if the connection is defined but the database does not
+            # exists
+            if driver == "sqlite" and not os.path.exists(database):
+                message_interface.warning("Temporal database connection defined as:\n" + \
+                                          database + "\nBut database file does not exist.")
 
     return tgis_mapsets
 
@@ -456,7 +474,7 @@ def init(raise_fatal_error=False):
     """This function set the correct database backend from GRASS environmental
        variables and creates the grass temporal database structure for raster,
        vector and raster3d maps as well as for the space-time datasets strds,
-       str3ds and stvds in case it does not exists.
+       str3ds and stvds in case it does not exist.
 
        Several global variables are initiated and the messenger and C-library
        interface subprocesses are spawned.
@@ -535,6 +553,7 @@ def init(raise_fatal_error=False):
     _init_tgis_c_library_interface()
     msgr = get_tgis_message_interface()
     msgr.debug(1, "Initiate the temporal database")
+                  #"\n  traceback:%s"%(str("  \n".join(traceback.format_stack()))))
 
     ciface = get_tgis_c_library_interface()
     driver_string = ciface.get_driver_name()
@@ -737,10 +756,10 @@ def create_temporal_database(dbif):
     stvds_tables_sql = stds_tables_template_sql.replace("STDS", "stvds")
     str3ds_tables_sql = stds_tables_template_sql.replace("STDS", "str3ds")
 
-    msgr.message(_("Creating temporal database: %s" % (tgis_database_string)))
+    msgr.message(_("Creating temporal database: %s" % (str(tgis_database_string))))
 
     if tgis_backend == "sqlite":
-        # We need to create the sqlite3 database path if it does not exists
+        # We need to create the sqlite3 database path if it does not exist
         tgis_dir = os.path.dirname(tgis_database_string)
         if not os.path.exists(tgis_dir):
             try:
@@ -767,7 +786,7 @@ def create_temporal_database(dbif):
                                         "postgresql_indexes.sql"), 'r').read()
 
     # Connect now to the database
-    if not dbif.connected:
+    if dbif.connected is not True:
         dbif.connect()
 
     # Execute the SQL statements for sqlite
@@ -847,7 +866,7 @@ class SQLDatabaseInterfaceConnection(object):
             driver,  dbstring = self.tgis_mapsets[mapset]
 
             if dbstring not in self.unique_connections.keys():
-                self.unique_connections[dbstring] = DBConnection(backend=driver, 
+                self.unique_connections[dbstring] = DBConnection(backend=driver,
                                                                  dbstring=dbstring)
 
             self.connections[mapset] = self.unique_connections[dbstring]
@@ -878,7 +897,7 @@ class SQLDatabaseInterfaceConnection(object):
             driver,  dbstring = self.tgis_mapsets[mapset]
             conn = self.connections[mapset]
             if conn.is_connected() is False:
-                conn .connect(dbstring)
+                conn.connect(dbstring)
 
         self.connected = True
 
@@ -911,9 +930,8 @@ class SQLDatabaseInterfaceConnection(object):
             mapset = self.current_mapset
 
         if mapset not in self.tgis_mapsets.keys():
-            self.msgr.fatal(_("Unable to mogrify sql statement. There is no "
-                              "temporal database connection defined for "
-                              "mapset <%(mapset)s>" % {"mapset": mapset}))
+            self.msgr.fatal(_("Unable to mogrify sql statement. " +
+                              self._create_mapset_error_message(mapset)))
 
         return self.connections[mapset].mogrify_sql_statement(content)
 
@@ -934,9 +952,8 @@ class SQLDatabaseInterfaceConnection(object):
             mapset = self.current_mapset
 
         if mapset not in self.tgis_mapsets.keys():
-            self.msgr.fatal(_("Unable to check table. There is no temporal "
-                              "database connection defined for mapset "
-                              "<%(mapset)s>" % {"mapset": mapset}))
+            self.msgr.fatal(_("Unable to check table. " +
+                              self._create_mapset_error_message(mapset)))
 
         return self.connections[mapset].check_table(table_name)
 
@@ -951,9 +968,8 @@ class SQLDatabaseInterfaceConnection(object):
             mapset = self.current_mapset
 
         if mapset not in self.tgis_mapsets.keys():
-            self.msgr.fatal(_("Unable to execute sql statement. There is no "
-                              "temporal database connection defined for "
-                              "mapset <%(mapset)s>" % {"mapset": mapset}))
+            self.msgr.fatal(_("Unable to execute sql statement. " +
+                              self._create_mapset_error_message(mapset)))
 
         return self.connections[mapset].execute(statement,  args)
 
@@ -962,9 +978,8 @@ class SQLDatabaseInterfaceConnection(object):
             mapset = self.current_mapset
 
         if mapset not in self.tgis_mapsets.keys():
-            self.msgr.fatal(_("Unable to fetch one. There is no temporal "
-                              "database connection defined for mapset "
-                              "<%(mapset)s>" % {"mapset": mapset}))
+            self.msgr.fatal(_("Unable to fetch one. " +
+                              self._create_mapset_error_message(mapset)))
 
         return self.connections[mapset].fetchone()
 
@@ -973,9 +988,8 @@ class SQLDatabaseInterfaceConnection(object):
             mapset = self.current_mapset
 
         if mapset not in self.tgis_mapsets.keys():
-            self.msgr.fatal(_("Unable to fetch all. There is no temporal "
-                              "database connection defined for mapset "
-                              "<%(mapset)s>" % {"mapset": mapset}))
+            self.msgr.fatal(_("Unable to fetch all. " +
+                              self._create_mapset_error_message(mapset)))
 
         return self.connections[mapset].fetchall()
 
@@ -991,11 +1005,19 @@ class SQLDatabaseInterfaceConnection(object):
             mapset = self.current_mapset
 
         if mapset not in self.tgis_mapsets.keys():
-            self.msgr.fatal(_("Unable to execute transaction. There is no "
-                              "temporal database connection defined for "
-                              "mapset <%(mapset)s>" % {"mapset": mapset}))
+            self.msgr.fatal(_("Unable to execute transaction. " +
+                              self._create_mapset_error_message(mapset)))
 
         return self.connections[mapset].execute_transaction(statement)
+
+    def _create_mapset_error_message(self, mapset):
+
+          return("You have no permission to "
+                 "access mapset <%(mapset)s>, or "
+                 "mapset <%(mapset)s> has no temporal database. "
+                 "Accessable mapsets are: <%(mapsets)s>" % \
+                 {"mapset": mapset,
+                  "mapsets":','.join(self.tgis_mapsets.keys())})
 
 ###############################################################################
 
@@ -1012,7 +1034,7 @@ class DBConnection(object):
 
     def __init__(self, backend=None, dbstring=None):
         """ Constructor of a database connection
-        
+
             param backend:The database backend sqlite or pg
             param dbstring: The database connection string
         """
@@ -1032,9 +1054,15 @@ class DBConnection(object):
         if dbstring is None:
             global tgis_database_string
             self.dbstring = tgis_database_string
+        
+        self.dbstring = dbstring
 
         self.msgr = get_tgis_message_interface()
-        self.msgr.debug(1, "SQLDatabaseInterfaceConnection constructor")
+        self.msgr.debug(1, "DBConnection constructor:"\
+                           "\n  backend: %s"\
+                           "\n  dbstring: %s"%(backend, self.dbstring))
+                           #"\n  traceback:%s"%(backend, self.dbstring, 
+                           #str("  \n".join(traceback.format_stack()))))
 
     def __del__(self):
         if self.connected is True:
@@ -1058,7 +1086,7 @@ class DBConnection(object):
         """Connect to the DBMI to execute SQL statements
 
             Supported backends are sqlite3 and postgresql
-            
+
             param dbstring: The database connection string
         """
         # Connection in the current mapset

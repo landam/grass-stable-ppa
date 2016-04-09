@@ -47,11 +47,16 @@ class LayerList(object):
     def __init__(self, tree):
         self._tree = tree
 
+    def __len__(self):
+        return len([layer for layer in self])
+        
     def __iter__(self):
         """Iterates over the contents of the list."""
-        for item in self._tree.GetSelectedLayer(multi=True):
+        item = self._tree.GetFirstChild(self._tree.root)[0]
+        while item and item.IsOk():
             yield Layer(self._tree.GetPyData(item))
-
+            item = self._tree.GetNextItem(item)
+        
     def __getitem__(self, index):
         """Select a layer from the LayerList using the index."""
         return [l for l in self][index]
@@ -90,7 +95,7 @@ class LayerList(object):
 
         Launches property dialog if needed (raster, vector, etc.)
 
-        :param ltype: layer type (raster, vector, 3d-raster, ...)
+        :param ltype: layer type (raster, vector, raster_3d, ...)
         :param name: layer name
         :param checked: if True layer is checked
         :param opacity: layer opacity level
@@ -194,7 +199,23 @@ class LayerManagerGrassInterface(object):
 
     def UpdateCmdHistory(self, cmd):
         self.lmgr.goutput.GetPrompt().UpdateCmdHistory(cmd)
+        
+    def ShowStatusbar(self, show=True):
+        self.lmgr.GetMapDisplay().statusbarManager.Show(show)
 
+    def IsStatusbarShown(self):
+        return self.lmgr.GetMapDisplay().statusbarManager.IsShown()
+
+    def ShowAllToolbars(self, show=True):
+        if not show: # hide
+            action = self.lmgr.GetMapDisplay().RemoveToolbar
+        else:
+            action = self.lmgr.GetMapDisplay().AddToolbar
+        for toolbar in self.lmgr.GetMapDisplay().GetToolbarNames():
+            action(toolbar)
+            
+    def AreAllToolbarsShown(self):
+        return self.lmgr.GetMapDisplay().GetMapToolbar().IsShown()
 
 class LayerManagerGrassInterfaceForMapDisplay(object):
     """Provides reference only to the given layer list (according to tree),

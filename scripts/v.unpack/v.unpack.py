@@ -35,7 +35,6 @@
 #% label: Override projection check (use current location's projection)
 #% description: Assume that the dataset has same projection as the current location
 #% guisection: Output settings
-#% guisection: Output settings
 #%end
 
 import os
@@ -106,7 +105,7 @@ def main():
         pass
     elif os.path.exists(os.path.join(data_name, 'cell')):
         grass.fatal(_("This GRASS GIS pack file contains raster data. Use "
-                      "v.unpack to unpack <%s>" % map_name))
+                      "r.unpack to unpack <%s>" % map_name))
     else:
         grass.fatal(_("Pack file unreadable"))
 
