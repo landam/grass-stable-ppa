@@ -265,9 +265,12 @@ override_dh_installman:
 	dh_installman -p$(PKG_NAME)-core debian/$(BASE_NAME).1
 
 override_dh_python2:
-	dh_python2
-	dh_python2 /usr/lib/$(BASE_NAME)/gui/ /usr/lib/$(BASE_NAME)/tools/
-	dh_numpy
+	dh_python2 -pgrass-core -pgrass-gui -pgrass-dev
+	dh_python2 -pgrass-core /usr/lib/$(BASE_NAME)/etc/
+	dh_python2 -pgrass-core /usr/lib/$(BASE_NAME)/scripts/
+	dh_python2 -pgrass-gui /usr/lib/$(BASE_NAME)/gui/
+	dh_python2 -pgrass-dev /usr/lib/$(BASE_NAME)/tools/
+	dh_numpy -pgrass-core -pgrass-gui
 
 override_dh_shlibdeps:
 	dh_shlibdeps -l$(CURDIR)/debian/tmp/usr/lib/$(BASE_NAME)/lib
