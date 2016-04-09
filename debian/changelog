@@ -9,6 +9,7 @@ grass (7.1.svn20160409-1) UNRELEASED; urgency=medium
     - Update copyright years for Martin Landa, Vaclav Petras & Markus Metz
     - Add Tereza Fiedlerova & pietro to copyright holders
     - Add license & copyright for lz4.{c,h}
+  * Add patch to fix various spelling errors.
 
  -- Bas Couwenberg <sebastic@debian.org>  Sat, 09 Apr 2016 12:50:12 +0200
 
