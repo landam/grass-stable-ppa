@@ -1,0 +1,15 @@
+Description: Use packaged jQuery.
+Author: Bas Couwenberg <sebastic@debian.org>
+Forwarded: not-needed
+
+--- a/man/build_html.py
++++ b/man/build_html.py
+@@ -326,7 +326,7 @@ headerpso_tmpl = \
+ r"""
+ <link rel="stylesheet" href="grassdocs.css" type="text/css">
+ <link rel="stylesheet" href="parser_standard_options.css" type="text/css">
+-<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
++<script src="jquery/jquery.min.js"></script>
+ <script type="text/javascript" src="jquery.fixedheadertable.min.js"></script>
+ <script type="text/javascript" src="parser_standard_options.js"></script>
+ </head>
