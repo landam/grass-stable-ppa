@@ -5,6 +5,7 @@ Description: Fix spelling errors.
  specifed        -> specified
 Author: Bas Couwenberg <sebastic@debian.org>
 Forwarded: https://trac.osgeo.org/grass/ticket/2985
+Applied-Upstream: https://trac.osgeo.org/grass/changeset/68235
 
 --- a/gui/wxpython/gmodeler/g.gui.gmodeler.html
 +++ b/gui/wxpython/gmodeler/g.gui.gmodeler.html
