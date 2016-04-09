@@ -9,7 +9,7 @@ Can be used either from Layer Manager or as d.mon backend.
 Classes:
  - mapdisp::MapFrame
 
-(C) 2006-2014 by the GRASS Development Team
+(C) 2006-2016 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -53,6 +53,7 @@ from mapwin.analysis import ProfileController, MeasureDistanceController, \
     MeasureAreaController
 from gui_core.forms import GUI
 from core.giface import Notification
+from gui_core.vselect import VectorSelectBase, VectorSelectHighlighter
 
 from mapdisp import statusbar as sb
 
@@ -66,23 +67,25 @@ class MapFrame(SingleMapFrame):
     child double buffered drawing window.
     """
     def __init__(self, parent, giface, title = _("GRASS GIS - Map display"),
-                 toolbars = ["map"], tree = None, notebook = None, lmgr = None,
-                 page = None, Map = Map(), auimgr = None, name = 'MapWindow', **kwargs):
+                 toolbars = ["map"], statusbar = True,
+                 tree = None, notebook = None, lmgr = None,
+                 page = None, Map = None, auimgr = None, name = 'MapWindow', **kwargs):
         """Main map display window with toolbars, statusbar and
         2D map window, 3D map window and digitizer.
         
         :param toolbars: array of activated toolbars, e.g. ['map', 'digit']
+        :param statusbar: True to add statusbar
         :param tree: reference to layer tree
         :param notebook: control book ID in Layer Manager
         :param lmgr: Layer Manager
         :param page: notebook page with layer tree
         :param map: instance of render.Map
-        :param auimgs: AUI manager
+        :param auimgr: AUI manager
         :param name: frame name
         :param kwargs: wx.Frame attributes
         """
         SingleMapFrame.__init__(self, parent = parent, title = title,
-                              Map = Map, auimgr = auimgr, name = name, **kwargs)
+                                Map = Map, auimgr = auimgr, name = name, **kwargs)
         
         self._giface = giface
         # Layer Manager object
@@ -118,43 +121,10 @@ class MapFrame(SingleMapFrame):
         #
         # Add statusbar
         #
+        self.statusbarManager = None
+        if statusbar:
+            self.CreateStatusbar()
         
-        # items for choice
-        self.statusbarItems = [sb.SbCoordinates,
-                               sb.SbRegionExtent,
-                               sb.SbCompRegionExtent,
-                               sb.SbShowRegion,
-                               sb.SbAlignExtent,
-                               sb.SbResolution,
-                               sb.SbDisplayGeometry,
-                               sb.SbMapScale,
-                               sb.SbGoTo,
-                               sb.SbProjection]
-                            
-        self.statusbarItemsHiddenInNviz = (sb.SbAlignExtent,
-                                           sb.SbDisplayGeometry,
-                                           sb.SbShowRegion,
-                                           sb.SbResolution,
-                                           sb.SbMapScale)
-        
-        # create statusbar and its manager
-        statusbar = self.CreateStatusBar(number = 4, style = 0)
-        if globalvar.wxPython3:
-            statusbar.SetMinHeight(24)
-        statusbar.SetStatusWidths([-5, -2, -1, -1])
-        self.statusbarManager = sb.SbManager(mapframe = self, statusbar = statusbar)
-        
-        # fill statusbar manager
-        self.statusbarManager.AddStatusbarItemsByClass(self.statusbarItems, mapframe = self, statusbar = statusbar)
-        self.statusbarManager.AddStatusbarItem(sb.SbMask(self, statusbar = statusbar, position = 2))
-        sbRender = sb.SbRender(self, statusbar = statusbar, position = 3)
-        self.statusbarManager.AddStatusbarItem(sbRender)
-        
-        self.statusbarManager.Update()
-        
-        #
-        self.Map.updateProgress.connect(self.statusbarManager.SetProgress)
-
         # init decoration objects
         self.decorations = {}
         self.legend = LegendController(self.Map, self._giface)
@@ -197,12 +167,9 @@ class MapFrame(SingleMapFrame):
         # used by Nviz (3D display mode)
         self.MapWindow3D = None 
 
-        #
-        # initialize region values
-        #
-        self._initMap(Map = self.Map) 
-
-        self.toolbars['map'].SelectDefault()
+        if 'map' in self.toolbars:
+            self.toolbars['map'].SelectDefault()
+        
         #
         # Bind various events
         #
@@ -231,13 +198,58 @@ class MapFrame(SingleMapFrame):
         self.dialogs['category'] = None
         self.dialogs['vnet'] = None
         self.dialogs['query'] = None
+        self.dialogs['vselect'] = None
 
         # initialize layers to query (d.what.vect/rast)
         self._vectQueryLayers = []
         self._rastQueryLayers = []
+        # initialize highlighter for vector features
+        self._highlighter_layer = None
 
         self.measureController = None
 
+        self._resize()
+
+    def CreateStatusbar(self):
+        if self.statusbarManager:
+            return
+        
+        # items for choice
+        self.statusbarItems = [sb.SbCoordinates,
+                               sb.SbRegionExtent,
+                               sb.SbCompRegionExtent,
+                               sb.SbShowRegion,
+                               sb.SbAlignExtent,
+                               sb.SbResolution,
+                               sb.SbDisplayGeometry,
+                               sb.SbMapScale,
+                               sb.SbGoTo,
+                               sb.SbProjection]
+                            
+        self.statusbarItemsHiddenInNviz = (sb.SbAlignExtent,
+                                           sb.SbDisplayGeometry,
+                                           sb.SbShowRegion,
+                                           sb.SbResolution,
+                                           sb.SbMapScale)
+        
+        # create statusbar and its manager
+        statusbar = self.CreateStatusBar(number = 4, style = 0)
+        if globalvar.wxPython3:
+            statusbar.SetMinHeight(24)
+        statusbar.SetStatusWidths([-5, -2, -1, -1])
+        self.statusbarManager = sb.SbManager(mapframe = self, statusbar = statusbar)
+        
+        # fill statusbar manager
+        self.statusbarManager.AddStatusbarItemsByClass(self.statusbarItems, mapframe = self, statusbar = statusbar)
+        self.statusbarManager.AddStatusbarItem(sb.SbMask(self, statusbar = statusbar, position = 2))
+        sbRender = sb.SbRender(self, statusbar = statusbar, position = 3)
+        self.statusbarManager.AddStatusbarItem(sbRender)
+        
+        self.statusbarManager.Update()
+        
+        #
+        self.Map.GetRenderMgr().updateProgress.connect(self.statusbarManager.SetProgress)
+        
     def GetMapWindow(self):
         return self.MapWindow
 
@@ -250,7 +262,7 @@ class MapFrame(SingleMapFrame):
             grassVersion = "?"
 
         gisenv = grass.gisenv()
-        title = _("GRASS GIS %(version)s Map Display: %(id)s  - Location: %(loc)s@%(mapset)s") % \
+        title = _("GRASS GIS %(version)s Map Display: %(id)s - Location: %(loc)s@%(mapset)s") % \
             {'version': grassVersion,
              'id': str(displayId),
              'loc': gisenv["LOCATION_NAME"],
@@ -300,9 +312,10 @@ class MapFrame(SingleMapFrame):
         elif self._mgr.GetPane('3d').IsShown():
             self._mgr.GetPane('3d').Hide()
         self._mgr.GetPane('vdigit').Show()
-        self.toolbars['vdigit'] = VDigitToolbar(parent=self, toolSwitcher=self._toolSwitcher,
-                                                MapWindow = self.MapWindow,
-                                                digitClass=VDigit, giface=self._giface)
+        if 'vdigit' not in self.toolbars:
+            self.toolbars['vdigit'] = VDigitToolbar(parent=self, toolSwitcher=self._toolSwitcher,
+                                                    MapWindow = self.MapWindow,
+                                                    digitClass=VDigit, giface=self._giface)
         self.MapWindowVDigit.SetToolbar(self.toolbars['vdigit'])
         
         self._mgr.AddPane(self.toolbars['vdigit'],
@@ -345,7 +358,6 @@ class MapFrame(SingleMapFrame):
                                           self.OnFlyThrough, wx.ITEM_CHECK, 8),))
         self._toolSwitcher.AddToolToGroup(group='mouseUse', toolbar=self.toolbars['map'],
                                           tool=self.toolbars['map'].flyThrough)
-        self.toolbars['map'].ChangeToolsDesc(mode2d = False)
         # update status bar
         
         self.statusbarManager.HideStatusbarChoiceItemsByClass(self.statusbarItemsHiddenInNviz)
@@ -466,7 +478,8 @@ class MapFrame(SingleMapFrame):
         """
         # default toolbar
         if name == "map":
-            self.toolbars['map'] = MapToolbar(self, toolSwitcher=self._toolSwitcher)
+            if 'map' not in self.toolbars:
+                self.toolbars['map'] = MapToolbar(self, toolSwitcher=self._toolSwitcher)
             
             self._mgr.AddPane(self.toolbars['map'],
                               wx.aui.AuiPaneInfo().
@@ -479,7 +492,7 @@ class MapFrame(SingleMapFrame):
             
         # vector digitizer
         elif name == "vdigit":
-            self.toolbars['map'].combo.SetValue(_("Digitize"))
+            self.toolbars['map'].combo.SetValue(_("Vector digitizer"))
             self._addToolbarVDigit()
         
         if fixed:
@@ -487,27 +500,25 @@ class MapFrame(SingleMapFrame):
          
         self._mgr.Update()
         
-    def RemoveToolbar (self, name):
+    def RemoveToolbar (self, name, destroy=False):
         """Removes defined toolbar from the window
 
-        .. todo::
-            Only hide, activate by calling AddToolbar()
+        :param name toolbar to remove
+        :param destroy True to destroy otherwise toolbar is only hidden
         """
-        # cannot hide main toolbar
-        if name == "map":
-            return
-        
         self._mgr.DetachPane(self.toolbars[name])
-        self._toolSwitcher.RemoveToolbarFromGroup('mouseUse', self.toolbars[name])
-        self.toolbars[name].Destroy()
-        self.toolbars.pop(name)
+        if destroy:
+            self._toolSwitcher.RemoveToolbarFromGroup('mouseUse', self.toolbars[name])
+            self.toolbars[name].Destroy()
+            self.toolbars.pop(name)
+        else:
+            self.toolbars[name].Hide()
         
         if name == 'vdigit':
             self._mgr.GetPane('vdigit').Hide()
             self._mgr.GetPane('2d').Show()
             self._switchMapWindow(self.MapWindow2D)
-            
-        self.toolbars['map'].combo.SetValue(_("2D view"))
+
         self.toolbars['map'].Enable2D(True)
         
         self._mgr.Update()
@@ -536,6 +547,10 @@ class MapFrame(SingleMapFrame):
             self.MapWindow.UpdateMap(render = True, renderVector = True)
         else:
             self.MapWindow.UpdateMap(render = True)
+
+        # reset dialog with selected features
+        if self.dialogs['vselect']:
+            self.dialogs['vselect'].Reset()
         
         # update statusbar
         self.StatusbarUpdate()
@@ -548,6 +563,23 @@ class MapFrame(SingleMapFrame):
         if self.GetToolbar('vdigit'):
             self.toolbars['vdigit'].action['id'] = -1
             self.toolbars['vdigit'].action['desc']=''
+
+    def OnSelect(self, event):
+        """Vector feature selection button clicked
+        """
+        layerList = self._giface.GetLayerList()
+        layerSelected = layerList.GetSelectedLayer()
+        if not self.dialogs['vselect']:
+            if layerSelected is None:
+                GMessage(_("No map layer selected. Operation canceled."))
+                return
+
+            self.dialogs['vselect'] = VectorSelectBase(self.parent, self._giface)
+            self.dialogs['vselect'].CreateDialog(createButton=True)
+            self.dialogs['vselect'].onCloseDialog.connect(self._onCloseVectorSelectDialog)
+            
+    def _onCloseVectorSelectDialog(self):
+        self.dialogs['vselect'] = None
 
     def OnRotate(self, event):
         """Rotate 3D view
@@ -774,7 +806,9 @@ class MapFrame(SingleMapFrame):
                 self.toolbars['vdigit'].OnExit()
         if self.IsPaneShown('3d'):
             self.RemoveNviz()
-        
+        if hasattr(self, 'rdigit') and self.rdigit:
+            self.rdigit.CleanUp()
+
         if not self._layerManager:
             self.Destroy()
         elif self.page:
@@ -859,6 +893,8 @@ class MapFrame(SingleMapFrame):
         """
         Debug.msg(1, "QueryMap(): raster=%s vector=%s" % (','.join(rast),
                                                           ','.join(vect)))
+        if self._highlighter_layer is None:
+            self._highlighter_layer = VectorSelectHighlighter(mapdisp=self._giface.GetMapDisplay(), giface=self._giface)
 
         # use display region settings instead of computation region settings
         self.tmpreg = os.getenv("GRASS_REGION")
@@ -867,7 +903,8 @@ class MapFrame(SingleMapFrame):
         rastQuery = []
         vectQuery = []
         if rast:
-            rastQuery = grass.raster_what(map=rast, coord=(east, north))
+            rastQuery = grass.raster_what(map=rast, coord=(east, north),
+                                          localized=True)
         if vect:
             encoding = UserSettings.Get(group='atm', key='encoding', subkey='value')
             try:
@@ -878,7 +915,9 @@ class MapFrame(SingleMapFrame):
                        message=_("Failed to query vector map(s) <{maps}>. "
                                  "Check database settings and topology.").format(maps=','.join(vect)))
         self._QueryMapDone()
-        if 'Id' in vectQuery:
+
+        self._highlighter_layer.Clear()
+        if vectQuery and 'Category' in vectQuery[0]:
             self._queryHighlight(vectQuery)
 
         result = rastQuery + vectQuery
@@ -896,6 +935,8 @@ class MapFrame(SingleMapFrame):
         self.dialogs['query'] = None
         self._vectQueryLayers = []
         self._rastQueryLayers = []
+        self._highlighter_layer.Clear()
+        self._highlighter_layer = None
         event.Skip()
 
     def _onRedirectQueryOutput(self, output, style='log'):
@@ -907,36 +948,15 @@ class MapFrame(SingleMapFrame):
 
     def _queryHighlight(self, vectQuery):
         """Highlight category from query."""
-        cats = name = None
-        for res in vectQuery:
-            cats = {res['Layer']: [res['Category']]}
-            name = res['Map']
-        try:
-            qlayer = self.Map.GetListOfLayers(name = globalvar.QUERYLAYER)[0]
-        except IndexError:
-            qlayer = None
+        if len(vectQuery) > 0:
+            self._highlighter_layer.SetLayer(vectQuery[0]['Layer'])
+            self._highlighter_layer.SetMap(vectQuery[0]['Map'])
+            tmp = list()
+            for i in vectQuery:
+                tmp.append(i['Category'])
 
-        if not (cats and name):
-            if qlayer:
-                self.Map.DeleteLayer(qlayer)
-                self.MapWindow.UpdateMap(render = False, renderVector = False)
-            return
-
-        if not self.IsPaneShown('3d') and self.IsAutoRendered():
-            # highlight feature & re-draw map
-            if qlayer:
-                qlayer.SetCmd(self.AddTmpVectorMapLayer(name, cats,
-                                                        useId = False,
-                                                        addLayer = False))
-            else:
-                qlayer = self.AddTmpVectorMapLayer(name, cats, useId = False)
-            
-            # set opacity based on queried layer
-            # TODO fix
-            # opacity = layer.maplayer.GetOpacity(float = True)
-            # qlayer.SetOpacity(opacity)
-            
-            self.MapWindow.UpdateMap(render = False, renderVector = False)
+            self._highlighter_layer.SetCats(tmp)
+            self._highlighter_layer.DrawSelected()
 
     def _QueryMapDone(self):
         """Restore settings after querying (restore GRASS_REGION)
@@ -977,13 +997,19 @@ class MapFrame(SingleMapFrame):
         icon = ''
         size = 0
         # here we know that there is one selected layer and it is vector
-        vparam = self._giface.GetLayerList().GetSelectedLayers()[0].cmd
+        layerSelected = self._giface.GetLayerList().GetSelectedLayer()
+        if not layerSelected:
+            return None
+        
+        vparam = layerSelected.cmd
         for p in vparam:
             if '=' in p:
-                parg,pval = p.split('=', 1)
-                if parg == 'icon': icon = pval
-                elif parg == 'size': size = float(pval)
-
+                parg, pval = p.split('=', 1)
+                if parg == 'icon':
+                    icon = pval
+                elif parg == 'size':
+                    size = float(pval)
+        
         pattern = ["d.vect",
                    "map=%s" % name,
                    "color=%s" % colorStr,
@@ -1007,12 +1033,15 @@ class MapFrame(SingleMapFrame):
                 cmd[-1].append("cats=%s" % ListOfCatsToRange(lcats))
 
         if addLayer:
+            args = {}
             if useId:
-                return self.Map.AddLayer(ltype = 'vector', name = globalvar.QUERYLAYER, command = cmd,
-                                         active = True, hidden = True, opacity = 1.0)
+                args['ltype'] = 'vector'
             else:
-                return self.Map.AddLayer(ltype = 'command', name = globalvar.QUERYLAYER, command = cmd,
-                                         active = True, hidden = True, opacity = 1.0)
+                args['ltype'] = 'command'
+                
+            return self.Map.AddLayer(name = globalvar.QUERYLAYER, command = cmd,
+                                     active = True, hidden = True, opacity = 1.0,
+                                     render = True, **args)
         else:
             return cmd
 
@@ -1414,7 +1443,15 @@ class MapFrame(SingleMapFrame):
 
     def GetMapToolbar(self):
         """Returns toolbar with zooming tools"""
-        return self.toolbars['map']
+        return self.toolbars['map'] if 'map' in self.toolbars else None
+
+    def GetToolbarNames(self):
+        """Return toolbar names"""
+        return self.toolbars.keys()
+
+    def GetDialog(self, name):
+        """Get selected dialog if exist"""
+        return self.dialogs.get(name, None)
 
     def OnVNet(self, event):
         """Dialog for v.net* modules 
@@ -1442,3 +1479,58 @@ class MapFrame(SingleMapFrame):
         map_win.ActivateWin()
 
         self.MapWindow = map_win
+
+    def AddRDigit(self):
+        """Adds raster digitizer: creates toolbar and digitizer controller,
+        binds events and signals."""
+        from rdigit.controller import RDigitController, EVT_UPDATE_PROGRESS
+        from rdigit.toolbars import RDigitToolbar
+
+        self.rdigit = RDigitController(self._giface,
+                                       mapWindow=self.GetMapWindow())
+        self.toolbars['rdigit'] = RDigitToolbar(parent=self, controller=self.rdigit,
+                                                toolSwitcher=self._toolSwitcher)
+        # connect signals
+        self.rdigit.newRasterCreated.connect(self.toolbars['rdigit'].NewRasterAdded)
+        self.rdigit.newRasterCreated.connect(lambda name: self._giface.mapCreated.emit(name=name, ltype='raster'))
+        self.rdigit.newFeatureCreated.connect(self.toolbars['rdigit'].UpdateCellValues)
+        self.rdigit.uploadMapCategories.connect(self.toolbars['rdigit'].UpdateCellValues)
+        self.rdigit.showNotification.connect(lambda text: self.SetStatusText(text, 0))
+        self.rdigit.quitDigitizer.connect(self.QuitRDigit)
+        self.rdigit.Bind(EVT_UPDATE_PROGRESS,
+                         lambda evt: self.statusbarManager.SetProgress(evt.range, evt.value, evt.text))
+        rasters = self.GetMap().GetListOfLayers(ltype='raster', mapset=grass.gisenv()['MAPSET'])
+        self.toolbars['rdigit'].UpdateRasterLayers(rasters)
+        self.toolbars['rdigit'].SelectDefault()
+
+        self.GetMap().layerAdded.connect(self._updateRDigitLayers)
+        self.GetMap().layerRemoved.connect(self._updateRDigitLayers)
+        self.GetMap().layerChanged.connect(self._updateRDigitLayers)
+        self._mgr.AddPane(self.toolbars['rdigit'],
+                          wx.aui.AuiPaneInfo().
+                          Name("rdigit toolbar").Caption(_("Raster Digitizer Toolbar")).
+                          ToolbarPane().Top().Row(1).
+                          LeftDockable(False).RightDockable(False).
+                          BottomDockable(False).TopDockable(True).Floatable().
+                          CloseButton(False).Layer(2).DestroyOnClose().
+                          BestSize((self.toolbars['rdigit'].GetBestSize())))
+        self._mgr.Update()
+
+        self.rdigit.Start()
+
+    def _updateRDigitLayers(self, layer):
+        mapset = grass.gisenv()['MAPSET']
+        self.toolbars['rdigit'].UpdateRasterLayers(
+            rasters=self.GetMap().GetListOfLayers(ltype='raster', mapset=mapset))
+
+    def QuitRDigit(self):
+        """Calls digitizer cleanup, removes digitizer object and disconnects
+        signals from Map."""
+        self.rdigit.CleanUp()
+        # disconnect updating layers
+        self.GetMap().layerAdded.disconnect(self._updateRDigitLayers)
+        self.GetMap().layerRemoved.disconnect(self._updateRDigitLayers)
+        self.GetMap().layerChanged.disconnect(self._updateRDigitLayers)
+
+        self.RemoveToolbar('rdigit', destroy=True)
+        self.rdigit = None

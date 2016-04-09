@@ -134,6 +134,7 @@ void Vect_destroy_boxlist(struct boxlist *);
 
 /* Bounding box (MBR) */
 int Vect_point_in_box(double, double, double, const struct bound_box *);
+int Vect_point_in_box_2d(double, double, const struct bound_box *);
 int Vect_box_overlap(const struct bound_box *, const struct bound_box *);
 int Vect_box_copy(struct bound_box *, const struct bound_box *);
 int Vect_box_extend(struct bound_box *, const struct bound_box *);
@@ -159,6 +160,9 @@ int Vect_cidx_dump(const struct Map_info *, FILE *);
 int Vect_cidx_save(struct Map_info *);
 int Vect_cidx_open(struct Map_info *, int);
 
+/* Create/destroy Map_info */
+struct Map_info *Vect_new_map_struct(void);
+void Vect_destroy_map_struct(struct Map_info *);
 
 /* Set/get map header info */
 int Vect_read_header(struct Map_info *);
@@ -313,7 +317,7 @@ int Vect_select_lines_by_box(struct Map_info *, const struct bound_box *,
 int Vect_select_areas_by_box(struct Map_info *, const struct bound_box *,
                              struct boxlist *);
 int Vect_select_isles_by_box(struct Map_info *, const struct bound_box *,
-			     struct boxlist *);
+                 struct boxlist *);
 int Vect_select_nodes_by_box(struct Map_info *, const struct bound_box *,
                              struct ilist *);
 int Vect_find_node(struct Map_info *, double, double, double, double, int);
@@ -391,8 +395,12 @@ int Vect_graph_shortest_path(dglGraph_s *, int, int, struct ilist *, double *);
 /* Network (graph) */
 int Vect_net_build_graph(struct Map_info *, int, int, int, const char *,
                          const char *, const char *, int, int);
+int Vect_net_ttb_build_graph(struct Map_info *, int, int, int, int, int ,
+                            const char *, const char *, const char *, int, int);
 int Vect_net_shortest_path(struct Map_info *, int, int, struct ilist *,
                            double *);
+int Vect_net_ttb_shortest_path(struct Map_info *, int, int, int, int, int,
+                             struct ilist *, double *);
 dglGraph_s *Vect_net_get_graph(struct Map_info *);
 int Vect_net_get_line_cost(const struct Map_info *, int, int, double *);
 int Vect_net_get_node_cost(const struct Map_info *, int, double *);
@@ -401,12 +409,12 @@ int Vect_net_nearest_nodes(struct Map_info *, double, double, double, int,
                            struct line_pnts *, struct line_pnts *, double *);
 int Vect_net_shortest_path_coor(struct Map_info *, double, double, double,
                                 double, double, double, double, double,
-                                double *, struct line_pnts *, struct ilist *,
+                                double *, struct line_pnts *, struct ilist *,  struct ilist *,
                                 struct line_pnts *, struct line_pnts *,
                                 double *, double *);
-int Vect_net_shortest_path_coor2(struct Map_info *, double, double, double,
-                                double, double, double, double, double,
-                                double *, struct line_pnts *, struct ilist *, struct ilist *,
+int Vect_net_ttb_shortest_path_coor(struct Map_info *, double, double, double,
+                                double, double, double, double, double, int,
+                                double *, struct line_pnts *, struct ilist *,  struct ilist *,
                                 struct line_pnts *, struct line_pnts *,
                                 double *, double *);
 
@@ -591,10 +599,19 @@ int Vect_attach_centroids(struct Map_info *, const struct bound_box *);
     /* GEOS support */
 #ifdef HAVE_GEOS
 GEOSGeometry *Vect_read_line_geos(struct Map_info *, int, int*);
-GEOSGeometry *Vect_line_to_geos(struct Map_info *, const struct line_pnts*, int);
+GEOSGeometry *Vect_line_to_geos(const struct line_pnts*, int, int);
 GEOSGeometry *Vect_read_area_geos(struct Map_info *, int);
 GEOSCoordSequence *Vect_get_area_points_geos(struct Map_info *, int);
 GEOSCoordSequence *Vect_get_isle_points_geos(struct Map_info *, int);
+char *Vect_line_to_wkt(const struct line_pnts *, int, int);
+unsigned char *Vect_line_to_wkb(const struct line_pnts *,
+                                int, int, size_t *);
+char *Vect_read_area_to_wkt(struct Map_info *, int);
+unsigned char *Vect_read_area_to_wkb(struct Map_info *, int, size_t *);
+unsigned char *Vect_read_line_to_wkb(const struct Map_info *, 
+                                     struct line_pnts *, 
+                                     struct line_cats *, 
+                                     int, size_t *, int *);
 #endif
 
     /* Raster color tables */

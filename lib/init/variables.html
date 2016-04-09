@@ -107,6 +107,14 @@ PERMANENT
   <dd>defines the name (path) of a shell script to be processed as
   batch job.</dd>
 
+  <dt>GRASS_COMPRESSOR</dt>
+  <dd>[libraster]<br>
+    the compression method for new raster maps can be set with the
+    environment variable GRASS_COMPRESSOR. Supported methods are RLE, 
+    ZLIB, LZ4, and BZIP2 if GRASS has been compiled with BZIP2 support. 
+    The default is ZLIB which can be changed with e.g. 
+    <tt>GRASS_COMPRESSOR=LZ4</tt></dd>
+
   <dt>GRASS_DB_ENCODING</dt>
   <dd>[various modules, wxGUI]<br>
     encoding for vector attribute data (utf-8, ascii, iso8859-1, koi8-r)</dd>
@@ -186,8 +194,12 @@ PERMANENT
     raster maps are compressed using zlib compression. This applies to all 
     raster map types (CELL, FCELL, DCELL).
     <br><br>
+    Valid zlib compression levels are -1 to 9. The <tt>GRASS_ZLIB_LEVEL=-1</tt> corresponds
+    to the zlib default value (equivalent to <tt>GRASS_ZLIB_LEVEL=6</tt>). Often
+    <tt>GRASS_ZLIB_LEVEL=1</tt> gives the best compromise between speed and compression.
+    <br><br>
     If the variable doesn't exist, or the value cannot be parsed as an
-    integer, zlib's default compression level will be used.</dd>
+    integer, zlib's default compression level 6 will be used.</dd>
   
   <dt>GRASS_MESSAGE_FORMAT</dt>
   <dd>[various modules, wxGUI]<br>
@@ -276,23 +288,58 @@ PERMANENT
 
   <dt>GRASS_VECTOR_TEMPORARY</dt>
   <dd>[vectorlib]<br> If the environment variable
-    GRASS_VECTOR_TEMPORARY exists, vector library will operate with
-    temporary vector maps. New vector maps will be created
-    in <tt>$MAPSET/.tmp/$HOSTNAME/vector</tt>, existing vector maps
-    will be read also from this directory. Note that temporary vector
-    maps are not visible to the user
-    via <em><a href="g.list.html">g.list</a></em>. They are used
-    internally by the GRASS modules and deleted automatically when the
-    map is closed or GRASS session quited. Note that this variable is
-    dedicated for internal use only.</dd>
-  
+    GRASS_VECTOR_TEMPORARY exists, GRASS vector library will operate
+    on temporary vector maps. New vector maps will be created in
+    temporary directory (see GRASS_VECTOR_TMPDIR_MAPSET variable), existing
+    vector maps will be read (if found) also from this directory. It
+    may be set to either:
+    <ul>
+      <li><tt>keep</tt> - the temporary vector map is not deleted when
+      closing the map.
+      <li><tt>move</tt> - the temporary vector map is moved to the
+      current mapset when closing the map.</li>
+      <li><tt>delete</tt> - the temporary vector map is deleted when
+      closing the map.
+      </li>
+    </ul>    
+    Default value is <tt>keep</tt>.
+
+    Note that temporary vector maps are not visible to the user
+    via <em><a href="g.list.html">g.list</a></em>
+    or <em><a href="wxGUI.html">wxGUI</a></em>. They are used
+    internally by the GRASS modules and deleted automatically when
+    GRASS session is quited.</dd>
+
+  <dt>GRASS_VECTOR_TMPDIR_MAPSET</dt>
+  <dd>[vectorlib]<br> By default GRASS temporary directory is located in
+  <tt>$LOCATION/$MAPSET/.tmp/$HOSTNAME</tt>. If GRASS_VECTOR_TMPDIR_MAPSET is
+  set to '0', the temporary directory is located in TMPDIR
+  (environmental variable defined by the user or GRASS initialization
+  script if not given).<br>
+  Important note: This variable is currently used only in vector
+  library. In other words the variable is ignored by raster or
+  raster3d library.</dd>
+
+  <dt>GRASS_VECTOR_TOPO_DEBUG</dt>
+  <dd>[vectorlib, v.generalize]<br> If the environment variable
+  GRASS_VECTOR_TOPO_DEBUG
+  exists, <em><a href="v.generalize.html">v.generalize</a></em> runs
+  in extremely slow debug mode.</dd>
+
   <dt>GRASS_WXBUNDLED</dt>
   <dd>[wxGUI]<br>
     set to tell wxGUI that a bundled wxPython will be used.<br>
     When set, the wxGUI will not check the wxPython version, as this
     function is incompatible with a bundled wxPython.  It is up to the
     packager to make sure that a compatible wxPython version is bundled.</dd>
-  
+
+  <dt>GRASS_WXVERSION</dt>
+  <dd>[wxGUI]<br>
+    set to tell wxGUI which version of wxPython to use.<br>
+    When set, the wxGUI will select the given wxPython version. It's
+    useful when multiple versions of wxPython are installed and the
+    user wants to run wxGUI with non-default wxPython version.</dd>
+
   <dt>GRASS_XTERM</dt>
   <dd>[lib/init/grass-xterm-wrapper, lib/init/grass-xterm-mac]<br>
     set to any value (e.g. rxvt, aterm, gnome-terminal, konsole) to
@@ -321,7 +368,7 @@ PERMANENT
     If OpenMP support is enabled this limits the number of threads.
     The default is set to the number of CPUs on the system.
     Setting to '1' effectively disables parallel processing.</dd>
-    
+
   <dt>TMPDIR, TEMP, TMP</dt>
   <dd>[Various GRASS GIS commands and wxGUI]<br>
   <!-- what about Windows %TEMP% and http://trac.osgeo.org/grass/ticket/560#comment:21 ? -->
@@ -368,6 +415,12 @@ PERMANENT
   
   <dt>GRASS_RENDER_TEXT_SIZE</dt>
   <dd>defines default text size.</dd>
+
+  <dt>GRASS_RENDER_COMMAND</dt>
+  <dd>external command called by display library to render data (see
+    example in <em><a href="displaydrivers.html">display
+    drivers</a></em> page for details).<br>Currently only Python scripts
+    are supported.</dd>
 
 </dl>
 
@@ -521,4 +574,4 @@ Note: On MS Windows the files are stored in <tt>%APPDATA%</tt>.
 </em>
 
 <p>
-<i>Last changed: $Date: 2015-11-27 00:10:47 +0100 (Fri, 27 Nov 2015) $</i>
+<i>Last changed: $Date: 2016-02-20 02:08:19 -0800 (Sat, 20 Feb 2016) $</i>

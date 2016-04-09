@@ -2,6 +2,7 @@ MODULE_TOPDIR = ..
 
 SUBDIRS = \
 	d.correlate \
+	d.frame \
 	d.out.file \
 	d.to.rast \
 	d.polar \
@@ -20,6 +21,7 @@ SUBDIRS = \
 	g.extension \
 	g.extension.all \
 	g.manual \
+	g.search.modules \
 	i.colors.enhance \
 	i.image.mosaic \
 	i.in.spotvgt \
@@ -33,7 +35,7 @@ SUBDIRS = \
 	r.colors.stddev \
 	r.fillnulls \
 	r.grow \
-	r.import \
+    r.import \
 	r.in.aster \
 	r.in.srtm \
 	r.in.wms \

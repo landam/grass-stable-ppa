@@ -49,15 +49,15 @@ from core.utils            import SetAddOnPath, GetLayerNameFromCmd, command2lty
 from gui_core.preferences  import MapsetAccess, PreferencesDialog
 from lmgr.layertree        import LayerTree, LMIcons
 from lmgr.menudata         import LayerManagerMenuData, LayerManagerModuleTree
-from gui_core.widgets      import GNotebook
+from gui_core.widgets      import GNotebook, FormNotebook
 from modules.mcalc_builder import MapCalcFrame
 from dbmgr.manager         import AttributeManager
 from core.workspace        import ProcessWorkspaceFile, ProcessGrcFile, WriteWorkspaceFile
 from core.gconsole         import GConsole, EVT_IGNORED_CMD_RUN
 from core.giface           import Notification
 from gui_core.goutput      import GConsoleWindow, GC_SEARCH, GC_PROMPT
-from gui_core.dialogs      import GdalOutputDialog, DxfImportDialog, GdalImportDialog, MapLayersDialog
-from gui_core.dialogs      import LocationDialog, MapsetDialog, CreateNewVector, GroupDialog, QuitDialog
+from modules.import_export import GdalOutputDialog, DxfImportDialog, GdalImportDialog, OgrImportDialog
+from gui_core.dialogs      import LocationDialog, MapsetDialog, CreateNewVector, GroupDialog, MapLayersDialog, QuitDialog
 from modules.colorrules    import RasterColorTable, VectorColorTable
 from gui_core.menu         import Menu, SearchModuleWindow
 from gmodeler.model        import Model
@@ -70,6 +70,7 @@ from lmgr.toolbars         import LMWorkspaceToolbar, LMDataToolbar, LMToolsTool
 from lmgr.toolbars         import LMMiscToolbar, LMVectorToolbar, LMNvizToolbar
 from lmgr.pyshell          import PyShellWindow
 from lmgr.giface           import LayerManagerGrassInterface
+from datacatalog.catalog   import DataCatalog
 from gui_core.forms        import GUI
 from gcp.manager           import GCPWizard
 from nviz.main             import haveNviz
@@ -277,17 +278,20 @@ class GMFrame(wx.Frame):
     
     def _createNoteBook(self):
         """Creates notebook widgets"""
-        self.notebook = GNotebook(parent = self, style = globalvar.FNPageDStyle)
+        if sys.platform == 'win32':
+            self.notebook = GNotebook(parent=self, style=globalvar.FNPageDStyle)
+        else:
+            self.notebook = FormNotebook(parent=self, style=wx.NB_BOTTOM)
         # create displays notebook widget and add it to main notebook page
         cbStyle = globalvar.FNPageStyle
         if globalvar.hasAgw:
-            self.notebookLayers = FN.FlatNotebook(self, id = wx.ID_ANY, agwStyle = cbStyle)
+            self.notebookLayers = FN.FlatNotebook(self.notebook, id=wx.ID_ANY, agwStyle=cbStyle)
         else:
-            self.notebookLayers = FN.FlatNotebook(self, id = wx.ID_ANY, style = cbStyle)
+            self.notebookLayers = FN.FlatNotebook(self.notebook, id=wx.ID_ANY, style=cbStyle)
         self.notebookLayers.SetTabAreaColour(globalvar.FNPageColor)
         menu = self._createTabMenu()
         self.notebookLayers.SetRightClickMenu(menu)
-        self.notebook.AddPage(page = self.notebookLayers, text = _("Map layers"), name = 'layers')
+        self.notebook.AddPage(page = self.notebookLayers, text = _("Layers"), name = 'layers')
         
         # create 'command output' text area
         self._gconsole = GConsole(guiparent = self, giface = self._giface,
@@ -295,10 +299,10 @@ class GMFrame(wx.Frame):
                                                       '^r.external$|^r.external.out$|'
                                                       '^v.in.ogr$|^v.external$|^v.external.out$|'
                                                       '^cd$|^cd .*')
-        self.goutput = GConsoleWindow(parent = self, gconsole = self._gconsole,
+        self.goutput = GConsoleWindow(parent=self.notebook, gconsole=self._gconsole,
                                       menuModel=self._moduleTreeBuilder.GetModel(),
                                       gcstyle = GC_PROMPT)
-        self.notebook.AddPage(page = self.goutput, text = _("Command console"), name = 'output')
+        self.notebook.AddPage(page = self.goutput, text = _("Console"), name = 'output')
 
         self.goutput.showNotification.connect(lambda message: self.SetStatusText(message))
 
@@ -313,22 +317,31 @@ class GMFrame(wx.Frame):
         
         # create 'search module' notebook page
         if not UserSettings.Get(group = 'manager', key = 'hideTabs', subkey = 'search'):
-            self.search = SearchModuleWindow(parent = self, model=self._moduleTreeBuilder.GetModel())
+            self.search = SearchModuleWindow(parent=self.notebook, handlerObj=self,
+                                             model=self._moduleTreeBuilder.GetModel())
             self.search.showNotification.connect(lambda message: self.SetStatusText(message))
-            self.notebook.AddPage(page = self.search, text = _("Search modules"), name = 'search')
+            self.notebook.AddPage(page = self.search, text = _("Modules"), name = 'search')
         else:
             self.search = None
         
+        # create 'data catalog' notebook page
+        self.datacatalog = DataCatalog(parent=self.notebook, giface=self._giface)
+        self.datacatalog.showNotification.connect(lambda message: self.SetStatusText(message))
+        self.notebook.AddPage(page = self.datacatalog, text = _("Data"), name = 'catalog')
+        
         # create 'python shell' notebook page
         if not UserSettings.Get(group = 'manager', key = 'hideTabs', subkey = 'pyshell'):
-            self.pyshell = PyShellWindow(parent = self)
-            self.notebook.AddPage(page = self.pyshell, text = _("Python shell"), name = 'pyshell')
+            self.pyshell = PyShellWindow(parent=self.notebook, giface=self._giface)
+            self.notebook.AddPage(page = self.pyshell, text = _("Python"), name = 'pyshell')
         else:
             self.pyshell = None
         
         # bindings
+        if sys.platform == 'win32':
+            self.notebook.Bind(FN.EVT_FLATNOTEBOOK_PAGE_CHANGED, self.OnPageChanged)
+        else:
+            self.notebook.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.OnPageChanged)
         self.notebookLayers.Bind(FN.EVT_FLATNOTEBOOK_PAGE_CHANGED,    self.OnCBPageChanged)
-        self.notebook.Bind(FN.EVT_FLATNOTEBOOK_PAGE_CHANGED, self.OnPageChanged)
         self.notebookLayers.Bind(FN.EVT_FLATNOTEBOOK_PAGE_CLOSING,    self.OnCBPageClosed)
         
         return self.notebook
@@ -353,10 +366,10 @@ class GMFrame(wx.Frame):
         self._auimgr.Update()
         
         # create nviz tools tab
-        self.nviz = NvizToolWindow(parent = self,
-                                   display = self.GetMapDisplay())
+        self.nviz = NvizToolWindow(parent=self.notebook, tree=self.GetLayerTree(),
+                                   display=self.GetMapDisplay())
         idx = self.notebook.GetPageIndexByName('layers')
-        self.notebook.InsertPage(indx = idx + 1, page = self.nviz, text = _("3D view"), name = 'nviz')
+        self.notebook.InsertPage(index=idx + 1, page=self.nviz, text=_("3D view"), name='nviz')
         self.notebook.SetSelectionByName('nviz')
 
         # this is a bit strange here since a new window is created everytime
@@ -546,6 +559,8 @@ class GMFrame(wx.Frame):
         page = event.GetSelection()
         if page == self.notebook.GetPageIndexByName('output'):
             wx.CallAfter(self.goutput.ResetFocus)
+        elif page == self.notebook.GetPageIndexByName('catalog'):
+            wx.CallAfter(self.datacatalog.LoadItems)
         self.SetStatusText('', 0)
         
         event.Skip()
@@ -677,7 +692,7 @@ class GMFrame(wx.Frame):
             # add layer into layer tree
             lname, found = GetLayerNameFromCmd(command, fullyQualified = True,
                                                layerType = layertype)
-            self.GetLayerTree().AddLayer(ltype = layertype,
+            self.GetLayerTree().AddLayer(ltype = layertype, lchecked = True,
                                          lname = lname,
                                          lcmd = command)
 
@@ -1059,8 +1074,8 @@ class GMFrame(wx.Frame):
         if name and dlg.IsChecked('add'):
             # add layer to map layer tree
             self.GetLayerTree().AddLayer(ltype = 'vector',
-                                            lname = name,
-                                            lcmd = ['d.vect', 'map=%s' % name])
+                                         lname = name, lchecked=True,
+                                         lcmd = ['d.vect', 'map=%s' % name])
         dlg.Destroy()
         
     def OnSystemInfo(self, event):
@@ -1085,16 +1100,16 @@ class GMFrame(wx.Frame):
                                 "%s: %s\n"
                                 "%s: %s\n"
                                 # "%s: %s (%s)\n"
-                                "GDAL/OGR: %s\n"
+                                "GDAL: %s\n"
                                 "PROJ.4: %s\n"
                                 "GEOS: %s\n"
                                 "SQLite: %s\n"
                                 "Python: %s\n"
                                 "wxPython: %s\n"
                                 "%s: %s%s\n"% (_("GRASS version"), vInfo.get('version', _('unknown version')),
-                                               _("GRASS SVN Revision"), vInfo.get('revision', '?'),
-                                               _("Build Date"), vInfo.get('build_date', '?'),
-                                               _("Build Platform"), vInfo.get('build_platform', '?'),
+                                               _("GRASS SVN revision"), vInfo.get('revision', '?'),
+                                               _("Build date"), vInfo.get('build_date', '?'),
+                                               _("Build platform"), vInfo.get('build_platform', '?'),
                                                # _("GIS Library Revision"), vInfo.get('libgis_revision'], vInfo.get('libgis_date'].split(' ', 1)[0],
                                                vInfo.get('gdal', '?'), vInfo.get('proj4', '?'), vInfo.get('geos', '?'), vInfo.get('sqlite', '?'),
                                                platform.python_version(),
@@ -1274,7 +1289,7 @@ class GMFrame(wx.Frame):
                     mapdisp.SetPosition(display['pos'])
                 if display['size']:
                     mapdisp.SetSize(display['size'])
-                    
+            
             # set extent if defined
             if display['extent']:
                 w, s, e, n, b, t = display['extent']
@@ -1563,7 +1578,7 @@ class GMFrame(wx.Frame):
         The parameters of all handlers which are associated with module
         and contained in menu/toolboxes must be event and cmd.
         When called from menu event is always None and cmd is the
-        associated command (list containing a module name and paremeters).
+        associated command (list containing a module name and parameters).
         
         .. todo::
             This documentation is actually documentation of some
@@ -1698,13 +1713,13 @@ class GMFrame(wx.Frame):
         
     def OnImportOgrLayers(self, event, cmd = None):
         """Convert multiple OGR layers to GRASS vector map layers"""
-        dlg = GdalImportDialog(parent = self, giface = self._giface, ogr = True)
+        dlg = OgrImportDialog(parent = self, giface = self._giface)
         dlg.CentreOnScreen()
         dlg.Show()
         
     def OnLinkOgrLayers(self, event, cmd = None):
         """Links multiple OGR layers to GRASS vector map layers"""
-        dlg = GdalImportDialog(parent = self, giface = self._giface, ogr = True, link = True)
+        dlg = OgrImportDialog(parent = self, giface = self._giface, link = True)
         dlg.CentreOnScreen()
         dlg.Show()
         
@@ -1874,19 +1889,16 @@ class GMFrame(wx.Frame):
         for layerName in mapLayers:
             if ltype == 'raster':
                 cmd = ['d.rast', 'map=%s' % layerName]
-                wxType = 'raster'
             elif ltype == 'raster_3d':
                 cmd = ['d.rast3d', 'map=%s' % layerName]
-                wxType = '3d-raster'
             elif ltype == 'vector':
                 cmd = ['d.vect', 'map=%s' % layerName] + GetDisplayVectSettings()
-                wxType = 'vector'
             else:
                 GError(parent = self,
                        message = _("Unsupported map layer type <%s>.") % ltype)
                 return
             
-            newItem = maptree.AddLayer(ltype = wxType,
+            newItem = maptree.AddLayer(ltype = ltype,
                                        lname = layerName,
                                        lchecked = check,
                                        lopacity = 1.0,
@@ -1918,23 +1930,13 @@ class GMFrame(wx.Frame):
     def AddOrUpdateMap(self, mapName, ltype):
         """Add map layer or update"""
         # start new map display if no display is available
-
-        # TODO: standardize type identifiers
-        convertType = {'raster': 'raster',
-                       '3d-raster': 'raster_3d',
-                       'vector': 'vector'}
-        try:
-            grassType = convertType[ltype]
-        except KeyError:
-            if ltype in convertType.values():
-                grassType = ltype
-            else:
-                GError(parent = self,
-                       message = _("Unsupported map layer type <%s>.") % ltype)
-                return
+        if ltype not in ['raster', 'raster_3d', 'vector']:
+            GError(parent = self,
+                   message = _("Unsupported map layer type <%s>.") % ltype)
+            return
 
         if not self.currentPage:
-            self.AddMaps([mapName], grassType, check = True)
+            self.AddMaps([mapName], ltype, check=True)
         else:
             display = self.GetMapDisplay()
             mapLayers = map(lambda x: x.GetName(),
@@ -1942,7 +1944,7 @@ class GMFrame(wx.Frame):
             if mapName in mapLayers:
                 display.GetWindow().UpdateMap(render = True)
             else:
-                self.AddMaps([mapName], grassType, check = True)
+                self.AddMaps([mapName], ltype, check=True)
 
     def OnAddRaster(self, event):
         """Add raster map layer"""
@@ -1959,7 +1961,7 @@ class GMFrame(wx.Frame):
         if not self.currentPage:
             self.NewDisplay(show = True)
         
-        self._popupMenu((('layer3d-raster', self.OnAddRaster3D),
+        self._popupMenu((('layerRaster_3d', self.OnAddRaster3D),
                          (None, None),
                          ('layerRgb',    self.OnAddRasterRGB),
                          ('layerHis',    self.OnAddRasterHIS),
@@ -2022,7 +2024,7 @@ class GMFrame(wx.Frame):
     def OnAddRaster3D(self, event):
         """Add 3D raster map to the current layer tree"""
         self.notebook.SetSelectionByName('layers')
-        self.GetLayerTree().AddLayer('3d-raster')
+        self.GetLayerTree().AddLayer('raster_3d')
 
     def OnAddRasterRGB(self, event):
         """Add RGB raster map to the current layer tree"""

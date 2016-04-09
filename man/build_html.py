@@ -191,6 +191,7 @@ r"""<hr class="header">
 <a href="${index_url}">Main index</a> |
 <a href="topics.html">Topics index</a> |
 <a href="keywords.html">Keywords index</a> |
+<a href="graphical_index.html">Graphical index</a> |
 <a href="full_index.html">Full index</a>
 </p>
 <p>
@@ -316,10 +317,27 @@ r"""
 <hr class="header">
 
 <h2>Topic: ${keyword}</h2>
-<i>Note: see also the corresponding keyword <a href="keywords.html#${keyword}">${keyword}</a> for additional references.</i>
-<p>
+
 <table>
 """)
+#"
+
+headerpso_tmpl = \
+r"""
+<link rel="stylesheet" href="grassdocs.css" type="text/css">
+<link rel="stylesheet" href="parser_standard_options.css" type="text/css">
+<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+<script type="text/javascript" src="jquery.fixedheadertable.min.js"></script>
+<script type="text/javascript" src="parser_standard_options.js"></script>
+</head>
+<body style="width: 99%">
+<div id="container">
+
+<a href="index.html"><img src="grass_logo.png" alt="GRASS logo"></a>
+<hr class="header">
+<h2>Parser standard options</h2>
+<ul>
+"""
 #"
 
 ############################################################################
@@ -358,14 +376,14 @@ def replace_file(name):
 def copy_file(src, dst):
     write_file(dst, read_file(src))
 
-def html_files(cls = None):
+def html_files(cls=None, ignore_gui=True):
     for cmd in sorted(os.listdir(html_dir)):
         if cmd.endswith(".html") and \
            (cls in [None, '*'] or cmd.startswith(cls + ".")) and \
            (cls != '*' or len(cmd.split('.')) >= 3) and \
            cmd not in ["full_index.html", "index.html"] and \
            cmd not in exclude_mods and \
-           not cmd.startswith("wxGUI."):
+           (ignore_gui and not cmd.startswith("wxGUI.") or not ignore_gui):
             yield cmd
 
 def write_html_header(f, title, ismain = False, body_width = "99%"):

@@ -8,7 +8,7 @@
 #
 # PURPOSE:      Import and reproject on the fly
 #
-# COPYRIGHT:    (C) 2015 GRASS development team
+# COPYRIGHT:    (C) 2015-2016 GRASS development team
 #
 #               This program is free software under the GNU General
 #               Public License (>=v2). Read the file COPYING that
@@ -89,6 +89,14 @@
 #% description: Resolution of output raster map (use with option resolution=value)
 #% guisection: Output
 #%end
+#%option
+#% key: title
+#% key_desc: phrase
+#% type: string
+#% required: no
+#% description: Title for resultant raster map
+#% guisection: Metadata
+#%end
 #%flag
 #% key: e
 #% description: Estimate resolution only
@@ -103,7 +111,11 @@
 #% key: l
 #% description: Force Lat/Lon maps to fit into geographic coordinates (90N,S; 180E,W)
 #%end
-
+#%flag
+#% key: o
+#% label: Override projection check (use current location's projection)
+#% description: Assume that the dataset has the same projection as the current location
+#%end
 
 import sys
 import os
@@ -141,6 +153,7 @@ def main():
     memory = options['memory']
     bands = options['band']
     tgtres = options['resolution']
+    title = options["title"]
     if options['resolution_value']:
         if tgtres != 'value':
             grass.fatal(_("To set custom resolution value, select 'value' in resolution option"))
@@ -171,7 +184,7 @@ def main():
     # create temp location from input without import
     grass.verbose(_("Creating temporary location for <%s>...") % GDALdatasource)
     parameters = dict(input=GDALdatasource, output=output,
-                      memory=memory, flags='c',
+                      memory=memory, flags='c', title=title,
                       location=TMPLOC, quiet=True)
     if bands:
         parameters['band'] = bands
@@ -188,8 +201,10 @@ def main():
 
     # try r.in.gdal directly first
     additional_flags = 'l' if flags['l'] else ''
-    if grass.run_command('r.in.gdal', input=GDALdatasource, flags='j',
-                         errors='status', quiet=True) == 0:
+    if flags['o']:
+        additional_flags += 'o'
+    if flags['o'] or grass.run_command('r.in.gdal', input=GDALdatasource, flags='j',
+                                       errors='status', quiet=True) == 0:
         parameters = dict(input=GDALdatasource, output=output,
                           memory=memory, flags='k' + additional_flags)
         if bands:

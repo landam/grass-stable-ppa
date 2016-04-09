@@ -480,12 +480,20 @@ def _removeUserToolboxesItem(root):
 
 def _getAddons():
     try:
-        output = gcore.read_command('g.extension', quiet=True, flags='a')
+        output = gcore.read_command('g.extension', quiet=True, flags='ag')
     except CalledModuleError:
         _warning(_("List of addons cannot be obtained"
                    " because g.extension failed."))
         return []
-    return sorted(output.splitlines())
+    
+    flist = []
+    for line in output.splitlines():
+        if not line.startswith('executables'):
+            continue
+        for fexe in line.split('=', 1)[1].split(','):
+            flist.append(fexe)
+    
+    return sorted(flist)
 
 
 def _removeAddonsItem(node, addonsNodes):
@@ -779,8 +787,8 @@ def module_test():
     directory and in files from distribution.
     """
     toolboxesFile   = os.path.join(WXGUIDIR, 'xml', 'toolboxes.xml')
-    userToolboxesFile = 'test.toolboxes_user_toolboxes.xml'
-    menuFile = 'test.toolboxes_menu.xml'
+    userToolboxesFile = 'data/test_toolboxes_user_toolboxes.xml'
+    menuFile = 'data/test_toolboxes_menu.xml'
     wxguiItemsFile  = os.path.join(WXGUIDIR, 'xml', 'wxgui_items.xml')
     moduleItemsFile = os.path.join(WXGUIDIR, 'xml', 'module_items.xml')
 
@@ -807,7 +815,7 @@ def module_test():
         sys.stdout.write(_getXMLString(root))
         return 0
 
-    menudataFile = 'test.toolboxes_menudata.xml'
+    menudataFile = 'data/test_toolboxes_menudata_ref.xml'
     with open(menudataFile) as correctMenudata:
         correct = str(correctMenudata.read())
 
@@ -827,6 +835,16 @@ def module_test():
     else:
         print "OK"
         return 0
+
+
+def validate_file(filename):
+    try:
+        etree.parse(filename)
+    except ETREE_EXCEPTIONS as error:
+        print "XML file <{name}> is not well formed: {error}".format(
+            name=filename, error=error)
+        return 1
+    return 0
 
 
 def main():
@@ -854,4 +872,6 @@ if __name__ == '__main__':
             sys.exit(doc_test())
         elif sys.argv[1] == 'test':
             sys.exit(module_test())
+        elif sys.argv[1] == 'validate':
+            sys.exit(validate_file(sys.argv[2]))
     sys.exit(main())

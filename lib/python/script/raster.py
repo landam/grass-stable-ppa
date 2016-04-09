@@ -17,15 +17,16 @@ for details.
 .. sectionauthor:: Glynn Clements
 .. sectionauthor:: Martin Landa <landa.martin gmail.com>
 """
+from __future__ import absolute_import
 
 import os
 import string
 import types
 import time
 
-from core import *
+from .core import *
 from grass.exceptions import CalledModuleError
-from utils import float_or_dms, parse_key_val
+from .utils import float_or_dms, parse_key_val
 
 
 def raster_history(map):
@@ -149,7 +150,7 @@ def mapcalc_start(exp, quiet=False, verbose=False, overwrite=False,
     return p
 
 
-def raster_what(map, coord, env=None):
+def raster_what(map, coord, env=None, localized=False):
     """Interface to r.what
 
     >>> raster_what('elevation', [[640000, 228000]])
@@ -187,7 +188,10 @@ def raster_what(map, coord, env=None):
     if not ret:
         return data
 
-    labels = (_("value"), _("label"), _("color"))
+    if localized:
+        labels = (_("value"), _("label"), _("color"))
+    else:
+        labels = ('value', 'label', 'color')
     for item in ret.splitlines():
         line = item.split(sep)[3:]
         for i, map_name in enumerate(map_list):

@@ -1,6 +1,6 @@
 How to release GRASS GIS binaries and source code
 
-$Date: 2016-01-18 16:57:27 +0100 (Mon, 18 Jan 2016) $
+$Date: 2016-02-16 05:33:42 -0800 (Tue, 16 Feb 2016) $
 
 Note: This text contains *some* rules only applicable to the
       development coordinator (currently Markus Neteler, PSC Chair).
@@ -57,8 +57,8 @@ Contents
 
 #example:
 7
-0
-3RC1
+1
+0RC1
 2016
       rm -f include/VERSION~
 
@@ -120,8 +120,8 @@ Contents
 
 #example
 7
-0
-3svn
+1
+0svn
 2016
 
     rm -f include/VERSION~
@@ -145,12 +145,14 @@ Contents
     - News section
     - http://grass.osgeo.org/download/software/
     - http://grass.osgeo.org/download/software/sources/
-    - http://grass.osgeo.org/grass70/
+    - http://grass.osgeo.org/download/software/linux/
+    - http://grass.osgeo.org/grass71/
     - http://grass.osgeo.org/home/history/releases/
     - http://grass.osgeo.org/development/svn/svn-tags/ (add tag): echo $RELEASETAG
 
      write announcement
       - store in trac: http://trac.osgeo.org/grass/wiki/Release/7.XX.YY-News
+      - update version in https://grasswiki.osgeo.org/wiki/GRASS-Wiki
       - store in Web as announces/announce_grass$MAJOR$MINOR$RELEASE.html <- how? with protected PHP upload page?
 
      full release:
@@ -168,8 +170,8 @@ Contents
                    release tag for the differences
 
  o Trac updates:
-      - Set "complete" flag in https://trac.osgeo.org/grass/milestone/7.0.x
-        and batch-migrate assigned tickets to next milestone
+      - Set "complete" flag in https://trac.osgeo.org/grass/milestone/7.0.x --> Edit Milestone
+        this batch-migrates assigned tickets to next milestone
       - Add release to https://trac.osgeo.org/grass/admin/ticket/versions
 
  o WinGRASS notes:
@@ -177,12 +179,12 @@ Contents
    Update grass_packager_release.bat, eg.
 
      set MAJOR=7
-     set MINOR=0
-     set PATCH=3beta3
+     set MINOR=1
+     set PATCH=0beta3
 
    Update addons (grass_addons.sh) rules, eg.
 
-     compile $SVN_PATH/grass7 $GISBASE_PATH/grass703beta3   $ADDON_PATH/grass703beta3/addons
+     compile $SVN_PATH/grass7 $GISBASE_PATH/grass710beta3   $ADDON_PATH/grass710beta3/addons
 
    Modify grass_copy_wwwroot.sh accordingly, eg.
 
@@ -194,7 +196,7 @@ Contents
 
    Upload tarball for created release
 
-   Update daily recipe contents: https://code.launchpad.net/~grass/+recipe/grass70-release-daily
+   Update daily recipe contents: https://code.launchpad.net/~grass/+recipe/grass-trunk
 
 2. Tell others about it:
 

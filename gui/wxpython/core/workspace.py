@@ -8,7 +8,7 @@ Classes:
  - workspace::WriteWorkspaceFile
  - workspace::ProcessGrcFile
 
-(C) 2007-2011 by the GRASS Development Team
+(C) 2007-2016 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -895,7 +895,7 @@ class WriteWorkspaceFile(object):
                     self.file.write('%s<nviz>\n' % (' ' * self.indent))
                     if maplayer.type == 'raster':
                         self.__writeNvizSurface(nviz['surface'])
-                    if maplayer.type == '3d-raster':
+                    if maplayer.type == 'raster_3d':
                         self.__writeNvizVolume(nviz['volume'])
                     elif maplayer.type == 'vector':
                         self.__writeNvizVector(nviz['vector'])

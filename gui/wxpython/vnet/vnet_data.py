@@ -28,6 +28,7 @@ from copy import deepcopy
 
 from grass.script.utils import try_remove
 from grass.script     import core as grass
+from grass.script.task import cmdlist_to_tuple
 
 import wx
 
@@ -307,7 +308,6 @@ class VNETPointsData:
             idx = self.cols["name"].index(col)
             self.data[pt_id][idx] = v
 
-
         # if type is changed checked columns must be recalculated by _usePoint
         if data.has_key('type') and not data.has_key('use'):
             data["use"] = self.GetPointData(pt_id)['use']
@@ -437,7 +437,6 @@ class VNETPointsData:
     def _vnetPathUpdateUsePoints(self, checked_pt_id):
 
             alreadyChecked = []
-
 
             type_idx = self.cols["name"].index("type")
             use_idx = self.cols["name"].index("use")
@@ -1009,7 +1008,7 @@ class VectMap:
 
         if colorsCmd:
             colorsCmd.append('map=%s' % self.fullName)
-            layerStyleVnetColors = utils.CmdToTuple(colorsCmd)
+            layerStyleVnetColors = cmdlist_to_tuple(colorsCmd)
 
             RunCommand(layerStyleVnetColors[0],
                         **layerStyleVnetColors[1])

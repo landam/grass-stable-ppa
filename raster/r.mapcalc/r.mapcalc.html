@@ -332,12 +332,14 @@ xor(x,y)                exclusive-or (XOR) of x and y                   I
 
 <div class="code"><pre>
 Internal variables:
- row()                  current row of moving window
- col()                  current col of moving window
- x()                    current x-coordinate of moving window
- y()                    current y-coordinate of moving window
- ewres()                current east-west resolution
- nsres()                current north-south resolution
+ row()                  current row of moving window                    I
+ col()                  current col of moving window                    I
+ nrows()                number of rows in computation region            I
+ ncols()                number of columns in computation region         I
+ x()                    current x-coordinate of moving window           F
+ y()                    current y-coordinate of moving window           F
+ ewres()                current east-west resolution                    F
+ nsres()                current north-south resolution                  F
  null()                 NULL value
 </pre></div>
 Note, that the row() and col() indexing starts with 1.
@@ -729,4 +731,4 @@ Research Laboratory
 <p>Glynn Clements
 
 <p>
-<i>Last changed: $Date: 2015-10-25 11:02:36 +0100 (Sun, 25 Oct 2015) $</i>
+<i>Last changed: $Date: 2016-01-25 05:23:34 -0800 (Mon, 25 Jan 2016) $</i>

@@ -21,6 +21,11 @@ For areas, costs will be calculated along boundary lines.
 <p>Points representing nodes must be exactly on network nodes, and the 
 input vector map needs to be prepared with <em>v.net operation=connect</em>.
 
+<h2>NOTES</h2>
+
+Current implementation of obtaining Steiner tree is not memory efficient.
+An attempt to run module on a network with large number of intersections thus
+might result in failure to allocate memory or out of memory condition.
 
 <h2>EXAMPLE</h2>
 
@@ -125,4 +130,4 @@ Radim Blazek, ITC-Irst, Trento, Italy<br>
 Documentation: Markus Neteler, Markus Metz
 
 
-<p><i>Last changed: $Date: 2014-12-24 15:44:33 +0100 (Wed, 24 Dec 2014) $</i>
+<p><i>Last changed: $Date: 2016-03-07 23:50:26 -0800 (Mon, 07 Mar 2016) $</i>

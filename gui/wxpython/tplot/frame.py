@@ -10,7 +10,7 @@ Classes:
  - frame::TplotFrame
  - frame::LookUp
 
-(C) 2012-2014 by the GRASS Development Team
+(C) 2012-2016 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -38,9 +38,9 @@ try:
         NavigationToolbar2WxAgg as NavigationToolbar
     import matplotlib.dates as mdates
     from matplotlib import cbook
-except ImportError:
+except ImportError as e:
     raise ImportError(_('The Temporal Plot Tool needs the "matplotlib" '
-                        '(python-matplotlib) package to be installed.'))
+                        '(python-matplotlib) package to be installed. {}').format(e))
 
 from core.utils import _
 
@@ -51,6 +51,7 @@ from gui_core import gselect
 from core import globalvar
 from grass.pygrass.vector.geometry import Point
 from grass.pygrass.raster import RasterRow
+from grass.pygrass.gis.region import Region
 from collections import OrderedDict
 from subprocess import PIPE
 try:
@@ -107,6 +108,7 @@ class TplotFrame(wx.Frame):
         self.dbif = tgis.SQLDatabaseInterfaceConnection()
         self.dbif.connect()
         self.Bind(wx.EVT_CLOSE, self.onClose)
+        self.region = Region()
 
     def init(self):
         self.timeDataR = OrderedDict()
@@ -126,9 +128,10 @@ class TplotFrame(wx.Frame):
             self.dbif.close()
         tgis.stop_subprocesses()
 
-    def onClose(self,evt):
-        self.coorval.OnClose()
-        self.cats.OnClose()
+    def onClose(self, evt):
+        # this two lines return errors during exit
+        # self.coorval.OnClose()
+        # self.cats.OnClose()
         self.Destroy()
 
     def _layout(self):
@@ -213,12 +216,17 @@ class TplotFrame(wx.Frame):
         self.datasetSelectLabelV = wx.StaticText(parent=self.controlPanelVector,
                                                  id=wx.ID_ANY,
                                                  label=_('Vector temporal '
-                                                         'dataset (strds)'))
+                                                         'dataset (strds)\n'
+                                                         'Please press enter if'
+                                                         ' you digit the name'
+                                                         ' instead select with'
+                                                         ' combobox'))
         self.datasetSelectV = gselect.Select(parent=self.controlPanelVector,
                                              id=wx.ID_ANY,
                                              size=globalvar.DIALOG_GSELECT_SIZE,
                                              type='stvds', multiple=True)
-        self.datasetSelectV.Bind(wx.EVT_TEXT, self.OnVectorSelected)
+        self.datasetSelectV.Bind(wx.EVT_COMBOBOX_CLOSEUP,
+                                 self.OnVectorSelected)
 
         self.attribute = gselect.ColumnSelect(parent=self.controlPanelVector)
         self.attributeLabel = wx.StaticText(parent=self.controlPanelVector,
@@ -280,6 +288,10 @@ class TplotFrame(wx.Frame):
         """Load data and read properties
         :param list timeseries: a list of timeseries
         """
+        if not self.poi:
+            GError(parent=self, message=_("Invalid input coordinates"),
+                   showTraceback=False)
+            return
         mode = None
         unit = None
         columns = ','.join(['name', 'start_time', 'end_time'])
@@ -682,6 +694,12 @@ class TplotFrame(wx.Frame):
                     GError(parent=self, message=_("Invalid input coordinates"),
                            showTraceback=False)
                     return
+                bbox = self.region.get_bbox()
+                if not bbox.contains(self.poi):
+                    GError(parent=self, message=_("Seed point outside the "
+                                                  "current region"),
+                           showTraceback=False)
+                    return
         # check raster dataset
         if datasetsR:
             datasetsR = datasetsR.split(',')
@@ -837,11 +855,20 @@ class TplotFrame(wx.Frame):
     def OnVectorSelected(self, event):
         """Update the controlbox related to stvds"""
         dataset = self.datasetSelectV.GetValue().strip()
-        vect_list = grass.read_command('t.vect.list', flags='s', input=dataset,
-                                       col='name')
-        vect_list = list(set(sorted(vect_list.split())))
-        for vec in vect_list:
-            self.attribute.InsertColumns(vec, 1)
+        if dataset:
+            try:
+                vect_list = grass.read_command('t.vect.list', flags='s',
+                                               input=dataset, column='name')
+            except Exception:
+                self.attribute.Clear()
+                GError(parent=self, message=_("Invalid input temporal dataset"),
+                       showTraceback=False)
+                return
+            vect_list = list(set(sorted(vect_list.split())))
+            for vec in vect_list:
+                self.attribute.InsertColumns(vec, 1)
+        else:
+            return
 
 
 class LookUp:

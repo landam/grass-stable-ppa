@@ -32,11 +32,11 @@ void define_options(struct opt *opt)
     opt->action->type = TYPE_STRING;
     opt->action->required = YES;
     opt->action->multiple = NO;
-    opt->action->options = "nodes,connect,arcs,report,nreport";
+    opt->action->options = "nodes,connect,arcs,report,nreport,turntable";
     opt->action->description = _("Operation to be performed");
     desc = NULL;
     G_asprintf(&desc,
-	       "nodes;%s;connect;%s;arcs;%s;report;%s;nreport;%s",
+	       "nodes;%s;connect;%s;arcs;%s;report;%s;nreport;%s;turntable;%s;",
 	       _("new point is placed on each node (line end) "
 		 "if doesn't exist"),
 	       _("connect still unconnected points to vector network "
@@ -46,7 +46,8 @@ void define_options(struct opt *opt)
 	       _("print to standard output "
 		 "{line_category start_point_category end_point_category}"),
 	       _("print to standard output "
-		 "{point_category line_category[,line_category...]}"));
+		 "{point_category line_category[,line_category...]}"),
+         _("create turntable on vector network"));
     opt->action->descriptions = desc;
 
     opt->afield_opt = G_define_standard_option(G_OPT_V_FIELD);
@@ -54,6 +55,13 @@ void define_options(struct opt *opt)
     opt->afield_opt->gisprompt = "new,layer,layer";
     opt->afield_opt->label = _("Arc layer");
     opt->afield_opt->guisection = _("Arcs");
+
+    opt->type = G_define_standard_option(G_OPT_V_TYPE);
+    opt->type->key = "arc_type";
+    opt->type->options = "line,boundary";
+    opt->type->answer = "line,boundary";
+    opt->type->label = _("Arc type");
+    opt->type->guisection = _("Turntable");
 
     opt->nfield_opt = G_define_standard_option(G_OPT_V_FIELD);
     opt->nfield_opt->key = "node_layer";
@@ -91,6 +99,28 @@ void define_options(struct opt *opt)
 	_("For operation 'connect'. By default, a new line from the point to the network is created.");
     opt->snap_flag->guisection = _("Nodes");
 
+    opt->tfield = G_define_standard_option(G_OPT_V_FIELD);
+    opt->tfield->label = _("Turntable layer");
+    opt->tfield->description =
+    _
+    ("Layer where turntable will be attached. Format: layer number[/layer name]."
+     "Required for operation 'turntable'.");
+    opt->tfield->answer = "3";
+    opt->tfield->key = "turn_layer";
+    opt->tfield->required = NO;
+    opt->tfield->guisection = _("Turntable");
+
+    opt->tucfield = G_define_standard_option(G_OPT_V_FIELD);
+    opt->tucfield->label = _("Layer with unique categories used in turntable");
+    opt->tucfield->description =
+    _
+    ("Layer with unique categories for every line in arc_layer and point on every node. "
+     " The categories are used in turntable. Format: layer number[/layer name]. "
+     "Required for operation 'turntable'.");
+    opt->tucfield->answer = "4";
+    opt->tucfield->key = "turn_cat_layer";
+    opt->tucfield->required = NO;
+    opt->tucfield->guisection = _("Turntable");
 }
 
 void parse_arguments(const struct opt *opt,
@@ -110,17 +140,21 @@ void parse_arguments(const struct opt *opt,
 	*act = TOOL_NREPORT;
     else if (strcmp(opt->action->answer, "arcs") == 0)
 	*act = TOOL_ARCS;
+    else if (strcmp(opt->action->answer, "turntable") == 0)
+    *act = TOOL_TURNTABLE;
     else
 	G_fatal_error(_("Unknown operation"));
 
     if (*act == TOOL_NODES || *act == TOOL_CONNECT ||
-	*act == TOOL_REPORT || *act == TOOL_NREPORT) {
+	*act == TOOL_REPORT || *act == TOOL_NREPORT ||
+    *act == TOOL_TURNTABLE) {
 	if (opt->input->answer == NULL)
 	    G_fatal_error(_("Required parameter <%s> not set"),
 			  opt->input->key);
     }
 
-    if (*act == TOOL_NODES || *act == TOOL_CONNECT) {
+    if (*act == TOOL_NODES || *act == TOOL_CONNECT ||
+        *act == TOOL_TURNTABLE) {
 	if (opt->output->answer == NULL)
 	    G_fatal_error(_("Required parameter <%s> not set"),
 			  opt->output->key);

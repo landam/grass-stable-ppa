@@ -3,7 +3,7 @@
 
 @brief Global variables used by wxGUI
 
-(C) 2007-2014 by the GRASS Development Team
+(C) 2007-2016 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -49,8 +49,11 @@ def CheckWxVersion(version):
 
     return True
 
-def CheckForWx():
-    """Try to import wx module and check its version"""
+def CheckForWx(forceVersion = os.getenv('GRASS_WXVERSION', None)):
+    """Try to import wx module and check its version
+
+    :param forceVersion: force wxPython version, eg. '2.8'
+    """
     if 'wx' in sys.modules.keys():
         return
 
@@ -60,7 +63,8 @@ def CheckForWx():
             import wxversion
         except ImportError as e:
             raise ImportError(e)
-        # wxversion.select(str(minVersion[0]) + '.' + str(minVersion[1]))
+        if forceVersion:
+            wxversion.select(forceVersion)
         wxversion.ensureMinimal(str(minVersion[0]) + '.' + str(minVersion[1]))
         import wx
         version = wx.__version__
@@ -112,7 +116,7 @@ DIALOG_TEXTCTRL_SIZE = (400, -1)
 DIALOG_LAYER_SIZE = (100, -1)
 DIALOG_COLOR_SIZE = (30, 30)
 
-MAP_WINDOW_SIZE = (800, 600)
+MAP_WINDOW_SIZE = (825, 600)
 
 GM_WINDOW_MIN_SIZE = (525, 400)
 # small for ms window which wraps the menu

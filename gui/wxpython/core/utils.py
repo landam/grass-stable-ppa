@@ -3,7 +3,7 @@
 
 @brief Misc utilities for wxGUI
 
-(C) 2007-2013 by the GRASS Development Team
+(C) 2007-2015 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -23,6 +23,7 @@ import inspect
 
 from grass.script import core as grass
 from grass.script import task as gtask
+from grass.exceptions import OpenError
 
 from core import globalvar
 from core.gcmd  import RunCommand
@@ -94,7 +95,7 @@ def GetLayerNameFromCmd(dcmd, fullyQualified = False, param = None,
     :param fullyQualified: change map name to be fully qualified
     :param param: params directory
     :param str layerType: check also layer type ('raster', 'vector',
-                          '3d-raster', ...)
+                          'raster_3d', ...)
     
     :return: tuple (name, found)
     """
@@ -156,11 +157,11 @@ def GetLayerNameFromCmd(dcmd, fullyQualified = False, param = None,
             mapname = v
             mapset = ''
             if fullyQualified and '@' not in mapname:
-                if layerType in ('raster', 'vector', '3d-raster', 'rgb', 'his'):
+                if layerType in ('raster', 'vector', 'raster_3d', 'rgb', 'his'):
                     try:
                         if layerType in ('raster', 'rgb', 'his'):
                             findType = 'cell'
-                        elif layerType == '3d-raster':
+                        elif layerType == 'raster_3d':
                             findType = 'grid3'
                         else:
                             findType = layerType
@@ -480,58 +481,7 @@ def GetCmdString(cmd):
     
     :return: command string
     """
-    return ' '.join(CmdTupleToList(cmd))
-
-def CmdTupleToList(cmd):
-    """Convert command tuple to list.
-    
-    :param cmd: GRASS command given as tuple
-    
-    :return: command in list
-    """
-    cmdList = []
-    if not cmd:
-        return cmdList
-    
-    cmdList.append(cmd[0])
-    
-    if 'flags' in cmd[1]:
-        for flag in cmd[1]['flags']:
-            cmdList.append('-' + flag)
-    for flag in ('help', 'verbose', 'quiet', 'overwrite'):
-        if flag in cmd[1] and cmd[1][flag] is True:
-            cmdList.append('--' + flag)
-    
-    for k, v in cmd[1].iteritems():
-        if k in ('flags', 'help', 'verbose', 'quiet', 'overwrite'):
-            continue
-        cmdList.append('%s=%s' % (k, v))
-            
-    return cmdList
-
-def CmdToTuple(cmd):
-    """Convert command list to tuple for gcmd.RunCommand()"""
-    if len(cmd) < 1:
-        return None
-    
-    dcmd = {}
-    for item in cmd[1:]:
-        if '=' in item: # params
-            key, value = item.split('=', 1)
-            dcmd[str(key)] = str(value).replace('"', '')
-        elif item[:2] == '--': # long flags
-            flag = item[2:]
-            if flag in ('help', 'verbose', 'quiet', 'overwrite'):
-                dcmd[str(flag)] = True
-        elif len(item) == 2 and item[0] == '-': # -> flags
-            if 'flags' not in dcmd:
-                dcmd['flags'] = ''
-            dcmd['flags'] += item[1]
-        else: # unnamed parameter
-            module = gtask.parse_interface(cmd[0])
-            dcmd[module.define_first()] = item
-    
-    return (cmd[0], dcmd)
+    return ' '.join(gtask.cmdtuple_to_list(cmd))
 
 def PathJoin(*args):
     """Check path created by os.path.join"""
@@ -547,15 +497,16 @@ def ReadEpsgCodes(path):
 
     :param path: full path to the file with EPSG codes
 
+    Raise OpenError on failure.
+
     :return: dictionary of EPSG code
-    :return: string on error
     """
     epsgCodeDict = dict()
     try:
         try:
             f = open(path, "r")
         except IOError:
-            return _("failed to open '%s'" % path)
+            raise OpenError(_("failed to open '{}'").format(path))
 
         code = None
         for line in f.readlines():
@@ -570,7 +521,7 @@ def ReadEpsgCodes(path):
                 try:
                     code = int(code.replace('<', '').replace('>', ''))
                 except ValueError as e:
-                    return e
+                    raise OpenError('{}'.format(e))
             
             if code is not None:
                 epsgCodeDict[code] = (descr, params)
@@ -578,7 +529,7 @@ def ReadEpsgCodes(path):
         
         f.close()
     except StandardError as e:
-        return e
+        raise OpenError('{}'.format(e))
     
     return epsgCodeDict
 
@@ -999,7 +950,7 @@ def color_resolve(color):
     return (rgb, label)
 
 command2ltype = {'d.rast'         : 'raster',
-                 'd.rast3d'       : '3d-raster',
+                 'd.rast3d'       : 'raster_3d',
                  'd.rgb'          : 'rgb',
                  'd.his'          : 'his',
                  'd.shade'        : 'shaded',
@@ -1022,7 +973,8 @@ command2ltype = {'d.rast'         : 'raster',
                  'd.graph'        : 'graph',
                  'd.out.file'     : 'export',
                  'd.to.rast'      : 'torast',
-                 'd.text'         : 'text'
+                 'd.text'         : 'text',
+                 'd.northarrow'   : 'northarrow'
                  }
 ltype2command = {}
 for (cmd, ltype) in command2ltype.items():
@@ -1175,6 +1127,32 @@ def doc_test():
     do_doctest_gettext_workaround()
     return doctest.testmod().failed
 
+def registerPid(pid):
+    """Register process id as GUI_PID GRASS variable
 
+    :param: pid process id
+    """
+    env = grass.gisenv()
+    guiPid = []
+    if 'GUI_PID' in env:
+        guiPid = env['GUI_PID'].split(',')
+    guiPid.append(str(pid))
+    grass.run_command('g.gisenv', set='GUI_PID={}'.format(','.join(guiPid)))
+    
+def unregisterPid(pid):
+    """Unregister process id from GUI_PID GRASS variable
+
+    :param: pid process id
+    """
+    env = grass.gisenv()
+    if 'GUI_PID' not in env:
+        return
+    
+    guiPid = env['GUI_PID'].split(',')
+    pid = str(os.getpid())
+    if pid in guiPid:
+        guiPid.remove(pid)
+        grass.run_command('g.gisenv', set='GUI_PID={}'.format(','.join(guiPid)))
+    
 if __name__ == '__main__':
     sys.exit(doc_test())

@@ -33,6 +33,7 @@ import wx.lib.scrolledpanel    as scrolled
 import wx.lib.filebrowsebutton as filebrowse
 
 import grass.script as grass
+from grass.script.task import cmdlist_to_tuple
 
 from core             import globalvar
 from core             import utils
@@ -701,7 +702,7 @@ class ColorTable(wx.Frame):
             if self.properties['sourceColumn'] and self.properties['sourceColumn'] != 'cat':
                 cmd.append('column=%s' % self.properties['sourceColumn'])
             
-        cmd = utils.CmdToTuple(cmd)
+        cmd = cmdlist_to_tuple(cmd)
         
         if self.inmap:
             ctable = RunCommand(cmd[0], **cmd[1])
@@ -748,7 +749,8 @@ class ColorTable(wx.Frame):
         if self.mapType == 'vector' and self.properties['sourceColumn'] \
                 and self.properties['sourceColumn'] != 'cat':
             cmd.append('column=%s' % self.properties['sourceColumn'])
-        cmd = utils.CmdToTuple(cmd)
+        
+        cmd = cmdlist_to_tuple(cmd)
         ret = RunCommand(cmd[0], **cmd[1])               
         if ret != 0:
             return False
@@ -807,7 +809,8 @@ class RasterColorTable(ColorTable):
                             title = _('Create new color table for raster map'), **kwargs)
         
         self._initLayer()
-        
+        self.Map.GetRenderMgr().renderDone.connect(self._restoreColorTable)
+            
         # self.SetMinSize(self.GetSize()) 
         self.SetMinSize((650, 700))
                 
@@ -914,29 +917,33 @@ class RasterColorTable(ColorTable):
             mapset = grass.find_file(self.inmap, element = 'cell')['mapset']
             if not mapset:
                 return
-        old_colrtable = None
+        self._tmp = tmp
+        self._old_colrtable = None
         if mapset == grass.gisenv()['MAPSET']:
-            old_colrtable = grass.find_file(name = name, element = 'colr')['file']
+            self._old_colrtable = grass.find_file(name = name, element = 'colr')['file']
         else:
-            old_colrtable = grass.find_file(name = name, element = 'colr2/' + mapset)['file']
+            self._old_colrtable = grass.find_file(name = name, element = 'colr2/' + mapset)['file']
         
-        if old_colrtable:
-            colrtemp = utils.GetTempfile()
-            shutil.copyfile(old_colrtable, colrtemp)
+        if self._old_colrtable:
+            self._colrtemp = utils.GetTempfile()
+            shutil.copyfile(self._old_colrtable, self._colrtemp)
             
-        ColorTable.DoPreview(self, ltype, cmdlist)  
-        
+        ColorTable.DoPreview(self, ltype, cmdlist)
+
+    def _restoreColorTable(self):
         # restore previous color table
-        if tmp:
-            if old_colrtable:
-                shutil.copyfile(colrtemp, old_colrtable)
-                os.remove(colrtemp)
+        if self._tmp:
+            if self._old_colrtable:
+                shutil.copyfile(self._colrtemp, self._old_colrtable)
+                os.remove(self._colrtemp)
+                del self._colrtemp, self._old_colrtable
             else:
                 RunCommand('r.colors',
                            parent = self,
                            flags = 'r',
                            map = self.inmap)
-        
+            del self._tmp
+            
     def OnHelp(self, event):
         """Show GRASS manual page"""
         cmd = 'r.colors'
@@ -1380,7 +1387,7 @@ class VectorColorTable(ColorTable):
     def CreateAttrTable(self, dcmd, layer, params, propwin):
         """Create attribute table"""
         if dcmd:
-            cmd = utils.CmdToTuple(dcmd)
+            cmd = cmdlist_to_tuple(dcmd)
             ret = RunCommand(cmd[0], **cmd[1])
             if ret == 0:
                 self.OnSelectionInput(None)
@@ -1794,6 +1801,7 @@ class BufferedWindow(wx.Window):
         # make sure that extents are updated at init
         self.Map.region = self.Map.GetRegion()
         self.Map.SetRegion()
+        self.Map.GetRenderMgr().renderDone.connect(self._updatePreviewFinished)
 
     def Draw(self, pdc, img = None, pdctype = 'image'):
         """Draws preview or clears window"""
@@ -1885,19 +1893,24 @@ class BufferedWindow(wx.Window):
     def UpdatePreview(self, img = None):
         """Update canvas if window changes geometry"""
         Debug.msg (2, "BufferedWindow.UpdatePreview(%s): render=%s" % (img, self.render))
-        oldfont = ""
-        oldencoding = ""
         
-        if self.render:
-            # extent is taken from current map display
-            try:
-                self.Map.region = copy.deepcopy(self.parent.parent.GetLayerTree().GetMap().GetCurrentRegion())
-            except AttributeError:
-                self.Map.region = self.Map.GetRegion()
-            # render new map images
-            self.mapfile = self.Map.Render(force = self.render)
-            self.img = self.GetImage()
-            self.resize = False
+        if not self.render:
+            return
+        
+        # extent is taken from current map display
+        try:
+            self.Map.region = copy.deepcopy(self.parent.parent.GetLayerTree().GetMap().GetCurrentRegion())
+        except AttributeError:
+            self.Map.region = self.Map.GetRegion()
+        # render new map images
+        self.mapfile = self.Map.Render(force = self.render)
+
+    def _updatePreviewFinished(self):
+        if not self.render:
+            return
+        
+        self.img = self.GetImage()
+        self.resize = False
         
         if not self.img:
             return

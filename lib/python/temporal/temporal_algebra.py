@@ -466,6 +466,7 @@ class TemporalAlgebraLexer(object):
         'tsnap'  : 'TSNAP',
         'tshift' : 'TSHIFT',
         'tmap' : 'TMAP',
+        'merge' : 'MERGE',
         'strds' : 'STRDS',
         'str3ds' : 'STR3DS',
         'stvds' : 'STVDS',
@@ -629,7 +630,7 @@ class TemporalAlgebraLexer(object):
         t.lineno += len(t.value)
 
     def t_NAME(self, t):
-        r'[a-zA-Z_][a-zA-Z_0-9]*'
+        r'[a-zA-Z_][a-zA-Z_0-9\@]*'
         self.temporal_symbol(t)
         return t
 
@@ -766,7 +767,7 @@ class TemporalAlgebraParser(object):
              space time datasets in the expression to generate the map lists.
              
              This function will analyze the expression to detect space time datasets
-             and computes the common granularity  from all granularities.
+             and computes the common granularity from all granularities.
           
              This granularity is then be used to generate the map lists. Hence, all
              maps from all STDS will have equidistant temporal extents. The only meaningful
@@ -816,6 +817,7 @@ class TemporalAlgebraParser(object):
             count += 1
 
         grans = []
+        start_times = []
         ttypes = {}
         dbif, connected = init_dbif(self.dbif)
 
@@ -827,6 +829,7 @@ class TemporalAlgebraParser(object):
                 return False
 
             grans.append(stds.get_granularity())
+            start_times.append(stds.get_temporal_extent_as_tuple()[0])
             ttypes[stds.get_temporal_type()] = stds.get_temporal_type()
         
         # Only one temporal type is allowed
@@ -836,7 +839,7 @@ class TemporalAlgebraParser(object):
             
         # Compute the common granularity
         if "absolute" in ttypes.keys():
-            self.granularity = compute_common_absolute_time_granularity(grans)
+            self.granularity = compute_common_absolute_time_granularity(grans, start_times)
         else:
             self.granularity = compute_common_relative_time_granularity(grans)
             
@@ -976,7 +979,7 @@ class TemporalAlgebraParser(object):
                 if temp_ext != None:
                     mapA.set_temporal_extent(temp_ext)
                 else:
-                    returncode = 0 
+                    returncode = 0
         return(returncode)
 
     def set_temporal_extent_list(self, maplist, topolist = ["EQUAL"], temporal = 'l' ):
@@ -2148,7 +2151,7 @@ class TemporalAlgebraParser(object):
         t[0] = t[1]
 
     def p_expr_strds_function(self, t):
-        # Specifiy a explicitely a space time raster dataset
+        # Explicitly specify a space time raster dataset
         # R = A : strds(B) 
         """
         expr : STRDS LPAREN stds RPAREN
@@ -2161,7 +2164,7 @@ class TemporalAlgebraParser(object):
                 print "Opening STRDS: ",  t[0]
 
     def p_expr_str3ds_function(self, t):
-        # Specifiy a explicitely a space time raster dataset
+        # Explicitly specify a space time raster dataset
         # R = A : str3ds(B) 
         """
         expr : STR3DS LPAREN stds RPAREN
@@ -2174,7 +2177,7 @@ class TemporalAlgebraParser(object):
                 print "Opening STR3DS: ",  t[0]
 
     def p_expr_stvds_function(self, t):
-        # Specifiy a explicitely a space time vector dataset
+        # Explicitly specify a space time vector dataset
         # R = A : stvds(B) 
         """
         expr : STVDS LPAREN stds RPAREN
@@ -2225,6 +2228,50 @@ class TemporalAlgebraParser(object):
 
         if self.debug:
             print "tmap(", t[3] , ")"
+
+    def p_expr_tmerge_function(self, t):
+        # Merge two maplists of same STDS type into a result map list.
+        # Only possible for same data types!
+        # Examples:
+        #    R = merge(A, B)
+        """
+        expr : MERGE LPAREN stds COMMA stds RPAREN
+               | MERGE LPAREN expr COMMA stds RPAREN
+               | MERGE LPAREN stds COMMA expr RPAREN
+               | MERGE LPAREN expr COMMA expr RPAREN
+        """
+        if self.run:
+            # Check input map.
+            maplistA   = self.check_stds(t[3])
+            maplistB   = self.check_stds(t[5])
+            
+            # Check empty lists.
+            if len(maplistA) == 0 and len(maplistB) == 0:
+                self.msgr.warning(_("Merging empty map lists"))
+                resultlist = maplistA + maplistB
+            elif len(maplistA) == 0:
+                self.msgr.message(_("First Map list is empty, can't merge it. Return only last map list"))
+                resultlist = maplistB
+            elif len(maplistB) == 0:
+                self.msgr.message(_("Second Map list is empty, can't merge it. Return only first map list"))
+                resultlist = maplistA
+            else:
+                # Check for identical data types in map lists.
+                typeA = maplistA[0].metadata.get_datatype()
+                typeB = maplistB[0].metadata.get_datatype()
+
+                if typeA != typeB:
+                    grass.fatal(_("Space time datasets to merge must have the same temporal type"))
+
+                resultlist = maplistA + maplistB
+            
+            # Return map list.
+            t[0] = resultlist
+        else:
+            t[0] = "merge(",  t[3], ",", t[5], ")"
+
+        if self.debug:
+            print "merge(", t[3], ",", t[5], ")"
 
     def p_t_hash(self,t):
         """

@@ -27,11 +27,12 @@ import shutil
 from copy      import deepcopy
 
 import grass.script as grass
+from grass.script.task import cmdlist_to_tuple, cmdtuple_to_list
 
 from core             import globalvar
 from core.debug       import Debug
 from core.gcmd        import GMessage, GWarning, GError, RunCommand
-from core.utils       import GetSettingsPath, CmdToTuple, CmdTupleToList, _
+from core.utils       import GetSettingsPath, _
 from core.gconsole    import CmdThread, GStderr, EVT_CMD_DONE, EVT_CMD_OUTPUT
 
 from gui_core.gselect import Select
@@ -122,6 +123,7 @@ class WSDialogBase(wx.Dialog):
         self.layerName = wx.TextCtrl(parent = self.reqDataPanel, id = wx.ID_ANY)
 
         for ws in self.ws_panels.iterkeys():
+            # set class WSPanel argument layerNameTxtCtrl
             self.ws_panels[ws]['panel'] =  WSPanel(parent = self.reqDataPanel,
                                                    web_service = ws)
             self.ws_panels[ws]['panel'].capParsed.connect(self.OnPanelCapParsed)
@@ -220,7 +222,12 @@ class WSDialogBase(wx.Dialog):
         dialogSizer.Add(item = self.btnsizer, proportion = 0,
                         flag = wx.ALIGN_CENTER)
 
-        dialogSizer.Add(item = self.statusbar, proportion = 0)
+        # expand wxWidget wx.StatusBar
+        statusbarSizer = wx.BoxSizer(wx.HORIZONTAL)
+        statusbarSizer.Add(item=self.statusbar, proportion=1, flag=wx.EXPAND)
+        dialogSizer.Add(item=statusbarSizer,
+                        proportion=0,
+                        flag=wx.EXPAND)
 
         self.SetSizer(dialogSizer)
         self.Layout()
@@ -302,6 +309,12 @@ class WSDialogBase(wx.Dialog):
         else:
             self.adv_conn.Collapse(True)
 
+        # clear content of the wxWidget wx.TextCtrl (Output layer
+        # name:), based on changing default server selection in the
+        # wxWidget wx.Choice
+        if len(self.layerName.GetValue()) > 0:
+            self.layerName.Clear()
+
     def OnClose(self, event):
         """Close the dialog
         """
@@ -326,6 +339,11 @@ class WSDialogBase(wx.Dialog):
         else:
             self.btn_connect.Enable(False)
         
+        # clear content of the wxWidget wx.TextCtrl (Output Layer
+        # name:), based on changing content of the wxWidget
+        # wx.TextCtrl (Server:)
+        self.layerName.Clear()
+
     def OnOutputLayerName(self, event):
         """Update layer name to web service panel
         """
@@ -549,7 +567,7 @@ class AddWSDialog(WSDialogBase):
         ws_cap_files = self._getCapFiles()
         # create properties dialog
         cmd_list = ltree.GetLayerInfo(layer,'cmd')
-        cmd = CmdToTuple(cmd_list)
+        cmd = cmdlist_to_tuple(cmd_list)
 
         prop_win = WSPropertiesDialog(parent = self.parent,
                                       giface = self.giface,
@@ -705,7 +723,7 @@ class WSPropertiesDialog(WSDialogBase):
                                               propwin = self)
 
         #TODO use just list or tuple
-        cmd = CmdToTuple(lcmd)
+        cmd = cmdlist_to_tuple(lcmd)
         self.revert_cmd = cmd
         self._setRevertCapFiles(self._getCapFiles())
 
@@ -992,7 +1010,7 @@ class SaveWMSLayerDialog(wx.Dialog):
             region = self._giface.GetMapWindow().GetMap().SetRegion()
             env['GRASS_REGION'] = region
 
-        cmdList = CmdTupleToList(cmd)
+        cmdList = cmdtuple_to_list(cmd)
         self.currentPid = self.thread.GetId()
 
         self.thread.RunCmd(cmdList, env=env, stderr=self.cmdStdErr)

@@ -41,8 +41,8 @@ import wx.lib.mixins.listctrl as listmix
 import wx.lib.scrolledpanel as SP
 
 from grass.pydispatch.signal import Signal
-
 from grass.script import core as grass
+from grass.exceptions import OpenError
 
 from core          import globalvar
 from core.gcmd     import RunCommand, GError
@@ -279,7 +279,7 @@ class PreferencesDialog(PreferencesBaseDialog):
 
         row += 1
         hideSearch = wx.CheckBox(parent = panel, id = wx.ID_ANY,
-                                 label = _("Hide '%s' tab (requires GUI restart)") % _("Search module"),
+                                 label = _("Hide '%s' tab (requires GUI restart)") % _("Modules"),
                                  name = 'IsChecked')
         hideSearch.SetValue(self.settings.Get(group = 'manager', key = 'hideTabs', subkey = 'search'))
         self.winId['manager:hideTabs:search'] = hideSearch.GetId()
@@ -289,7 +289,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         
         row += 1
         hidePyShell = wx.CheckBox(parent = panel, id = wx.ID_ANY,
-                                  label = _("Hide '%s' tab (requires GUI restart)") % _("Python shell"),
+                                  label = _("Hide '%s' tab (requires GUI restart)") % _("Python"),
                                   name = 'IsChecked')
         hidePyShell.SetValue(self.settings.Get(group = 'manager', key = 'hideTabs', subkey = 'pyshell'))
         self.winId['manager:hideTabs:pyshell'] = hidePyShell.GetId()
@@ -302,7 +302,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         #
         row += 1
         copySelectedTextToClipboard = wx.CheckBox(parent = panel, id = wx.ID_ANY,
-                                                  label = _("Automatically copy selected text to clipboard (in Command console)"),
+                                                  label = _("Automatically copy selected text to clipboard (in the Console tab)"),
                                                   name = 'IsChecked')
         copySelectedTextToClipboard.SetValue(self.settings.Get(group = 'manager', key = 'copySelectedTextToClipboard', subkey = 'enabled'))
         self.winId['manager:copySelectedTextToClipboard:enabled'] = copySelectedTextToClipboard.GetId()
@@ -1373,10 +1373,17 @@ class PreferencesDialog(PreferencesBaseDialog):
         """Load EPSG codes from the file"""
         win = self.FindWindowById(self.winId['projection:statusbar:projFile'])
         path = win.GetValue()
-        wx.BeginBusyCursor()
-        self.epsgCodeDict = ReadEpsgCodes(path)
-
         epsgCombo = self.FindWindowById(self.winId['projection:statusbar:epsg'])
+        wx.BeginBusyCursor()
+        try:
+            self.epsgCodeDict = ReadEpsgCodes(path)
+        except OpenError as e:
+            wx.EndBusyCursor()
+            epsgCombo.SetItems([])
+            GError(parent = self,
+                   message = _("Unable to read EPGS codes: {}").format(e), showTraceback=False)
+            return
+
         if type(self.epsgCodeDict) == type(''):
             wx.MessageBox(parent = self,
                           message = _("Unable to read EPSG codes: %s") % self.epsgCodeDict,

@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <grass/gis.h>
 #include <grass/spawn.h>
 #include <grass/display.h>
@@ -7,29 +8,41 @@
 
 #include "proto.h"
 
-static void start(const char *, const char *, int);
-static void start_wx(const char *, const char *, const char *,
-		     const char *, int, int);
+static char *start(const char *, const char *, int, int, int);
+static char *start_wx(const char *, const char *, int, int, int);
 static void error_handler(void *);
 
 /* start file-based monitor */
-void start(const char *name, const char *output, int update)
+char *start(const char *name, const char *output, int width, int height, int update)
 {
-    char *env_name, output_path[GPATH_MAX];
+    char *output_path;
     const char *output_name;
     
     /* stop monitor on failure */
     G_add_error_handler(error_handler, (char *)name);
     
+    /* full path for output file */
+    output_path = (char *) G_malloc(GPATH_MAX);
+    output_path[0] = '\0';
+    
     if (!output) {
+        char buff[512];
+
+        sprintf(buff, "GRASS_RENDER_IMMEDIATE=%s", name);
+        putenv(G_store(buff));
+        sprintf(buff, "GRASS_RENDER_WIDTH=%d", width);
+        putenv(G_store(buff));
+        sprintf(buff, "GRASS_RENDER_HEIGHT=%d", height);
+        putenv(G_store(buff));
+
         D_open_driver();
         
         output_name = D_get_file();
         if (!output_name) 
-            return;
+            return NULL;
         if (!update && access(output_name, F_OK) == 0) {
             if (G_get_overwrite()) {
-                G_warning(_("File '%s' already exists and will be overwritten"), output_name);
+                G_warning(_("File <%s> already exists and will be overwritten"), output_name);
                 D_setup_unity(0);
                 D_erase("white");
             }
@@ -41,15 +54,23 @@ void start(const char *name, const char *output, int update)
         }
         D_close_driver(); /* must be called after check because this
                            * function produces default map file */
+        putenv("GRASS_RENDER_IMMEDIATE=");
     }
     else {
         output_name = output;
+        if (!update && access(output_name, F_OK) == 0) {
+            if (G_get_overwrite()) {
+                G_warning(_("File <%s> already exists and will be overwritten"), output_name);
+                if (0 != unlink(output_name))
+                    G_fatal_error(_("Unable to delete <%s>"), output_name);
+            }
+        }
     }
 
         
     if (!strchr(output_name, HOST_DIRSEP)) { /* relative path */
         char *ptr;
-        
+    
         if (!getcwd(output_path, GPATH_MAX))
             G_fatal_error(_("Unable to get current working directory"));
         ptr = output_path + strlen(output_path) - 1;
@@ -64,50 +85,47 @@ void start(const char *name, const char *output, int update)
         strcpy(output_path, output_name); /* already full path */
     }
 
-    env_name = NULL;
-    G_asprintf(&env_name, "MONITOR_%s_MAPFILE", G_store_upper(name));
-    G_setenv(env_name, output_path);
+    return output_path;
 }
 
 /* start wxGUI display monitor */
-void start_wx(const char *name, const char *tempfile,
-	      const char *env_value, const char *cmd_value,
-	      int width, int height)
+char *start_wx(const char *name, const char *element, int width, int height, int x_only)
 {
-    char progname[GPATH_MAX];
-    char *env_name, *map_value, str_width[1024], str_height[1024];
-
-    env_name = NULL;
-    G_asprintf(&env_name, "MONITOR_%s_MAPFILE", G_store_upper(name));
-    G_asprintf(&map_value, "%s.ppm", tempfile);
-    G_setenv(env_name, map_value);
-    /* close(creat(map_value, 0666)); */
+    char progname[GPATH_MAX], mon_path[GPATH_MAX];
+    char str_width[1024], str_height[1024], *str_x_only;
+    char *mapfile;
     
-    G_debug(3, "       mapfile = %s", map_value);
+    /* full path */
+    mapfile = (char *) G_malloc(GPATH_MAX);
+    mapfile[0] = '\0';
 
     sprintf(progname, "%s/gui/wxpython/mapdisp/main.py", G_gisbase());
-    if (width > 0)
-        sprintf(str_width, "%d", width);
-    else
-        str_width[0] = '\0';
-    if (height > 0)
-        sprintf(str_height, "%d", height);
-    else
-        str_height[0] = '\0';
+    sprintf(str_width, "%d", width);
+    sprintf(str_height, "%d", height);
 
+    if (x_only)
+        str_x_only = "1";
+    else
+        str_x_only = "0";
+    
+    G_file_name(mon_path, element, NULL, G_mapset());
     G_spawn_ex(getenv("GRASS_PYTHON"), progname, progname,
-	       name, map_value, cmd_value, env_value,
-               str_width, str_height, SF_BACKGROUND, NULL);
+               name, mon_path, str_width, str_height, str_x_only, SF_BACKGROUND, NULL);
+
+    G_file_name(mapfile, element, "map.ppm", G_mapset());
+    
+    return mapfile;
 }
 
 int start_mon(const char *name, const char *output, int select,
 	      int width, int height, const char *bgcolor,
-	      int truecolor, int update)
+	      int truecolor, int x_only, int update)
 {
-    char *u_name;
-    char *env_name, *env_value, *cmd_value;
-    char *tempfile, buf[1024];
-    int env_fd;
+    char *mon_path;
+    char *out_file, *env_file, *cmd_file;
+    char  buf[1024];
+    char file_path[GPATH_MAX], render_cmd_path[GPATH_MAX];
+    int  fd;
 
     if (check_mon(name)) {
         const char *curr_mon;
@@ -119,71 +137,83 @@ int start_mon(const char *name, const char *output, int select,
         G_fatal_error(_("Monitor <%s> already running"), name);
     }
 
-    tempfile = G_tempfile();
+    G_verbose_message(_("Starting monitor <%s>..."), name);
+    
+    /* create .tmp/HOSTNAME/u_name directory */
+    mon_path = get_path(name, FALSE);
+    G_make_mapset_element(mon_path);
+    
+    G_file_name(file_path, mon_path, "env", G_mapset());
+    env_file = G_store(file_path);
+    G_file_name(file_path, mon_path, "cmd", G_mapset());
+    cmd_file = G_store(file_path);
 
-    u_name = G_store_upper(name);
+    /* create py file (renderer) */
+    sprintf(render_cmd_path, "%s/etc/d.mon/render_cmd.py", getenv("GISBASE"));
+    G_file_name(file_path, mon_path, "render.py", G_mapset());
+    G_debug(1, "Monitor name=%s, pyfile = %s", name, file_path);
+    if (1 != G_copy_file(render_cmd_path, file_path))
+        G_fatal_error(_("Unable to copy render command file"));
 
-    env_name = env_value = NULL;
-    G_asprintf(&env_name, "MONITOR_%s_ENVFILE", u_name);
-    G_asprintf(&env_value, "%s.env", tempfile);
-    G_setenv(env_name, env_value);
-    env_fd = creat(env_value, 0666);
-    if (env_fd < 0)
-	G_fatal_error(_("Unable to create file '%s'"), env_value);
+    /* start monitor */
+    if (strncmp(name, "wx", 2) == 0)
+        out_file = start_wx(name, mon_path, width, height, x_only);
+    else
+        out_file = start(name, output, width, height, update);
+    
+    /* create env file (environmental variables used for rendering) */
+    G_debug(1, "Monitor name=%s, envfile=%s", name, env_file);
+    fd = creat(env_file, 0666);
+    if (fd < 0)
+	G_fatal_error(_("Unable to create file <%s>"), env_file);
 
-    sprintf(buf, "GRASS_RENDER_FILE_READ=TRUE\n");
-    write(env_fd, buf, strlen(buf));
-    if (width) {
-	sprintf(buf, "GRASS_RENDER_WIDTH=%d\n", width);
-	write(env_fd, buf, strlen(buf));
+    if (G_strncasecmp(name, "wx", 2) == 0) {
+        sprintf(buf, "GRASS_RENDER_IMMEDIATE=default\n"); /* TODO: read settings from wxGUI */
+        write(fd, buf, strlen(buf));
+        sprintf(buf, "GRASS_RENDER_FILE_READ=FALSE\n");
+        write(fd, buf, strlen(buf));
+        sprintf(buf, "GRASS_RENDER_TRANSPARENT=TRUE\n");
+        write(fd, buf, strlen(buf));
     }
-    if (height) {
-	sprintf(buf, "GRASS_RENDER_HEIGHT=%d\n", height);
-	write(env_fd, buf, strlen(buf));
+    else {
+        sprintf(buf, "GRASS_RENDER_IMMEDIATE=%s\n", name);
+        write(fd, buf, strlen(buf));
+        sprintf(buf, "GRASS_RENDER_FILE_READ=TRUE\n");
+        write(fd, buf, strlen(buf));
+
     }
+    sprintf(buf, "GRASS_RENDER_FILE=%s\n", out_file);
+    write(fd, buf, strlen(buf));
+    sprintf(buf, "GRASS_RENDER_WIDTH=%d\n", width);
+    write(fd, buf, strlen(buf));
+    sprintf(buf, "GRASS_RENDER_HEIGHT=%d\n", height);
+    write(fd, buf, strlen(buf));
     if (bgcolor) {
 	if (strcmp(bgcolor, "none") == 0)
 	    sprintf(buf, "GRASS_RENDER_TRANSPARENT=TRUE\n");
 	else
 	    sprintf(buf, "GRASS_RENDER_BACKGROUNDCOLOR=%s\n", bgcolor);
-	write(env_fd, buf, strlen(buf));
+	write(fd, buf, strlen(buf));
     }
     if (truecolor) {
 	sprintf(buf, "GRASS_RENDER_TRUECOLOR=TRUE\n");
-	write(env_fd, buf, strlen(buf));
+	write(fd, buf, strlen(buf));
     }
-    close(env_fd);
+    close(fd);
+   
+    /* create cmd file (list of GRASS display commands to render) */
+    G_debug(1, "Monitor name=%s, cmdfile = %s", name, cmd_file);
+    if (0 > creat(cmd_file, 0666))
+        G_fatal_error(_("Unable to create file <%s>"), cmd_file);
 
-    cmd_value = NULL;
-    G_asprintf(&env_name, "MONITOR_%s_CMDFILE", u_name);
-    G_asprintf(&cmd_value, "%s.cmd", tempfile);
-    G_setenv(env_name, cmd_value);
-    close(creat(cmd_value, 0666));
-
-    G_verbose_message(_("Starting monitor <%s> with env file '%s'"), name, env_value);
-    if (G_verbose() > G_verbose_std()) {
-        FILE *fd;
-        
-        fd = fopen(env_value, "r");
-        while (G_getl2(buf, sizeof(buf) - 1, fd) != 0) {
-            fprintf(stderr, " %s\n", buf);
-        }
-        fclose(fd);
-    }
-
-    G_debug(1, "start: name=%s ", name);
-    G_debug(3, "       envfile = %s", env_value);
-    G_debug(3, "       cmdfile = %s", cmd_value);
-    
+    /* select monitor if requested */
     if (select)
 	G_setenv("MONITOR", name);
-    
-    if (strncmp(name, "wx", 2) == 0) 
-	start_wx(name, tempfile, env_value, cmd_value, 
-		 width, height);
-    else
-      start(name, output, update);
-    
+   
+    G_free(mon_path);
+    G_free(out_file);
+    G_free(env_file);
+
     return 0;
 }
 

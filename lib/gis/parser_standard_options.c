@@ -3,7 +3,7 @@
   
   \brief GIS Library - Argument parsing functions (standard options)
   
-  (C) 2001-2014 by the GRASS Development Team
+  (C) 2001-2016 by the GRASS Development Team
   
   This program is free software under the GNU General Public License
   (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -362,7 +362,7 @@ struct Option *G_define_standard_option(int opt)
 	Opt->type = TYPE_STRING;
 	Opt->key_desc = "name";
 	Opt->required = YES;
-	Opt->gisprompt = "old,grid3,3d-raster";
+	Opt->gisprompt = "old,grid3,raster_3d";
 	Opt->description = _("Name of input 3D raster map");
 	break;
     case G_OPT_R3_INPUTS:
@@ -371,7 +371,7 @@ struct Option *G_define_standard_option(int opt)
 	Opt->key_desc = "name";
 	Opt->required = YES;
 	Opt->multiple = YES;
-	Opt->gisprompt = "old,grid3,3d-raster";
+	Opt->gisprompt = "old,grid3,raster_3d";
 	Opt->description = _("Name of input 3D raster map(s)");
 	break;
     case G_OPT_R3_OUTPUT:
@@ -379,7 +379,7 @@ struct Option *G_define_standard_option(int opt)
 	Opt->type = TYPE_STRING;
 	Opt->key_desc = "name";
 	Opt->required = YES;
-	Opt->gisprompt = "new,grid3,3d-raster";
+	Opt->gisprompt = "new,grid3,raster_3d";
 	Opt->description = _("Name for output 3D raster map");
 	break;
     case G_OPT_R3_MAP:
@@ -387,7 +387,7 @@ struct Option *G_define_standard_option(int opt)
 	Opt->type = TYPE_STRING;
 	Opt->key_desc = "name";
 	Opt->required = YES;
-	Opt->gisprompt = "old,grid3,3d-raster";
+	Opt->gisprompt = "old,grid3,raster_3d";
 	Opt->description = _("Name of 3D raster map");
 	break;
     case G_OPT_R3_MAPS:
@@ -396,7 +396,7 @@ struct Option *G_define_standard_option(int opt)
 	Opt->key_desc = "name";
 	Opt->required = YES;
 	Opt->multiple = YES;
-	Opt->gisprompt = "old,grid3,3d-raster";
+	Opt->gisprompt = "old,grid3,raster_3d";
 	Opt->description = _("Name of 3D raster map(s)");
 	break;
     case G_OPT_R3_TYPE:
@@ -531,6 +531,7 @@ struct Option *G_define_standard_option(int opt)
 	Opt->type = TYPE_INTEGER;
 	Opt->required = NO;
 	Opt->description = _("Category value");
+        Opt->gisprompt = "old,cat,cats";
 	break;
     case G_OPT_V_CATS:
 	Opt->key = "cats";
@@ -539,6 +540,7 @@ struct Option *G_define_standard_option(int opt)
 	Opt->required = NO;
 	Opt->label = _("Category values");
 	Opt->description = _("Example: 1,3,7-9,13");
+        Opt->gisprompt = "old,cats,cats";
 	break;
     case G_OPT_V_ID:
 	Opt->key = "id";
@@ -657,26 +659,26 @@ struct Option *G_define_standard_option(int opt)
 	break;
 	
     case G_OPT_M_LOCATION:
-    Opt->key = "location";
-    Opt->type = TYPE_STRING;
-    Opt->required = NO;
-    Opt->multiple = NO;
-    Opt->label = _("Location name");
-    Opt->description = _("Location name (not location path)");
-    Opt->gisprompt = "old,location,location";
-    Opt->key_desc = "name";
-    break;
+	Opt->key = "location";
+	Opt->type = TYPE_STRING;
+	Opt->required = NO;
+	Opt->multiple = NO;
+	Opt->label = _("Location name");
+	Opt->description = _("Location name (not location path)");
+	Opt->gisprompt = "old,location,location";
+	Opt->key_desc = "name";
+	break;
 
     case G_OPT_M_DBASE:
-    Opt->key = "dbase";
-    Opt->type = TYPE_STRING;
-    Opt->required = NO;
-    Opt->multiple = NO;
-    Opt->label = _("GRASS GIS database directory");
-    Opt->description = _("Default: path to the current GRASS GIS database");
-    Opt->gisprompt = "old,dbase,dbase";
-    Opt->key_desc = "path";
-    break;
+	Opt->key = "dbase";
+	Opt->type = TYPE_STRING;
+	Opt->required = NO;
+	Opt->multiple = NO;
+	Opt->label = _("GRASS GIS database directory");
+	Opt->description = _("Default: path to the current GRASS GIS database");
+	Opt->gisprompt = "old,dbase,dbase";
+	Opt->key_desc = "path";
+	break;
 
     case G_OPT_M_COORDS:
 	Opt->key = "coordinates";
@@ -916,7 +918,8 @@ struct Flag *G_define_standard_flag(int flag)
 	break;
     case G_FLG_V_TOPO:
 	Flg->key = 'b';
-	Flg->description = _("Do not build topology");
+        Flg->label = _("Do not build topology");
+        Flg->description = _("Advantageous when handling a large number of points");
 	break;
     }
     

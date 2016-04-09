@@ -9,7 +9,7 @@ Classes:
  - extensions::ManageExtensionWindow
  - extensions::CheckListExtension
 
-(C) 2008-2014 by the GRASS Development Team
+(C) 2008-2016 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -48,7 +48,7 @@ class InstallExtensionWindow(wx.Frame):
         self.panel = wx.Panel(parent = self, id = wx.ID_ANY)
 
         self.repoBox = wx.StaticBox(parent = self.panel, id = wx.ID_ANY,
-                                    label = " %s " % _("Repository"))
+                                    label = " %s " % _("Repository (leave empty to use the official one)"))
         self.treeBox = wx.StaticBox(parent = self.panel, id = wx.ID_ANY,
                                     label = " %s " % _("List of extensions - double-click to install"))
         
@@ -86,9 +86,9 @@ class InstallExtensionWindow(wx.Frame):
                 continue
             self.options[name] = wx.CheckBox(parent = self.panel, id = wx.ID_ANY,
                                              label = desc)
-        defaultUrl = 'http://svn.osgeo.org/grass/grass-addons/grass7'
-        self.repo.SetValue(task.get_param(value = 'svnurl').get('default', defaultUrl))
-        
+        defaultUrl = ''  # default/official one will be used when option empty
+        self.repo.SetValue(task.get_param(value='url').get('default', defaultUrl))
+
         self.statusbar = self.CreateStatusBar(number = 1)
         
         self.btnFetch = wx.Button(parent = self.panel, id = wx.ID_ANY,
@@ -179,7 +179,7 @@ class InstallExtensionWindow(wx.Frame):
                     flags.append('--%s' % key)
         
         return ['g.extension'] + flags + ['extension=' + name,
-                                          'svnurl=' + self.repo.GetValue().strip()]
+                                          'url=' + self.repo.GetValue().strip()]
 
     def OnFetch(self, event):
         """Fetch list of available extensions"""
@@ -198,7 +198,8 @@ class InstallExtensionWindow(wx.Frame):
             
     def _fetchDone(self):
         self.tree.RefreshItems()
-        self.SetStatusText("", 0)
+        nitems = len(self.modelBuilder.GetModel().SearchNodes(key='command', value='*'))
+        self.SetStatusText(_("%d extensions loaded") % nitems, 0)
         wx.EndBusyCursor()
         
     def OnContextMenu(self, node):
@@ -309,7 +310,7 @@ class ExtensionTreeModelBuilder:
         else:
             flags = 'l'
         retcode, ret, msg = RunCommand('g.extension', read = True, getErrorMsg = True,
-                                       svnurl = url,
+                                       url=url,
                                        flags = flags, quiet = True)
         if retcode != 0:
             raise GException(_("Unable to load extensions. %s") % msg)
@@ -423,6 +424,9 @@ class ManageExtensionWindow(wx.Frame):
         for ext in eList:
             files = RunCommand('g.extension', parent = self, read = True, quiet = True,
                                extension = ext, operation = 'remove').splitlines()
+            if len(files) > 10:
+                files = files[:10]
+                files.append('...')
             dlg = wx.MessageDialog(parent = self,
                                    message = _("List of files to be removed:\n%(files)s\n\n"
                                                "Do you want really to remove <%(ext)s> extension?") % \

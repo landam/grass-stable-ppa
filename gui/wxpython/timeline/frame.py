@@ -8,7 +8,7 @@ Classes:
  - frame::TimelineFrame
  - frame::LookUp
 
-(C) 2012-2014 by the GRASS Development Team
+(C) 2012-2016 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -34,8 +34,9 @@ try:
         NavigationToolbar2WxAgg as NavigationToolbar
     import matplotlib.dates as mdates
     from matplotlib import cbook
-except ImportError:
-    raise ImportError(_('The Timeline Tool needs the "matplotlib" (python-matplotlib) package to be installed.'))
+except ImportError as e:
+    raise ImportError(_('The Timeline Tool needs the "matplotlib" '
+                        '(python-matplotlib) package to be installed. {}').format(e))
 
 import grass.script as grass
 from core.utils import _
@@ -345,6 +346,8 @@ class TimelineFrame(wx.Frame):
         datasets = datasets.split(',')
         try:
             datasets = self._checkDatasets(datasets)
+            if not datasets:
+                return
         except GException, e:
             GError(parent=self, message=unicode(e), showTraceback=False)
             return
@@ -396,6 +399,8 @@ class TimelineFrame(wx.Frame):
         # flatten this list
         if allDatasets:
             allDatasets = reduce(lambda x, y: x + y, reduce(lambda x, y: x + y, allDatasets))
+            mapsets = tgis.get_tgis_c_library_interface().available_mapsets()
+            allDatasets = [i for i in sorted(allDatasets, key=lambda l: mapsets.index(l[1]))]
 
         for dataset in datasets:
             errorMsg = _("Space time dataset <%s> not found.") % dataset
@@ -421,6 +426,8 @@ class TimelineFrame(wx.Frame):
                 if dlg.ShowModal() == wx.ID_OK:
                     index = dlg.GetSelection()
                     validated.append(allDatasets[indices[index]])
+                else:
+                    continue
             else:
                 validated.append(allDatasets[indices[0]])
 
@@ -437,6 +444,8 @@ class TimelineFrame(wx.Frame):
             return
         try:
             datasets = self._checkDatasets(datasets)
+            if not datasets:
+                return
         except GException, e:
             GError(parent=self, message=unicode(e), showTraceback=False)
             return

@@ -30,6 +30,7 @@ SUBDIRS = \
 	rst \
 	lidar \
 	raster3d \
+	raster3d/test \
 	gpde \
 	dspf \
 	symbol \
@@ -42,7 +43,8 @@ SUBDIRS = \
 	temporal \
 	python \
 	iostream \
-	manage
+	manage \
+	calc
 
 include $(MODULE_TOPDIR)/include/Make/Dir.make
 include $(MODULE_TOPDIR)/include/Make/Doxygen.make

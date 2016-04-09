@@ -19,7 +19,6 @@ int read_areas(struct Map_info *Map)
     int i, idx, found;
     int area_num, nareas;
     struct line_cats *Cats;
-    struct line_pnts *Ppoints;
     double area, perimeter;
 
     Cats = Vect_new_cats_struct();
@@ -29,7 +28,6 @@ int read_areas(struct Map_info *Map)
 
     /* Cycle through all areas */
     for (area_num = 1; area_num <= nareas; area_num++) {
-	Ppoints = Vect_new_line_struct();
 	area = 0;
 	perimeter = 0;
 
@@ -40,7 +38,7 @@ int read_areas(struct Map_info *Map)
 	if ((options.option == O_COMPACT) || (options.option == O_FD) ||
 	    (options.option == O_PERIMETER)) {
 	    perimeter = Vect_get_area_perimeter(Map, area_num);
-	    if (G_projection() != PROJECTION_LL)
+	    if (G_projection() != PROJECTION_LL && G_projection() != PROJECTION_XY)
 		    perimeter = perimeter * G_database_units_to_meters_factor();
 	}
 
@@ -67,14 +65,23 @@ int read_areas(struct Map_info *Map)
 		    found = 1;
 		}
 	    }
-	    /* why do we do this? */
-	    if (!found) {	/* no category found */
-		idx = find_cat(0, 1);
-		if (options.option == O_AREA) {
+
+	    if (!found) {	/* Values for no category (cat = -1) are reported at the end */
+		idx = find_cat(-1, 1);
+		switch (options.option) {
+		case O_AREA:
 		    Values[idx].d1 += area;
-		}
-		else if (options.option == O_PERIMETER) {
-		    Values[idx].d1 += area;
+		    break;
+		case O_PERIMETER:
+		    Values[idx].d1 += perimeter;
+		    break;
+		case O_COMPACT:
+		    Values[idx].d1 =
+			perimeter / (2.0 * sqrt(M_PI * area));
+		    break;
+		case O_FD:
+		    Values[idx].d1 = 2.0 * log(perimeter) / log(area);
+		    break;
 		}
 	    }
 	}

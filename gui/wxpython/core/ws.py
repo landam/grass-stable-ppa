@@ -9,7 +9,7 @@ Classes:
  - ws::RenderWMSMgr
  - ws::GDALRasterMerger
 
-(C) 2012 by the GRASS Development Team
+(C) 2012-2015 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -18,17 +18,18 @@ This program is free software under the GNU General Public License
 """
 import sys
 import copy
+import time
 
 import wx
 from wx.lib.newevent import NewEvent
 
 from grass.script.utils import try_remove
 from grass.script import core as grass
+from grass.exceptions import CalledModuleError
 
 from core          import utils
 from core.debug    import Debug
-
-from core.gconsole import CmdThread, GStderr, EVT_CMD_DONE, EVT_CMD_OUTPUT
+from core.gthread import  gThread
 from core.utils import _
 
 try:
@@ -44,33 +45,27 @@ from grass.pydispatch.signal import Signal
 class RenderWMSMgr(wx.EvtHandler):
     """Fetch and prepare WMS data for rendering.
     """
-    def __init__(self, layer, mapfile, maskfile):
+    def __init__(self, layer, env):
         if not haveGdal:
             sys.stderr.write(_("Unable to load GDAL Python bindings.\n"\
                                "WMS layers can not be displayed without the bindings.\n"))
 
         self.layer = layer
-
+        
         wx.EvtHandler.__init__(self)
 
         # thread for d.wms commands
-        self.thread = CmdThread(self)
-        self.Bind(EVT_CMD_DONE, self.OnDataFetched)
+        self.thread = gThread()
 
+        self._startTime = None
         self.downloading = False
         self.renderedRegion = None
         self.updateMap = True
         self.fetched_data_cmd = None
 
-        self.cmdStdErr = GStderr(self)
-
-        self.mapfile = mapfile
-        self.maskfile = maskfile
         self.tempMap = grass.tempfile()
         self.dstSize = {}
  
-        self.Bind(EVT_CMD_OUTPUT, self.OnCmdOutput)
-        
         self.dataFetched = Signal('RenderWMSMgr.dataFetched')
         self.updateProgress = Signal('RenderWMSMgr.updateProgress')
 
@@ -87,6 +82,9 @@ class RenderWMSMgr(wx.EvtHandler):
         if not haveGdal:
             return
 
+        Debug.msg(1, "RenderWMSMgr.Render(%s): force=%d img=%s" % \
+                  (self.layer, self.layer.forceRender, self.layer.mapfile))
+
         env = copy.copy(env)
         self.dstSize['cols'] = int(env["GRASS_RENDER_WIDTH"])
         self.dstSize['rows'] = int(env["GRASS_RENDER_HEIGHT"])
@@ -95,7 +93,7 @@ class RenderWMSMgr(wx.EvtHandler):
         self._fitAspect(region, self.dstSize)
 
         self.updateMap = True
-        fetchData = False
+        fetchData = True # changed to True when calling Render()
         zoomChanged = False
 
         if self.renderedRegion is None or \
@@ -118,35 +116,36 @@ class RenderWMSMgr(wx.EvtHandler):
             self.fetched_data_cmd = None
             self.renderedRegion = region
 
-            try_remove(self.mapfile)
+            try_remove(self.layer.mapfile)
             try_remove(self.tempMap)
 
             self.currentPid = self.thread.GetId()
-            self.thread.abort()
+            ### self.thread.Terminate()
             self.downloading = True
 
             self.fetching_cmd = cmd
-            cmdList = utils.CmdTupleToList(cmd)
-
-            if Debug.GetLevel() < 3:
-                cmdList.append('--quiet')
 
             env["GRASS_RENDER_FILE"] = self.tempMap
             env["GRASS_REGION"] = self._createRegionStr(region)
 
-            self.thread.RunCmd(cmdList, env=env, stderr=self.cmdStdErr)
+            cmd_render = copy.deepcopy(cmd)
+            cmd_render[1]['quiet'] = True # be quiet
+        
+            self._startTime = time.time()
+            self.thread.Run(callable=self._render, cmd=cmd_render, env=env,
+                            ondone=self.OnRenderDone)
+            self.layer.forceRender = False
+            
+        self.updateProgress.emit(layer=self.layer)
+        
+    def _render(self, cmd, env):
+        try:
+            return grass.run_command(cmd[0], env=env, **cmd[1])
+        except CalledModuleError as e:
+            grass.error(e)
+            return 1
 
-    def OnCmdOutput(self, event):
-        """Print cmd output according to debug level.
-        """
-        if Debug.GetLevel() == 0:
-            if event.type == 'error':
-                sys.stderr.write(event.text)
-                sys.stderr.flush()
-        else:
-            Debug.msg(1, event.text)
-
-    def OnDataFetched(self, event):
+    def OnRenderDone(self, event):
         """Fetch data
         """
         if event.pid != self.currentPid:
@@ -158,12 +157,13 @@ class RenderWMSMgr(wx.EvtHandler):
             self.fetched_data_cmd = None
             return
 
-        self.mapMerger = GDALRasterMerger(targetFile = self.mapfile, region = self.renderedRegion,
+        self.mapMerger = GDALRasterMerger(targetFile = self.layer.mapfile,
+                                          region = self.renderedRegion,
                                           bandsNum = 3, gdalDriver = 'PNM', fillValue = 0)
         self.mapMerger.AddRasterBands(self.tempMap, {1 : 1, 2 : 2, 3 : 3})
         del self.mapMerger
 
-        self.maskMerger = GDALRasterMerger(targetFile = self.maskfile, region = self.renderedRegion,
+        self.maskMerger = GDALRasterMerger(targetFile = self.layer.maskfile, region = self.renderedRegion,
                                            bandsNum = 1, gdalDriver = 'PNM', fillValue = 0)
         #{4 : 1} alpha channel (4) to first and only channel (1) in mask
         self.maskMerger.AddRasterBands(self.tempMap, {4 : 1}) 
@@ -171,7 +171,10 @@ class RenderWMSMgr(wx.EvtHandler):
 
         self.fetched_data_cmd = self.fetching_cmd
 
-        self.dataFetched.emit()
+        Debug.msg(1, "RenderWMSMgr.OnRenderDone(%s): ret=%d time=%f" % \
+                      (self.layer, event.ret, time.time() - self._startTime))
+        
+        self.dataFetched.emit(layer=self.layer)
 
     def _getRegionDict(self, env):
         """Parse string from GRASS_REGION env variable into dict.
@@ -232,10 +235,14 @@ class RenderWMSMgr(wx.EvtHandler):
             region['n-s resol'] = region['e-w resol']
 
     def Abort(self):
-        """Abort process"""
+        """Abort rendering process"""
+        Debug.msg(1, "RenderWMSMgr({}).Abort()".format(self.layer))
+        self.thread.Terminate()
+        
+        # force rendering layer next time
+        self.layer.forceRender = True
         self.updateMap = False
-        self.thread.abort(abortall = True)        
-
+        self.thread.Terminate(False)
 
 class GDALRasterMerger:
     """Merge rasters.

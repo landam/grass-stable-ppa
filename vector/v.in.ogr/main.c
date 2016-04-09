@@ -9,7 +9,7 @@
  *
  * PURPOSE:      Import OGR vectors
  *
- * COPYRIGHT:    (C) 2003-2015 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2003-2016 by the GRASS Development Team
  *
  *               This program is free software under the GNU General
  *               Public License (>=v2).  Read the file COPYING that
@@ -45,6 +45,8 @@ int geom(OGRGeometryH hGeom, struct Map_info *Map, int field, int cat,
 int centroid(OGRGeometryH hGeom, CENTR * Centr, struct spatial_index * Sindex,
 	     int field, int cat, double min_area, int type);
 int poly_count(OGRGeometryH hGeom, int line2boundary);
+
+char *get_datasource_name(const char *, int);
 
 int main(int argc, char *argv[])
 {
@@ -139,10 +141,11 @@ int main(int argc, char *argv[])
     param.dsn->key = "input";
     param.dsn->type = TYPE_STRING;
     param.dsn->required =YES;
-    param.dsn->label = _("OGR datasource name");
+    param.dsn->label = _("Name of OGR datasource to be imported");
     param.dsn->description = _("Examples:\n"
 				   "\t\tESRI Shapefile: directory containing shapefiles\n"
 				   "\t\tMapInfo File: directory containing mapinfo files");
+    param.dsn->gisprompt = "old,datasource,datasource";
     
     param.layer = G_define_option();
     param.layer->key = "layer";
@@ -154,7 +157,8 @@ int main(int argc, char *argv[])
     param.layer->description =
 	_("Examples:\n" "\t\tESRI Shapefile: shapefile name\n"
 	  "\t\tMapInfo File: mapinfo file name");
-    param.layer->guisection = _("Selection");
+    param.layer->guisection = _("Input");
+    param.layer->gisprompt = "old,datasource_layer,datasource_layer";
 
     param.out = G_define_standard_option(G_OPT_V_OUTPUT);
     param.out->required = NO;
@@ -213,6 +217,7 @@ int main(int argc, char *argv[])
     param.outloc->required = NO;
     param.outloc->description = _("Name for new location to create");
     param.outloc->key_desc = "name";
+    param.outloc->guisection = _("Output");
     
     param.cnames = G_define_standard_option(G_OPT_DB_COLUMNS);
     param.cnames->description =
@@ -275,8 +280,10 @@ int main(int argc, char *argv[])
 
     flag.over = G_define_flag();
     flag.over->key = 'o';
+    flag.over->label =
+	_("Override projection check (use current location's projection)");
     flag.over->description =
-	_("Override dataset projection (use location's projection)");
+	_("Assume that the dataset has the same projection as the current location");
 
     flag.proj = G_define_flag();
     flag.proj->key = 'j';
@@ -308,6 +315,7 @@ int main(int argc, char *argv[])
     flag.no_import->description =
 	_("Create the location specified by the \"location\" parameter and exit."
           " Do not import the vector data.");
+    flag.no_import->guisection = _("Output");
     
     /* The parser checks if the map already exists in current mapset, this is
      * wrong if location options is used, so we switch out the check and do it
@@ -354,44 +362,9 @@ int main(int argc, char *argv[])
     else
 	datetime_type = "datetime";
 
-    /* dsn is 'PG:', check default connection settings */
     dsn = NULL;
-    if (driver_name && strcmp(driver_name, "pg") == 0 &&
-        G_strcasecmp(param.dsn->answer, "PG:") == 0) {
-        const char *dbname;
-        dbConnection conn;
-        
-        dbname = db_get_default_database_name();
-        if (!dbname)
-            G_fatal_error(_("Database not defined, please check default "
-                            " connection settings by db.connect"));
-
-        dsn = (char *) G_malloc(GPATH_MAX);
-        /* -> dbname */
-        sprintf(dsn, "PG:dbname=%s", dbname);
-        
-        /* -> user/passwd */
-        if (DB_OK == db_get_connection(&conn) &&
-            strcmp(conn.driverName, "pg") == 0 &&
-            strcmp(conn.databaseName, dbname) == 0) {
-            if (conn.user) {
-                strcat(dsn, " user=");
-                strcat(dsn, conn.user);
-            }
-            if (conn.password) {
-                strcat(dsn, " passwd=");
-                strcat(dsn, conn.password);
-            }
-            /* TODO: host/port... */
-        }
-        else {
-            G_debug(1, "unable to get connection");
-        }
-        G_debug(1, "Using dsn=%s", dsn);
-    }
-    else if (param.dsn->answer) {
-        dsn = G_store(param.dsn->answer);
-    }
+    if (param.dsn->answer)
+        dsn = get_datasource_name(param.dsn->answer, TRUE);
     
     min_area = atof(param.min_area->answer);
     snap = atof(param.snap->answer);
@@ -1000,8 +973,13 @@ int main(int argc, char *argv[])
                 /* check if the field is integer */
                 Ogr_field = OGR_FD_GetFieldDefn(Ogr_featuredefn, key_idx);
                 Ogr_ftype = OGR_Fld_GetType(Ogr_field);
-                if (Ogr_ftype != OFTInteger)
+                if (!(Ogr_ftype == OFTInteger
+#if GDAL_VERSION_NUM >= 2000000
+                      || Ogr_ftype == OFTInteger64
+#endif
+		      )) {
                     G_fatal_error(_("Key column '%s' is not integer"), param.key->answer);
+                }
                 key_column = G_store(OGR_Fld_GetNameRef(Ogr_field));
             }
         }
@@ -1081,11 +1059,30 @@ int main(int argc, char *argv[])
 		/**                                          OFTDate = 9           **/
 		/**                                          OFTTime = 10          **/
 		/**                                          OFTDateTime = 11      **/
+                /** GDAL 2.0+                                                      **/
+                /** Simple 64bit integer                     OFTInteger64 = 12     **/
+                /** List of 64bit integers                   OFTInteger64List = 13 **/
 
 		if (Ogr_ftype == OFTInteger) {
 		    sprintf(buf, ", %s integer", Ogr_fieldname);
 		}
-		else if (Ogr_ftype == OFTIntegerList) {
+#if GDAL_VERSION_NUM >= 2000000
+		else if (Ogr_ftype == OFTInteger64) {
+                    if (strcmp(Fi->driver, "pg") == 0) 
+                        sprintf(buf, ", %s bigint", Ogr_fieldname);
+                    else {
+                        sprintf(buf, ", %s integer", Ogr_fieldname);
+                        if (strcmp(Fi->driver, "sqlite") != 0) 
+                            G_warning(_("Writing column <%s> with integer 64 as integer 32"),
+                                      Ogr_fieldname);
+                    }
+                }
+#endif
+		else if (Ogr_ftype == OFTIntegerList
+#if GDAL_VERSION_NUM >= 2000000
+                         || Ogr_ftype == OFTInteger64List
+#endif
+                         ) {
 		    /* hack: treat as string */
 		    sprintf(buf, ", %s varchar ( %d )", Ogr_fieldname,
 			    OFTIntegerListlength);
@@ -1128,8 +1125,8 @@ int main(int argc, char *argv[])
 			      Ogr_fieldname, OFTIntegerListlength);
 		}
 		else {
-		    G_warning(_("Column type not supported (%s)"),
-			      Ogr_fieldname);
+		    G_warning(_("Column type (Ogr_ftype: %d) not supported (Ogr_fieldname: %s)"),
+			      Ogr_ftype, Ogr_fieldname);
 		    buf[0] = 0;
 		}
 		db_append_string(&sql, buf);
@@ -1213,7 +1210,11 @@ int main(int argc, char *argv[])
 		    Ogr_field = OGR_FD_GetFieldDefn(Ogr_featuredefn, i);
 		    Ogr_ftype = OGR_Fld_GetType(Ogr_field);
 		    if (OGR_F_IsFieldSet(Ogr_feature, i)) {
-			if (Ogr_ftype == OFTInteger || Ogr_ftype == OFTReal) {
+			if (Ogr_ftype == OFTInteger ||
+#if GDAL_VERSION_NUM >= 2000000
+                            Ogr_ftype == OFTInteger64 ||
+#endif
+                            Ogr_ftype == OFTReal) {
 			    sprintf(buf, ", %s",
 				    OGR_F_GetFieldAsString(Ogr_feature, i));
 			}
@@ -1234,7 +1235,11 @@ int main(int argc, char *argv[])
 #endif
 			else if (Ogr_ftype == OFTString ||
 			         Ogr_ftype == OFTStringList ||
-				 Ogr_ftype == OFTIntegerList) {
+				 Ogr_ftype == OFTIntegerList 
+#if GDAL_VERSION_NUM >= 2000000
+                                 || Ogr_ftype == OFTInteger64List
+#endif
+                                 ) {
 			    db_set_string(&strval, (char *)
 					  OGR_F_GetFieldAsString(Ogr_feature,
 								 i));
@@ -1248,20 +1253,28 @@ int main(int argc, char *argv[])
 		    }
 		    else {
 			/* G_warning (_("Column value not set" )); */
-			if (Ogr_ftype == OFTInteger || Ogr_ftype == OFTReal) {
+			if (Ogr_ftype == OFTInteger ||
+#if GDAL_VERSION_NUM >= 2000000
+                            Ogr_ftype == OFTInteger64 ||
+#endif
+                            Ogr_ftype == OFTReal) {
 			    sprintf(buf, ", NULL");
 			}
 #if GDAL_VERSION_NUM >= 1320
 			else if (Ogr_ftype == OFTDate ||
 				 Ogr_ftype == OFTTime || 
 				 Ogr_ftype == OFTDateTime) {
-			    sprintf(buf, ", ''");
+			    sprintf(buf, ", NULL");
 			}
 #endif
 			else if (Ogr_ftype == OFTString ||
 			         Ogr_ftype == OFTStringList ||
-				 Ogr_ftype == OFTIntegerList) {
-			    sprintf(buf, ", ''");
+				 Ogr_ftype == OFTIntegerList
+#if GDAL_VERSION_NUM >= 2000000
+                                 || Ogr_ftype == OFTInteger64List
+#endif
+                                 ) {
+			    sprintf(buf, ", NULL");
 			}
 			else {
 			    /* column type not supported */
@@ -1659,19 +1672,23 @@ int main(int argc, char *argv[])
         G_fatal_error(_("Import failed"));
 
     /* create index - may fail on non-unique categories */
-    if (db_create_index2(driver, Fi->table, key_column) != DB_OK)
-        G_warning(_("Unable to create index for table <%s>, key <%s>"),
-                  Fi->table, key_column);
+    if (!flag.notab->answer) {
+    	if (db_create_index2(driver, Fi->table, key_column) != DB_OK)
+        	G_warning(_("Unable to create index for table <%s>, key <%s>"),
+                	  Fi->table, key_column);
     
-    if (delete_table) {
-        sprintf(buf, "drop table %s", Fi->table);
-        db_set_string(&sql, buf);
-        if (db_execute_immediate(driver, &sql) != DB_OK) {
-            G_fatal_error(_("Unable to drop table: '%s'"),
-                          db_get_string(&sql));
-        }
+    
+	if (delete_table) {
+        	sprintf(buf, "drop table %s", Fi->table);
+	        db_set_string(&sql, buf);
+        	if (db_execute_immediate(driver, &sql) != DB_OK) {
+	            G_fatal_error(_("Unable to drop table: '%s'"),
+        	                  db_get_string(&sql));
+        	}
+    	}
+
+	db_close_database_shutdown_driver(driver);
     }
-    db_close_database_shutdown_driver(driver);
     
     /* -------------------------------------------------------------------- */
     /*      Extend current window based on dataset.                         */

@@ -23,7 +23,6 @@ import os
 import sys
 
 import wx
-import wx.aui
 
 from core        import globalvar
 from core.debug  import Debug
@@ -56,9 +55,9 @@ class MapFrameBase(wx.Frame):
     
     AUI manager is stored in \c self._mgr.
     """
-    def __init__(self, parent = None, id = wx.ID_ANY, title = None,
+    def __init__(self, parent = None, id = wx.ID_ANY, title = '',
                  style = wx.DEFAULT_FRAME_STYLE,
-                 auimgr = None, name = None, **kwargs):
+                 auimgr = None, name = '', **kwargs):
         """
 
         .. warning::
@@ -93,7 +92,8 @@ class MapFrameBase(wx.Frame):
         # Fancy gui
         #
         if auimgr == None:
-            self._mgr = wx.aui.AuiManager(self)
+            from wx.aui import AuiManager
+            self._mgr = AuiManager(self)
         else:
             self._mgr = auimgr
         
@@ -101,11 +101,14 @@ class MapFrameBase(wx.Frame):
         self._toolSwitcher = ToolSwitcher()
         self._toolSwitcher.toggleToolChanged.connect(self._onToggleTool)
 
-        # set accelerator table for fullscreen
-        fullScreenId = wx.NewId()
-        self.Bind(wx.EVT_MENU, self.OnFullScreen, id=fullScreenId)
-        accelTable = wx.AcceleratorTable([(wx.ACCEL_NORMAL, wx.WXK_F11, fullScreenId)])
-        self.SetAcceleratorTable(accelTable)
+        # set accelerator table (fullscreen, close window)
+        accelTable = []
+        for wxId, handler, entry, kdb in ((wx.NewId(), self.OnFullScreen, wx.ACCEL_NORMAL, wx.WXK_F11),
+                                          (wx.NewId(), self.OnCloseWindow, wx.ACCEL_CTRL, ord('W'))):
+            self.Bind(wx.EVT_MENU, handler, id=wxId)
+            accelTable.append((entry, kdb, wxId))
+        
+        self.SetAcceleratorTable(wx.AcceleratorTable(accelTable))
 
     def _initMap(self, Map):
         """Initialize map display, set dimensions and map region
@@ -118,6 +121,14 @@ class MapFrameBase(wx.Frame):
         Map.ChangeMapSize(self.GetClientSize())
         Map.region = Map.GetRegion() # g.region -upgc
         # self.Map.SetRegion() # adjust region to match display window
+
+    def _resize(self):
+        Debug.msg(1, "MapFrame._resize():")
+        wm, hw = self.MapWindow.GetClientSize()
+        wf, hf = self.GetSize()
+        dw = wf - wm
+        dh = hf - hw
+        self.SetSize((wf + dw, hf + dh))
 
     def _onToggleTool(self, id):
         if self._toolSwitcher.IsToolInGroup(id, 'mouseUse'):
@@ -139,6 +150,9 @@ class MapFrameBase(wx.Frame):
         self.ShowFullScreen(not self.IsFullScreen())
         event.Skip()
 
+    def OnCloseWindow(self, event):
+        self.Destroy()
+        
     def GetToolSwitcher(self):
         return self._toolSwitcher
 
@@ -256,21 +270,20 @@ class MapFrameBase(wx.Frame):
     def GetMapToolbar(self):
         """Returns toolbar with zooming tools"""
         raise NotImplementedError("GetMapToolbar")
-       
+
     def GetToolbar(self, name):
-        """Returns toolbar if exists else None.
-        
-        Toolbars dictionary contains currently used toolbars only.
+        """Returns toolbar if exists and is active, else None.
         """
-        if name in self.toolbars:
+        if name in self.toolbars and self.toolbars[name].IsShown():
             return self.toolbars[name]
-        
+
         return None
-       
+
     def StatusbarUpdate(self):
         """Update statusbar content"""
-        Debug.msg(5, "MapFrameBase.StatusbarUpdate()")
-        self.statusbarManager.Update()
+        if self.statusbarManager:
+            Debug.msg(5, "MapFrameBase.StatusbarUpdate()")
+            self.statusbarManager.Update()
         
     def IsAutoRendered(self):
         """Check if auto-rendering is enabled"""
@@ -285,12 +298,14 @@ class MapFrameBase(wx.Frame):
         """
         # assuming that the first mode is coordinates
         # probably shold not be here but good solution is not available now
-        if self.statusbarManager.GetMode() == 0:
-            self.statusbarManager.ShowItem('coordinates')
+        if self.statusbarManager:
+            if self.statusbarManager.GetMode() == 0:
+                self.statusbarManager.ShowItem('coordinates')
         
     def StatusbarReposition(self):
         """Reposition items in statusbar"""
-        self.statusbarManager.Reposition()
+        if self.statusbarManager:
+            self.statusbarManager.Reposition()
         
     def StatusbarEnableLongHelp(self, enable = True):
         """Enable/disable toolbars long help"""
@@ -327,12 +342,13 @@ class MapFrameBase(wx.Frame):
     def _setUpMapWindow(self, mapWindow):
         """Binds map windows' zoom history signals to map toolbar."""
         # enable or disable zoom history tool
-        mapWindow.zoomHistoryAvailable.connect(
-            lambda:
-            self.GetMapToolbar().Enable('zoomBack', enable=True))
-        mapWindow.zoomHistoryUnavailable.connect(
-            lambda:
-            self.GetMapToolbar().Enable('zoomBack', enable=False))
+        if self.GetMapToolbar():
+            mapWindow.zoomHistoryAvailable.connect(
+                lambda:
+                self.GetMapToolbar().Enable('zoomBack', enable=True))
+            mapWindow.zoomHistoryUnavailable.connect(
+                lambda:
+                self.GetMapToolbar().Enable('zoomBack', enable=False))
         mapWindow.mouseMoving.connect(self.CoordinatesChanged)
 
     def OnPointer(self, event):
@@ -379,10 +395,10 @@ class SingleMapFrame(MapFrameBase):
     @note To access maps use getters only
     (when using class or when writing class itself).
     """
-    def __init__(self, parent = None, giface = None, id = wx.ID_ANY, title = None,
+    def __init__(self, parent = None, giface = None, id = wx.ID_ANY, title = '',
                  style = wx.DEFAULT_FRAME_STYLE,
                  Map = None,
-                 auimgr = None, name = None, **kwargs):
+                 auimgr = None, name = '', **kwargs):
         """
         
         :param parent: gui parent
@@ -403,7 +419,8 @@ class SingleMapFrame(MapFrameBase):
         #
         # initialize region values
         #
-        self._initMap(Map = self.Map)
+        if self.Map:
+            self._initMap(Map = self.Map)
         
     def GetMap(self):
         """Returns map (renderer) instance"""

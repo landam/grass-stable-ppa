@@ -5,7 +5,7 @@
 # MODULE:	d.redraw
 # AUTHOR(S):	Martin Landa <landa.martin gmail.com>
 # PURPOSE:	Redraws the content of currently selected monitor
-# COPYRIGHT:	(C) 2011 by the GRASS Development Team
+# COPYRIGHT:	(C) 2011-2015 by the GRASS Development Team
 #
 #		This program is free software under the GNU General
 #		Public License (>=v2). Read the file COPYING that
@@ -20,29 +20,20 @@
 #% keyword: monitors
 #%end
 
+import os
 import sys
-import shlex
 
 from grass.script import core as grass
-
-def split(s):
-    """!Platform specific shlex.split"""
-    if sys.version_info >= (2, 6):
-        return shlex.split(s, posix = (sys.platform != "win32"))
-    elif sys.platform == "win32":
-        return shlex.split(s.replace('\\', r'\\'))
-    else:
-        return shlex.split(s)
+from grass.script.utils import split
 
 def main():
-    env = grass.gisenv()
-    mon = env.get('MONITOR', None)
+    mon = grass.gisenv().get('MONITOR', None)
     if not mon:
         grass.fatal(_("No graphics device selected. Use d.mon to select graphics device."))
-    
-    monCmd = env.get('MONITOR_%s_CMDFILE' % mon.upper())
-    if not monCmd:
-        grass.fatal(_("No cmd file found for monitor <%s>") % mon)
+
+    monCmd = grass.parse_command('d.mon', flags='g').get('cmd', None)
+    if not monCmd or not os.path.isfile(monCmd):
+        grass.fatal(_("Unable to open file '%s'") % monCmd)
 
     try:
         fd = open(monCmd, 'r')
