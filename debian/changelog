@@ -17,6 +17,7 @@ grass (7.1.svn20160409-1) UNRELEASED; urgency=medium
   * Enable PDAL support.
   * Drop explicit python-numpy dependency, included in ${python:Depends}
     via dh_numpy.
+  * Have dh_python & dh_numpy act on specific packages only.
 
  -- Bas Couwenberg <sebastic@debian.org>  Sat, 09 Apr 2016 12:50:12 +0200
 
