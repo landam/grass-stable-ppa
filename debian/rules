@@ -210,6 +210,9 @@ install-arch-stamp:
 		mv "$$file" "$$dir" ; \
 	done < debian/grass-gui.image-file-in-usr-lib.list
 
+	# Remove empty files
+	find debian/tmp/ -type f -empty -name "class_graphical*" -print -delete
+
 	touch $@
 
 override_dh_auto_install-indep: install-arch-stamp

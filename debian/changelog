@@ -13,6 +13,7 @@ grass (7.2.0~rc1-1) UNRELEASED; urgency=medium
     - Rename MIT license shortname to Expat
   * Add jquery.fixedheadertable.js to missing-sources.
   * Use packaged jQuery in HTML documentation.
+  * Remove empty files (class_graphical).
 
  -- Bas Couwenberg <sebastic@debian.org>  Fri, 28 Oct 2016 12:44:55 +0200
 
