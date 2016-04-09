@@ -6,14 +6,14 @@ Section: science
 Priority: optional
 Build-Depends: autoconf2.13,
                autotools-dev,
+               bison,
                debhelper (>= 9),
                dh-python,
                doxygen,
                fakeroot,
                flex,
-               bison,
                graphviz,
-               libmotif-dev | lesstif2-dev,
+               libblas-dev,
                libcairo2-dev,
                libfftw3-dev,
                libfreetype6-dev,
@@ -21,33 +21,33 @@ Build-Depends: autoconf2.13,
                libgeos-dev,
                libglu1-mesa-dev,
                libjpeg-dev,
-               libpng-dev,
-               libtiff-dev,
+               liblapack-dev,
+               liblas-c-dev (>= 1.8.0-8~),
+               libmotif-dev | lesstif2-dev,
                libmysqlclient-dev,
                libncurses5-dev,
+               libnetcdf-dev,
+               libpng-dev,
                libpq-dev,
                libproj-dev,
-# proj-bin needed for nad2bin during config
-               proj-bin,
                libreadline-dev,
                libsqlite3-dev,
+               libtiff-dev,
                libwxgtk3.0-dev,
                libxmu-dev,
+               netcdf-bin,
 # install optipng if compressing the PNG images in the programmers' manual
 #              optipng,
+# proj-bin needed for nad2bin during config
+               proj-bin,
                python,
-               python-wxgtk3.0,
                python-dev,
                python-numpy,
-               python-ply,
                python-pil,
-               libnetcdf-dev,
-               netcdf-bin,
-               libblas-dev,
-               liblapack-dev,
+               python-ply,
+               python-wxgtk3.0,
                unixodbc-dev,
-               zlib1g-dev,
-               liblas-c-dev (>= 1.8.0-8~)
+               zlib1g-dev
 Standards-Version: 3.9.7
 Vcs-Browser: https://anonscm.debian.org/cgit/pkg-grass/grass.git
 Vcs-Git: https://anonscm.debian.org/git/pkg-grass/grass.git
@@ -125,11 +125,11 @@ Description: GRASS GIS core components
 Package: grass-gui
 Architecture: any
 Depends: grass-core,
-         ${python:Depends},
-         python-wxgtk3.0,
 # pyGL needed for wxNviz
          python-opengl,
+         python-wxgtk3.0,
          xterm | x-terminal-emulator,
+         ${python:Depends},
          ${misc:Depends}
 Recommends:
 # gs needed for wxPsmap PDF export
@@ -179,8 +179,8 @@ Description: GRASS GIS user documentation
 Package: grass-dev-doc
 Section: doc
 Architecture: all
-Depends: ${misc:Depends},
-         libjs-jquery
+Depends: libjs-jquery,
+         ${misc:Depends}
 Suggests: grass
 Conflicts: grass70-dev-doc,
            grass7-dev-doc
@@ -204,10 +204,10 @@ Architecture: any
 Depends: grass-core (= ${binary:Version}),
 # fakeroot used by patches/htmlgen-fakeroot; see changelog entry for 5.7.0+6.0.0beta2-2
          fakeroot,
-         libproj-dev,
-         libgdal-dev,
          libfreetype6-dev,
+         libgdal-dev,
          libpq-dev,
+         libproj-dev,
          python,
          ${shlibs:Depends},
          ${misc:Depends}
