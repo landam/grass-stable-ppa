@@ -11,6 +11,7 @@ grass (7.1.svn20160409-1) UNRELEASED; urgency=medium
     - Add license & copyright for lz4.{c,h}
   * Add patch to fix various spelling errors.
   * Use packaged jQuery in HTML documentation.
+  * Add jquery.fixedheadertable.js to missing-sources.
 
  -- Bas Couwenberg <sebastic@debian.org>  Sat, 09 Apr 2016 12:50:12 +0200
 
