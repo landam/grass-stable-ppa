@@ -275,6 +275,9 @@ install-arch-stamp:
 	mkdir -p debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/vdigit
 	mv debian/tmp/usr/lib/$(BASE_NAME)/gui/wxpython/vdigit/vdigit_toolbar.jpg debian/tmp/usr/share/$(BASE_NAME)/gui/wxpython/vdigit/
 
+	# Remove empty files
+	find debian/tmp/ -type f -empty -name "class_graphical*" -print -delete
+
 	touch $@
 
 override_dh_auto_install-indep: install-arch-stamp
