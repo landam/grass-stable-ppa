@@ -1,3 +1,9 @@
+grass (7.0.3-4) UNRELEASED; urgency=medium
+
+  * Add template for x-grass7.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Sat, 09 Apr 2016 20:20:29 +0200
+
 grass (7.0.3-3) unstable; urgency=medium
 
   * Update dh_python2 override to call dh_numpy too.
