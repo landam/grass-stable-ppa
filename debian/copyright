@@ -7,19 +7,21 @@ Files-Excluded: .svn/*
 Files: *
 Copyright:   1989-2016, GRASS Development Team
              2003-2016, Markus Neteler
+             2014-2016, Tereza Fiedlerova
+             2006-2015, Martin Landa
        2012, 2014-2015, Luca Delucchi
+            2013, 2015, Vaclav Petras
+                  2015, pietro
              1993-2014, James Darrell McCauley <darrell@mccauley-usa.com>
              2003-2014, Glynn Clements
              2003-2014, Per Henrik Johansen
              2006-2014, Hamish Bowman
-             2006-2014, Martin Landa
              2007-2014, Lars Ahlzen
+             2011-2014, Markus Metz
              2011-2014, Soeren Gebbert
              2011-2013, Anna Kratochvilova
                   2013, GKX Associates Inc.
-                  2013, Vaclav Petras
        2009-2010, 2012, Daniel Bundala
-             2011-2012, Markus Metz
                   2012, Eric Momsen
                   2012, Stepan Turek
              2001-2011, Frank Warmerdam
@@ -70,6 +72,11 @@ Files: lib/external/shapelib/dbfopen.c
  raster/r.external/list.c
 Copyright: 1999, 2001, 2007, Frank Warmerdam
 License: MIT or LGPL-2+
+
+Files: lib/gis/lz4.c
+ lib/gis/lz4.h
+Copyright: 2011-2015, Yann Collet
+License: BSD-2-Clause
 
 Files: lib/python/imaging/images2avi.py
  lib/python/imaging/images2ims.py
@@ -218,6 +225,30 @@ License: LGPL-2.1+
  On Debian systems, the full text of the GNU Lesser General Public
  License version 2.1 can be found in the file
  `/usr/share/common-licenses/LGPL-2.1'.
+
+License: BSD-2-Clause
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are
+ met:
+ .
+ * Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+ .
+ * Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 License: BSD-3-Clause
  Redistribution and use in source and binary forms, with or without

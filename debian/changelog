@@ -5,6 +5,10 @@ grass (7.1.svn20160409-1) UNRELEASED; urgency=medium
   * Exclude .svn directory from upstream tarball.
   * Drop typo patches, applied upstream. Refresh remaining patches.
   * Move new image files from /usr/lib to /usr/share.
+  * Update copyright file, changes:
+    - Update copyright years for Martin Landa, Vaclav Petras & Markus Metz
+    - Add Tereza Fiedlerova & pietro to copyright holders
+    - Add license & copyright for lz4.{c,h}
 
  -- Bas Couwenberg <sebastic@debian.org>  Sat, 09 Apr 2016 12:50:12 +0200
 
