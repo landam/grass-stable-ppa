@@ -7,6 +7,8 @@ grass (7.0.3-4) UNRELEASED; urgency=medium
   * Have dh_python & dh_numpy act on specific packages only.
   * Use dynamic list of wxpython images files to move to use /usr/share.
   * Install additional icon sizes in hicolor icon theme.
+  * Bump Standards-Version to 3.9.8, changes:
+    additional icon sizes in hicolor theme.
 
  -- Bas Couwenberg <sebastic@debian.org>  Sat, 09 Apr 2016 20:20:29 +0200
 
