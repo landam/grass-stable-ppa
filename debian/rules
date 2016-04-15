@@ -32,7 +32,12 @@ templates:
 	dh $@ --with autotools_dev,python2 --parallel
 
 override_dh_clean:
-	dh_clean build-arch-stamp install-arch-stamp debian/grass-gui.image-file-in-usr-lib.list
+	dh_clean build-arch-stamp install-arch-stamp debian/grass-gui.image-file-in-usr-lib.list \
+		gui/icons/grass-8x8.png    gui/icons/grass-16x16.png  gui/icons/grass-22x22.png \
+		gui/icons/grass-24x24.png  gui/icons/grass-32x32.png  gui/icons/grass-36x36.png \
+		gui/icons/grass-40x40.png  gui/icons/grass-42x42.png  gui/icons/grass-72x72.png \
+		gui/icons/grass-80x80.png  gui/icons/grass-96x96.png  gui/icons/grass-128x128.png \
+		gui/icons/grass-192x192.png
 
 	$(RM) lib/proj/nad2bin
 	$(RM) tools/timer/main.o
@@ -68,6 +73,7 @@ override_dh_auto_clean:
 	[ ! -f $(CURDIR)/include/Make/Platform.make ] || $(MAKE) distclean
 
 override_dh_auto_configure: templates
+	cp debian/gui/icons/* gui/icons/
 	dh_auto_configure -- \
                     --prefix=/usr/lib \
                     --enable-socket \
