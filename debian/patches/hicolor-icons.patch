@@ -2,6 +2,8 @@ Description: Install additional hicolor icon sizes.
  Debian Policy requires at least 22x22 PNG icons.
 Author: Bas Couwenberg <sebastic@debian.org>
 Forwarded: https://trac.osgeo.org/grass/ticket/2988
+Applied-Upstream: https://trac.osgeo.org/grass/changeset/68265
+                  https://trac.osgeo.org/grass/changeset/68266
 
 --- a/gui/icons/Makefile
 +++ b/gui/icons/Makefile
