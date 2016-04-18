@@ -14,6 +14,7 @@ grass (7.0.4~rc1-1) UNRELEASED; urgency=medium
     - Add license & copyright for mapcalc.tab.{c,h}
   * Drop patches applied upstream. Refresh remaining patches.
   * Add python-matplotlib to grass-gui Recommends for the several wxGUI tools.
+  * Add patch to fix spelling errors.
 
  -- Bas Couwenberg <sebastic@debian.org>  Mon, 18 Apr 2016 22:28:07 +0200
 
