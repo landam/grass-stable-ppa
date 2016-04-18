@@ -133,7 +133,8 @@ Recommends:
 # gs needed for wxPsmap PDF export
             ghostscript,
 # PIL needed for wxPsmap preview
-            python-imaging
+            python-imaging,
+            python-matplotlib
 Breaks: grass (<< 6.4.2-1~)
 Conflicts: grass@VERSION@-gui,
            grass7-gui

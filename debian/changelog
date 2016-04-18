@@ -13,6 +13,7 @@ grass (7.0.4~rc1-1) UNRELEASED; urgency=medium
     - Add Jachym Ceppicky to copyright holders
     - Add license & copyright for mapcalc.tab.{c,h}
   * Drop patches applied upstream. Refresh remaining patches.
+  * Add python-matplotlib to grass-gui Recommends for the several wxGUI tools.
 
  -- Bas Couwenberg <sebastic@debian.org>  Mon, 18 Apr 2016 22:28:07 +0200
 
