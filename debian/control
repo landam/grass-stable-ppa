@@ -100,7 +100,8 @@ Suggests: grass-doc,
 # used by NVIZ, d.out.gpsdrive, r.out.mpeg
           netpbm,
 # used by v.kridge
-          python-rpy2
+          python-rpy2,
+          python-termcolor
 Breaks: grass (<< 6.4.2-1~)
 Conflicts: grass70-core,
            grass7-core
