@@ -105,7 +105,8 @@ Then convert from HIS model to RGB and show the result.
 <div class="code"><pre>
 r.mapcalc "elevation_shaded_relief_bright_50 = #elevation_shaded_relief * 1.5"
 r.colors elevation_shaded_relief_bright_50 color=grey255
-r.his hue=elevation intensity=elevation_shaded_relief_bright_50 red=shadedmap_r green=shadedmap_g blue=shadedmap_b
+r.his hue=elevation intensity=elevation_shaded_relief_bright_50 \
+      red=shadedmap_r green=shadedmap_g blue=shadedmap_b
 
 d.mon wx1
 d.rgb red=shadedmap_r green=shadedmap_g blue=shadedmap_b
@@ -131,4 +132,4 @@ d.rgb red=shadedmap_r green=shadedmap_g blue=shadedmap_b
 
 Glynn Clements (based upon <em><a href="d.his.html">d.his</a></em>)
 
-<p><i>Last changed: $Date: 2014-12-20 05:56:06 +0100 (Sat, 20 Dec 2014) $</i>
+<p><i>Last changed: $Date: 2016-01-28 12:27:18 +0100 (Thu, 28 Jan 2016) $</i>

@@ -15047,7 +15047,7 @@ msgid "Name of target mapset"
 msgstr "ชื่อของ ชุดแผนที่เป้าหมาย"
 
 #: ../imagery/i.target/main.c:68
-msgid "Set current location and mapset as target for of imagery group"
+msgid "Set current location and mapset as target for imagery group"
 msgstr "กำหนด ตำแหน่งและชุดแผนที่ ปัจจุบัน เป็นเป้าหมายสำหรับ กลุ่มภาพ"
 
 #: ../imagery/i.target/main.c:90 ../imagery/i.target/main.c:107
@@ -34477,9 +34477,10 @@ msgstr "การทำงาน ที่ไม่ทราบ"
 msgid "Unable to tokenize column string: [%s]"
 msgstr "ไม่สามารถ  tokenize Column string: %s"
 
-#: ../vector/v.transform/main.c:277
+#: ../vector/v.transform/main.c:277 ../vector/v.to.3d/trans3.c:80
+#: ../vector/v.to.3d/trans2.c:79
 #, fuzzy
-msgid "Tranforming features..."
+msgid "Transforming features..."
 msgstr "กำลังอ่านข้อมูล ..."
 
 #: ../vector/v.transform/main.c:290
@@ -37469,11 +37470,6 @@ msgstr "ชื่อ Column (ชนิดต้องเป็นตัวเล
 msgid "Reading categories..."
 msgstr "กำลังแนบ หมวดหมู่ ..."
 
-#: ../vector/v.to.3d/trans3.c:80 ../vector/v.to.3d/trans2.c:79
-#, fuzzy
-msgid "Transforming features..."
-msgstr "กำลังอ่านข้อมูล ..."
-
 #: ../vector/v.to.3d/trans3.c:101
 #, fuzzy, c-format
 msgid "Feature id %d has no category - skipping"
@@ -40423,7 +40419,7 @@ msgstr "ชื่อของ แผนที่เชิงเส้น ที�
 
 #: ../vector/v.build/main.c:61
 #, fuzzy
-msgid "Build topology or dump topology or indeces to standard output"
+msgid "Build topology or dump topology or indices to standard output"
 msgstr "สร้าง topology หรือ dump topology หรือ spatial index ไปที่ stdout"
 
 #: ../vector/v.build/main.c:65

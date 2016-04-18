@@ -15751,7 +15751,7 @@ msgid "Name of target mapset"
 msgstr "Nom du jeu de données en sortie"
 
 #: ../imagery/i.target/main.c:68
-msgid "Set current location and mapset as target for of imagery group"
+msgid "Set current location and mapset as target for imagery group"
 msgstr ""
 "Règle le Secteur courant et le jeu de donnée comme cible du groupe d'images"
 
@@ -36548,9 +36548,10 @@ msgstr "Type inconnu"
 msgid "Unable to tokenize column string: [%s]"
 msgstr "Impossible d'ouvrir le fichier de cellules pour [%s]"
 
-#: ../vector/v.transform/main.c:277
+#: ../vector/v.transform/main.c:277 ../vector/v.to.3d/trans3.c:80
+#: ../vector/v.to.3d/trans2.c:79
 #, fuzzy
-msgid "Tranforming features..."
+msgid "Transforming features..."
 msgstr "Rotation des données ... "
 
 #: ../vector/v.transform/main.c:290
@@ -39730,11 +39731,6 @@ msgstr "Nom de la colonne (le type doit être numérique)"
 msgid "Reading categories..."
 msgstr "Rattachement des catégories...\n"
 
-#: ../vector/v.to.3d/trans3.c:80 ../vector/v.to.3d/trans2.c:79
-#, fuzzy
-msgid "Transforming features..."
-msgstr "Rotation des données ... "
-
 # c-format
 #: ../vector/v.to.3d/trans3.c:101
 #, fuzzy, c-format
@@ -42888,7 +42884,7 @@ msgid ""
 msgstr "Nom de la couche en sortie où les erreurs seront écrites"
 
 #: ../vector/v.build/main.c:61
-msgid "Build topology or dump topology or indeces to standard output"
+msgid "Build topology or dump topology or indices to standard output"
 msgstr ""
 
 #: ../vector/v.build/main.c:65

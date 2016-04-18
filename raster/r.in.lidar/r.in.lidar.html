@@ -260,11 +260,6 @@ needed to test for matching projections.
 <h2>KNOWN ISSUES</h2>
 
 <ul>
-<li> <em>n</em> map <tt>percent=100</tt> and <tt>percent=xx</tt> maps
-  differ slightly (point will fall above/below the segmentation line)
-  <br>Investigate with "<tt>r.mapcalc diff = bin_n.100 - bin_n.33</tt>" etc.
-  <br>Cause unknown.
-
 <li> "<tt>nan</tt>" can leak into <em>coeff_var</em> maps.
   <br>Cause unknown. Possible work-around: "<tt>r.null setnull=nan</tt>"
 <!-- Another method:  r.mapcalc 'No_nan = if(map == map, map, null() )' -->
@@ -302,4 +297,4 @@ Markus Metz<br>
 based on r.in.xyz by Hamish Bowman and Volker Wichmann<br>
 
 <br>
-<p><i>Last changed: $Date: 2015-05-11 02:16:13 +0200 (Mon, 11 May 2015) $</i>
+<p><i>Last changed: $Date: 2016-02-24 14:28:49 +0100 (Wed, 24 Feb 2016) $</i>

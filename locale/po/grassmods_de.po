@@ -15052,7 +15052,7 @@ msgid "Name of target mapset"
 msgstr "Name des Zielmapsets."
 
 #: ../imagery/i.target/main.c:68
-msgid "Set current location and mapset as target for of imagery group"
+msgid "Set current location and mapset as target for imagery group"
 msgstr "Setzt aktuelle Location und Mapset als Ziel für die Bildgruppe."
 
 #: ../imagery/i.target/main.c:90 ../imagery/i.target/main.c:107
@@ -34796,10 +34796,9 @@ msgstr "Unbekannte Operater"
 msgid "Unable to tokenize column string: [%s]"
 msgstr "Kann Spalten-Zeichenkette [%s] nicht tokenisieren"
 
-#: ../vector/v.transform/main.c:277
-#, fuzzy
-msgid "Tranforming features..."
-msgstr "Transformiere Feature..."
+#: ../vector/v.to.3d/trans3.c:80 ../vector/v.to.3d/trans2.c:79
+msgid "Transforming features..."
+msgstr "Transformiere Objekte..."
 
 #: ../vector/v.transform/main.c:290
 #, fuzzy, c-format
@@ -37835,10 +37834,6 @@ msgstr "Spalte muss numerisch sein."
 msgid "Reading categories..."
 msgstr "Lese Kategorien..."
 
-#: ../vector/v.to.3d/trans3.c:80 ../vector/v.to.3d/trans2.c:79
-msgid "Transforming features..."
-msgstr "Transformiere Objekte..."
-
 #: ../vector/v.to.3d/trans3.c:101
 #, c-format
 msgid "Feature id %d has no category - skipping"
@@ -40857,7 +40852,7 @@ msgstr ""
 
 #: ../vector/v.build/main.c:61
 #, fuzzy
-msgid "Build topology or dump topology or indeces to standard output"
+msgid "Build topology or dump topology or indices to standard output"
 msgstr ""
 "Erzeuge Topologie oder schreibe die Topologie oder den räumlichen Index nach "
 "stdout."
