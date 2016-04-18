@@ -1,6 +1,6 @@
 How to release GRASS GIS binaries and source code
 
-$Date: 2016-01-18 16:57:27 +0100 (Mon, 18 Jan 2016) $
+$Date: 2016-02-16 14:35:10 +0100 (Tue, 16 Feb 2016) $
 
 Note: This text contains *some* rules only applicable to the
       development coordinator (currently Markus Neteler, PSC Chair).
@@ -145,12 +145,14 @@ Contents
     - News section
     - http://grass.osgeo.org/download/software/
     - http://grass.osgeo.org/download/software/sources/
+    - http://grass.osgeo.org/download/software/linux/
     - http://grass.osgeo.org/grass70/
     - http://grass.osgeo.org/home/history/releases/
     - http://grass.osgeo.org/development/svn/svn-tags/ (add tag): echo $RELEASETAG
 
      write announcement
       - store in trac: http://trac.osgeo.org/grass/wiki/Release/7.XX.YY-News
+      - update version in https://grasswiki.osgeo.org/wiki/GRASS-Wiki
       - store in Web as announces/announce_grass$MAJOR$MINOR$RELEASE.html <- how? with protected PHP upload page?
 
      full release:
@@ -168,8 +170,8 @@ Contents
                    release tag for the differences
 
  o Trac updates:
-      - Set "complete" flag in https://trac.osgeo.org/grass/milestone/7.0.x
-        and batch-migrate assigned tickets to next milestone
+      - Set "complete" flag in https://trac.osgeo.org/grass/milestone/7.0.x --> Edit Milestone
+        this batch-migrates assigned tickets to next milestone
       - Add release to https://trac.osgeo.org/grass/admin/ticket/versions
 
  o WinGRASS notes:

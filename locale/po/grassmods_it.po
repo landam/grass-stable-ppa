@@ -14838,7 +14838,7 @@ msgid "Name of target mapset"
 msgstr "Nome del mapset di destinazione"
 
 #: ../imagery/i.target/main.c:68
-msgid "Set current location and mapset as target for of imagery group"
+msgid "Set current location and mapset as target for imagery group"
 msgstr ""
 "Imposta location e mapset correnti come destinazione del gruppo di immagini"
 
@@ -34211,9 +34211,8 @@ msgstr "Tipo di colonna sconosciuto '%s'"
 msgid "Unable to tokenize column string: [%s]"
 msgstr ""
 
-#: ../vector/v.transform/main.c:277
-#, fuzzy
-msgid "Tranforming features..."
+#: ../vector/v.to.3d/trans3.c:80 ../vector/v.to.3d/trans2.c:79
+msgid "Transforming features..."
 msgstr "Trasformazione degli elementi in corso..."
 
 #: ../vector/v.transform/main.c:290
@@ -37172,10 +37171,6 @@ msgstr "La colonna dev'essere di tipo numerico"
 msgid "Reading categories..."
 msgstr "Assegnazione delle categorie in corso..."
 
-#: ../vector/v.to.3d/trans3.c:80 ../vector/v.to.3d/trans2.c:79
-msgid "Transforming features..."
-msgstr "Trasformazione degli elementi in corso..."
-
 #: ../vector/v.to.3d/trans3.c:101
 #, c-format
 msgid "Feature id %d has no category - skipping"
@@ -40094,7 +40089,7 @@ msgid ""
 msgstr "Nome della mappa vettoriale di output su cui scrivere i segmenti"
 
 #: ../vector/v.build/main.c:61
-msgid "Build topology or dump topology or indeces to standard output"
+msgid "Build topology or dump topology or indices to standard output"
 msgstr ""
 
 #: ../vector/v.build/main.c:65

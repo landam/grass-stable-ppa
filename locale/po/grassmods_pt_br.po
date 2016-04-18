@@ -15365,7 +15365,7 @@ msgid "Name of target mapset"
 msgstr "Nome do mapset de destino"
 
 #: ../imagery/i.target/main.c:68
-msgid "Set current location and mapset as target for of imagery group"
+msgid "Set current location and mapset as target for imagery group"
 msgstr "Definir locação e mapset atuais como destino para um grupo de imagens"
 
 #: ../imagery/i.target/main.c:90 ../imagery/i.target/main.c:107
@@ -35214,9 +35214,10 @@ msgstr "Tipo desconhecido"
 msgid "Unable to tokenize column string: [%s]"
 msgstr "Não consegui usar a coluna '%s'"
 
-#: ../vector/v.transform/main.c:277
+#: ../vector/v.transform/main.c:277 ../vector/v.to.3d/trans3.c:80
+#: ../vector/v.to.3d/trans2.c:79
 #, fuzzy
-msgid "Tranforming features..."
+msgid "Transforming features..."
 msgstr "Rotacionando dados ... "
 
 #: ../vector/v.transform/main.c:290
@@ -38277,11 +38278,6 @@ msgstr "Nome da coluna (tipo deve ser numérico)"
 msgid "Reading categories..."
 msgstr "Anexando categorias...\n"
 
-#: ../vector/v.to.3d/trans3.c:80 ../vector/v.to.3d/trans2.c:79
-#, fuzzy
-msgid "Transforming features..."
-msgstr "Rotacionando dados ... "
-
 #: ../vector/v.to.3d/trans3.c:101
 #, fuzzy, c-format
 msgid "Feature id %d has no category - skipping"
@@ -41309,7 +41305,7 @@ msgid ""
 msgstr "Mapa de saída no qual os erros serão gravados"
 
 #: ../vector/v.build/main.c:61
-msgid "Build topology or dump topology or indeces to standard output"
+msgid "Build topology or dump topology or indices to standard output"
 msgstr ""
 
 #: ../vector/v.build/main.c:65

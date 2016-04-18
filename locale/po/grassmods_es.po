@@ -15068,7 +15068,7 @@ msgid "Name of target mapset"
 msgstr "Nombre de destino del conjunto de mapas"
 
 #: ../imagery/i.target/main.c:68
-msgid "Set current location and mapset as target for of imagery group"
+msgid "Set current location and mapset as target for imagery group"
 msgstr ""
 "Asignar la localización y el conjunto de mapas activo como destino del grupo "
 "de imágenes"
@@ -34920,10 +34920,9 @@ msgstr "Operador desconocido"
 msgid "Unable to tokenize column string: [%s]"
 msgstr "a"
 
-#: ../vector/v.transform/main.c:277
-#, fuzzy
-msgid "Tranforming features..."
-msgstr "Trasponiendo la matriz de valores propios..."
+#: ../vector/v.to.3d/trans3.c:80 ../vector/v.to.3d/trans2.c:79
+msgid "Transforming features..."
+msgstr "Transformando elementos..."
 
 #: ../vector/v.transform/main.c:290
 #, fuzzy, c-format
@@ -37975,10 +37974,6 @@ msgstr "La columna tiene que ser numérica"
 msgid "Reading categories..."
 msgstr "Adjuntando categorías..."
 
-#: ../vector/v.to.3d/trans3.c:80 ../vector/v.to.3d/trans2.c:79
-msgid "Transforming features..."
-msgstr "Transformando elementos..."
-
 #: ../vector/v.to.3d/trans3.c:101
 #, c-format
 msgid "Feature id %d has no category - skipping"
@@ -40978,7 +40973,7 @@ msgstr ""
 "Nombre del mapa vectorial donde se escriben elementos vectoriales erróneos"
 
 #: ../vector/v.build/main.c:61
-msgid "Build topology or dump topology or indeces to standard output"
+msgid "Build topology or dump topology or indices to standard output"
 msgstr "Construir topología o volcar topología o índices a salida estandar"
 
 #: ../vector/v.build/main.c:65
