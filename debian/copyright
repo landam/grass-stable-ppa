@@ -7,6 +7,7 @@ Files: *
 Copyright:   1989-2016, GRASS Development Team
              2003-2016, Markus Neteler
        2012, 2014-2015, Luca Delucchi
+                  2015, Jachym Ceppicky
              1993-2014, James Darrell McCauley <darrell@mccauley-usa.com>
              2003-2014, Glynn Clements
              2003-2014, Per Henrik Johansen
@@ -110,6 +111,11 @@ Files: raster/r.in.bin/gmt_grd.h
 Copyright: 1991-2000, P. Wessel and W. H. F. Smith
 License: GPL-2
 
+Files: raster/r.mapcalc/mapcalc.tab.c
+ raster/r.mapcalc/mapcalc.tab.h
+Copyright: 1984, 1989-1990, 2000-2015, Free Software Foundation, Inc.
+License: GPL-3+ with Bison exception
+
 Files: raster/r.out.mpeg/main.c
  raster/r.out.mpeg/write.c
 Copyright: 1994, Bill Brown, USACERL <brown@zorro.cecer.army.mil>
@@ -187,6 +193,33 @@ License: GPL-2+
  .
  On Debian systems, the complete text of version 2 of the GNU General
  Public License can be found in `/usr/share/common-licenses/GPL-2'.
+
+License: GPL-3+ with Bison exception
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ On Debian systems, the complete text of version 3 of the GNU General
+ Public License can be found in `/usr/share/common-licenses/GPL-3'.
+ .
+ As a special exception, you may create a larger work that contains
+ part or all of the Bison parser skeleton and distribute that work
+ under terms of your choice, so long as that work isn't itself a
+ parser generator using the skeleton or a modified version thereof
+ as a parser skeleton.  Alternatively, if you modify or redistribute
+ the parser skeleton itself, you may (at your option) remove this
+ special exception, which will cause the skeleton and the resulting
+ Bison output files to be licensed under the GNU General Public
+ License without this special exception.
+ .
+ This special exception was added by the Free Software Foundation in
+ version 2.2 of Bison.
 
 License: LGPL-2+
  This library is free software; you can redistribute it and/or

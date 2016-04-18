@@ -10,6 +10,9 @@ grass (7.0.4~rc1-1) UNRELEASED; urgency=medium
   * Install additional icon sizes in hicolor icon theme.
   * Bump Standards-Version to 3.9.8, changes:
     additional icon sizes in hicolor theme.
+  * Update copyright file, changes:
+    - Add Jachym Ceppicky to copyright holders
+    - Add license & copyright for mapcalc.tab.{c,h}
 
  -- Bas Couwenberg <sebastic@debian.org>  Mon, 18 Apr 2016 22:28:07 +0200
 
