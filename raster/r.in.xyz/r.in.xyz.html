@@ -260,15 +260,6 @@ r.colors lidar_min.rst_scaled rule=bcyr -n -e
 <h2>KNOWN ISSUES</h2>
 
 <ul>
-<li> <em>n</em> map sum can be ever-so-slightly more than `<tt>wc -l</tt>`
-  with e.g. <tt>percent=10</tt> or less.
-  <br>Cause unknown.
-
-<li> <em>n</em> map <tt>percent=100</tt> and <tt>percent=xx</tt> maps
-  differ slightly (point will fall above/below the segmentation line)
-  <br>Investigate with "<tt>r.mapcalc diff = bin_n.100 - bin_n.33</tt>" etc.
-  <br>Cause unknown.
-
 <li> "<tt>nan</tt>" can leak into <em>coeff_var</em> maps.
   <br>Cause unknown. Possible work-around: "<tt>r.null setnull=nan</tt>"
 <!-- Another method:  r.mapcalc 'No_nan = if(map == map, map, null() )' -->
@@ -319,4 +310,4 @@ Extended by Volker Wichmann to support the aggregate functions
 <i>median, percentile, skewness</i> and <i>trimmed mean</i>.
 
 <p>
-<i>Last changed: $Date: 2015-11-20 12:34:12 +0100 (Fri, 20 Nov 2015) $</i>
+<i>Last changed: $Date: 2016-02-24 14:28:01 +0100 (Wed, 24 Feb 2016) $</i>

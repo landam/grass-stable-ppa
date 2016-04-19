@@ -15126,7 +15126,7 @@ msgid "Name of target mapset"
 msgstr "Tên của bộ bản đồ đích"
 
 #: ../imagery/i.target/main.c:68
-msgid "Set current location and mapset as target for of imagery group"
+msgid "Set current location and mapset as target for imagery group"
 msgstr "Thiết lập vị trí và bộ bản đồ hiện tại làm đích cho nhóm ảnh"
 
 #: ../imagery/i.target/main.c:90 ../imagery/i.target/main.c:107
@@ -34860,9 +34860,8 @@ msgstr "Lệnh không biết"
 msgid "Unable to tokenize column string: [%s]"
 msgstr "Không thể thẻ hoá chuỗi cột: [%s]"
 
-#: ../vector/v.transform/main.c:277
-#, fuzzy
-msgid "Tranforming features..."
+#: ../vector/v.to.3d/trans3.c:80 ../vector/v.to.3d/trans2.c:79
+msgid "Transforming features..."
 msgstr "Đang chuyển đổi các đối tượng..."
 
 #: ../vector/v.transform/main.c:290
@@ -37877,10 +37876,6 @@ msgstr "Cột phải có kiểu số"
 msgid "Reading categories..."
 msgstr "Đang gắn các phạm trù..."
 
-#: ../vector/v.to.3d/trans3.c:80 ../vector/v.to.3d/trans2.c:79
-msgid "Transforming features..."
-msgstr "Đang chuyển đổi các đối tượng..."
-
 #: ../vector/v.to.3d/trans3.c:101
 #, c-format
 msgid "Feature id %d has no category - skipping"
@@ -40862,7 +40857,7 @@ msgstr "Tên của bản đồ vec-tơ dùng để lưu các đối tượng vec
 
 #: ../vector/v.build/main.c:61
 #, fuzzy
-msgid "Build topology or dump topology or indeces to standard output"
+msgid "Build topology or dump topology or indices to standard output"
 msgstr ""
 "Xây dựng tôpô hoặc 'đổ' tôpô hoặc chỉ mục không gian vào đầu ra tiêu chuẩn"
 

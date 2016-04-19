@@ -247,8 +247,9 @@ class ListCtrlComboPopup(wx.combo.ComboPopup):
         if inputText:
             root = self.seltree.GetRootItem()
             match = self.FindItem(root, inputText, startLetters = True)
-            self.seltree.EnsureVisible(match)
-            self.seltree.SelectItem(match)
+            if match.IsOk():
+                self.seltree.EnsureVisible(match)
+                self.seltree.SelectItem(match)
 
     def GetAdjustedSize(self, minWidth, prefHeight, maxHeight):
         """Reads UserSettings to get height (which was 200 in old implementation).
@@ -409,8 +410,9 @@ class TreeCtrlComboPopup(ListCtrlComboPopup):
         """
         # update list
         self.seltree.DeleteAllItems()
-        self._getElementList(self.type, self.mapsets, elements, exclude)
-
+        if self.type:
+            self._getElementList(self.type, self.mapsets, elements, exclude)
+        
         if len(self.value) > 0:
             root = self.seltree.GetRootItem()
             if not root:
@@ -553,7 +555,7 @@ class TreeCtrlComboPopup(ListCtrlComboPopup):
         :param exclude: True to exclude, False for forcing the list
         :param node: parent node
         """
-        elist.sort()
+        elist = grass.natural_sort(elist)
         for elem in elist:
             if elem != '':
                 fullqElem = elem + '@' + mapset
@@ -2072,11 +2074,13 @@ class ProjSelect(wx.ComboBox):
         self.SetValue('')
 
 class ElementSelect(wx.Choice):
-    def __init__(self, parent, id = wx.ID_ANY, size = globalvar.DIALOG_COMBOBOX_SIZE,
+    def __init__(self, parent, id = wx.ID_ANY, elements = None,
+                 size = globalvar.DIALOG_COMBOBOX_SIZE,
                  **kwargs):
         """Widget for selecting GIS element
 
         :param parent: parent window
+        :param elements: filter elements
         """
         super(ElementSelect, self).__init__(parent, id, size = size,
                                             **kwargs)
@@ -2086,7 +2090,18 @@ class ElementSelect(wx.Choice):
         p = task.get_param(value = 'type')
         self.values = p.get('values', [])
         self.valuesDesc = p.get('values_desc', [])
-
+        
+        if elements:
+            values = []
+            valuesDesc = []
+            for idx in range(0, len(self.values)):
+                value = self.values[idx]
+                if value in elements:
+                    values.append(value)
+                    valuesDesc.append(self.valuesDesc[idx])
+            self.values = values
+            self.valuesDesc = valuesDesc
+        
         self.SetItems(self.valuesDesc)
 
     def GetValue(self, name):

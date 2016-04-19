@@ -168,7 +168,7 @@ static void *cache_get_raw(struct row_cache *cache, int row, int data_type)
 
     if (i <= -cache->nrows || i >= cache->nrows * 2 - 1) {
 	memset(sub->valid, 0, cache->nrows);
-	sub->row = i;
+	sub->row = row;
 	read_row(cache->fd, sub->buf[0], row, data_type);
 	sub->valid[0] = 1;
 	return sub->buf[0];
@@ -307,7 +307,7 @@ static void translate_from_colors(struct map *m, DCELL *rast, CELL *cell,
  * to compute the key and the index
  *
  * This uses the BTREE library to manage the tree itself
- * btree structure must already be intialized
+ * btree structure must already be initialized
  * pcats structure must already contain category labels
  */
 
