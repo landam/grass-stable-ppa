@@ -14925,7 +14925,7 @@ msgid "Name of target mapset"
 msgstr "ターゲットマップセット名"
 
 #: ../imagery/i.target/main.c:68
-msgid "Set current location and mapset as target for of imagery group"
+msgid "Set current location and mapset as target for imagery group"
 msgstr ""
 "画像グループのターゲットとして現在のロケーションとマップセットを設定する。"
 
@@ -34196,9 +34196,8 @@ msgstr "不明な操作"
 msgid "Unable to tokenize column string: [%s]"
 msgstr "列の文字を分割できません： [%s]"
 
-#: ../vector/v.transform/main.c:277
-#, fuzzy
-msgid "Tranforming features..."
+#: ../vector/v.to.3d/trans3.c:80 ../vector/v.to.3d/trans2.c:79
+msgid "Transforming features..."
 msgstr "フィーチャーを変換中、、、"
 
 #: ../vector/v.transform/main.c:290
@@ -37152,10 +37151,6 @@ msgstr "列は数字でなくてはいけません"
 #, fuzzy
 msgid "Reading categories..."
 msgstr "カテゴリーを添付中、、、"
-
-#: ../vector/v.to.3d/trans3.c:80 ../vector/v.to.3d/trans2.c:79
-msgid "Transforming features..."
-msgstr "フィーチャーを変換中、、、"
 
 #: ../vector/v.to.3d/trans3.c:101
 #, c-format
@@ -40117,7 +40112,7 @@ msgstr "誤ったベクトルフィーチャーが書き込まれているベク
 
 #: ../vector/v.build/main.c:61
 #, fuzzy
-msgid "Build topology or dump topology or indeces to standard output"
+msgid "Build topology or dump topology or indices to standard output"
 msgstr ""
 "トポロジーまたはダンプトポロジーまたは空間インデックスをstdoutに作成します  "
 

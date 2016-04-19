@@ -15068,7 +15068,7 @@ msgid "Name of target mapset"
 msgstr "Ime izhodnega rastrskega sloja"
 
 #: ../imagery/i.target/main.c:68
-msgid "Set current location and mapset as target for of imagery group"
+msgid "Set current location and mapset as target for imagery group"
 msgstr ""
 
 #: ../imagery/i.target/main.c:90 ../imagery/i.target/main.c:107
@@ -34646,9 +34646,10 @@ msgstr "Nepoznan tip"
 msgid "Unable to tokenize column string: [%s]"
 msgstr "Ne morem odpreti cellfile za [%s]"
 
-#: ../vector/v.transform/main.c:277
+#: ../vector/v.transform/main.c:277 ../vector/v.to.3d/trans3.c:80
+#: ../vector/v.to.3d/trans2.c:79
 #, fuzzy
-msgid "Tranforming features..."
+msgid "Transforming features..."
 msgstr "Ri¹em ..."
 
 #: ../vector/v.transform/main.c:290
@@ -37634,11 +37635,6 @@ msgstr "Ne najdem vhodnega vektorja <%s>"
 msgid "Reading categories..."
 msgstr "Pripajam kategorije...\n"
 
-#: ../vector/v.to.3d/trans3.c:80 ../vector/v.to.3d/trans2.c:79
-#, fuzzy
-msgid "Transforming features..."
-msgstr "Ri¹em ..."
-
 #: ../vector/v.to.3d/trans3.c:101
 #, fuzzy, c-format
 msgid "Feature id %d has no category - skipping"
@@ -40598,7 +40594,7 @@ msgid ""
 msgstr "Ime izhodnega vektorskega sloja"
 
 #: ../vector/v.build/main.c:61
-msgid "Build topology or dump topology or indeces to standard output"
+msgid "Build topology or dump topology or indices to standard output"
 msgstr ""
 
 #: ../vector/v.build/main.c:65

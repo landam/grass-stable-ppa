@@ -20,6 +20,7 @@ for details.
 import os
 import shutil
 import locale
+import re
 
 
 def float_or_dms(s):
@@ -148,6 +149,32 @@ class KeyValue(dict):
         self[key] = value
 
 
+def decode(string):
+    """Decode string with defualt locale
+
+    :param str string: the string to decode
+    """
+    enc = locale.getdefaultlocale()[1]
+    if enc:
+        if hasattr(string, 'decode'):
+            return string.decode(enc)
+
+    return string
+
+
+def encode(string):
+    """Encode string with defualt locale
+
+    :param str string: the string to encode
+    """
+    enc = locale.getdefaultlocale()[1]
+    if enc:
+        if hasattr(string, 'encode'):
+            return string.encode(enc)
+
+    return string
+
+
 def parse_key_val(s, sep='=', dflt=None, val_type=None, vsep=None):
     """Parse a string into a dictionary, where entries are separated
     by newlines and the key and value are separated by `sep` (default: `=`)
@@ -171,6 +198,10 @@ def parse_key_val(s, sep='=', dflt=None, val_type=None, vsep=None):
     if not s:
         return result
 
+    if isinstance(s, bytes):
+        sep = encode(sep)
+        vsep = encode(vsep) if vsep else vsep
+
     if vsep:
         lines = s.split(vsep)
         try:
@@ -182,9 +213,9 @@ def parse_key_val(s, sep='=', dflt=None, val_type=None, vsep=None):
 
     for line in lines:
         kv = line.split(sep, 1)
-        k = kv[0].strip()
+        k = decode(kv[0].strip())
         if len(kv) > 1:
-            v = kv[1].strip()
+            v = decode(kv[1].strip())
         else:
             v = dflt
 
@@ -194,30 +225,6 @@ def parse_key_val(s, sep='=', dflt=None, val_type=None, vsep=None):
             result[k] = v
 
     return result
-
-
-def decode(string):
-    """Decode string with defualt locale
-
-    :param str string: the string to decode
-    """
-    enc = locale.getdefaultlocale()[1]
-    if enc:
-        return string.decode(enc)
-
-    return string
-
-
-def encode(string):
-    """Encode string with defualt locale
-
-    :param str string: the string to encode
-    """
-    enc = locale.getdefaultlocale()[1]
-    if enc:
-        return string.encode(enc)
-
-    return string
 
 
 def get_num_suffix(number, max_number):
@@ -235,3 +242,13 @@ def get_num_suffix(number, max_number):
     """
     return '{number:0{width}d}'.format(width=len(str(max_number)),
                                        number=number)
+
+# source:
+#    http://stackoverflow.com/questions/4836710/
+#    does-python-have-a-built-in-function-for-string-natural-sort/4836734#4836734
+def natural_sort(l):
+    """Returns sorted strings using natural sort
+    """
+    convert = lambda text: int(text) if text.isdigit() else text.lower()
+    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
+    return sorted(l, key=alphanum_key)

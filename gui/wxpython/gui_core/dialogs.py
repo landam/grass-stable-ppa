@@ -23,7 +23,7 @@ List of classes:
  - :class:`SymbolDialog`
  - :class:`QuitDialog`
 
-(C) 2008-2015 by the GRASS Development Team
+(C) 2008-2016 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -43,6 +43,7 @@ import wx.lib.mixins.listctrl as listmix
 
 from grass.script import core as grass
 from grass.script import task as gtask
+from grass.script.utils import natural_sort
 
 from grass.pydispatch.signal import Signal
 
@@ -1414,7 +1415,7 @@ class MapLayersDialogBase(wx.Dialog):
         :param str mapset: mapset name
         """
         self.map_layers = grass.list_grouped(type = type)[mapset]
-        self.layers.Set(self.map_layers)
+        self.layers.Set(natural_sort(self.map_layers))
         
         # check all items by default
         for item in range(self.layers.GetCount()):
@@ -1480,7 +1481,8 @@ class MapLayersDialogBase(wx.Dialog):
                     list.append(layer)
             except:
                 pass
-        
+        list = natural_sort(list)
+
         self.layers.Set(list)
         self.OnSelectAll(None)
         
@@ -1995,7 +1997,7 @@ class GdalImportDialog(ImportDialog):
                 cmd.append('--overwrite')
             
             # run in Layer Manager
-            self._giface.RunCmd(cmd, onDone = self.OnCmdDone, userData = userData)
+            self._giface.RunCmd(cmd, onDone=self.OnCmdDone, userData=userData, addLayer=False)
 
     def OnCmdDone(self, event):
         """Load layers and close if required"""
@@ -2165,7 +2167,7 @@ class DxfImportDialog(ImportDialog):
                 cmd.append('--overwrite')
             
             # run in Layer Manager
-            self._giface.RunCmd(cmd, onDone=self.OnCmdDone)
+            self._giface.RunCmd(cmd, onDone=self.OnCmdDone, addLayer=False)
 
     def OnCmdDone(self, event):
         """Load layers and close if required"""
@@ -2743,6 +2745,7 @@ class TextEntryDialog(wx.Dialog):
         self._textCtrl = wx.TextCtrl(self, id=wx.ID_ANY,
                                      value=defaultValue, validator=validator, style=textStyle)
         self._textCtrl.SetInitialSize(textSize)
+        wx.CallAfter(self._textCtrl.SetFocus)
         
         vbox.Add(item=self._textCtrl, proportion=0, flag=wx.EXPAND | wx.LEFT | wx.RIGHT, border=10)
         self._textCtrl.SetFocus()
@@ -2793,8 +2796,7 @@ class HyperlinkDialog(wx.Dialog):
 
 class QuitDialog(wx.Dialog):
     def __init__(self, parent, title=_("Quit GRASS GIS"), id=wx.ID_ANY,
-                 style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
-                 size=(350, 150), **kwargs):
+                 style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER, **kwargs):
         """Dialog to quit GRASS
         
         :param parent: window
@@ -2802,23 +2804,25 @@ class QuitDialog(wx.Dialog):
         wx.Dialog.__init__(self, parent, id, title, style=style, **kwargs)
         self.panel = wx.Panel(parent = self, id = wx.ID_ANY)
 
+        self._icon = wx.StaticBitmap(parent=self.panel, id=wx.ID_ANY,
+                                     bitmap=wx.ArtProvider().GetBitmap(wx.ART_QUESTION, client=wx.ART_MESSAGE_BOX))
+
         self.informLabel = wx.StaticText(parent=self.panel, id=wx.ID_ANY,
                                          label=_("Do you want to quit GRASS including shell "
                                                  "prompt or just close the GUI?"))
         self.btnCancel = wx.Button(parent = self.panel, id = wx.ID_CANCEL)
         self.btnClose = wx.Button(parent = self.panel, id = wx.ID_NO,
                                    label=_("Close GUI"))
+        self.btnClose.SetFocus()
         self.btnQuit = wx.Button(parent = self.panel, id = wx.ID_YES,
                                    label=_("Quit GRASS GIS"))
         self.btnQuit.SetMinSize((130, self.btnQuit.GetSize()[1]))
         self.btnQuit.SetForegroundColour(wx.Colour(35, 142, 35))
-        self.btnQuit.SetDefault()
         
         self.btnClose.Bind(wx.EVT_BUTTON, self.OnClose)
         self.btnQuit.Bind(wx.EVT_BUTTON, self.OnQuit)
         
         self.__layout()
-        self.SetSize(size)
 
     def __layout(self):
         """Do layout"""
@@ -2829,13 +2833,17 @@ class QuitDialog(wx.Dialog):
         btnSizer.Add(item=self.btnClose, flag=wx.RIGHT, border=5)
         btnSizer.Add(item=self.btnQuit, flag=wx.RIGHT, border=5)
         
-        sizer.Add(item = self.informLabel, proportion = 1,
-                  flag = wx.EXPAND | wx.ALL, border = 25)
+        bodySizer = wx.BoxSizer(wx.HORIZONTAL)
+        bodySizer.Add(item=self._icon, flag=wx.RIGHT, border=10)
+        bodySizer.Add(item=self.informLabel, proportion=1, flag=wx.EXPAND)
+        
+        sizer.Add(item = bodySizer, proportion = 1,
+                  flag = wx.EXPAND | wx.ALL, border = 15)
         sizer.Add(item = btnSizer, proportion = 0,
                   flag = wx.ALL | wx.ALIGN_RIGHT, border = 5)
 
         self.panel.SetSizer(sizer)
-        sizer.Fit(self.panel)
+        sizer.Fit(self)
         self.Layout()
         
     def OnClose(self, event):

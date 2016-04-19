@@ -1,3 +1,24 @@
+grass (7.0.4~rc1-1~exp1~wily1) wily; urgency=medium
+
+  * New upstream release candidate.
+  * Add template for x-grass7.
+  * Drop explicit python-numpy dependency, included in ${python:Depends}
+    via dh_numpy.
+  * Have dh_python & dh_numpy act on specific packages only.
+  * Use dynamic list of wxpython images files to move to use /usr/share.
+  * Install additional icon sizes in hicolor icon theme.
+  * Bump Standards-Version to 3.9.8, changes:
+    additional icon sizes in hicolor theme.
+  * Update copyright file, changes:
+    - Add Jachym Ceppicky to copyright holders
+    - Add license & copyright for mapcalc.tab.{c,h}
+  * Drop patches applied upstream. Refresh remaining patches.
+  * Add python-matplotlib to grass-gui Recommends for the several wxGUI tools.
+  * Add patch to fix spelling errors.
+  * Add python-termcolor to grass-core Recommends for g.search.modules.
+
+ -- Martin Landa <landa.martin@gmail.com>  Tue, 19 Apr 2016 14:26:58 +0200
+
 grass (7.0.3-3~wily1) wily; urgency=medium
 
   * Fix broken build of package 7.0.3
