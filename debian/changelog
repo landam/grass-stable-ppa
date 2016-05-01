@@ -1,3 +1,16 @@
+grass (7.0.4-1~xenial1) xenial; urgency=medium
+
+  * Rebuild for xenial.
+
+ -- Martin Landa <landa.martin@gmail.com>  Sun, 01 May 2016 18:42:45 +0200
+
+grass (7.0.4-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Move from experimental to unstable.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Sun, 01 May 2016 16:09:45 +0200
+
 grass (7.0.4~rc1-1~exp1~xenial1) xenial; urgency=medium
 
   * New upstream release candidate.
