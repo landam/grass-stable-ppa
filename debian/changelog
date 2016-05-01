@@ -1,8 +1,9 @@
-grass (7.0.4-1) UNRELEASED; urgency=medium
+grass (7.0.4-1) unstable; urgency=medium
 
   * New upstream release.
+  * Move from experimental to unstable.
 
- -- Bas Couwenberg <sebastic@debian.org>  Sun, 01 May 2016 15:59:10 +0200
+ -- Bas Couwenberg <sebastic@debian.org>  Sun, 01 May 2016 16:09:45 +0200
 
 grass (7.0.4~rc1-1~exp1) experimental; urgency=medium
 
