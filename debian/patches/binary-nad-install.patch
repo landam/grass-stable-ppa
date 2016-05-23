@@ -1,0 +1,17 @@
+Description: Binary NAD files install
+ Corrects binary NAD files install rule.
+Author: Alexis Bienvenüe <pado@passoire.fr>
+Bug-Debian: https://bugs.debian.org/825092
+Forwarded: https://trac.osgeo.org/grass/ticket/3042
+
+--- a/lib/proj/Makefile
++++ b/lib/proj/Makefile
+@@ -43,7 +43,7 @@ $(FTOL_OBJ): $(OBJDIR)/ftol.o
+ 	$(INSTALL) $< $@
+ endif
+ 
+-$(NAD_DSTFILES): $(NAD_DIR)/%: $(NAD_BINFILES) | $(NAD_DIR)
++$(NAD_DSTFILES): $(NAD_DIR)/%: $(OBJDIR)/% | $(NAD_DIR)
+ 	$(INSTALL_DATA) $< $@
+ 
+ $(NAD_BINFILES): $(OBJDIR)/%: %.lla

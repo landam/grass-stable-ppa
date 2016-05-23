@@ -1,0 +1,33 @@
+Description: Make srand48_auto use SOURCE_DATE_EPOCH if set
+ If SOURCE_DATE_EPOCH is set, use it to seed the random generator when
+ G_srand48_auto is called. This helps makeing the build reproducible
+ (html/random.png)
+ See https://reproducible-builds.org/specs/source-date-epoch/
+Author: Alexis Bienvenüe <pado@passoire.fr>
+Bug-Debian: https://bugs.debian.org/825092
+Forwarded: https://trac.osgeo.org/grass/ticket/3042
+
+--- a/lib/gis/lrand48.c
++++ b/lib/gis/lrand48.c
+@@ -70,7 +70,12 @@ void G_srand48(long seedval)
+ 
+ long G_srand48_auto(void)
+ {
+-    unsigned long seed = (unsigned long) getpid();
++    unsigned long seed;
++    char *source_date_epoch = getenv("SOURCE_DATE_EPOCH");
++    if(source_date_epoch) {
++        seed = strtoull(source_date_epoch, NULL, 10);
++    } else {  
++        seed = (unsigned long) getpid();
+ 
+ #ifdef HAVE_GETTIMEOFDAY
+     {
+@@ -86,6 +91,7 @@ long G_srand48_auto(void)
+ 	seed += (unsigned long) t;
+     }
+ #endif
++    }
+ 
+     G_srand48((long) seed);
+     return (long) seed;
