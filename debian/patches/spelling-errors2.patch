@@ -5,6 +5,7 @@ Description: Fix spelling errors.
  substract   ->esubtract
 Author: Bas Couwenberg <sebastic@debian.org>
 Forwarded: https://trac.osgeo.org/grass/ticket/3088
+Applied-Upstream: https://trac.osgeo.org/grass/changeset/68822
 
 --- a/display/d.vect.thematic/d.vect.thematic.html
 +++ b/display/d.vect.thematic/d.vect.thematic.html
