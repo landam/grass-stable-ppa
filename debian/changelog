@@ -1,10 +1,10 @@
-grass (7.0.4-3) UNRELEASED; urgency=medium
+grass (7.0.4-3) unstable; urgency=medium
 
   * Add upstream patch to fix FTBFS with GCC 6.
     (closes: #811886)
   * Add patch to fix spelling errors.
 
- -- Bas Couwenberg <sebastic@debian.org>  Thu, 30 Jun 2016 21:46:24 +0200
+ -- Bas Couwenberg <sebastic@debian.org>  Thu, 30 Jun 2016 23:21:27 +0200
 
 grass (7.0.4-2) unstable; urgency=medium
 
