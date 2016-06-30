@@ -2,6 +2,7 @@ grass (7.0.4-3) UNRELEASED; urgency=medium
 
   * Add upstream patch to fix FTBFS with GCC 6.
     (closes: #811886)
+  * Add patch to fix spelling errors.
 
  -- Bas Couwenberg <sebastic@debian.org>  Thu, 30 Jun 2016 21:46:24 +0200
 
