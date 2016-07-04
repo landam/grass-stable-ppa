@@ -2,6 +2,7 @@ grass (7.0.4-3~bpo8+1) jessie-backports; urgency=medium
 
   * Rebuild for jessie-backports.
   * Update branch in gbp.conf & Vcs-Git URL.
+  * Drop version constraints for libgdal-dev & liblas-c-dev.
 
  -- Bas Couwenberg <sebastic@debian.org>  Tue, 05 Jul 2016 00:20:51 +0200
 
