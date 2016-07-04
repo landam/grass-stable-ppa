@@ -81,7 +81,7 @@ override_dh_auto_configure: templates
                     --with-gdal \
                     --with-geos \
                     --with-lapack \
-                    --with-liblas=/usr/bin/liblas-config \
+                    --with-liblas=no \
                     --with-motif \
                     --with-mysql \
                     --with-mysql-includes=$(shell mysql_config --include | sed -e 's/-I//') \
