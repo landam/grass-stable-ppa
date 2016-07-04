@@ -50,7 +50,7 @@ Build-Depends: autoconf2.13,
                zlib1g-dev
 Standards-Version: 3.9.8
 Vcs-Browser: https://anonscm.debian.org/cgit/pkg-grass/grass.git
-Vcs-Git: https://anonscm.debian.org/git/pkg-grass/grass.git
+Vcs-Git: https://anonscm.debian.org/git/pkg-grass/grass.git -b jessie-backports
 Homepage: http://grass.osgeo.org/
 
 Package: grass

@@ -1,3 +1,10 @@
+grass (7.0.4-3~bpo8+1) jessie-backports; urgency=medium
+
+  * Rebuild for jessie-backports.
+  * Update branch in gbp.conf & Vcs-Git URL.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Tue, 05 Jul 2016 00:20:51 +0200
+
 grass (7.0.4-3) unstable; urgency=medium
 
   * Add upstream patch to fix FTBFS with GCC 6.
