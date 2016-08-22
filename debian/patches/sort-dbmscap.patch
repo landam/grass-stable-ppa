@@ -3,6 +3,7 @@ Description: Sort dbmscap list
 Author: Alexis Bienvenüe <pado@passoire.fr>
 Bug-Debian: https://bugs.debian.org/825092
 Forwarded: https://trac.osgeo.org/grass/ticket/3042
+Applied-Upstream: https://trac.osgeo.org/grass/changeset/69216
 
 --- a/lib/db/dbmi_base/dbmscap.c
 +++ b/lib/db/dbmi_base/dbmscap.c

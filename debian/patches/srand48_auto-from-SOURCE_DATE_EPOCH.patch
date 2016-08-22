@@ -6,6 +6,7 @@ Description: Make srand48_auto use SOURCE_DATE_EPOCH if set
 Author: Alexis Bienvenüe <pado@passoire.fr>
 Bug-Debian: https://bugs.debian.org/825092
 Forwarded: https://trac.osgeo.org/grass/ticket/3042
+Applied-Upstream: https://trac.osgeo.org/grass/changeset/69217
 
 --- a/lib/gis/lrand48.c
 +++ b/lib/gis/lrand48.c

@@ -3,6 +3,7 @@ Description: Binary NAD files install
 Author: Alexis Bienvenüe <pado@passoire.fr>
 Bug-Debian: https://bugs.debian.org/825092
 Forwarded: https://trac.osgeo.org/grass/ticket/3042
+Applied-Upstream: https://trac.osgeo.org/grass/changeset/69216
 
 --- a/lib/proj/Makefile
 +++ b/lib/proj/Makefile
