@@ -1,3 +1,9 @@
+grass (7.0.5~rc1-1) UNRELEASED; urgency=medium
+
+  * New upstream release candidate.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Sun, 28 Aug 2016 03:29:06 +0200
+
 grass (7.0.4-3) unstable; urgency=medium
 
   * Add upstream patch to fix FTBFS with GCC 6.
