@@ -3,10 +3,3 @@ instdir
 no-fail-html.patch
 appstream.patch
 spelling-errors.patch
-sort-build-modules-list.patch
-sort-dbmscap.patch
-sort-obj-files.patch
-srand48_auto-from-SOURCE_DATE_EPOCH.patch
-binary-nad-install.patch
-use-exception-specifiers-only-for-C++-versions-older-than-C++11.patch
-spelling-errors2.patch
