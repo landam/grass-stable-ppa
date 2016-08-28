@@ -802,10 +802,13 @@ def set_language():
             # If we get here, system locale settings are terribly wrong
             # There is no point to continue as GRASS/Python will fail
             # in some other unpredictable way.
-            print "System locale is not usable. It indicates misconfigured environment."
-            print "Reported error message: %s" % e
-            sys.exit("Fix system locale settings and then try again.")
-        
+            print("System locale is not usable (LC_ALL variable not defined). "
+                  "It indicates misconfigured environment.")
+            print("Reported error message: %s" % e)
+            ## TOO DRASTIC: sys.exit("Fix system locale settings and then try again.")
+            locale.setlocale(locale.LC_ALL, 'C')
+            warning(_("Default locale settings are missing. GRASS running with C locale."))
+
         language, encoding = locale.getdefaultlocale()
         if not language:
             warning(_("Default locale settings are missing. GRASS running with C locale."))
@@ -1055,12 +1058,14 @@ r"""
 %-41s%s (%s)
 %-41sg.manual -i
 %-41sg.version -c
+%-41sg.version -x
 """ % (_("GRASS GIS homepage:"),
         # GTC Running through: SHELL NAME
        _("This version running through:"),
        shellname, os.getenv('SHELL'),
        _("Help is available with the command:"),
-       _("See the licence terms with:")))
+       _("See the licence terms with:"),
+       _("See citation options with:")))
     
     if grass_gui == 'wxpython':
         message("%-41sg.gui wxpython" % _("If required, restart the GUI with:"))
@@ -1424,7 +1429,9 @@ if not os.access(gisrc, os.F_OK):
                 " - Launch GRASS with '-gui' switch (`grass70 -gui`)\n"
                 " - Create manually GISRC file (%s)\n"
                 " - Launch GRASS with path to "
-                "the location/mapset as an argument (`grass70 /path/to/location/mapset`)") % gisrcrc)
+                "the location/mapset as an argument (`grass70 /path/to/location/mapset`)\n"
+                " - Use '--help' for further options (`grass70 --help`)\n"
+                " See also: https://grass.osgeo.org/grass70/manuals/helptext.html") % gisrcrc)
     create_initial_gisrc()
 else:
     clean_temp()
