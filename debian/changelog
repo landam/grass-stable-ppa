@@ -1,4 +1,4 @@
-grass (7.0.5~rc1-1) UNRELEASED; urgency=medium
+grass (7.0.5~rc1-1~exp1) experimental; urgency=medium
 
   * New upstream release candidate.
   * Drop patches applied upstream, refresh remaining patches.
@@ -6,7 +6,7 @@ grass (7.0.5~rc1-1) UNRELEASED; urgency=medium
   * Update copyright file, add license & copyright for wxlibplot.py.
   * Add patch to fix spelling errors.
 
- -- Bas Couwenberg <sebastic@debian.org>  Sun, 28 Aug 2016 03:29:06 +0200
+ -- Bas Couwenberg <sebastic@debian.org>  Sun, 28 Aug 2016 04:19:36 +0200
 
 grass (7.0.4-3) unstable; urgency=medium
 
