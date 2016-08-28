@@ -6,7 +6,9 @@ the vectors' relationships (distance, category, etc.) may be uploaded to
 the attribute table attached to the first vector map, or printed to 
 'stdout'. A new vector map may be created where lines connecting 
 nearest points on features are written. <b>dmin</b> and/or 
-<b>dmax</b> can be used to limit the search radius.
+<b>dmax</b> can be used to limit the search radius (in lat-long locations
+to be given in meters since they are calculated as geodesic distances on
+a sphere).
 
 <p>
 For lines to lines, say line A to line B, <em>v.distance</em> calculates 
@@ -223,4 +225,4 @@ Improved processing speed: Markus Metz<br>
 Distance from any feature to any feature: Markus Metz
 
 <p>
-<i>Last changed: $Date: 2015-10-07 10:15:43 +0200 (Wed, 07 Oct 2015) $</i>
+<i>Last changed: $Date: 2016-05-14 19:12:38 +0200 (Sat, 14 May 2016) $</i>

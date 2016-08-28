@@ -9,7 +9,7 @@
  *
  * PURPOSE:      Import OGR vectors
  *
- * COPYRIGHT:    (C) 2003-2015 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2003-2016 by the GRASS Development Team
  *
  *               This program is free software under the GNU General
  *               Public License (>=v2).  Read the file COPYING that
@@ -1485,8 +1485,14 @@ int main(int argc, char *argv[])
 	    cat = 0;		/* field = layer + 1 */
 	    G_percent(cat, n_features, 2);
 	    while ((Ogr_feature = OGR_L_GetNextFeature(Ogr_layer)) != NULL) {
-		cat++;
 		G_percent(cat, n_features, 2);
+
+                /* Category */
+                if (key_idx > -1)
+                    cat = OGR_F_GetFieldAsInteger(Ogr_feature, key_idx);
+                else
+                    cat++;
+
 		/* Geometry */
 #if GDAL_VERSION_NUM >= 1110000
                 for (i = 0; i < OGR_FD_GetGeomFieldCount(Ogr_featuredefn); i++) {
@@ -1699,19 +1705,23 @@ int main(int argc, char *argv[])
         G_fatal_error(_("Import failed"));
 
     /* create index - may fail on non-unique categories */
-    if (db_create_index2(driver, Fi->table, key_column) != DB_OK)
-        G_warning(_("Unable to create index for table <%s>, key <%s>"),
-                  Fi->table, key_column);
+    if (!flag.notab->answer) {
+    	if (db_create_index2(driver, Fi->table, key_column) != DB_OK)
+        	G_warning(_("Unable to create index for table <%s>, key <%s>"),
+                	  Fi->table, key_column);
     
-    if (delete_table) {
-        sprintf(buf, "drop table %s", Fi->table);
-        db_set_string(&sql, buf);
-        if (db_execute_immediate(driver, &sql) != DB_OK) {
-            G_fatal_error(_("Unable to drop table: '%s'"),
-                          db_get_string(&sql));
-        }
+    
+	if (delete_table) {
+        	sprintf(buf, "drop table %s", Fi->table);
+	        db_set_string(&sql, buf);
+        	if (db_execute_immediate(driver, &sql) != DB_OK) {
+	            G_fatal_error(_("Unable to drop table: '%s'"),
+        	                  db_get_string(&sql));
+        	}
+    	}
+
+	db_close_database_shutdown_driver(driver);
     }
-    db_close_database_shutdown_driver(driver);
     
     /* -------------------------------------------------------------------- */
     /*      Extend current window based on dataset.                         */

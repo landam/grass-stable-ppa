@@ -1,11 +1,26 @@
 <h2>DESCRIPTION</h2>
 
-<em>v.import</em> imports selected layers from a OGR vector datasource
-into the current location and mapset. If the projection of the input
+<em>v.import</em> imports vector data from files and database connections
+supported by the <a href="http://www.gdal.org/">OGR</a> library) into the
+current location and mapset. If the projection of the input
 does not match the projection of the location, the input is reprojected
-into the current location. If the projection of the input does match
-the projection of the location, the input is imported directly with
-<a href="v.in.ogr.html">v.in.ogr</a>.
+into the current location. In case that the projection of the input map
+does match the projection of the location, the input is imported directly.
+
+<h3>Supported Vector Formats</h3>
+
+<em>v.import</em> uses the OGR library which supports various vector data
+formats including <a href="http://www.gdal.org/drv_shapefile.html">ESRI
+Shapefile</a>, <a href="http://www.gdal.org/drv_mitab.html">Mapinfo
+File</a>, UK .NTF, SDTS, TIGER, IHO S-57 (ENC), DGN, GML, GPX, AVCBin, REC,
+Memory, OGDI, and PostgreSQL, depending on the local OGR installation.
+For details see the <a href="http://www.gdal.org/ogr_formats.html">OGR web
+site</a>. The OGR (Simple Features Library) is part of the
+<a href="http://www.gdal.org">GDAL</a> library, hence GDAL needs to be
+installed to use <em>v.in.ogr</em>.
+
+<p>
+The list of actually supported formats can be printed by <b>-f</b> flag.
 
 <h2>NOTES</h2>
 
@@ -18,6 +33,17 @@ of the input data format. If the original polygons contain errors (unexpected
 overlapping areas or small gaps between polygons), the import might
 need to be repeated using a larger <em>snap</em> value.
 
+<!-- TODO: add hints for latlong -->
+
+<p>
+The <em>snap</em> threshold defines the maximal distance from one to another
+vertex in map units (for latitude-longitude locations in degree). If there
+is no other vertex within <em>snap</em> distance, no snapping will be done.
+Note that a too large value can severely damage area topology, beyond repair.
+<p>
+<i>Post-processing:</i> Snapped boundaries may need to be cleaned with
+<em>v.clean</em>, using its tools <em>break,rmdupl,rmsa</em>. For details,
+refer to the <em>v.clean</em> manual page.
 
 <h2>EXAMPLE</h2>
 
@@ -29,6 +55,7 @@ v.import input=research_area.shp output=research_area extent=input
 <h2>SEE ALSO</h2>
 
 <em>
+<a href="v.clean.html">v.clean</a>,
 <a href="v.in.ogr.html">v.in.ogr</a>,
 <a href="v.proj.html">v.proj</a>
 </em>
@@ -39,4 +66,4 @@ Markus Metz<br>
 Improvements: Martin Landa, Anna Petrasova
 
 <p>
-<i>Last changed: $Date: 2015-01-20 20:52:27 +0100 (Tue, 20 Jan 2015) $</i>
+<i>Last changed: $Date: 2016-08-06 18:35:16 +0200 (Sat, 06 Aug 2016) $</i>
