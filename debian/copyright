@@ -53,6 +53,11 @@ Copyright:   1989-2016, GRASS Development Team
                   1992, USA-CERL
 License: GPL-2+
 
+Files: gui/wxpython/gui_core/wxlibplot.py
+Copyright: 2002, Gordon Williams
+License: wxlibplot
+ Use as you wish.
+
 Files: imagery/i.landsat.toar/earth_sun.c
  imagery/i.landsat.toar/earth_sun.h
 Copyright: 2006, E. Jorge Tizado
