@@ -1,4 +1,42 @@
-grass (7.0.4~rc1-1~exp1~trusty1) trusty; urgency=medium
+grass (7.0.5~rc1-1~exp1~trusty) trusty; urgency=medium
+
+  * Rebuild for trusty.
+
+ -- Martin Landa <landa.martin@gmail.com>  Thu, 08 Sep 2016 11:01:09 +0200
+
+grass (7.0.5~rc1-1~exp1) experimental; urgency=medium
+
+  * New upstream release candidate.
+  * Drop patches applied upstream, refresh remaining patches.
+  * Use SOURCE_DATE_EPOCH as random seed for reproducible builds.
+  * Update copyright file, add license & copyright for wxlibplot.py.
+  * Add patch to fix spelling errors.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Sun, 28 Aug 2016 04:19:36 +0200
+
+grass (7.0.4-3) unstable; urgency=medium
+
+  * Add upstream patch to fix FTBFS with GCC 6.
+    (closes: #811886)
+  * Add patch to fix spelling errors.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Thu, 30 Jun 2016 23:21:27 +0200
+
+grass (7.0.4-2) unstable; urgency=medium
+
+  * Add patches by Alexis Bienvenüe to make the build reproducible.
+    (closes: #825092)
+
+ -- Bas Couwenberg <sebastic@debian.org>  Tue, 24 May 2016 20:01:10 +0200
+
+grass (7.0.4-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Move from experimental to unstable.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Sun, 01 May 2016 16:09:45 +0200
+
+grass (7.0.4~rc1-1~exp1) experimental; urgency=medium
 
   * New upstream release candidate.
   * Add template for x-grass7.
