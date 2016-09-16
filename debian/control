@@ -106,11 +106,7 @@ Suggests: grass-doc,
 Breaks: grass (<< 6.4.2-1~)
 Conflicts: grass70-core,
            grass7-core
-<<<<<<< HEAD
 Provides: grass703-2,
-=======
-Provides: grass705-1,
->>>>>>> debian/7.0.5.rc1-1.exp1
           grass70-core,
           grass7-core
 Replaces: grass70-core,
