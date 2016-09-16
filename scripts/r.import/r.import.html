@@ -57,28 +57,61 @@ When importing whole-world maps the user should disable map-trimming with
 the <b>-n</b> flag. For further explanations of <b>-n</b> flag, please refer
 the to <a href="r.proj.html">r.proj</a> manual.
 
-<h2>EXAMPLE</h2>
+<h2>EXAMPLES</h2>
 
-Import of a subset from <a href="">Bioclim data set</a>, to be reprojected
-to current location projection (North Carolina sample dataset). While normally
-the full raster map is imported, we spatially subset using the <em>extent</em>
-parameter:
+
+<h3>Import of SRTM V3 global data at 1 arc-seconds resolution</h3>
+
+The SRTM V3 1 arc-second global data (~30 meters resolution) are available
+from EarthExplorer (<a href="http://earthexplorer.usgs.gov/">http://earthexplorer.usgs.gov/</a>).
+The SRTM collections are located under the "Digital Elevation" category.
+<p>
+Example for North Carolina sample dataset (the tile name is "n35_w079_1arc_v3.tif"):
 
 <div class="code"><pre>
-# download selected Bioclim data
+# set computational region to e.g. 10m elevation model:
+g.region raster=elevation -p
+ 
+# Import with reprojection on the fly. Recommended parameters:
+# resample   Resampling method to use for reprojection - bilinear
+# extent     Output raster map extent - region: extent of current region
+# resolution Resolution of output raster map
+#  - region: current region resolution - limit to g.region setting from above
+r.import input=n35_w079_1arc_v3.tif output=srtmv3_resamp10m resample=bilinear \
+  extent=region resolution=region title="SRTM V3 resampled to 10m resolution"
+
+# beautify colors:
+r.colors srtmv3_resamp10m color=elevation
+</pre></div>
+
+
+<h3>Import of WorldClim data</h3>
+Import of a subset from WorldClim <a href="http://worldclim.org/bioclim">Bioclim data set</a>,
+to be reprojected to current location projection (North Carolina sample dataset).
+Different resolutions are available, in this example we use the 2.5 arc-minutes
+resolution data. During import, we spatially subset the world data to the 
+North Carolina region using the <em>extent</em> parameter:
+
+<div class="code"><pre>
+# download selected Bioclim data (2.5 arc-minutes resolution)
+# optionally tiles are available for the 30 arc-sec resolution
 wget http://biogeo.ucdavis.edu/data/climate/worldclim/1_4/grid/cur/bio_2-5m_bil.zip
 
-# extract BIO1 from package:
+# extract BIO1 from package (BIO1 = Annual Mean Temperature):
 unzip bio_2-5m_bil.zip bio1.bil bio1.hdr
+
+# prior to import, fix broken WorldClim extent using GDAL tool
+gdal_translate -a_ullr -180 90 180 -60 bio1.bil bio1_fixed.tif
 
 # set computational region to North Carolina, 4000 m target pixel resolution
 g.region -d res=4000 -ap
 
 # subset to current region and reproject on the fly to current location projection,
 # using -n since whole-world map is imported:
-r.import input=bio1.bil output=bioclim01 resample=bilinear \
+r.import input=bio1_fixed.tif output=bioclim01 resample=bilinear \
          extent=region resolution=region -n
 
+# temperature data are in &deg;C * 10
 r.info bioclim01
 r.univar -e bioclim01
 </pre></div>
@@ -102,4 +135,4 @@ Markus Metz<br>
 Improvements: Martin Landa, Anna Petrasova
 
 <p>
-<i>Last changed: $Date: 2015-01-20 20:52:27 +0100 (Tue, 20 Jan 2015) $</i>
+<i>Last changed: $Date: 2016-05-25 18:51:19 +0200 (Wed, 25 May 2016) $</i>

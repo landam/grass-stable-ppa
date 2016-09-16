@@ -76,6 +76,10 @@ d.vect map where="individual='juvenile' and area='beach'"
 <li> DBF column names are limited to 10 characters (DBF API definition).</li>
 </ul>
 
+<h3>Database table column types</h3>
+
+The supported types of columns depend on the database backend. However, all backends
+should support VARCHAR, INT, DOUBLE PRECISION and DATE.
 
 <h2>EXAMPLES</h2>
 
@@ -231,4 +235,4 @@ v.db.update vectormap column=species qcolumn="CASE WHEN col1 &gt;= 1 THEN cat WH
 <a href="database.html">Help pages for database modules</a>
 
 <p>
-<i>Last changed: $Date: 2015-12-17 15:41:28 +0100 (Thu, 17 Dec 2015) $</i>
+<i>Last changed: $Date: 2016-06-26 16:45:35 +0200 (Sun, 26 Jun 2016) $</i>

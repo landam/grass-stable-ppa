@@ -1,8 +1,33 @@
-grass (7.0.4-1~xenial1) xenial; urgency=medium
+grass (7.0.5~rc1-1~exp1~xenial1) xenial; urgency=medium
 
   * Rebuild for xenial.
 
- -- Martin Landa <landa.martin@gmail.com>  Sun, 01 May 2016 18:42:45 +0200
+ -- Martin Landa <landa.martin@gmail.com>  Fri, 16 Sep 2016 10:43:10 +0200
+
+grass (7.0.5~rc1-1~exp1) experimental; urgency=medium
+
+  * New upstream release candidate.
+  * Drop patches applied upstream, refresh remaining patches.
+  * Use SOURCE_DATE_EPOCH as random seed for reproducible builds.
+  * Update copyright file, add license & copyright for wxlibplot.py.
+  * Add patch to fix spelling errors.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Sun, 28 Aug 2016 04:19:36 +0200
+
+grass (7.0.4-3) unstable; urgency=medium
+
+  * Add upstream patch to fix FTBFS with GCC 6.
+    (closes: #811886)
+  * Add patch to fix spelling errors.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Thu, 30 Jun 2016 23:21:27 +0200
+
+grass (7.0.4-2) unstable; urgency=medium
+
+  * Add patches by Alexis Bienvenüe to make the build reproducible.
+    (closes: #825092)
+
+ -- Bas Couwenberg <sebastic@debian.org>  Tue, 24 May 2016 20:01:10 +0200
 
 grass (7.0.4-1) unstable; urgency=medium
 

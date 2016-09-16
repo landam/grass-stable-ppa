@@ -19,7 +19,12 @@ CFLAGS+=-Wall
 
 TEMPLATES=$(wildcard debian/*.in)
 
-versions: 
+# Use SOURCE_DATE_EPOCH as random seed for reproducible builds
+ifdef SOURCE_DATE_EPOCH
+	export GRASS_RANDOM_SEED=$(SOURCE_DATE_EPOCH)
+endif
+
+versions:
 	@echo "Version: $(VERSION)"
 	@echo "ABI: $(ABI)"
 
