@@ -104,7 +104,7 @@ Suggests: grass-doc,
 Breaks: grass (<< 6.4.2-1~)
 Conflicts: grass70-core,
            grass7-core
-Provides: grass705-1,
+Provides: grass705-2,
           grass70-core,
           grass7-core
 Replaces: grass70-core,
