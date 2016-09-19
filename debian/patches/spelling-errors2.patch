@@ -8,6 +8,7 @@ Description: Fix spelling errors.
  * occure      -> occur
  * should'nt   -> shouldn't
 Author: Bas Couwenberg <sebastic@debian.org>
+Forwarded: https://trac.osgeo.org/grass/ticket/3163
 
 --- a/gui/wxpython/gcp/g.gui.gcp.html
 +++ b/gui/wxpython/gcp/g.gui.gcp.html
