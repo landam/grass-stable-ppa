@@ -5,6 +5,7 @@ grass (7.0.5~rc2-1) UNRELEASED; urgency=medium
     used instead, but its dependencies cannot be satisfied on mips64el.
   * Drop --with-mysql configure options to disable MySQL/MariaDB support.
   * Drop spelling-errors2.patch, applied upstream.
+  * Add patch to fix new spelling errors.
 
  -- Bas Couwenberg <sebastic@debian.org>  Mon, 19 Sep 2016 09:31:05 +0200
 
