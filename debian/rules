@@ -88,8 +88,6 @@ override_dh_auto_configure: templates
                     --with-lapack \
                     --with-liblas=/usr/bin/liblas-config \
                     --with-motif \
-                    --with-mysql \
-                    --with-mysql-includes=$(shell mysql_config --include | sed -e 's/-I//') \
                     --with-netcdf \
                     --with-nls \
                     --with-odbc \
