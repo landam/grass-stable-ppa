@@ -1,3 +1,22 @@
+grass (7.0.5~rc2-1~exp1~xenial1) xenial; urgency=medium
+
+  * Rebuild for xenial.
+
+ -- Martin Landa <landa.martin@gmail.com>  Mon, 19 Sep 2016 13:00:58 +0200
+
+grass (7.0.5~rc2-1~exp1) experimental; urgency=medium
+
+  * New upstream release candidate.
+  * Drop libmysqlclient-dev dependency, default-libmysqlclient-dev should be
+    used instead, but its dependencies cannot be satisfied on mips64el.
+  * Drop --with-mysql configure options to disable MySQL/MariaDB support.
+  * Drop spelling-errors2.patch, applied upstream.
+  * Add patch to fix new spelling errors.
+  * Update copyright file, changes:
+    - Drop license & copyright for mapcalc.tab.{c,h}, removed upstream
+
+ -- Bas Couwenberg <sebastic@debian.org>  Mon, 19 Sep 2016 09:36:07 +0200
+
 grass (7.0.5~rc1-1~exp1~xenial1) xenial; urgency=medium
 
   * Rebuild for xenial.
