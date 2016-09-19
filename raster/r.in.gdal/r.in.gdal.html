@@ -1,6 +1,6 @@
 <h2>DESCRIPTION</h2>
 
-<em>r.in.gdal</em> allows a user to create a (binary) GRASS raster map layer,
+<em>r.in.gdal</em> allows a user to create a GRASS GIS raster map layer,
 or imagery group, from any GDAL supported raster map format, with an optional 
 title. The imported file may also be optionally used to create a new location.
 
@@ -17,64 +17,112 @@ PERMANENT mapset.
 
 <h3>GDAL supported raster formats</h3>
 
-Full details on GDAL supported formats are available at:
+Full details on all GDAL supported formats are available at:
 <p>
 <a href="http://www.gdal.org/formats_list.html">http://www.gdal.org/formats_list.html</a>
 <p>
-Selected formats of the more than 80 supported formats:
+Selected formats out of the more than 140 supported formats:
 
 <div class="code"><pre>
-
-Long Format Name                                        Code                    Creation        Georeferencing          Maximum File Size
-
-Arc/Info ASCII Grid                                     AAIGrid                 Yes             Yes                     No limits
-Arc/Info Binary Grid                                    AIG                     No              Yes                     --
-AIRSAR Polarimetric                                     AIRSAR                  No              No                      --
-Microsoft Windows Device Independent Bitmap (.bmp)      BMP                     Yes             Yes                     4GiB
-BSB Nautical Chart Format (.kap)                        BSB                     No              Yes                     --
-VTP Binary Terrain Format (.bt)                         BT                      Yes             Yes                     --
-CEOS (Spot for instance)                                CEOS                    No              No                      --
-First Generation USGS DOQ (.doq)                        DOQ1                    No              Yes                     --
-New Labelled USGS DOQ (.doq)                            DOQ2                    No              Yes                     --
-Data (.dt0, .dt1)                                       DTED                    No              Yes                     --
-ERMapper Compressed Wavelets (.ecw)                     ECW                     Yes             Yes			
-ESRI .hdr Labelled                                      EHdr                    No              Yes                     --
-ENVI .hdr Labelled Raster                               ENVI                    Yes             Yes                     No limits
-Envisat Image Product (.n1)                             Envisat                 No              No                      --
-EOSAT FAST Format                                       FAST                    No              Yes                     --
-FITS (.fits)                                            FITS                    Yes             No			
-Graphics Interchange Format (.gif)                      GIF                     Yes             No                      2GB
-Arc/Info Binary Grid (.adf)                             GIO                     Yes             Yes		     
-GRASS Rasters                                           GRASS                   No              Yes                     --
-TIFF / GeoTIFF (.tif)                                   GTiff                   Yes             Yes                     4GiB
-Hierarchical Data Format Release 4 (HDF4)               HDF4                    Yes             Yes                     2GiB
-Erdas Imagine (.img)                                    HFA                     Yes             Yes                     No limits
-Atlantis MFF2e                                          HKV                     Yes             Yes                     No limits
-Image Display and Analysis (WinDisp)                    IDA                     Yes             Yes                     2GB
-ILWIS Raster Map (.mpr,.mpl)                            ILWIS                   Yes             Yes                     --
-Japanese DEM (.mem)                                     JDEM                    No              Yes                     --
-JPEG JFIF (.jpg)                                        JPEG                    Yes             Yes                     4GiB (max dimentions 65500x65500)
-JPEG2000 (.jp2, .j2k)                                   JPEG2000                Yes             Yes                     2GiB
-JPEG2000 (.jp2, .j2k)                                   JP2KAK                  Yes             Yes                     No limits
-NOAA Polar Orbiter Level 1b Data Set (AVHRR)            L1B                     No              Yes                     --
-Erdas 7.x .LAN and .GIS                                 LAN                     No              Yes                     2GB
-In Memory Raster                                        MEM                     Yes             Yes                     2GiB
-Atlantis MFF                                            MFF                     Yes             Yes                     No limits
-Multi-resolution Seamless Image Database                MrSID                   No              Yes                     --
-NDF                                                     NLAPS Data Format       No              Yes                     No limits
-NITF                                                    NITF                    Yes             Yes		
-NetCDF                                                  netCDF                  Yes             Yes                     2GB
-OGDI Bridge                                             OGDI                    No              Yes                     --
-PCI .aux Labelled                                       PAux                    Yes             No                      No limits
-PCI Geomatics Database File                             PCIDSK                  Yes             Yes                     No limits
-Portable Network Graphics (.png)                        PNG                     Yes             No		
-PCRaster (.map)                                         PCRaster                Yes             No			
-Netpbm (.ppm,.pgm)                                      PNM                     Yes             No                      No limits
-RadarSat2 XML (product.xml)                             RS2                     No              Yes                     4GB
-USGS SDTS DEM (*CATD.DDF)                               SDTS                    No              Yes                     --
-SAR CEOS                                                SAR_CEOS                No              Yes                     --
-USGS ASCII DEM (.dem)                                   USGSDEM                 No              Yes                     --
-X11 Pixmap (.xpm)                                       XPM                     Yes             No			
+Long Format Name                              Code           Creation  Georeferencing Maximum file size
+---------------------------------------------+-------------+----------+--------------+-----------------
+ADRG/ARC Digitilized Raster Graphics          ADRG              Yes      Yes          --
+Arc/Info ASCII Grid                           AAIGrid           Yes      Yes          2GB
+Arc/Info Binary Grid (.adf)                   AIG               No       Yes          --
+Arc/Info Export E00 GRID                      E00GRID           No       Yes          --
+ArcSDE Raster                                 SDE               No       Yes          --
+ASCII Gridded XYZ                             XYZ               Yes      Yes          --
+BSB Nautical Chart Format (.kap)              BSB               No       Yes          --
+CEOS (Spot for instance)                      CEOS              No       No           --
+DB2                                           DB2               Yes      Yes          No limits
+DODS / OPeNDAP                                DODS              No       Yes          --
+EarthWatch/DigitalGlobe .TIL                  TIL               No       No           --
+ENVI .hdr Labelled Raster                     ENVI              Yes      Yes          No limits
+Envisat Image Product (.n1)                   ESAT              No       No           --
+EOSAT FAST Format                             FAST              No       Yes          --
+Epsilon - Wavelet compressed images           EPSILON           Yes      No           --
+Erdas 7.x .LAN and .GIS                       LAN               No       Yes          2GB
+ERDAS Compressed Wavelets (.ecw)              ECW               Yes      Yes           
+Erdas Imagine (.img)                          HFA               Yes      Yes          No limits
+Erdas Imagine Raw                             EIR               No       Yes          --
+ERMapper (.ers)                               ERS               Yes      Yes
+ESRI .hdr Labelled                            EHdr              Yes      Yes          No limits
+EUMETSAT Archive native (.nat)                MSGN              No       Yes
+FIT                                           FIT               Yes      No           --
+FITS (.fits)                                  FITS              Yes      No           --
+Fuji BAS Scanner Image                        FujiBAS           No       No           --
+GDAL Virtual (.vrt)                           VRT               Yes      Yes          --
+Generic Binary (.hdr Labelled)                GENBIN            No       No           --
+GeoPackage                                    GPKG              Yes      Yes          No limits
+Geospatial PDF                                PDF               Yes      Yes          --
+GMT Compatible netCDF                         GMT               Yes      Yes          2GB
+Golden Software Surfer 7 Binary Grid          GS7BG             Yes      Yes          4GiB
+Graphics Interchange Format (.gif)            GIF               Yes      No           2GB
+GRASS Raster Format                           GRASS             No       Yes          --
+GSat File Format                              GFF               No       No           --
+Hierarchical Data Format Release 4 (HDF4)     HDF4              Yes      Yes          2GiB
+Hierarchical Data Format Release 5 (HDF5)     HDF5              No       Yes          2GiB
+Idrisi Raster                                 RST               Yes      Yes          No limits
+ILWIS Raster Map (.mpr,.mpl)                  ILWIS             Yes      Yes          --
+Image Display and Analysis (WinDisp)          IDA               Yes      Yes          2GB
+In Memory Raster                              MEM               Yes      Yes
+Intergraph Raster                             INGR              Yes      Yes          2GiB
+IRIS                                          IRIS              No       Yes          --
+Japanese DEM (.mem)                           JDEM              No       Yes          --
+JAXA PALSAR Product Reader (Level 1.1/1.5)    JAXAPALSAR        No       No           --
+JPEG2000 (.jp2, .j2k)                         JP2OpenJPEG       Yes      Yes
+JPEG JFIF (.jpg)                              JPEG              Yes      Yes          4GiB
+KMLSUPEROVERLAY                               KMLSUPEROVERLAY   Yes      Yes
+MBTiles                                       MBTiles           Yes      Yes          --
+Meta Raster Format                            MRF               Yes      Yes          --
+Meteosat Second Generation                    MSG               No       Yes
+MG4 Encoded Lidar                             MG4Lidar          No       Yes          --
+Microsoft Windows Device Independent Bitmap   BMP               Yes      Yes          4GiB
+Military Elevation Data (.dt0, .dt1, .dt2)    DTED              Yes      Yes          --
+Multi-resolution Seamless Image Database      MrSID             No       Yes          --
+NASA Planetary Data System                    PDS               No       Yes          --
+NetCDF                                        netCDF            Yes      Yes          2GB
+Netpbm (.ppm,.pgm)                            PNM               Yes      No           No limits
+NITF                                          NITF              Yes      Yes          10GB
+NLAPS Data Format                             NDF               No       Yes          No limits
+NOAA NGS Geoid Height Grids                   NGSGEOID          No       Yes
+NOAA Polar Orbiter Level 1b Data Set (AVHRR)  L1B               No       Yes          --
+OGC Web Coverage Service                      WCS               No       Yes          --
+OGC Web Map Service, and TMS, WorldWind, On EaWMS               No       Yes          --
+OGC Web Map Tile Service                      WMTS              No       Yes          --
+OGDI Bridge                                   OGDI              No       Yes          --
+Oracle Spatial GeoRaster                      GEORASTER         Yes      Yes          No limits
+OziExplorer .MAP                              MAP               No       Yes          --
+OZI OZF2/OZFX3                                OZI               No       Yes          --
+PCI Geomatics Database File                   PCIDSK            Yes      Yes          No limits
+PCRaster                                      PCRaster          Yes      Yes           
+Planet Labs Mosaics API                       PLMosaic          No       Yes          --
+Portable Network Graphics (.png)              PNG               Yes      No           
+PostGIS Raster (previously WKTRaster)         PostGISRaster     No       Yes          --
+RadarSat2 XML (product.xml)                   RS2               No       Yes          4GB
+Rasdaman                                      RASDAMAN          No       No           No limits
+Rasterlite - Rasters in SQLite DB             Rasterlite        Yes      Yes          --
+Raster Product Format/RPF (CADRG, CIB)        RPFTOC            No       Yes          --
+R Object Data Store                           R                 Yes      No           --
+ROI_PAC Raster                                ROI_PAC           Yes      Yes          --
+R Raster (.grd)                               RRASTER           No       Yes          --
+SAGA GIS Binary format                        SAGA              Yes      Yes          --
+SAR CEOS                                      SAR_CEOS          No       Yes          --
+Sentinel 1 SAR SAFE (manifest.safe)           SAFE              No       Yes          No limits
+Sentinel 2                                    SENTINEL2         No       Yes          No limits
+SGI Image Format                              SGI               Yes      Yes          --
+SRTM HGT Format                               SRTMHGT           Yes      Yes          --
+TerraSAR-X Complex SAR Data Product           COSAR             No       No           --
+TerraSAR-X Product                            TSX               Yes      No           --
+TIFF / BigTIFF / GeoTIFF (.tif)               GTiff             Yes      Yes          4GiB/None for BigTIFF
+USGS ASCII DEM / CDED (.dem)                  USGSDEM           Yes      Yes          --
+USGS Astrogeology ISIS cube (Version 3)       ISIS3             No       Yes          --
+USGS SDTS DEM (*CATD.DDF)                     SDTS              No       Yes          --
+Vexcel MFF                                    MFF               Yes      Yes          No limits
+VICAR                                         VICAR             No       Yes          --
+VTP Binary Terrain Format (.bt)               BT                Yes      Yes          --
+WEBP                                          WEBP              Yes      No           --
+WMO GRIB1/GRIB2 (.grb)                        GRIB              No       Yes          2GB
 </pre></div>
 
 <h3>Location Creation</h3>
@@ -245,7 +293,7 @@ provides climate data for Europe ranging from 1950 - 2015 or later
 (<a href="http://eca.knmi.nl/download/ensembles/ensembles.php">Terms of use</a>).
 To import the different chunks of data provided by the project as netCDF files,
 the offset parameter can be used to properly assign numbers to the series
-of daily raster maps from 1st Jan 1950 (in case if importing the ECAD data
+of daily raster maps from 1st Jan 1950 (in case of importing the ECAD data
 split into multi-annual chunks). The ECAD data must be imported into a
 LatLong location.
 <p>
@@ -364,4 +412,4 @@ GDAL Pages: <a href="http://www.gdal.org">http://www.gdal.org/</a><br>
  (<a href="mailto:warmerdam AT pobox dot com">email</a>).
 
 <p>
-<i>Last changed: $Date: 2016-05-22 15:26:32 +0200 (Sun, 22 May 2016) $</i>
+<i>Last changed: $Date: 2016-09-15 15:32:42 +0200 (Thu, 15 Sep 2016) $</i>
