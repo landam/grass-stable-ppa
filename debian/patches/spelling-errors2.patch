@@ -9,6 +9,7 @@ Description: Fix spelling errors.
  * should'nt   -> shouldn't
 Author: Bas Couwenberg <sebastic@debian.org>
 Forwarded: https://trac.osgeo.org/grass/ticket/3163
+Applied-Upstream: https://trac.osgeo.org/grass/changeset/69532
 
 --- a/gui/wxpython/gcp/g.gui.gcp.html
 +++ b/gui/wxpython/gcp/g.gui.gcp.html
