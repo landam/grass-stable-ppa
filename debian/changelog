@@ -3,6 +3,7 @@ grass (7.0.5~rc2-1) UNRELEASED; urgency=medium
   * New upstream release candidate.
   * Drop libmysqlclient-dev dependency, default-libmysqlclient-dev should be
     used instead, but its dependencies cannot be satisfied on mips64el.
+  * Drop spelling-errors2.patch, applied upstream.
 
  -- Bas Couwenberg <sebastic@debian.org>  Mon, 19 Sep 2016 09:31:05 +0200
 
