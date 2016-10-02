@@ -183,6 +183,7 @@ install-arch-stamp:
 	         debian/tmp/usr/lib/$(BASE_NAME)/CITING \
 	         debian/tmp/usr/lib/$(BASE_NAME)/COPYING \
 	         debian/tmp/usr/lib/$(BASE_NAME)/GPL.TXT \
+	         debian/tmp/usr/lib/$(BASE_NAME)/INSTALL \
 	         debian/tmp/usr/lib/$(BASE_NAME)/REQUIREMENTS.html \
 	         debian/tmp/usr/lib/$(BASE_NAME)/config.status \
 	         debian/tmp/usr/lib/$(BASE_NAME)/contributors.csv \

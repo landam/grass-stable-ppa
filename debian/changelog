@@ -3,6 +3,7 @@ grass (7.0.5-1) UNRELEASED; urgency=medium
   * New upstream release.
   * Drop spelling error patches, applied upstream.
   * Include CITING in docs.
+  * Explicitly remove INSTALL file, not installed.
 
  -- Bas Couwenberg <sebastic@debian.org>  Sun, 02 Oct 2016 22:23:44 +0200
 
