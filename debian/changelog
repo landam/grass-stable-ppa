@@ -1,3 +1,9 @@
+grass (7.0.5-3) UNRELEASED; urgency=medium
+
+  * Drop unused overrides for hardening-no-pie.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Tue, 25 Oct 2016 20:36:48 +0200
+
 grass (7.0.5-2) unstable; urgency=medium
 
   * Reinstate MySQL/MariaDB support, mariadb-10.0 available on mips64el now.
