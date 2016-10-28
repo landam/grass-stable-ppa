@@ -5,6 +5,7 @@ Description: Fix spelling errors.
  * allows to <verb> -> allows <verb>ing
 Author: Bas Couwenberg <sebastic@debian.org>
 Forwarded: https://trac.osgeo.org/grass/ticket/3194
+Applied-Upstream: https://trac.osgeo.org/grass/changeset/69749
 
 --- a/imagery/i.landsat.toar/landsat_set.c
 +++ b/imagery/i.landsat.toar/landsat_set.c
