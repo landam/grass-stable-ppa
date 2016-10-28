@@ -24,17 +24,17 @@ Usage::
     # query GRASS itself for its GISBASE
     # (with fixes for specific platforms)
     # needs to be edited by the user
-    grass7bin = 'grass70'
+    grass7bin = 'grass72'
     if sys.platform.startswith('win'):
         # MS Windows
-        grass7bin = r'C:\OSGeo4W\bin\grass70.bat'
+        grass7bin = r'C:\OSGeo4W\bin\grass72.bat'
         # uncomment when using standalone WinGRASS installer
-        # grass7bin = r'C:\Program Files (x86)\GRASS GIS 7.0.0\grass70.bat'
+        # grass7bin = r'C:\Program Files (x86)\GRASS GIS 7.2.0\grass72.bat'
         # this can be avoided if GRASS executable is added to PATH
     elif sys.platform == 'darwin':
         # Mac OS X
         # TODO: this have to be checked, maybe unix way is good enough
-        grass7bin = '/Applications/GRASS/GRASS-7.0.app/'
+        grass7bin = '/Applications/GRASS/GRASS-7.2.app/'
 
     # query GRASS GIS itself for its GISBASE
     startcmd = [grass7bin, '--config', 'path']
@@ -102,11 +102,11 @@ import tempfile as tmpfile
 
 def write_gisrc(dbase, location, mapset):
     """Write the ``gisrc`` file and return its path."""
-    fd, gisrc = tmpfile.mkstemp()
-    os.write(fd, "GISDBASE: %s\n" % dbase)
-    os.write(fd, "LOCATION_NAME: %s\n" % location)
-    os.write(fd, "MAPSET: %s\n" % mapset)
-    os.close(fd)
+    gisrc = tmpfile.mktemp()
+    with open(gisrc, 'w') as rc:
+        rc.write("GISDBASE: %s\n" % dbase)
+        rc.write("LOCATION_NAME: %s\n" % location)
+        rc.write("MAPSET: %s\n" % mapset)
     return gisrc
 
 
@@ -149,6 +149,7 @@ def init(gisbase, dbase='', location='demolocation', mapset='PERMANENT'):
     :param dbase: path to GRASS database (default: '')
     :param location: location name (default: 'demolocation')
     :param mapset: mapset within given location (default: 'PERMANENT')
+    
     :returns: path to ``gisrc`` file (to be deleted later)
     """
     # TODO: why we don't set GISBASE?

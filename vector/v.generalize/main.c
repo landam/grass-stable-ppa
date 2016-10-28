@@ -96,8 +96,10 @@ int main(int argc, char *argv[])
     error_out = G_define_standard_option(G_OPT_V_OUTPUT);
     error_out->key = "error";
     error_out->required = NO;
+    error_out->label =
+	_("Error map with failed generalizations");
     error_out->description =
-	_("Error map of all lines and boundaries not being generalized due to topology issues or over-simplification");
+	_("Lines and boundaries causing errors (collapsed to a point or topology errors)");
 
     method_opt = G_define_option();
     method_opt->key = "method";
@@ -334,12 +336,12 @@ int main(int argc, char *argv[])
 	G_fatal_error(_("Unable to create vector map <%s>"), map_out->answer);
     }
 
-    if(error_out->answer)
+    if (error_out->answer) {
         if (0 > Vect_open_new(&Error, error_out->answer, with_z)) {
 	    Vect_close(&In);
 	    G_fatal_error(_("Unable to create error vector map <%s>"), error_out->answer);
         }
-
+    }
 
 
     Vect_copy_head_data(&In, &Out);
@@ -391,11 +393,10 @@ int main(int argc, char *argv[])
 	int not_modified_boundaries = 0, n_oversimplified = 0;
 	struct line_pnts *APoints;  /* original Points */
 
+	set_topo_debug();
+
 	Vect_copy_map_lines(&In, &Out);
 	Vect_build_partial(&Out, GV_BUILD_CENTROIDS);
-
-	if ((mask_type & GV_AREA) && !(mask_type & GV_BOUNDARY))
-	    mask_type |= GV_BOUNDARY;
 
 	G_message("-----------------------------------------------------");
 	G_message(_("Generalization (%s)..."), method_opt->answer);
@@ -429,30 +430,19 @@ int main(int argc, char *argv[])
 			
 			/* check if any of the centroids is selected */
 			Vect_get_line_areas(&Out, i, &left, &right);
+			if (left < 0)
+			    left = Vect_get_isle_area(&Out, abs(left));
+			if (right < 0)
+			    right = Vect_get_isle_area(&Out, abs(right));
+
 			if (left > 0) {
 			    Vect_get_area_cats(&Out, left, Cats);
 			    do_line = Vect_cats_in_constraint(Cats, layer, cat_list);
 			}
-			else if (left < 0) {
-			    left = Vect_get_isle_area(&Out, abs(left));
-			    if (left > 0) {
-				Vect_get_area_cats(&Out, left, Cats);
-				do_line = Vect_cats_in_constraint(Cats, layer, cat_list);
-			    }
-			}
 			
-			if (!do_line) {
-			    if (right > 0) {
-				Vect_get_area_cats(&Out, right, Cats);
-				do_line = Vect_cats_in_constraint(Cats, layer, cat_list);
-			    }
-			    else if (right < 0) {
-				right = Vect_get_isle_area(&Out, abs(right));
-				if (right > 0) {
-				    Vect_get_area_cats(&Out, right, Cats);
-				    do_line = Vect_cats_in_constraint(Cats, layer, cat_list);
-				}
-			    }
+			if (!do_line && right > 0) {
+			    Vect_get_area_cats(&Out, right, Cats);
+			    do_line = Vect_cats_in_constraint(Cats, layer, cat_list);
 			}
 		    }
 		    if (!do_line)
@@ -552,7 +542,7 @@ int main(int argc, char *argv[])
 		after = APoints->n_points;
 		n_oversimplified++;
                 if (error_out->answer)
-		    Vect_write_line(&Error, type, APoints, Cats);
+		    Vect_write_line(&Error, GV_POINT, Points, Cats);
 	    }
 	    /* check for topology corruption */
 	    else if (type == GV_BOUNDARY) {
@@ -560,7 +550,7 @@ int main(int argc, char *argv[])
 		    after = APoints->n_points;
 		    not_modified_boundaries++;
                     if (error_out->answer)
-		        Vect_write_line(&Error, type, APoints, Cats);
+		        Vect_write_line(&Error, type, Points, Cats);
 		}
 		else
 		    after = Points->n_points;

@@ -4,10 +4,12 @@
  * MODULE:       v.net.alloc
  *
  * AUTHOR(S):    Radim Blazek
+ *               Stepan Turek <stepan.turek seznam.cz> (turns support)
+ *               Markus Metz (costs from/to centers)
  *
  * PURPOSE:      Allocate subnets for nearest centers
  *               
- * COPYRIGHT:    (C) 2001, 2014 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2001, 2016 by the GRASS Development Team
  *
  *               This program is free software under the 
  *               GNU General Public License (>=v2). 
@@ -22,29 +24,20 @@
 #include <grass/vector.h>
 #include <grass/dbmi.h>
 #include <grass/glocale.h>
+#include "alloc.h"
 
-typedef struct
-{
-    int cat;			/* category number */
-    int node;			/* node number */
-} CENTER;
-
-typedef struct
-{
-    int center;			/* neares center, initially -1 */
-    double cost;		/* costs from this center, initially not undefined */
-} NODE;
 
 int main(int argc, char **argv)
 {
-    int i, ret, center, line, center1, center2;
-    int nlines, nnodes, type, ltype, afield, nfield, geo, cat;
+    int i, ret, line, center1, center2;
+    int nlines, nnodes, type, ltype, afield, nfield, geo, cat, tfield,
+	tucfield;
     int node1, node2;
-    double cost, e1cost, e2cost, n1cost, n2cost, s1cost, s2cost, l, l1, l2;
-    struct Option *map, *output;
+    double e1cost, e2cost, n1cost, n2cost, s1cost, s2cost, l, l1, l2;
+    struct Option *map, *output, *method_opt;
     struct Option *afield_opt, *nfield_opt, *afcol, *abcol, *ncol, *type_opt,
-	*term_opt;
-    struct Flag *geo_f;
+	*term_opt, *tfield_opt, *tucfield_opt;
+    struct Flag *geo_f, *turntable_f;
     struct GModule *module;
     struct Map_info Map, Out;
     struct cat_list *catlist;
@@ -53,6 +46,8 @@ int main(int argc, char **argv)
     NODE *Nodes;
     struct line_cats *Cats;
     struct line_pnts *Points, *SPoints;
+    int graph_version;
+    int from_centers;
 
     /* initialize GIS environment */
     G_gisinit(argv[0]);		/* reads grass env, stores program name to G_program_name() */
@@ -72,20 +67,40 @@ int main(int argc, char **argv)
     map = G_define_standard_option(G_OPT_V_INPUT);
     output = G_define_standard_option(G_OPT_V_OUTPUT);
 
+    method_opt = G_define_option();
+    method_opt->key = "method";
+    method_opt->type = TYPE_STRING;
+    method_opt->required = NO;
+    method_opt->options = "from,to";
+    method_opt->answer = "from";
+    method_opt->description = _("Use costs from centers or costs to centers");
+    method_opt->guisection = _("Cost");
+
+    term_opt = G_define_standard_option(G_OPT_V_CATS);
+    term_opt->key = "center_cats";
+    term_opt->required = YES;
+    term_opt->description =
+	_("Categories of centers (points on nodes) to which net "
+	  "will be allocated, "
+	  "layer for this categories is given by nlayer option");
+
     afield_opt = G_define_standard_option(G_OPT_V_FIELD);
     afield_opt->key = "arc_layer";
     afield_opt->answer = "1";
+    afield_opt->required = YES;
     afield_opt->label = _("Arc layer");
 
     type_opt = G_define_standard_option(G_OPT_V_TYPE);
     type_opt->key = "arc_type";
     type_opt->options = "line,boundary";
     type_opt->answer = "line,boundary";
-    type_opt->description = _("Arc type");
+    type_opt->required = YES;
+    type_opt->label = _("Arc type");
 
     nfield_opt = G_define_standard_option(G_OPT_V_FIELD);
     nfield_opt->key = "node_layer";
     nfield_opt->answer = "2";
+    nfield_opt->required = YES;
     nfield_opt->label = _("Node layer");
 
     afcol = G_define_option();
@@ -109,13 +124,26 @@ int main(int argc, char **argv)
     ncol->description = _("Node cost column (number)");
     ncol->guisection = _("Cost");
 
-    term_opt = G_define_standard_option(G_OPT_V_CATS);
-    term_opt->key = "center_cats";
-    term_opt->required = YES;
-    term_opt->description =
-	_("Categories of centers (points on nodes) to which net "
-	  "will be allocated, "
-	  "layer for this categories is given by nlayer option");
+    turntable_f = G_define_flag();
+    turntable_f->key = 't';
+    turntable_f->description = _("Use turntable");
+    turntable_f->guisection = _("Turntable");
+
+    tfield_opt = G_define_standard_option(G_OPT_V_FIELD);
+    tfield_opt->key = "turn_layer";
+    tfield_opt->answer = "3";
+    tfield_opt->label = _("Layer with turntable");
+    tfield_opt->description =
+	_("Relevant only with -t flag");
+    tfield_opt->guisection = _("Turntable");
+
+    tucfield_opt = G_define_standard_option(G_OPT_V_FIELD);
+    tucfield_opt->key = "turn_cat_layer";
+    tucfield_opt->answer = "4";
+    tucfield_opt->label = _("Layer with unique categories used in turntable");
+    tucfield_opt->description =
+	_("Relevant only with -t flag");
+    tucfield_opt->guisection = _("Turntable");
 
     geo_f = G_define_flag();
     geo_f->key = 'g';
@@ -147,10 +175,23 @@ int main(int argc, char **argv)
 
     afield = Vect_get_field_number(&Map, afield_opt->answer);
     nfield = Vect_get_field_number(&Map, nfield_opt->answer);
+    tfield = Vect_get_field_number(&Map, tfield_opt->answer);
+    tucfield = Vect_get_field_number(&Map, tucfield_opt->answer);
 
     /* Build graph */
-    Vect_net_build_graph(&Map, type, afield, nfield, afcol->answer,
-			 abcol->answer, ncol->answer, geo, 0);
+    graph_version = 1;
+    from_centers = 1;
+    if (method_opt->answer[0] == 't' && !turntable_f->answer) {
+	graph_version = 2;
+	from_centers = 0;
+    }
+    if (turntable_f->answer)
+	Vect_net_ttb_build_graph(&Map, type, afield, nfield, tfield, tucfield,
+				 afcol->answer, abcol->answer, ncol->answer,
+				 geo, 0);
+    else
+	Vect_net_build_graph(&Map, type, afield, nfield, afcol->answer,
+			     abcol->answer, ncol->answer, geo, graph_version);
 
     nnodes = Vect_get_num_nodes(&Map);
     nlines = Vect_get_num_lines(&Map);
@@ -158,13 +199,15 @@ int main(int argc, char **argv)
     /* Create list of centers based on list of categories */
     for (i = 1; i <= nlines; i++) {
 	int node;
-	
+
 	ltype = Vect_get_line_type(&Map, i);
 	if (!(ltype & GV_POINT))
 	    continue;
 
 	Vect_read_line(&Map, Points, Cats, i);
-	node = Vect_find_node(&Map, Points->x[0], Points->y[0], Points->z[0], 0, 0);
+	node =
+	    Vect_find_node(&Map, Points->x[0], Points->y[0], Points->z[0], 0,
+			   0);
 	if (!node) {
 	    G_warning(_("Point is not connected to the network"));
 	    continue;
@@ -198,50 +241,32 @@ int main(int argc, char **argv)
 	G_warning(_("Not enough centers for selected nlayer. "
 		    "Nothing will be allocated."));
 
-    /* alloc and reset space for all nodes */
-    Nodes = (NODE *) G_calloc((nnodes + 1), sizeof(NODE));
-    for (i = 1; i <= nnodes; i++) {
-	Nodes[i].center = -1;
+    /* alloc and reset space for all lines */
+    if (turntable_f->answer) {
+	/* if turntable is used we are looking for lines as destinations, not the intersections (nodes) */
+	Nodes = (NODE *) G_calloc((nlines * 2 + 2), sizeof(NODE));
     }
-
+    else {
+	Nodes = (NODE *) G_calloc((nnodes + 1), sizeof(NODE));
+    }
 
     /* Fill Nodes by nearest center and costs from that center */
-    G_message(_("Calculating costs from centers ..."));
 
-    for (center = 0; center < ncenters; center++) {
-	G_percent(center, ncenters, 1);
-	node1 = Centers[center].node;
-	Vect_net_get_node_cost(&Map, node1, &n1cost);
-	G_debug(2, "center = %d node = %d cat = %d", center, node1,
-		Centers[center].cat);
-	for (node2 = 1; node2 <= nnodes; node2++) {
-	    G_debug(5, "  node1 = %d node2 = %d", node1, node2);
-	    Vect_net_get_node_cost(&Map, node2, &n2cost);
-	    if (n2cost == -1) {
-		continue;
-	    }			/* closed, left it as not attached */
-
-	    ret = Vect_net_shortest_path(&Map, node1, node2, NULL, &cost);
-	    if (ret == -1) {
-		continue;
-	    }			/* node unreachable */
-
-	    /* We must add center node costs (not calculated by Vect_net_shortest_path() ), but
-	     *  only if center and node are not identical, because at the end node cost is add later */
-	    if (node1 != node2)
-		cost += n1cost;
-
-	    G_debug(5,
-		    "Arc nodes: %d %d cost: %f (x old cent: %d old cost %f",
-		    node1, node2, cost, Nodes[node2].center,
-		    Nodes[node2].cost);
-	    if (Nodes[node2].center == -1 || cost < Nodes[node2].cost) {
-		Nodes[node2].cost = cost;
-		Nodes[node2].center = center;
-	    }
+    if (turntable_f->answer) {
+	G_message(_("Calculating costs from centers ..."));
+	alloc_from_centers_loop_tt(&Map, Nodes, Centers, ncenters,
+				   tucfield);
+    }
+    else {
+	if (from_centers) {
+	    G_message(_("Calculating costs from centers ..."));
+	    alloc_from_centers(Vect_net_get_graph(&Map), Nodes, Centers, ncenters);
+	}
+	else {
+	    G_message(_("Calculating costs to centers ..."));
+	    alloc_to_centers(Vect_net_get_graph(&Map), Nodes, Centers, ncenters);
 	}
     }
-    G_percent(1, 1, 1);
 
     /* Write arcs to new map */
     if (Vect_open_new(&Out, output->answer, Vect_is_3d(&Map)) < 0)
@@ -255,20 +280,38 @@ int main(int argc, char **argv)
 	if (!(ltype & type)) {
 	    continue;
 	}
-	Vect_get_line_nodes(&Map, line, &node1, &node2);
-	center1 = Nodes[node1].center;
-	center2 = Nodes[node2].center;
-	s1cost = Nodes[node1].cost;
-	s2cost = Nodes[node2].cost;
+
+	if (turntable_f->answer) {
+	    center1 = Nodes[line * 2].center;
+	    center2 = Nodes[line * 2 + 1].center;
+	    s1cost = Nodes[line * 2].cost;
+	    s2cost = Nodes[line * 2 + 1].cost;
+	    n1cost = n2cost = 0;
+	}
+	else {
+	    Vect_get_line_nodes(&Map, line, &node1, &node2);
+	    center1 = Nodes[node1].center;
+	    center2 = Nodes[node2].center;
+	    s1cost = Nodes[node1].cost;
+	    s2cost = Nodes[node2].cost;
+
+	    Vect_net_get_node_cost(&Map, node1, &n1cost);
+	    Vect_net_get_node_cost(&Map, node2, &n2cost);
+	}
+
+	if (from_centers) {
+	    Vect_net_get_line_cost(&Map, line, GV_FORWARD, &e1cost);
+	    Vect_net_get_line_cost(&Map, line, GV_BACKWARD, &e2cost);
+	}
+	else {
+	    /* from node to center */
+	    Vect_net_get_line_cost(&Map, line, GV_FORWARD, &e2cost);
+	    Vect_net_get_line_cost(&Map, line, GV_BACKWARD, &e1cost);
+	}
+
 	G_debug(3, "Line %d:", line);
 	G_debug(3, "Arc centers: %d %d (nodes: %d %d)", center1, center2,
 		node1, node2);
-
-	Vect_net_get_node_cost(&Map, node1, &n1cost);
-	Vect_net_get_node_cost(&Map, node2, &n2cost);
-
-	Vect_net_get_line_cost(&Map, line, GV_FORWARD, &e1cost);
-	Vect_net_get_line_cost(&Map, line, GV_BACKWARD, &e2cost);
 
 	G_debug(3, "  s1cost = %f n1cost = %f e1cost = %f", s1cost, n1cost,
 		e1cost);
@@ -292,7 +335,7 @@ int main(int argc, char **argv)
 		Vect_write_line(&Out, ltype, Points, Cats);
 	    }
 	    else {		/* each node in different area */
-		/* Check if direction is reachable */
+		/* Check if line is reachable from center */
 		if (center1 == -1 || n1cost == -1 || e1cost == -1) {	/* closed from first node */
 		    G_debug(3,
 			    "    -> arc is not reachable from 1. node -> alloc to 2. node");
@@ -309,7 +352,6 @@ int main(int argc, char **argv)
 		    Vect_write_line(&Out, ltype, Points, Cats);
 		    continue;
 		}
-
 		/* Now we know that arc is reachable from both sides */
 
 		/* Add costs of node to starting costs */
@@ -348,7 +390,8 @@ int main(int argc, char **argv)
 		    /* First segment */
 		    ret = Vect_line_segment(Points, 0, l1, SPoints);
 		    if (ret == 0) {
-			G_warning(_("Cannot get line segment, segment out of line"));
+			G_warning(_
+				  ("Cannot get line segment, segment out of line"));
 		    }
 		    else {
 			cat = Centers[center1].cat;
@@ -359,7 +402,8 @@ int main(int argc, char **argv)
 		    /* Second segment */
 		    ret = Vect_line_segment(Points, l1, l, SPoints);
 		    if (ret == 0) {
-			G_warning(_("Cannot get line segment, segment out of line"));
+			G_warning(_
+				  ("Cannot get line segment, segment out of line"));
 		    }
 		    else {
 			Vect_reset_cats(Cats);

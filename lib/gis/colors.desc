@@ -14,6 +14,7 @@ etopo2: colors for ETOPO2 worldwide bathymetry/topography
 evi: enhanced vegetative index colors
 fahrenheit: blue to red for Fahrenheit temperature
 gdd: accumulated growing degree days
+grass: GRASS GIS green (perceptually uniform)
 greens: white to green
 grey: grey scale
 grey1.0: grey scale for raster values between 0.0-1.0
@@ -40,7 +41,10 @@ ryb: red through yellow to blue
 ryg: red through yellow to green
 sepia: yellowish-brown through to white
 slope: r.slope.aspect-type slope colors for raster values 0-90
+soilmoisture: soilmoisture color table (0.0-1.0)
 srtm: color palette for Shuttle Radar Topography Mission elevation
 srtm_plus: color palette for Shuttle Radar Topography Mission elevation (with seafloor colors)
 terrain: global elevation color table covering -11000 to +8850m
+viridis: perceptually uniform sequential color table viridis
+water: water depth
 wave: color wave

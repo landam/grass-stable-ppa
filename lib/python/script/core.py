@@ -17,25 +17,34 @@ for details.
 .. sectionauthor:: Martin Landa <landa.martin gmail.com>
 .. sectionauthor:: Michael Barton <michael.barton asu.edu>
 """
+from __future__ import absolute_import, print_function
 
 import os
 import sys
-import types
-import re
 import atexit
 import subprocess
 import shutil
 import codecs
 import types as python_types
 
-from utils import KeyValue, parse_key_val, basename, encode
+from .utils import KeyValue, parse_key_val, basename, encode
 from grass.exceptions import ScriptError, CalledModuleError
 
 # i18N
 import gettext
 gettext.install('grasslibs', os.path.join(os.getenv("GISBASE"), 'locale'))
-import __builtin__
-__builtin__.__dict__['_'] = __builtin__.__dict__['_'].im_self.lgettext
+
+try:
+    # python2
+    import __builtin__
+    from os import environ
+except ImportError:
+    # python3
+    import builtins as __builtin__
+    from os import environb as environ
+    unicode = str
+__builtin__.__dict__['_'] = __builtin__.__dict__['_'].__self__.lgettext
+
 
 # subprocess wrapper that uses shell on Windows
 
@@ -82,14 +91,18 @@ _popen_args = ["bufsize", "executable", "stdin", "stdout", "stderr",
 
 
 def _make_val(val):
-    if isinstance(val, types.StringType) or \
-            isinstance(val, types.UnicodeType):
+    """Convert value to bytes"""
+    if isinstance(val, bytes):
         return val
-    if isinstance(val, types.ListType):
-        return ",".join(map(_make_val, val))
-    if isinstance(val, types.TupleType):
-        return _make_val(list(val))
-    return str(val)
+    if isinstance(val, (str, unicode)):
+        return encode(val)
+    if isinstance(val, (int, float)):
+        return encode(str(val))
+    try:
+        return b",".join(map(_make_val, iter(val)))
+    except TypeError:
+        pass
+    return bytes(val)
 
 
 def get_commands():
@@ -249,7 +262,7 @@ def get_real_command(cmd):
     return cmd
 
 
-def make_command(prog, flags="", overwrite=False, quiet=False, verbose=False,
+def make_command(prog, flags=b"", overwrite=False, quiet=False, verbose=False,
                  errors=None, **options):
     """Return a list of strings suitable for use as the args parameter to
     Popen() or call(). Example:
@@ -268,31 +281,34 @@ def make_command(prog, flags="", overwrite=False, quiet=False, verbose=False,
 
     :return: list of arguments
     """
-    args = [prog]
+    args = [_make_val(prog)]
     if overwrite:
-        args.append("--o")
+        args.append(b"--o")
     if quiet:
-        args.append("--q")
+        args.append(b"--q")
     if verbose:
-        args.append("--v")
+        args.append(b"--v")
     if flags:
-        if '-' in flags:
+        flags = _make_val(flags)
+        if b'-' in flags:
             raise ScriptError("'-' is not a valid flag")
-        args.append("-%s" % flags)
-    for opt, val in options.iteritems():
+        args.append(b"-" + bytes(flags))
+    for opt, val in options.items():
         if opt in _popen_args:
             continue
+        # convert string to bytes
+        opt = encode(opt)
         if val != None:
-            if opt.startswith('_'):
+            if opt.startswith(b'_'):
                 opt = opt[1:]
                 warning(_("To run the module <%s> add underscore at the end"
                     " of the option <%s> to avoid conflict with Python"
                     " keywords. Underscore at the beginning is"
                     " depreciated in GRASS GIS 7.0 and will be removed"
                     " in version 7.1.") % (prog, opt))
-            elif opt.endswith('_'):
+            elif opt.endswith(b'_'):
                 opt = opt[:-1]
-            args.append("%s=%s" % (opt, _make_val(val)))
+            args.append(opt + b'=' + _make_val(val))
     return args
 
 
@@ -312,16 +328,16 @@ def handle_errors(returncode, result, args, kwargs):
         raise CalledModuleError(module=None, code=repr(args),
                                 returncode=returncode)
 
-def start_command(prog, flags="", overwrite=False, quiet=False,
+def start_command(prog, flags=b"", overwrite=False, quiet=False,
                   verbose=False, **kwargs):
     """Returns a Popen object with the command created by make_command.
     Accepts any of the arguments which Popen() accepts apart from "args"
     and "shell".
 
     >>> p = start_command("g.gisenv", stdout=subprocess.PIPE)
-    >>> print p  # doctest: +ELLIPSIS
+    >>> print(p)  # doctest: +ELLIPSIS
     <...Popen object at 0x...>
-    >>> print p.communicate()[0]  # doctest: +SKIP
+    >>> print(p.communicate()[0])  # doctest: +SKIP
     GISDBASE='/opt/grass-data';
     LOCATION_NAME='spearfish60';
     MAPSET='glynn';
@@ -343,7 +359,7 @@ def start_command(prog, flags="", overwrite=False, quiet=False,
     """
     options = {}
     popts = {}
-    for opt, val in kwargs.iteritems():
+    for opt, val in kwargs.items():
         if opt in _popen_args:
             popts[opt] = val
         else:
@@ -358,7 +374,6 @@ def start_command(prog, flags="", overwrite=False, quiet=False,
                                                               __name__,
                                                               ' '.join(args)))
         sys.stderr.flush()
-
     return Popen(args, **popts)
 
 
@@ -400,9 +415,9 @@ def pipe_command(*args, **kwargs):
     "stdout = PIPE". Returns the Popen object.
 
     >>> p = pipe_command("g.gisenv")
-    >>> print p  # doctest: +ELLIPSIS
+    >>> print(p)  # doctest: +ELLIPSIS
     <....Popen object at 0x...>
-    >>> print p.communicate()[0]  # doctest: +SKIP
+    >>> print(p.communicate()[0])  # doctest: +SKIP
     GISDBASE='/opt/grass-data';
     LOCATION_NAME='spearfish60';
     MAPSET='glynn';
@@ -471,7 +486,7 @@ def parse_command(*args, **kwargs):
     parse = None
     parse_args = {}
     if 'parse' in kwargs:
-        if type(kwargs['parse']) is types.TupleType:
+        if isinstance(kwargs['parse'], tuple):
             parse = kwargs['parse'][0]
             parse_args = kwargs['parse'][1]
         del kwargs['parse']
@@ -663,15 +678,15 @@ def _parse_opts(lines):
         if not line:
             break
         try:
-            [var, val] = line.split('=', 1)
+            [var, val] = line.split(b'=', 1)
         except:
             raise SyntaxError("invalid output from g.parser: %s" % line)
 
-        if var.startswith('flag_'):
+        if var.startswith(b'flag_'):
             flags[var[5:]] = bool(int(val))
-        elif var.startswith('opt_'):
+        elif var.startswith(b'opt_'):
             options[var[4:]] = val
-        elif var in ['GRASS_OVERWRITE', 'GRASS_VERBOSE']:
+        elif var in [b'GRASS_OVERWRITE', b'GRASS_VERBOSE']:
             os.environ[var] = val
         else:
             raise SyntaxError("invalid output from g.parser: %s" % line)
@@ -692,14 +707,17 @@ def parser():
     dictionaries containing option/flag values, keyed by lower-case
     option/flag names. The values in "options" are strings, those in
     "flags" are Python booleans.
+
+    Overview table of parser standard options:
+    https://grass.osgeo.org/grass72/manuals/parser_standard_options.html
     """
     if not os.getenv("GISBASE"):
-        print >> sys.stderr, "You must be in GRASS GIS to run this program."
+        print("You must be in GRASS GIS to run this program.", file=sys.stderr)
         sys.exit(1)
 
-    cmdline = [basename(sys.argv[0])]
-    cmdline += ['"' + arg + '"' for arg in sys.argv[1:]]
-    os.environ['CMDLINE'] = ' '.join(cmdline)
+    cmdline = [basename(encode(sys.argv[0]))]
+    cmdline += [b'"' + encode(arg) + b'"' for arg in sys.argv[1:]]
+    environ[b'CMDLINE'] = b' '.join(cmdline)
 
     argv = sys.argv[:]
     name = argv[0]
@@ -712,12 +730,12 @@ def parser():
     prog = "g.parser.exe" if sys.platform == "win32" else "g.parser"
     p = subprocess.Popen([prog, '-n'] + argv, stdout=subprocess.PIPE)
     s = p.communicate()[0]
-    lines = s.split('\0')
+    lines = s.split(b'\0')
 
-    if not lines or lines[0] != "@ARGS_PARSED@":
-        sys.stdout.write(s)
+    if not lines or lines[0] != b"@ARGS_PARSED@":
+        stdout = os.fdopen(sys.stdout.fileno(), 'wb')
+        stdout.write(s)
         sys.exit(p.returncode)
-
     return _parse_opts(lines[1:])
 
 # interface to g.tempfile
@@ -927,7 +945,7 @@ def gisenv():
     dictionary. Example:
 
     >>> env = gisenv()
-    >>> print env['GISDBASE']  # doctest: +SKIP
+    >>> print(env['GISDBASE'])  # doctest: +SKIP
     /opt/grass-data
 
     :return: list of GRASS variables
@@ -977,7 +995,7 @@ def region(region3d=False, complete=False):
 
     s = read_command("g.region", flags=flgs)
     reg = parse_key_val(s, val_type=float)
-    for k in ['rows',  'cols',  'cells',
+    for k in ['projection', 'zone', 'rows',  'cols',  'cells',
               'rows3', 'cols3', 'cells3', 'depths']:
         if k not in reg:
             continue
@@ -1089,9 +1107,9 @@ def find_file(name, element='cell', mapset=None):
     dictionary. Example:
 
     >>> result = find_file('elevation', element='cell')
-    >>> print result['fullname']
+    >>> print(result['fullname'])
     elevation@PERMANENT
-    >>> print result['file']  # doctest: +ELLIPSIS
+    >>> print(result['file'])  # doctest: +ELLIPSIS
     /.../PERMANENT/cell/elevation
 
 
@@ -1132,7 +1150,7 @@ def list_strings(type, pattern=None, mapset=None, exclude=None, flag=''):
     """
     if type == 'cell':
         verbose(_('Element type should be "raster" and not "%s"') % type)
-    
+
     result = list()
     for line in read_command("g.list",
                              quiet=True,
@@ -1321,7 +1339,7 @@ def find_program(pgm, *args):
             or non-zero return code
     :return: True otherwise
     """
-    nuldev = file(os.devnull, 'w+')
+    nuldev = open(os.devnull, 'w+')
     try:
         # TODO: the doc or impl is not correct, any return code is accepted
         call([pgm] + list(args), stdin = nuldev, stdout = nuldev, stderr = nuldev)
@@ -1491,8 +1509,7 @@ def version():
 
     ::
 
-        print version()
-
+        >>> print(version())
         {'proj4': '4.8.0', 'geos': '3.3.5', 'libgis_revision': '52468',
          'libgis_date': '2012-07-27 22:53:30 +0200 (Fri, 27 Jul 2012)',
          'version': '7.0.svn', 'date': '2012', 'gdal': '2.0dev',
@@ -1500,7 +1517,7 @@ def version():
 
     """
     data = parse_command('g.version', flags='rge', errors='ignore')
-    for k, v in data.iteritems():
+    for k, v in data.items():
         data[k.strip()] = v.replace('"', '').strip()
 
     return data

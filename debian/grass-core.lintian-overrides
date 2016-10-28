@@ -7,8 +7,11 @@ grass-core: manpage-has-bad-whatis-entry *
 
 # Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
 #  Fortify Source functions: no, only unprotected functions found!
-#         unprotected: read
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/i.gensig
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r3.in.bin
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.grow.distance
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.in.ascii
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.cwed
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.dominance
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.edgedensity
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.mpa
@@ -24,66 +27,20 @@ grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.richness
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.shannon
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.shape
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.simpson
-grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.thin
-grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/wximgview
-grass-core: hardening-no-fortify-functions usr/lib/grass*/etc/lock
-
-# Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
-#  Fortify Source functions: no, only unprotected functions found!
-#         unprotected: fread
-grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r3.in.bin
-
-# Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
-#  Fortify Source functions: no, only unprotected functions found!
-#         unprotected: fgets
-#         unprotected: fread
-grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.in.ascii
-
-# Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
-#  Fortify Source functions: no, only unprotected functions found!
-#         unprotected: strcat
-#         unprotected: read
-#         unprotected: strcpy
-grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.li.cwed
-
-# Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
-#  Fortify Source functions: no, only unprotected functions found!
-#         unprotected: fgets
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.null
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.thin
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/v.extract
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/v.lrs.segment
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/v.segment
-
-# Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
-#  Fortify Source functions: no, only unprotected functions found!
-#         unprotected: strncpy
-grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/i.gensig
 grass-core: hardening-no-fortify-functions usr/lib/grass*/driver/db/ogr
-
-# Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
-#  Fortify Source functions: no, only unprotected functions found!
-#         unprotected: strcpy
 grass-core: hardening-no-fortify-functions usr/lib/grass*/etc/lister/cell
 grass-core: hardening-no-fortify-functions usr/lib/grass*/etc/lister/vector
-
-# Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
-#  Fortify Source functions: no, only unprotected functions found!
-#         unprotected: memset
-#         unprotected: read
-#         unprotected: memcpy
+grass-core: hardening-no-fortify-functions usr/lib/grass*/etc/lock
 grass-core: hardening-no-fortify-functions usr/lib/grass*/lib/libgrass_dgl.*.so
-
-# Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
-#  Fortify Source functions: no, only unprotected functions found!
-#         unprotected: read
-#         unprotected: memcpy
 grass-core: hardening-no-fortify-functions usr/lib/grass*/lib/libgrass_segment.*.so
 
 # This license file is used by the program to show license, so needs to be
 # distributed.
 grass-core: extra-license-file usr/lib/grass*/etc/license
 grass-core: extra-license-file usr/share/doc/grass-core/COPYING
-
-# PIE breaks the build
-grass-core: hardening-no-pie *
 

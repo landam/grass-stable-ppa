@@ -60,6 +60,7 @@ from grass.exceptions import CalledModuleError
 
 
 class Sample(object):
+
     def __init__(self, start=None, end=None, raster_names=None,
                  strds_name=None):
         self.start = start
@@ -151,9 +152,9 @@ def main():
                               "datasets must be equal\n<%(a)s> of type "
                               "%(type_a)s do not match <%(b)s> of type "
                               "%(type_b)s" % {"a": first_strds.get_id(),
-                               "type_a": first_strds.get_temporal_type(),
-                               "b": dataset.get_id(),
-                               "type_b": dataset.get_temporal_type()}))
+                                              "type_a": first_strds.get_temporal_type(),
+                                              "b": dataset.get_id(),
+                                              "type_b": dataset.get_temporal_type()}))
 
         mapmatrizes = tgis.sample_stds_by_stds_topology("strds", "strds",
                                                         strds_names,
@@ -162,7 +163,7 @@ def main():
                                                         "equal", False,
                                                         False)
 
-        for i in xrange(len(mapmatrizes[0])):
+        for i in range(len(mapmatrizes[0])):
             isvalid = True
             mapname_list = []
             for mapmatrix in mapmatrizes:
@@ -200,14 +201,14 @@ def main():
         pymap.open('r')
     except:
         dbif.close()
-        grass.fatal(_("It is not possible to open the new map %s" % output))
+        grass.fatal(_("Unable to create vector map <%s>" % output))
 
     if len(pymap.dblinks) == 0:
         try:
             grass.run_command("v.db.addtable", map=output)
         except CalledModuleError:
             dbif.close()
-            grass.fatal(_("Impossible add table to vector %s" % output))
+            grass.fatal(_("Unable to add table <%s> to vector map <%s>" % output))
     pymap.close()
     for sample in samples:
         raster_names = sample.raster_names

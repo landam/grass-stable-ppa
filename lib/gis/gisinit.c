@@ -24,7 +24,7 @@
 #include <grass/glocale.h>
 
 #include "G.h"
-#include "local_proto.h"
+#include "gis_local_proto.h"
 
 struct G__ G__;
 
@@ -119,7 +119,9 @@ static int gisinit(void)
     G__.little_endian = G_is_little_endian();
 
     zlib = getenv("GRASS_ZLIB_LEVEL");
-    G__.compression_level = (zlib && *zlib && isdigit(*zlib)) ? atoi(zlib) : -2;
+    G__.compression_level = (zlib && *zlib && isdigit(*zlib)) ? atoi(zlib) : 1;
+    if (G__.compression_level < -1 || G__.compression_level > 9)
+	G__.compression_level = 1;
 
     initialized = 1;
 

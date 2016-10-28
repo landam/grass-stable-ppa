@@ -2,30 +2,54 @@
 #include <string.h>
 #include  "global.h"
 
-/* returns index to array of values, inserts new if necessary */
-int find_cat(int cat, int add)
+
+static int bsearch_cat(int cat)
+{
+    int mid, lo, hi;
+
+    /* tests */
+    if (vstat.rcat < 1)
+	return -1;
+
+    lo = 0;
+    hi = vstat.rcat - 1;
+    
+    if (hi == 0 || Values[lo].cat > cat || Values[hi].cat < cat)
+	return -1;
+
+    if (Values[hi].cat == cat)
+	return hi;
+
+    if (Values[lo].cat == cat)
+	return lo;
+
+    /* bsearch */
+    while (lo < hi) {
+	mid = (lo + hi) / 2;
+	
+	if (Values[mid].cat == cat)
+	    return mid;
+
+	if (Values[mid].cat > cat) {
+	    hi = mid;
+	}
+	else {
+	    lo = mid;
+	}
+    }
+    
+    return -1;
+}
+
+/* returns index to array of values, mark as used if requested */
+int find_cat(int cat, int used)
 {
     int i;
 
-    for (i = 0; i < vstat.rcat; i++)
-	if (Values[i].cat == cat)
-	    return i;
+    i = bsearch_cat(cat);
 
-    if (!add)
-	return -1;
+    if (i >= 0 && used)
+	Values[i].used = 1;
 
-    /* Not found -> add new */
-    Values[vstat.rcat].cat = cat;
-    Values[vstat.rcat].count1 = 0;
-    Values[vstat.rcat].count1 = 0;
-    Values[vstat.rcat].i1 = -1;
-    Values[vstat.rcat].i2 = -1;
-    Values[vstat.rcat].d1 = 0.0;
-    Values[vstat.rcat].d2 = 0.0;
-    Values[vstat.rcat].qcat = NULL;
-    Values[vstat.rcat].nqcats = 0;
-    Values[vstat.rcat].aqcats = 0;
-    vstat.rcat++;
-
-    return (vstat.rcat - 1);
+    return (i);
 }

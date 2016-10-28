@@ -9,7 +9,7 @@ Forwarded: not-needed
  <!-- Copyright 2014 Richard Hughes <richard@hughsie.com> -->
  <component type="desktop">
 -  <id>grass.desktop</id>
-+  <id>grass70.desktop</id>
++  <id>grass72.desktop</id>
    <metadata_license>CC0-1.0</metadata_license>
    <project_license>GPL-2.0+</project_license>
    <summary>GRASS GIS, the Open Source Geographic Information System</summary>

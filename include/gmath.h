@@ -4,7 +4,7 @@
 
  * @Copyright David D.Gray <ddgray@armadce.demon.co.uk>
  * 27th. Sep. 2000
- * Last updated: $Id: gmath.h 49183 2011-11-11 17:44:36Z martinl $
+ * Last updated: $Id: gmath.h 66485 2015-10-13 02:25:44Z wenzeslaus $
  *
 
  * This file is part of GRASS GIS. It is free software. You can 
@@ -24,10 +24,6 @@
 #define GRASS_GMATH_H
 
 #include <grass/config.h>
-#if defined(HAVE_LIBLAPACK) && defined(HAVE_LIBBLAS) && defined(HAVE_G2C_H)
- /* only include if available */
-#include <grass/la.h>
-#endif
 #include <stddef.h>
 
 /*solver names */

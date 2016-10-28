@@ -54,7 +54,7 @@ FILES = AUTHORS CHANGES CITING COPYING GPL.TXT INSTALL REQUIREMENTS.html contrib
 FILES_DST = $(patsubst %,$(ARCH_DISTDIR)/%,$(FILES))
 
 default:
-	@echo "GRASS GIS $(GRASS_VERSION_MAJOR).$(GRASS_VERSION_MINOR).$(GRASS_VERSION_RELEASE) r$(GRASS_VERSION_SVN) compilation log" \
+	@echo "GRASS GIS $(GRASS_VERSION_MAJOR).$(GRASS_VERSION_MINOR).$(GRASS_VERSION_RELEASE) $(GRASS_VERSION_SVN) compilation log" \
 		> $(ERRORLOG)
 	@echo "--------------------------------------------------" >> $(ERRORLOG)
 	@echo "Started compilation: `date`"                        >> $(ERRORLOG)
@@ -96,7 +96,8 @@ LIBDIRS = \
 	lib/linkm \
 	lib/db \
 	lib/vector \
-	db/drivers
+	db/drivers \
+	lib/python
 
 # Compile libraries only
 libs:

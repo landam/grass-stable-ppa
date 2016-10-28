@@ -71,6 +71,7 @@ int main(int argc, char *argv[])
     G_add_keyword(_("geometry"));
     G_add_keyword(_("grid"));
     G_add_keyword(_("point pattern"));
+    G_add_keyword(_("hexagon"));
     module->description = _("Creates a vector map of a user-defined grid.");
 
     vectname = G_define_standard_option(G_OPT_V_OUTPUT);
@@ -451,7 +452,7 @@ int main(int argc, char *argv[])
 		    }
 		    else {
 		        sprintf(buf, "( %d, %d, %d )",
-			        attCount + 1, i + 1, j + 1);
+			        attCount + 1, grid_info.num_rows - i, j + 1);
 		    }
 		    if (db_append_string(&sql, buf) != DB_OK)
 		        G_fatal_error(_("Unable to fill attribute table"));

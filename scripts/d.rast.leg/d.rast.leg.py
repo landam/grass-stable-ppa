@@ -65,6 +65,7 @@ import sys
 import os
 import grass.script as grass
 
+
 def make_frame(f, b, t, l, r):
     (fl, fr, ft, fb) = f
 
@@ -124,8 +125,10 @@ def main():
     ncats = len(cats.strip().split('\n'))
 
     # Only need to adjust legend size if number of categories is between 1 and 10
-    if ncats < 2: ncats = 2
-    if ncats > 10: ncats = 10
+    if ncats < 2:
+        ncats = 2
+    if ncats > 10:
+        ncats = 10
 
     VSpacing = (100 - (ncats * 10) + 10)
 

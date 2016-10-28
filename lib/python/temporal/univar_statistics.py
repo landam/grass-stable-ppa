@@ -18,8 +18,9 @@ for details.
 
 :authors: Soeren Gebbert
 """
+from __future__ import print_function
 
-from open_stds import *
+from .open_stds import *
 import grass.script as gscript
 
 ###############################################################################
@@ -71,7 +72,7 @@ def print_gridded_dataset_univar_statistics(type, input, output, where, extended
             string += "third_quartile" + fs + "percentile_90"
 
         if output is None:
-            print string
+            print(string)
         else:
             out_file.write(string + "\n")
 
@@ -113,7 +114,7 @@ def print_gridded_dataset_univar_statistics(type, input, output, where, extended
             string += fs + str(stats["third_quartile"]) + fs + str(stats["percentile_90"])
 
         if output is None:
-            print string
+            print(string)
         else:
             out_file.write(string + "\n")
 
@@ -126,7 +127,7 @@ def print_gridded_dataset_univar_statistics(type, input, output, where, extended
 ###############################################################################
 
 
-def print_vector_dataset_univar_statistics(input, twhere, layer, type, column,
+def print_vector_dataset_univar_statistics(input, output, twhere, layer, type, column,
                                            where, extended, no_header=False,
                                            fs="|"):
     """Print univariate statistics for a space time vector dataset
@@ -147,6 +148,9 @@ def print_vector_dataset_univar_statistics(input, twhere, layer, type, column,
     # We need a database interface
     dbif = SQLDatabaseInterfaceConnection()
     dbif.connect()
+
+    if output is not None:
+        out_file = open(output, "w")
 
     mapset = get_current_mapset()
 
@@ -187,7 +191,10 @@ def print_vector_dataset_univar_statistics(input, twhere, layer, type, column,
                 string += fs + "first_quartile" + fs + "median" + fs + \
                     "third_quartile" + fs + "percentile_90"
 
-        print string
+        if output is None:
+            print(string)
+        else:
+            out_file.write(string + "\n")
 
     for row in rows:
         id = row["name"] + "@" + row["mapset"]
@@ -247,6 +254,12 @@ def print_vector_dataset_univar_statistics(input, twhere, layer, type, column,
                 else:
                     string += fs + fs + fs + fs
 
-        print string
+        if output is None:
+            print(string)
+        else:
+            out_file.write(string + "\n")
 
     dbif.close()
+
+    if output is not None:
+        out_file.close()
