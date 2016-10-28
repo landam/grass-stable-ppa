@@ -4,6 +4,7 @@ grass (7.2.0~rc1-1) UNRELEASED; urgency=medium
   * Drop unused overrides for hardening-no-pie.
   * Update watch file for 7.2.x releases.
   * Drop Conflicts/Provides/Replaces for old upstream GRASS 7.0 packages.
+  * Refresh patches.
 
  -- Bas Couwenberg <sebastic@debian.org>  Fri, 28 Oct 2016 12:44:55 +0200
 

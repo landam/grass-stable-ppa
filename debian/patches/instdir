@@ -4,7 +4,7 @@ Forwarded: not-needed
 
 --- a/configure
 +++ b/configure
-@@ -1427,7 +1427,7 @@ fi
+@@ -1441,7 +1441,7 @@ fi
  if test -n "$MACOSX_APP" ; then
      INSTDIR='${prefix}'"/GRASS-${GRASS_VERSION_MAJOR}.${GRASS_VERSION_MINOR}.app/Contents/MacOS"
  else
@@ -15,7 +15,7 @@ Forwarded: not-needed
  
 --- a/configure.in
 +++ b/configure.in
-@@ -214,7 +214,7 @@ AC_SUBST(MACOSX_SDK)
+@@ -216,7 +216,7 @@ AC_SUBST(MACOSX_SDK)
  if test -n "$MACOSX_APP" ; then
      INSTDIR='${prefix}'"/GRASS-${GRASS_VERSION_MAJOR}.${GRASS_VERSION_MINOR}.app/Contents/MacOS"
  else
