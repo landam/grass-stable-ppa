@@ -1,10 +1,11 @@
-import grass.gunittest
+from grass.gunittest.case import TestCase
+from grass.gunittest.main import test
 
 
 # TODO: add more expressions
 # TODO: add tests with prepared data
 
-class TestBasicOperations(grass.gunittest.TestCase):
+class TestBasicOperations(TestCase):
 
     # TODO: replace by unified handing of maps
     to_remove = []
@@ -50,7 +51,15 @@ class TestBasicOperations(grass.gunittest.TestCase):
             expression='diff_e_e = 3 * x() * y() * z() - 3 * x() * y() * z()')
         self.to_remove.append('diff_e_e')
         self.assertRaster3dMinMax('diff_e_e', refmin=0, refmax=0)
+    
+    def test_nrows_ncols_ndepths_sum(self):
+        """Test if sum of nrows, ncols and ndepths matches one
+        expected from current region settigs"""
+        self.assertModule('r3.mapcalc',
+            expression='nrows_ncols_ndepths_sum = nrows() + ncols() + ndepths()')
+        self.to_remove.append('nrows_ncols_ndepths_sum')
+        self.assertRasterMinMax('nrows_ncols_ndepths_sum', refmin=2160, refmax=2160)
 
 
 if __name__ == '__main__':
-    grass.gunittest.test()
+    test()

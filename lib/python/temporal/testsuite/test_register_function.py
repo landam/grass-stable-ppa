@@ -10,11 +10,12 @@ for details.
 """
 
 import grass.temporal as tgis
-import grass.gunittest
+from grass.gunittest.case import TestCase
+from grass.gunittest.main import test
 import datetime
 import os
 
-class TestRegisterFunctions(grass.gunittest.TestCase):
+class TestRegisterFunctions(TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -335,4 +336,4 @@ class TestRegisterFails(TestCase):
 
 
 if __name__ == '__main__':
-    grass.gunittest.test()
+    test()

@@ -16,14 +16,20 @@ for details.
 .. sectionauthor:: Glynn Clements
 .. sectionauthor:: Martin Landa <landa.martin gmail.com>
 """
-
+from __future__ import absolute_import
 import os
 import types
-import copy
-import __builtin__
 
-from utils import parse_key_val
-from core import *
+try:
+    import __builtin__
+    bytes = str
+except ImportError:
+    # python3
+    import builtins as __builtin__
+    unicode = str
+
+from .utils import parse_key_val
+from .core import *
 from grass.exceptions import CalledModuleError
 
 
@@ -263,7 +269,7 @@ json = None
 orderedDict = None
 
 
-def vector_what(map, coord, distance=0.0, ttype=None, encoding=None):
+def vector_what(map, coord, distance=0.0, ttype=None, encoding=None, skip_attributes=False):
     """Query vector map at given locations
 
     To query one vector map at one location
@@ -319,6 +325,8 @@ def vector_what(map, coord, distance=0.0, ttype=None, encoding=None):
     :param distance: query threshold distance (in map units)
     :param ttype: list of topology types (default of v.what are point, line,
                   area, face)
+    :param encoding: attributes encoding
+    :param skip_attributes: True to skip quering attributes
 
     :return: parsed list
     """
@@ -326,7 +334,7 @@ def vector_what(map, coord, distance=0.0, ttype=None, encoding=None):
         locale = os.environ["LC_ALL"]
         os.environ["LC_ALL"] = "C"
 
-    if type(map) in (types.StringType, types.UnicodeType):
+    if isinstance(map, (bytes, unicode)):
         map_list = [map]
     else:
         map_list = map
@@ -334,14 +342,14 @@ def vector_what(map, coord, distance=0.0, ttype=None, encoding=None):
     layer_list = ['-1'] * len(map_list)
 
     coord_list = list()
-    if type(coord) is types.TupleType:
+    if isinstance(coord, tuple):
         coord_list.append('%f,%f' % (coord[0], coord[1]))
     else:
         for e, n in coord:
             coord_list.append('%f,%f' % (e, n))
 
     cmdParams = dict(quiet      = True,
-                     flags      = 'aj',
+                     flags      = 'j' if skip_attributes else 'aj',
                      map        = ','.join(map_list),
                      layer      = ','.join(layer_list),
                      coordinates = ','.join(coord_list),
@@ -352,7 +360,7 @@ def vector_what(map, coord, distance=0.0, ttype=None, encoding=None):
     try:
         ret = read_command('v.what',
                            **cmdParams).strip()
-    except CalledModuleError, e:
+    except CalledModuleError as e:
         raise ScriptError(e.msg)
 
     if "LC_ALL" in os.environ:

@@ -79,7 +79,7 @@ def cleanup():
 def main():
     global tmp, sqltmp, tmpname, nuldev, vector, rastertmp
     rastertmp = False
-    #### setup temporary files
+    # setup temporary files
     tmp = grass.tempfile()
     sqltmp = tmp + ".sql"
     # we need a random name
@@ -146,13 +146,15 @@ def main():
     try:
         fi = grass.vector_db(map=vector)[int(layer)]
     except KeyError:
-        grass.fatal(_('There is no table connected to this map. Run v.db.connect or v.db.addtable first.'))
+        grass.fatal(
+            _('There is no table connected to this map. Run v.db.connect or v.db.addtable first.'))
     # we need this for non-DBF driver:
     dbfdriver = fi['driver'] == 'dbf'
 
     # Find out which table is linked to the vector map on the given layer
     if not fi['table']:
-        grass.fatal(_('There is no table connected to this map. Run v.db.connect or v.db.addtable first.'))
+        grass.fatal(
+            _('There is no table connected to this map. Run v.db.connect or v.db.addtable first.'))
 
     # replaced by user choiche
     #basecols = ['n', 'min', 'max', 'range', 'mean', 'stddev', 'variance', 'cf_var', 'sum']
@@ -206,7 +208,7 @@ def main():
         if currcolumn in grass.vector_columns(vector, layer).keys():
             if not flags['c']:
                 grass.fatal((_("Cannot create column <%s> (already present). ") % currcolumn) +
-                             _("Use -c flag to update values in this column."))
+                            _("Use -c flag to update values in this column."))
         else:
             if i == "n":
                 coltype = "INTEGER"
@@ -231,7 +233,7 @@ def main():
     f = file(sqltmp, 'w')
 
     # do the stats
-    p = grass.pipe_command('r.univar', flags='t' + 'g' + extstat, map=raster,
+    p = grass.pipe_command('r.univar', flags='t' + extstat, map=raster,
                            zones=rastertmp, percentile=percentile, sep=';')
 
     first_line = 1
@@ -252,8 +254,9 @@ def main():
                 variable = variables_dbf[variable]
             i = variables[variable]
             value = vars[i]
-            # convert nan, +nan, -nan to NULL
-            if value.lower().endswith('nan'):
+            # convert nan, +nan, -nan, inf, +inf, -inf, Infinity, +Infinity,
+            # -Infinity to NULL
+            if value.lower().endswith('nan') or 'inf' in value.lower():
                 value = 'NULL'
             if not first_var:
                 f.write(" , ")
@@ -276,7 +279,9 @@ def main():
                          " of vector map <{vector}>."
                          ).format(raster=raster, vector=vector)))
     except CalledModuleError:
-        grass.warning(_("Failed to upload statistics to attribute table of vector map <%s>.") % vector)
+        grass.warning(
+            _("Failed to upload statistics to attribute table of vector map <%s>.") %
+            vector)
         exitcode = 1
 
     sys.exit(exitcode)

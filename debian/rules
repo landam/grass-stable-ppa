@@ -79,6 +79,7 @@ override_dh_auto_configure: templates
                     --enable-socket \
                     --enable-shared \
                     --with-blas \
+                    --with-bzlib \
                     --with-cairo \
                     --with-cxx \
                     --with-freetype \
@@ -88,6 +89,8 @@ override_dh_auto_configure: templates
                     --with-lapack \
                     --with-liblas=/usr/bin/liblas-config \
                     --with-motif \
+                    --with-mysql \
+                    --with-mysql-includes=$(shell mysql_config --include | sed -e 's/-I//') \
                     --with-netcdf \
                     --with-nls \
                     --with-odbc \
@@ -206,6 +209,9 @@ install-arch-stamp:
 		fi ; \
 		mv "$$file" "$$dir" ; \
 	done < debian/grass-gui.image-file-in-usr-lib.list
+
+	# Remove empty files
+	find debian/tmp/ -type f -empty -name "class_graphical*" -print -delete
 
 	touch $@
 

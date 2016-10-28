@@ -14,6 +14,7 @@ from grass.pygrass.errors import GrassError, OpenError, must_be_open
 from grass.pygrass.vector.table import DBlinks, Link
 from grass.pygrass.vector.find import PointFinder, BboxFinder, PolygonFinder
 
+test_vector_name="abstract_doctest_map"
 
 def is_open(c_mapinfo):
     """Return if the Vector is open"""
@@ -30,51 +31,39 @@ class Info(object):
     """Basic vector info.
     To get access to the vector info the map must be opened. ::
 
-        >>> cens = Info('census')
-        >>> cens.open(mode='r')
+        >>> test_vect = Info(test_vector_name)
+        >>> test_vect.open(mode='r')
 
     Then it is possible to read and write the following map attributes: ::
 
-        >>> cens.organization
-        'NC OneMap'
-        >>> cens.person
-        'hmitaso'
-        >>> cens.title
-        'Wake County census blocks with attributes, clipped (polygon map)'
-        >>> cens.map_date
-        datetime.datetime(2007, 3, 19, 22, 1, 37)
-        >>> cens.date
-        ''
-        >>> cens.scale
+        >>> test_vect.organization
+        'Thuenen Institut'
+        >>> test_vect.person
+        'Soeren Gebbert'
+        >>> test_vect.title
+        'Test dataset'
+        >>> test_vect.scale
         1
-        >>> cens.comment
-        ''
-        >>> cens.comment = "One useful comment!"
-        >>> cens.comment
+        >>> test_vect.comment
+        'This is a comment'
+        >>> test_vect.comment = "One useful comment!"
+        >>> test_vect.comment
         'One useful comment!'
-        >>> cens.zone
-        0
-        >>> cens.proj
-        99
 
     There are some read only attributes: ::
 
-        >>> cens.full_name
-        'census@PERMANENT'
-        >>> cens.proj_name
-        'Lambert Conformal Conic'
-        >>> cens.maptype
+        >>> test_vect.maptype
         'native'
 
     And some basic methods: ::
 
-        >>> cens.is_3D()
+        >>> test_vect.is_3D()
         False
-        >>> cens.exist()
+        >>> test_vect.exist()
         True
-        >>> cens.is_open()
+        >>> test_vect.is_open()
         True
-        >>> cens.close()
+        >>> test_vect.close()
 
     """
     def __init__(self, name, mapset='', *aopen, **kwopen):
@@ -107,8 +96,6 @@ class Info(object):
         if not utils.is_clean_name(newname):
             str_err = _("Map name {0} not valid")
             raise ValueError(str_err.format(newname))
-        if self.exist():
-            self.rename(newname)
         self._name = newname
 
     name = property(fget=_get_name, fset=_set_name,
@@ -173,7 +160,10 @@ class Info(object):
     def _get_map_date(self):
         """Private method to obtain the Vector map date"""
         date_str = libvect.Vect_get_map_date(self.c_mapinfo)
-        return datetime.datetime.strptime(date_str, self.date_fmt)
+        try:
+            return datetime.datetime.strptime(date_str, self.date_fmt)
+        except:
+            return date_str
 
     def _set_map_date(self, datetimeobj):
         """Private method to change the Vector map date"""
@@ -362,18 +352,19 @@ class Info(object):
         if mode == 'w':
             openvect = libvect.Vect_open_new(self.c_mapinfo, self.name, with_z)
             self.dblinks = DBlinks(self.c_mapinfo)
-            if tab_cols:
-                # create a link
-                link = Link(layer,
-                            link_name if link_name else self.name,
-                            tab_name if tab_name else self.name,
-                            link_key, link_db, link_driver)
-                # add the new link
-                self.dblinks.add(link)
-                # create the table
-                table = link.table()
-                table.create(tab_cols)
-                table.conn.commit()
+
+        if mode in ('w', 'rw') and tab_cols:
+            # create a link
+            link = Link(layer,
+                        link_name if link_name else self.name,
+                        tab_name if tab_name else self.name,
+                        link_key, link_db, link_driver)
+            # add the new link
+            self.dblinks.add(link)
+            # create the table
+            table = link.table()
+            table.create(tab_cols)
+            table.conn.commit()
 
         # check the C function result.
         if openvect == -1:
@@ -388,13 +379,17 @@ class Info(object):
             self.layer = self.dblinks.by_layer(layer).layer
             self.table = self.dblinks.by_layer(layer).table()
             self.n_lines = self.table.n_rows()
-        self.writable = self.mapset == utils.getenv("MAPSET")
+        self.writeable =  self.mapset == utils.getenv("MAPSET")
+        # Initialize the finder
         self.find = {'by_point': PointFinder(self.c_mapinfo, self.table,
-                                             self.writable),
-                     'by_box': BboxFinder(self.c_mapinfo, self.table,
-                                          self.writable),
+                                             self.writeable),
+                     'by_bbox': BboxFinder(self.c_mapinfo, self.table,
+                                          self.writeable),
                      'by_polygon': PolygonFinder(self.c_mapinfo, self.table,
-                                                 self.writable), }
+                                                 self.writeable), }
+        self.find_by_point = self.find["by_point"]
+        self.find_by_bbox  = self.find["by_bbox"]
+        self.find_by_polygon = self.find["by_polygon"]
 
     def close(self, build=False):
         """Method to close the Vector
@@ -432,3 +427,9 @@ class Info(object):
             str_err = 'Error when trying build topology with Vect_build'
             raise GrassError(str_err)
         libvect.Vect_close(self.c_mapinfo)
+
+if __name__ == "__main__":
+    import doctest
+    from grass.pygrass import utils
+    utils.create_test_vector_map(test_vector_name)
+    doctest.testmod()

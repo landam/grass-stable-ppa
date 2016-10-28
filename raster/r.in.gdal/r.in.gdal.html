@@ -170,11 +170,15 @@ transformation is recommended, either before import with
 <b>gdalwarp -tps</b> or after import with <b>i.rectify -t</b>.
 
 
-<h3>Map names: Management of offset</h3>
+<h3>Map names: Management of offset and leading zeros</h3>
 
 The <b>offset</b> parameter allows adding an offset to band number(s) which
 is convenient in case of the import of e.g. a continuous time series split
 across different input files.
+<p>
+The <b>num_digits</b> parameter allows defining the number of  leading zeros
+(zero padding) in case of band numbers (e.g., to turn <tt>band.1</tt> into
+<tt>band.001</tt>).
 
 
 <h2>NOTES</h2>
@@ -297,38 +301,43 @@ of daily raster maps from 1st Jan 1950 (in case of importing the ECAD data
 split into multi-annual chunks). The ECAD data must be imported into a
 LatLong location.
 <p>
+By using the <em>num_digits</em> parameter leading zeros are added to the
+map name numbers, allowing for chronological numbering of the imported raster
+map layers, so that <em>g.list</em> lists them in the correct order.
+Here, use <em>num_digits=5</em> to have a 5 digit suffix with leading zeros (00001 - 99999).
+</p>
 
 <div class="code"><pre>
 # Import of ECAD data split into chunks
 # Import precipitation data
-r.in.gdal -o input=rr_0.25deg_reg_1950-1964_v12.0.nc output=precipitation offset=0
-r.in.gdal -o input=rr_0.25deg_reg_1965-1979_v12.0.nc output=precipitation offset=5479
-r.in.gdal -o input=rr_0.25deg_reg_1980-1994_v12.0.nc output=precipitation offset=10957
-r.in.gdal -o input=rr_0.25deg_reg_1995-2015_v12.0.nc output=precipitation offset=16436
+r.in.gdal -o input=rr_0.25deg_reg_1950-1964_v12.0.nc output=precipitation num_digits=5 offset=0
+r.in.gdal -o input=rr_0.25deg_reg_1965-1979_v12.0.nc output=precipitation num_digits=5 offset=5479
+r.in.gdal -o input=rr_0.25deg_reg_1980-1994_v12.0.nc output=precipitation num_digits=5 offset=10957
+r.in.gdal -o input=rr_0.25deg_reg_1995-2015_v12.0.nc output=precipitation num_digits=5 offset=16436
 
 # Import air pressure data
-r.in.gdal -o input=pp_0.25deg_reg_1950-1964_v12.0.nc output=air_pressure offset=0
-r.in.gdal -o input=pp_0.25deg_reg_1965-1979_v12.0.nc output=air_pressure offset=5479
-r.in.gdal -o input=pp_0.25deg_reg_1980-1994_v12.0.nc output=air_pressure offset=10957
-r.in.gdal -o input=pp_0.25deg_reg_1995-2015_v12.0.nc output=air_pressure offset=16436
+r.in.gdal -o input=pp_0.25deg_reg_1950-1964_v12.0.nc output=air_pressure num_digits=5 offset=0
+r.in.gdal -o input=pp_0.25deg_reg_1965-1979_v12.0.nc output=air_pressure num_digits=5 offset=5479
+r.in.gdal -o input=pp_0.25deg_reg_1980-1994_v12.0.nc output=air_pressure num_digits=5 offset=10957
+r.in.gdal -o input=pp_0.25deg_reg_1995-2015_v12.0.nc output=air_pressure num_digits=5 offset=16436
 
 # Import min temperature data
-r.in.gdal -o input=tn_0.25deg_reg_1950-1964_v12.0.nc output=temperatur_min offset=0
-r.in.gdal -o input=tn_0.25deg_reg_1965-1979_v12.0.nc output=temperatur_min offset=5479
-r.in.gdal -o input=tn_0.25deg_reg_1980-1994_v12.0.nc output=temperatur_min offset=10957
-r.in.gdal -o input=tn_0.25deg_reg_1995-2015_v12.0.nc output=temperatur_min offset=16436
+r.in.gdal -o input=tn_0.25deg_reg_1950-1964_v12.0.nc output=temperatur_min num_digits=5 offset=0
+r.in.gdal -o input=tn_0.25deg_reg_1965-1979_v12.0.nc output=temperatur_min num_digits=5 offset=5479
+r.in.gdal -o input=tn_0.25deg_reg_1980-1994_v12.0.nc output=temperatur_min num_digits=5 offset=10957
+r.in.gdal -o input=tn_0.25deg_reg_1995-2015_v12.0.nc output=temperatur_min num_digits=5 offset=16436
 
 # Import max temperature data
-r.in.gdal -o input=tx_0.25deg_reg_1950-1964_v12.0.nc output=temperatur_max offset=0
-r.in.gdal -o input=tx_0.25deg_reg_1965-1979_v12.0.nc output=temperatur_max offset=5479
-r.in.gdal -o input=tx_0.25deg_reg_1980-1994_v12.0.nc output=temperatur_max offset=10957
-r.in.gdal -o input=tx_0.25deg_reg_1995-2015_v12.0.nc output=temperatur_max offset=16436
+r.in.gdal -o input=tx_0.25deg_reg_1950-1964_v12.0.nc output=temperatur_max num_digits=5 offset=0
+r.in.gdal -o input=tx_0.25deg_reg_1965-1979_v12.0.nc output=temperatur_max num_digits=5 offset=5479
+r.in.gdal -o input=tx_0.25deg_reg_1980-1994_v12.0.nc output=temperatur_max num_digits=5 offset=10957
+r.in.gdal -o input=tx_0.25deg_reg_1995-2015_v12.0.nc output=temperatur_max num_digits=5 offset=16436
 
 # Import mean temperature data
-r.in.gdal -o input=tg_0.25deg_reg_1950-1964_v12.0.nc output=temperatur_mean offset=0
-r.in.gdal -o input=tg_0.25deg_reg_1965-1979_v12.0.nc output=temperatur_mean offset=5479
-r.in.gdal -o input=tg_0.25deg_reg_1980-1994_v12.0.nc output=temperatur_mean offset=10957
-r.in.gdal -o input=tg_0.25deg_reg_1995-2015_v12.0.nc output=temperatur_mean offset=16436
+r.in.gdal -o input=tg_0.25deg_reg_1950-1964_v12.0.nc output=temperatur_mean num_digits=5 offset=0
+r.in.gdal -o input=tg_0.25deg_reg_1965-1979_v12.0.nc output=temperatur_mean num_digits=5 offset=5479
+r.in.gdal -o input=tg_0.25deg_reg_1980-1994_v12.0.nc output=temperatur_mean num_digits=5 offset=10957
+r.in.gdal -o input=tg_0.25deg_reg_1995-2015_v12.0.nc output=temperatur_mean num_digits=5 offset=16436
 </pre></div>
 
 
@@ -412,4 +421,4 @@ GDAL Pages: <a href="http://www.gdal.org">http://www.gdal.org/</a><br>
  (<a href="mailto:warmerdam AT pobox dot com">email</a>).
 
 <p>
-<i>Last changed: $Date: 2016-09-15 15:32:42 +0200 (Thu, 15 Sep 2016) $</i>
+<i>Last changed: $Date: 2016-09-15 15:32:14 +0200 (Thu, 15 Sep 2016) $</i>

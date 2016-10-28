@@ -10,6 +10,7 @@
 #include <grass/raster3d.h>
 #include <grass/btree.h>
 #include <grass/glocale.h>
+#include <grass/calc.h>
 
 #include "mapcalc.h"
 #include "globals.h"
@@ -27,6 +28,7 @@ void setup_region(void)
     rows = current_region3.rows;
     columns = current_region3.cols;
     depths = current_region3.depths;
+    calc_init(columns);
 }
 
 /****************************************************************************/
@@ -525,7 +527,7 @@ void setup_maps(void)
      * avoid that several threads access a single map for reading
      * at the same time. The raster3d library is not thread safe.
      * */
-    putenv("WORKERS=1");
+    putenv("WORKERS=0");
 
     for (i = 0; i < num_maps; i++)
 	setup_map(&maps[i]);
@@ -573,6 +575,16 @@ void close_maps(void)
 	close_map(&maps[i]);
 
     num_maps = 0;
+}
+
+void list_maps(FILE *fp, const char *sep)
+{
+    int i;
+
+    for (i = 0; i < num_maps; i++) {
+        const struct map *m = &maps[i];
+        fprintf(fp, "%s%s@%s", i ? sep : "", m->name, m->mapset);
+    }
 }
 
 /****************************************************************************/

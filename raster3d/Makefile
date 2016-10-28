@@ -2,9 +2,12 @@ MODULE_TOPDIR = ..
 
 SUBDIRS = \
 	r3.cross.rast \
+	r3.flow \
+	r3.gradient \
 	r3.gwflow \
 	r3.in.ascii \
 	r3.in.bin \
+	r3.in.lidar \
 	r3.in.v5d \
 	r3.info \
 	r3.mask \

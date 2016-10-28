@@ -11,7 +11,7 @@
  *               OGR support by Martin Landa <landa.martin gmail.com>
  *               Markus Metz
  * PURPOSE:      
- * COPYRIGHT:    (C) 2003-2014 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2003-2016 by the GRASS Development Team
  *
  *               This program is free software under the GNU General
  *               Public License (>=v2). Read the file COPYING that
@@ -31,7 +31,7 @@
 
 #include "local.h"
 
-void copy_table(struct Map_info *, struct Map_info *, int, int);
+void copy_table(struct Map_info *, struct Map_info *, int, int, int);
 
 int main(int argc, char *argv[])
 {
@@ -50,6 +50,7 @@ int main(int argc, char *argv[])
     int verbose;
 
     struct field_info *Fi = NULL;
+    int table_type;
     char buf[DB_SQL_MAX];
     dbString stmt;
     dbString sql, value_string, col_defs;
@@ -161,6 +162,10 @@ int main(int argc, char *argv[])
 	i++;
     }
 
+    table_type = GV_1TABLE;
+    if ((ofield[0] > 0) + (ofield[1] > 0) + (ofield[2] > 0) > 1)
+	table_type = GV_MTABLE;
+
     if (operator_opt->answer[0] == 'a')
 	operator = OP_AND;
     else if (operator_opt->answer[0] == 'o')
@@ -223,7 +228,7 @@ int main(int argc, char *argv[])
 
     /* Create dblinks */
     if (ofield[0] > 0) {
-	Fi = Vect_default_field_info(&Out, ofield[0], NULL, GV_MTABLE);
+	Fi = Vect_default_field_info(&Out, ofield[0], NULL, table_type);
     }
 
     db_init_string(&sql);
@@ -622,11 +627,11 @@ int main(int argc, char *argv[])
 	/* TODO: copy only valid attributes */
 	/* copy attributes from ainput */
 	if (ofield[1] > 0 && field[0] > 0) {
-	    copy_table(&In[0], &Out, field[0], ofield[1]);
+	    copy_table(&In[0], &Out, field[0], ofield[1], table_type);
 	}
 	/* copy attributes from binput */
 	if (ofield[2] > 0 && field[1] > 0 && ofield[1] != ofield[2]) {
-	    copy_table(&In[1], &Out, field[1], ofield[2]);
+	    copy_table(&In[1], &Out, field[1], ofield[2], table_type);
 	}
     }
 
@@ -640,16 +645,19 @@ int main(int argc, char *argv[])
 }
 
 void copy_table(struct Map_info *In, struct Map_info *Out, int infield, 
-                int outfield)
+                int outfield, int table_type)
 {
     struct ilist *list;
     int findex;
     
-    list = Vect_new_list();
     findex = Vect_cidx_get_field_index(Out, outfield);
-    
+    if (findex < 0) 
+        return;
+
+    list = Vect_new_list();
     Vect_cidx_get_unique_cats_by_index(Out, findex, list);
-    Vect_copy_table_by_cats(In, Out, infield, outfield, NULL, GV_MTABLE, list->value, list->n_values);
+    Vect_copy_table_by_cats(In, Out, infield, outfield, NULL,
+                            table_type, list->value, list->n_values);
     
     Vect_destroy_list(list);
 }

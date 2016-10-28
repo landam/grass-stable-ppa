@@ -76,6 +76,9 @@ int main(int argc, char *argv[])
     flag_print->key = 'g';
     flag_print->label = _("Print only the number of clumps in shell script style");
 
+    G_option_exclusive(flag_print, opt_out, NULL);
+    G_option_required(flag_print, opt_out, NULL);
+
     /* parse options */
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);

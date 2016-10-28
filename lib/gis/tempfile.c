@@ -3,7 +3,7 @@
  *
  * \brief GIS Library - Temporary file functions.
  *
- * (C) 2001-2009 by the GRASS Development Team
+ * (C) 2001-2015 by the GRASS Development Team
  *
  * This program is free software under the GNU General Public License
  * (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -14,9 +14,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <stdlib.h>
+
 #include <grass/gis.h>
 
-#include "local_proto.h"
+#include "gis_local_proto.h"
 
 static struct Counter unique;
 static int initialized;
@@ -87,6 +89,8 @@ char *G_tempfile_pid(int pid)
     }
     while (access(path, F_OK) == 0);
 
+    G_debug(2, "G_tempfile_pid(): %s", path);
+    
     return G_store(path);
 }
 
@@ -97,6 +101,17 @@ char *G_tempfile_pid(int pid)
  */
 void G_temp_element(char *element)
 {
+    G__temp_element(element, FALSE);
+}
+
+/*!
+ * \brief Populates element with a path string (internal use only!)
+ *
+ * \param[out] element element name
+ * \param tmp TRUE to use G_make_mapset_element_tmp() instead of G_make_mapset_element()
+ */
+void G__temp_element(char *element, int tmp)
+{
     const char *machine;
 
     strcpy(element, ".tmp");
@@ -105,5 +120,11 @@ void G_temp_element(char *element)
 	strcat(element, "/");
 	strcat(element, machine);
     }
-    G_make_mapset_element(element);
+    
+    if (!tmp)
+        G_make_mapset_element(element);
+    else
+        G_make_mapset_element_tmp(element);
+    
+    G_debug(2, "G__temp_element(): %s (tmp=%d)", element, tmp);
 }

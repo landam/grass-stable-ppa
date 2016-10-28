@@ -10,7 +10,7 @@ Forwarded: not-needed
 
 --- a/lib/init/grass.py
 +++ b/lib/init/grass.py
-@@ -440,10 +440,12 @@ def find_exe(pgm):
+@@ -636,10 +636,12 @@ def find_exe(pgm):
  def set_defaults():
      # GRASS_PAGER
      if not os.getenv('GRASS_PAGER'):

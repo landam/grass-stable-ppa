@@ -17,16 +17,16 @@ for details.
 
 :authors: Soeren Gebbert
 """
-
-from space_time_datasets import *
-from factory import *
-from open_stds import *
+from __future__ import print_function
+from .space_time_datasets import *
+from .factory import *
+from .open_stds import *
 
 ###############################################################################
 
 
 def get_dataset_list(type, temporal_type, columns=None, where=None,
-                     order=None):
+                     order=None, dbif=None):
     """ Return a list of time stamped maps or space time datasets of a specific
         temporal type that are registred in the temporal database
 
@@ -41,6 +41,7 @@ def get_dataset_list(type, temporal_type, columns=None, where=None,
         :param where: A where statement for selected listing without "WHERE"
         :param order: A comma separated list of columns to order the
                       datasets by category
+        :param dbif: The database interface to be used
 
         :return: A dictionary with the rows of the SQL query for each
                  available mapset
@@ -51,21 +52,19 @@ def get_dataset_list(type, temporal_type, columns=None, where=None,
             >>> tgis.init()
             >>> name = "list_stds_test"
             >>> sp = tgis.open_new_stds(name=name, type="strds",
-            ... temporaltype="absolute", title="title", descr="descr",
-            ... semantic="mean", dbif=None, overwrite=True)
+            ... temporaltype="absolute", title="title", descr="descr", semantic="mean", dbif=None, overwrite=True)
             >>> mapset = tgis.get_current_mapset()
             >>> stds_list = tgis.get_dataset_list("strds", "absolute", columns="name")
             >>> rows =  stds_list[mapset]
             >>> for row in rows:
             ...     if row["name"] == name:
-            ...         print True
+            ...         print(True)
             True
-            >>> stds_list = tgis.get_dataset_list("strds", "absolute",
-            ... columns="name,mapset", where="mapset = '%s'"%(mapset))
+            >>> stds_list = tgis.get_dataset_list("strds", "absolute", columns="name,mapset", where="mapset = '%s'"%(mapset))
             >>> rows =  stds_list[mapset]
             >>> for row in rows:
             ...     if row["name"] == name and row["mapset"] == mapset:
-            ...         print True
+            ...         print(True)
             True
             >>> check = sp.delete()
 
@@ -73,8 +72,7 @@ def get_dataset_list(type, temporal_type, columns=None, where=None,
     id = None
     sp = dataset_factory(type, id)
 
-    dbif = SQLDatabaseInterfaceConnection()
-    dbif.connect()
+    dbif, connected = init_dbif(dbif)
 
     mapsets = get_available_temporal_mapsets()
 
@@ -107,13 +105,16 @@ def get_dataset_list(type, temporal_type, columns=None, where=None,
         if rows:
             result[mapset] = rows
 
+    if connected:
+        dbif.close()
+
     return result
 
 ###############################################################################
 
 
 def list_maps_of_stds(type, input, columns, order, where, separator,
-                      method, no_header=False, gran=None,
+                      method, no_header=False, gran=None, dbif=None,
                       outpath=None):
     """ List the maps of a space time dataset using different methods
 
@@ -127,6 +128,7 @@ def list_maps_of_stds(type, input, columns, order, where, separator,
         :param separator: The field separator character between the columns
         :param method: String identifier to select a method out of cols,
                        comma,delta or deltagaps
+        :param dbif: The database interface to be used
 
             - "cols" Print preselected columns specified by columns
             - "comma" Print the map ids ("name@mapset") as comma separated string
@@ -145,7 +147,7 @@ def list_maps_of_stds(type, input, columns, order, where, separator,
         :param outpath: The path to file where to save output
     """
 
-    dbif, connected = init_dbif(None)
+    dbif, connected = init_dbif(dbif)
     msgr = get_tgis_message_interface()
 
     sp = open_old_stds(input, type, dbif)
@@ -190,7 +192,7 @@ def list_maps_of_stds(type, input, columns, order, where, separator,
             if outpath:
                 outfile.write('{st}\n'.format(st=string))
             else:
-                print string
+                print(string)
 
         if maps and len(maps) > 0:
 
@@ -238,7 +240,7 @@ def list_maps_of_stds(type, input, columns, order, where, separator,
                 if outpath:
                     outfile.write('{st}\n'.format(st=string))
                 else:
-                    print string
+                    print(string)
 
     else:
         # In comma separated mode only map ids are needed
@@ -260,7 +262,7 @@ def list_maps_of_stds(type, input, columns, order, where, separator,
                 if outpath:
                     outfile.write('{st}\n'.format(st=string))
                 else:
-                    print string
+                    print(string)
 
             elif method == "cols":
                 # Print the column names if requested
@@ -279,7 +281,7 @@ def list_maps_of_stds(type, input, columns, order, where, separator,
                     if outpath:
                         outfile.write('{st}\n'.format(st=output))
                     else:
-                        print output
+                        print(output)
 
                 for row in rows:
                     output = ""
@@ -293,7 +295,7 @@ def list_maps_of_stds(type, input, columns, order, where, separator,
                     if outpath:
                         outfile.write('{st}\n'.format(st=output))
                     else:
-                        print output
+                        print(output)
     if outpath:
         outfile.close()
     if connected:

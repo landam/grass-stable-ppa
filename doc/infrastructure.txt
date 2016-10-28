@@ -1,7 +1,7 @@
 How the GRASS Webserver and related infrastructure works
 
 written by M. Neteler
-Last changed: $Date: 2016-06-02 01:11:23 +0200 (Thu, 02 Jun 2016) $
+Last changed: $Date: 2016-09-12 00:27:05 +0200 (Mon, 12 Sep 2016) $
 
 
 Related Wiki documents:
@@ -151,6 +151,12 @@ Maintainer: OSGeo-SAC, http://wiki.osgeo.org/wiki/SAC
 Wiki Macro definitions for manual pages G7:modulename
 * https://trac.osgeo.org/grass/wiki/InterMapTxt
 
+ZIP file download support in trac (needed for g.extension) - on trac.osgeo.org:
+/var/www/trac/grass/conf/trac.ini
+[browser]
+downloadable_paths = /grass-addons/grass7/*/*,/sandbox/*/*
+
+
 == GRASS Bugtracker ==
 
 Current bugtracker (Jan 2008 - today):
@@ -175,10 +181,11 @@ Very old bugtracker (Dec 2000 - Dec 2006):
 
 Maintainer: Martin Landa
 
-Note: Only checking trunk
-
 * https://travis-ci.org/GRASS-GIS
 * https://github.com/GRASS-GIS/grass-ci
+
+Coverity Scan:
+* https://scan.coverity.com/projects/grass?tab=overview
 
 == OLD: GRASS Quality Control ==
 

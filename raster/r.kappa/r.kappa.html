@@ -48,6 +48,14 @@ information for each and every category.
 
 <H2>EXAMPLE</H2>
 
+Example for North Carolina sample dataset:
+
+<div class="code"><pre>
+g.region raster=landclass96 -p
+r.kappa -w classification=landuse96_28m reference=landclass96
+</pre></div>
+<p>
+
 Verification of classified LANDSAT scene against training areas:
 
 <div class="code"><pre>
@@ -69,4 +77,4 @@ r.kappa -w classification=lsat7_2002_classes reference=training
 Tao Wen, University of Illinois at Urbana-Champaign, Illinois
 
 <p>
-<i>Last changed: $Date: 2012-12-16 13:56:26 +0100 (Sun, 16 Dec 2012) $</i>
+<i>Last changed: $Date: 2014-12-19 22:17:36 +0100 (Fri, 19 Dec 2014) $</i>

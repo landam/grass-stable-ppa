@@ -3,12 +3,13 @@ Functions to use GRASS 2D and 3D rasters with NumPy.
 
 Usage:
 
->>> import grass.script as grass
+>>> from __future__ import print_function
+>>> import grass.script as gscript
 >>> from grass.script import array as garray
 >>>
 >>> # We create a temporary region that is only valid in this python session
-... grass.use_temp_region()
->>> grass.run_command("g.region", n=80, e=120, t=60, s=0, w=0, b=0, res=20, res3=20)
+... gscript.use_temp_region()
+>>> gscript.run_command("g.region", n=80, e=120, t=60, s=0, w=0, b=0, res=20, res3=20)
 0
 >>>
 >>> # Lets create a raster map numpy array
@@ -21,7 +22,7 @@ Usage:
 ...         map2d_1[y,x] = y + x
 ...
 >>> # Lets have a look at the array
-... print map2d_1
+... print(map2d_1)
 [[ 0.  1.  2.  3.  4.  5.]
  [ 1.  2.  3.  4.  5.  6.]
  [ 2.  3.  4.  5.  6.  7.]
@@ -31,15 +32,13 @@ Usage:
 ... map2d_1.write(mapname="map2d_1", overwrite=True)
 0
 >>>
->>> # We create a new array and read map2d_1 to modify it
-... map2d_2 = garray.array()
+>>> # We create a new array from raster map2d_1 to modify it
+... map2d_2 = garray.array(mapname="map2d_1")
 >>> # Don't do map2d_2 = map2d_1 % 3
 ... # because: this will overwrite the internal temporary filename
-... map2d_2.read("map2d_1")
-0
->>> map2d_2 %= 3
+... map2d_2 %= 3
 >>> # Show the result
-... print map2d_2
+... print(map2d_2)
 [[ 0.  1.  2.  0.  1.  2.]
  [ 1.  2.  0.  1.  2.  0.]
  [ 2.  0.  1.  2.  0.  1.]
@@ -60,7 +59,7 @@ Usage:
 ...             map3d_1[z,y,x] = z + y + x
 ...
 >>> # Lets have a look at the 3D array
-... print map3d_1
+... print(map3d_1)
 [[[  0.   1.   2.   3.   4.   5.]
   [  1.   2.   3.   4.   5.   6.]
   [  2.   3.   4.   5.   6.   7.]
@@ -79,15 +78,13 @@ Usage:
 ... # with name map3d_1
 ... map3d_1.write(mapname="map3d_1", overwrite=True)
 0
->>> # We create a new 3D array and read map3d_1 to modify it
-... map3d_2 = garray.array3d()
+>>> # We create a new 3D array from 3D raster map3d_1 to modify it
+... map3d_2 = garray.array3d(mapname="map3d_1")
 >>> # Don't do map3d_2 = map3d_1 % 3
 ... # because: this will overwrite the internal temporary filename
-... map3d_2.read("map3d_1")
-0
->>> map3d_2 %= 3
+... map3d_2 %= 3
 >>> # Show the result
-... print map3d_2
+... print(map3d_2)
 [[[ 0.  1.  2.  0.  1.  2.]
   [ 1.  2.  0.  1.  2.  0.]
   [ 2.  0.  1.  2.  0.  1.]
@@ -114,11 +111,13 @@ for details.
 .. sectionauthor:: Glynn Clements
 """
 
-import os
+from __future__ import absolute_import
+import sys
+
 import numpy
 
-from utils import try_remove
-import core as grass
+from .utils import try_remove
+from . import core as gcore
 from grass.exceptions import CalledModuleError
 
 
@@ -126,7 +125,7 @@ from grass.exceptions import CalledModuleError
 
 class _tempfile(object):
     def __init__(self):
-        self.filename = grass.tempfile()
+        self.filename = gcore.tempfile()
 
     def __del__(self):
         try_remove(self.filename)
@@ -134,24 +133,47 @@ class _tempfile(object):
 ###############################################################################
 
 class array(numpy.memmap):
-    def __new__(cls, dtype=numpy.double):
+    def __new__(cls, mapname=None, null=None, dtype=numpy.double):
         """Define new numpy array
 
         :param cls:
         :param dtype: data type (default: numpy.double)
         """
-        reg = grass.region()
+        reg = gcore.region()
         r = reg['rows']
         c = reg['cols']
         shape = (r, c)
 
         tempfile = _tempfile()
+        if mapname:
+            kind = numpy.dtype(dtype).kind
+            size = numpy.dtype(dtype).itemsize
+
+            if kind == 'f':
+                flags = 'f'
+            elif kind in 'biu':
+                flags = 'i'
+            else:
+                raise ValueError(_('Invalid kind <%s>') % kind)
+
+            if size not in [1, 2, 4, 8]:
+                raise ValueError(_('Invalid size <%d>') % size)
+
+            gcore.run_command(
+                'r.out.bin',
+                flags=flags,
+                input=mapname,
+                output=tempfile.filename,
+                bytes=size,
+                null=null,
+                quiet=True,
+                overwrite=True)
 
         self = numpy.memmap.__new__(
             cls,
             filename=tempfile.filename,
             dtype=dtype,
-            mode='w+',
+            mode='r+',
             shape=shape)
 
         self.tempfile = tempfile
@@ -166,7 +188,14 @@ class array(numpy.memmap):
 
         :return: 0 on success
         :return: non-zero code on failure
+
+        .. deprecated:: 7.1
+        Instead reading the map after creating the array,
+        pass the map name in the array constructor.
         """
+        if sys.platform == 'win32':
+            gcore.warning(_("grass.script.array.read is deprecated and does not"
+                            " work on MS Windows, pass raster name in the constructor"))
         kind = self.dtype.kind
         size = self.dtype.itemsize
 
@@ -181,7 +210,7 @@ class array(numpy.memmap):
             raise ValueError(_('Invalid size <%d>') % size)
 
         try:
-            grass.run_command(
+            gcore.run_command(
                 'r.out.bin',
                 flags=flags,
                 input=mapname,
@@ -224,10 +253,10 @@ class array(numpy.memmap):
         else:
             raise ValueError(_('Invalid kind <%s>') % kind)
 
-        reg = grass.region()
+        reg = gcore.region()
 
         try:
-            grass.run_command(
+            gcore.run_command(
                 'r.in.bin',
                 flags=flags,
                 input=self.filename,
@@ -251,25 +280,48 @@ class array(numpy.memmap):
 
 
 class array3d(numpy.memmap):
-    def __new__(cls, dtype=numpy.double):
+    def __new__(cls, mapname=None, null=None, dtype=numpy.double):
         """Define new 3d numpy array
 
         :param cls:
         :param dtype: data type (default: numpy.double)
         """
-        reg = grass.region(True)
+        reg = gcore.region(True)
         r = reg['rows3']
         c = reg['cols3']
         d = reg['depths']
         shape = (d, r, c)
 
         tempfile = _tempfile()
+        if mapname:
+            kind = numpy.dtype(dtype).kind
+            size = numpy.dtype(dtype).itemsize
+    
+            if kind == 'f':
+                flags = None # default is double
+            elif kind in 'biu':
+                flags = 'i'
+            else:
+                raise ValueError(_('Invalid kind <%s>') % kind)
+
+            if size not in [1, 2, 4, 8]:
+                raise ValueError(_('Invalid size <%d>') % size)
+
+            gcore.run_command(
+                'r3.out.bin',
+                flags=flags,
+                input=mapname,
+                output=tempfile.filename,
+                bytes=size,
+                null=null,
+                quiet=True,
+                overwrite=True)
 
         self = numpy.memmap.__new__(
             cls,
             filename=tempfile.filename,
             dtype=dtype,
-            mode='w+',
+            mode='r+',
             shape=shape)
 
         self.tempfile = tempfile
@@ -285,7 +337,14 @@ class array3d(numpy.memmap):
 
         :return: 0 on success
         :return: non-zero code on failure
+
+        .. deprecated:: 7.1
+        Instead reading the map after creating the array,
+        pass the map name in the array constructor.
         """
+        if sys.platform == 'win32':
+            gcore.warning(_("grass.script.array3d.read is deprecated and does not"
+                            " work on MS Windows, pass 3D raster name in the constructor"))
         kind = self.dtype.kind
         size = self.dtype.itemsize
 
@@ -300,7 +359,7 @@ class array3d(numpy.memmap):
             raise ValueError(_('Invalid size <%d>') % size)
 
         try:
-            grass.run_command(
+            gcore.run_command(
                 'r3.out.bin',
                 flags=flags,
                 input=mapname,
@@ -338,10 +397,10 @@ class array3d(numpy.memmap):
         else:
             raise ValueError(_('Invalid kind <%s>') % kind)
 
-        reg = grass.region(True)
+        reg = gcore.region(True)
 
         try:
-            grass.run_command(
+            gcore.run_command(
                 'r3.in.bin',
                 flags=flags,
                 input=self.filename,

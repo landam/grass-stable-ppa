@@ -21,6 +21,11 @@ void Indep(void)
 	G_debug(3, "(CellCount):%d", CellCount);
 	G_debug(3, "(Count):%d", Count);
 
+        if (Found >= MaxCellsNum) {
+            G_debug(1, "Hit maximum number of cells");
+            break;
+        }
+
 	DRow = DoNext[Count].R;
 	DCol = DoNext[Count++].C;
 
@@ -137,6 +142,8 @@ void Indep(void)
 	G_percent(R, Rs, 2);
 	for (C = 0; C < Cs; C++) {
 	    CellBuffer[C] = Out[R][C];
+	    if(CellBuffer[C] == 0)
+		Rast_set_null_value(&CellBuffer[C], 1, CELL_TYPE);
 	}
 	Rast_put_row(OutFD, CellBuffer, CELL_TYPE);
     }

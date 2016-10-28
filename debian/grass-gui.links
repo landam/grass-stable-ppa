@@ -1,8 +1,8 @@
 #!/bin/sh
 
 cat <<DIRS
-usr/share/grass70/gui/icons  usr/lib/grass70/gui/icons
-usr/share/grass70/gui/images usr/lib/grass70/gui/images
+usr/share/grass72/gui/icons  usr/lib/grass72/gui/icons
+usr/share/grass72/gui/images usr/lib/grass72/gui/images
 DIRS
 
 if [ -e debian/grass-gui.image-file-in-usr-lib.list ]; then \

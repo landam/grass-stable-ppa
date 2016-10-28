@@ -2,6 +2,7 @@ MODULE_TOPDIR = ..
 
 SUBDIRS = \
 	d.correlate \
+	d.frame \
 	d.out.file \
 	d.to.rast \
 	d.polar \
@@ -34,7 +35,7 @@ SUBDIRS = \
 	r.colors.stddev \
 	r.fillnulls \
 	r.grow \
-	r.import \
+    r.import \
 	r.in.aster \
 	r.in.srtm \
 	r.in.wms \
@@ -74,8 +75,7 @@ SUBDIRS = \
 	v.unpack \
 	v.what.strds \
 	v.what.vect \
-	wxpyimgview \
-	v.krige
+	wxpyimgview
 
 include $(MODULE_TOPDIR)/include/Make/Dir.make
 

@@ -18,9 +18,9 @@ for details.
 .. sectionauthor:: Glynn Clements
 .. sectionauthor:: Martin Landa <landa.martin gmail.com>
 """
-
-from core import *
-from utils import try_remove
+from __future__ import absolute_import
+from .core import *
+from .utils import try_remove
 from grass.exceptions import CalledModuleError
 
 
@@ -114,7 +114,7 @@ def db_connection(force=False):
     if not conn and force:
         run_command('db.connect', flags='c')
         conn = parse_command('db.connect', flags='g')
-    
+
     return conn
 
 def db_select(sql=None, filename=None, table=None, **args):
@@ -163,8 +163,7 @@ def db_select(sql=None, filename=None, table=None, **args):
         fatal(_("Fetching data failed"))
 
     ofile = open(fname)
-    result = map(lambda x: tuple(x.rstrip(os.linesep).split(args['sep'])),
-                 ofile.readlines())
+    result = [tuple(x.rstrip(os.linesep).split(args['sep'])) for x in ofile.readlines()]
     ofile.close()
     try_remove(fname)
 
@@ -185,12 +184,12 @@ def db_table_in_vector(table):
 
     :param str table: name of table to query
     """
-    from vector import vector_db
+    from .vector import vector_db
     nuldev = file(os.devnull, 'w')
     used = []
     vects = list_strings('vect')
     for vect in vects:
-        for f in vector_db(vect, stderr=nuldev).itervalues():
+        for f in vector_db(vect, stderr=nuldev).values():
             if not f:
                 continue
             if f['table'] == table:

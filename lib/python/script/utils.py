@@ -7,7 +7,7 @@ Usage:
 
     from grass.script import utils as gutils
 
-(C) 2014 by the GRASS Development Team
+(C) 2014-2016 by the GRASS Development Team
 This program is free software under the GNU General Public
 License (>=v2). Read the file COPYING that comes with GRASS
 for details.
@@ -18,10 +18,11 @@ for details.
 """
 
 import os
+import sys
 import shutil
 import locale
+import shlex
 import re
-
 
 def float_or_dms(s):
     """Convert DMS to float.
@@ -149,30 +150,31 @@ class KeyValue(dict):
         self[key] = value
 
 
-def decode(string):
-    """Decode string with defualt locale
+def decode(bytes_):
+    """Decode bytes with default locale and return (unicode) string
 
-    :param str string: the string to decode
+    No-op if parameter is not bytes (assumed unicode string).
+
+    :param bytes bytes_: the bytes to decode
     """
-    enc = locale.getdefaultlocale()[1]
-    if enc:
-        if hasattr(string, 'decode'):
-            return string.decode(enc)
-
-    return string
+    if isinstance(bytes_, bytes):
+        enc = locale.getdefaultlocale()[1]
+        return bytes_.decode(enc) if enc else bytes_.decode()
+    return bytes_
 
 
 def encode(string):
-    """Encode string with defualt locale
+    """Encode string with default locale and return bytes with that encoding
+
+    No-op if parameter is bytes (assumed already encoded).
+    This ensures garbage in, garbage out.
 
     :param str string: the string to encode
     """
+    if isinstance(string, bytes):
+        return string
     enc = locale.getdefaultlocale()[1]
-    if enc:
-        if hasattr(string, 'encode'):
-            return string.encode(enc)
-
-    return string
+    return string.encode(enc) if enc else string.encode()
 
 
 def parse_key_val(s, sep='=', dflt=None, val_type=None, vsep=None):
@@ -243,6 +245,16 @@ def get_num_suffix(number, max_number):
     return '{number:0{width}d}'.format(width=len(str(max_number)),
                                        number=number)
 
+def split(s):
+    """!Platform specific shlex.split"""
+    if sys.version_info >= (2, 6):
+        return shlex.split(s, posix = (sys.platform != "win32"))
+    elif sys.platform == "win32":
+        return shlex.split(s.replace('\\', r'\\'))
+    else:
+        return shlex.split(s)
+
+
 # source:
 #    http://stackoverflow.com/questions/4836710/
 #    does-python-have-a-built-in-function-for-string-natural-sort/4836734#4836734
@@ -252,3 +264,118 @@ def natural_sort(l):
     convert = lambda text: int(text) if text.isdigit() else text.lower()
     alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
     return sorted(l, key=alphanum_key)
+
+
+def get_lib_path(modname, libname=None):
+    """Return the path of the libname contained in the module.
+    """
+    from os.path import isdir, join, sep
+    from os import getenv
+
+    if isdir(join(getenv('GISBASE'), 'etc', modname)):
+        path = join(os.getenv('GISBASE'), 'etc', modname)
+    elif getenv('GRASS_ADDON_BASE') and libname and \
+            isdir(join(getenv('GRASS_ADDON_BASE'), 'etc', modname, libname)):
+        path = join(getenv('GRASS_ADDON_BASE'), 'etc', modname)
+    elif getenv('GRASS_ADDON_BASE') and \
+            isdir(join(getenv('GRASS_ADDON_BASE'), 'etc', modname)):
+        path = join(getenv('GRASS_ADDON_BASE'), 'etc', modname)
+    elif getenv('GRASS_ADDON_BASE') and \
+            isdir(join(getenv('GRASS_ADDON_BASE'), modname, modname)):
+        path = join(os.getenv('GRASS_ADDON_BASE'), modname, modname)
+    else:
+        # used by g.extension compilation process
+        cwd = os.getcwd()
+        idx = cwd.find(modname)
+        if idx < 0:
+            return None
+        path = '{cwd}{sep}etc{sep}{modname}'.format(cwd=cwd[:idx+len(modname)],
+                                                    sep=sep,
+                                                    modname=modname)
+        if libname:
+            path += '{pathsep}{cwd}{sep}etc{sep}{modname}{sep}{libname}'.format(
+                cwd=cwd[:idx+len(modname)],
+                sep=sep,
+                modname=modname, libname=libname,
+                pathsep=os.pathsep
+            )
+
+    return path
+
+
+def set_path(modulename, dirname=None, path='.'):
+    """Set sys.path looking in the the local directory GRASS directories.
+
+    :param modulename: string with the name of the GRASS module
+    :param dirname: string with the directory name containing the python
+                    libraries, default None
+    :param path: string with the path to reach the dirname locally.
+
+    Example
+    --------
+
+    "set_path" example working locally with the source code of a module
+    (r.green) calling the function with all the parameters. Below it is
+    reported the directory structure on the r.green module.
+
+    ::
+
+        grass_prompt> pwd
+        ~/Download/r.green/r.green.hydro/r.green.hydro.financial
+
+        grass_prompt> tree ../../../r.green
+        ../../../r.green
+        |-- ...
+        |-- libgreen
+        |   |-- pyfile1.py
+        |   +-- pyfile2.py
+        +-- r.green.hydro
+           |-- Makefile
+           |-- libhydro
+           |   |-- pyfile1.py
+           |   +-- pyfile2.py
+           |-- r.green.hydro.*
+           +-- r.green.hydro.financial
+               |-- Makefile
+               |-- ...
+               +-- r.green.hydro.financial.py
+
+        21 directories, 125 files
+
+    in the source code the function is called with the following parameters: ::
+
+        set_path('r.green', 'libhydro', '..')
+        set_path('r.green', 'libgreen', os.path.join('..', '..'))
+
+    when we are executing the module: r.green.hydro.financial locally from
+    the command line:  ::
+
+        grass_prompt> python r.green.hydro.financial.py --ui
+
+    In this way we are executing the local code even if the module was already
+    installed as grass-addons and it is available in GRASS standards path.
+
+    The function is cheching if the dirname is provided and if the
+    directory exists and it is available using the path
+    provided as third parameter, if yes add the path to sys.path to be
+    importable, otherwise it will check on GRASS GIS standard paths.
+
+    """
+    import sys
+    # TODO: why dirname is checked first - the logic should be revised
+    pathlib = None
+    if dirname:
+        pathlib = os.path.join(path, dirname)
+    if pathlib and os.path.exists(pathlib):
+        # we are running the script from the script directory, therefore
+        # we add the path to sys.path to reach the directory (dirname)
+        sys.path.append(os.path.abspath(path))
+    else:
+        # running from GRASS GIS session
+        path = get_lib_path(modulename, dirname)
+        if path is None:
+            pathname = os.path.join(modulename, dirname) if dirname else modulename
+            raise ImportError("Not able to find the path '%s' directory "
+                              "(current dir '%s')." % (pathname, os.getcwd()))
+
+        sys.path.insert(0, path)

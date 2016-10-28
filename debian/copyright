@@ -6,20 +6,26 @@ Source: http://grass.osgeo.org/
 Files: *
 Copyright:   1989-2016, GRASS Development Team
              2003-2016, Markus Neteler
+       2013, 2015-2016, Vaclav Petras
+             2014-2016, Tereza Fiedlerova
+                  2016, Adam Laza
+             2006-2015, Martin Landa
+             2011-2015, Markus Metz
        2012, 2014-2015, Luca Delucchi
+             2014-2015, Matej Krejci
+                  2015, Anna Petrasova
                   2015, Jachym Ceppicky
+                  2015, pietro
+                  2015, Stephanie Wendel
              1993-2014, James Darrell McCauley <darrell@mccauley-usa.com>
              2003-2014, Glynn Clements
              2003-2014, Per Henrik Johansen
              2006-2014, Hamish Bowman
-             2006-2014, Martin Landa
              2007-2014, Lars Ahlzen
              2011-2014, Soeren Gebbert
              2011-2013, Anna Kratochvilova
                   2013, GKX Associates Inc.
-                  2013, Vaclav Petras
        2009-2010, 2012, Daniel Bundala
-             2011-2012, Markus Metz
                   2012, Eric Momsen
                   2012, Stepan Turek
              2001-2011, Frank Warmerdam
@@ -74,7 +80,12 @@ Files: lib/external/shapelib/dbfopen.c
  lib/external/shapelib/shpopen.c
  raster/r.external/list.c
 Copyright: 1999, 2001, 2007, Frank Warmerdam
-License: MIT or LGPL-2+
+License: Expat or LGPL-2+
+
+Files: lib/gis/lz4.c
+ lib/gis/lz4.h
+Copyright: 2011-2015, Yann Collet
+License: BSD-2-Clause
 
 Files: lib/python/imaging/images2avi.py
  lib/python/imaging/images2ims.py
@@ -96,6 +107,11 @@ License: LGPL-2.1+
 Files: lib/python/imaging/images2gif.py
 Copyright: 2012, Almar Klein, Ant1, Marius van Voorden
 License: BSD-3-Clause
+
+Files: man/jquery.fixedheadertable.min.js
+ man/parser_standard_options.css
+Copyright: 2011, 2013, Mark Malek
+License: Expat
 
 Files: raster3d/r3.in.v5d/binio.c
  raster3d/r3.in.v5d/binio.h
@@ -140,7 +156,7 @@ Files: vector/v.lrs/lib/lrs.c
  vector/v.lrs/v.lrs.segment/main.c
  vector/v.lrs/v.lrs.where/main.c
 Copyright: 2004-2007, Radim Blazek <blazek@itc.it>
-License: MIT
+License: Expat
 
 Files: vector/v.hull/chull.c
 Copyright: 1998, Joseph O'Rourke. It may be freely
@@ -224,6 +240,30 @@ License: LGPL-2.1+
  License version 2.1 can be found in the file
  `/usr/share/common-licenses/LGPL-2.1'.
 
+License: BSD-2-Clause
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are
+ met:
+ .
+ * Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+ .
+ * Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 License: BSD-3-Clause
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
@@ -251,7 +291,7 @@ License: BSD-3-Clause
  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  POSSIBILITY OF SUCH DAMAGE.
 
-License: MIT
+License: Expat
  Permission is hereby granted, free of charge, to any person obtaining a
  copy of this software and associated documentation files (the "Software"),
  to deal in the Software without restriction, including without limitation

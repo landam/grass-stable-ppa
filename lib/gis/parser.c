@@ -64,7 +64,9 @@
  *    that the "map" option is required and also that the number 12 is
  *    out of range.  The acceptable range (or list) will be printed.
  *
- * (C) 2001-2014 by the GRASS Development Team
+ * Overview table: <a href="parser_standard_options.html">Parser standard options</a>
+ * 
+ * (C) 2001-2015 by the GRASS Development Team
  *
  * This program is free software under the GNU General Public License
  * (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -319,6 +321,7 @@ int G_parser(int argc, char **argv)
 {
     int need_first_opt;
     int opt_checked = 0;
+    const char *gui_envvar;
     char *ptr, *tmp_name, *err;
     int i;
     struct Option *opt;
@@ -431,9 +434,10 @@ int G_parser(int argc, char **argv)
     }
 
     /* If there are NO arguments, go interactive */
-
+    gui_envvar = G_getenv_nofatal("GUI");
     if (argc < 2 && (st->has_required || G__has_required_rule())
-        && !st->no_interactive && isatty(0)) {
+        && !st->no_interactive && isatty(0) &&
+        (gui_envvar && G_strcasecmp(gui_envvar, "text") != 0)) {
 	if (module_gui_wx() == 0)
             return -1;
     }
@@ -537,6 +541,21 @@ int G_parser(int argc, char **argv)
 		st->quiet = 1;	/* for passing to gui init */
 	    }
 
+            /* Super quiet option */
+            else if (strcmp(ptr, "--qq") == 0 ) {
+                char buff[32];
+
+                /* print nothing, but errors  */
+                st->module_info.verbose = G_verbose_min();
+                sprintf(buff, "GRASS_VERBOSE=%d", G_verbose_min());
+                putenv(G_store(buff));
+                G_suppress_warnings(TRUE);
+                if (st->quiet == -1) {
+                    G_warning(_("Use either --qq or --verbose flag, not both. Assuming --qq."));
+                }
+                st->quiet = 1;  /* for passing to gui init */
+            }
+
 	    /* Force gui to come up */
 	    else if (strcmp(ptr, "--ui") == 0) {
 		force_gui = TRUE;
@@ -617,9 +636,11 @@ int G_parser(int argc, char **argv)
  * Creates a command-line that runs the current command completely
  * non-interactive.
  *
+ * \param original_path TRUE if original path should be used, FALSE for
+ *  stripped and clean name of the module
  * \return pointer to a char string
  */
-char *G_recreate_command(void)
+char *recreate_command(int original_path)
 {
     char *buff;
     char flg[4];
@@ -636,7 +657,10 @@ char *G_recreate_command(void)
 
     buff = G_calloc(1024, sizeof(char));
     nalloced += 1024;
-    tmp = G_program_name();
+    if (original_path)
+        tmp = G_original_program_name();
+    else
+        tmp = G_program_name();
     len = strlen(tmp);
     if (len >= nalloced) {
 	nalloced += (1024 > len) ? 1024 : len + 1;
@@ -699,7 +723,25 @@ char *G_recreate_command(void)
 
     opt = &st->first_option;
     while (st->n_opts && opt) {
-	if (opt->answer && opt->answers && opt->answers[0]) {
+	if (opt->answer && opt->answer[0] == '\0') {	/* answer = "" */
+	    slen = strlen(opt->key) + 4;	/* +4 for: ' ' = " " */
+	    if (len + slen >= nalloced) {
+		nalloced += (nalloced + 1024 > len + slen) ? 1024 : slen + 1;
+		buff = G_realloc(buff, nalloced);
+		cur = buff + len;
+	    }
+	    strcpy(cur, " ");
+	    cur++;
+	    strcpy(cur, opt->key);
+	    cur = strchr(cur, '\0');
+	    strcpy(cur, "=");
+	    cur++;
+	    if (opt->type == TYPE_STRING) {
+		strcpy(cur, "\"\"");
+		cur += 2;
+	    }
+	    len = cur - buff;
+	} else if (opt->answer && opt->answers && opt->answers[0]) {
 	    slen = strlen(opt->key) + strlen(opt->answers[0]) + 4;	/* +4 for: ' ' = " " */
 	    if (len + slen >= nalloced) {
 		nalloced += (nalloced + 1024 > len + slen) ? 1024 : slen + 1;
@@ -745,6 +787,37 @@ char *G_recreate_command(void)
     }
 
     return buff;
+}
+
+/*!
+ * \brief Creates command to run non-interactive.
+ *
+ * Creates a command-line that runs the current command completely
+ * non-interactive.
+ *
+ * \return pointer to a char string
+ */
+char *G_recreate_command(void)
+{
+    return recreate_command(FALSE);
+}
+
+/* TODO: update to docs of these 3 functions to whatever general purpose
+ * they have now. */
+/*!
+ * \brief Creates command to run non-interactive.
+ *
+ * Creates a command-line that runs the current command completely
+ * non-interactive.
+ *
+ * This gives the same as G_recreate_command() but the original path
+ * from the command line is used instead of the module name only.
+ *
+ * \return pointer to a char string
+ */
+char *G_recreate_command_original_path(void)
+{
+    return recreate_command(TRUE);
 }
 
 /*!
@@ -861,6 +934,7 @@ int module_gui_wx(void)
 {
     char script[GPATH_MAX];
 
+    /* TODO: the 4 following lines seems useless */
     if (!st->pgm_path)
 	st->pgm_path = G_program_name();
     if (!st->pgm_path)
@@ -870,7 +944,7 @@ int module_gui_wx(void)
             getenv("GISBASE"));
     if (access(script, F_OK) != -1)
         G_spawn(getenv("GRASS_PYTHON"), getenv("GRASS_PYTHON"),
-                script, G_recreate_command(), NULL);
+                script, G_recreate_command_original_path(), NULL);
     else
         return -1;
 
@@ -1132,6 +1206,7 @@ void check_an_opt(const char *key, int type, const char *options,
 
     error = 0;
     err = NULL;
+    found = 0;
 
     switch (type) {
     case TYPE_INTEGER:
@@ -1645,7 +1720,7 @@ char* G_option_to_separator(const struct Option *option)
     else
         sep = G_store(option->answer);
     
-    G_debug(2, "G_option_to_separator(): key = %s -> sep = '%s'",
+    G_debug(3, "G_option_to_separator(): key = %s -> sep = '%s'",
 	    option->key, sep);
     
     return sep;

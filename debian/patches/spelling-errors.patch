@@ -1,0 +1,85 @@
+Description: Fix spelling errors.
+ * betweeen         -> between
+ * depenencies      -> dependencies
+ * erroneus         -> erroneous
+ * allows to <verb> -> allows <verb>ing
+Author: Bas Couwenberg <sebastic@debian.org>
+Forwarded: https://trac.osgeo.org/grass/ticket/3194
+
+--- a/imagery/i.landsat.toar/landsat_set.c
++++ b/imagery/i.landsat.toar/landsat_set.c
+@@ -378,7 +378,7 @@ void set_MSS5(lsat_data * lsat)
+     /* Spectral radiances at detector */
+     double Lmax[][4] = {
+ 	{240., 170., 150., 127.},	/* before   April 6, 1984    */
+-	{268., 179., 159., 123.},	/* betweeen                  */
++	{268., 179., 159., 123.},	/* between                   */
+ 	{268., 179., 148., 123.}	/* after    November 9, 1984 */
+     };
+     double Lmin[][4] = {
+--- a/raster/r.compress/r.compress.html
++++ b/raster/r.compress/r.compress.html
+@@ -114,7 +114,7 @@ FCELL and DCELL maps are never and have
+ <dt><strong>ZLIB</strong></dt>
+ <dd>ZLIB's deflate is the default compression method for all raster 
+ maps. GRASS GIS 7 uses by default 1 as ZLIB compression level which is the 
+-best compromise betweeen speed and compression ratio, also when 
++best compromise between speed and compression ratio, also when 
+ compared to other available compression methods. Valid levels are in 
+ the range [1, 9] and can be set with the environment variable 
+ <tt>GRASS_ZLIB_LEVEL</tt>.</dd>
+--- a/raster/rasterintro.html
++++ b/raster/rasterintro.html
+@@ -302,7 +302,7 @@ FCELL and DCELL maps are never and have
+ <dt><strong>ZLIB</strong></dt>
+ <dd>ZLIB's deflate is the default compression method for all raster 
+ maps. GRASS GIS 7 uses by default 1 as ZLIB compression level which is the 
+-best compromise betweeen speed and compression ratio, also when 
++best compromise between speed and compression ratio, also when 
+ compared to other available compression methods. Valid levels are in 
+ the range [1, 9] and can be set with the environment variable 
+ <tt>GRASS_ZLIB_LEVEL</tt>.</dd>
+--- a/temporal/t.rast.algebra/t.rast.algebra.py
++++ b/temporal/t.rast.algebra/t.rast.algebra.py
+@@ -65,7 +65,7 @@
+ 
+ #%flag
+ #% key: d
+-#% description: Perform a dry run, compute all depenencies and module calls but don't run them
++#% description: Perform a dry run, compute all dependencies and module calls but don't run them
+ #%end
+ 
+ import grass.script
+--- a/temporal/t.select/t.select.py
++++ b/temporal/t.select/t.select.py
+@@ -42,7 +42,7 @@
+ 
+ #%flag
+ #% key: d
+-#% description: Perform a dry run, compute all depenencies and module calls but don't run them
++#% description: Perform a dry run, compute all dependencies and module calls but don't run them
+ #%end
+ 
+ 
+--- a/vector/v.generalize/v.generalize.html
++++ b/vector/v.generalize/v.generalize.html
+@@ -29,7 +29,7 @@ flag is used to disable loop support.
+ 
+ <p>Lines and boundaries are not translated if they would collapse to a 
+ single point. Boundaries are not translated if they would intersect 
+-with themselves or other boundaries. Such erroneus features are written 
++with themselves or other boundaries. Such erroneous features are written 
+ to an optional <em>error</em> vector map. Overlaying the <em>error</em> 
+ map over the generalized map indicates the kind of error. 
+ Lines/boundaries collapsing to a point are written out as points, 
+--- a/raster/r.patch/r.patch.html
++++ b/raster/r.patch/r.patch.html
+@@ -84,7 +84,7 @@ layer.
+ from the <em>input</em> maps and creates these files for the patched, 
+ composite <em>output</em> map.  This can be quite time consuming for 
+ certain maps, especially if there are many different category values 
+-across the patched maps. The <em>-s</em> flag allows to disable the reading
++across the patched maps. The <em>-s</em> flag allows disabling the reading
+ and creation of these support files,  meaning that the <em>output</em> 
+ map will have no category labels and no explicit color table.
+ 

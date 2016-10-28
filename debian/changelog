@@ -1,3 +1,38 @@
+grass (7.2.0~rc1-1~exp1~xenial1) xenial; urgency=medium
+
+  * Rebuild for xenial.
+
+ -- Martin Landa <landa.martin@gmail.com>  Fri, 28 Oct 2016 18:00:44 +0200
+
+grass (7.2.0~rc1-1~exp1) experimental; urgency=medium
+
+  * New upstream release candidate.
+  * Drop unused overrides for hardening-no-pie.
+  * Update watch file for 7.2.x releases.
+  * Drop Conflicts/Provides/Replaces for old upstream GRASS 7.0 packages.
+  * Refresh patches.
+  * Enable bzip2 support.
+  * Update copyright file, changes:
+    - Update copyright years for various copyright holders
+    - Add new copyright holders
+    - Add license & copyright for lz4.{c,h} & jquery.fixedheadertable
+    - Rename MIT license shortname to Expat
+  * Add jquery.fixedheadertable.js to missing-sources.
+  * Use packaged jQuery in HTML documentation.
+  * Remove empty files (class_graphical).
+  * Add patch to fix spelling errors.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Fri, 28 Oct 2016 15:56:28 +0200
+
+grass (7.0.5-2) unstable; urgency=medium
+
+  * Reinstate MySQL/MariaDB support, mariadb-10.0 available on mips64el now.
+    Changes:
+    - Add default-libmysqlclient-dev build dependency
+    - Add --with-mysql* configure options
+
+ -- Bas Couwenberg <sebastic@debian.org>  Thu, 13 Oct 2016 07:31:23 +0200
+
 grass (7.0.5-1~xenial1) xenial; urgency=medium
 
   * Rebuild for xenial.

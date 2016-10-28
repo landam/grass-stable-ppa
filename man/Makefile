@@ -7,7 +7,10 @@ MANPAGES := $(patsubst $(HTMLDIR)/%.html,$(MANDIR)/%.$(MANSECT),$(wildcard $(HTM
 DSTFILES := \
 	$(HTMLDIR)/grassdocs.css \
 	$(HTMLDIR)/grass_logo.png \
-	$(HTMLDIR)/grass_icon.png
+	$(HTMLDIR)/grass_icon.png \
+	$(HTMLDIR)/jquery.fixedheadertable.min.js \
+	$(HTMLDIR)/parser_standard_options.css \
+	$(HTMLDIR)/parser_standard_options.js
 
 categories = \
 	d:display \
@@ -23,7 +26,7 @@ categories = \
 
 IDXCATS := $(foreach cat,$(categories),$(lastword $(subst :, ,$(cat))))
 
-IDXSRC = full_index index topics keywords $(IDXCATS)
+IDXSRC = full_index index topics keywords graphical_index manual_gallery class_graphical parser_standard_options $(IDXCATS)
 
 INDICES := $(patsubst %,$(HTMLDIR)/%.html,$(IDXSRC))
 
@@ -67,6 +70,33 @@ GISBASE="$(RUN_GISBASE)" ARCH="$(ARCH)" ARCH_DISTDIR="$(ARCH_DISTDIR)" \
 	$(PYTHON) ./build_keywords.py $(HTMLDIR)
 endef
 
+define build_graphical_index
+GISBASE="$(RUN_GISBASE)" ARCH="$(ARCH)" ARCH_DISTDIR="$(ARCH_DISTDIR)" \
+	VERSION_NUMBER=$(GRASS_VERSION_NUMBER) VERSION_DATE=$(GRASS_VERSION_DATE) \
+	$(PYTHON) ./build_graphical_index.py $(HTMLDIR)
+endef
+
+define build_manual_gallery
+GISBASE="$(RUN_GISBASE)" ARCH="$(ARCH)" ARCH_DISTDIR="$(ARCH_DISTDIR)" \
+	VERSION_NUMBER=$(GRASS_VERSION_NUMBER) VERSION_DATE=$(GRASS_VERSION_DATE) \
+	$(PYTHON) ./build_manual_gallery.py $(HTMLDIR)
+endef
+
+define build_pso
+GISBASE="$(RUN_GISBASE)" ARCH="$(ARCH)" ARCH_DISTDIR="$(ARCH_DISTDIR)" \
+	VERSION_NUMBER=$(GRASS_VERSION_NUMBER) VERSION_DATE=$(GRASS_VERSION_DATE) \
+	$(PYTHON) ./parser_standard_options.py -t "$(GRASS_HOME)/lib/gis/parser_standard_options.c" \
+	-f "grass" -o "$(HTMLDIR)/parser_standard_options.html" -p 'id="opts_table" class="scroolTable"'
+endef
+
+$(HTMLDIR)/topics.html: $(ALL_HTML)
+
+define build_class_graphical
+GISBASE="$(RUN_GISBASE)" ARCH="$(ARCH)" ARCH_DISTDIR="$(ARCH_DISTDIR)" \
+	VERSION_NUMBER=$(GRASS_VERSION_NUMBER) VERSION_DATE=$(GRASS_VERSION_DATE) \
+	$(PYTHON) ./build_class_graphical.py $(HTMLDIR)
+endef
+
 $(HTMLDIR)/topics.html: $(ALL_HTML) build_topics.py
 	$(call build_topics)
 	touch $@
@@ -81,6 +111,23 @@ $(HTMLDIR)/index.html: build_index.py build_html.py
 
 $(HTMLDIR)/keywords.html: $(ALL_HTML)
 	$(call build_keywords)
+	touch $@
+
+
+$(HTMLDIR)/graphical_index.html: $(ALL_HTML)
+	$(call build_graphical_index)
+	touch $@
+
+$(HTMLDIR)/manual_gallery.html: $(ALL_HTML)
+	$(call build_manual_gallery)
+
+$(HTMLDIR)/parser_standard_options.html: $(ALL_HTML)
+	$(call build_pso)
+	touch $@
+
+# TODO: this should be done in the same way as category_rule
+$(HTMLDIR)/class_graphical.html: $(ALL_HTML)
+	$(call build_class_graphical)
 	touch $@
 
 define category_rule
@@ -100,3 +147,11 @@ $(HTMLDIR)/grass_logo.png: grass_logo.png
 $(HTMLDIR)/grass_icon.png: grass_icon.png
 	$(INSTALL_DATA) $< $@
 
+$(HTMLDIR)/jquery.fixedheadertable.min.js: jquery.fixedheadertable.min.js
+	$(INSTALL_DATA) $< $@
+
+$(HTMLDIR)/parser_standard_options.js: parser_standard_options.js
+	$(INSTALL_DATA) $< $@
+
+$(HTMLDIR)/parser_standard_options.css: parser_standard_options.css
+	$(INSTALL_DATA) $< $@

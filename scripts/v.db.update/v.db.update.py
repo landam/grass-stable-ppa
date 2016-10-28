@@ -43,10 +43,17 @@
 #%end
 #%option G_OPT_DB_WHERE
 #%end
+#%option G_OPT_F_INPUT
+#% key: sqliteextra
+#% description: Name of SQLite extension file for extra functions (SQLite backend only)
+#% gisprompt: old,bin,file
+#% required: no
+#%end
 
 import sys
 import os
 import grass.script as grass
+
 
 def main():
     vector = options['map']
@@ -55,21 +62,30 @@ def main():
     value = options['value']
     qcolumn = options['query_column']
     where = options['where']
+    sqlitefile = options['sqliteextra']
 
     mapset = grass.gisenv()['MAPSET']
 
     # does map exist in CURRENT mapset?
-    if not grass.find_file(vector, element = 'vector', mapset = mapset)['file']:
+    if not grass.find_file(vector, element='vector', mapset=mapset)['file']:
         grass.fatal(_("Vector map <%s> not found in current mapset") % vector)
 
     try:
         f = grass.vector_db(vector)[int(layer)]
     except KeyError:
-        grass.fatal(_('There is no table connected to this map. Run v.db.connect or v.db.addtable first.'))
+        grass.fatal(
+            _('There is no table connected to this map. Run v.db.connect or v.db.addtable first.'))
 
     table = f['table']
     database = f['database']
     driver = f['driver']
+
+    # check for SQLite backend for extra functions
+    if sqlitefile and driver != "sqlite":
+        grass.fatal(_("Use of libsqlitefunctions only with SQLite backend"))
+    if driver == "sqlite" and sqlitefile:
+        if not os.access(sqlitefile, os.R_OK):
+            grass.fatal(_("File <%s> not found") % sqlitefile)
 
     # checking column types
     try:
@@ -93,9 +109,13 @@ def main():
     if where:
         cmd += " WHERE " + where
 
-    grass.verbose("SQL: \"%s\"" % cmd)
+    # SQLite: preload extra functions from extension lib if provided by user
+    if sqlitefile:
+        sqliteload = "SELECT load_extension('%s');\n" % sqlitefile
+        cmd = sqliteload + cmd
 
-    grass.write_command('db.execute', input = '-', database = database, driver = driver, stdin = cmd)
+    grass.verbose("SQL: \"%s\"" % cmd)
+    grass.write_command('db.execute', input='-', database=database, driver=driver, stdin=cmd)
 
     # write cmd history:
     grass.vector_history(vector)
