@@ -25,6 +25,7 @@ if not os.getenv('GISBASE'):
 sys.path.insert(0, os.path.abspath(os.path.join(os.environ['GISBASE'], 'etc', 'python', 'grass')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.environ['GISBASE'], 'etc', 'python', 'grass', 'ctypes')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.environ['GISBASE'], 'etc', 'python', 'grass', 'exceptions')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.environ['GISBASE'], 'etc', 'python', 'grass', 'gunittest')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.environ['GISBASE'], 'etc', 'python', 'grass', 'imaging')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.environ['GISBASE'], 'etc', 'python', 'grass', 'pydispatch')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.environ['GISBASE'], 'etc', 'python', 'grass', 'pygrass')))

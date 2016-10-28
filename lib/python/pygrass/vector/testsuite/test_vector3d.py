@@ -6,7 +6,8 @@ Created on Wed Jun 18 17:21:42 2014
 """
 import numpy as np
 
-from grass.gunittest import TestCase, test
+from grass.gunittest.case import TestCase
+from grass.gunittest.main import test
 
 from grass.script.core import run_command
 
@@ -59,9 +60,8 @@ class VectorTopo3DTestCase(TestCase):
     @classmethod
     def tearDownClass(cls):
         """Remove the generated vector map, if exist"""
-        mset = get_mapset_vector(cls.tmpname, mapset='')
-        if mset:
-            run_command("g.remove", flags='f', type='vector', name=cls.tmpname)
+        cls.runModule("g.remove", flags='f', type='vector', 
+                      name=cls.tmpname)
 
 
 if __name__ == '__main__':

@@ -17,7 +17,8 @@ void parse_args(int argc, char **argv,
 				  "\t\tMapInfo File: directory containing a mapinfo file\n"
 				  "\t\tPostGIS database: connection string, eg. 'PG:dbname=db user=grass'");
     options->dsn->required = YES;
-
+    options->dsn->gisprompt = "old,datasource,datasource";
+    
     options->layer = G_define_option();
     options->layer->key = "layer";
     options->layer->type = TYPE_STRING;
@@ -28,12 +29,20 @@ void parse_args(int argc, char **argv,
 				    "\t\tESRI Shapefile: shapefile name\n"
 				    "\t\tMapInfo File: mapinfo file name\n"
 				    "\t\tPostGIS database: table name");
-    options->layer->required = YES;
+    options->layer->required = NO;
     options->layer->key_desc = "name";
-    
+    options->layer->gisprompt = "old,datasource_layer,datasource_layer";
+        
     options->output = G_define_standard_option(G_OPT_V_OUTPUT);
     options->output->required = NO;
     options->output->description = _("Name for output GRASS vector map (default: input layer)");
+
+    flags->override = G_define_flag();
+    flags->override->key = 'o';
+    flags->override->label =
+	_("Override projection check (use current location's projection)");
+    flags->override->description =
+	_("Assume that the dataset has the same projection as the current location");
 
     flags->format = G_define_flag();
     flags->format->key = 'f';

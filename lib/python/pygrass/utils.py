@@ -12,6 +12,9 @@ from grass.script import core as grasscore
 from grass.pygrass.errors import GrassError
 
 
+test_vector_name="Utils_test_vector"
+test_raster_name="Utils_test_raster"
+
 def looking(obj, filter_string):
     """
     >>> import grass.lib.vector as libvect
@@ -104,9 +107,9 @@ def rename(oldname, newname, maptype, **kwargs):
 def copy(existingmap, newmap, maptype, **kwargs):
     """Copy a map
 
-    >>> copy('census', 'mycensus', 'vect')
-    >>> rename('mycensus', 'mynewcensus', 'vect')
-    >>> remove('mynewcensus', 'vect')
+    >>> copy(test_vector_name, 'mycensus', 'vector')
+    >>> rename('mycensus', 'mynewcensus', 'vector')
+    >>> remove('mynewcensus', 'vector')
 
     """
     kwargs.update({maptype: '{old},{new}'.format(old=existingmap, new=newmap)})
@@ -116,8 +119,9 @@ def copy(existingmap, newmap, maptype, **kwargs):
 def getenv(env):
     """Return the current grass environment variables
 
-    >>> getenv("MAPSET")
-    'user1'
+    >>> from grass.script.core import gisenv
+    >>> getenv("MAPSET") == gisenv()["MAPSET"]
+    True
 
     """
     return libgis.G_getenv_nofatal(env)
@@ -126,8 +130,8 @@ def getenv(env):
 def get_mapset_raster(mapname, mapset=''):
     """Return the mapset of the raster map
 
-    >>> get_mapset_raster('elevation')
-    'PERMANENT'
+    >>> get_mapset_raster(test_raster_name) == getenv("MAPSET")
+    True
 
     """
     return libgis.G_find_raster2(mapname, mapset)
@@ -136,8 +140,8 @@ def get_mapset_raster(mapname, mapset=''):
 def get_mapset_vector(mapname, mapset=''):
     """Return the mapset of the vector map
 
-    >>> get_mapset_vector('census')
-    'PERMANENT'
+    >>> get_mapset_vector(test_vector_name) == getenv("MAPSET")
+    True
 
     """
     return libgis.G_find_vector2(mapname, mapset)
@@ -151,7 +155,7 @@ def is_clean_name(name):
     >>> is_clean_name('0census')
     True
     >>> is_clean_name('census?')
-    False
+    True
     >>> is_clean_name('cénsus')
     False
 
@@ -164,6 +168,7 @@ def is_clean_name(name):
 def coor2pixel(coord, region):
     """Convert coordinates into a pixel row and col
 
+    >>> from grass.pygrass.gis.region import Region
     >>> reg = Region()
     >>> coor2pixel((reg.west, reg.north), reg)
     (0.0, 0.0)
@@ -172,13 +177,14 @@ def coor2pixel(coord, region):
 
     """
     (east, north) = coord
-    return (libraster.Rast_northing_to_row(north, region.c_region),
-            libraster.Rast_easting_to_col(east, region.c_region))
+    return (libraster.Rast_northing_to_row(north, region.byref()),
+            libraster.Rast_easting_to_col(east, region.byref()))
 
 
 def pixel2coor(pixel, region):
     """Convert row and col of a pixel into a coordinates
 
+    >>> from grass.pygrass.gis.region import Region
     >>> reg = Region()
     >>> pixel2coor((0, 0), reg) == (reg.north, reg.west)
     True
@@ -187,34 +193,47 @@ def pixel2coor(pixel, region):
 
     """
     (col, row) = pixel
-    return (libraster.Rast_row_to_northing(row, region.c_region),
-            libraster.Rast_col_to_easting(col, region.c_region))
+    return (libraster.Rast_row_to_northing(row, region.byref()),
+            libraster.Rast_col_to_easting(col, region.byref()))
 
 
 def get_raster_for_points(poi_vector, raster, column=None, region=None):
     """Query a raster map for each point feature of a vector
 
+    test_vector_name="Utils_test_vector"
+    test_raster_name="Utils_test_raster"
+
     Example
 
     >>> from grass.pygrass.vector import VectorTopo
     >>> from grass.pygrass.raster import RasterRow
-    >>> ele = RasterRow('elevation')
-    >>> copy('schools','myschools','vect')
-    >>> sch = VectorTopo('myschools')
-    >>> sch.open(mode='r')
-    >>> get_raster_for_points(sch, ele)               # doctest: +ELLIPSIS
-    [(1, 633649.2856743174, 221412.94434781274, 145.06602)...
-    >>> sch.table.columns.add('elevation','double precision')
-    >>> 'elevation' in sch.table.columns
+    >>> from grass.pygrass.gis.region import Region
+    >>> region = Region()
+    >>> region.from_rast(test_raster_name)
+    >>> region.set_raster_region()
+    >>> ele = RasterRow(test_raster_name)
+    >>> copy(test_vector_name,'test_vect_2','vector')
+    >>> fire = VectorTopo('test_vect_2')
+    >>> fire.open(mode='r')
+    >>> l = get_raster_for_points(fire, ele, region=region)
+    >>> l[0]                                        # doctest: +ELLIPSIS
+    (1, 620856.9585876337, 230066.3831321055, 111.2153883384)
+    >>> l[1]                                        # doctest: +ELLIPSIS
+    (2, 625331.9185974908, 229990.82160762616, 89.978796115200012)
+    >>> fire.table.columns.add(test_raster_name,'double precision')
+    >>> test_raster_name in fire.table.columns
     True
-    >>> get_raster_for_points(sch, ele, 'elevation')
+    >>> get_raster_for_points(fire, ele, column=test_raster_name, region=region)
     True
-    >>> sch.table.filters.select('NAMESHORT','elevation')
-    Filters(u'SELECT NAMESHORT, elevation FROM myschools;')
-    >>> cur = sch.table.execute()
-    >>> cur.fetchall()                                # doctest: +ELLIPSIS
-    [(u'SWIFT CREEK', 145.06602), ... (u'9TH GRADE CTR', None)]
-    >>> remove('myschools','vect')
+    >>> fire.table.filters.select('name', test_raster_name)
+    Filters(u'SELECT name, Utils_test_raster FROM test_vect_2;')
+    >>> cur = fire.table.execute()
+    >>> r = cur.fetchall()
+    >>> r[0]                                        # doctest: +ELLIPSIS
+    (u'Morrisville #3', 111.2153883384)
+    >>> r[1]                                        # doctest: +ELLIPSIS
+    (u'Morrisville #1', 89.97879611520001)
+    >>> remove('test_vect_2','vect')
 
 
     :param point: point vector object
@@ -234,6 +253,7 @@ def get_raster_for_points(poi_vector, raster, column=None, region=None):
         raster.open()
     if poi_vector.num_primitive_of('point') == 0:
         raise GrassError(_("Vector doesn't contain points"))
+
     for poi in poi_vector.viter('points'):
         val = raster.get_value(poi, region)
         if column:
@@ -265,32 +285,12 @@ def r_export(rast, output='', fmt='png', **kargs):
 
 def get_lib_path(modname, libname=None):
     """Return the path of the libname contained in the module.
-    """
-    from os.path import isdir, join, sep
-    from os import getenv
 
-    if isdir(join(getenv('GISBASE'), 'etc', modname)):
-        path = join(os.getenv('GISBASE'), 'etc', modname)
-    elif getenv('GRASS_ADDON_BASE') and libname and \
-            isdir(join(getenv('GRASS_ADDON_BASE'), 'etc', modname, libname)):
-        path = join(getenv('GRASS_ADDON_BASE'), 'etc', modname)
-    elif getenv('GRASS_ADDON_BASE') and \
-            isdir(join(getenv('GRASS_ADDON_BASE'), 'etc', modname)):
-        path = join(getenv('GRASS_ADDON_BASE'), 'etc', modname)
-    elif getenv('GRASS_ADDON_BASE') and \
-            isdir(join(getenv('GRASS_ADDON_BASE'), modname, modname)):
-        path = join(os.getenv('GRASS_ADDON_BASE'), modname, modname)
-    else:
-        # used by g.extension compilation process
-        cwd = os.getcwd()
-        idx = cwd.find(modname)
-        if idx < 0:
-            return None
-        path = '{cwd}{sep}etc{sep}{modname}'.format(cwd=cwd[:idx+len(modname)],
-                                                    sep=sep,
-                                                    modname=modname)
-    
-    return path
+    .. deprecated:: 7.1
+        Use :func:`grass.script.utils.get_lib_path` instead.
+    """
+    from grass.script.utils import get_lib_path
+    return get_lib_path(modname=modname, libname=libname)
 
 
 def set_path(modulename, dirname=None, path='.'):
@@ -301,74 +301,11 @@ def set_path(modulename, dirname=None, path='.'):
                     libraries, default None
     :param path: string with the path to reach the dirname locally.
 
-    Example
-    --------
-
-    "set_path" example working locally with the source code of a module
-    (r.green) calling the function with all the parameters. Below it is
-    reported the directory structure on the r.green module.
-
-    ::
-
-        grass_prompt> pwd
-        ~/Download/r.green/r.green.hydro/r.green.hydro.financial
-
-        grass_prompt> tree ../../../r.green
-        ../../../r.green
-        |-- ...
-        |-- libgreen
-        |   |-- pyfile1.py
-        |   +-- pyfile2.py
-        +-- r.green.hydro
-           |-- Makefile
-           |-- libhydro
-           |   |-- pyfile1.py
-           |   +-- pyfile2.py
-           |-- r.green.hydro.*
-           +-- r.green.hydro.financial
-               |-- Makefile
-               |-- ...
-               +-- r.green.hydro.financial.py
-
-        21 directories, 125 files
-
-    in the source code the function is called with the following parameters: ::
-
-        set_path('r.green', 'libhydro', '..')
-        set_path('r.green', 'libgreen', os.path.join('..', '..'))
-
-    when we are executing the module: r.green.hydro.financial locally from
-    the command line:  ::
-
-        grass_prompt> python r.green.hydro.financial.py --ui
-
-    In this way we are executing the local code even if the module was already
-    installed as grass-addons and it is available in GRASS standards path.
-
-    The function is cheching if the dirname is provided and if the
-    directory exists and it is available using the path
-    provided as third parameter, if yes add the path to sys.path to be
-    importable, otherwise it will check on GRASS GIS standard paths.
-
+    .. deprecated:: 7.1
+        Use :func:`grass.script.utils.set_path` instead.
     """
-    import sys
-    # TODO: why dirname is checked first - the logic should be revised
-    pathlib = None
-    if dirname:
-        pathlib = os.path.join(path, dirname)
-    if pathlib and os.path.exists(pathlib):
-        # we are running the script from the script directory, therefore
-        # we add the path to sys.path to reach the directory (dirname)
-        sys.path.append(os.path.abspath(path))
-    else:
-        # running from GRASS GIS session
-        path = get_lib_path(modulename, dirname)
-        if path is None:
-            pathname = os.path.join(modulename, dirname) if dirname else modulename
-            raise ImportError("Not able to find the path '%s' directory "
-                              "(current dir '%s')." % (pathname, os.getcwd()))
-        
-        sys.path.insert(0, path)
+    from grass.script.utils import set_path
+    return set_path(modulename=modulename, dirname=dirname, path=path)
 
 
 def split_in_chunk(iterable, length=10):
@@ -413,3 +350,177 @@ def table_exist(cursor, table_name):
             return False
     one = cursor.fetchone() if cursor else None
     return True if one and one[0] else False
+
+
+def create_test_vector_map(map_name="test_vector"):
+    """This functions creates a vector map layer with points, lines, boundaries,
+       centroids, areas, isles and attributes for testing purposes
+
+       This should be used in doc and unit tests to create location/mapset
+       independent vector map layer. This map includes 3 points, 3 lines,
+       11 boundaries and 4 centroids. The attribute table contains cat, name
+       and value columns.
+
+        param map_name: The vector map name that should be used
+
+
+
+                                  P1 P2 P3
+           6                       *  *  *
+           5
+           4    _______ ___ ___   L1 L2 L3
+        Y  3   |A1___ *|  *|  *|   |  |  |
+           2   | |A2*| |   |   |   |  |  |
+           1   | |___| |A3 |A4 |   |  |  |
+           0   |_______|___|___|   |  |  |
+          -1
+            -1 0 1 2 3 4 5 6 7 8 9 10 12 14
+                           X
+    """
+
+    from grass.pygrass.vector import VectorTopo
+    from grass.pygrass.vector.geometry import Point, Line, Centroid, Boundary
+
+    cols = [(u'cat', 'INTEGER PRIMARY KEY'),
+            (u'name','varchar(50)'),
+            (u'value', 'double precision')]
+    with VectorTopo(map_name, mode='w', tab_name=map_name,
+                    tab_cols=cols) as vect:
+
+        # Write 3 points
+        vect.write(Point(10, 6), cat=1, attrs=("point", 1))
+        vect.write(Point(12, 6), cat=1)
+        vect.write(Point(14, 6), cat=1)
+        # Write 3 lines
+        vect.write(Line([(10, 4), (10, 2), (10,0)]), cat=2, attrs=("line", 2))
+        vect.write(Line([(12, 4), (12, 2), (12,0)]), cat=2)
+        vect.write(Line([(14, 4), (14, 2), (14,0)]), cat=2)
+        # boundaries 1 - 4
+        vect.write(Boundary(points=[(0, 0), (0,4)]))
+        vect.write(Boundary(points=[(0, 4), (4,4)]))
+        vect.write(Boundary(points=[(4, 4), (4,0)]))
+        vect.write(Boundary(points=[(4, 0), (0,0)]))
+        # 5. boundary (Isle)
+        vect.write(Boundary(points=[(1, 1), (1,3), (3, 3), (3,1), (1,1)]))
+        # boundaries 6 - 8
+        vect.write(Boundary(points=[(4, 4), (6,4)]))
+        vect.write(Boundary(points=[(6, 4), (6,0)]))
+        vect.write(Boundary(points=[(6, 0), (4,0)]))
+        # boundaries 9 - 11
+        vect.write(Boundary(points=[(6, 4), (8,4)]))
+        vect.write(Boundary(points=[(8, 4), (8,0)]))
+        vect.write(Boundary(points=[(8, 0), (6,0)]))
+        # Centroids, all have the same cat and attribute
+        vect.write(Centroid(x=3.5, y=3.5), cat=3, attrs=("centroid", 3))
+        vect.write(Centroid(x=2.5, y=2.5), cat=3)
+        vect.write(Centroid(x=5.5, y=3.5), cat=3)
+        vect.write(Centroid(x=7.5, y=3.5), cat=3)
+
+        vect.organization = 'Thuenen Institut'
+        vect.person = 'Soeren Gebbert'
+        vect.title = 'Test dataset'
+        vect.comment = 'This is a comment'
+
+        vect.table.conn.commit()
+
+        vect.organization = "Thuenen Institut"
+        vect.person = "Soeren Gebbert"
+        vect.title = "Test dataset"
+        vect.comment = "This is a comment"
+        vect.close()
+
+def create_test_stream_network_map(map_name="streams"):
+    """
+       This functions creates a vector map layer with lines that represent
+       a stream network with two different graphs. The first graph
+       contains a loop, the second can be used as directed graph.
+
+       This should be used in doc and unit tests to create location/mapset
+       independent vector map layer.
+
+        param map_name: The vector map name that should be used
+
+       1(0,2)  3(2,2)
+        \     /
+       1 \   / 2
+          \ /
+           2(1,1)
+    6(0,1) ||  5(2,1)
+       5 \ || / 4
+          \||/
+           4(1,0)
+           |
+           | 6
+           |7(1,-1)
+
+       7(0,-1) 8(2,-1)
+        \     /
+       8 \   / 9
+          \ /
+           9(1, -2)
+           |
+           | 10
+           |
+          10(1,-3)
+    """
+
+    from grass.pygrass.vector import VectorTopo
+    from grass.pygrass.vector.geometry import Line
+
+    cols = [(u'cat', 'INTEGER PRIMARY KEY'), (u'id', 'INTEGER')]
+    with VectorTopo(map_name, mode='w', tab_name=map_name,
+                    tab_cols=cols) as streams:
+
+        # First flow graph
+        l = Line([(0,2), (0.22, 1.75), (0.55, 1.5), (1,1)])
+        streams.write(l, cat=1, attrs=(1,))
+        l = Line([(2,2),(1,1)])
+        streams.write(l, cat=2, attrs=(2,))
+        l = Line([(1,1), (0.85, 0.5), (1,0)])
+        streams.write(l, cat=3, attrs=(3,))
+        l = Line([(2,1),(1,0)])
+        streams.write(l, cat=4, attrs=(4,))
+        l = Line([(0,1),(1,0)])
+        streams.write(l, cat=5, attrs=(5,))
+        l = Line([(1,0),(1,-1)])
+        streams.write(l, cat=6, attrs=(6,))
+        # Reverse line 3
+        l = Line([(1,0), (1.15, 0.5),(1,1)])
+        streams.write(l, cat=7, attrs=(7,))
+
+        # second flow graph
+        l = Line([(0,-1),(1,-2)])
+        streams.write(l, cat=8, attrs=(8,))
+        l = Line([(2,-1),(1,-2)])
+        streams.write(l, cat=9, attrs=(9,))
+        l = Line([(1,-2),(1,-3)])
+        streams.write(l, cat=10, attrs=(10,))
+
+        streams.organization = 'Thuenen Institut'
+        streams.person = 'Soeren Gebbert'
+        streams.title = 'Test dataset for stream networks'
+        streams.comment = 'This is a comment'
+
+        streams.table.conn.commit()
+        streams.close()
+
+if __name__ == "__main__":
+
+    import doctest
+    from grass.pygrass import utils
+    from grass.script.core import run_command
+
+    utils.create_test_vector_map(test_vector_name)
+    run_command("g.region", n=50, s=0, e=60, w=0, res=1)
+    run_command("r.mapcalc", expression="%s = 1"%(test_raster_name),
+                             overwrite=True)
+
+    doctest.testmod()
+
+    """Remove the generated vector map, if exist"""
+    mset = utils.get_mapset_vector(test_vector_name, mapset='')
+    if mset:
+        run_command("g.remove", flags='f', type='vector', name=test_vector_name)
+    mset = utils.get_mapset_raster(test_raster_name, mapset='')
+    if mset:
+        run_command("g.remove", flags='f', type='raster', name=test_raster_name)

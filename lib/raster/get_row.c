@@ -97,8 +97,9 @@ static void read_data_fp_compressed(int fd, int row, unsigned char *data_buf,
 
     *nbytes = fcb->nbytes;
 
-    if ((size_t) G_zlib_read(fcb->data_fd, readamount, data_buf, bufsize) != bufsize)
-	G_fatal_error(_("Error reading raster data for row %d of <%s>"),
+    if ((size_t) G_read_compressed(fcb->data_fd, readamount, data_buf,
+                                   bufsize, fcb->cellhd.compressed) != bufsize)
+	G_fatal_error(_("Error uncompressing raster data for row %d of <%s>"),
 		      row, fcb->name);
 }
 
@@ -128,7 +129,8 @@ static void read_data_compressed(int fd, int row, unsigned char *data_buf,
     off_t t1 = fcb->row_ptr[row];
     off_t t2 = fcb->row_ptr[row + 1];
     ssize_t readamount = t2 - t1;
-    unsigned char *cmp;
+    size_t bufsize;
+    unsigned char *cmp, *cmp2;
     int n;
 
     if (lseek(fcb->data_fd, t1, SEEK_SET) < 0)
@@ -143,6 +145,9 @@ static void read_data_compressed(int fd, int row, unsigned char *data_buf,
 		      row, fcb->name);
     }
 
+    /* save cmp for free below */
+    cmp2 = cmp;
+
     /* Now decompress the row */
     if (fcb->cellhd.compressed > 0) {
 	/* one byte is nbyte count */
@@ -153,16 +158,21 @@ static void read_data_compressed(int fd, int row, unsigned char *data_buf,
 	/* pre 3.0 compression */
 	n = *nbytes = fcb->nbytes;
 
-    if (fcb->cellhd.compressed < 0 || readamount < n * fcb->cellhd.cols) {
-	if (fcb->cellhd.compressed == 2)
-	    G_zlib_expand(cmp, readamount, data_buf, n * fcb->cellhd.cols);
-	else
+    bufsize = n * fcb->cellhd.cols;
+    if (fcb->cellhd.compressed < 0 || readamount < bufsize) {
+	if (fcb->cellhd.compressed == 1)
 	    rle_decompress(data_buf, cmp, n, readamount);
+	else {
+	    if (G_expand(cmp, readamount, data_buf, bufsize,
+		     fcb->cellhd.compressed) != bufsize)
+	    G_fatal_error(_("Error uncompressing raster data for row %d of <%s>"),
+			  row, fcb->name);
+	}
     }
     else
 	memcpy(data_buf, cmp, readamount);
 
-    G_freea(cmp);
+    G_freea(cmp2);
 }
 
 static void read_data_uncompressed(int fd, int row, unsigned char *data_buf,
@@ -804,11 +814,50 @@ void Rast_get_d_row(int fd, DCELL * buf, int row)
     Rast_get_row(fd, buf, row, DCELL_TYPE);
 }
 
-static int read_null_bits(int fd, int row)
+static int read_null_bits_compressed(int null_fd, unsigned char *flags,
+				     int row, size_t size, int fd)
+{
+    struct fileinfo *fcb = &R__.fileinfo[fd];
+    off_t t1 = fcb->null_row_ptr[row];
+    off_t t2 = fcb->null_row_ptr[row + 1];
+    size_t readamount = t2 - t1;
+    unsigned char *compressed_buf;
+
+    if (lseek(null_fd, t1, SEEK_SET) < 0)
+	G_fatal_error(_("Error reading null data for row %d of <%s>"),
+		      row, fcb->name);
+
+    if (readamount == size) {
+	if (read(null_fd, flags, size) != size) {
+	    G_fatal_error(_("Error reading null data for row %d of <%s>"),
+			  row, fcb->name);
+	}
+	return 1;
+    }
+
+    compressed_buf = G_alloca(readamount);
+
+    if (read(null_fd, compressed_buf, readamount) != readamount) {
+	G_freea(compressed_buf);
+	G_fatal_error(_("Error reading null data for row %d of <%s>"),
+		      row, fcb->name);
+    }
+
+    /* null bits file compressed with LZ4, see lib/gis/compress.h */
+    if (G_lz4_expand(compressed_buf, readamount, flags, size) < 1) {
+	G_fatal_error(_("Error uncompressing null data for row %d of <%s>"),
+		      row, fcb->name);
+    }
+
+    G_freea(compressed_buf);
+
+    return 1;
+}
+
+int Rast__read_null_bits(int fd, int row, unsigned char *flags)
 {
     struct fileinfo *fcb = &R__.fileinfo[fd];
     int null_fd = fcb->null_fd;
-    unsigned char *flags = fcb->null_bits;
     int cols = fcb->cellhd.cols;
     off_t offset;
     ssize_t size;
@@ -823,6 +872,10 @@ static int read_null_bits(int fd, int row)
 	return 0;
 
     size = Rast__null_bitstream_size(cols);
+
+    if (fcb->null_row_ptr)
+	return read_null_bits_compressed(null_fd, flags, R, size, fd);
+
     offset = (off_t) size * R;
 
     if (lseek(null_fd, offset, SEEK_SET) < 0)
@@ -850,7 +903,7 @@ static void get_null_value_row_nomask(int fd, char *flags, int row)
     }
 
     if (row != fcb->null_cur_row) {
-	if (!read_null_bits(fd, row)) {
+	if (!Rast__read_null_bits(fd, row, fcb->null_bits)) {
 	    fcb->null_cur_row = -1;
 	    if (fcb->map_type == CELL_TYPE) {
 		/* If can't read null row, assume  that all map 0's are nulls */

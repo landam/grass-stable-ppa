@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from grass.gunittest import TestCase, test
+from grass.gunittest.case import TestCase
+from grass.gunittest.main import test
 from grass.gunittest.gmodules import SimpleModule
 from grass.script.core import read_command
 
@@ -84,7 +85,7 @@ class TestNCMaps(TestCase):
                           "which suggests input map values were read as integers.")
 
     def test_formats_landcover(self):
-        recode = SimpleModule('r.recode', input='landuse96_28m@PERMANENT',
+        recode = SimpleModule('r.recode', input='landuse@PERMANENT',
                               output='recoded', rules='-', overwrite=True)
         recode.inputs.stdin = rules4
         self.assertModule(recode)

@@ -21,11 +21,12 @@ class MetaModule(object):
        >>> g_list.required
        ['type']
        >>> g_list.inputs.type = 'raster'
+       >>> g_list.inputs.mapset = 'PERMANENT'
        >>> g_list.stdout_ = -1
        >>> g_list.run()
        Module('g.list')
        >>> g_list.outputs.stdout                         # doctest: +ELLIPSIS
-       '...basins...soils...'
+       '...basin...soils...'
        >>> r = MetaModule('r')
        >>> what = r.what
        >>> what.description
@@ -46,7 +47,7 @@ class MetaModule(object):
         return self.cls('%s.%s' % (self.prefix, name.replace('_', '.')))
 
 
-# http://grass.osgeo.org/grass71/manuals/full_index.html
+# http://grass.osgeo.org/grass72/manuals/full_index.html
 #[ d.* | db.* | g.* | i.* | m.* | ps.* | r.* | r3.* | t.* | v.* ]
 #
 #  d.*	display commands

@@ -323,9 +323,9 @@ t.info input=8day_ts
 t.rast.list input=8day_ts
 
 # finally, copy the aggregation to a daily time series
-t.rast.aggregate.ds -s input=daily_ts sample=8day_ts \
-   output=8day_agg basename=8day_agg \
-   method=average sampling=contains
+t.rast.aggregate.ds input=daily_ts sample=8day_ts \
+   output=8day_agg basename=8day_agg method=average \
+   sampling=contains suffix=gran
 
 # add metadata
 t.support input=8day_agg \
@@ -362,5 +362,5 @@ name|mapset|start_time|end_time
 
 S&ouml;ren Gebbert, Th&uuml;nen Institute of Climate-Smart Agriculture
 
-<p><i>Last changed: $Date: 2016-09-07 23:19:02 +0200 (Wed, 07 Sep 2016) $</i>
+<p><i>Last changed: $Date: 2016-09-19 12:30:10 +0200 (Mon, 19 Sep 2016) $</i>
 

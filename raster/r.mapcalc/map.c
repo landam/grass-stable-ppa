@@ -14,6 +14,7 @@
 #include <grass/raster.h>
 #include <grass/btree.h>
 #include <grass/glocale.h>
+#include <grass/calc.h>
 
 #include "mapcalc.h"
 #include "globals.h"
@@ -29,6 +30,7 @@ void setup_region(void)
 
     rows = Rast_window_rows();
     columns = Rast_window_cols();
+    calc_init(columns);
     depths = 1;
 }
 
@@ -649,6 +651,16 @@ void close_maps(void)
     pthread_mutex_destroy(&cats_mutex);
     pthread_mutex_destroy(&mask_mutex);
 #endif
+}
+
+void list_maps(FILE *fp, const char *sep)
+{
+    int i;
+
+    for (i = 0; i < num_maps; i++) {
+        const struct map *m = &maps[i];
+        fprintf(fp, "%s%s@%s", i ? sep : "", m->name, m->mapset);
+    }
 }
 
 /****************************************************************************/

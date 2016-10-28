@@ -39,6 +39,15 @@
 #%end
 
 #%option
+#% key: suffix
+#% type: string
+#% description: Suffix to add at basename: set 'gran' for granularity, 'time' for the full time format, 'num' for numerical suffix with a specific number of digits (default %05)
+#% answer: gran
+#% required: no
+#% multiple: no
+#%end
+
+#%option
 #% key: granularity
 #% type: string
 #% description: Aggregation granularity, format absolute time "x years, x months, x weeks, x days, x hours, x minutes, x seconds" or an integer value for relative time
@@ -74,6 +83,15 @@
 #% answer: 1
 #%end
 
+#%option
+#% key: file_limit
+#% type: integer
+#% description: The maximum number of open files allowed for each r.series process
+#% required: no
+#% multiple: no
+#% answer: 1000
+#%end
+
 #%option G_OPT_T_SAMPLE
 #% options: equal,overlaps,overlapped,starts,started,finishes,finished,during,contains
 #% answer: contains
@@ -85,11 +103,6 @@
 #%flag
 #% key: n
 #% description: Register Null maps
-#%end
-
-#%flag
-#% key: s
-#% description: Use start time - truncated according to granularity - as suffix (overrides offset option)
 #%end
 
 import grass.script as gcore
@@ -110,7 +123,8 @@ def main():
     sampling = options["sampling"]
     offset = options["offset"]
     nprocs = options["nprocs"]
-    time_suffix = flags["s"]
+    file_limit = options["file_limit"]
+    time_suffix = options["suffix"]
 
     topo_list = sampling.split(",")
 
@@ -171,7 +185,7 @@ def main():
                                                                        map_list=map_list,
                                                                        topo_list=topo_list,  basename=base, time_suffix=time_suffix,
                                                                        offset=offset,  method=method,  nprocs=nprocs,  spatial=None,
-                                                                       overwrite=gcore.overwrite())
+                                                                       overwrite=gcore.overwrite(), file_limit=file_limit)
 
     if output_list:
         temporal_type, semantic_type, title, description = sp.get_initial_values()

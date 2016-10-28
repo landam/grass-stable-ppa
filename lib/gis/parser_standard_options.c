@@ -531,6 +531,7 @@ struct Option *G_define_standard_option(int opt)
 	Opt->type = TYPE_INTEGER;
 	Opt->required = NO;
 	Opt->description = _("Category value");
+        Opt->gisprompt = "old,cat,cats";
 	break;
     case G_OPT_V_CATS:
 	Opt->key = "cats";
@@ -539,6 +540,7 @@ struct Option *G_define_standard_option(int opt)
 	Opt->required = NO;
 	Opt->label = _("Category values");
 	Opt->description = _("Example: 1,3,7-9,13");
+        Opt->gisprompt = "old,cats,cats";
 	break;
     case G_OPT_V_ID:
 	Opt->key = "id";
@@ -657,26 +659,26 @@ struct Option *G_define_standard_option(int opt)
 	break;
 	
     case G_OPT_M_LOCATION:
-    Opt->key = "location";
-    Opt->type = TYPE_STRING;
-    Opt->required = NO;
-    Opt->multiple = NO;
-    Opt->label = _("Location name");
-    Opt->description = _("Location name (not location path)");
-    Opt->gisprompt = "old,location,location";
-    Opt->key_desc = "name";
-    break;
+	Opt->key = "location";
+	Opt->type = TYPE_STRING;
+	Opt->required = NO;
+	Opt->multiple = NO;
+	Opt->label = _("Location name");
+	Opt->description = _("Location name (not location path)");
+	Opt->gisprompt = "old,location,location";
+	Opt->key_desc = "name";
+	break;
 
     case G_OPT_M_DBASE:
-    Opt->key = "dbase";
-    Opt->type = TYPE_STRING;
-    Opt->required = NO;
-    Opt->multiple = NO;
-    Opt->label = _("GRASS GIS database directory");
-    Opt->description = _("Default: path to the current GRASS GIS database");
-    Opt->gisprompt = "old,dbase,dbase";
-    Opt->key_desc = "path";
-    break;
+	Opt->key = "dbase";
+	Opt->type = TYPE_STRING;
+	Opt->required = NO;
+	Opt->multiple = NO;
+	Opt->label = _("GRASS GIS database directory");
+	Opt->description = _("Default: path to the current GRASS GIS database");
+	Opt->gisprompt = "old,dbase,dbase";
+	Opt->key_desc = "path";
+	break;
 
     case G_OPT_M_COORDS:
 	Opt->key = "coordinates";
@@ -916,7 +918,8 @@ struct Flag *G_define_standard_flag(int flag)
 	break;
     case G_FLG_V_TOPO:
 	Flg->key = 'b';
-	Flg->description = _("Do not build topology");
+        Flg->label = _("Do not build topology");
+        Flg->description = _("Advantageous when handling a large number of points");
 	break;
     }
     

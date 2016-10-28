@@ -19,6 +19,7 @@ at various levels:
   modules
 * **GRASS GIS Temporal Framework** implements the temporal GIS functionality
   of GRASS GIS and provides an API to implement spatio-temporal processing modules
+* **Testing GRASS GIS source code and modules** using gunittest package
 * **exceptions package** contains exceptions used by other packages
 * **imaging package** is a library to create animated images and films
 * **pydispatch package** is a library for signal-dispatching
@@ -33,5 +34,6 @@ Contents:
    temporal_framework
    exceptions
    imaging
+   gunittest_testing
    pydispatch
 

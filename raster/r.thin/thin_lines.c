@@ -26,7 +26,6 @@
 #define false 0
 #define DELETED_PIX   9999
 
-extern char *error_prefix;
 static char *work_file_name;
 static int n_rows, n_cols, pad_size;
 static int box_right, box_left, box_top, box_bottom;

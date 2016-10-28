@@ -9,8 +9,8 @@ for details.
 :authors: Soeren Gebbert
 """
 import getpass
-from abstract_map_dataset import *
-from abstract_space_time_dataset import *
+from .abstract_map_dataset import *
+from .abstract_space_time_dataset import *
 import grass.script.array as garray
 
 ###############################################################################
@@ -73,6 +73,16 @@ class RasterDataset(AbstractMapDataset):
              | Minimum value:.............. 1.0
              | Maximum value:.............. 1.0
 
+            >>> grass.run_command("r.timestamp", map="strds_map_test_case",
+            ...                   date="2 years", quiet=True)
+            0
+            >>> rmap.read_timestamp_from_grass()
+            True
+            >>> rmap.get_temporal_extent_as_tuple()
+            (2, None)
+            >>> rmap.get_relative_time_unit()
+            'years'
+
             >>> newmap = rmap.get_new_instance("new@PERMANENT")
             >>> isinstance(newmap, RasterDataset)
             True
@@ -89,7 +99,7 @@ class RasterDataset(AbstractMapDataset):
             >>> rmap.get_temporal_extent_as_tuple()
             (datetime.datetime(2001, 1, 1, 0, 0), datetime.datetime(2012, 1, 1, 0, 0))
             >>> rmap.get_name()
-            'strds_map_test_case'
+            u'strds_map_test_case'
             >>> rmap.get_mapset() == mapset
             True
             >>> rmap.get_temporal_type()
@@ -392,6 +402,16 @@ class Raster3DDataset(AbstractMapDataset):
              | Number of depths:........... 10
              | Top-Bottom resolution:...... 10.0
 
+            >>> grass.run_command("r3.timestamp", map="str3ds_map_test_case",
+            ...                   date="2 years", quiet=True)
+            0
+            >>> r3map.read_timestamp_from_grass()
+            True
+            >>> r3map.get_temporal_extent_as_tuple()
+            (2, None)
+            >>> r3map.get_relative_time_unit()
+            'years'
+
             >>> newmap = r3map.get_new_instance("new@PERMANENT")
             >>> isinstance(newmap, Raster3DDataset)
             True
@@ -408,7 +428,7 @@ class Raster3DDataset(AbstractMapDataset):
             >>> r3map.get_temporal_extent_as_tuple()
             (datetime.datetime(2001, 1, 1, 0, 0), datetime.datetime(2012, 1, 1, 0, 0))
             >>> r3map.get_name()
-            'str3ds_map_test_case'
+            u'str3ds_map_test_case'
             >>> r3map.get_mapset() == mapset
             True
             >>> r3map.get_temporal_type()
@@ -722,6 +742,17 @@ class VectorDataset(AbstractMapDataset):
              | Number of islands .......... 0
              | Number of holes ............ 0
              | Number of volumes .......... 0
+
+            >>> grass.run_command("v.timestamp", map="stvds_map_test_case",
+            ...                   date="2 years", quiet=True)
+            0
+            >>> vmap.read_timestamp_from_grass()
+            True
+            >>> vmap.get_temporal_extent_as_tuple()
+            (2, None)
+            >>> vmap.get_relative_time_unit()
+            'years'
+
             >>> newmap = vmap.get_new_instance("new@PERMANENT")
             >>> isinstance(newmap, VectorDataset)
             True
@@ -738,7 +769,7 @@ class VectorDataset(AbstractMapDataset):
             >>> vmap.get_temporal_extent_as_tuple()
             (datetime.datetime(2001, 1, 1, 0, 0), datetime.datetime(2012, 1, 1, 0, 0))
             >>> vmap.get_name()
-            'stvds_map_test_case'
+            u'stvds_map_test_case'
             >>> vmap.get_mapset() == mapset
             True
             >>> vmap.get_temporal_type()

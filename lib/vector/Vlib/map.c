@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <errno.h>
 
 #include <grass/glocale.h>
 #include <grass/vector.h>
@@ -29,6 +30,41 @@
 #include <grass/glocale.h>
 
 #include "local_proto.h"
+
+/*!
+   \brief Creates and initializes Map_info structure
+
+  To free allocated memory call Vect_destroy_map_struct().
+
+   \return pointer to Map_info 
+ */
+struct Map_info *Vect_new_map_struct(void)
+{
+    struct Map_info *p;
+
+    p = (struct Map_info *)malloc(sizeof(struct Map_info)); 
+
+    if (NULL == p)
+      G_fatal_error("Vect_new_map_struct(): %s", _("Out of memory"));
+
+    G_zero(p, sizeof(struct Map_info));
+
+    return p;
+}
+
+/*!
+   \brief Frees all memory associated with a Map_info structure,
+   including the structure itself
+
+   \param p pointer to Map_info structure
+ */
+void Vect_destroy_map_struct(struct Map_info *p)
+{
+   /* We should free all allocated member structures, but they may be already 
+      freed by other functions (e.g. Vect_close()) without resetting member pointers to zero */
+
+   G_free((char *)p);
+}
 
 /*!
    \brief Copy file
@@ -347,9 +383,9 @@ int Vect_delete(const char *map)
 int Vect__delete(const char *map, int is_tmp)
 {
     int ret;
-    char *path, path_buf[GPATH_MAX];
+    char path[GPATH_MAX], path_buf[GPATH_MAX];
     char xname[GNAME_MAX], xmapset[GMAPSET_MAX];
-    const char *tmp, *mapset;
+    const char *tmp, *mapset, *env;
     
     struct Map_info Map;
     
@@ -384,7 +420,7 @@ int Vect__delete(const char *map, int is_tmp)
         }
     }
         
-    path = Vect__get_element_path(&Map, GV_DBLN_ELEMENT);
+    Vect__get_element_path(path, &Map, GV_DBLN_ELEMENT);
     G_debug(1, "dbln file: %s", path);
 
     if (access(path, F_OK) == 0) {
@@ -439,10 +475,9 @@ int Vect__delete(const char *map, int is_tmp)
             }
         }
     }
-    G_free(path);
     
     /* Delete all files from vector/name directory */
-    path = Vect__get_element_path(&Map, NULL);
+    Vect__get_element_path(path, &Map, NULL);
     Vect_close(&Map);
     G_debug(3, "opendir '%s'", path);
     dir = opendir(path);
@@ -468,23 +503,30 @@ int Vect__delete(const char *map, int is_tmp)
     }
     closedir(dir);
     
-    /* NFS can create .nfsxxxxxxxx files for those deleted 
-     *  -> we have to move the directory to ./tmp before it is deleted */
-    tmp = G_tempfile();
-
-    G_debug(3, "rename '%s' to '%s'", path, tmp);
-    ret = rename(path, tmp);
-    if (ret == -1) {
-        G_warning(_("Unable to rename directory '%s' to '%s'"), path, tmp);
-        return -1;
+    env = getenv("GRASS_VECTOR_TMPDIR_MAPSET");
+    if (env && strcmp(env, "0") == 0) {
+	tmp = path;
     }
-    G_free(path);
+    else {
+	/* NFS can create .nfsxxxxxxxx files for those deleted 
+	 *  -> we have to move the directory to ./tmp before it is deleted */
+	tmp = G_tempfile();
+	
+	G_debug(3, "rename '%s' to '%s'", path, tmp);
+	
+	ret = rename(path, tmp);
+	if (ret == -1) {
+	    G_warning(_("Unable to rename directory '%s' to '%s'"), path, tmp);
+	    return -1;
+	}
+    }
 
     G_debug(3, "remove directory '%s'", tmp);
     /* Warning: remove() fails on Windows */
     ret = rmdir(tmp);
     if (ret == -1) {
-        G_warning(_("Unable to remove directory '%s'"), tmp);
+        G_warning(_("Unable to remove directory '%s': %s"),
+		  tmp, strerror(errno));
         return -1;
     }
 

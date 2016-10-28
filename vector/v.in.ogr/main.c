@@ -46,6 +46,8 @@ int centroid(OGRGeometryH hGeom, CENTR * Centr, struct spatial_index * Sindex,
 	     int field, int cat, double min_area, int type);
 int poly_count(OGRGeometryH hGeom, int line2boundary);
 
+char *get_datasource_name(const char *, int);
+
 int main(int argc, char *argv[])
 {
     struct GModule *module;
@@ -139,10 +141,11 @@ int main(int argc, char *argv[])
     param.dsn->key = "input";
     param.dsn->type = TYPE_STRING;
     param.dsn->required =YES;
-    param.dsn->label = _("OGR datasource name");
+    param.dsn->label = _("Name of OGR datasource to be imported");
     param.dsn->description = _("Examples:\n"
 				   "\t\tESRI Shapefile: directory containing shapefiles\n"
 				   "\t\tMapInfo File: directory containing mapinfo files");
+    param.dsn->gisprompt = "old,datasource,datasource";
     
     param.layer = G_define_option();
     param.layer->key = "layer";
@@ -154,7 +157,8 @@ int main(int argc, char *argv[])
     param.layer->description =
 	_("Examples:\n" "\t\tESRI Shapefile: shapefile name\n"
 	  "\t\tMapInfo File: mapinfo file name");
-    param.layer->guisection = _("Selection");
+    param.layer->guisection = _("Input");
+    param.layer->gisprompt = "old,datasource_layer,datasource_layer";
 
     param.out = G_define_standard_option(G_OPT_V_OUTPUT);
     param.out->required = NO;
@@ -213,6 +217,7 @@ int main(int argc, char *argv[])
     param.outloc->required = NO;
     param.outloc->description = _("Name for new location to create");
     param.outloc->key_desc = "name";
+    param.outloc->guisection = _("Output");
     
     param.cnames = G_define_standard_option(G_OPT_DB_COLUMNS);
     param.cnames->description =
@@ -275,8 +280,10 @@ int main(int argc, char *argv[])
 
     flag.over = G_define_flag();
     flag.over->key = 'o';
+    flag.over->label =
+	_("Override projection check (use current location's projection)");
     flag.over->description =
-	_("Override dataset projection (use location's projection)");
+	_("Assume that the dataset has the same projection as the current location");
 
     flag.proj = G_define_flag();
     flag.proj->key = 'j';
@@ -308,6 +315,7 @@ int main(int argc, char *argv[])
     flag.no_import->description =
 	_("Create the location specified by the \"location\" parameter and exit."
           " Do not import the vector data.");
+    flag.no_import->guisection = _("Output");
     
     /* The parser checks if the map already exists in current mapset, this is
      * wrong if location options is used, so we switch out the check and do it
@@ -354,44 +362,9 @@ int main(int argc, char *argv[])
     else
 	datetime_type = "datetime";
 
-    /* dsn is 'PG:', check default connection settings */
     dsn = NULL;
-    if (driver_name && strcmp(driver_name, "pg") == 0 &&
-        G_strcasecmp(param.dsn->answer, "PG:") == 0) {
-        const char *dbname;
-        dbConnection conn;
-        
-        dbname = db_get_default_database_name();
-        if (!dbname)
-            G_fatal_error(_("Database not defined, please check default "
-                            " connection settings by db.connect"));
-
-        dsn = (char *) G_malloc(GPATH_MAX);
-        /* -> dbname */
-        sprintf(dsn, "PG:dbname=%s", dbname);
-        
-        /* -> user/passwd */
-        if (DB_OK == db_get_connection(&conn) &&
-            strcmp(conn.driverName, "pg") == 0 &&
-            strcmp(conn.databaseName, dbname) == 0) {
-            if (conn.user) {
-                strcat(dsn, " user=");
-                strcat(dsn, conn.user);
-            }
-            if (conn.password) {
-                strcat(dsn, " passwd=");
-                strcat(dsn, conn.password);
-            }
-            /* TODO: host/port... */
-        }
-        else {
-            G_debug(1, "unable to get connection");
-        }
-        G_debug(1, "Using dsn=%s", dsn);
-    }
-    else if (param.dsn->answer) {
-        dsn = G_store(param.dsn->answer);
-    }
+    if (param.dsn->answer)
+        dsn = get_datasource_name(param.dsn->answer, TRUE);
     
     min_area = atof(param.min_area->answer);
     snap = atof(param.snap->answer);

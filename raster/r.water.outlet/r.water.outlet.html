@@ -45,6 +45,9 @@ d.rast map=basin_A30
 # overlay with transparency
 r.colors map=basin_A30 color=grey
 d.his h=accum_5K i=basin_A30
+
+# report outlet size in ha
+r.report map=basin_A30 units=h
 </pre></div>
 
 <p>
@@ -67,4 +70,4 @@ d.his h=accum_5K i=basin_A30
 Charles Ehlschlaeger, U.S. Army Construction Engineering Research Laboratory
 
 <p>
-<i>Last changed: $Date: 2016-04-26 02:49:55 +0200 (Tue, 26 Apr 2016) $</i>
+<i>Last changed: $Date: 2016-10-20 22:26:55 +0200 (Thu, 20 Oct 2016) $</i>
