@@ -32,7 +32,6 @@ grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.thin
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/v.extract
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/v.lrs.segment
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/v.segment
-grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/wximgview
 grass-core: hardening-no-fortify-functions usr/lib/grass*/driver/db/ogr
 grass-core: hardening-no-fortify-functions usr/lib/grass*/etc/lister/cell
 grass-core: hardening-no-fortify-functions usr/lib/grass*/etc/lister/vector
