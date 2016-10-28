@@ -8,7 +8,7 @@
  *               
  * PURPOSE:      Create a new vector as a link to OGR layer
  *               
- * COPYRIGHT:    (C) 2003-2011 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2003-2016 by the GRASS Development Team
  *
  *               This program is free software under the GNU General
  *               Public License (>=v2). Read the file COPYING that
@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
     FILE *fd;
     
     int ilayer, use_ogr;
-    char buf[GPATH_MAX], *dsn;
+    char buf[GPATH_MAX], *dsn, *layer;
     const char *output;
     
     G_gisinit(argv[0]);
@@ -95,22 +95,9 @@ int main(int argc, char *argv[])
         exit(EXIT_SUCCESS);
     }
 
-    /* be friendly, ignored 'PG:' prefix for PostGIS links */
     dsn = NULL;
-    if (options.dsn->answer) {
-        if (!use_ogr) {
-            int i, length;
-            
-            length = strlen(options.dsn->answer);
-            dsn = (char *) G_malloc(length - 3);
-            for (i = 3; i < length; i++)
-                dsn[i-3] = options.dsn->answer[i];
-            dsn[length-3] = '\0';
-        }
-        else {
-            dsn = G_store(options.dsn->answer);
-        }
-    }
+    if (options.dsn->answer)
+        dsn = get_datasource_name(options.dsn->answer, use_ogr);
     
     if (flags.list->answer || flags.tlist->answer) {
         /* list layers */
@@ -121,25 +108,34 @@ int main(int argc, char *argv[])
         exit(EXIT_SUCCESS);
     }
 
-    /* define name for output */
-    if (!options.output->answer)
-        output = options.layer->answer;
-    else
-        output = options.output->answer;
-    
-
-    /* get layer index */
-    ilayer = list_layers(NULL, dsn, options.layer->answer,
+    /* get layer index/name */
+    layer = NULL;
+    if (options.layer->answer)
+        layer = G_store(options.layer->answer);
+    ilayer = list_layers(NULL, dsn, &layer,
                          FALSE, use_ogr);
     if (ilayer == -1) {
-        G_fatal_error(_("Layer <%s> not available"), options.layer->answer);
+        if (options.layer->answer)
+            G_fatal_error(_("Layer <%s> not available"), options.layer->answer);
+        else
+            G_fatal_error(_("No layer defined"));
     }
-    
-    G_debug(2, "layer '%s' was found", options.layer->answer);
+    G_debug(2, "layer '%s' was found", layer);
+
+    /* define name for output */
+    if (!options.output->answer)
+        output = layer;
+    else
+        output = options.output->answer;
 
     if (G_find_vector2(output, G_mapset()) && !G_check_overwrite(argc, argv)) {
         G_fatal_error(_("option <%s>: <%s> exists. To overwrite, use the --overwrite flag"),
                       options.output->key, output);
+    }
+
+    /* check projection match */
+    if (!flags.override->answer) {
+        check_projection(dsn, ilayer);
     }
     
     /* create new vector map */
@@ -169,7 +165,7 @@ int main(int argc, char *argv[])
     if (!use_ogr) {
         char *table_name, *schema_name;
         
-        get_table_name(options.layer->answer, &table_name, &schema_name);
+        get_table_name(layer, &table_name, &schema_name);
         
         fprintf(fd, "format: postgis\n");
         fprintf(fd, "conninfo: %s\n", dsn);
@@ -183,7 +179,7 @@ int main(int argc, char *argv[])
     else {
         fprintf(fd, "format: ogr\n");
         fprintf(fd, "dsn: %s\n", dsn);
-        fprintf(fd, "layer: %s\n", options.layer->answer);
+        fprintf(fd, "layer: %s\n", layer);
     }
     fclose(fd);
     

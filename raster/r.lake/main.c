@@ -164,6 +164,7 @@ int main(int argc, char *argv[])
     lake_opt = G_define_standard_option(G_OPT_R_OUTPUT);
     lake_opt->key = "lake";
     lake_opt->required = NO;
+    lake_opt->guisection = _("Output");
 
     sdxy_opt = G_define_standard_option(G_OPT_M_COORDS);
     sdxy_opt->label = _("Seed point coordinates");
@@ -171,6 +172,7 @@ int main(int argc, char *argv[])
 	" map have to be specified");
     sdxy_opt->required = NO;
     sdxy_opt->multiple = NO;
+    sdxy_opt->guisection = _("Seed");
 
     smap_opt = G_define_standard_option(G_OPT_R_MAP);
     smap_opt->key = "seed";
@@ -179,6 +181,7 @@ int main(int argc, char *argv[])
     smap_opt->description =
 	_("Either this parameter or a coordinates pair have to be specified");
     smap_opt->required = NO;
+    smap_opt->guisection = _("Seed");
 
     negative_flag = G_define_flag();
     negative_flag->key = 'n';
@@ -189,6 +192,7 @@ int main(int argc, char *argv[])
     overwrite_flag->key = 'o';
     overwrite_flag->description =
 	_("Overwrite seed map with result (lake) map");
+    overwrite_flag->guisection = _("Output");
 
     if (G_parser(argc, argv))	/* Returns 0 if successful, non-zero otherwise */
 	exit(EXIT_FAILURE);
@@ -351,7 +355,7 @@ int main(int argc, char *argv[])
     G_message(_("Lake depth from %f to %f (specified water level is taken as zero)"), min_depth, max_depth);
     G_message(_("Lake area %f square meters"), area);
     G_message(_("Lake volume %f cubic meters"), volume);
-    G_warning(_("Volume is correct only if lake depth (terrain raster map) is in meters"));
+    G_important_message(_("Volume is correct only if lake depth (terrain raster map) is in meters"));
 
     /* Close all files. Lake map gets written only now. */
     Rast_close(in_terran_fd);

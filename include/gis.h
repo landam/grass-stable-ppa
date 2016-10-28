@@ -38,8 +38,8 @@
 static const char *GRASS_copyright __attribute__ ((unused))
     = "GRASS GNU GPL licensed Software";
 
-#define GIS_H_VERSION "$Revision: 67364 $"
-#define GIS_H_DATE    "$Date: 2015-12-24 16:07:44 +0100 (Thu, 24 Dec 2015) $"
+#define GIS_H_VERSION "$Revision: 68908 $"
+#define GIS_H_DATE    "$Date: 2016-07-09 20:12:57 +0200 (Sat, 09 Jul 2016) $"
 
 #define G_gisinit(pgm) G__gisinit(GIS_H_VERSION, (pgm))
 #define G_no_gisinit() G__no_gisinit(GIS_H_VERSION)
@@ -119,6 +119,12 @@ static const char *GRASS_copyright __attribute__ ((unused))
 
 #undef M_PI_4
 #define M_PI_4  0.78539816339744830962	/* pi/4 */
+
+#undef M_R2D
+#define M_R2D  57.295779513082320877    /* 180/pi */
+
+#undef M_D2R
+#define M_D2R   0.017453292519943295769 /* pi/180 */
 
 /* epsilon (IEEE: 2.220446e-16) */
 #define GRASS_EPSILON 1.0e-15
@@ -340,6 +346,7 @@ enum rule_type {
 /* default colors */
 #define DEFAULT_FG_COLOR "black"
 #define DEFAULT_BG_COLOR "white"
+#define DEFAULT_COLOR_TABLE "viridis"
 
 /* error codes */
 #define G_FATAL_EXIT    0

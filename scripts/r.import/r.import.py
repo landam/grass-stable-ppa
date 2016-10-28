@@ -46,6 +46,7 @@
 #%end
 #%option G_OPT_R_OUTPUT
 #% description: Name for output raster map
+#% required: no
 #% guisection: Output
 #%end
 #%option
@@ -89,6 +90,14 @@
 #% description: Resolution of output raster map (use with option resolution=value)
 #% guisection: Output
 #%end
+#%option
+#% key: title
+#% key_desc: phrase
+#% type: string
+#% required: no
+#% description: Title for resultant raster map
+#% guisection: Metadata
+#%end
 #%flag
 #% key: e
 #% description: Estimate resolution only
@@ -106,7 +115,10 @@
 #%flag
 #% key: o
 #% label: Override projection check (use current location's projection)
-#% description: Assume that the dataset has same projection as the current location
+#% description: Assume that the dataset has the same projection as the current location
+#%end
+#%rules
+#% required: output,-e
 #%end
 
 import sys
@@ -131,7 +143,8 @@ def cleanup():
         grass.try_rmdir(os.path.join(GISDBASE, TMPLOC))
     if SRCGISRC:
         grass.try_remove(SRCGISRC)
-    if TMP_REG_NAME:
+    if TMP_REG_NAME and grass.find_file(name=TMP_REG_NAME, element='vector',
+                                        mapset=grass.gisenv()['MAPSET'])['fullname']:
         grass.run_command('g.remove', type='vector', name=TMP_REG_NAME,
                           flags='f', quiet=True)
 
@@ -145,6 +158,9 @@ def main():
     memory = options['memory']
     bands = options['band']
     tgtres = options['resolution']
+    title = options["title"]
+    if flags['e'] and not output:
+        output = 'rimport_tmp'  # will be removed with the entire tmp location
     if options['resolution_value']:
         if tgtres != 'value':
             grass.fatal(_("To set custom resolution value, select 'value' in resolution option"))
@@ -152,7 +168,8 @@ def main():
         if tgtres_value <= 0:
             grass.fatal(_("Resolution value can't be smaller than 0"))
     elif tgtres == 'value':
-         grass.fatal(_("Please provide the resolution for the imported dataset or change to 'estimated' resolution"))
+        grass.fatal(
+            _("Please provide the resolution for the imported dataset or change to 'estimated' resolution"))
 
     grassenv = grass.gisenv()
     tgtloc = grassenv['LOCATION_NAME']
@@ -175,7 +192,7 @@ def main():
     # create temp location from input without import
     grass.verbose(_("Creating temporary location for <%s>...") % GDALdatasource)
     parameters = dict(input=GDALdatasource, output=output,
-                      memory=memory, flags='c',
+                      memory=memory, flags='c', title=title,
                       location=TMPLOC, quiet=True)
     if bands:
         parameters['band'] = bands
@@ -202,14 +219,18 @@ def main():
             parameters['band'] = bands
         try:
             grass.run_command('r.in.gdal', **parameters)
-            grass.verbose(_("Input <%s> successfully imported without reprojection") % GDALdatasource)
+            grass.verbose(
+                _("Input <%s> successfully imported without reprojection") %
+                GDALdatasource)
             return 0
         except CalledModuleError as e:
             grass.fatal(_("Unable to import GDAL dataset <%s>") % GDALdatasource)
-    
+
     # make sure target is not xy
     if grass.parse_command('g.proj', flags='g')['name'] == 'xy_location_unprojected':
-        grass.fatal(_("Coordinate reference system not available for current location <%s>") % tgtloc)
+        grass.fatal(
+            _("Coordinate reference system not available for current location <%s>") %
+            tgtloc)
 
     # switch to temp location
     os.environ['GISRC'] = str(SRCGISRC)
@@ -318,7 +339,9 @@ def main():
         grass.run_command('g.remove', type='vector', name=vreg,
                           flags='f', quiet=True)
 
-        grass.message(_("Estimated target resolution for input band <{out}>: {res}").format(out=outfile, res=estres))
+        grass.message(
+            _("Estimated target resolution for input band <{out}>: {res}").format(
+                out=outfile, res=estres))
         if flags['e']:
             continue
 
@@ -331,7 +354,9 @@ def main():
             res = estres
         elif tgtres == 'value':
             res = tgtres_value
-            grass.message(_("Using given resolution for input band <{out}>: {res}").format(out=outfile, res=res))
+            grass.message(
+                _("Using given resolution for input band <{out}>: {res}").format(
+                    out=outfile, res=res))
             # align to requested resolution
             grass.run_command('g.region', res=res, flags='a')
         else:

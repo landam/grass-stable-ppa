@@ -80,7 +80,7 @@
 #% description: Print the column names as first row
 #% guisection: Formatting
 #%end
-
+from __future__ import print_function
 import grass.script as gscript
 import grass.temporal as tgis
 import sys
@@ -104,6 +104,8 @@ def main():
     tgis.init()
 
     sp = tgis.dataset_factory(type, None)
+    dbif = tgis.SQLDatabaseInterfaceConnection()
+    dbif.connect()
     first = True
 
     if  gscript.verbosity() > 0 and not outpath:
@@ -115,7 +117,7 @@ def main():
         else:
             time = "relative time"
 
-        stds_list = tgis.get_dataset_list(type,  ttype,  columns,  where,  order)
+        stds_list = tgis.get_dataset_list(type,  ttype,  columns,  where,  order, dbif=dbif)
 
         # Use the correct order of the mapsets, hence first the current mapset, then
         # alphabetic ordering
@@ -151,7 +153,7 @@ def main():
                         if outpath:
                             outfile.write("{st}\n".format(st=output))
                         else:
-                            print output
+                            print(output)
                         first = False
 
                     for row in rows:
@@ -166,9 +168,10 @@ def main():
                         if outpath:
                             outfile.write("{st}\n".format(st=output))
                         else:
-                            print output
+                            print(output)
     if outpath:
         outfile.close()
+    dbif.close()
 
 if __name__ == "__main__":
     options, flags = gscript.parser()

@@ -4,7 +4,7 @@
  * MODULE:       d.info
  * AUTHOR(S):    Glynn Clements
  * PURPOSE:      Display information about the active display monitor
- * COPYRIGHT:    (C) 2004, 2012 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2004-2015 by the GRASS Development Team
  *
  *               This program is free software under the GNU General Public
  *               License (>=v2). Read the file COPYING that comes with GRASS
@@ -14,6 +14,9 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <dirent.h>
+#include <string.h>
+
 #include <grass/gis.h>
 #include <grass/display.h>
 #include <grass/glocale.h>
@@ -62,8 +65,8 @@ int main(int argc, char *argv[])
     gflag->description =
 	_("Display geographic coordinates and resolution of entire frame");
 
-    G_option_required(rflag, dflag, fflag, eflag, bflag, gflag, NULL); 
-
+    G_option_required(rflag, dflag, fflag, eflag, bflag, gflag, NULL);
+    
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
@@ -118,7 +121,7 @@ int main(int argc, char *argv[])
 	fprintf(stdout, "nsres=%.15g\n", -D_get_d_to_u_yconv() );
     }
 
-    
+   
     D_close_driver();
 
     exit(EXIT_SUCCESS);

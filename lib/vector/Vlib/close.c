@@ -5,7 +5,7 @@
 
    Higher level functions for reading/writing/manipulating vectors.
 
-   (C) 2001-2009, 2011-2012 by the GRASS Development Team
+   (C) 2001-2015 by the GRASS Development Team
 
    This program is free software under the GNU General Public License
    (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -323,14 +323,12 @@ void Vect__free_offset(struct Format_info_offset *offset)
 
 void unlink_file(const struct Map_info *Map, const char *name)
 {
-    char *path;
+    char path[GPATH_MAX];
 
     /* delete old support files if available */
-    path = Vect__get_element_path(Map, name);
+    Vect__get_element_path(path, Map, name);
     if (access(path, F_OK) == 0) { /* file exists? */
         G_debug(2, "\t%s: unlink", path);
         unlink(path);
     }
-
-    G_free(path);
 }

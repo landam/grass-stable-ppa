@@ -50,6 +50,7 @@ libpythonclean:
 	-rm -f _templates/layout.html
 	-rm -f src/ctypes*.rst
 	-rm -f src/exceptions.rst
+	-rm -f src/gunittest.*rst
 	-rm -f src/imaging.rst
 	-rm -f src/pydispatch.rst
 	-rm -f src/pygrass.*rst
@@ -60,6 +61,7 @@ libpythonapidoc:
 	@echo "SPHINXBUILD: Using <$(SPHINXBUILD)>"
 	$(call run_grass,$(SPHINXAPIDOC) -T -f -o src/ ../imaging/)
 	$(call run_grass,$(SPHINXAPIDOC) -T -f -o src/ ../exceptions/)
+	$(call run_grass,$(SPHINXAPIDOC) -T -f -o src/ ../gunittest/ ../gunittest/multireport.py ../gunittest/multirunner.py ../gunittest/main.py)
 	$(call run_grass,$(SPHINXAPIDOC) -T -f -o src/ ../pydispatch/)
 	$(call run_grass,$(SPHINXAPIDOC) -T -f -o src/ ../pygrass/)
 	$(call run_grass,$(SPHINXAPIDOC) -T -f -o src/ ../script/)

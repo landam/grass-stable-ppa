@@ -8,13 +8,16 @@ import sys
 import unittest
 import numpy as np
 
-from grass.gunittest import TestCase, test
+from grass.gunittest.case import TestCase
+from grass.gunittest.main import test
 
 import grass.lib.vector as libvect
+from grass.script.core import run_command
 
-from grass.pygrass.vector import VectorTopo
+from grass.pygrass.vector import Vector, VectorTopo
 from grass.pygrass.vector.geometry import Point, Line, Node
-
+from grass.pygrass.vector.geometry import Area, Boundary, Centroid
+from grass.pygrass.vector.basic import Bbox
 
 class PointTestCase(TestCase):
 
@@ -50,11 +53,21 @@ class PointTestCase(TestCase):
         self.assertEqual(Point(1, 2).coords(), (1, 2))
         self.assertEqual(Point(1, 2, 3).coords(), (1, 2, 3))
 
-    def test_get_wkt(self):
+    def test_to_wkt_p(self):
         """Test coords method"""
-        self.assertEqual(Point(1, 2).get_wkt(), 'POINT(1.000000 2.000000)')
-        self.assertEqual(Point(1, 2, 3).get_wkt(),
+        self.assertEqual(Point(1, 2).to_wkt_p(), 'POINT(1.000000 2.000000)')
+        self.assertEqual(Point(1, 2, 3).to_wkt_p(),
                          'POINT(1.000000 2.000000 3.000000)')
+
+    def test_to_wkt(self):
+        """Test coords method"""
+        self.assertEqual(Point(1, 2).to_wkt(), 'POINT (1.0000000000000000 2.0000000000000000)')
+        self.assertEqual(Point(1, 2, 3).to_wkt(),
+                         'POINT Z (1.0000000000000000 2.0000000000000000 3.0000000000000000)')
+
+    def test_to_wkb(self):
+        """Test to_wkb method"""
+        self.assertEqual(len(Point(1, 2).to_wkb()), 21)
 
     def test_distance(self):
         """Test distance method"""
@@ -88,6 +101,29 @@ class PointTestCase(TestCase):
 
 class LineTestCase(TestCase):
 
+    tmpname = "LineTestCase_map"
+
+    @classmethod
+    def setUpClass(cls):
+
+        from grass.pygrass import utils
+        utils.create_test_vector_map(cls.tmpname)
+
+        cls.vect = None
+        cls.vect = VectorTopo(cls.tmpname)
+        cls.vect.open('r')
+        cls.c_mapinfo = cls.vect.c_mapinfo
+
+    @classmethod
+    def tearDownClass(cls):
+        if cls.vect is not None:
+            cls.vect.close()
+            cls.c_mapinfo = None
+
+        """Remove the generated vector map, if exist"""
+        cls.runModule("g.remove", flags='f', type='vector', 
+                      name=cls.tmpname)
+
     def test_len(self):
         """Test __len__ magic method"""
         self.assertEqual(len(Line()), 0)
@@ -120,9 +156,18 @@ class LineTestCase(TestCase):
         """Test get_pnt method"""
         line = Line([(0, 0), (1, 1)])
         with self.assertRaises(ValueError):
-            line.get_pnt(5)
+            line.point_on_line(5)
         vals = (0.7071067811865475, 0.7071067811865475)
-        self.assertTupleEqual(line.get_pnt(1).coords(), vals)
+        self.assertTupleEqual(line.point_on_line(1).coords(), vals)
+
+    def test_to_wkt(self):
+        """Test to_wkt method"""
+        string = 'LINESTRING (0.0000000000000000 0.0000000000000000, 1.0000000000000000 1.0000000000000000)'
+        self.assertEqual(Line([(0, 0), (1, 1)]).to_wkt(), string)
+
+    def test_to_wkb(self):
+        """Test to_wkb method"""
+        self.assertEqual(len(Line([(0, 0), (1, 1)]).to_wkb()), 41)
 
     def test_bbox(self):
         """Test bbox method"""
@@ -134,24 +179,29 @@ class LineTestCase(TestCase):
         self.assertEqual(0, bbox.west)
 
     def test_nodes(self):
-        """Test inodes method"""
+        """Test nodes method"""
         def nodes2tuple(nodes):
             """Convert an iterable of nodes to a tuple of nodes id"""
             return tuple(n.id for n in nodes)
 
-        with VectorTopo("roadsmajor", mode='r') as vect:
-            self.assertTupleEqual((206, 172), nodes2tuple(vect[284].nodes()))
-            self.assertTupleEqual((208, 206), nodes2tuple(vect[287].nodes()))
-            self.assertTupleEqual((206, 209), nodes2tuple(vect[288].nodes()))
-            self.assertTupleEqual((218, 206), nodes2tuple(vect[301].nodes()))
-
-
+        with VectorTopo("LineTestCase_map", mode='r') as vect:
+            self.assertTupleEqual((1, 2), nodes2tuple(vect[4].nodes()))
+            self.assertTupleEqual((3, 4), nodes2tuple(vect[5].nodes()))
+            self.assertTupleEqual((5, 6), nodes2tuple(vect[6].nodes()))
 
 class NodeTestCase(TestCase):
+
+    tmpname = "NodeTestCase_map"
+
     @classmethod
     def setUpClass(cls):
+
+        # Tests are based on a stream network
+        from grass.pygrass import utils
+        utils.create_test_stream_network_map(cls.tmpname)
+
         cls.vect = None
-        cls.vect = VectorTopo("roadsmajor")
+        cls.vect = VectorTopo(cls.tmpname)
         cls.vect.open('r')
         cls.c_mapinfo = cls.vect.c_mapinfo
 
@@ -161,32 +211,172 @@ class NodeTestCase(TestCase):
             cls.vect.close()
             cls.c_mapinfo = None
 
+        """Remove the generated vector map, if exist"""
+        cls.runModule("g.remove", flags='f', type='vector', 
+                      name=cls.tmpname)
+
     def test_init(self):
         """Test Node __init__"""
-        node = Node(v_id=206, c_mapinfo=self.c_mapinfo)
-        self.assertEqual(206, node.id)
+        node = Node(v_id=4, c_mapinfo=self.c_mapinfo)
+        self.assertEqual(4, node.id)
         self.assertTrue(node.is2D)
-        self.assertEqual(4, node.nlines)
+        self.assertEqual(5, node.nlines)
 
     def test_coords(self):
         """Test Node coordinates"""
-        node = Node(v_id=206, c_mapinfo=self.c_mapinfo)
-        self.assertTupleEqual((620906.5786131569, 221685.65913128198),
-                              node.coords())
+        node = Node(v_id=4, c_mapinfo=self.c_mapinfo)
+        self.assertTupleEqual((1.0, 0.0), node.coords())
 
     def test_ilines(self):
-        """Test Node coordinates"""
-        node = Node(v_id=206, c_mapinfo=self.c_mapinfo)
-        self.assertTupleEqual((288, -301, -287, 284), tuple(node.ilines()))
-        self.assertTupleEqual((-301, -287), tuple(node.ilines(only_in=True)))
-        self.assertTupleEqual((288, 284), tuple(node.ilines(only_out=True)))
+        """Test Node neighbors"""
+        node = Node(v_id=4, c_mapinfo=self.c_mapinfo)
+        self.assertTupleEqual((6, -4, 7, -3, -5), tuple(node.ilines()))
+        self.assertTupleEqual((-4, -3, -5), tuple(node.ilines(only_in=True)))
+        node = Node(v_id=4, c_mapinfo=self.c_mapinfo)
+        self.assertTupleEqual((6, 7), tuple(node.ilines(only_out=True)))
 
     def test_angles(self):
         """Test Node angles"""
-        node = Node(v_id=206, c_mapinfo=self.c_mapinfo)
-        angles = (-3.044905185699463, -1.026218056678772,
-                  0.10362745821475983, 2.2236430644989014)
+        node = Node(v_id=4, c_mapinfo=self.c_mapinfo)
+        angles = (-1.5707963705062866, 0.7853981852531433,
+                   1.2793395519256592, 1.8622530698776245,
+                   2.356194496154785)
         self.assertTupleEqual(angles, tuple(node.angles()))
+
+class AreaTestCase(TestCase):
+
+    tmpname = "AreaTestCase_map"
+
+    @classmethod
+    def setUpClass(cls):
+
+        # Tests are based on a stream network
+        from grass.pygrass import utils
+        utils.create_test_vector_map(cls.tmpname)
+
+        cls.vect = None
+        cls.vect = VectorTopo(cls.tmpname)
+        cls.vect.open('r')
+        cls.c_mapinfo = cls.vect.c_mapinfo
+
+    @classmethod
+    def tearDownClass(cls):
+        if cls.vect is not None:
+            cls.vect.close()
+            cls.c_mapinfo = None
+
+        """Remove the generated vector map, if exist"""
+        cls.runModule("g.remove", flags='f', type='vector', 
+                      name=cls.tmpname)
+
+    def test_init(self):
+        """Test area __init__ and basic functions"""
+        area = Area(v_id=1, c_mapinfo=self.c_mapinfo)
+        self.assertEqual(1, area.id)
+        self.assertTrue(area.is2D)
+        self.assertTrue(area.alive())
+        self.assertEqual(area.area(), 12.0)
+
+    def test_to_wkt(self):
+        """Test to_wkt method"""
+        area = Area(v_id=1, c_mapinfo=self.c_mapinfo)
+        # Outer and inner ring!!
+        string = "POLYGON ((0.0000000000000000 0.0000000000000000, "\
+                           "0.0000000000000000 4.0000000000000000, "\
+                           "0.0000000000000000 4.0000000000000000, "\
+                           "4.0000000000000000 4.0000000000000000, "\
+                           "4.0000000000000000 4.0000000000000000, "\
+                           "4.0000000000000000 0.0000000000000000, "\
+                           "4.0000000000000000 0.0000000000000000, "\
+                           "0.0000000000000000 0.0000000000000000), "\
+                           "(1.0000000000000000 1.0000000000000000, "\
+                           "3.0000000000000000 1.0000000000000000, "\
+                           "3.0000000000000000 3.0000000000000000, "\
+                           "1.0000000000000000 3.0000000000000000, "\
+                           "1.0000000000000000 1.0000000000000000))"
+        self.assertEqual(area.to_wkt(), string)
+
+    def test_to_wkb(self):
+        """Test to_wkt method"""
+        area = Area(v_id=1, c_mapinfo=self.c_mapinfo)
+        self.assertEqual(len(area.to_wkb()), 225)
+
+    def test_contains_point(self):
+        """Test contain_point method"""
+        area = Area(v_id=1, c_mapinfo=self.c_mapinfo)
+        p = Point(0.5, 0.5)
+        bbox = Bbox(4.0, 0.0, 4.0, 0.0)
+        self.assertTrue(area.contains_point(p, bbox))
+        self.assertTrue(area.contains_point(p))
+
+    def test_bbox(self):
+        """Test contain_point method"""
+        area = Area(v_id=1, c_mapinfo=self.c_mapinfo)
+        self.assertEqual(str(area.bbox()), "Bbox(4.0, 0.0, 4.0, 0.0)")
+
+    def test_centroid(self):
+        """Test centroid access"""
+        area = Area(v_id=1, c_mapinfo=self.c_mapinfo)
+        centroid = area.centroid()
+
+        self.assertEqual(centroid.id, 18)
+        self.assertEqual(centroid.area_id, 1)
+        self.assertEqual(centroid.to_wkt(), 'POINT (3.5000000000000000 3.5000000000000000)')
+
+    def test_boundaries_1(self):
+        """Test boundary access"""
+        area = Area(v_id=1, c_mapinfo=self.c_mapinfo)
+        boundaries = area.boundaries()
+        self.assertEqual(len(boundaries), 4)
+
+        string_list = []
+        string_list.append("LINESTRING (0.0000000000000000 0.0000000000000000, 0.0000000000000000 4.0000000000000000)")
+        string_list.append("LINESTRING (0.0000000000000000 4.0000000000000000, 4.0000000000000000 4.0000000000000000)")
+        string_list.append("LINESTRING (4.0000000000000000 4.0000000000000000, 4.0000000000000000 0.0000000000000000)")
+        string_list.append("LINESTRING (4.0000000000000000 0.0000000000000000, 0.0000000000000000 0.0000000000000000)")
+
+        for boundary, i in zip(boundaries, range(4)):
+            self.assertEqual(len(boundary.to_wkb()), 41)
+            self.assertEqual(boundary.to_wkt(), string_list[i])
+
+    def test_boundaries_2(self):
+        """Test boundary access"""
+        area = Area(v_id=1, c_mapinfo=self.c_mapinfo)
+        boundaries = area.boundaries()
+        boundary = boundaries[2]
+        boundary.read_area_ids()
+        self.assertEqual(boundary.left_area_id, 2)
+        self.assertEqual(boundary.right_area_id, 1)
+
+        self.assertEqual(boundary.left_centroid().to_wkt(), 'POINT (5.5000000000000000 3.5000000000000000)')
+        self.assertEqual(boundary.right_centroid().to_wkt(), 'POINT (3.5000000000000000 3.5000000000000000)')
+
+    def test_isles_1(self):
+        """Test centroid access"""
+        area = Area(v_id=1, c_mapinfo=self.c_mapinfo)
+        self.assertEqual(area.num_isles(), 1)
+
+        isles = area.isles()
+        isle = isles[0]
+
+        self.assertEqual(isle.area(), 4.0)
+        self.assertEqual(isle.points().to_wkt(), "LINESTRING (1.0000000000000000 1.0000000000000000, "\
+                                                             "3.0000000000000000 1.0000000000000000, "\
+                                                             "3.0000000000000000 3.0000000000000000, "\
+                                                             "1.0000000000000000 3.0000000000000000, "\
+                                                             "1.0000000000000000 1.0000000000000000)")
+    def test_isles_2(self):
+        """Test centroid access"""
+        area = Area(v_id=1, c_mapinfo=self.c_mapinfo)
+        self.assertEqual(area.num_isles(), 1)
+
+        isles = area.isles()
+        isle = isles[0]
+        self.assertEqual(isle.area_id(), 1)
+        self.assertTrue(isle.alive())
+
+        self.assertEqual(str(isle.bbox()), "Bbox(3.0, 1.0, 3.0, 1.0)")
+
 
 if __name__ == '__main__':
     test()

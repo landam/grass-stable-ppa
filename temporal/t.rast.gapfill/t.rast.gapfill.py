@@ -39,6 +39,15 @@
 #%end
 
 #%option
+#% key: suffix
+#% type: string
+#% description: Suffix to add at basename: set 'gran' for granularity, 'time' for the full time format, 'num' for numerical suffix with a specific number of digits (default %05)
+#% answer: gran
+#% required: no
+#% multiple: no
+#%end
+
+#%option
 #% key: nprocs
 #% type: integer
 #% description: Number of interpolation processes to run in parallel
@@ -52,9 +61,14 @@
 #% description: Assign the space time raster dataset start and end time to the output map
 #%end
 
+import sys
+import copy
 from multiprocessing import Process
 import grass.script as grass
 import grass.temporal as tgis
+
+import grass.pygrass.modules as pymod
+from grass.exceptions import FatalError
 
 ############################################################################
 
@@ -66,6 +80,7 @@ def main():
     base = options["basename"]
     where = options["where"]
     nprocs = options["nprocs"]
+    tsuffix = options["suffix"]
 
     mapset = grass.gisenv()["MAPSET"]
 
@@ -82,6 +97,13 @@ def main():
 
     num = len(maps)
 
+    # Configure the r.to.vect module
+    gapfill_module = pymod.Module("r.series.interp",
+                             overwrite=grass.overwrite(), quiet=True, run_=False,
+                             finish_=False,)
+
+    process_queue = pymod.ParallelModuleQueue(int(nprocs))
+
     gap_list = []
     overwrite_flags = {}
 
@@ -90,17 +112,12 @@ def main():
     for _map in maps:
         if _map.get_id() is None:
             count += 1
-            _id = "%s_%d@%s" % (base, num + count, mapset)
+            if sp.get_temporal_type() == 'absolute' and tsuffix in ['gran', 'time']:
+                _id = "{ba}@{ma}".format(ba=base, ma=mapset)
+            else:
+                map_name = tgis.create_numeric_suffic(base, num + count, tsuffix)
+                _id = "{name}@{ma}".format(name=map_name, ma=mapset)
             _map.set_id(_id)
-            overwrite_flags[_id] = False
-            if _map.map_exists() or _map.is_in_db(dbif):
-                if not grass.overwrite:
-                        grass.fatal(_("Map with name <%s> already exists. "
-                                      "Please use another base name." % (_id)))
-                else:
-                    if _map.is_in_db(dbif):
-                        overwrite_flags[_id] = True
-
 
             gap_list.append(_map)
 
@@ -127,42 +144,70 @@ def main():
                             "Using the first found."))
 
     # Interpolate the maps using parallel processing
-    proc_list = []
-    proc_count = 0
-    num = len(gap_list)
+    result_list = []
 
     for _map in gap_list:
         predecessor = _map.get_follows()[0]
         successor = _map.get_precedes()[0]
 
-        # Build the module inputs strings
-        inputs = "%s,%s" % (predecessor.get_map_id(), successor.get_map_id())
-        dpos = "0,1"
-        output = "%s" % (_map.get_name())
-        outpos = "0.5"
+        gran = sp.get_granularity()
+        tmpval,  start = predecessor.get_temporal_extent_as_tuple()
+        end,  tmpval = successor.get_temporal_extent_as_tuple()
+        
+        # Now resample the gap
+        map_matrix = tgis.AbstractSpaceTimeDataset.resample_maplist_by_granularity((_map, ),start, end,  gran)
+        
+        map_names = []
+        map_positions = []
+        
+        increment = 1.0/ (len(map_matrix) + 1.0)
+        position = increment
+        count = 0
+        for intp_list in map_matrix:
+            new_map = intp_list[0]
+            count += 1
+            if sp.get_temporal_type() == 'absolute' and tsuffix == 'gran':
+                suffix = tgis.create_suffix_from_datetime(new_map.temporal_extent.get_start_time(),
+                                                          sp.get_granularity())
+                new_id = "{ba}_{su}@{ma}".format(ba=new_map.get_name(),
+                                                 su=suffix, ma=mapset)
+            elif sp.get_temporal_type() == 'absolute' and tsuffix == 'time':
+                suffix = tgis.create_time_suffix(new_map)
+                new_id = "{ba}_{su}@{ma}".format(ba=new_map.get_name(),
+                                                 su=suffix, ma=mapset)
+            else:
+                map_name = tgis.create_numeric_suffic(new_map.get_name(),
+                                                      count, tsuffix)
+                new_id = "{name}@{ma}".format(name=map_name, ma=mapset)
 
-        # Start several processes in parallel
-        proc_list.append(Process(
-            target=run_interp, args=(inputs, dpos, output, outpos)))
-        proc_list[proc_count].start()
-        proc_count += 1
+            new_map.set_id(new_id)
+            
+            overwrite_flags[new_id] = False
+            if new_map.map_exists() or new_map.is_in_db(dbif):
+                if not grass.overwrite:
+                        grass.fatal(_("Map with name <%s> already exists. "
+                                      "Please use another base name." % (_id)))
+                else:
+                    if new_map.is_in_db(dbif):
+                        overwrite_flags[new_id] = True
 
-        if proc_count == nprocs or proc_count == num:
-            proc_count = 0
-            exitcodes = 0
-            for proc in proc_list:
-                proc.join()
-                exitcodes += proc.exitcode
+            map_names.append(new_map.get_name())
+            map_positions.append(position)
+            position += increment
+            
+            result_list.append(new_map)
 
-            if exitcodes != 0:
-                dbif.close()
-                grass.fatal(_("Error while interpolation computation"))
+        mod = copy.deepcopy(gapfill_module)
+        mod(input=(predecessor.get_map_id(), successor.get_map_id()),
+                datapos=(0, 1), output=map_names,  samplingpos=map_positions)
+        sys.stderr.write(mod.get_bash() + "\n")
+        process_queue.put(mod)
 
-            # Empty process list
-            proc_list = []
+    # Wait for unfinished processes
+    process_queue.wait()
 
     # Insert new interpolated maps in temporal database and dataset
-    for _map in gap_list:
+    for _map in result_list:
         id = _map.get_id()
         if overwrite_flags[id] == True:
             if _map.is_time_absolute():

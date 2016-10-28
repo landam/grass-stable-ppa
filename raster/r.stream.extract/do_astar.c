@@ -4,8 +4,8 @@
 #include <grass/glocale.h>
 #include "local_proto.h"
 
-#define GET_PARENT(c) ((((c) - 2) >> 3) + 1)
-#define GET_CHILD(p) (((p) << 3) - 6)
+#define GET_PARENT(c) ((((GW_LARGE_INT)(c) - 2) >> 3) + 1)
+#define GET_CHILD(p) (((GW_LARGE_INT)(p) << 3) - 6)
 
 HEAP_PNT heap_drop(void);
 static double get_slope(CELL, CELL, double);
@@ -126,7 +126,7 @@ int do_astar(void)
 		else if (!is_worked) {
 		    if (FLAG_GET(af.flag, EDGEFLAG)) {
 			/* neighbour is edge in list, not yet worked */
-			if (af.asp < 0  && slope[ct_dir] > 0) {
+			if (af.asp < 0 && slope[ct_dir] > 0) {
 			    /* adjust flow direction for edge cell */
 			    af.asp = drain[r_nbr - r + 1][c_nbr - c + 1];
 			    seg_put(&aspflag, (char *)&af, r_nbr, c_nbr);

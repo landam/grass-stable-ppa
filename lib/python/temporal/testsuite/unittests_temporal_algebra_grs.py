@@ -9,11 +9,12 @@ for details.
 
 import grass.script
 import grass.temporal as tgis
-import grass.gunittest
+from grass.gunittest.case import TestCase
+from grass.gunittest.main import test
 import datetime
 import os
 
-class TestTemporalAlgebraGranularity(grass.gunittest.TestCase):
+class TestTemporalAlgebraGranularity(TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -61,7 +62,7 @@ class TestTemporalAlgebraGranularity(grass.gunittest.TestCase):
         tgis.register_maps_in_space_time_dataset(type="raster", name="D", maps="d3",
                                                  start="2001-05-01", increment="31 days", interval=True)
         tgis.register_maps_in_space_time_dataset(type="raster", name=None,  maps="singletmap", 
-                                                start="2001-01-03", end="2001-01-04", interval=True)
+                                                start="2001-01-03", end="2001-01-04")
 
     def tearDown(self):
         pass
@@ -76,12 +77,12 @@ class TestTemporalAlgebraGranularity(grass.gunittest.TestCase):
 
     def test_common_granularity_1(self):
         """Testing the common granularity function. """
-        ta = tgis.TemporalAlgebraParser(run = True, debug = True)
+        ta = tgis.TemporalAlgebraParser(run=True, debug=True)
         expr = 'R = A : B'
         ret = ta.setup_common_granularity(expression=expr)
 
         self.assertEqual(ret, True)
-        self.assertEqual(ta.granularity, "1 months")
+        self.assertEqual(ta.granularity, "1 month")
 
         ta.count = 0
         ta.stdstype = "strds"
@@ -108,7 +109,7 @@ class TestTemporalAlgebraGranularity(grass.gunittest.TestCase):
        
     def test_common_granularity_2(self):
         """Testing the common granularity function year to month samping. """
-        ta = tgis.TemporalAlgebraParser(run = True, debug = True)
+        ta = tgis.TemporalAlgebraParser(run=True, debug=True)
         expr = 'R = A : C'
         ret = ta.setup_common_granularity(expression=expr)
         
@@ -128,7 +129,7 @@ class TestTemporalAlgebraGranularity(grass.gunittest.TestCase):
 
     def test_common_granularity_3(self):
         """Testing the common granularity function with gaps. """
-        ta = tgis.TemporalAlgebraParser(run = True, debug = True)
+        ta = tgis.TemporalAlgebraParser(run=True, debug=True)
         expr = 'R = A : D'
         ret = ta.setup_common_granularity(expression=expr)
         
@@ -148,7 +149,7 @@ class TestTemporalAlgebraGranularity(grass.gunittest.TestCase):
 
     def test_common_granularity_4(self):
         """Testing the common granularity function year to month with gaps. """
-        ta = tgis.TemporalAlgebraParser(run = True, debug = True)
+        ta = tgis.TemporalAlgebraParser(run=True, debug=True)
         expr = 'R = C : D'
         ret = ta.setup_common_granularity(expression=expr)
         
@@ -167,7 +168,7 @@ class TestTemporalAlgebraGranularity(grass.gunittest.TestCase):
        
     def test_common_granularity_4(self):
         """Testing the common granularity function year to month with gaps. """
-        ta = tgis.TemporalAlgebraParser(run = True, debug = True)
+        ta = tgis.TemporalAlgebraParser(run=True, debug=True)
         expr = 'R = C : D'
         ret = ta.setup_common_granularity(expression=expr)
         
@@ -186,7 +187,7 @@ class TestTemporalAlgebraGranularity(grass.gunittest.TestCase):
        
     def test_common_granularity_5(self):
         """Testing the common granularity function year to month with gaps. """
-        ta = tgis.TemporalAlgebraParser(run = True, debug = True)
+        ta = tgis.TemporalAlgebraParser(run=True, debug=True)
         expr = 'R = A : C : D'
         ret = ta.setup_common_granularity(expression=expr)
         
@@ -205,7 +206,7 @@ class TestTemporalAlgebraGranularity(grass.gunittest.TestCase):
          
     def test_common_granularity_6(self):
         """Testing the common granularity function year to month with gaps. """
-        ta = tgis.TemporalAlgebraParser(run = True, debug = True)
+        ta = tgis.TemporalAlgebraParser(run=True, debug=True)
         expr = 'R = if(start_month(A) > 2, A : C : D)'
         ret = ta.setup_common_granularity(expression=expr)
         
@@ -225,4 +226,4 @@ class TestTemporalAlgebraGranularity(grass.gunittest.TestCase):
 
 
 if __name__ == '__main__':
-    grass.gunittest.test()
+    test()

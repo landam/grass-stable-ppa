@@ -1,4 +1,5 @@
-import grass.gunittest
+from grass.gunittest.case import TestCase
+from grass.gunittest.main import test
 from grass.gunittest.gmodules import SimpleModule
 
 cell_seed_500 = """\
@@ -8,16 +9,16 @@ east: 25
 west: 15
 rows: 10
 cols: 10
-2 12 183 135 117 176 138 117 182 40
-157 70 195 1 30 125 122 74 108 104
-163 146 82 164 67 63 60 3 147 193
-151 173 144 173 128 77 141 6 144 193
-180 56 14 121 124 107 46 107 90 60
-177 57 12 104 178 13 167 104 163 187
-55 133 27 114 195 60 78 35 49 11
-55 138 25 105 32 58 47 18 139 32
-24 74 36 71 131 124 87 161 160 154
-136 45 48 146 9 182 69 12 35 19
+121 12 183 55 37 96 138 117 182 40 
+157 70 115 1 149 125 42 193 108 24 
+83 66 82 84 186 182 179 122 67 113 
+151 93 144 173 128 196 61 125 64 193 
+180 175 14 41 44 27 165 27 90 60 
+97 57 12 104 98 13 87 24 83 107 
+174 133 146 114 115 60 78 154 49 130 
+55 138 144 25 32 58 47 137 139 32 
+143 193 155 190 131 124 87 81 160 154 
+56 45 48 66 9 182 69 12 154 19 
 """
 
 dcell_seed_600 = """\
@@ -59,7 +60,7 @@ cols: 10
 """
 
 
-class TestRandFunction(grass.gunittest.TestCase):
+class TestRandFunction(TestCase):
 
     # TODO: replace by unified handing of maps
     to_remove = []
@@ -164,7 +165,7 @@ class TestRandFunction(grass.gunittest.TestCase):
 # TODO: add more expressions
 # TODO: add tests with prepared data
 
-class TestBasicOperations(grass.gunittest.TestCase):
+class TestBasicOperations(TestCase):
 
     # TODO: replace by unified handing of maps
     to_remove = []
@@ -217,7 +218,15 @@ class TestBasicOperations(grass.gunittest.TestCase):
             expression='diff_e_e = 3 * x() * y() - 3 * x() * y()')
         self.to_remove.append('diff_e_e')
         self.assertRasterMinMax('diff_e_e', refmin=0, refmax=0)
+    
+    def test_nrows_ncols_sum(self):
+        """Test if sum of nrows and ncols matches one
+        expected from current region settigs"""
+        self.assertModule('r.mapcalc',
+            expression='nrows_ncols_sum = nrows() + ncols()')
+        self.to_remove.append('nrows_ncols_sum')
+        self.assertRasterMinMax('nrows_ncols_sum', refmin=20, refmax=20)
 
 
 if __name__ == '__main__':
-    grass.gunittest.test()
+    test()

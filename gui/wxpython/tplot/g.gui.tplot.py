@@ -41,7 +41,7 @@
 #% required: no
 #%end
 
-#TODO use option G_OPT_V_CATS
+# TODO use option G_OPT_V_CATS
 #%option
 #% key: cats
 #% label: Categories of vectores features
@@ -78,6 +78,10 @@ def main():
     options, flags = gscript.parser()
 
     import wx
+
+    from grass.script.setup import set_gui_path
+    set_gui_path()
+
     from core.utils import _
     from core.giface import StandaloneGrassInterface
     try:
@@ -117,12 +121,7 @@ def main():
             sizes = options['size'].strip().split(',')
             sizes = [int(s) for s in sizes]
             frame.canvas.SetSize(sizes)
-        if output.split('.')[-1].lower() == 'png':
-            frame.canvas.print_png(output)
-        if output.split('.')[-1].lower() in ['jpg', 'jpeg']:
-            frame.canvas.print_jpg(output)
-        if output.split('.')[-1].lower() in ['tif', 'tiff']:
-            frame.canvas.print_tif(output)
+        frame.canvas.figure.savefig(output)
     else:
         frame.Show()
         app.MainLoop()

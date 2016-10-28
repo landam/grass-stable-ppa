@@ -180,6 +180,11 @@
     <description>Add multiple raster or vector map layers to current display</description>
     <shortcut>Ctrl+Shift+L</shortcut>
   </wxgui-item>
+  <wxgui-item name="AddRGB">
+    <label>Add RGB raster layer</label>
+    <handler>OnAddRasterRGB</handler>
+    <description>Add RGB raster map layer to current display</description>
+  </wxgui-item>
   <wxgui-item name="AddWebServiceLayer">
     <label>Add web service layer</label>
     <handler>OnAddWS</handler>
@@ -328,12 +333,6 @@
     <handler>OnRLiSetup</handler>
     <description>Configuration editor for r.li.'index'</description>
     <keywords>raster,landscape structure analysis</keywords>
-  </wxgui-item>
-  <wxgui-item name="OrdinaryOrBlockKriging">
-    <label>Ordinary or block kriging</label>
-    <command>v.krige</command>
-    <description>Performs ordinary or block kriging.</description>
-    <keywords>vector,raster,interpolation,kriging</keywords>
   </wxgui-item>
   <wxgui-item name="CreateNewVectorMap">
     <label>Create new vector map</label>

@@ -25,7 +25,7 @@ int vect_to_rast(const char *vector_map, const char *raster_map, const char *fie
 
     /* Attributes */
     int nrec;
-    int ctype;
+    int ctype = 0;
     struct field_info *Fi;
     dbDriver *Driver;
     dbCatValArray cvarr;
@@ -133,8 +133,13 @@ int vect_to_rast(const char *vector_map, const char *raster_map, const char *fie
 
 	G_debug(1, "%d areas sorted", nareas);
     }
+    if (nareas > 0 && dense) {
+	G_warning(_("Area conversion and line densification are mutually exclusive, disabling line densification."));
+	dense = 0;
+    }
 
-    nlines = 1;
+    nlines = Vect_get_num_primitives(&Map, ftype);
+    nplines_all = nlines;
     npasses = begin_rasterization(cache_mb, format, dense);
     pass = 0;
 
@@ -215,11 +220,21 @@ int vect_to_rast(const char *vector_map, const char *raster_map, const char *fie
     update_labels(raster_map, vector_map, field, labelcolumn, use, value,
 		  column);
 
+#if 0
+    /* maximum possible numer of areas: number of centroids
+     * actual number of areas, currently unknown:
+     * number of areas with centroid that are within cat constraint
+     * and overlap with current region */
     if (nareas_all > 0)
 	G_message(_("Converted areas: %d of %d"), nareas,
-	          nareas_all - Vect_get_num_primitives(&Map, GV_CENTROID));
-    if (nplines_all > 0)
+	          Vect_get_num_primitives(&Map, GV_CENTROID));
+    /* maximum possible numer of lines: number of GV_LINE + GV_POINT
+     * actual number of lines, currently unknown:
+     * number of lines are within cat constraint
+     * and overlap with current region */
+    if (nlines > 0 && nplines_all > 0)
 	G_message(_("Converted points/lines: %d of %d"), nlines, nplines_all);
+#endif
 
     return 0;
 }
