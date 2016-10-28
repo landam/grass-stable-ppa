@@ -6,14 +6,15 @@ Section: science
 Priority: optional
 Build-Depends: autoconf2.13,
                autotools-dev,
+               bison,
                debhelper (>= 9),
                dh-python,
                doxygen,
                fakeroot,
                flex,
-               bison,
                graphviz,
-               libmotif-dev | lesstif2-dev,
+               libblas-dev,
+               libbz2-dev,
                libcairo2-dev,
                libfftw3-dev,
                libfreetype6-dev,
@@ -21,36 +22,36 @@ Build-Depends: autoconf2.13,
                libgeos-dev,
                libglu1-mesa-dev,
                libjpeg-dev,
-               libpng-dev,
-               libtiff-dev,
+               liblapack-dev,
+               liblas-c-dev (>= 1.8.0-3~),
+               libmotif-dev | lesstif2-dev,
                libmysqlclient-dev,
                libncurses5-dev,
+               libnetcdf-dev,
+               libpng-dev,
                libpq-dev,
                libproj-dev,
-# proj-bin needed for nad2bin during config
-               proj-bin,
                libreadline-dev,
                libsqlite3-dev,
+               libtiff-dev,
                libwxgtk3.0-dev,
                libxmu-dev,
+               netcdf-bin,
 # install optipng if compressing the PNG images in the programmers' manual
 #              optipng,
+# proj-bin needed for nad2bin during config
+               proj-bin,
                python,
-               python-wxgtk2.8,
                python-dev,
                python-numpy,
-               python-ply,
                python-pil,
-               libnetcdf-dev,
-               netcdf-bin,
-               libblas-dev,
-               liblapack-dev,
+               python-ply,
+               python-wxgtk2.8,
                unixodbc-dev,
-               zlib1g-dev,
-               liblas-c-dev (>= 1.8.0-3~)
-Standards-Version: 3.9.6
+               zlib1g-dev
+Standards-Version: 3.9.8
 Vcs-Browser: https://anonscm.debian.org/cgit/pkg-grass/grass.git
-Vcs-Git: git://anonscm.debian.org/pkg-grass/grass.git -b ubuntugis/trusty
+Vcs-Git: https://anonscm.debian.org/git/pkg-grass/grass.git -b ubuntugis/trusty
 Homepage: http://grass.osgeo.org/
 
 Package: grass
@@ -61,12 +62,6 @@ Depends: grass-core,
          ${misc:Depends}
 Recommends: grass-doc
 Suggests: grass-dev
-Conflicts: grass@VERSION@,
-           grass7
-Provides: grass@VERSION@,
-          grass7
-Replaces: grass@VERSION@,
-          grass7
 Description: Geographic Resources Analysis Support System (GRASS GIS)
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
@@ -81,8 +76,6 @@ Package: grass-core
 Architecture: any
 Depends: ${shlibs:Depends},
          ${python:Depends},
-# numpy used by the GRASS Python Library
-         python-numpy,
          ${misc:Depends}
 Recommends: gdal-bin,
 # cs2cs used by m.proj, gdalinfo+gdal_translate used by a number of scripts
@@ -102,16 +95,11 @@ Suggests: grass-doc,
 # used by NVIZ, d.out.gpsdrive, r.out.mpeg
           netpbm,
 # used by v.kridge
-          python-rpy2
+          python-rpy2,
+          python-termcolor
 Breaks: grass (<< 6.4.2-1~)
-Conflicts: grass@VERSION@-core,
-           grass7-core
-Provides: grass@ABI@,
-          grass@VERSION@-core,
-          grass7-core
-Replaces: grass@VERSION@-core,
-          grass7-core,
-          grass (<< 6.4.2-1~)
+Provides: grass@ABI@
+Replaces: grass (<< 6.4.2-1~)
 Description: GRASS GIS core components
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
@@ -125,25 +113,20 @@ Description: GRASS GIS core components
 Package: grass-gui
 Architecture: any
 Depends: grass-core,
-         ${python:Depends},
-         python-wxgtk2.8,
 # pyGL needed for wxNviz
          python-opengl,
+         python-wxgtk2.8,
          xterm | x-terminal-emulator,
+         ${python:Depends},
          ${misc:Depends}
 Recommends:
 # gs needed for wxPsmap PDF export
             ghostscript,
 # PIL needed for wxPsmap preview
-            python-imaging
+            python-imaging,
+            python-matplotlib
 Breaks: grass (<< 6.4.2-1~)
-Conflicts: grass@VERSION@-gui,
-           grass7-gui
-Provides: grass@VERSION@-gui,
-          grass7-gui
-Replaces: grass (<< 6.4.2-1~),
-          grass@VERSION@-gui,
-          grass7-gui
+Replaces: grass (<< 6.4.2-1~)
 Description: GRASS GIS graphical user interfaces
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
@@ -160,12 +143,6 @@ Architecture: all
 Depends: ${misc:Depends}
 Suggests: grass,
           grass-dev-doc
-Conflicts: grass@VERSION@-doc,
-           grass7-doc
-Provides: grass@VERSION@-doc,
-          grass7-doc
-Replaces: grass@VERSION@-doc,
-          grass7-doc
 Description: GRASS GIS user documentation
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
@@ -179,15 +156,9 @@ Description: GRASS GIS user documentation
 Package: grass-dev-doc
 Section: doc
 Architecture: all
-Depends: ${misc:Depends},
-         libjs-jquery
+Depends: libjs-jquery,
+         ${misc:Depends}
 Suggests: grass
-Conflicts: grass@VERSION@-dev-doc,
-           grass7-dev-doc
-Provides: grass@VERSION@-dev-doc,
-          grass7-dev-doc
-Replaces: grass@VERSION@-dev-doc,
-          grass7-dev-doc
 Description: GRASS GIS Programmers' Manual
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
@@ -204,10 +175,10 @@ Architecture: any
 Depends: grass-core (= ${binary:Version}),
 # fakeroot used by patches/htmlgen-fakeroot; see changelog entry for 5.7.0+6.0.0beta2-2
          fakeroot,
-         libproj-dev,
-         libgdal-dev,
          libfreetype6-dev,
+         libgdal-dev,
          libpq-dev,
+         libproj-dev,
          python,
          ${shlibs:Depends},
          ${misc:Depends}
@@ -215,12 +186,6 @@ Depends: grass-core (= ${binary:Version}),
 Recommends: subversion
 Suggests: grass-dev-doc,
           pkg-config
-Conflicts: grass@VERSION@-dev,
-           grass7-dev
-Provides: grass@VERSION@-dev,
-          grass7-dev
-Replaces: grass@VERSION@-dev,
-          grass7-dev
 Description: GRASS GIS development files
  Commonly referred to as GRASS, this is a Geographic Information
  System (GIS) used for geospatial data management and analysis,
