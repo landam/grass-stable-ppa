@@ -1,6 +1,7 @@
 grass (7.0.5-3) UNRELEASED; urgency=medium
 
   * Drop unused overrides for hardening-no-pie.
+  * Update watch file for 7.2.x releases.
 
  -- Bas Couwenberg <sebastic@debian.org>  Tue, 25 Oct 2016 20:36:48 +0200
 
