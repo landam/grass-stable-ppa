@@ -6,7 +6,6 @@ grass (7.2.0~rc1-1) UNRELEASED; urgency=medium
   * Drop Conflicts/Provides/Replaces for old upstream GRASS 7.0 packages.
   * Refresh patches.
   * Enable bzip2 support.
-  * Enable PDAL support.
   * Update copyright file, changes:
     - Update copyright years for various copyright holders
     - Add new copyright holders
