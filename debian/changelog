@@ -1,6 +1,7 @@
 grass (7.2.0~rc2-1) UNRELEASED; urgency=medium
 
   * New upstream release candidate.
+  * Add license & copyright for fix_typos.sh.
 
  -- Bas Couwenberg <sebastic@debian.org>  Thu, 24 Nov 2016 22:52:36 +0100
 
