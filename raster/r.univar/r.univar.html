@@ -32,6 +32,9 @@ This module can use large amounts of system memory when the <b>-e</b>
 extended statistics flag is used with a very large region setting. If the
 region is too large the module should exit gracefully with a memory allocation
 error. Basic statistics can be calculated using any size input region.
+Extended statistics can be calculated using
+<em><a href="r.stats.quantile.html">r.stats.quantile</a></em>.
+
 <p>
 Without a <b>zones</b> input raster, the <em>r.quantile</em> module will
 be significantly more efficient for calculating percentiles with large maps.
@@ -238,4 +241,4 @@ Extended statistics by Martin Landa<br>
 Multiple input map support by Ivan Shmakov<br>
 Zonal loop by Markus Metz
 
-<p><i>Last changed: $Date: 2016-05-03 19:09:18 +0200 (Tue, 03 May 2016) $</i>
+<p><i>Last changed: $Date: 2016-11-03 12:46:42 +0100 (Thu, 03 Nov 2016) $</i>

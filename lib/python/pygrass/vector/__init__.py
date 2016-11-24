@@ -179,7 +179,18 @@ class Vector(Info):
 
         """
         self.n_lines += 1
+        if not isinstance(cat, int) and not isinstance(cat, str):
+            # likely the case of using 7.0 API
+            import warnings
+            warnings.warn("Vector.write(geo_obj, attrs=(...)) is"
+                          " depreciated, specify cat explicitly",
+                          DeprecationWarning)
+            # try to accommodate
+            attrs = cat
+            cat = None
         if attrs and cat is None:
+            # TODO: this does not work as expected when there are
+            # already features in the map when we opened it
             cat = (self._cats[-1] if self._cats else 0) + 1
 
         if cat is not None and cat not in self._cats:
@@ -328,7 +339,7 @@ class VectorTopo(Vector):
 
     @must_be_open
     def number_of(self, vtype):
-        """Return the number of the choosen element type
+        """Return the number of the chosen element type
 
         :param vtype: the name of type to query; the supported values are:
                       *areas*, *dblinks*, *faces*, *holes*, *islands*,
@@ -556,14 +567,14 @@ class VectorTopo(Vector):
         :type feature_id: int
         """
         if libvect.Vect_rewrite_line(self.c_mapinfo, feature_id) == -1:
-            raise GrassError("C funtion: Vect_rewrite_line.")
+            raise GrassError("C function: Vect_rewrite_line.")
 
     @must_be_open
     def restore(self, geo_obj):
         if hasattr(geo_obj, 'offset'):
             if libvect.Vect_restore_line(self.c_mapinfo, geo_obj.offset,
                                          geo_obj.id) == -1:
-                raise GrassError("C funtion: Vect_restore_line.")
+                raise GrassError("C function: Vect_restore_line.")
         else:
             raise ValueError("The value have not an offset attribute.")
 
