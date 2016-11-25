@@ -138,7 +138,7 @@ int Rast_open_old(const char *name, const char *mapset)
    for use by the get_map_row family of routines.
 
    Diagnostics: Errors other than actual open failure will cause a
-   diagnostic to be delivered thru G_warning() open failure messages
+   diagnostic to be delivered through G_warning() open failure messages
    are left to the calling routine since the masking logic will want to
    issue a different warning.
 
@@ -708,6 +708,7 @@ static int open_raster_new(const char *name, int open_mode,
 
     fcb->null_temp_name = tempname;
 
+    fcb->null_row_ptr = NULL;
     if (R__.compress_nulls) {
 	fcb->null_row_ptr = G_calloc(fcb->cellhd.rows + 1, sizeof(off_t));
 	G_zero(fcb->row_ptr, (fcb->cellhd.rows + 1) * sizeof(off_t));

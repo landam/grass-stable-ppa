@@ -20,10 +20,10 @@ In this example, random points are sampled from the elevation map
 g.region raster=elevation -p
 v.random output=samples n=100
 v.db.addtable samples column="heights double precision"
-v.what.rast samples raster=elevation colum=heights
+v.what.rast samples raster=elevation column=heights
 v.db.select samples
 
-db.univar samples colum=heights
+db.univar samples column=heights
 </pre></div>
 
 <h2>SEE ALSO</h2>
@@ -40,4 +40,4 @@ db.univar samples colum=heights
  Michael Barton, Arizona State University
 <p>and authors of <em>r.univar.sh</em>
 
-<p><i>Last changed: $Date: 2014-12-19 22:17:36 +0100 (Fri, 19 Dec 2014) $</i>
+<p><i>Last changed: $Date: 2016-11-14 00:09:36 +0100 (Mon, 14 Nov 2016) $</i>
