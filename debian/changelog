@@ -1,3 +1,24 @@
+grass (7.2.0~rc2-1~exp1~trusty1) trusty; urgency=medium
+
+  * Rebuild for trusty.
+
+ -- Martin Landa <landa.martin@gmail.com>  Fri, 25 Nov 2016 11:34:31 +0100
+
+grass (7.2.0~rc2-1~exp1) experimental; urgency=medium
+
+  * New upstream release candidate.
+  * Add license & copyright for fix_typos.sh.
+  * Drop spelling-errors.patch, applied upstream.
+  * Re-instate lintian overrides for hardening-no-pie.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Thu, 24 Nov 2016 23:03:03 +0100
+
+grass (7.2.0~rc1-1~exp2) experimental; urgency=medium
+
+  * Drop Conflicts/Provides/Replaces in control.in too.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Fri, 28 Oct 2016 20:13:04 +0200
+
 grass (7.2.0~rc1-1~exp1~trusty2) trusty; urgency=medium
 
   * Merge changes from experimental branch to sync packaging.

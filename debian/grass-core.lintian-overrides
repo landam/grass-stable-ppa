@@ -44,3 +44,6 @@ grass-core: hardening-no-fortify-functions usr/lib/grass*/lib/libgrass_segment.*
 grass-core: extra-license-file usr/lib/grass*/etc/license
 grass-core: extra-license-file usr/share/doc/grass-core/COPYING
 
+# PIE breaks the build
+grass-core: hardening-no-pie *
+

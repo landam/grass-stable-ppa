@@ -150,6 +150,10 @@ License: public-domain
  LIMITATION, WARRANTY OF MERCHANTABILITY AND WARRANTY OF FITNESS FOR A
  PARTICULAR PURPOSE.
 
+Files: tools/fix_typos.sh
+Copyright: 2016, Even Rouault <even.rouault@spatialys.com>
+License: Expat
+
 Files: vector/v.lrs/lib/lrs.c
  vector/v.lrs/v.lrs.create/main.c
  vector/v.lrs/v.lrs.label/main.c

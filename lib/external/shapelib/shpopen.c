@@ -1,5 +1,5 @@
 /******************************************************************************
- * $Id: shpopen.c 55838 2013-04-17 06:03:16Z hamish $
+ * $Id: shpopen.c 69812 2016-11-13 23:09:36Z neteler $
  *
  * Project:  Shapelib
  * Purpose:  Implementation of core Shapefile read/write functions.
@@ -231,7 +231,7 @@
 #include <string.h>
 #include <stdio.h>
 
-SHP_CVSID("$Id: shpopen.c 55838 2013-04-17 06:03:16Z hamish $")
+SHP_CVSID("$Id: shpopen.c 69812 2016-11-13 23:09:36Z neteler $")
 
 typedef unsigned char uchar;
 
@@ -1525,7 +1525,7 @@ SHPReadObject( SHPHandle psSHP, int hEntity )
         {
             char szError[200];
 
-            /* Reallocate previous successfull size for following features */
+            /* Reallocate previous successful size for following features */
             psSHP->pabyRec = malloc(psSHP->nBufSize);
 
             sprintf( szError, 
@@ -1535,7 +1535,7 @@ SHPReadObject( SHPHandle psSHP, int hEntity )
             return NULL;
         }
 
-        /* Only set new buffer size after successfull alloc */
+        /* Only set new buffer size after successful alloc */
 	psSHP->nBufSize = nEntitySize;
     }
 
