@@ -1,9 +1,9 @@
-grass (7.0.5-3) UNRELEASED; urgency=medium
+grass (7.0.5-3) unstable; urgency=medium
 
   * Add patch to fix v.net.iso segmentation fault.
     (closes: #845429)
 
- -- Bas Couwenberg <sebastic@debian.org>  Tue, 25 Oct 2016 20:36:48 +0200
+ -- Bas Couwenberg <sebastic@debian.org>  Thu, 01 Dec 2016 20:05:05 +0100
 
 grass (7.0.5-2) unstable; urgency=medium
 
