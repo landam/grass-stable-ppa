@@ -33,6 +33,13 @@ grass (7.2.0~rc1-1~exp1) experimental; urgency=medium
 
  -- Bas Couwenberg <sebastic@debian.org>  Fri, 28 Oct 2016 15:56:28 +0200
 
+grass (7.0.5-3) unstable; urgency=medium
+
+  * Add patch to fix v.net.iso segmentation fault.
+    (closes: #845429)
+
+ -- Bas Couwenberg <sebastic@debian.org>  Thu, 01 Dec 2016 20:05:05 +0100
+
 grass (7.0.5-2) unstable; urgency=medium
 
   * Reinstate MySQL/MariaDB support, mariadb-10.0 available on mips64el now.

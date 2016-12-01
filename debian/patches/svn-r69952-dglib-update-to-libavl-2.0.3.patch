@@ -1,0 +1,772 @@
+Description: dglib: update to libavl-2.0.3 (backport from trunk r69935)
+Author: Markus Metz
+Origin: https://trac.osgeo.org/grass/changeset/69952
+Bug: https://trac.osgeo.org/grass/ticket/3213
+Bug-Debian: https://bugs.debian.org/845429
+
+--- a/lib/vector/dglib/avl.c
++++ b/lib/vector/dglib/avl.c
+@@ -1,25 +1,28 @@
+-/* Produced by texiweb from libavl.w on 2002/02/09 at 01:45. */
++/* Produced by texiweb from libavl.w. */
+ 
+ /* libavl - library for manipulation of binary trees.
+-   Copyright (C) 1998-2002 Free Software Foundation, Inc.
++   Copyright (C) 1998, 1999, 2000, 2001, 2002, 2004 Free Software
++   Foundation, Inc.
+ 
+-   This program is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU General Public License as
+-   published by the Free Software Foundation; either version 2 of the
+-   License, or (at your option) any later version.
+-
+-   This program is distributed in the hope that it will be useful, but
+-   WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+-   See the GNU General Public License for more details.
+-
+-   You should have received a copy of the GNU General Public License
+-   along with this program; if not, write to the Free Software
+-   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+-
+-   The author may be contacted at <blp@gnu.org> on the Internet, or
+-   as Ben Pfaff, 12167 Airport Rd, DeWitt MI 48820, USA through more
+-   mundane means.
++   This library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 3 of the License, or (at your option) any later version.
++
++   This library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with this library; if not, write to the Free Software
++   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++   02110-1301 USA.
++ */
++
++/* Nov 2016, Markus Metz
++ * from libavl-2.0.3
++ * added safety checks and speed optimizations
+  */
+ 
+ #include <assert.h>
+@@ -63,15 +66,15 @@ void *avl_find(const struct avl_table *t
+     const struct avl_node *p;
+ 
+     assert(tree != NULL && item != NULL);
+-    for (p = tree->avl_root; p != NULL;) {
++
++    p = tree->avl_root;
++    while (p != NULL) {
+ 	int cmp = tree->avl_compare(item, p->avl_data, tree->avl_param);
+ 
+-	if (cmp < 0)
+-	    p = p->avl_link[0];
+-	else if (cmp > 0)
+-	    p = p->avl_link[1];
+-	else			/* |cmp == 0| */
++	if (cmp == 0)
+ 	    return p->avl_data;
++
++	p = p->avl_link[cmp > 0];
+     }
+ 
+     return NULL;
+@@ -97,7 +100,8 @@ void **avl_probe(struct avl_table *tree,
+     z = (struct avl_node *)&tree->avl_root;
+     y = tree->avl_root;
+     dir = 0;
+-    for (q = z, p = y; p != NULL; q = p, p = p->avl_link[dir]) {
++    q = z, p = y;
++    while (p != NULL) {
+ 	int cmp = tree->avl_compare(item, p->avl_data, tree->avl_param);
+ 
+ 	if (cmp == 0)
+@@ -106,25 +110,33 @@ void **avl_probe(struct avl_table *tree,
+ 	if (p->avl_balance != 0)
+ 	    z = q, y = p, k = 0;
+ 	da[k++] = dir = cmp > 0;
++	q = p, p = p->avl_link[dir];
+     }
+ 
+-    n = q->avl_link[dir] =
+-	tree->avl_alloc->libavl_malloc(tree->avl_alloc, sizeof *n);
++    n = tree->avl_alloc->libavl_malloc(tree->avl_alloc, sizeof *n);
+     if (n == NULL)
+ 	return NULL;
+ 
+     tree->avl_count++;
+-    n->avl_data = item;
++    tree->avl_generation++;
+     n->avl_link[0] = n->avl_link[1] = NULL;
++    n->avl_data = item;
+     n->avl_balance = 0;
+-    if (y == NULL)
++    if (y == NULL) {
++	tree->avl_root = n;
++
+ 	return &n->avl_data;
++    }
++    q->avl_link[dir] = n;
+ 
+-    for (p = y, k = 0; p != n; p = p->avl_link[da[k]], k++)
++    p = y, k = 0;
++    while (p != n) {
+ 	if (da[k] == 0)
+ 	    p->avl_balance--;
+ 	else
+ 	    p->avl_balance++;
++	p = p->avl_link[da[k]], k++;
++    }
+ 
+     if (y->avl_balance == -2) {
+ 	struct avl_node *x = y->avl_link[0];
+@@ -180,7 +192,6 @@ void **avl_probe(struct avl_table *tree,
+ 	return &n->avl_data;
+     z->avl_link[y != z->avl_link[0]] = w;
+ 
+-    tree->avl_generation++;
+     return &n->avl_data;
+ }
+ 
+@@ -209,6 +220,7 @@ void *avl_replace(struct avl_table *tabl
+ 	void *r = *p;
+ 
+ 	*p = item;
++
+ 	return r;
+     }
+ }
+@@ -223,23 +235,31 @@ void *avl_delete(struct avl_table *tree,
+     int k;			/* Stack pointer. */
+ 
+     struct avl_node *p;		/* Traverses tree to find node to delete. */
++    int dir;			/* Side of |pa[k]| on which |p| is linked. */
+     int cmp;			/* Result of comparison between |item| and |p|. */
+ 
+     assert(tree != NULL && item != NULL);
+ 
+-    k = 0;
+-    p = (struct avl_node *)&tree->avl_root;
+-    for (cmp = -1; cmp != 0;
+-	 cmp = tree->avl_compare(item, p->avl_data, tree->avl_param)) {
+-	int dir = cmp > 0;
++    pa[0] = (struct avl_node *)&tree->avl_root;
++    da[0] = 0;
++    k = 1;
++    p = tree->avl_root;
++    while (p != NULL) {
++	cmp = tree->avl_compare(item, p->avl_data, tree->avl_param);
++
++	if (cmp == 0)
++	    break;
++
++	dir = cmp > 0;
+ 
+ 	pa[k] = p;
+ 	da[k++] = dir;
+ 
+ 	p = p->avl_link[dir];
+-	if (p == NULL)
+-	    return NULL;
+     }
++    if (p == NULL)
++	return NULL;
++
+     item = p->avl_data;
+ 
+     if (p->avl_link[1] == NULL)
+@@ -258,7 +278,7 @@ void *avl_delete(struct avl_table *tree,
+ 	    struct avl_node *s;
+ 	    int j = k++;
+ 
+-	    for (;;) {
++	    while (r != NULL) {
+ 		da[k] = 0;
+ 		pa[k++] = r;
+ 		s = r->avl_link[0];
+@@ -367,6 +387,7 @@ void *avl_delete(struct avl_table *tree,
+ 
+     tree->avl_count--;
+     tree->avl_generation++;
++
+     return (void *)item;
+ }
+ 
+@@ -463,31 +484,30 @@ void *avl_t_last(struct avl_traverser *t
+ void *avl_t_find(struct avl_traverser *trav, struct avl_table *tree,
+ 		 void *item)
+ {
+-    struct avl_node *p, *q;
++    struct avl_node *p;
+ 
+     assert(trav != NULL && tree != NULL && item != NULL);
+     trav->avl_table = tree;
+     trav->avl_height = 0;
+     trav->avl_generation = tree->avl_generation;
+-    for (p = tree->avl_root; p != NULL; p = q) {
++    p = tree->avl_root;
++    while (p != NULL) {
+ 	int cmp = tree->avl_compare(item, p->avl_data, tree->avl_param);
+ 
+-	if (cmp < 0)
+-	    q = p->avl_link[0];
+-	else if (cmp > 0)
+-	    q = p->avl_link[1];
+-	else {			/* |cmp == 0| */
+-
++	if (cmp == 0) {
+ 	    trav->avl_node = p;
++
+ 	    return p->avl_data;
+ 	}
+ 
+ 	assert(trav->avl_height < AVL_MAX_HEIGHT);
+ 	trav->avl_stack[trav->avl_height++] = p;
++	p = p->avl_link[cmp > 0];
+     }
+ 
+     trav->avl_height = 0;
+     trav->avl_node = NULL;
++
+     return NULL;
+ }
+ 
+@@ -512,10 +532,12 @@ void *avl_t_insert(struct avl_traverser
+ 			  ((char *)p - offsetof(struct avl_node, avl_data)));
+ 
+ 	trav->avl_generation = tree->avl_generation - 1;
++
+ 	return *p;
+     }
+     else {
+ 	avl_t_init(trav, tree);
++
+ 	return NULL;
+     }
+ }
+@@ -644,14 +666,18 @@ void *avl_t_cur(struct avl_traverser *tr
+    The new item must not upset the ordering of the tree. */
+ void *avl_t_replace(struct avl_traverser *trav, void *new)
+ {
+-    struct avl_node *old;
++    void *old;
+ 
+     assert(trav != NULL && trav->avl_node != NULL && new != NULL);
+     old = trav->avl_node->avl_data;
+     trav->avl_node->avl_data = new;
++
+     return old;
+ }
+ 
++/* Destroys |new| with |avl_destroy (new, destroy)|,
++   first setting right links of nodes in |stack| within |new|
++   to null pointers to avoid touching uninitialized data. */
+ static void
+ copy_error_recovery(struct avl_node **stack, int height,
+ 		    struct avl_table *new, avl_item_func * destroy)
+@@ -688,13 +714,14 @@ struct avl_table *avl_copy(const struct
+ 		     allocator != NULL ? allocator : org->avl_alloc);
+     if (new == NULL)
+ 	return NULL;
++
+     new->avl_count = org->avl_count;
+     if (new->avl_count == 0)
+ 	return new;
+ 
+     x = (const struct avl_node *)&org->avl_root;
+     y = (struct avl_node *)&new->avl_root;
+-    for (;;) {
++    while (x != NULL) {
+ 	while (x->avl_link[0] != NULL) {
+ 	    assert(height < 2 * (AVL_MAX_HEIGHT + 1));
+ 
+@@ -754,6 +781,8 @@ struct avl_table *avl_copy(const struct
+ 	    x = stack[--height];
+ 	}
+     }
++
++    return new;
+ }
+ 
+ /* Frees storage allocated for |tree|.
+@@ -764,7 +793,8 @@ void avl_destroy(struct avl_table *tree,
+ 
+     assert(tree != NULL);
+ 
+-    for (p = tree->avl_root; p != NULL; p = q)
++    p = tree->avl_root;
++    while (p != NULL) {
+ 	if (p->avl_link[0] == NULL) {
+ 	    q = p->avl_link[1];
+ 	    if (destroy != NULL && p->avl_data != NULL)
+@@ -776,6 +806,8 @@ void avl_destroy(struct avl_table *tree,
+ 	    p->avl_link[0] = q->avl_link[1];
+ 	    q->avl_link[1] = p;
+ 	}
++	p = q;
++    }
+ 
+     tree->avl_alloc->libavl_free(tree->avl_alloc, tree);
+ }
+@@ -785,6 +817,7 @@ void avl_destroy(struct avl_table *tree,
+ void *avl_malloc(struct libavl_allocator *allocator, size_t size)
+ {
+     assert(allocator != NULL && size > 0);
++
+     return malloc(size);
+ }
+ 
+@@ -801,6 +834,9 @@ struct libavl_allocator avl_allocator_de
+     avl_free
+ };
+ 
++#undef NDEBUG
++#include <assert.h>
++
+ /* Asserts that |avl_insert()| succeeds at inserting |item| into |table|. */
+ void (avl_assert_insert) (struct avl_table * table, void *item)
+ {
+@@ -816,5 +852,6 @@ void *(avl_assert_delete) (struct avl_ta
+     void *p = avl_delete(table, item);
+ 
+     assert(p != NULL);
++
+     return p;
+ }
+--- a/lib/vector/dglib/avl.h
++++ b/lib/vector/dglib/avl.h
+@@ -1,25 +1,23 @@
+-/* Produced by texiweb from libavl.w on 2002/02/09 at 01:45. */
++/* Produced by texiweb from libavl.w. */
+ 
+ /* libavl - library for manipulation of binary trees.
+-   Copyright (C) 1998-2002 Free Software Foundation, Inc.
++   Copyright (C) 1998, 1999, 2000, 2001, 2002, 2004 Free Software
++   Foundation, Inc.
+ 
+-   This program is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU General Public License as
+-   published by the Free Software Foundation; either version 2 of the
+-   License, or (at your option) any later version.
+-
+-   This program is distributed in the hope that it will be useful, but
+-   WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+-   See the GNU General Public License for more details.
+-
+-   You should have received a copy of the GNU General Public License
+-   along with this program; if not, write to the Free Software
+-   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+-
+-   The author may be contacted at <blp@gnu.org> on the Internet, or
+-   as Ben Pfaff, 12167 Airport Rd, DeWitt MI 48820, USA through more
+-   mundane means.
++   This library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 3 of the License, or (at your option) any later version.
++
++   This library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with this library; if not, write to the Free Software
++   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++   02110-1301 USA.
+  */
+ 
+ #ifndef AVL_H
+@@ -48,9 +46,9 @@ extern struct libavl_allocator avl_alloc
+ void *avl_malloc(struct libavl_allocator *, size_t);
+ void avl_free(struct libavl_allocator *, void *);
+ 
+-/* Maximum AVL height. */
++/* Maximum AVL tree height. */
+ #ifndef AVL_MAX_HEIGHT
+-#define AVL_MAX_HEIGHT 32
++#define AVL_MAX_HEIGHT 92
+ #endif
+ 
+ /* Tree data structure. */
+--- a/lib/vector/dglib/tavl.c
++++ b/lib/vector/dglib/tavl.c
+@@ -1,25 +1,28 @@
+-/* Produced by texiweb from libavl.w on 2002/02/09 at 01:45. */
++/* Produced by texiweb from libavl.w. */
+ 
+ /* libavl - library for manipulation of binary trees.
+-   Copyright (C) 1998-2002 Free Software Foundation, Inc.
++   Copyright (C) 1998, 1999, 2000, 2001, 2002, 2004 Free Software
++   Foundation, Inc.
+ 
+-   This program is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU General Public License as
+-   published by the Free Software Foundation; either version 2 of the
+-   License, or (at your option) any later version.
+-
+-   This program is distributed in the hope that it will be useful, but
+-   WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+-   See the GNU General Public License for more details.
+-
+-   You should have received a copy of the GNU General Public License
+-   along with this program; if not, write to the Free Software
+-   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+-
+-   The author may be contacted at <blp@gnu.org> on the Internet, or
+-   as Ben Pfaff, 12167 Airport Rd, DeWitt MI 48820, USA through more
+-   mundane means.
++   This library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 3 of the License, or (at your option) any later version.
++
++   This library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with this library; if not, write to the Free Software
++   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++   02110-1301 USA.
++ */
++
++/* Nov 2016, Markus Metz
++ * from libavl-2.0.3
++ * added safety checks and speed optimizations
+  */
+ 
+ #include <assert.h>
+@@ -63,10 +66,7 @@ void *tavl_find(const struct tavl_table
+     assert(tree != NULL && item != NULL);
+ 
+     p = tree->tavl_root;
+-    if (p == NULL)
+-	return NULL;
+-
+-    for (;;) {
++    while (p != NULL) {
+ 	int cmp, dir;
+ 
+ 	cmp = tree->tavl_compare(item, p->tavl_data, tree->tavl_param);
+@@ -77,8 +77,10 @@ void *tavl_find(const struct tavl_table
+ 	if (p->tavl_tag[dir] == TAVL_CHILD)
+ 	    p = p->tavl_link[dir];
+ 	else
+-	    return NULL;
++	    p = NULL;
+     }
++
++    return NULL;
+ }
+ 
+ /* Inserts |item| into |tree| and returns a pointer to |item|'s address.
+@@ -100,24 +102,21 @@ void **tavl_probe(struct tavl_table *tre
+ 
+     z = (struct tavl_node *)&tree->tavl_root;
+     y = tree->tavl_root;
+-    if (y != NULL) {
+-	for (q = z, p = y;; q = p, p = p->tavl_link[dir]) {
+-	    int cmp =
+-		tree->tavl_compare(item, p->tavl_data, tree->tavl_param);
+-	    if (cmp == 0)
+-		return &p->tavl_data;
+-
+-	    if (p->tavl_balance != 0)
+-		z = q, y = p, k = 0;
+-	    da[k++] = dir = cmp > 0;
++    dir = 0;
++    q = z, p = y;
++    while (p != NULL) {
++	int cmp =
++	    tree->tavl_compare(item, p->tavl_data, tree->tavl_param);
++	if (cmp == 0)
++	    return &p->tavl_data;
+ 
+-	    if (p->tavl_tag[dir] == TAVL_THREAD)
+-		break;
+-	}
+-    }
+-    else {
+-	p = z;
+-	dir = 0;
++	if (p->tavl_balance != 0)
++	    z = q, y = p, k = 0;
++	da[k++] = dir = cmp > 0;
++
++	if (p->tavl_tag[dir] == TAVL_THREAD)
++	    break;
++	q = p, p = p->tavl_link[dir];
+     }
+ 
+     n = tree->tavl_alloc->libavl_malloc(tree->tavl_alloc, sizeof *n);
+@@ -127,23 +126,26 @@ void **tavl_probe(struct tavl_table *tre
+     tree->tavl_count++;
+     n->tavl_data = item;
+     n->tavl_tag[0] = n->tavl_tag[1] = TAVL_THREAD;
+-    n->tavl_link[dir] = p->tavl_link[dir];
+-    if (tree->tavl_root != NULL) {
+-	p->tavl_tag[dir] = TAVL_CHILD;
+-	n->tavl_link[!dir] = p;
+-    }
+-    else
+-	n->tavl_link[1] = NULL;
+-    p->tavl_link[dir] = n;
+     n->tavl_balance = 0;
+-    if (tree->tavl_root == n)
++    if (y == NULL) {
++	n->tavl_link[0] = n->tavl_link[1] = NULL;
++	tree->tavl_root = n;
++
+ 	return &n->tavl_data;
++    }
++    n->tavl_link[dir] = p->tavl_link[dir];
++    n->tavl_link[!dir] = p;
++    p->tavl_tag[dir] = TAVL_CHILD;
++    p->tavl_link[dir] = n;
+ 
+-    for (p = y, k = 0; p != n; p = p->tavl_link[da[k]], k++)
++    p = y, k = 0;
++    while (p != n) {
+ 	if (da[k] == 0)
+ 	    p->tavl_balance--;
+ 	else
+ 	    p->tavl_balance++;
++	p = p->tavl_link[da[k]], k++;
++    }
+ 
+     if (y->tavl_balance == -2) {
+ 	struct tavl_node *x = y->tavl_link[0];
+@@ -259,6 +261,7 @@ void *tavl_replace(struct tavl_table *ta
+ 	void *r = *p;
+ 
+ 	*p = item;
++
+ 	return r;
+     }
+ }
+@@ -308,19 +311,26 @@ void *tavl_delete(struct tavl_table *tre
+ 
+     assert(tree != NULL && item != NULL);
+ 
+-    if (tree->tavl_root == NULL)
+-	return NULL;
++    q = (struct tavl_node *)&tree->tavl_root;
++    p = tree->tavl_root;
++    dir = 0;
++    while (p != NULL) {
++	cmp = tree->tavl_compare(item, p->tavl_data, tree->tavl_param);
++
++	if (cmp == 0)
++	    break;
+ 
+-    p = (struct tavl_node *)&tree->tavl_root;
+-    for (cmp = -1; cmp != 0;
+-	 cmp = tree->tavl_compare(item, p->tavl_data, tree->tavl_param)) {
+ 	dir = cmp > 0;
+ 
+ 	q = p;
+-	if (p->tavl_tag[dir] == TAVL_THREAD)
+-	    return NULL;
+-	p = p->tavl_link[dir];
++	if (p->tavl_tag[dir] == TAVL_CHILD)
++	    p = p->tavl_link[dir];
++	else
++	    p = NULL;
+     }
++    if (p == NULL)
++	return NULL;
++
+     item = p->tavl_data;
+ 
+     if (p->tavl_tag[1] == TAVL_THREAD) {
+@@ -359,7 +369,7 @@ void *tavl_delete(struct tavl_table *tre
+ 	else {
+ 	    struct tavl_node *s;
+ 
+-	    for (;;) {
++	    while (r != NULL) {
+ 		s = r->tavl_link[0];
+ 		if (s->tavl_tag[0] == TAVL_THREAD)
+ 		    break;
+@@ -527,6 +537,7 @@ void *tavl_delete(struct tavl_table *tre
+     }
+ 
+     tree->tavl_count--;
++
+     return (void *)item;
+ }
+ 
+@@ -590,15 +601,13 @@ void *tavl_t_find(struct tavl_traverser
+     trav->tavl_node = NULL;
+ 
+     p = tree->tavl_root;
+-    if (p == NULL)
+-	return NULL;
+-
+-    for (;;) {
++    while (p != NULL) {
+ 	int cmp, dir;
+ 
+ 	cmp = tree->tavl_compare(item, p->tavl_data, tree->tavl_param);
+ 	if (cmp == 0) {
+ 	    trav->tavl_node = p;
++
+ 	    return p->tavl_data;
+ 	}
+ 
+@@ -606,8 +615,12 @@ void *tavl_t_find(struct tavl_traverser
+ 	if (p->tavl_tag[dir] == TAVL_CHILD)
+ 	    p = p->tavl_link[dir];
+ 	else
+-	    return NULL;
++	    p = NULL;
+     }
++
++    trav->tavl_node = NULL;
++
++    return NULL;
+ }
+ 
+ /* Attempts to insert |item| into |tree|.
+@@ -634,6 +647,7 @@ void *tavl_t_insert(struct tavl_traverse
+     }
+     else {
+ 	tavl_t_init(trav, tree);
++
+ 	return NULL;
+     }
+ }
+@@ -705,11 +719,12 @@ void *tavl_t_cur(struct tavl_traverser *
+    The new item must not upset the ordering of the tree. */
+ void *tavl_t_replace(struct tavl_traverser *trav, void *new)
+ {
+-    struct tavl_node *old;
++    void *old;
+ 
+     assert(trav != NULL && trav->tavl_node != NULL && new != NULL);
+     old = trav->tavl_node->tavl_data;
+     trav->tavl_node->tavl_data = new;
++
+     return old;
+ }
+ 
+@@ -748,6 +763,9 @@ copy_node(struct tavl_table *tree,
+     return 1;
+ }
+ 
++/* Destroys |new| with |tavl_destroy (new, destroy)|,
++   first initializing the right link in |new| that has
++   not yet been initialized. */
+ static void
+ copy_error_recovery(struct tavl_node *p,
+ 		    struct tavl_table *new, tavl_item_func * destroy)
+@@ -798,7 +816,7 @@ struct tavl_table *tavl_copy(const struc
+     rq.tavl_link[0] = NULL;
+     rq.tavl_tag[0] = TAVL_THREAD;
+ 
+-    for (;;) {
++    while (p != NULL) {
+ 	if (p->tavl_tag[0] == TAVL_CHILD) {
+ 	    if (!copy_node(new, q, 0, p->tavl_link[0], copy)) {
+ 		copy_error_recovery(rq.tavl_link[0], new, destroy);
+@@ -830,6 +848,8 @@ struct tavl_table *tavl_copy(const struc
+ 		return NULL;
+ 	    }
+     }
++
++    return new;
+ }
+ 
+ /* Frees storage allocated for |tree|.
+@@ -840,9 +860,10 @@ void tavl_destroy(struct tavl_table *tre
+     struct tavl_node *n;	/* Next node. */
+ 
+     p = tree->tavl_root;
+-    if (p != NULL)
++    if (p != NULL) {
+ 	while (p->tavl_tag[0] == TAVL_CHILD)
+ 	    p = p->tavl_link[0];
++    }
+ 
+     while (p != NULL) {
+ 	n = p->tavl_link[1];
+@@ -881,6 +902,9 @@ struct libavl_allocator tavl_allocator_d
+     tavl_free
+ };
+ 
++#undef NDEBUG
++#include <assert.h>
++
+ /* Asserts that |tavl_insert()| succeeds at inserting |item| into |table|. */
+ void (tavl_assert_insert) (struct tavl_table * table, void *item)
+ {
+@@ -896,5 +920,6 @@ void *(tavl_assert_delete) (struct tavl_
+     void *p = tavl_delete(table, item);
+ 
+     assert(p != NULL);
++
+     return p;
+ }
+--- a/lib/vector/dglib/tavl.h
++++ b/lib/vector/dglib/tavl.h
+@@ -1,25 +1,23 @@
+-/* Produced by texiweb from libavl.w on 2002/02/09 at 01:45. */
++/* Produced by texiweb from libavl.w. */
+ 
+ /* libavl - library for manipulation of binary trees.
+-   Copyright (C) 1998-2002 Free Software Foundation, Inc.
++   Copyright (C) 1998, 1999, 2000, 2001, 2002, 2004 Free Software
++   Foundation, Inc.
+ 
+-   This program is free software; you can redistribute it and/or
+-   modify it under the terms of the GNU General Public License as
+-   published by the Free Software Foundation; either version 2 of the
+-   License, or (at your option) any later version.
+-
+-   This program is distributed in the hope that it will be useful, but
+-   WITHOUT ANY WARRANTY; without even the implied warranty of
+-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+-   See the GNU General Public License for more details.
+-
+-   You should have received a copy of the GNU General Public License
+-   along with this program; if not, write to the Free Software
+-   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+-
+-   The author may be contacted at <blp@gnu.org> on the Internet, or
+-   as Ben Pfaff, 12167 Airport Rd, DeWitt MI 48820, USA through more
+-   mundane means.
++   This library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 3 of the License, or (at your option) any later version.
++
++   This library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with this library; if not, write to the Free Software
++   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++   02110-1301 USA.
+  */
+ 
+ #ifndef TAVL_H
+@@ -50,7 +48,7 @@ void tavl_free(struct libavl_allocator *
+ 
+ /* Maximum TAVL height. */
+ #ifndef TAVL_MAX_HEIGHT
+-#define TAVL_MAX_HEIGHT 32
++#define TAVL_MAX_HEIGHT 92
+ #endif
+ 
+ /* Tree data structure. */
