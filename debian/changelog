@@ -1,6 +1,8 @@
 grass (7.0.5-3) UNRELEASED; urgency=medium
 
   * Drop unused overrides for hardening-no-pie.
+  * Add patch to fix v.net.iso segmentation fault.
+    (closes: #845429)
 
  -- Bas Couwenberg <sebastic@debian.org>  Tue, 25 Oct 2016 20:36:48 +0200
 

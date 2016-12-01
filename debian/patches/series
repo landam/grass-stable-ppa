@@ -2,3 +2,4 @@ pager
 instdir
 no-fail-html.patch
 appstream.patch
+svn-r69952-dglib-update-to-libavl-2.0.3.patch
