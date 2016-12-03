@@ -1,3 +1,10 @@
+grass (7.2.0~rc2-1~exp2) UNRELEASED; urgency=medium
+
+  * Make grass-core depend on grass-doc, g.extension requires some of its files.
+    (LP: #1646812)
+
+ -- Bas Couwenberg <sebastic@debian.org>  Sat, 03 Dec 2016 11:14:04 +0100
+
 grass (7.2.0~rc2-1~exp1) experimental; urgency=medium
 
   * New upstream release candidate.
