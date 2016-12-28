@@ -2,6 +2,7 @@ Description: Fix hicolor icon name.
  grass.desktop uses Icon=grass not Icon=grass71.
 Author: Bas Couwenberg <sebastic@debian.org>
 Forwarded: https://trac.osgeo.org/grass/ticket/3233
+Applied-Upstream: https://trac.osgeo.org/grass/changeset/70166
 
 --- a/gui/icons/Makefile
 +++ b/gui/icons/Makefile
