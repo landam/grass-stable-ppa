@@ -4,6 +4,7 @@ grass (7.2.0-1) UNRELEASED; urgency=medium
   * Make grass-core depend on grass-doc, g.extension requires some of its files.
     (LP: #1646812)
   * Drop svn-r69952-dglib-update-to-libavl-2.0.3.patch, included upstream.
+  * Update license & copyright for avl.
 
  -- Bas Couwenberg <sebastic@debian.org>  Wed, 28 Dec 2016 18:14:57 +0100
 
