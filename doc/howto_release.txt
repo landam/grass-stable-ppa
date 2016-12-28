@@ -1,6 +1,6 @@
 How to release GRASS GIS binaries and source code
 
-$Date: 2016-10-02 23:08:51 +0200 (Sun, 02 Oct 2016) $
+$Date: 2016-11-29 00:02:11 +0100 (Tue, 29 Nov 2016) $
 
 Note: This text contains *some* rules only applicable to the
       development coordinator (currently Markus Neteler, PSC Chair).
@@ -21,6 +21,8 @@ Contents
         ( cd doc/raster/r.example/ ; make clean ; make )
         ( cd doc/vector/v.example/ ; make clean ; make )
       still compile; fix otherwise
+
+   - fix typos with tools/fix_typos.sh
  
    - Check that autoconf scripts are up-to-date (to do only in RC cycle!):
 
