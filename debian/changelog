@@ -1,4 +1,4 @@
-grass (7.2.0-1) UNRELEASED; urgency=medium
+grass (7.2.0-1) unstable; urgency=medium
 
   * New upstream release.
   * Make grass-core depend on grass-doc, g.extension requires some of its files.
@@ -7,8 +7,9 @@ grass (7.2.0-1) UNRELEASED; urgency=medium
   * Update license & copyright for avl.
   * Add patch to fix spelling errors.
   * Add patch to fix hicolor icon name.
+  * Move from experimental to unstable.
 
- -- Bas Couwenberg <sebastic@debian.org>  Wed, 28 Dec 2016 18:14:57 +0100
+ -- Bas Couwenberg <sebastic@debian.org>  Wed, 28 Dec 2016 19:05:08 +0100
 
 grass (7.2.0~rc2-1~exp1) experimental; urgency=medium
 
