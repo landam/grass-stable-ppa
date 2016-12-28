@@ -6,6 +6,7 @@ grass (7.2.0-1) UNRELEASED; urgency=medium
   * Drop svn-r69952-dglib-update-to-libavl-2.0.3.patch, included upstream.
   * Update license & copyright for avl.
   * Add patch to fix spelling errors.
+  * Add patch to fix hicolor icon name.
 
  -- Bas Couwenberg <sebastic@debian.org>  Wed, 28 Dec 2016 18:14:57 +0100
 
