@@ -3,3 +3,5 @@ instdir
 no-fail-html.patch
 appstream.patch
 jquery.patch
+spelling-errors.patch
+hicolor-icons.patch

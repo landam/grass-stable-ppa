@@ -1,3 +1,22 @@
+grass (7.2.0-1~trusty1) trusty; urgency=medium
+
+  * Rebuild for trusty.
+
+ -- Martin Landa <landa.martin@gmail.com>  Thu, 29 Dec 2016 17:39:34 +0100
+
+grass (7.2.0-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Make grass-core depend on grass-doc, g.extension requires some of its files.
+    (LP: #1646812)
+  * Drop svn-r69952-dglib-update-to-libavl-2.0.3.patch, included upstream.
+  * Update license & copyright for avl.
+  * Add patch to fix spelling errors.
+  * Add patch to fix hicolor icon name.
+  * Move from experimental to unstable.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Wed, 28 Dec 2016 19:05:08 +0100
+
 grass (7.2.0~rc2-1~exp1~trusty2) trusty; urgency=medium
 
   * Rebuild for trusty.
@@ -62,6 +81,13 @@ grass (7.2.0~rc1-1~exp1) experimental; urgency=medium
   * Add patch to fix spelling errors.
 
  -- Bas Couwenberg <sebastic@debian.org>  Fri, 28 Oct 2016 15:56:28 +0200
+
+grass (7.0.5-3) unstable; urgency=medium
+
+  * Add patch to fix v.net.iso segmentation fault.
+    (closes: #845429)
+
+ -- Bas Couwenberg <sebastic@debian.org>  Thu, 01 Dec 2016 20:05:05 +0100
 
 grass (7.0.5-2) unstable; urgency=medium
 
