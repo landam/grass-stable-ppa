@@ -134,18 +134,35 @@ int main(int argc, char *argv[])
         G_fatal_error(_("Unable to create PostGIS layer <%s>"),
                       olayer);
     G_add_error_handler(output_handler, &Out);
-    
-    /* check output type */
-    if (otype > 0) { /* type is not 'auto' */
-        if (Vect_write_line(&Out, otype, NULL, NULL) < 0)
-            G_fatal_error(_("Feature type %d is not supported"), otype);
-    }
 
-    /* copy attributes */
+    /* copy attributes (must be done before checking output type
+       otherwise attributes are not copied) */
     field = Vect_get_field_number(&In, params.layer->answer);
     if (!flags.table->answer)
         Vect_copy_map_dblinks(&In, &Out, TRUE);
 
+    /* check output type */
+    if (otype < 1 && Vect_level(&In) > 1) {
+        /* type 'auto' -> try to guess output feature type on level 2 */
+        if (Vect_get_num_areas(&In) > 0)
+            otype = GV_AREA;
+        else if (Vect_get_num_primitives(&In, GV_LINE) > 0)
+            otype = GV_LINE;
+        else if (Vect_get_num_primitives(&In, GV_POINT) > 0)
+            otype = GV_POINT;
+    }
+    if (otype > 0) {
+        if (otype & (GV_FACE | GV_KERNEL))
+            G_fatal_error(_("Feature type '%s' not supported"),
+                          params.type->answer);
+        
+        /* set up output feature type if possible */
+        if (Vect_write_line(&Out, otype, NULL, NULL) < 0)
+            G_fatal_error(_("Feature type %d is not supported"), otype);
+
+        Vect_set_constraint_type(&In, otype);
+    }
+    
     /* copy vector features & create PostGIS table */
     if (Vect_copy_map_lines_field(&In, field, &Out) != 0)
         G_fatal_error(_("Copying features failed"));
@@ -208,9 +225,13 @@ void output_handler(void *p)
     G_debug(1, "output_handler(): schema = %s; olayer = %s", pg_info->schema_name, pg_info->table_name);
     sprintf(stmt, "SELECT DropGeometryTable('%s', '%s')", pg_info->schema_name, pg_info->table_name);
     result = PQexec(pg_info->conn, stmt);
+    /*
+      be quiet - table may do not exists
+
     if (!result || PQresultStatus(result) != PGRES_TUPLES_OK) {
         G_warning(_("Unable to drop table <%s.%s>"), pg_info->schema_name, pg_info->table_name);
     }
+    */
     PQclear(result);
 
     if (pg_info->toposchema_name) {

@@ -31,8 +31,19 @@
 #% guisection: Output
 #%end
 #%flag
+#% key: n
+#% description: Invert selection (logical NOT)
+#% guisection: Output
+#%end
+#%flag
 #% key: m
 #% description: Search in manual pages too (can be slow)
+#% guisection: Output
+#%end
+#%flag
+#% key: k
+#% label: Search only for the exact keyword in module keyword list
+#% description: Instead of full text search, search only in actual keywords
 #% guisection: Output
 #%end
 #%flag
@@ -67,9 +78,10 @@ COLORIZE = False
 
 def main():
     global COLORIZE
-    keywords = options['keyword'].lower().split(',')
     AND = flags['a']
+    NOT = flags['n']
     manpages = flags['m']
+    exact_keywords = flags['k']
     out_format = None
     if flags['g']:
         out_format = 'shell'
@@ -78,7 +90,12 @@ def main():
     else:
         COLORIZE = flags['c']
 
-    modules = _search_module(keywords, AND, manpages)
+    if exact_keywords:
+        keywords = options['keyword'].split(',')
+    else:
+        keywords = options['keyword'].lower().split(',')
+
+    modules = _search_module(keywords, AND, NOT, manpages, exact_keywords)
 
     print_results(modules, out_format)
 
@@ -129,9 +146,9 @@ def _print_results(data):
     import textwrap
 
     for item in data:
-        print('\n{}'.format(colorize(item['name'], attrs=['bold'])))
+        print('\n{0}'.format(colorize(item['name'], attrs=['bold'])))
         for attr in item['attributes']:
-            out = '{}: {}'.format(attr, item['attributes'][attr])
+            out = '{0}: {1}'.format(attr, item['attributes'][attr])
             out = textwrap.wrap(out, width=79, initial_indent=4 * ' ',
                                 subsequent_indent=4 * ' ' + len(attr) * ' ' + '  ')
             for line in out:
@@ -162,7 +179,8 @@ def colorize(text, attrs=None, pattern=None):
         return colored(text, attrs=attrs)
 
 
-def _search_module(keywords, logical_and=False, manpages=False):
+def _search_module(keywords, logical_and=False, invert=False, manpages=False,
+                   exact_keywords=False):
     """Search modules by given keywords
 
     :param list.<str> keywords: list of keywords
@@ -194,7 +212,11 @@ def _search_module(keywords, logical_and=False, manpages=False):
             keyword = keywords[idx]
             keyword_found = False
 
-            keyword_found = _basic_search(keyword, name, description, module_keywords)
+            if exact_keywords:
+                keyword_found = _exact_search(keyword, module_keywords)
+            else:
+                keyword_found = _basic_search(keyword, name, description,
+                                              module_keywords)
 
             if not keyword_found and manpages:
                 keyword_found = _manpage_search(keyword, name)
@@ -212,7 +234,10 @@ def _search_module(keywords, logical_and=False, manpages=False):
                                            attrs=['underline'],
                                            pattern=keyword)
 
-        if False not in found:
+        add = False not in found
+        if invert:
+            add = not add
+        if add:
             found_modules.append({
                 'name': name,
                 'attributes': {
@@ -225,7 +250,11 @@ def _search_module(keywords, logical_and=False, manpages=False):
 
 
 def _basic_search(pattern, name, description, module_keywords):
+    """Search for a string in all the provided strings.
 
+    This lowercases the strings before searching in them, so the pattern
+    string should be lowercased too.
+    """
     if name.lower().find(pattern) > -1 or\
        description.lower().find(pattern) > -1 or\
        module_keywords.lower().find(pattern) > -1:
@@ -233,6 +262,19 @@ def _basic_search(pattern, name, description, module_keywords):
         return True
     else:
         return False
+
+
+def _exact_search(keyword, module_keywords):
+    """Compare exact keyword with module keywords
+
+    :param keyword: exact keyword to find in the list (not lowercased)
+    :param module_keywords: comma separated list of keywords
+    """
+    module_keywords = module_keywords.split(',')
+    for current in module_keywords:
+        if keyword == current:
+            return True
+    return False
 
 
 def _manpage_search(pattern, name):
