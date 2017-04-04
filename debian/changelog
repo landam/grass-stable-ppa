@@ -1,3 +1,9 @@
+grass (7.2.1~rc1-1) UNRELEASED; urgency=medium
+
+  * New upstream release candidate.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Wed, 05 Apr 2017 01:29:04 +0200
+
 grass (7.2.0-2) unstable; urgency=medium
 
   * Enable PIE hardening flags.
