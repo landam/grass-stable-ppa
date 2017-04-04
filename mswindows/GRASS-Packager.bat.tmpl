@@ -3,7 +3,7 @@ rem Self Contained GRASS Automated Packager
 rem -----------------------------------------------------------------------------------------------------------------------
 rem Edited by: Marco Pasetti
 rem Revised for OSGeo4W by: Colin Nielsen, Helmut Kudrnovsky, and Martin Landa
-rem Last Update: $Id: GRASS-Packager.bat.tmpl 67543 2016-01-10 20:42:09Z martinl $
+rem Last Update: $Id: GRASS-Packager.bat.tmpl 70807 2017-03-28 06:04:54Z martinl $
 rem -----------------------------------------------------------------------------------------------------------------------
 
 @echo off
@@ -55,6 +55,7 @@ copy %OSGEO4W_PKG_DIR%\bin\* %PACKAGE_DIR%\extrabin
 xcopy %OSGEO4W_PKG_DIR%\bin\gdalplugins\* %PACKAGE_DIR%\extrabin\gdalplugins /S/V/F/I
 del %PACKAGE_DIR%\extrabin\msvcp*
 del %PACKAGE_DIR%\extrabin\msvcr*
+del %PACKAGE_DIR%\extrabin\vcredist_*
 
 @echo.
 @echo -----------------------------------------------------------------------------------------------------------------------

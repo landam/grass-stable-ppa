@@ -37,7 +37,7 @@ try:
     from matplotlib import cbook
 except ImportError as e:
     raise ImportError(_('The Timeline Tool needs the "matplotlib" '
-                        '(python-matplotlib) package to be installed. {}').format(e))
+                        '(python-matplotlib) package to be installed. {0}').format(e))
 
 import grass.script as grass
 from core.utils import _
@@ -85,14 +85,16 @@ class TimelineFrame(wx.Frame):
         # We create a database interface here to speedup the GUI
         self.dbif = tgis.SQLDatabaseInterfaceConnection()
         self.dbif.connect()
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
 
-    def __del__(self):
+    def OnClose(self, event):
         """Close the database interface and stop the messenger and C-interface
            subprocesses.
         """
         if self.dbif.connected is True:
             self.dbif.close()
         tgis.stop_subprocesses()
+        self.Destroy()
 
     def _layout(self):
         """Creates the main panel with all the controls on it:

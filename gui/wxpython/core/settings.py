@@ -11,7 +11,7 @@ Usage:
 from core.settings import UserSettings
 @endcode
 
-(C) 2007-2016 by the GRASS Development Team
+(C) 2007-2017 by the GRASS Development Team
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
 
@@ -102,6 +102,12 @@ class Settings:
                     },
                     'posManager': {
                         'enabled': False
+                    },
+                },
+                # region
+                'region': {
+                    'resAlign': {
+                        'enabled' : False
                     },
                 },
             },
@@ -447,7 +453,8 @@ class Settings:
                 },
                 'selectThresh': {
                     'value': 10,
-                    'units': 'screen pixels'
+                    'unit': 0,  # new
+                    'units': 'screen pixels'  # old for backwards comp.
                 },
                 'checkForDupl': {
                     'enabled': False
@@ -672,6 +679,7 @@ class Settings:
                     'points': {
                         'show': False,
                         'size': 100,
+                        'autosize': True,
                         'width': 2,
                         'marker': 2,
                         'color': (0, 0, 0, 255),
