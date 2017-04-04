@@ -1,4 +1,4 @@
-grass (7.2.1~rc1-1) UNRELEASED; urgency=medium
+grass (7.2.1~rc1-1~exp1) experimental; urgency=medium
 
   * New upstream release candidate.
   * Drop patches applied upstream.
@@ -7,7 +7,7 @@ grass (7.2.1~rc1-1) UNRELEASED; urgency=medium
     - Add Maris Nartiss to copyright holders
   * Add patch to fix spelling errors.
 
- -- Bas Couwenberg <sebastic@debian.org>  Wed, 05 Apr 2017 01:29:04 +0200
+ -- Bas Couwenberg <sebastic@debian.org>  Wed, 05 Apr 2017 01:58:20 +0200
 
 grass (7.2.0-2) unstable; urgency=medium
 
