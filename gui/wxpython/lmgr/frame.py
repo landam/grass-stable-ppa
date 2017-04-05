@@ -382,7 +382,7 @@ class GMFrame(wx.Frame):
         if not UserSettings.Get(
                 group='manager', key='hideTabs', subkey='pyshell'):
             self.pyshell = PyShellWindow(
-                parent=self.notebook, giface=self._giface)
+                parent=self.notebook, giface=self._giface, simpleEditorHandler=self.OnSimpleEditor)
             self.notebook.AddPage(
                 page=self.pyshell,
                 text=_("Python"),
@@ -1458,7 +1458,6 @@ class GMFrame(wx.Frame):
         for layer in gxwXml.layers:
             display = layer['display']
             maptree = self.notebookLayers.GetPage(display).maptree
-
             newItem = maptree.AddLayer(ltype=layer['type'],
                                        lname=layer['name'],
                                        lchecked=layer['checked'],
@@ -1466,7 +1465,8 @@ class GMFrame(wx.Frame):
                                        lcmd=layer['cmd'],
                                        lgroup=layer['group'],
                                        lnviz=layer['nviz'],
-                                       lvdigit=layer['vdigit'])
+                                       lvdigit=layer['vdigit'],                                       
+                                       loadWorkspace=True)
 
             if 'selected' in layer:
                 selectList.append((maptree, newItem, layer['selected']))
@@ -1929,6 +1929,17 @@ class GMFrame(wx.Frame):
         x, y = dlg.GetPosition()
         dlg.SetPosition((x, y - 200))
         dlg.Show()
+
+    def OnSimpleEditor(self, event):
+        # import on demand
+        from gui_core.pyedit import PyEditFrame
+
+        # we don't keep track of them and we don't care about open files
+        # there when closing the main GUI
+        simpleEditor = PyEditFrame(parent=self, giface=self._giface)
+        simpleEditor.SetSize(self.GetSize())
+        simpleEditor.CenterOnScreen()
+        simpleEditor.Show()
 
     def OnShowAttributeTable(self, event, selection=None):
         """Show attribute table of the given vector map layer
@@ -2484,7 +2495,7 @@ class GMFrame(wx.Frame):
             grass.warning(_("Unable to exit GRASS shell: unknown PID"))
             return
 
-        Debug.msg(1, "Exiting shell with pid={}".format(shellPid))
+        Debug.msg(1, "Exiting shell with pid={0}".format(shellPid))
         import signal
         os.kill(shellPid, signal.SIGTERM)
 

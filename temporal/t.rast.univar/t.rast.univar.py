@@ -49,25 +49,27 @@
 #%end
 
 #%flag
-#% key: s
+#% key: u
 #% description: Suppress printing of column names
 #% guisection: Formatting
 #%end
 
 import grass.script as grass
-import grass.temporal as tgis
+
 
 ############################################################################
 
 
 def main():
+    # lazy imports
+    import grass.temporal as tgis
 
     # Get the options
     input = options["input"]
     output = options["output"]
     where = options["where"]
     extended = flags["e"]
-    no_header = flags["s"]
+    no_header = flags["u"]
     rast_region = bool(flags["r"])
     separator = grass.separator(options["separator"])
 

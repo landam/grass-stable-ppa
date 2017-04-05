@@ -9,7 +9,7 @@
  *
  * PURPOSE:      Converts GRASS vector to one of supported OGR vector formats.
  *
- * COPYRIGHT:    (C) 2001-2013 by the GRASS Development Team
+ * COPYRIGHT:    (C) 2001-2017 by the GRASS Development Team
  *
  *               This program is free software under the GNU General
  *               Public License (>=v2).  Read the file COPYING that
@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
     /*
        If no output type specified: determine one automatically.
        Centroids, Boundaries and Kernels always have to be exported
-       explicitely, using the "type=" option.
+       explicitly, using the "type=" option.
      */
     if (!flags.new->answer) {
 	/* open input vector (topology required) */

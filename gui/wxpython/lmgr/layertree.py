@@ -30,6 +30,7 @@ except ImportError:
 
 from grass.script import core as grass
 from grass.script import vector as gvector
+from grass.script import utils as gutils
 
 from core import globalvar
 from gui_core.dialogs import SqlQueryFrame, SetOpacityDialog, TextEntryDialog
@@ -422,7 +423,7 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
         if not hasattr(self, "popupID"):
             self.popupID = dict()
             for key in (
-                    'remove', 'rename', 'opacity', 'nviz', 'zoom', 'region',
+                    'remove', 'rename', 'opacity', 'nviz', 'zoom', 'region', 'align',
                     'export', 'attr', 'edit', 'save_ws', 'bgmap', 'topo', 'meta',
                     'null', 'zoom1', 'color', 'colori', 'hist', 'univar', 'prof',
                     'properties', 'sql', 'copy', 'report', 'export-pg',
@@ -464,7 +465,6 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
                 same = False
                 break
 
-        # map layer items
         if ltype not in ("group", "command"):
             if numSelected == 1:
                 self.popupMenu.AppendSeparator()
@@ -515,6 +515,15 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
                     self.mapdisplay.OnZoomToMap,
                     id=self.popupID['zoom'])
 
+                # raster-specific zoom
+                if ltype and ltype == "raster" and same:
+                    self.popupMenu.Append(
+                        self.popupID['zoom1'], _("Zoom to selected map(s) (ignore NULLs)"))
+                    self.Bind(
+                        wx.EVT_MENU,
+                        self.mapdisplay.OnZoomToRaster,
+                        id=self.popupID['zoom1'])
+
                 item = wx.MenuItem(
                     self.popupMenu,
                     id=self.popupID['region'],
@@ -525,15 +534,22 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
                     wx.EVT_MENU,
                     self.OnSetCompRegFromMap,
                     id=self.popupID['region'])
-
-        # specific items
-        try:
-            mltype = self.GetLayerInfo(self.layer_selected, key='type')
-        except:
-            mltype = None
+                
+                # raster align 
+                if ltype and ltype == "raster" and len(selected) == 1:
+                    item = wx.MenuItem(
+                        self.popupMenu,
+                        id=self.popupID['align'],
+                        text=_("Align computational region to selected map"))
+                    item.SetBitmap(MetaIcon(img='region').GetBitmap(self.bmpsize))
+                    self.popupMenu.AppendItem(item)
+                    self.Bind(
+                        wx.EVT_MENU,
+                        self.OnAlignCompRegToRaster,
+                        id=self.popupID['align'])
 
         # vector layers (specific items)
-        if mltype and mltype == "vector" and numSelected == 1:
+        if ltype and ltype == "vector" and numSelected == 1:
             self.popupMenu.AppendSeparator()
             item = wx.MenuItem(
                 self.popupMenu,
@@ -701,16 +717,7 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
             self.Bind(wx.EVT_MENU, self.OnMetadata, id=self.popupID['meta'])
 
         # raster layers (specific items)
-        elif mltype and mltype == "raster":
-            if same:
-                self.popupMenu.Append(
-                    self.popupID['zoom1'],
-                    text=_("Zoom to selected map(s) (ignore NULLs)"))
-                self.Bind(
-                    wx.EVT_MENU,
-                    self.mapdisplay.OnZoomToRaster,
-                    id=self.popupID['zoom1'])
-
+        elif same and ltype and ltype == "raster":
             self.popupMenu.AppendSeparator()
 
             if numSelected == 1:
@@ -762,13 +769,14 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
                 wx.EVT_MENU,
                 self.OnRasterColorTable,
                 id=self.popupID['color'])
-            self.popupMenu.Append(
-                self.popupID['colori'],
-                _("Set color table interactively"))
-            self.Bind(
-                wx.EVT_MENU,
-                self.lmgr.OnRasterRules,
-                id=self.popupID['colori'])
+            if len(selected) < 2:
+                self.popupMenu.Append(
+                    self.popupID['colori'],
+                    _("Set color table interactively"))
+                self.Bind(
+                    wx.EVT_MENU,
+                    self.lmgr.OnRasterRules,
+                    id=self.popupID['colori'])
 
             item = wx.MenuItem(
                 self.popupMenu,
@@ -824,7 +832,7 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
                     self.OnMetadata,
                     id=self.popupID['meta'])
 
-        elif mltype and mltype == 'raster_3d':
+        elif ltype and ltype == 'raster_3d':
             if numSelected == 1:
                 self.popupMenu.AppendSeparator()
                 self.popupMenu.Append(
@@ -859,7 +867,7 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
                     id=self.popupID['meta'])
 
         # web service layers (specific item)
-        elif mltype and mltype == "wms":
+        elif ltype and ltype == "wms":
             self.popupMenu.Append(
                 self.popupID['save_ws'],
                 text=_("Save web service layer"))
@@ -910,22 +918,8 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
         # print output to command log area
         self._giface.RunCmd(cmd)
 
-    def OnSetCompRegFromRaster(self, event):
-        """Set computational region from selected raster map (ignore NULLs).
-        Unused, removed item from layer context menu"""
-        mapLayer = self.GetLayerInfo(self.layer_selected, key='maplayer')
-
-        cmd = ['g.region', 'raster=%s' % mapLayer.GetName(),
-               'zoom=%s' % mapLayer.GetName()]
-
-        # print output to command log area
-        self._giface.RunCmd(cmd, notification=Notification.NO_NOTIFICATION)
-
-        # re-render map display
-        self._giface.GetMapWindow().UpdateMap(render=True)
-
     def OnSetCompRegFromMap(self, event):
-        """Set computational region from selected raster/vector map
+        """Set computational region from selected raster/vector map(s)
         """
         rast = []
         vect = []
@@ -944,23 +938,48 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
                 for rname in mapLayer.GetName().splitlines():
                     rast.append(rname)
 
-        cmd = ['g.region']
+        kwargs = {}
         if rast:
-            cmd.append('raster=%s' % ','.join(rast))
+            kwargs['raster'] = ','.join(rast)
         if vect:
-            cmd.append('vector=%s' % ','.join(vect))
+            kwargs['vector'] = ','.join(vect)
         if rast3d:
-            cmd.append('raster_3d=%s' % ','.join(rast3d))
+            kwargs['raster_3d'] = ','.join(rast3d)
 
-        # print output to command log area
-        if len(cmd) > 1:
-            if mltype == 'raster_3d':
-                cmd.append('-3')
-            self._giface.RunCmd(cmd, compReg=False,
-                                notification=Notification.NO_NOTIFICATION)
+        if kwargs:
+            if UserSettings.Get(group='general',
+                                key='region', subkey=['resAlign', 'enabled']):
+                kwargs['flags'] = 'a'
+            # command must run in main thread otherwise it can be
+            # launched after rendering is done (region extent will
+            # remain untouched)
+            RunCommand('g.region', **kwargs)
 
         # re-render map display
-        self._giface.GetMapWindow().UpdateMap(render=True)
+        self._giface.GetMapWindow().UpdateMap(render=False)
+
+    def OnAlignCompRegToRaster(self, event):
+        """Align computational region to selected raster map
+        """
+        selected = self.GetSelections()
+        if len(selected) != 1 or \
+           self.GetLayerInfo(selected[0], key='type') != 'raster':
+            return
+
+        kwargs = {'align': self.GetLayerInfo(selected[0],
+                                             key='maplayer').GetName()
+        }
+
+        if UserSettings.Get(group='general',
+                            key='region', subkey=['resAlign', 'enabled']):
+            kwargs['flags'] = 'a'
+        # command must run in main thread otherwise it can be
+        # launched after rendering is done (region extent will
+        # remain untouched)
+        RunCommand('g.region', **kwargs)
+
+        # re-render map display
+        self._giface.GetMapWindow().UpdateMap(render=False)
 
     def OnProfile(self, event):
         """Plot profile of given raster map layer"""
@@ -1275,7 +1294,8 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
         event.Skip()
 
     def AddLayer(self, ltype, lname=None, lchecked=None, lopacity=1.0,
-                 lcmd=None, lgroup=None, lvdigit=None, lnviz=None, multiple=True):
+                 lcmd=None, lgroup=None, lvdigit=None, lnviz=None,
+                 multiple=True, loadWorkspace=False):
         """Add new item to the layer tree, create corresponding MapLayer instance.
         Launch property dialog if needed (raster, vector, etc.)
 
@@ -1288,6 +1308,7 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
         :param lvdigit: vector digitizer settings (eg. geometry attributes)
         :param lnviz: layer Nviz properties
         :param bool multiple: True to allow multiple map layers in layer tree
+        :param bool loadWorkspace: True if called when loading workspace
         """
         if lname and not multiple:
             # check for duplicates
@@ -1323,36 +1344,36 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
             ctrl.SetToolTipString(_("Click to edit layer settings"))
             self.Bind(wx.EVT_BUTTON, self.OnLayerContextMenu, ctrl)
         # add layer to the layer tree
-        if selectedLayer and selectedLayer != self.GetRootItem():
-            if self.GetLayerInfo(selectedLayer, key='type') == 'group' \
-                    and self.IsExpanded(selectedLayer):
-                # add to group (first child of self.layer_selected) if group
-                # expanded
-                layer = self.PrependItem(parent=selectedLayer,
-                                         text='', ct_type=1, wnd=ctrl)
-            else:
-                # prepend to individual layer or non-expanded group
-                if lgroup == -1:
-                    # -> last child of root (loading from workspace)
-                    layer = self.AppendItem(parentId=self.root,
-                                            text='', ct_type=1, wnd=ctrl)
-                elif lgroup > -1:
-                    # -> last child of group (loading from workspace)
-                    parent = self.FindItemByIndex(index=lgroup)
-                    if not parent:
-                        parent = self.root
-                    layer = self.AppendItem(parentId=parent,
-                                            text='', ct_type=1, wnd=ctrl)
-                elif lgroup is None:
+        if loadWorkspace:
+            # when loading workspace, we always append
+            if lgroup == -1:
+                # -> last child of root (loading from workspace)
+                layer = self.AppendItem(parentId=self.root,
+                                        text='', ct_type=1, wnd=ctrl)
+            elif lgroup > -1:
+                # -> last child of group (loading from workspace)
+                parent = self.FindItemByIndex(index=lgroup)
+                if not parent:
+                    parent = self.root
+                layer = self.AppendItem(parentId=parent,
+                                        text='', ct_type=1, wnd=ctrl)
+        else:
+            if selectedLayer and selectedLayer != self.GetRootItem():
+                if selectedLayer and self.GetLayerInfo(selectedLayer, key='type') == 'group' \
+                        and self.IsExpanded(selectedLayer):
+                    # add to group (first child of self.layer_selected) if group
+                    # expanded
+                    layer = self.PrependItem(parent=selectedLayer,
+                                             text='', ct_type=1, wnd=ctrl)
+                else:
                     # -> previous sibling of selected layer
                     parent = self.GetItemParent(selectedLayer)
                     layer = self.InsertItem(
-                        parentId=parent, input=self.GetPrevSibling(
-                            selectedLayer),
-                        text='', ct_type=1, wnd=ctrl)
-        else:  # add first layer to the layer tree (first child of root)
-            layer = self.PrependItem(
-                parent=self.root, text='', ct_type=1, wnd=ctrl)
+                                parentId=parent, input=self.GetPrevSibling(selectedLayer),
+                                text='', ct_type=1, wnd=ctrl)
+            else:  # add first layer to the layer tree (first child of root)
+                layer = self.PrependItem(
+                    parent=self.root, text='', ct_type=1, wnd=ctrl)
 
         # layer is initially unchecked as inactive (beside 'command')
         # use predefined value if given
@@ -1402,7 +1423,7 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
                 cmd = []
                 if ltype == 'command' and lname:
                     for c in lname.split(';'):
-                        cmd.append(c.split(' '))
+                        cmd.append(gutils.split(c))
 
                 name = None
 
@@ -1962,11 +1983,6 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
                          message=_("Map <%s> not found.") % mapName)
                 return
 
-            if not mapLayer.IsActive():
-                self.forceCheck = True
-                self.CheckItem(layer, True)
-                mapLayer.SetActive(True)
-
         # update layer data
         if params:
             self.SetPyData(layer, (self.GetLayerInfo(layer), params))
@@ -1990,39 +2006,49 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
             self.first = False  # first layer has been already added to
             # the layer tree
 
-        # update nviz session
-        if self.mapdisplay.IsPaneShown('3d') and dcmd:
-            mapLayer = self.GetLayerInfo(layer, key='maplayer')
-            mapWin = self.mapdisplay.MapWindow
-            if len(mapLayer.GetCmd()) > 0:
-                if mapLayer.type == 'raster':
-                    if mapWin.IsLoaded(layer):
-                        mapWin.UnloadRaster(layer)
+        if dcmd:
+            if not mapLayer.IsActive():
+                self.forceCheck = True
+                self.CheckItem(layer, True)
+                mapLayer.SetActive(True)
+                # no need to update nviz here, already done by OnLayerChecked
 
-                    mapWin.LoadRaster(layer)
-
-                elif mapLayer.type == 'raster_3d':
-                    if mapWin.IsLoaded(layer):
-                        mapWin.UnloadRaster3d(layer)
-
-                    mapWin.LoadRaster3d(layer)
-
-                elif mapLayer.type == 'vector':
-                    if mapWin.IsLoaded(layer):
-                        mapWin.UnloadVector(layer)
-
-                    mapWin.LoadVector(layer)
-
-                # reset view when first layer loaded
-                nlayers = len(
-                    mapWin.Map.GetListOfLayers(
-                        ltype=(
-                            'raster',
-                            'raster_3d',
-                            'vector'),
-                        active=True))
-                if nlayers < 2:
-                    mapWin.ResetView()
+            # update nviz session
+            elif self.mapdisplay.IsPaneShown('3d'):
+                mapLayer = self.GetLayerInfo(layer, key='maplayer')
+                mapWin = self.mapdisplay.MapWindow
+                if len(mapLayer.GetCmd()) > 0:
+                    if mapLayer.type == 'raster':
+                        if mapWin.IsLoaded(layer):
+                            mapWin.UnloadRaster(layer)
+    
+                        mapWin.LoadRaster(layer)
+    
+                    elif mapLayer.type == 'raster_3d':
+                        if mapWin.IsLoaded(layer):
+                            mapWin.UnloadRaster3d(layer)
+    
+                        mapWin.LoadRaster3d(layer)
+    
+                    elif mapLayer.type == 'vector':
+                        if mapWin.IsLoaded(layer):
+                            mapWin.UnloadVector(layer)
+                        vInfo = gvector.vector_info_topo(mapLayer.GetName())
+                        if (vInfo['points'] + vInfo['centroids']) > 0:
+                            mapWin.LoadVector(layer, points=True)
+                        if (vInfo['lines'] + vInfo['boundaries']) > 0:
+                            mapWin.LoadVector(layer, points=False)
+    
+                    # reset view when first layer loaded
+                    nlayers = len(
+                        mapWin.Map.GetListOfLayers(
+                            ltype=(
+                                'raster',
+                                'raster_3d',
+                                'vector'),
+                            active=True))
+                    if nlayers < 2:
+                        mapWin.ResetView()
 
     def GetVisibleLayers(self, skipDigitized=False):
         # make a list of visible layers

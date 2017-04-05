@@ -179,7 +179,7 @@ class ParallelModuleQueue(object):
         """Constructor
 
         :param nprocs: The maximum number of Module processes that
-                       can be run in parallel, defualt is 1, if None
+                       can be run in parallel, default is 1, if None
                        then use all the available CPUs.
         :type nprocs: int
         """
@@ -359,6 +359,7 @@ class Module(object):
     "Color table for raster map <test_a> set to 'rules'"
 
     Run a second time
+
     >>> colors.run()
     Module('r.colors')
     >>> stdout, stderr = colors.popen.communicate(input="1 blue")
@@ -369,6 +370,7 @@ class Module(object):
     "Color table for raster map <test_a> set to 'rules'"
 
     Multiple run test
+
     >>> colors = Module("r.colors", map="test_a",
     ...                                            color="ryb", run_=False)
     >>> colors.get_bash()

@@ -59,12 +59,13 @@
 #%end
 
 import grass.script as grass
-import grass.temporal as tgis
 
 ############################################################################
 
 
 def main():
+    # lazy imports
+    import grass.temporal as tgis
 
     # Get the options
     name = options["output"]
@@ -78,7 +79,7 @@ def main():
     tgis.init()
     
     tgis.open_new_stds(name, type, temporaltype, title, descr, 
-                                     semantic, None, grass.overwrite())
+                       semantic, None, grass.overwrite())
 
 if __name__ == "__main__":
     options, flags = grass.parser()

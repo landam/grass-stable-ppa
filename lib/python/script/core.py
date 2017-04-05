@@ -64,7 +64,7 @@ class Popen(subprocess.Popen):
             and kwargs.get('executable') is None):
             cmd = shutil_which(args[0])
             if cmd is None:
-                raise OSError(_("Cannot find the executable {}")
+                raise OSError(_("Cannot find the executable {0}")
                               .format(args[0]))
             args = [cmd] + args[1:]
             name, ext = os.path.splitext(cmd)
@@ -238,7 +238,7 @@ def shutil_which(cmd, mode=os.F_OK | os.X_OK, path=None):
 # This function also could skip the check for platform but depends
 # how will be used, this is most general but not most effective.
 def get_real_command(cmd):
-    """Returns the real file commad for a module (cmd)
+    """Returns the real file command for a module (cmd)
 
     For Python scripts on MS Windows it returns full path to the script
     and adds a '.py' extension.
@@ -1535,10 +1535,10 @@ def debug_level(force=False):
         try:
             _debug_level = int(gisenv().get('DEBUG', 0))
             if _debug_level < 0 or _debug_level > 5:
-                raise ValueError(_("Debug level {}").format(_debug_level))
+                raise ValueError(_("Debug level {0}").format(_debug_level))
         except ValueError as e:
             _debug_level = 0
-            sys.stderr.write(_("WARNING: Ignoring unsupported debug level (must be >=0 and <=5). {}\n").format(e))
+            sys.stderr.write(_("WARNING: Ignoring unsupported debug level (must be >=0 and <=5). {0}\n").format(e))
             
     return _debug_level
 

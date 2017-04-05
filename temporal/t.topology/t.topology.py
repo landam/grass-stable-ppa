@@ -34,22 +34,24 @@
 
 #%flag
 #% key: m
-#% description: Print temporal relationships and exit
+#% description: Print temporal topological relationships and exit
 #%end
 
 #%flag
 #% key: s
-#% description: Print spatio-temporal relationships and exit
+#% description: Print spatio-temporal topological relationships and exit
 #%end
 from __future__ import print_function
 
 import grass.script as grass
-import grass.temporal as tgis
+
 
 ############################################################################
 
 
 def main():
+    # lazy imports
+    import grass.temporal as tgis
 
     # Get the options
     name = options["input"]

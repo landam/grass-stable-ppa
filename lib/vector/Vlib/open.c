@@ -1020,7 +1020,7 @@ int Vect_coor_info(const struct Map_info *Map, struct Coor_info *Info)
   Note: string is allocated by G_store(). Free allocated memory with
   G_free().
   
-  Currently are implemeted:
+  Currently are implemented:
    - Native format  (native)
    - OGR format     (ogr)
    - PostGIS format (postgis)
@@ -1056,7 +1056,7 @@ const char *Vect_maptype_info(const struct Map_info *Map)
 /*!
   \brief Gets vector map format
 
-  Currently are implemeted:
+  Currently are implemented:
    - Native format                    (GV_FORMAT_NATIVE)
    - OGR format linked via v.external (GV_FORMAT_OGR)
    - OGR format                       (GV_FORMAT_OGR_DIRECT)
@@ -1395,8 +1395,16 @@ int map_format(struct Map_info *Map)
             
             /* srid (default: 0) */
             p = G_find_key_value("srid", key_val);
-            if (p)
+            if (p) {
                 pg_info->srid = atoi(p);
+            }
+            else {
+                /* not defined by v.external.out, so try if EPSG code
+                 * is defined */
+                p = G_database_epsg_code();
+                if (p)
+                    pg_info->srid = atoi(p);
+            }
             G_debug(1, "PG: srid = %d", pg_info->srid);
             
             /* table name */

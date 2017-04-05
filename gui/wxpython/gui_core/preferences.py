@@ -14,7 +14,7 @@ Classes:
  - preferences::MapsetAccess
  - preferences::CheckListMapset
 
-(C) 2007-2014 by the GRASS Development Team
+(C) 2007-2017 by the GRASS Development Team
 
 This program is free software under the GNU General Public License
 (>=v2). Read the file COPYING that comes with GRASS for details.
@@ -50,13 +50,14 @@ from core.settings import UserSettings
 from gui_core.dialogs import SymbolDialog, DefaultFontDialog
 from gui_core.widgets import IntegerValidator, ColorTablesComboBox
 from core.debug import Debug
+from gui_core.wrap import GSpinCtrl as SpinCtrl
 
 
 class PreferencesBaseDialog(wx.Dialog):
     """Base preferences dialog"""
 
     def __init__(self, parent, giface, settings, title=_("User settings"),
-                 size=(500, 475),
+                 size=(-1, 500),
                  style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER):
         self.parent = parent  # ModelerFrame
         self.title = title
@@ -452,6 +453,41 @@ class PreferencesDialog(PreferencesBaseDialog):
             border=5)
         border.Add(item=sizer, proportion=0, flag=wx.ALL | wx.EXPAND, border=3)
 
+        #
+        # region
+        #
+        box = wx.StaticBox(
+            parent=panel,
+            id=wx.ID_ANY,
+            label=" %s " %
+            _("Region settings"))
+        sizer = wx.StaticBoxSizer(box, wx.VERTICAL)
+
+        gridSizer = wx.GridBagSizer(hgap=3, vgap=3)
+
+        row = 0
+        resAlign = wx.CheckBox(parent=panel, id=wx.ID_ANY, label=_(
+            "Align region to resolution"), name='IsChecked')
+        resAlign.SetValue(
+            self.settings.Get(
+                group='general',
+                key='region',
+                subkey=[
+                    'resAlign',
+                    'enabled']))
+        self.winId['general:region:resAlign:enabled'] = resAlign.GetId()
+
+        gridSizer.Add(resAlign,
+                      pos=(row, 0), span=(1, 2))
+
+        gridSizer.AddGrowableCol(0)
+        sizer.Add(
+            gridSizer,
+            proportion=1,
+            flag=wx.ALL | wx.EXPAND,
+            border=5)
+        border.Add(sizer, proportion=0, flag=wx.ALL | wx.EXPAND, border=3)
+
         panel.SetSizer(border)
 
         return panel
@@ -647,7 +683,7 @@ class PreferencesDialog(PreferencesBaseDialog):
             key='gSelectPopupHeight',
             subkey='value')
 
-        popupHeightSpin = wx.SpinCtrl(
+        popupHeightSpin = SpinCtrl(
             parent=panel, id=wx.ID_ANY, size=(100, -1))
         popupHeightSpin.SetRange(min, max)
         popupHeightSpin.SetValue(value)
@@ -1362,7 +1398,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         gridSizer.Add(item=wx.StaticText(parent=panel, id=wx.ID_ANY,
                                          label=_("Line width:")),
                       flag=wx.ALIGN_CENTER_VERTICAL, pos=(row, col))
-        hlWidth = wx.SpinCtrl(
+        hlWidth = SpinCtrl(
             parent=panel, id=wx.ID_ANY, size=(50, -1),
             initial=self.settings.Get(
                 group='vectorLayer', key='line', subkey='width'),
@@ -1379,7 +1415,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         gridSizer.Add(item=wx.StaticText(parent=panel, id=wx.ID_ANY,
                                          label=_("Symbol size:")),
                       flag=wx.ALIGN_CENTER_VERTICAL, pos=(row, col))
-        ptSize = wx.SpinCtrl(
+        ptSize = SpinCtrl(
             parent=panel, id=wx.ID_ANY, size=(50, -1),
             initial=self.settings.Get(
                 group='vectorLayer', key='point', subkey='size'),
@@ -1473,7 +1509,7 @@ class PreferencesDialog(PreferencesBaseDialog):
             parent=panel,
             id=wx.ID_ANY,
             label=_("Line width (in pixels):"))
-        hlWidth = wx.SpinCtrl(
+        hlWidth = SpinCtrl(
             parent=panel, id=wx.ID_ANY, size=(50, -1),
             initial=self.settings.Get(
                 group='atm', key='highlight', subkey='width'),
@@ -1757,7 +1793,7 @@ class PreferencesDialog(PreferencesBaseDialog):
             ll.SetSelection(1)
 
         # precision
-        precision = wx.SpinCtrl(parent=panel, id=wx.ID_ANY,
+        precision = SpinCtrl(parent=panel, id=wx.ID_ANY,
                                 min=0, max=12,
                                 name="GetValue")
         precision.SetValue(int(self.settings.Get(
@@ -1846,7 +1882,7 @@ class PreferencesDialog(PreferencesBaseDialog):
             epsgCombo.SetItems([])
             GError(
                 parent=self,
-                message=_("Unable to read EPGS codes: {}").format(e),
+                message=_("Unable to read EPGS codes: {0}").format(e),
                 showTraceback=False)
             return
 

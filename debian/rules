@@ -3,9 +3,8 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-# Enable hardening build flags, except:
-#  pie: causes build failure
-export DEB_BUILD_MAINT_OPTIONS=hardening=+all,-pie
+# Enable hardening build flags
+export DEB_BUILD_MAINT_OPTIONS=hardening=+all
 
 VERSION=$(shell echo `head -2 $(CURDIR)/include/VERSION` | sed -e 's/ //')
 ABI=$(shell echo `head -3 $(CURDIR)/include/VERSION` | sed -e 's/ //g' -e 's/RC/-/')

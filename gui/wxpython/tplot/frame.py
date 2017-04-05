@@ -41,7 +41,7 @@ try:
     from matplotlib import cbook
 except ImportError as e:
     raise ImportError(_('The Temporal Plot Tool needs the "matplotlib" '
-                        '(python-matplotlib) package to be installed. {}').format(e))
+                        '(python-matplotlib) package to be installed. {0}').format(e))
 
 from core.utils import _
 
@@ -130,9 +130,10 @@ class TplotFrame(wx.Frame):
         tgis.stop_subprocesses()
 
     def onClose(self, evt):
-        # this two lines return errors during exit
-        # self.coorval.OnClose()
-        # self.cats.OnClose()
+        if self._giface.GetMapDisplay():
+            self.coorval.OnClose()
+            self.cats.OnClose()
+        self.__del__()
         self.Destroy()
 
     def _layout(self):
@@ -219,15 +220,16 @@ class TplotFrame(wx.Frame):
             parent=self.controlPanelVector, id=wx.ID_ANY,
             label=_(
                 'Vector temporal '
-                'dataset (strds)\n'
-                'Please press enter if'
-                ' you digit the name'
-                ' instead select with'
+                'dataset (stvds)\n'
+                'Press ENTER if you'
+                ' type the name of the'
+                ' stvds instead of'
+                ' selecting with the'
                 ' combobox'))
         self.datasetSelectV = gselect.Select(
             parent=self.controlPanelVector, id=wx.ID_ANY,
             size=globalvar.DIALOG_GSELECT_SIZE, type='stvds', multiple=True)
-        self.datasetSelectV.Bind(wx.EVT_COMBOBOX_CLOSEUP,
+        self.datasetSelectV.Bind(wx.EVT_TEXT,
                                  self.OnVectorSelected)
 
         self.attribute = gselect.ColumnSelect(parent=self.controlPanelVector)
@@ -885,9 +887,20 @@ class TplotFrame(wx.Frame):
     def OnVectorSelected(self, event):
         """Update the controlbox related to stvds"""
         dataset = self.datasetSelectV.GetValue().strip()
-        if dataset:
+        name = dataset.split('@')[0]
+        mapset = dataset.split('@')[1] if len(dataset.split('@')) > 1 else ''
+        found = False
+        for each in tgis.tlist(type='stvds', dbif=self.dbif):
+            each_name, each_mapset = each.split('@')
+            if name == each_name:
+                if mapset and mapset != each_mapset:
+                    continue
+                dataset = name + '@' + each_mapset
+                found = True
+                break
+        if found:
             try:
-                vect_list = grass.read_command('t.vect.list', flags='s',
+                vect_list = grass.read_command('t.vect.list', flags='u',
                                                input=dataset, column='name')
             except Exception:
                 self.attribute.Clear()
@@ -900,7 +913,7 @@ class TplotFrame(wx.Frame):
             for vec in vect_list:
                 self.attribute.InsertColumns(vec, 1)
         else:
-            return
+            self.attribute.Clear()
 
 
 class LookUp:

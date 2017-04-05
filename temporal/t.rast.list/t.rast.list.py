@@ -80,18 +80,20 @@
 #%end
 
 #%flag
-#% key: s
+#% key: u
 #% description: Suppress printing of column names
 #% guisection: Formatting
 #%end
 
 import grass.script as grass
-import grass.temporal as tgis
+
 
 ############################################################################
 
 
 def main():
+    # lazy imports
+    import grass.temporal as tgis
 
     # Get the options
     input = options["input"]
@@ -101,7 +103,7 @@ def main():
     separator = grass.separator(options["separator"])
     method = options["method"]
     granule = options["granule"]
-    header = flags["s"]
+    header = flags["u"]
     output = options["output"]
 
     # Make sure the temporal database exists

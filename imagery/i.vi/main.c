@@ -222,7 +222,7 @@ int main(int argc, char *argv[])
     if(opt.bits->answer)
         dnbits = atof(opt.bits->answer);
     result = opt.output->answer;
-    G_message(_("Calculating %s"), viflag);
+    G_verbose_message(_("Calculating %s..."), viflag);
 
     if (!strcasecmp(viflag, "sr") && (!(opt.red->answer) || !(opt.nir->answer)) )
 	G_fatal_error(_("sr index requires red and nir maps"));
@@ -508,7 +508,8 @@ int main(int argc, char *argv[])
 	}
 	Rast_put_d_row(outfd, outrast);
     }
-
+    G_percent(1, 1, 1);
+      
     G_free(inrast_redchan);
     Rast_close(infd_redchan);
     if (nirchan) {

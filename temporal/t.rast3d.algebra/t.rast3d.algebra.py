@@ -51,7 +51,7 @@
 
 #%flag
 #% key: s
-#% description: Activate spatial topology
+#% description: Check the spatial topology of temporally related maps and process only spatially related maps
 #%end
 
 #%flag
@@ -66,10 +66,13 @@
 
 
 import grass.script
-import grass.temporal as tgis
 import sys
 
+
 def main():
+    # lazy imports
+    import grass.temporal as tgis
+
     expression = options['expression']
     basename = options['basename']
     nprocs = options["nprocs"]
@@ -88,11 +91,11 @@ def main():
 
     tgis.init(True)
     p = tgis.TemporalRaster3DAlgebraParser(run = True, debug=False, spatial = spatial, nprocs = nprocs, register_null = register_null)
-    
+
     if granularity:
         if not p.setup_common_granularity(expression=expression,  stdstype = 'str3ds',  lexer = tgis.TemporalRasterAlgebraLexer()):
             grass.script.fatal(_("Unable to process the expression in granularity algebra mode"))
-            
+
     p.parse(expression, basename, grass.script.overwrite())
 
 if __name__ == "__main__":

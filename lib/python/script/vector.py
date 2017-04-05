@@ -269,7 +269,7 @@ json = None
 orderedDict = None
 
 
-def vector_what(map, coord, distance=0.0, ttype=None, encoding=None, skip_attributes=False):
+def vector_what(map, coord, distance=0.0, ttype=None, encoding=None, skip_attributes=False, layer=None):
     """Query vector map at given locations
 
     To query one vector map at one location
@@ -326,7 +326,9 @@ def vector_what(map, coord, distance=0.0, ttype=None, encoding=None, skip_attrib
     :param ttype: list of topology types (default of v.what are point, line,
                   area, face)
     :param encoding: attributes encoding
-    :param skip_attributes: True to skip quering attributes
+    :param skip_attributes: True to skip querying attributes
+    :param layer: layer number or list of layers (one for each vector),
+                  if None, all layers (-1) are used
 
     :return: parsed list
     """
@@ -339,7 +341,17 @@ def vector_what(map, coord, distance=0.0, ttype=None, encoding=None, skip_attrib
     else:
         map_list = map
 
-    layer_list = ['-1'] * len(map_list)
+    if layer:
+        if isinstance(layer, (tuple, list)):
+            layer_list = [str(l) for l in layer]
+        else:
+            layer_list = [str(layer)]
+        if len(layer_list) != len(map_list):
+            raise ScriptError(_("Number of given vector maps ({m}) "
+                                "differs from number of layers ({l})").format(m=len(map_list),
+                                                                              l=len(layer_list)))
+    else:
+        layer_list = ['-1'] * len(map_list)
 
     coord_list = list()
     if isinstance(coord, tuple):

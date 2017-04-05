@@ -112,13 +112,14 @@
 import sys
 import copy
 import grass.script as gscript
-import grass.temporal as tgis
-import grass.pygrass.modules as pymod
 
 
 ############################################################################
 
 def main(options, flags):
+    # lazy imports
+    import grass.temporal as tgis
+    import grass.pygrass.modules as pymod
 
     # Get the options
     points = options["points"]
@@ -217,7 +218,7 @@ def main(options, flags):
                                         overwrite=overwrite, flags=flags, 
                                         quiet=True)
     else: 
-        grass.error(_("Please specify points or coordinates"))
+        gscript.error(_("Please specify points or coordinates"))
 
     if len(maps) < nprocs:
         nprocs = len(maps)
@@ -262,6 +263,11 @@ def main(options, flags):
     if remaining_maps > 0:
         # Use a single process if less then 100 maps
         if remaining_maps <= 100:
+            map_names = []
+            for i in range(remaining_maps):
+                map = maps[count]
+                map_names.append(map.get_id())
+                count += 1
             mod = copy.deepcopy(r_what)
             mod(map=map_names, output=file_name)
             process_queue.put(mod)
@@ -413,7 +419,7 @@ def one_point_per_col_output(separator, output_files, output_time_list,
 
 def one_point_per_timerow_output(separator, output_files, output_time_list,
                              output, write_header, site_input):
-    """Use the original layout of the r.waht output and print instead of 
+    """Use the original layout of the r.what output and print instead of 
        the raster names, the time stamps as header
        
        One point per line for all time stamps:

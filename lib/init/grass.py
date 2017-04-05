@@ -18,7 +18,7 @@
 #               command line options for setting the GISDBASE, LOCATION,
 #               and/or MAPSET. Finally it starts GRASS with the appropriate
 #               user interface and cleans up after it is finished.
-# COPYRIGHT:    (C) 2000-2016 by the GRASS Development Team
+# COPYRIGHT:    (C) 2000-2017 by the GRASS Development Team
 #
 #               This program is free software under the GNU General
 #               Public License (>=v2). Read the file COPYING that
@@ -675,7 +675,7 @@ def set_browser():
     browser = os.getenv('GRASS_HTML_BROWSER')
     if not browser:
         if macosx:
-            # OSX doesn't execute browsers from the shell PATH - route thru a
+            # OSX doesn't execute browsers from the shell PATH - route through a
             # script
             browser = gpath('etc', "html_browser_mac.sh")
             os.environ['GRASS_HTML_BROWSER_MACOSX'] = "-b com.apple.helpviewer"
@@ -695,7 +695,7 @@ def set_browser():
                     break
 
     elif macosx:
-        # OSX doesn't execute browsers from the shell PATH - route thru a
+        # OSX doesn't execute browsers from the shell PATH - route through a
         # script
         os.environ['GRASS_HTML_BROWSER_MACOSX'] = "-b %s" % browser
         browser = gpath('etc', "html_browser_mac.sh")
@@ -966,7 +966,7 @@ def gui_startup(grass_gui):
     if ret == 0:
         pass
     elif ret in [1, 2]:
-        # 1 probably error comming from gis_set.py
+        # 1 probably error coming from gis_set.py
         # 2 probably file not found from python interpreter
         # formerly we were starting in text mode instead, now we just fail
         # which is more straightforward for everybody
@@ -1055,7 +1055,7 @@ def load_env(grass_env_file):
         except:
             continue
 
-        debug("Environmental variable set {}={}".format(k, v))
+        debug("Environmental variable set {0}={1}".format(k, v))
         os.environ[k] = v
 
     # Allow for mixed ISIS-GRASS Environment
@@ -1155,10 +1155,19 @@ def set_language(grass_config_dir):
     # Set up environment for subprocesses
     os.environ['LANGUAGE'] = language
     os.environ['LANG'] = language
-    if encoding:
+
+    if language == 'ko_KR' and encoding == 'cp949':
+        # The default encoding for the Korean language in Windows is cp949,
+        # Microsoft's proprietary extension to euc-kr, but gettext prints no
+        # translated messages at all in the Command Prompt window if LC_CTYPE
+        # is set to ko_KR.cp949. Here, force LC_CTYPE to be euc-kr.
+        normalized = 'euc-kr'
+        encoding = None
+    elif encoding:
         normalized = locale.normalize('%s.%s' % (language, encoding))
     else:
         normalized = language
+
     for lc in ('LC_CTYPE', 'LC_MESSAGES', 'LC_TIME', 'LC_COLLATE',
                'LC_MONETARY', 'LC_PAPER', 'LC_NAME', 'LC_ADDRESS',
                'LC_TELEPHONE', 'LC_MEASUREMENT', 'LC_IDENTIFICATION'):
@@ -1213,10 +1222,10 @@ def lock_mapset(mapset_path, force_gislock_removal, user, grass_gui):
                           'user': user, 'file': lockfile}))
     elif ret != 0:
         msg = _("Unable to properly access '%s'.\n"
-                "Please notify system personel.") % lockfile
+                "Please notify system personnel.") % lockfile
 
     # TODO: the gui decision should be done by the caller
-    # this needs some change to the function interafce, return tupple or
+    # this needs some change to the function interface, return tuple or
     # use exceptions (better option)
     if msg:
         if grass_gui == "wxpython":
@@ -1383,11 +1392,11 @@ def close_gui():
         return
     import signal
     for pid in env['GUI_PID'].split(','):
-        debug("Exiting GUI with pid={}".format(pid))
+        debug("Exiting GUI with pid={0}".format(pid))
         try:
             os.kill(int(pid), signal.SIGTERM)
         except OSError as e:
-            message(_("Unable to close GUI. {}").format(e))
+            message(_("Unable to close GUI. {0}").format(e))
         
 def clear_screen():
     """Clear terminal"""
@@ -1511,7 +1520,7 @@ def bash_startup(location, location_name, grass_env_file):
         os.environ['HISTSIZE'] = "3000"
 
     # instead of changing $HOME, start bash with: --rcfile "$LOCATION/.bashrc" ?
-    #   if so, must care be taken to explicity call .grass.bashrc et al for
+    #   if so, must care be taken to explicitly call .grass.bashrc et al for
     #   non-interactive bash batch jobs?
     userhome = os.getenv('HOME')      # save original home
     home = location                   # save .bashrc in $LOCATION
@@ -1857,7 +1866,7 @@ def main():
         message(_("Starting GRASS GIS..."))
 
     # Ensure GUI is set
-    if batch_job:
+    if batch_job or params.exit_grass:
         grass_gui = 'text'
     else:
         if not grass_gui:
@@ -1875,7 +1884,7 @@ def main():
         # User selects LOCATION and MAPSET if not set
         if not set_mapset_interactive(grass_gui):
             # No GUI available, update gisrc file
-            fatal(_("<{}> requested, but not available. Run GRASS in text "
+            fatal(_("<{0}> requested, but not available. Run GRASS in text "
                     "mode (-text) or install missing package (usually "
                     "'grass-gui').").format(grass_gui))
     else:

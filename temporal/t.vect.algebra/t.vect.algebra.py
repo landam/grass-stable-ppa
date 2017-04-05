@@ -43,14 +43,16 @@
 
 #%flag
 #% key: s
-#% description: Activate spatial topology
+#% description: Check the spatial topology of temporally related maps and process only spatially related maps
 #%end
 
 import grass.script
-import grass.temporal as tgis
 import sys
 
 def main():
+    # lazy imports
+    import grass.temporal as tgis
+
     expression = options['expression']
     basename = options['basename']
     spatial = flags["s"]

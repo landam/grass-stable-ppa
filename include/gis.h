@@ -38,8 +38,8 @@
 static const char *GRASS_copyright __attribute__ ((unused))
     = "GRASS GNU GPL licensed Software";
 
-#define GIS_H_VERSION "$Revision: 68908 $"
-#define GIS_H_DATE    "$Date: 2016-07-09 20:12:57 +0200 (Sat, 09 Jul 2016) $"
+#define GIS_H_VERSION "$Revision: 70617 $"
+#define GIS_H_DATE    "$Date: 2017-02-18 15:55:19 +0100 (Sat, 18 Feb 2017) $"
 
 #define G_gisinit(pgm) G__gisinit(GIS_H_VERSION, (pgm))
 #define G_no_gisinit() G__no_gisinit(GIS_H_VERSION)
@@ -237,6 +237,7 @@ typedef enum
     G_OPT_R_COVER,		/*!< old input cover raster map */
     G_OPT_R_ELEV,		/*!< old input elevation raster map */
     G_OPT_R_ELEVS,		/*!< old input elevation raster maps */
+    G_OPT_R_TYPE,               /*!< raster map type */
     G_OPT_R_INTERP_TYPE,        /*!< interpolation type */
     G_OPT_R_BASENAME_INPUT,     /*!< old input basename raster maps */
     G_OPT_R_BASENAME_OUTPUT,    /*!< new output basename raster maps */
@@ -539,6 +540,7 @@ struct Flag
     char key;			/*!< Key char used on command line */
     char answer;		/*!< Stores flag state: 0/1 */
     char suppress_required;	/*!< Suppresses checking of required options */
+    char suppress_overwrite;	/*!< Suppresses checking of existing output */
     const char *label;		/*!< Optional short label, used in GUI as item label */
     const char *description;	/*!< String describing flag meaning   */
     const char *guisection;	/*!< GUI Layout guidance: ';' delimited hierarchical tree position */

@@ -55,12 +55,11 @@ header_graphical_index_tmpl = """\
     float: left;
     margin: 0 15px 0 0;
     background: white;
+    object-fit: scale-down;
 }
 
 .img-list li img.default-img {
-    width: 40px;
-    padding-left: 30px;
-    padding-right: 30px;
+    max-height: 5ex;
 }
 
 .img-list li .desc {
@@ -138,7 +137,7 @@ def generate_page_for_category(short_family, module_family, imgs, year,
               "Manual: Graphical index" % grass_version))
     output.write(header_graphical_index_tmpl)
 
-    if module_family.lower() not in ['general', 'misc', 'postscript']:
+    if module_family.lower() not in ['general', 'postscript']:
         if module_family == 'raster3d':
             # covert keyword to nice form
             module_family = '3D raster'
@@ -149,7 +148,7 @@ def generate_page_for_category(short_family, module_family, imgs, year,
     elif module_family == 'guimodules':
         output.write("<h3>g.gui.* modules:</h3>")
     else:
-        output.write("<h3>{} modules:</h3>".format(to_title(module_family)))
+        output.write("<h3>{0} modules:</h3>".format(to_title(module_family)))
     output.write('<ul class="img-list">')
 
     #for all modules:
@@ -210,7 +209,7 @@ def main():
         ('db', 'database'),
         ('g', 'general'),
         ('i', 'imagery'),
-        ('m', 'misc'),
+        ('m', 'miscellaneous'),
         ('ps', 'postscript'),
         ('r', 'raster'),
         ('r3', 'raster3d'),
@@ -231,7 +230,7 @@ def main():
 
     for short_family, module_family in families:
         generate_page_for_category(short_family, module_family, imgs,
-                                   year=year, skip_no_image=True)
+                                   year=year, skip_no_image=False)
 
 
 if __name__ == '__main__':

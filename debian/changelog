@@ -1,3 +1,56 @@
+grass (7.2.1~rc1-1~exp1~yakkety1) yakkety; urgency=medium
+
+  * Rebuild for yakkety.
+
+ -- Martin Landa <landa.martin@gmail.com>  Wed, 05 Apr 2017 17:35:09 +0200
+
+grass (7.2.1~rc1-1~exp1) experimental; urgency=medium
+
+  * New upstream release candidate.
+  * Drop patches applied upstream.
+  * Update copyright file, changes:
+    - Update copyright years for GRASS Development Team & Glynn Clements
+    - Add Maris Nartiss to copyright holders
+  * Add patch to fix spelling errors.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Wed, 05 Apr 2017 01:58:20 +0200
+
+grass (7.2.0-2) unstable; urgency=medium
+
+  * Enable PIE hardening flags.
+    (closes: #859372)
+  * Drop unused lintian overrides for hardening-no-pie.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Sun, 02 Apr 2017 23:38:40 +0200
+
+grass (7.2.0-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Make grass-core depend on grass-doc, g.extension requires some of its files.
+    (LP: #1646812)
+  * Drop svn-r69952-dglib-update-to-libavl-2.0.3.patch, included upstream.
+  * Update license & copyright for avl.
+  * Add patch to fix spelling errors.
+  * Add patch to fix hicolor icon name.
+  * Move from experimental to unstable.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Wed, 28 Dec 2016 19:05:08 +0100
+
+grass (7.2.0~rc2-1~exp1) experimental; urgency=medium
+
+  * New upstream release candidate.
+  * Add license & copyright for fix_typos.sh.
+  * Drop spelling-errors.patch, applied upstream.
+  * Re-instate lintian overrides for hardening-no-pie.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Thu, 24 Nov 2016 23:03:03 +0100
+
+grass (7.2.0~rc1-1~exp2) experimental; urgency=medium
+
+  * Drop Conflicts/Provides/Replaces in control.in too.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Fri, 28 Oct 2016 20:13:04 +0200
+
 grass (7.2.0~rc1-1~exp1~yakkety1) yakkety; urgency=medium
 
   * Rebuild for yakkety.
@@ -23,6 +76,13 @@ grass (7.2.0~rc1-1~exp1) experimental; urgency=medium
   * Add patch to fix spelling errors.
 
  -- Bas Couwenberg <sebastic@debian.org>  Fri, 28 Oct 2016 15:56:28 +0200
+
+grass (7.0.5-3) unstable; urgency=medium
+
+  * Add patch to fix v.net.iso segmentation fault.
+    (closes: #845429)
+
+ -- Bas Couwenberg <sebastic@debian.org>  Thu, 01 Dec 2016 20:05:05 +0100
 
 grass (7.0.5-2) unstable; urgency=medium
 

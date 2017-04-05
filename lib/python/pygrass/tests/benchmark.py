@@ -282,7 +282,7 @@ def run_benchmark(resolution_list, runs, testdict, profile):
             for oper, operdict in operation.items():
                 operdict['time'], operdict['times'] = mytimer(operdict['func'],runs)
                 if profile:
-                    filename = '{}_{}_{}'.format(execmode, oper, profile)
+                    filename = '{0}_{1}_{2}'.format(execmode, oper, profile)
                     cProfile.runctx(operdict['func'].__name__ + '()',
                                     globals(), locals(), filename = filename)
                 print(('    {0}: {1: 40.6f}s'.format(oper, operdict['time'])))
@@ -389,7 +389,7 @@ def main(testdict):
     # res
     parser.add_option("-r", "--resolution", action="store", type="string",
                       dest="res", default = '1,0.25',
-                      help="Resolution list separete by comma.")
+                      help="Resolution list separate by comma.")
     # fmt
     parser.add_option("-f", "--fmt", action="store", type="string",
                       dest="fmt", default = 'txt',

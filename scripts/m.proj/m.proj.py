@@ -3,7 +3,7 @@
 """
 MODULE:    m.proj
 
-AUTHOR(S): M. Hamish Bowman, Dept. Marine Science, Otago Univeristy,
+AUTHOR(S): M. Hamish Bowman, Dept. Marine Science, Otago University,
            New Zealand
            Converted to Python by Glynn Clements
 
@@ -29,6 +29,7 @@ COPYRIGHT: (c) 2006-2014 Hamish Bowman, and the GRASS Development Team
 #% description: Converts coordinates from one projection to another (cs2cs frontend).
 #% keyword: miscellaneous
 #% keyword: projection
+#% keyword: transformation
 #%end
 #%option G_OPT_M_COORDS
 #% description: Input coordinates to reproject
@@ -145,7 +146,7 @@ def main():
         gcore.fatal(_("Choose only one output parameter method"))
 
     if ll_in and ll_out:
-        gcore.fatal(_("Choise only one auto-projection parameter method"))
+        gcore.fatal(_("Choose only one auto-projection parameter method"))
 
     if output and not gcore.overwrite() and os.path.exists(output):
         gcore.fatal(_("Output file already exists"))

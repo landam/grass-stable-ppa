@@ -65,15 +65,15 @@ import sys
 import copy
 from multiprocessing import Process
 import grass.script as grass
-import grass.temporal as tgis
-
-import grass.pygrass.modules as pymod
 from grass.exceptions import FatalError
 
 ############################################################################
 
 
 def main():
+    # lazy imports
+    import grass.temporal as tgis
+    import grass.pygrass.modules as pymod
 
     # Get the options
     input = options["input"]
@@ -184,7 +184,7 @@ def main():
             
             overwrite_flags[new_id] = False
             if new_map.map_exists() or new_map.is_in_db(dbif):
-                if not grass.overwrite:
+                if not grass.overwrite():
                         grass.fatal(_("Map with name <%s> already exists. "
                                       "Please use another base name." % (_id)))
                 else:

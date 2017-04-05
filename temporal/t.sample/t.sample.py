@@ -57,15 +57,17 @@
 
 #%flag
 #% key: s
-#% description: Check spatial overlap
+#% description: Check for spatial topological overlap
 #%end
 
 import grass.script as grass
-import grass.temporal as tgis
+
 
 ############################################################################
 
 def main():
+    # lazy imports
+    import grass.temporal as tgis
 
     # Get the options
     inputs = options["inputs"]

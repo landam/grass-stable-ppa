@@ -43,31 +43,31 @@
 #%end
 
 #%flag
-#% key: s
+#% key: d
 #% description: Print information about the temporal DBMI interface and exit
 #% suppress_required: yes
 #%end
 from __future__ import print_function
 
 import grass.script as grass
-import grass.temporal as tgis
 
 ############################################################################
 
 
 def main():
+    # lazy imports
+    import grass.temporal as tgis
 
     name = options["input"]
     type_ = options["type"]
     shellstyle = flags['g']
-    system = flags['s']
+    system = flags['d']
     history = flags['h']
 
     # Make sure the temporal database exists
     tgis.init()
 
     dbif, connected = tgis.init_dbif(None)
-
 
     rows = tgis.get_tgis_metadata(dbif)
 

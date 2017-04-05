@@ -128,20 +128,7 @@ int Vect_segment_intersection(double ax1, double ay1, double az1, double ax2,
 	first_3d = 0;
     }
 
-    /* Check identical segments */
-    if ((ax1 == bx1 && ay1 == by1 && ax2 == bx2 && ay2 == by2) ||
-	(ax1 == bx2 && ay1 == by2 && ax2 == bx1 && ay2 == by1)) {
-	G_debug(2, " -> identical segments");
-	*x1 = ax1;
-	*y1 = ay1;
-	*z1 = az1;
-	*x2 = ax2;
-	*y2 = ay2;
-	*z2 = az2;
-	return 5;
-    }
-
-    /*  'Sort' lines by x, y 
+    /*  'Sort' each segment by x, y 
      *   MUST happen before D, D1, D2 are calculated */
     switched = 0;
     if (bx2 < bx1)
@@ -183,6 +170,59 @@ int Vect_segment_intersection(double ax1, double ay1, double az1, double ax2,
 	az2 = t;
     }
 
+    /* Check for identical segments */
+    if (ax1 == bx1 && ay1 == by1 && ax2 == bx2 && ay2 == by2) {
+	G_debug(2, " -> identical segments");
+	*x1 = ax1;
+	*y1 = ay1;
+	*z1 = az1;
+	*x2 = ax2;
+	*y2 = ay2;
+	*z2 = az2;
+	return 5;
+    }
+
+    /*  'Sort' segments by x, y: make sure a <= b
+     *   MUST happen before D, D1, D2 are calculated */
+    switched = 0;
+    if (bx1 < ax1)
+	switched = 1;
+    else if (bx1 == ax1) {
+	if (bx2 < ax2)
+	    switched = 1;
+	else if (bx2 == ax2) {
+	    if (by1 < ay1)
+		switched = 1;
+	    else if (by1 == ay1) {
+		if (by2 < ay2)
+		    switched = 1;
+	    }
+	}
+    }
+
+    if (switched) {
+	t = ax1;
+	ax1 = bx1;
+	bx1 = t;
+	t = ax2;
+	ax2 = bx2;
+	bx2 = t;
+
+	t = ay1;
+	ay1 = by1;
+	by1 = t;
+	t = ay2;
+	ay2 = by2;
+	by2 = t;
+
+	t = az1;
+	az1 = bz1;
+	bz1 = t;
+	t = az2;
+	az2 = bz2;
+	bz2 = t;
+    }
+
     d = D;
     d1 = D1;
     d2 = D2;
@@ -190,7 +230,7 @@ int Vect_segment_intersection(double ax1, double ay1, double az1, double ax2,
     G_debug(2, "Vect_segment_intersection(): d = %f, d1 = %f, d2 = %f", d, d1,
 	    d2);
 
-    /* TODO: dtol was originaly set to 1.0e-10, which was usualy working but not always. 
+    /* TODO: dtol was originally set to 1.0e-10, which was usually working but not always. 
      *       Can it be a problem to set the tolerance to 0.0 ? */
     dtol = 0.0;
     if (fabs(d) > dtol) {

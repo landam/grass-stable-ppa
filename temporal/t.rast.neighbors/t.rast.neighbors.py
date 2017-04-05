@@ -83,17 +83,24 @@
 #% key: n
 #% description: Register Null maps
 #%end
+
+#%flag
+#% key: r
+#% description: Ignore the current region settings and use the raster map regions
+#%end
+
 from __future__ import print_function
 
 import copy
 import grass.script as grass
-import grass.temporal as tgis
-import grass.pygrass.modules as pymod
 
 
 ############################################################################
 
 def main():
+    # lazy imports
+    import grass.temporal as tgis
+    import grass.pygrass.modules as pymod
 
     # Get the options
     input = options["input"]
@@ -167,7 +174,7 @@ def main():
     # Open the new space time raster dataset
     ttype, stype, title, descr = sp.get_initial_values()
     new_sp = tgis.open_new_stds(output, "strds", ttype, title,
-                                              descr, stype, dbif, overwrite)
+                                descr, stype, dbif, overwrite)
     num_maps = len(new_maps)
     # collect empty maps to remove them
     empty_maps = []
