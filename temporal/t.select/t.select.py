@@ -47,12 +47,13 @@
 
 
 import grass.script as grass
-import grass.temporal as tgis
 import sys
 
 ############################################################################
 
 def main():
+    # lazy imports
+    import grass.temporal as tgis
 
     expression = options['expression']
     spatial = flags["s"]
@@ -68,7 +69,7 @@ def main():
 
     tgis.init(True)
     p = tgis.TemporalAlgebraParser(run=True, debug=False, spatial=spatial, dry_run=dry_run)
-    pc = p.parse(expression, stdstype,  overwrite=grass.overwrite)
+    pc = p.parse(expression, stdstype,  overwrite=grass.overwrite())
 
     if dry_run is True:
         import pprint

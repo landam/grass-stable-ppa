@@ -1,3 +1,0 @@
-# PIE breaks the build
-grass-dev: hardening-no-pie *
-

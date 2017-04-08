@@ -7,7 +7,7 @@
 #               Glynn Clements
 #               Martin Landa <landa.martin gmail.com>
 # PURPOSE:      Create HTML manual page snippets
-# COPYRIGHT:    (C) 2007-2014 by Glynn Clements
+# COPYRIGHT:    (C) 2007-2017 by Glynn Clements
 #                and the GRASS Development Team
 #
 #               This program is free software under the GNU General
@@ -258,7 +258,7 @@ index_names = {
     'db': 'database',
     'g' : 'general',
     'i' : 'imagery',
-    'm' : 'misc',
+    'm' : 'miscellaneous',
     'ps': 'postscript',
     'p' : 'paint',
     'r' : 'raster',
@@ -271,14 +271,17 @@ index_names = {
 
 def to_title(name):
     """Convert name of command class/family to form suitable for title"""
-    return name.capitalize()
+    if name == 'raster3d':
+        return '3D raster'
+    elif name == 'postscript':
+        return 'PostScript'
+    else:
+        return name.capitalize()
+
 
 index_titles = {}
 for key, name in index_names.iteritems():
-    if key == 'r3':
-        index_titles[key] = '3D raster'
-    else:
-        index_titles[key] = to_title(name)
+    index_titles[key] = to_title(name)
 
 # process footer
 index = re.search('(<!-- meta page index:)(.*)(-->)', src_data, re.IGNORECASE)
@@ -287,7 +290,7 @@ if index:
     if '|' in index_name:
         index_name, index_name_cap = index_name.split('|', 1)
     else:
-        index_name_cap = index_name
+        index_name_cap = to_title(index_name)
 else:
     mod_class = pgm.split('.', 1)[0]
     index_name = index_names.get(mod_class, '')
@@ -301,8 +304,25 @@ if not year:
 # check the names of scripts to assign the right folder
 topdir = os.path.abspath(os.getenv("MODULE_TOPDIR"))
 curdir = os.path.abspath(os.path.curdir)
-pgmdir = curdir.replace(topdir, '').lstrip('/')
-url_source = urlparse.urljoin(source_url, pgmdir)
+pgmdir = curdir.replace(topdir, '').lstrip(os.path.sep)
+url_source = ''
+if os.getenv('SOURCE_URL', ''):
+    # addons
+    for prefix in index_names.keys():
+        cwd = os.getcwd()
+        idx = cwd.find('{0}{1}.'.format(os.path.sep, prefix))
+        if idx > -1:
+            pgmname = cwd[idx+1:]
+            classname = index_names[prefix]
+            url_source = urlparse.urljoin('{0}{1}/'.format(
+                    os.environ['SOURCE_URL'], classname),
+                    pgmname
+            )
+            break
+else:
+    url_source = urlparse.urljoin(source_url, pgmdir)
+if sys.platform == 'win32':
+    url_source = url_source.replace(os.path.sep, '/')
 
 if index_name:
     sys.stdout.write(sourcecode.substitute(URL_SOURCE=url_source, PGM=pgm,
