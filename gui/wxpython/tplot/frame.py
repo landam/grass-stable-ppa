@@ -41,7 +41,7 @@ try:
     from matplotlib import cbook
 except ImportError as e:
     raise ImportError(_('The Temporal Plot Tool needs the "matplotlib" '
-                        '(python-matplotlib) package to be installed. {}').format(e))
+                        '(python-matplotlib) package to be installed. {0}').format(e))
 
 from core.utils import _
 
@@ -900,7 +900,7 @@ class TplotFrame(wx.Frame):
                 break
         if found:
             try:
-                vect_list = grass.read_command('t.vect.list', flags='s',
+                vect_list = grass.read_command('t.vect.list', flags='u',
                                                input=dataset, column='name')
             except Exception:
                 self.attribute.Clear()

@@ -198,8 +198,9 @@ int main(int argc, char *argv[])
 	char name[GNAME_MAX];
 
 	if (nfiles >= NFILES)
-	    G_fatal_error(_("Can only do up to %d raster maps (%d given)"),
-			  NFILES, nfiles);
+	    G_fatal_error(_("Can only do up to %d raster maps"
+				" (more than %d given)"),
+			  NFILES, NFILES);
 
 	strcpy(name, *ptr);
 	fd[nfiles] = Rast_open_old(name, "");
@@ -414,10 +415,10 @@ int main(int argc, char *argv[])
 		}
 		if (flg.color->answer) {
 		    if (out_type[i] == CELL_TYPE)
-			Rast_get_c_color(&cell[i][cache[point].col],
+			Rast_get_c_color(&(cache[point].value[i]),
 					     &red, &green, &blue, &ncolor[i]);
 		    else
-			Rast_get_d_color(&dcell[i][cache[point].col],
+			Rast_get_d_color(&(cache[point].dvalue[i]),
 					     &red, &green, &blue, &ncolor[i]);
 
 		    sprintf(cache[point].clr_buf[i], "%03d:%03d:%03d", red,
@@ -453,6 +454,7 @@ int main(int argc, char *argv[])
 			continue;
 		    }
 		    fprintf(stdout, "%s%ld", fs, (long)cache[point].value[i]);
+		    cache[point].dvalue[i] = cache[point].value[i];
 		}
 		else {		/* FCELL or DCELL */
 
@@ -473,7 +475,7 @@ int main(int argc, char *argv[])
 		}
 		if (flg.label->answer)
 		    fprintf(stdout, "%s%s", fs,
-			    Rast_get_c_cat(&(cache[point].value[i]), &cats[i]));
+			    Rast_get_d_cat(&(cache[point].dvalue[i]), &cats[i]));
 		if (flg.color->answer)
 		    fprintf(stdout, "%s%s", fs, cache[point].clr_buf[i]);
 	    }

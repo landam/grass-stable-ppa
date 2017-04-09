@@ -85,8 +85,9 @@ int main(int argc, char *argv[])
     }
     
 #ifdef HAVE_OGR
-    if (use_ogr)
-        OGRRegisterAll();
+    /* GDAL drivers must be registered since check_projection()
+     * depends on it (even use_ogr is false)*/
+    OGRRegisterAll();
 #endif
 
     if (flags.format->answer) {
@@ -135,7 +136,19 @@ int main(int argc, char *argv[])
 
     /* check projection match */
     if (!flags.override->answer) {
-        check_projection(dsn, ilayer);
+        /* here must be used original dsn since check_projection() is
+         * using GDAL library */
+        char dsn_ogr[DB_SQL_MAX];
+
+        if (!use_ogr && G_strncasecmp(options.dsn->answer, "PG:", 3) == 0) {
+            /* make dsn OGR-compatible */
+            strcpy(dsn_ogr, "PG:");
+            strcat(dsn_ogr, dsn);
+        }
+        else {
+            sprintf(dsn_ogr, "%s", dsn);
+        }
+        check_projection(dsn_ogr, ilayer);
     }
     
     /* create new vector map */

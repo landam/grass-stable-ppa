@@ -62,6 +62,10 @@ v.db.update mygeodetic_pts col=zval qcol="CAST(z_value AS double precision)" \
 
 <h3>Updating of columns with on the fly calculation (SQLite extended functions)</h3>
 
+Note: this requires SQLite extended functions. For details see the GRASS GIS Wiki
+(compilation of <a href="https://grasswiki.osgeo.org/wiki/Build_SQLite_extension_on_Linux">libsqlitefunctions.so</a>
+and <a href="https://grasswiki.osgeo.org/wiki/Build_SQLite_extension_on_windows">libsqlitefunctions.dll</a>).
+<p>
 North Carolina data set example: adding new column, copying values from
 another table column with on the fly calculation:
 
@@ -101,4 +105,4 @@ jul|logjuly
 Moritz Lennert (mlennert@club.worldonline.be)
 
 <p>
-<i>Last changed: $Date: 2014-12-19 22:17:36 +0100 (Fri, 19 Dec 2014) $</i>
+<i>Last changed: $Date: 2017-03-12 11:58:42 +0100 (Sun, 12 Mar 2017) $</i>

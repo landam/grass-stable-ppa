@@ -21,10 +21,7 @@ void parse_args(int argc, char **argv,
 	  "by all output formats. Default is to use first type found in input vector map.");
     options->type->guisection = _("Selection");
 
-    options->dsn = G_define_option();
-    options->dsn->key = "output";
-    options->dsn->type = TYPE_STRING;
-    options->dsn->required = YES;
+    options->dsn = G_define_standard_option(G_OPT_F_OUTPUT);
     options->dsn->label = _("Name of output OGR datasource");
     options->dsn->description =
 	_("For example: ESRI Shapefile: filename or directory for storage\n"
@@ -89,6 +86,7 @@ void parse_args(int argc, char **argv,
     flags->append->key = 'a';
     flags->append->label = _("Append to existing layer");
     flags->append->description = _("A new OGR layer is created if it does not exist");
+    flags->append->suppress_overwrite = YES;
     
     flags->nocat = G_define_flag();
     flags->nocat->key = 's';

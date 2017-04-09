@@ -1,6 +1,6 @@
 How to release GRASS GIS binaries and source code
 
-$Date: 2016-11-29 00:02:11 +0100 (Tue, 29 Nov 2016) $
+$Date: 2017-01-03 23:49:21 +0100 (Tue, 03 Jan 2017) $
 
 Note: This text contains *some* rules only applicable to the
       development coordinator (currently Markus Neteler, PSC Chair).
@@ -17,6 +17,7 @@ Contents
 1. Local work (done by release coordinator)
 
    - svn up
+   - svn status --no-ignore
    - check if
         ( cd doc/raster/r.example/ ; make clean ; make )
         ( cd doc/vector/v.example/ ; make clean ; make )
@@ -60,16 +61,16 @@ Contents
 #example:
 7
 2
-0RC1
-2016
+1RC1
+2017
       rm -f include/VERSION~
 
     - Update OSGeo4W setup.hint file
+       - for RC candidates use 'test' keyword
+       - for final version use 'curr' keyword
+
       vim mswindows/osgeo4w/setup.hint.tmpl
 
-      for RC candidates use 'test' keyword
-      for final version use 'curr' keyword
-      
      #version:
      MAJOR=`cat include/VERSION | head -1 | tail -1`
      MINOR=`cat include/VERSION | head -2 | tail -1`
@@ -121,8 +122,8 @@ Contents
 #example
 7
 2
-0svn
-2016
+1svn
+2017
 
     rm -f include/VERSION~
     svn ci -m"back to SVN" include/VERSION
@@ -155,7 +156,9 @@ Contents
     - http://grass.osgeo.org/development/svn/svn-tags/ (add tag): echo $RELEASETAG
 
      write announcement
-      - store in trac: http://trac.osgeo.org/grass/wiki/Release/7.XX.YY-News
+      - store in trac:
+           http://trac.osgeo.org/grass/wiki/Release/7.XX.YY-News
+           https://trac.osgeo.org/grass/wiki/Grass7/NewFeatures72  <- major releases only
       - update version in https://grasswiki.osgeo.org/wiki/GRASS-Wiki
       - store in Web as announces/announce_grass$MAJOR$MINOR$RELEASE.html <- how? with protected PHP upload page?
 
@@ -213,6 +216,12 @@ Contents
 
    Update daily recipe contents: https://code.launchpad.net/~grass/+recipe/grass-trunk
 
+ o Packaging notes:
+   https://trac.osgeo.org/grass/wiki/BuildHints
+   - https://trac.osgeo.org/grass/wiki/DebianUbuntuPackaging
+   - https://trac.osgeo.org/grass/wiki/CompileOnWindows
+
+
 2. Tell others about it:
 
  * If release candidate:
@@ -254,14 +263,12 @@ Contents
    https://joinup.ec.europa.eu/software/grassgis/home (submit news, MN)
    http://www.macnn.com/contact/newstips/1
    http://www10.giscafe.com/submit_material/submit_options.php#Press (MN)   --> Press releases
-   http://www.freegis.org   (update, MN)
    http://www.directionsmag.com/pressreleases/ (News -> Submit Press Release)
    http://directory.fsf.org/wiki/GRASS_%28Geographic_Resources_Analysis_Support_System%29
-   http://www.kde-apps.org/content/show.php?content=19776
-   http://www.opendesktop.org/content/show.php?content=19776
+   https://www.linux-apps.com/p/1128004/edit/ (MN)
    https://news.eoportal.org/web/eoportal/share-your-news (MN)
             -> Share your news with the EO community
-   http://www.heise.de/software/download/edit_7105 (update, MN)
+   https://www.heise.de/download/product/grass-gis-7105 (update, MN)
 
    See also: http://grass.osgeo.org/wiki/Contact_Databases
    ... anywhere else? Please add here.
