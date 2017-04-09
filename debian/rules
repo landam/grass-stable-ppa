@@ -4,7 +4,7 @@
 #export DH_VERBOSE=1
 
 # Enable hardening build flags
-export DEB_BUILD_MAINT_OPTIONS=hardening=+all
+export DEB_BUILD_MAINT_OPTIONS=hardening=+all,-pie
 
 VERSION=$(shell echo `head -2 $(CURDIR)/include/VERSION` | sed -e 's/ //')
 ABI=$(shell echo `head -3 $(CURDIR)/include/VERSION` | sed -e 's/ //g' -e 's/RC/-/')
