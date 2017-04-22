@@ -1,6 +1,6 @@
 How to release GRASS GIS binaries and source code
 
-$Date: 2017-01-03 23:49:21 +0100 (Tue, 03 Jan 2017) $
+$Date: 2017-04-22 18:54:09 +0200 (Sat, 22 Apr 2017) $
 
 Note: This text contains *some* rules only applicable to the
       development coordinator (currently Markus Neteler, PSC Chair).
@@ -48,6 +48,7 @@ Contents
        find . -name '*.rej'  | xargs rm
        find . -name '*.o'    | xargs rm
        find . -name '*.pyc'  | xargs rm
+       find . -name 'OBJ.*'  | xargs rm -r
        rm -f gui/wxpython/menustrings.py gui/wxpython/build_ext.pyc gui/wxpython/xml/menudata.xml gui/wxpython/xml/module_tree_menudata.xml
        chmod -R a+r *
 
