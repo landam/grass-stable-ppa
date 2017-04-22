@@ -2,6 +2,7 @@ grass (7.2.1~rc2-1) UNRELEASED; urgency=medium
 
   * New upstream release candidate.
   * Disable PIE on Ubuntu where it's still problematic.
+  * Drop spelling-errors.patch, applied upstream.
 
  -- Bas Couwenberg <sebastic@debian.org>  Sat, 22 Apr 2017 21:54:45 +0200
 
