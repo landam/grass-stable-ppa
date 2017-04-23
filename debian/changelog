@@ -1,3 +1,17 @@
+grass (7.2.1~rc2-1~exp1~trusty1) trusty; urgency=medium
+
+  * Rebuild for trusty.
+
+ -- Martin Landa <landa.martin@gmail.com>  Sun, 23 Apr 2017 11:57:44 +0200
+
+grass (7.2.1~rc2-1~exp1) experimental; urgency=medium
+
+  * New upstream release candidate.
+  * Disable PIE on Ubuntu where it's still problematic.
+  * Drop spelling-errors.patch, applied upstream.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Sat, 22 Apr 2017 22:02:17 +0200
+
 grass (7.2.1~rc1-1~exp1~trusty1) trusty; urgency=medium
 
   * Rebuild for trusty.

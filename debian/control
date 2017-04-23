@@ -98,7 +98,7 @@ Suggests: grass-dev,
           python-rpy2,
           python-termcolor
 Breaks: grass (<< 6.4.2-1~)
-Provides: grass721-1
+Provides: grass721-2
 Replaces: grass (<< 6.4.2-1~)
 Description: GRASS GIS core components
  Commonly referred to as GRASS, this is a Geographic Information
