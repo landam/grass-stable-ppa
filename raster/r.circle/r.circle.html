@@ -32,7 +32,7 @@ of 500m and an outer radius of 1000m:
 EASTCENTER=`g.region -c |  awk ' /center easting:/ { print $3 }'`
 NORTHCENTER=`g.region -c | awk ' /center northing:/ { print $3 }'`
 r.circle -b output=circle coordinate=${EASTCENTER},${NORTHCENTER} min=500 max=1000
-</pre>	
+</pre></div>
 
 
 <h2>SEE ALSO</h2>
@@ -50,4 +50,4 @@ r.circle -b output=circle coordinate=${EASTCENTER},${NORTHCENTER} min=500 max=10
 Bill Brown, U.S. Army Construction Engineering Research Laboratory<br>
 Additional flag/min/max parameter by Markus Neteler, University of Hannover
 
-<p><i>Last changed: $Date: 2014-12-12 00:12:46 +0100 (Fri, 12 Dec 2014) $</i>
+<p><i>Last changed: $Date: 2017-04-28 03:32:53 +0200 (Fr, 28. Apr 2017) $</i>
