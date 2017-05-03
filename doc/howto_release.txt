@@ -1,6 +1,6 @@
 How to release GRASS GIS binaries and source code
 
-$Date: 2017-04-22 18:54:09 +0200 (Sat, 22 Apr 2017) $
+$Date: 2017-04-22 22:17:30 +0200 (Sa, 22. Apr 2017) $
 
 Note: This text contains *some* rules only applicable to the
       development coordinator (currently Markus Neteler, PSC Chair).
@@ -41,6 +41,7 @@ Contents
    - cleanup rubbish:
        rm -f locale/templates/*.pot
        rm -f locale/po/messages.mo
+       rm -f demolocation/PERMANENT/.bash*
        find . -name '*~'     | xargs rm
        find . -name '*.bak'  | xargs rm
        find . -name '.#*'    | xargs rm
