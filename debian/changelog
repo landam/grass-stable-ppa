@@ -1,3 +1,15 @@
+grass (7.2.1-1~zesty1) zesty; urgency=medium
+
+  * Rebuild for zesty.
+
+ -- Martin Landa <landa.martin@gmail.com>  Thu, 04 May 2017 08:14:37 +0200
+
+grass (7.2.1-1~exp1) experimental; urgency=medium
+
+  * New upstream release.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Wed, 03 May 2017 18:40:15 +0200
+
 grass (7.2.1~rc2-1~exp1~zesty1) zesty; urgency=medium
 
   * Rebuild for zesty.
