@@ -1,0 +1,246 @@
+Description: Fix spelling errors.
+ * complet -> complete
+Author: Bas Couwenberg <sebastic@debian.org>
+
+--- a/vector/v.net.steiner/main.c
++++ b/vector/v.net.steiner/main.c
+@@ -595,7 +595,7 @@ int main(int argc, char **argv)
+     /* Calculate true costs, which may be lower than MST if steiner points were not used */
+ 
+     if (nsp < nterms - 2) {
+-        G_message(_("Spanning tree costs on complet graph = %f\n"
++        G_message(_("Spanning tree costs on complete graph = %f\n"
+             "(may be higher than resulting Steiner tree costs!!!)"),
+ 		cost);
+     }
+--- a/locale/po/grassmods_ar.po
++++ b/locale/po/grassmods_ar.po
+@@ -5953,7 +5953,7 @@ msgstr "الخريطة الراستري�
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_cs.po
++++ b/locale/po/grassmods_cs.po
+@@ -5997,7 +5997,7 @@ msgstr "Počet Steinerových bodů (-1 p
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_de.po
++++ b/locale/po/grassmods_de.po
+@@ -5907,7 +5907,7 @@ msgstr "Anzahl der Steiner Punkte (-1 f�
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_el.po
++++ b/locale/po/grassmods_el.po
+@@ -5745,7 +5745,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_es.po
++++ b/locale/po/grassmods_es.po
+@@ -5722,7 +5722,7 @@ msgstr "Número de puntos steiner (-1 pa
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_fi.po
++++ b/locale/po/grassmods_fi.po
+@@ -5512,7 +5512,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_fr.po
++++ b/locale/po/grassmods_fr.po
+@@ -6165,7 +6165,7 @@ msgstr "couche vecteur des points de dé
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_it.po
++++ b/locale/po/grassmods_it.po
+@@ -5866,7 +5866,7 @@ msgstr "Numero di punti di steiner (-1 p
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_ja.po
++++ b/locale/po/grassmods_ja.po
+@@ -5891,7 +5891,7 @@ msgstr "Steiner ポイント数 （-1は
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_ko.po
++++ b/locale/po/grassmods_ko.po
+@@ -5767,7 +5767,7 @@ msgstr "출력할 격자지도"
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_lv.po
++++ b/locale/po/grassmods_lv.po
+@@ -5866,7 +5866,7 @@ msgstr "Vektorkartes nosaukums"
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_pl.po
++++ b/locale/po/grassmods_pl.po
+@@ -5906,7 +5906,7 @@ msgstr "Plik rastrowy punktów początko
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_pt.po
++++ b/locale/po/grassmods_pt.po
+@@ -6015,7 +6015,7 @@ msgstr "Arquivo(s) de pontos vetoriais p
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_pt_br.po
++++ b/locale/po/grassmods_pt_br.po
+@@ -6010,7 +6010,7 @@ msgstr "Arquivo(s) de pontos vetoriais p
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_ro.po
++++ b/locale/po/grassmods_ro.po
+@@ -5553,7 +5553,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_ru.po
++++ b/locale/po/grassmods_ru.po
+@@ -5942,7 +5942,7 @@ msgstr "Число точек стайн
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_sl.po
++++ b/locale/po/grassmods_sl.po
+@@ -5978,7 +5978,7 @@ msgstr "Rastrski sloj začetnih točk"
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_th.po
++++ b/locale/po/grassmods_th.po
+@@ -5938,7 +5938,7 @@ msgstr "จำนวนของ จุ�
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_tr.po
++++ b/locale/po/grassmods_tr.po
+@@ -5856,7 +5856,7 @@ msgstr "Çakıştırılacak vektör nokt
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_vi.po
++++ b/locale/po/grassmods_vi.po
+@@ -5952,7 +5952,7 @@ msgstr "Số lượng các điểm Stein
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_zh.po
++++ b/locale/po/grassmods_zh.po
+@@ -5933,7 +5933,7 @@ msgstr "起始点栅格文件"
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
