@@ -1,3 +1,10 @@
+grass (7.2.1-2) UNRELEASED; urgency=medium
+
+  * Change python-imaging dependency to python-pil.
+    (closes: #866428)
+
+ -- Bas Couwenberg <sebastic@debian.org>  Thu, 29 Jun 2017 18:57:12 +0200
+
 grass (7.2.1-1) unstable; urgency=medium
 
   * Add autopkgtest to test installability.
