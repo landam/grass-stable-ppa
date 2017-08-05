@@ -1,6 +1,7 @@
 grass (7.2.1-3) UNRELEASED; urgency=medium
 
   * Explicitly build with GCC 6 (FTBFS with GCC 7 not fixed yet).
+  * Update spelling-errors.patch to fix 'meaningful' typo.
 
  -- Bas Couwenberg <sebastic@debian.org>  Sat, 05 Aug 2017 11:13:12 +0200
 
