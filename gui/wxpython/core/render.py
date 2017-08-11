@@ -1091,11 +1091,11 @@ class Map(object):
                         (region['w'])
                     continue
                 elif key == "e-w resol":
-                    grass_region += "e-w resol: %f; " % \
+                    grass_region += "e-w resol: %.10f; " % \
                         (region['ewres'])
                     continue
                 elif key == "n-s resol":
-                    grass_region += "n-s resol: %f; " % \
+                    grass_region += "n-s resol: %.10f; " % \
                         (region['nsres'])
                     continue
                 elif key == "cols":
@@ -1273,8 +1273,8 @@ class Map(object):
         renderMgr = layer.GetRenderMgr()
         Debug.msg(
             1, "Map.AddLayer(): ltype={0}, command={1}".format(
-                ltype, layer.GetCmd(
-                    string=True)))
+                ltype, EncodeString(layer.GetCmd(
+                    string=True))))
         if renderMgr:
             if layer.type == 'wms':
                 renderMgr.dataFetched.connect(self.renderMgr.ReportProgress)

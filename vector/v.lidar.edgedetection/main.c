@@ -67,6 +67,9 @@ int main(int argc, char *argv[])
     dbDriver *driver;
 
 /*------------------------------------------------------------------------------------------*/
+
+    G_gisinit(argv[0]);
+
     /* Options' declaration */
     module = G_define_module();
     G_add_keyword(_("vector"));
@@ -77,9 +80,10 @@ int main(int argc, char *argv[])
 
     spline_step_flag = G_define_flag();
     spline_step_flag->key = 'e';
-    spline_step_flag->label = _("Estimate point density and distance");
+    spline_step_flag->label = _("Estimate point density and distance and quit");
     spline_step_flag->description =
-	_("Estimate point density and distance for the input vector points within the current region extends and quit");
+	_("Estimate point density and distance in map units for the input vector points within the current region extents and quit");
+    spline_step_flag->suppress_required = YES;
 
     in_opt = G_define_standard_option(G_OPT_V_INPUT);
 
@@ -89,18 +93,18 @@ int main(int argc, char *argv[])
     stepE_opt->key = "ew_step";
     stepE_opt->type = TYPE_DOUBLE;
     stepE_opt->required = NO;
-    stepE_opt->answer = "4";
-    stepE_opt->description =
+    stepE_opt->label =
 	_("Length of each spline step in the east-west direction");
+    stepE_opt->description = _("Default: 4 * east-west resolution");
     stepE_opt->guisection = _("Settings");
 
     stepN_opt = G_define_option();
     stepN_opt->key = "ns_step";
     stepN_opt->type = TYPE_DOUBLE;
     stepN_opt->required = NO;
-    stepN_opt->answer = "4";
-    stepN_opt->description =
+    stepN_opt->label =
 	_("Length of each spline step in the north-south direction");
+    stepN_opt->description = _("Default: 4 * north-south resolution");
     stepN_opt->guisection = _("Settings");
 
     lambdaB_opt = G_define_option();
@@ -147,15 +151,22 @@ int main(int argc, char *argv[])
     lambdaF_opt->answer = "2";
     lambdaF_opt->guisection = _("Settings");
 
-    /* Parsing */
-    G_gisinit(argv[0]);
+    G_option_required(out_opt, spline_step_flag, NULL);
+    G_option_requires(spline_step_flag, in_opt, NULL);
 
+    /* Parsing */
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
     line_out_counter = 1;
-    stepN = atof(stepN_opt->answer);
-    stepE = atof(stepE_opt->answer);
+
+    G_get_set_window(&original_reg);
+    stepN = 4 * original_reg.ns_res;
+    if (stepN_opt->answer)
+	stepN = atof(stepN_opt->answer);
+    stepE = 4 * original_reg.ew_res;
+    if (stepE_opt->answer)
+	stepE = atof(stepE_opt->answer);
     lambda_F = atof(lambdaF_opt->answer);
     lambda_B = atof(lambdaB_opt->answer);
     grad_H = atof(gradH_opt->answer);
@@ -164,6 +175,33 @@ int main(int argc, char *argv[])
 
     grad_L = grad_L * grad_L;
     grad_H = grad_H * grad_H;
+
+    if ((mapset = G_find_vector2(in_opt->answer, "")) == NULL) {
+	G_fatal_error(_("Vector map <%s> not found"), in_opt->answer);
+    }
+
+    Vect_set_open_level(1);
+    /* Open input vector */
+    if (1 > Vect_open_old(&In, in_opt->answer, mapset))
+	G_fatal_error(_("Unable to open vector map <%s>"), in_opt->answer);
+
+    /* Input vector must be 3D */
+    if (!Vect_is_3d(&In))
+	G_fatal_error(_("Input vector map <%s> is not 3D!"), in_opt->answer);
+
+    /* Estimate point density and mean distance for current region */
+    if (spline_step_flag->answer) {
+	double dens, dist;
+	if (P_estimate_splinestep(&In, &dens, &dist) == 0) {
+            fprintf(stdout, _("Estimated point density: %.4g\n"), dens);
+	    fprintf(stdout, _("Estimated mean distance between points: %.4g\n"), dist);
+	}
+	else
+	    G_warning(_("No points in current region!"));
+	
+	Vect_close(&In);
+	exit(EXIT_SUCCESS);
+    }
 
     if (!(db = G_getenv_nofatal2("DB_DATABASE", G_VAR_MAPSET)))
 	G_fatal_error(_("Unable to read name of database"));
@@ -208,34 +246,6 @@ int main(int argc, char *argv[])
     /* Checking vector names */
     Vect_check_input_output_name(in_opt->answer, out_opt->answer,
 				 G_FATAL_EXIT);
-
-    if ((mapset = G_find_vector2(in_opt->answer, "")) == NULL) {
-	G_fatal_error(_("Vector map <%s> not found"), in_opt->answer);
-    }
-
-    Vect_set_open_level(1);
-    /* Open input vector */
-    if (1 > Vect_open_old(&In, in_opt->answer, mapset))
-	G_fatal_error(_("Unable to open vector map <%s>"), in_opt->answer);
-
-    /* Input vector must be 3D */
-    if (!Vect_is_3d(&In))
-	G_fatal_error(_("Input vector map <%s> is not 3D!"), in_opt->answer);
-
-    /* Estimate point density and mean distance for current region */
-    if (spline_step_flag->answer) {
-	double dens, dist;
-	if (P_estimate_splinestep(&In, &dens, &dist) == 0) {
-	    G_message("Estimated point density: %.4g", dens);
-	    G_message("Estimated mean distance between points: %.4g", dist);
-	}
-	else
-	    G_warning(_("No points in current region!"));
-	
-	Vect_close(&In);
-	exit(EXIT_SUCCESS);
-    }
-
     /* Open output vector */
     if (0 > Vect_open_new(&Out, out_opt->answer, WITH_Z))
 	G_fatal_error(_("Unable to create vector map <%s>"), out_opt->answer);
@@ -267,7 +277,6 @@ int main(int argc, char *argv[])
     driver = db_start_driver_open_database(dvr, db);
 
     /* Setting regions and boxes */
-    G_get_set_window(&original_reg);
     G_get_set_window(&elaboration_reg);
     Vect_region_box(&elaboration_reg, &overlap_box);
     Vect_region_box(&elaboration_reg, &general_box);
@@ -411,7 +420,7 @@ int main(int argc, char *argv[])
 
 		G_free(observ);
 
-		G_important_message(_("Performing bilinear interpolation..."));
+		G_verbose_message(_("Performing bilinear interpolation..."));
 		normalDefBilin(N, TN, Q, obsVect, stepE, stepN, nsplx,
 			       nsply, elaboration_reg.west,
 			       elaboration_reg.south, npoints, nparameters,
@@ -428,7 +437,7 @@ int main(int argc, char *argv[])
 		N = G_alloc_matrix(nparameters, BW);	/* Normal matrix */
 		parVect_bicub = G_alloc_vector(nparameters);	/* Bicubic parameters vector */
 
-		G_important_message(_("Performing bicubic interpolation..."));
+		G_verbose_message(_("Performing bicubic interpolation..."));
 		normalDefBicubic(N, TN, Q, obsVect, stepE, stepN, nsplx,
 				 nsply, elaboration_reg.west,
 				 elaboration_reg.south, npoints, nparameters,
@@ -440,7 +449,7 @@ int main(int argc, char *argv[])
 		G_free_vector(TN);
 		G_free_vector(Q);
 
-		G_important_message(_("Point classification..."));
+		G_verbose_message(_("Point classification..."));
 		classification(&Out, elaboration_reg, general_box,
 			       overlap_box, obsVect, parVect_bilin,
 			       parVect_bicub, mean, alpha, grad_H, grad_L,
