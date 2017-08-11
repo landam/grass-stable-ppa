@@ -23,9 +23,6 @@ CFLAGS+=-Wno-error=format-security
 
 CFLAGS+=-Wall
 
-export CC=gcc-6
-export CXX=g++-6
-
 TEMPLATES=$(wildcard debian/*.in)
 
 # Use SOURCE_DATE_EPOCH as random seed for reproducible builds
