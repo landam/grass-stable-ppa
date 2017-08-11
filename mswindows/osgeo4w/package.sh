@@ -117,25 +117,26 @@ dll_to_a() {
 log dll.to.a
 [ -d mswindows/osgeo4w/lib ] || mkdir mswindows/osgeo4w/lib 
 dll_to_a $OSGEO4W_ROOT_MSYS/bin/proj.dll        mswindows/osgeo4w/lib/libproj
-dll_to_a $OSGEO4W_ROOT_MSYS/bin/zlib1.dll       mswindows/osgeo4w/lib/libz
 dll_to_a $OSGEO4W_ROOT_MSYS/bin/iconv.dll       mswindows/osgeo4w/lib/libiconv
-dll_to_a $OSGEO4W_ROOT_MSYS/bin/gdal200.dll     mswindows/osgeo4w/lib/libgdal
+dll_to_a $OSGEO4W_ROOT_MSYS/bin/gdal202.dll     mswindows/osgeo4w/lib/libgdal
 dll_to_a $OSGEO4W_ROOT_MSYS/bin/liblas_c.dll    mswindows/osgeo4w/lib/liblas_c
 dll_to_a $OSGEO4W_ROOT_MSYS/bin/geos_c.dll      mswindows/osgeo4w/lib/libgeos_c
 dll_to_a $OSGEO4W_ROOT_MSYS/bin/libtiff.dll     mswindows/osgeo4w/lib/libtiff
-if [ "$MINGW_POSTFIX" = "64" ]; then
-    dll_to_a $OSGEO4W_ROOT_MSYS/bin/libpng16.dll    mswindows/osgeo4w/lib/libpng
-    dll_to_a $OSGEO4W_ROOT_MSYS/bin/jpeg.dll        mswindows/osgeo4w/lib/libjpeg
-else
-# TODO (related to dependencies)
-#   dll_to_a $OSGEO4W_ROOT_MSYS/bin/libpng12-0.dll  mswindows/osgeo4w/lib/libpng
-    dll_to_a $OSGEO4W_ROOT_MSYS/bin/jpeg_osgeo.dll  mswindows/osgeo4w/lib/libjpeg
-fi
 dll_to_a $OSGEO4W_ROOT_MSYS/bin/libpq.dll       mswindows/osgeo4w/lib/libpq
 dll_to_a $OSGEO4W_ROOT_MSYS/bin/sqlite3.dll     mswindows/osgeo4w/lib/libsqlite3
 dll_to_a $OSGEO4W_ROOT_MSYS/bin/cairo.dll       mswindows/osgeo4w/lib/libcairo
 dll_to_a $OSGEO4W_ROOT_MSYS/bin/libfftw3-3.dll  mswindows/osgeo4w/lib/libfftw3
 dll_to_a $OSGEO4W_ROOT_MSYS/bin/pdcurses.dll  mswindows/osgeo4w/lib/libpdcurses
+if [ "$MINGW_POSTFIX" = "64" ]; then
+    dll_to_a $OSGEO4W_ROOT_MSYS/bin/zlib1.dll       mswindows/osgeo4w/lib/libz
+    dll_to_a $OSGEO4W_ROOT_MSYS/bin/libpng16.dll    mswindows/osgeo4w/lib/libpng
+    dll_to_a $OSGEO4W_ROOT_MSYS/bin/jpeg.dll        mswindows/osgeo4w/lib/libjpeg
+else
+# TODO (related to dependencies)
+    dll_to_a $OSGEO4W_ROOT_MSYS/bin/zlib_osgeo.dll       mswindows/osgeo4w/lib/libz
+#   dll_to_a $OSGEO4W_ROOT_MSYS/bin/libpng12-0.dll  mswindows/osgeo4w/lib/libpng
+    dll_to_a $OSGEO4W_ROOT_MSYS/bin/jpeg_osgeo.dll  mswindows/osgeo4w/lib/libjpeg
+fi
 
 cp -uv $OSGEO4W_ROOT_MSYS/lib/libxdr.a          mswindows/osgeo4w/lib
 #cp -uv $OSGEO4W_ROOT_MSYS/lib/libregex.a        mswindows/osgeo4w/lib
@@ -175,7 +176,6 @@ if ! [ -f mswindows/osgeo4w/configure-stamp ]; then
 		--with-proj-share=$OSGEO4W_ROOT_MSYS/share/proj \
 		--with-gdal=$PWD/mswindows/osgeo4w/gdal-config \
 		--with-geos=$PWD/mswindows/osgeo4w/geos-config \
-	        --with-liblas=$PWD/mswindows/osgeo4w/liblas-config \
 		--with-sqlite \
 		--with-regex \
 		--with-nls \
@@ -186,6 +186,8 @@ if ! [ -f mswindows/osgeo4w/configure-stamp ]; then
 	        --with-opengl=windows \
                 --with-bzlib
 	
+# see https://trac.osgeo.org/osgeo4w/ticket/539#ticket
+# --with-liblas=$PWD/mswindows/osgeo4w/liblas-config
 	touch mswindows/osgeo4w/configure-stamp
 fi
 

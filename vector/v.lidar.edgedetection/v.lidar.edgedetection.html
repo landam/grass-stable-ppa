@@ -28,6 +28,11 @@ gradient to two of eight neighboring points is greater than the high
 threshold. Other points are classified as TERRAIN.
 
 <p>
+The length (in mapping units) of each spline step is defined by 
+<b>ew_step</b> for the east-west direction and <b>ns_step</b> for the 
+north-south direction.
+
+<p>
 The output will be a vector map in which points has been classified as 
 TERRAIN, EDGE or UNKNOWN. This vector map should be the input of 
 <em><a href="v.lidar.growing.html">v.lidar.growing</a></em> module.
@@ -162,4 +167,4 @@ Update for GRASS 6.X:
 Roberto Antolin and Gonzalo Moreno
 
 <p>
-<i>Last changed: $Date: 2015-09-13 14:47:50 +0200 (Sun, 13 Sep 2015) $</i>
+<i>Last changed: $Date: 2017-08-08 00:26:18 +0200 (Tue, 08 Aug 2017) $</i>
