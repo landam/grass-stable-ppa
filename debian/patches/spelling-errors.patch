@@ -16,7 +16,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
      }
 --- a/locale/po/grassmods_ar.po
 +++ b/locale/po/grassmods_ar.po
-@@ -5953,7 +5953,7 @@ msgstr "الخريطة الراستري�
+@@ -5995,7 +5995,7 @@ msgstr "الخريطة الراستري�
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -27,7 +27,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_cs.po
 +++ b/locale/po/grassmods_cs.po
-@@ -5997,7 +5997,7 @@ msgstr "Počet Steinerových bodů (-1 p
+@@ -5634,7 +5634,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -38,7 +38,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_de.po
 +++ b/locale/po/grassmods_de.po
-@@ -5907,7 +5907,7 @@ msgstr "Anzahl der Steiner Punkte (-1 f�
+@@ -5660,7 +5660,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -49,7 +49,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_el.po
 +++ b/locale/po/grassmods_el.po
-@@ -5745,7 +5745,7 @@ msgstr ""
+@@ -5574,7 +5574,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -60,7 +60,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_es.po
 +++ b/locale/po/grassmods_es.po
-@@ -5722,7 +5722,7 @@ msgstr "Número de puntos steiner (-1 pa
+@@ -5725,7 +5725,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -71,7 +71,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_fi.po
 +++ b/locale/po/grassmods_fi.po
-@@ -5512,7 +5512,7 @@ msgstr ""
+@@ -5554,7 +5554,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -82,7 +82,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_fr.po
 +++ b/locale/po/grassmods_fr.po
-@@ -6165,7 +6165,7 @@ msgstr "couche vecteur des points de dé
+@@ -5594,7 +5594,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -93,7 +93,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_it.po
 +++ b/locale/po/grassmods_it.po
-@@ -5866,7 +5866,7 @@ msgstr "Numero di punti di steiner (-1 p
+@@ -5612,7 +5612,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -104,7 +104,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_ja.po
 +++ b/locale/po/grassmods_ja.po
-@@ -5891,7 +5891,7 @@ msgstr "Steiner ポイント数 （-1は
+@@ -5554,7 +5554,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -115,7 +115,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_ko.po
 +++ b/locale/po/grassmods_ko.po
-@@ -5767,7 +5767,7 @@ msgstr "출력할 격자지도"
+@@ -5535,7 +5535,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -126,7 +126,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_lv.po
 +++ b/locale/po/grassmods_lv.po
-@@ -5866,7 +5866,7 @@ msgstr "Vektorkartes nosaukums"
+@@ -5579,7 +5579,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -137,7 +137,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_pl.po
 +++ b/locale/po/grassmods_pl.po
-@@ -5906,7 +5906,7 @@ msgstr "Plik rastrowy punktów początko
+@@ -5610,7 +5610,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -148,18 +148,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_pt.po
 +++ b/locale/po/grassmods_pt.po
-@@ -6015,7 +6015,7 @@ msgstr "Arquivo(s) de pontos vetoriais p
- #: ../vector/v.net.steiner/main.c:598
- #, c-format
- msgid ""
--"Spanning tree costs on complet graph = %f\n"
-+"Spanning tree costs on complete graph = %f\n"
- "(may be higher than resulting Steiner tree costs!!!)"
- msgstr ""
- 
---- a/locale/po/grassmods_pt_br.po
-+++ b/locale/po/grassmods_pt_br.po
-@@ -6010,7 +6010,7 @@ msgstr "Arquivo(s) de pontos vetoriais p
+@@ -5567,7 +5567,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -170,7 +159,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_ro.po
 +++ b/locale/po/grassmods_ro.po
-@@ -5553,7 +5553,7 @@ msgstr ""
+@@ -5591,7 +5591,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -181,7 +170,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_ru.po
 +++ b/locale/po/grassmods_ru.po
-@@ -5942,7 +5942,7 @@ msgstr "Число точек стайн
+@@ -5588,7 +5588,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -192,7 +181,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_sl.po
 +++ b/locale/po/grassmods_sl.po
-@@ -5978,7 +5978,7 @@ msgstr "Rastrski sloj začetnih točk"
+@@ -6021,7 +6021,7 @@ msgstr "Rastrski sloj začetnih točk"
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -203,7 +192,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_th.po
 +++ b/locale/po/grassmods_th.po
-@@ -5938,7 +5938,7 @@ msgstr "จำนวนของ จุ�
+@@ -5537,7 +5537,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -214,7 +203,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_tr.po
 +++ b/locale/po/grassmods_tr.po
-@@ -5856,7 +5856,7 @@ msgstr "Çakıştırılacak vektör nokt
+@@ -5563,7 +5563,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -225,7 +214,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_vi.po
 +++ b/locale/po/grassmods_vi.po
-@@ -5952,7 +5952,7 @@ msgstr "Số lượng các điểm Stein
+@@ -5994,7 +5994,7 @@ msgstr "Số lượng các điểm Stein
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -236,7 +225,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_zh.po
 +++ b/locale/po/grassmods_zh.po
-@@ -5933,7 +5933,7 @@ msgstr "起始点栅格文件"
+@@ -5537,7 +5537,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -287,3 +276,58 @@ Author: Bas Couwenberg <sebastic@debian.org>
        "If no answer is given it defaults to infinity.");
  
    /* main memory */
+--- a/locale/po/grassmods_id_ID.po
++++ b/locale/po/grassmods_id_ID.po
+@@ -18693,7 +18693,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_ml.po
++++ b/locale/po/grassmods_ml.po
+@@ -18757,7 +18757,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_pt_BR.po
++++ b/locale/po/grassmods_pt_BR.po
+@@ -5567,7 +5567,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_si.po
++++ b/locale/po/grassmods_si.po
+@@ -18757,7 +18757,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_uk.po
++++ b/locale/po/grassmods_uk.po
+@@ -18822,7 +18822,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
