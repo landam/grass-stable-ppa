@@ -4,7 +4,7 @@
 
  * @Copyright David D.Gray <ddgray@armadce.demon.co.uk>
  * 27th. Sep. 2000
- * Last updated: $Id: gmath.h 66485 2015-10-13 02:25:44Z wenzeslaus $
+ * Last updated: $Id: gmath.h 71202 2017-06-21 14:08:39Z neteler $
  *
 
  * This file is part of GRASS GIS. It is free software. You can 
@@ -24,6 +24,12 @@
 #define GRASS_GMATH_H
 
 #include <grass/config.h>
+
+#ifdef CTYPESGEN
+#undef __attribute__
+#define __attribute__(x)
+#endif
+
 #include <stddef.h>
 
 /*solver names */

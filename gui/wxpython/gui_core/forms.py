@@ -315,12 +315,15 @@ class UpdateThread(Thread):
 
             elif name == 'ColumnSelect':
                 if map:
-                    if map in cparams:
-                        if not cparams[map]['dbInfo']:
-                            cparams[map]['dbInfo'] = gselect.VectorDBInfo(map)
-                        self.data[win.GetParent().InsertColumns] = {
-                            'vector': map, 'layer': layer,
-                            'dbInfo': cparams[map]['dbInfo']}
+                    if map not in cparams:
+                        cparams[map] = {'dbInfo': None,
+                                        'layers': None, }
+
+                    if not cparams[map]['dbInfo']:
+                        cparams[map]['dbInfo'] = gselect.VectorDBInfo(map)
+                    self.data[win.GetParent().InsertColumns] = {
+                        'vector': map, 'layer': layer,
+                        'dbInfo': cparams[map]['dbInfo']}
                 else:  # table
                     if driver and db:
                         self.data[win.GetParent().InsertTableColumns] = {
@@ -1292,7 +1295,7 @@ class CmdPanel(wx.Panel):
                     value = self._getValue(p)
                     if value:
                         # parameter previously set
-                        win.SetValue(str(value))
+                        win.SetValue(value if p.get('type', 'string') == 'string' else str(value))
 
                     win.Bind(wx.EVT_TEXT, self.OnSetValue)
                     style = wx.EXPAND | wx.BOTTOM | wx.LEFT | wx.RIGHT
@@ -1822,9 +1825,17 @@ class CmdPanel(wx.Panel):
                                            style=wx.TE_MULTILINE,
                                            size=(-1, 75))
                         if p.get('value', '') and os.path.isfile(p['value']):
-                            f = open(p['value'])
-                            ifbb.SetValue(''.join(f.readlines()))
-                            f.close()
+                            ifbb.Clear()
+                            enc = locale.getdefaultlocale()[1]
+                            with codecs.open(p['value'], encoding=enc, errors='ignore') as f:
+                                nonascii = bytearray(range(0x80, 0x100))
+                                for line in f.readlines():
+                                    try:
+                                        ifbb.AppendText(line)
+                                    except UnicodeDecodeError:
+                                        # remove non-ascii characters on encoding mismatch (file vs OS)
+                                        ifbb.AppendText(line.translate(None, nonascii))
+                                ifbb.SetInsertionPoint(0)
 
                         ifbb.Bind(wx.EVT_TEXT, self.OnFileText)
 
@@ -1884,6 +1895,7 @@ class CmdPanel(wx.Panel):
                             _('Directory')),
                         buttonText=_('Browse'),
                         startDirectory=os.getcwd(),
+                        newDirectory=True,
                         changeCallback=self.OnSetValue)
                     value = self._getValue(p)
                     if value:
@@ -2018,11 +2030,16 @@ class CmdPanel(wx.Panel):
 
                         def OnCheckItem(index, flag):
                             layers = list()
+                            geometry = None
                             for layer, match, listId in self.win1.GetLayers():
+                                if '|' in layer:
+                                    layer, geometry = layer.split('|', 1)
                                 layers.append(layer)
                             porf = self.task.get_param(
                                 'layer', element='name', raiseError=False)
                             porf['value'] = ','.join(layers)
+                            # geometry is currently discarded
+                            # TODO: v.import has no geometry option
                             self.OnUpdateValues()  # TODO: replace by signal
 
                         self.win1.OnCheckItem = OnCheckItem
