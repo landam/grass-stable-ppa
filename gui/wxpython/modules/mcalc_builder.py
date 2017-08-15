@@ -97,16 +97,24 @@ class MapCalcFrame(wx.Frame):
             'median(x,y[,z...])': 'median( , )',
             'min(x,y[,z...])': 'min( , )',
             'mode(x,y[,z...])': 'mode( , )',
+            'nmax(x,y[,z...])': 'nmax( , )',
+            'nmedian(x,y[,z...])': 'nmedian( , )',
+            'nmin(x,y[,z...])': 'nmin( , )',
+            'nmode(x,y[,z...])': 'nmode( , )',
             'not(x)': 'not()',
             'pow(x,y)': 'pow( , )',
             'rand(a,b)': 'rand( , )',
             'round(x)': 'round()',
+            'round(x,y)': 'round( , )',
+            'round(x,y,z)': 'round( , , )',
             'sin(x)': 'sin()',
             'sqrt(x)': 'sqrt()',
             'tan(x)': 'tan()',
             'xor(x,y)': 'xor( , )',
             'row()': 'row()',
             'col()': 'col()',
+            'nrows()': 'nrows()',
+            'ncols()': 'ncols()',
             'x()': 'x()',
             'y()': 'y()',
             'ewres()': 'ewres()',
@@ -247,8 +255,12 @@ class MapCalcFrame(wx.Frame):
                 _('Name for new 3D raster map to create'))
         else:
             self.newmaplabel.SetLabel(_('Name for new raster map to create'))
-        self.newmaptxt = wx.TextCtrl(
-            parent=self.panel, id=wx.ID_ANY, size=(250, -1))
+        # As we can write only to current mapset, names should not be fully qualified
+        # to not confuse end user about writing in other mapset
+        self.newmaptxt = Select(
+            parent=self.panel, id=wx.ID_ANY, size=(
+                250, -1), type=element, multiple=False,
+                fullyQualified=False)
         self.mapsellabel = wx.StaticText(parent=self.panel, id=wx.ID_ANY)
         if self.rast3d:
             self.mapsellabel.SetLabel(_('Insert existing 3D raster map'))
@@ -585,7 +597,7 @@ class MapCalcFrame(wx.Frame):
                 seed = " seed={val}".format(
                     val=self.randomSeedText.GetValue().strip())
 
-        return ('{cmd} "{new} = {expr}"{seed}{seed_flag}{overwrite}'
+        return ('{cmd} expression="{new} = {expr}"{seed}{seed_flag}{overwrite}'
                 .format(cmd=cmd, expr=expr, new=self.newmaptxt.GetValue(),
                         seed_flag=seed_flag, seed=seed, overwrite=overwrite))
 

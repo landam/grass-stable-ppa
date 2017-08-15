@@ -1,0 +1,333 @@
+Description: Fix spelling errors.
+ * complet     -> complete
+ * meaningfull -> meaningful
+Author: Bas Couwenberg <sebastic@debian.org>
+
+--- a/vector/v.net.steiner/main.c
++++ b/vector/v.net.steiner/main.c
+@@ -595,7 +595,7 @@ int main(int argc, char **argv)
+     /* Calculate true costs, which may be lower than MST if steiner points were not used */
+ 
+     if (nsp < nterms - 2) {
+-        G_message(_("Spanning tree costs on complet graph = %f\n"
++        G_message(_("Spanning tree costs on complete graph = %f\n"
+             "(may be higher than resulting Steiner tree costs!!!)"),
+ 		cost);
+     }
+--- a/locale/po/grassmods_ar.po
++++ b/locale/po/grassmods_ar.po
+@@ -5995,7 +5995,7 @@ msgstr "الخريطة الراستري�
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_cs.po
++++ b/locale/po/grassmods_cs.po
+@@ -5634,7 +5634,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_de.po
++++ b/locale/po/grassmods_de.po
+@@ -5660,7 +5660,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_el.po
++++ b/locale/po/grassmods_el.po
+@@ -5574,7 +5574,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_es.po
++++ b/locale/po/grassmods_es.po
+@@ -5725,7 +5725,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_fi.po
++++ b/locale/po/grassmods_fi.po
+@@ -5554,7 +5554,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_fr.po
++++ b/locale/po/grassmods_fr.po
+@@ -5594,7 +5594,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_it.po
++++ b/locale/po/grassmods_it.po
+@@ -5612,7 +5612,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_ja.po
++++ b/locale/po/grassmods_ja.po
+@@ -5554,7 +5554,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_ko.po
++++ b/locale/po/grassmods_ko.po
+@@ -5535,7 +5535,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_lv.po
++++ b/locale/po/grassmods_lv.po
+@@ -5579,7 +5579,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_pl.po
++++ b/locale/po/grassmods_pl.po
+@@ -5610,7 +5610,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_pt.po
++++ b/locale/po/grassmods_pt.po
+@@ -5567,7 +5567,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_ro.po
++++ b/locale/po/grassmods_ro.po
+@@ -5591,7 +5591,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_ru.po
++++ b/locale/po/grassmods_ru.po
+@@ -5588,7 +5588,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_sl.po
++++ b/locale/po/grassmods_sl.po
+@@ -6021,7 +6021,7 @@ msgstr "Rastrski sloj začetnih točk"
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_th.po
++++ b/locale/po/grassmods_th.po
+@@ -5537,7 +5537,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_tr.po
++++ b/locale/po/grassmods_tr.po
+@@ -5563,7 +5563,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_vi.po
++++ b/locale/po/grassmods_vi.po
+@@ -5994,7 +5994,7 @@ msgstr "Số lượng các điểm Stein
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_zh.po
++++ b/locale/po/grassmods_zh.po
+@@ -5537,7 +5537,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/lib/db/sqlp/sqlp.l
++++ b/lib/db/sqlp/sqlp.l
+@@ -252,7 +252,7 @@ int my_yyinput(char *buf, int max_size)
+ /**********************************************************************
+  * yyerror
+  *
+- * This should be called just before failing. It formats a meaningfull
++ * This should be called just before failing. It formats a meaningful
+  * message and deposits it in a useful place.
+  *
+  **********************************************************************/
+--- a/lib/gpde/n_les_assemble.c
++++ b/lib/gpde/n_les_assemble.c
+@@ -761,7 +761,7 @@ N_les *N_assemble_les_2d_param(int les_t
+  * \brief Integrate Dirichlet or Transmission boundary conditions into the les (2s)
+  *
+  * Dirichlet and Transmission boundary conditions will be integrated into
+- * the provided linear equation system. This is meaningfull if
++ * the provided linear equation system. This is meaningful if
+  * the les was created with #N_assemble_les_2d_dirichlet, because in
+  * this case Dirichlet boundary conditions are not automatically included.
+  *
+@@ -1214,7 +1214,7 @@ N_les *N_assemble_les_3d_param(int les_t
+  * \brief Integrate Dirichlet or Transmission boundary conditions into the les (3d)
+  *
+  * Dirichlet and Transmission boundary conditions will be integrated into
+- * the provided linear equation system. This is meaningfull if
++ * the provided linear equation system. This is meaningful if
+  * the les was created with #N_assemble_les_2d_dirichlet, because in
+  * this case Dirichlet boundary conditions are not automatically included.
+  *
+--- a/raster/r.terraflow/main.cpp
++++ b/raster/r.terraflow/main.cpp
+@@ -115,7 +115,7 @@ parse_args(int argc, char *argv[]) {
+   d8cut->label = _("Routing using SFD (D8) direction");
+   d8cut->description = 
+     _("If flow accumulation is larger than this value it is routed using "
+-      "SFD (D8) direction (meaningfull only for MFD flow). "
++      "SFD (D8) direction (meaningful only for MFD flow). "
+       "If no answer is given it defaults to infinity.");
+ 
+   /* main memory */
+--- a/locale/po/grassmods_id_ID.po
++++ b/locale/po/grassmods_id_ID.po
+@@ -18693,7 +18693,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_ml.po
++++ b/locale/po/grassmods_ml.po
+@@ -18757,7 +18757,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_pt_BR.po
++++ b/locale/po/grassmods_pt_BR.po
+@@ -5567,7 +5567,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_si.po
++++ b/locale/po/grassmods_si.po
+@@ -18757,7 +18757,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
+--- a/locale/po/grassmods_uk.po
++++ b/locale/po/grassmods_uk.po
+@@ -18822,7 +18822,7 @@ msgstr ""
+ #: ../vector/v.net.steiner/main.c:598
+ #, c-format
+ msgid ""
+-"Spanning tree costs on complet graph = %f\n"
++"Spanning tree costs on complete graph = %f\n"
+ "(may be higher than resulting Steiner tree costs!!!)"
+ msgstr ""
+ 
