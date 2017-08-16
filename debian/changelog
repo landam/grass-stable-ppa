@@ -1,3 +1,9 @@
+grass (7.2.2~rc1-1~exp1~zesty1) zesty; urgency=medium
+
+  * Rebuild for zesty.
+
+ -- Martin Landa <landa.martin@gmail.com>  Wed, 16 Aug 2017 17:46:13 +0200
+
 grass (7.2.2~rc1-1~exp1) experimental; urgency=medium
 
   * New upstream release candidate.
