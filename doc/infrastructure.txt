@@ -1,7 +1,7 @@
 How the GRASS Webserver and related infrastructure works
 
 written by M. Neteler
-Last changed: $Date: 2017-02-05 22:11:16 +0100 (Sun, 05 Feb 2017) $
+Last changed: $Date: 2017-08-14 23:30:40 +0200 (Mon, 14 Aug 2017) $
 
 
 Related Wiki documents:
@@ -207,6 +207,7 @@ Maintainer: Martin Landa
 
 * https://travis-ci.org/GRASS-GIS
 * https://github.com/GRASS-GIS/grass-ci
+* https://svn.osgeo.org/grass/grass-addons/tools/grass-ci/
 
 Travis CI control files:
  trunk/.travis/
@@ -214,8 +215,13 @@ Travis CI control files:
    linux.install.sh
    linux.script.sh
 
+Maintenance script:
+* https://svn.osgeo.org/grass/grass-addons/tools/grass-ci/grass-ci.sh
 
-Coverity Scan:
+== GRASS Coverity Scan ==
+
+Maintainer: Markus Neteler
+
 * https://scan.coverity.com/projects/grass?tab=overview
 
 == OLD: GRASS Quality Control ==
