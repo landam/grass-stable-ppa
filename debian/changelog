@@ -1,9 +1,10 @@
-grass (7.2.2-1) UNRELEASED; urgency=medium
+grass (7.2.2-1) unstable; urgency=medium
 
   * New upstream release.
   * Refresh patches.
+  * Move from experimental to unstable.
 
- -- Bas Couwenberg <sebastic@debian.org>  Sat, 16 Sep 2017 16:36:20 +0200
+ -- Bas Couwenberg <sebastic@debian.org>  Sat, 16 Sep 2017 16:38:01 +0200
 
 grass (7.2.2~rc2-1~exp1) experimental; urgency=medium
 
