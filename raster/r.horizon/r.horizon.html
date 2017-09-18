@@ -200,6 +200,8 @@ Horizon plot in polar coordinates.
 
 Raster map mode (output maps "horangle*" become input for <em>r.sun</em>):
 <div class="code"><pre>
+g.region raster=elevation -p
+
 # we put a bufferzone of 10% of maxdistance around the study area
 # compute only direction between 90 and 270 degrees
 r.horizon elevation=elevation step=30 start=90 end=300 \
@@ -254,4 +256,4 @@ European Commission, Ispra, Italy
 <a href="mailto:Marcel.Suri@jrc.it">Marcel.Suri@jrc.it</a> 
 </ADDRESS>
 
-<p><i>Last changed: $Date: 2016-01-19 23:08:21 +0100 (Tue, 19 Jan 2016) $</i> 
+<p><i>Last changed: $Date: 2017-08-31 21:47:47 +0200 (Thu, 31 Aug 2017) $</i> 

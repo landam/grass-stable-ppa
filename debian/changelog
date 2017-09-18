@@ -1,3 +1,17 @@
+grass (7.2.2-1~xenial1) xenial; urgency=medium
+
+  * Rebuild for xenial.
+
+ -- Martin Landa <landa.martin@gmail.com>  Mon, 18 Sep 2017 10:49:04 +0200
+
+grass (7.2.2-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Refresh patches.
+  * Move from experimental to unstable.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Sat, 16 Sep 2017 16:38:01 +0200
+
 grass (7.2.2~rc2-1~exp1~xenial1) xenial; urgency=medium
 
   * Rebuild for xenial.
