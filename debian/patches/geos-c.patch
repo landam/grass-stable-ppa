@@ -1,0 +1,26 @@
+Description: Get geos_c library from geos-config.
+Author: Bas Couwenberg <sebastic@debian.org>
+Forwarded: https://trac.osgeo.org/grass/ticket/3421
+
+--- a/configure.in
++++ b/configure.in
+@@ -1002,7 +1002,7 @@ else
+   fi
+   
+   if test "$GEOS_CONFIG" != "" ; then
+-    GEOS_LIBS=`"$GEOS_CONFIG" --libs`
++    GEOS_LIBS=`"$GEOS_CONFIG" --clibs`
+     GEOS_CFLAGS=`"$GEOS_CONFIG" --cflags`
+     USE_GEOS=1
+   fi
+--- a/configure
++++ b/configure
+@@ -6827,7 +6827,7 @@ fi
+   fi
+   
+   if test "$GEOS_CONFIG" != "" ; then
+-    GEOS_LIBS=`"$GEOS_CONFIG" --libs`
++    GEOS_LIBS=`"$GEOS_CONFIG" --clibs`
+     GEOS_CFLAGS=`"$GEOS_CONFIG" --cflags`
+     USE_GEOS=1
+   fi
