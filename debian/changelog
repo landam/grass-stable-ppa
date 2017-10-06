@@ -1,6 +1,7 @@
 grass (7.2.2-2) UNRELEASED; urgency=medium
 
   * Add patch to only link to GEOS C library.
+  * Update spelling-errors.patch to fix additional typo.
 
  -- Bas Couwenberg <sebastic@debian.org>  Fri, 06 Oct 2017 11:16:50 +0200
 
