@@ -49,7 +49,7 @@ Build-Depends: autoconf2.13,
                python-wxgtk3.0,
                unixodbc-dev,
                zlib1g-dev
-Standards-Version: 4.0.0
+Standards-Version: 4.1.1
 Vcs-Browser: https://anonscm.debian.org/cgit/pkg-grass/grass.git
 Vcs-Git: https://anonscm.debian.org/git/pkg-grass/grass.git
 Homepage: http://grass.osgeo.org/
