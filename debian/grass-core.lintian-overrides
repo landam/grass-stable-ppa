@@ -44,3 +44,6 @@ grass-core: hardening-no-fortify-functions usr/lib/grass*/lib/libgrass_segment.*
 grass-core: extra-license-file usr/lib/grass*/etc/license
 grass-core: extra-license-file usr/share/doc/grass-core/COPYING
 
+# False positive, filename ends in .class, but is not Java bytecode
+grass-core: package-installs-java-bytecode usr/lib/grass72/bin/v.class
+
