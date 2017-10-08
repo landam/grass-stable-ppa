@@ -1,6 +1,7 @@
 Description: Get geos_c library from geos-config.
 Author: Bas Couwenberg <sebastic@debian.org>
 Forwarded: https://trac.osgeo.org/grass/ticket/3421
+Applied-Upstream: https://trac.osgeo.org/grass/changeset/71545
 
 --- a/configure.in
 +++ b/configure.in
