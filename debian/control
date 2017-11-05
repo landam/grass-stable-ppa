@@ -123,8 +123,8 @@ Recommends:
 # gs needed for wxPsmap PDF export
             ghostscript,
 # PIL needed for wxPsmap preview
-            python-imaging,
-            python-matplotlib
+            python-matplotlib,
+            python-pil
 Breaks: grass (<< 6.4.2-1~)
 Replaces: grass (<< 6.4.2-1~)
 Description: GRASS GIS graphical user interfaces
