@@ -15,6 +15,7 @@ endif
 
 VERSION=$(shell echo `head -2 $(CURDIR)/include/VERSION` | sed -e 's/ //')
 ABI=$(shell echo `head -3 $(CURDIR)/include/VERSION` | sed -e 's/ //g' -e 's/RC/-/')
+GRASS_ABI=grass$(ABI)
 BASE_NAME=grass$(VERSION)
 PKG_NAME=grass
 
@@ -266,4 +267,7 @@ override_dh_shlibdeps:
 override_dh_compress:
 	dh_compress -XAUTHORS
 
-.PHONY: templates
+override_dh_gencontrol:
+	dh_gencontrol -- -Vgrass:Provides="$(GRASS_ABI)"
+
+.PHONY: templates versions

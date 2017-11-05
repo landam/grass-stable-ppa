@@ -4,6 +4,7 @@ grass (7.2.2-2) UNRELEASED; urgency=medium
   * Update spelling-errors.patch to fix additional typo.
   * Add lintian override for package-installs-java-bytecode false positive.
   * Bump Standards-Version to 4.1.1, no changes.
+  * Override dh_gencontrol to set GRASS ABI dependency with substvars.
 
  -- Bas Couwenberg <sebastic@debian.org>  Fri, 06 Oct 2017 11:16:50 +0200
 
