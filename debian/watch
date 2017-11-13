@@ -2,5 +2,5 @@ version=3
 opts=\
 uversionmangle=s/(\d)[_\.\-\+]?((RC|rc|pre|dev|beta|alpha)\d*)$/$1~$2/;s/RC/rc/,\
 dversionmangle=s/\+(debian|dfsg|ds|deb)\d*$// \
-http://grass.osgeo.org/grass72/source/ \
+http://grass.osgeo.org/grass74/source/ \
 grass-([\d\.]*(?:(?:RC|rc|pre|dev|beta|alpha)?\d*))\.(?:tgz|tbz|txz|(?:tar\.(?:gz|bz2|xz)))
