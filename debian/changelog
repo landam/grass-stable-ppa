@@ -6,6 +6,7 @@ grass (7.2.2-2) UNRELEASED; urgency=medium
   * Bump Standards-Version to 4.1.1, no changes.
   * Override dh_gencontrol to set GRASS ABI dependency with substvars.
   * Update watch file for GRASS 7.4 releases.
+  * Strip trailing whitespace from changelog.
 
  -- Bas Couwenberg <sebastic@debian.org>  Fri, 06 Oct 2017 11:16:50 +0200
 
@@ -275,7 +276,7 @@ grass (7.0.3~rc2-1~exp1) experimental; urgency=medium
 grass (7.0.3~rc1-1~exp2) experimental; urgency=medium
 
   * Fix build with `dpkg-buildpackage -A`. Add dependency on
-    override_dh_auto_install-arch target to 
+    override_dh_auto_install-arch target to
     override_dh_auto_install-indep target. The HTML documentation is
     built along with the code in the build-arch target.
     (closes: #806620)
@@ -381,7 +382,7 @@ grass (7.0.1~rc1-1~exp1) experimental; urgency=medium
 
   [ Francesco Paolo Lovergine ]
   * Added liblas-dev b-d to support new Lidar modules.
-  * Introduced a separate tag in debian/rules to regenerate debian stuff from 
+  * Introduced a separate tag in debian/rules to regenerate debian stuff from
     templates.
 
  -- Bas Couwenberg <sebastic@debian.org>  Sat, 04 Jul 2015 21:23:04 +0200
@@ -453,7 +454,7 @@ grass (6.4.4-1) unstable; urgency=medium
   * Added patch to fix Help-About parsing.
 
   [ Francesco Paolo Lovergine ]
-  * Debhelper level set to 9. 
+  * Debhelper level set to 9.
   * Vcs-* fields are now canonical to make lintian happy.
   * Added one more lintian override.
 
@@ -480,8 +481,8 @@ grass (6.4.4-1) unstable; urgency=medium
 grass (6.4.3-3) unstable; urgency=medium
 
   * Now b-d on current libgdal-dev.
-  * Policy bumped to 3.9.5. 
-  * Now use dh_autotools-dev_{restore,update}config instead of manual 
+  * Policy bumped to 3.9.5.
+  * Now use dh_autotools-dev_{restore,update}config instead of manual
     update/restore in debian/rules
 
     [ Paul Gevers ]
@@ -498,7 +499,7 @@ grass (6.4.3-2) unstable; urgency=low
   * Sort out watch file.
 
   [ Francesco Paolo Lovergine ]
-  * Removed versioned dep for libtiff-dev b-d and pre-b-d on libtiff5-dev 
+  * Removed versioned dep for libtiff-dev b-d and pre-b-d on libtiff5-dev
   (closes: #723974)
 
  -- M. Hamish Bowman <hamish_b@yahoo.com>  Sat, 21 Sep 2013 15:46:48 +1200
@@ -637,10 +638,10 @@ grass (6.4.0~rc6+42329-3) unstable; urgency=low
   * Merging main fixes taken from final 6.4.0 release. The big patch has been
     splitted in a few sub-patches for specific improvements.
         + localization.dpatch: updates to .po files.
-        + doc.dpatch: various documentation fixes with update to main URL too. 
-        + gcs.dpatch: Port GDAL's http://trac.osgeo.org/gdal/changeset/19810 
-              to fix missing towsg84 for EPSG codes: 3120 2172 2173 2174 2175 
-              3333 3334 3335 3329 3330 3331 3332 3328 4179. 
+        + doc.dpatch: various documentation fixes with update to main URL too.
+        + gcs.dpatch: Port GDAL's http://trac.osgeo.org/gdal/changeset/19810
+              to fix missing towsg84 for EPSG codes: 3120 2172 2173 2174 2175
+              3333 3334 3335 3329 3330 3331 3332 3328 4179.
               It also forces ETRS89 datum to be
               interpreted as 0,0,0,0,0,0,0 instead of 0.000,0.000,0.000 (i.e.
               overrides the datum.table ETRS89 setting, too). More info:
@@ -648,16 +649,16 @@ grass (6.4.0~rc6+42329-3) unstable; urgency=low
               http://trac.osgeo.org/gdal/ticket/3579.
         + g.extension.dpatch: added Markus g.extension script to download and
           eventually install extension from GRASS svn add-ons repo.
-        + scripts.dpatch: some fixes to a blounce of scripts: 
+        + scripts.dpatch: some fixes to a blounce of scripts:
                 m.proj - added GUI section
                 r.mask - allow r.mask to work in GISDBASE
                 v.in.gpsbabel - fixed broken awk statement
                 v.in.mapgen - better describe what v.in.mapgen will load
-                r.regression.line -  rename variable from italian so it 
+                r.regression.line -  rename variable from italian so it
                      doesn't get confused with median, add F-test to key
         + g.proj: only split at space characters if there is a + character
                   following
-        + clean_nodes: in Vlib fixes segfault when cleaning small angles 
+        + clean_nodes: in Vlib fixes segfault when cleaning small angles
                    at nodes
         + read_sig.c: catch empty sig files
         + convert.c: added non-standard datum name lookup
@@ -665,7 +666,7 @@ grass (6.4.0~rc6+42329-3) unstable; urgency=low
         + geom.c: fixes bug for min_area
         + flythrough: fixes NVIZ fly mode on 64bit. See #46 from upstream trac.
         + filldepr.cc: r.terraflow: backport fix for #1006 from upstream trac.
-  * Added missing docs used by GUIs: AUTHORS, contributors CSV files, 
+  * Added missing docs used by GUIs: AUTHORS, contributors CSV files,
     COPYING and a symlink to GPL-2 license in /usr/share/common-licenses.
     Those files need to be symlinked in GISBASE to be found at run-time.
     Thanks AlanB and Hamish for pointing the problem.
@@ -710,17 +711,17 @@ grass (6.4.0~rc5+41380-1) unstable; urgency=low
 
 grass (6.4.0~rc5+40109-1) unstable; urgency=low
 
-  * New upstream snapshot taken from 6.4 branch. 
+  * New upstream snapshot taken from 6.4 branch.
   * Fixed debian/rules to manage subdir installations for the programming manual.
 
  -- Francesco Paolo Lovergine <frankie@debian.org>  Tue, 22 Dec 2009 15:40:55 +0100
 
 grass (6.4.0~rc5+39438-1) unstable; urgency=low
 
-  * New upstream snapshot taken from 6.4 branch. 
+  * New upstream snapshot taken from 6.4 branch.
   * Removed patch newlocation.dpatch, merged upstream.
   * Grass is currently not compatible with swig 1.3.39, which causes wxpython
-    generalized misfunctioning. Added a swig.dpatch python to pre-build some 
+    generalized misfunctioning. Added a swig.dpatch python to pre-build some
     swig stuff with 1.3.36.
     (closes: #549867)
 
@@ -796,10 +797,10 @@ grass (6.4.0~rc3-3) unstable; urgency=low
   * Added a libgdal.so link to the system GDAL shlib, to allow external raster/vector
     support to work.
   * Policy bumped to 3.8.1, without changes.
-  * Introduced grassVERSION and grassVERSION-dev Provides and debian/control.in 
-    templates to get grass major.minor versions automagically. 
-    The new field is useful to introduce per-version dependency in external 
-    plugins: mixing fluxes^Wversions is evil, and currently gdal-grass could 
+  * Introduced grassVERSION and grassVERSION-dev Provides and debian/control.in
+    templates to get grass major.minor versions automagically.
+    The new field is useful to introduce per-version dependency in external
+    plugins: mixing fluxes^Wversions is evil, and currently gdal-grass could
     be installed with the wrong grass release.
   * Now fixscripts.sh get automagically grass version for its paths.
   * Added new files to fixscripts.sh to avoid a bounce of lintian warnings.
@@ -818,19 +819,19 @@ grass (6.4.0~rc3-2) unstable; urgency=low
 
 grass (6.4.0~rc3-1) unstable; urgency=low
 
-  * New upstream pre-release for next stable. 
+  * New upstream pre-release for next stable.
     From now on all grass-related directories are versionend to allow people installing
     packaged unofficial/testing versions.
-  * Removing Tcl Lenny related code in debian/rules. 
+  * Removing Tcl Lenny related code in debian/rules.
   * Some minor clean-ups in debian/rules.
   * Obsolete NEWS file removed.
   * Removed pre-lenny compatibility build-deps.
   * Debhelper level moved to 7, now using dh_prep.
   * Removed ld.so file installation. Grass programs must be called under Grass environment,
     so it is pointless and can be dangerous when different versions are installed. This
-    is also true for Qgis and its Grass plugin. As consequence postinst and postrm files 
+    is also true for Qgis and its Grass plugin. As consequence postinst and postrm files
     have been removed as obsolete.
-  * Fixed htmlgen-fakeroot.dpatch, incredibly broken without notice. 
+  * Fixed htmlgen-fakeroot.dpatch, incredibly broken without notice.
   * Cleaned debian/control.
 
   * Merging relevant changes in the stable 6.2.3 tree with the experimental DebianGis series:
@@ -936,15 +937,15 @@ grass (6.2.2-1) unstable; urgency=low
   * Merge from 6.2.1-4:
   	- New patch xterm.dpatch
         - Added /etc/ld.so.conf.d/grass.conf file instead of adding lib path
-          in-line into /etc/ld.so.conf.  
-        - Removed obsolete postgresql-dev build-dep 
+          in-line into /etc/ld.so.conf.
+        - Removed obsolete postgresql-dev build-dep
         - Added a new grass.dirs file.
 
  -- Francesco Paolo Lovergine <frankie@debian.org>  Sat, 26 May 2007 19:21:00 +0200
 
 grass (6.2.1-3) unstable; urgency=low
 
-  * Sigh, fixed www-browser: s/elif/else/  
+  * Sigh, fixed www-browser: s/elif/else/
 
  -- Francesco Paolo Lovergine <frankie@debian.org>  Wed, 11 Apr 2007 10:14:32 +0200
 
@@ -1050,10 +1051,10 @@ grass (6.0.2-1) unstable; urgency=low
 grass (6.0.1-4) unstable; urgency=low
 
   [ Steve Halasz ]
-  
+
   * Make libgrass depend on current version of grass.
     libgrass requires files in the main package and doesn't
-    yet stand alone. 
+    yet stand alone.
 
  -- Steve Halasz <debian@adkgis.org>  Thu, 23 Feb 2006 11:09:59 -0500
 
@@ -1190,7 +1191,7 @@ grass (5.7.0+6.0.0beta1+cvs20050203-0.dgis.unstable.1) unstable; urgency=low
   * Safe tmpdir creation (Closes: #287651)
   * Build without r.terraflow until it gets tmpdir fixes
   * Change libgrass5.7 -> libgrass6.0.0beta1
-  * Change maintainer 
+  * Change maintainer
       pkg-grass-general -> pkg-grass-devel@lists.alioth.debian.org
 
  -- Steve Halasz <debian@adkgis.org>  Thu,  3 Feb 2005 09:28:43 -0500
@@ -1278,9 +1279,9 @@ grass5.7 (5.7.0-3) unstable; urgency=low
 
 grass5.7 (5.7.0-2) unstable; urgency=low
 
-  * silence executable-not-elf-or-script lintian warning by making most tcl 
+  * silence executable-not-elf-or-script lintian warning by making most tcl
     scripts not executable
-  * silence interpreter-not-absolute lintian warning by inserting absolute path in 
+  * silence interpreter-not-absolute lintian warning by inserting absolute path in
     shebang
   * make tcltkgrass/main/tksys.tcl executable
 
@@ -1301,14 +1302,14 @@ grass (57-2) unstable; urgency=low
 
   * fixes for rules file by Giuseppe Dia <giusedia@libero.it>
 
-  * fixes for Debian built. Joint work with Paolo Brunetti <brunetti@itc.it> 
+  * fixes for Debian built. Joint work with Paolo Brunetti <brunetti@itc.it>
     and Donato Minati <minati@itc.it>
 
- -- Markus Neteler <neteler@itc.it>  Tue, 11 Nov 2003 17:59:04 +0100 
+ -- Markus Neteler <neteler@itc.it>  Tue, 11 Nov 2003 17:59:04 +0100
 
 grass (57-1) unstable; urgency=low
 
-  * Initial Release. Control file based on GRASS 5.0.2 deb from 
+  * Initial Release. Control file based on GRASS 5.0.2 deb from
     Giuseppe Dia <giusedia@libero.it>
 
  -- Markus Neteler <neteler@itc.it>  Mon, 10 Nov 2003 17:59:04 +0100
