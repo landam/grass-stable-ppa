@@ -32,7 +32,7 @@ class TestTemporalRaster3dAlgebra(TestCase):
         cls.runModule("r3.mapcalc", overwrite=True, quiet=True, expression="a4 = 4")
 
         tgis.open_new_stds(name="A", type="str3ds", temporaltype="absolute",
-                                         title="A", descr="A", semantic="field", overwrite=True)
+                           title="A", descr="A", semantic="field", overwrite=True)
 
         tgis.register_maps_in_space_time_dataset(type="raster_3d", name="A", maps="a1,a2,a3,a4",
                                                  start="2001-01-01", increment="1 day", interval=True)
@@ -44,16 +44,20 @@ class TestTemporalRaster3dAlgebra(TestCase):
     def tearDownClass(cls):
         """Remove the temporary region
         """
-        cls.runModule("t.remove", type="str3ds", flags="rf", inputs="A", quiet=True)
+        #cls.runModule("t.remove", type="str3ds", flags="rf", inputs="A", quiet=True)
         cls.del_temp_region()
 
     def test_temporal_neighbors_1(self):
         """Simple temporal neighborhood computation test"""
+        A = tgis.open_old_stds("A", type="str3ds")
+        A.print_info()
+
         tra = tgis.TemporalRaster3DAlgebraParser(run = True, debug = True)
         tra.parse(expression='D = A[-1] + A[1]',
                   basename="d", overwrite=True)
 
         D = tgis.open_old_stds("D", type="str3ds")
+        self.assertTrue(D.is_in_db())
         D.select()
         self.assertEqual(D.metadata.get_number_of_maps(), 2)
         self.assertEqual(D.metadata.get_min_min(), 4)  # 1 + 3
@@ -64,11 +68,15 @@ class TestTemporalRaster3dAlgebra(TestCase):
 
     def test_temporal_neighbors_2(self):
         """Simple temporal neighborhood computation test"""
+        A = tgis.open_old_stds("A", type="str3ds")
+        A.print_info()
+
         tra = tgis.TemporalRaster3DAlgebraParser(run = True, debug = True)
         tra.parse(expression='D = A[0,0,0,-1] + A[0,0,0,1]',
                   basename="d", overwrite=True)
 
         D = tgis.open_old_stds("D", type="str3ds")
+        self.assertTrue(D.is_in_db())
         D.select()
         self.assertEqual(D.metadata.get_number_of_maps(), 2)
         self.assertEqual(D.metadata.get_min_min(), 4)  # 1 + 3

@@ -30,7 +30,9 @@
 #include <grass/glocale.h>
 #include <grass/dbmi.h>
 
-#include "cpl_string.h"
+#include <cpl_string.h>
+#include <cpl_port.h>
+
 #include "local_proto.h"
 
 int range_check(double, double, GDALDataType);
@@ -116,7 +118,7 @@ int main(int argc, char *argv[])
     struct GModule *module;
     struct Flag *flag_l, *flag_c, *flag_m, *flag_f, *flag_t;
     struct Option *input, *format, *type, *output, *createopt, *metaopt,
-	*nodataopt;
+	          *nodataopt, *overviewopt;
 
     struct Cell_head cellhead;
     struct Ref ref;
@@ -127,6 +129,7 @@ int main(int argc, char *argv[])
     double dfCellMax, export_max;
     struct FPRange sRange;
     int retval = 0;
+    int n_overviews = 0;
 
     G_gisinit(argv[0]);
 
@@ -236,6 +239,17 @@ int main(int argc, char *argv[])
     nodataopt->required = NO;
     nodataopt->guisection = _("Creation");
     
+    overviewopt = G_define_option();
+    overviewopt->key = "overviews";
+    overviewopt->type = TYPE_INTEGER;
+    overviewopt->options = "0-5";
+    overviewopt->answer = "0";
+    overviewopt->label =
+	_("Number of overviews to create for the output dataset");
+    overviewopt->multiple = NO;
+    overviewopt->required = NO;
+    overviewopt->guisection = _("Creation");
+
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
 
@@ -640,6 +654,31 @@ int main(int argc, char *argv[])
 	}
     }
 
+    /* overviews */
+    if (overviewopt->answer) {
+	n_overviews = atoi(overviewopt->answer);
+	if (n_overviews < 0 || n_overviews > 5) {
+	    G_warning(_("Number of overviews must be between 0 and 5"));
+	    n_overviews = 0;
+	}
+    }
+    if (n_overviews) {
+	int i, oi, *ol;
+
+	G_message(_("Building overviews ..."));
+	
+	ol = G_malloc(n_overviews * sizeof(int));
+	oi = 2;
+	for (i = 0; i < n_overviews; i++) {
+	    ol[i] = oi;
+	    oi *= 2;
+	}
+	if (GDALBuildOverviews(hDstDS, "NEAREST", n_overviews, ol,
+	                       0, NULL, NULL, NULL) != CE_None) {
+	    G_warning(_("Unable to build overviews"));
+	}
+    }
+
     /* Finaly create user requested raster format from memory raster 
      * if in-memory driver was used */
     if (hMEMDS) {
@@ -732,7 +771,8 @@ int range_check(double min, double max, GDALDataType datatype)
 
     case GDT_Float32:
     case GDT_CFloat32:
-	if (max < TYPE_FLOAT32_MIN || min > TYPE_FLOAT32_MAX) {
+	if ((!CPLIsInf(max) && max < TYPE_FLOAT32_MIN) ||
+	    (!CPLIsInf(min) && min > TYPE_FLOAT32_MAX)) {
 	    G_warning(_("Selected GDAL datatype does not cover data range."));
 	    G_warning(_("GDAL datatype: %s, range: %g - %g"),
 		      GDALGetDataTypeName(datatype), TYPE_FLOAT32_MIN,
@@ -829,7 +869,7 @@ int nodataval_check(double nodataval, GDALDataType datatype)
 
     case GDT_Float32:
     case GDT_CFloat32:
-	if (nodataval != (double)(float) nodataval) {
+	if (!CPLIsNan(nodataval) && nodataval != (double)(float) nodataval) {
 	    G_warning(_("Mismatch between metadata nodata value and actual nodata value in exported raster: "
 		       "specified nodata value %g gets converted to %g by selected GDAL datatype."),
 		      nodataval, (float) nodataval);

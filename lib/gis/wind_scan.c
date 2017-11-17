@@ -38,12 +38,10 @@ static int scan_double(const char *, double *);
 int G_scan_northing(const char *buf, double *northing, int projection)
 {
     if (projection == PROJECTION_LL) {
-	if (G_lat_scan(buf, northing))
-	    return 1;
 	if (!scan_double(buf, northing))
-	    return 0;
+	    return G_lat_scan(buf, northing);
 
-	return (*northing <= 90.0 && *northing >= -90.0);
+	return 1;
     }
 
     return scan_double(buf, northing);
@@ -71,14 +69,8 @@ int G_scan_northing(const char *buf, double *northing, int projection)
 int G_scan_easting(const char *buf, double *easting, int projection)
 {
     if (projection == PROJECTION_LL) {
-	if (G_lon_scan(buf, easting))
-	    return 1;
 	if (!scan_double(buf, easting))
-	    return 0;
-	while (*easting > 180.0)
-	    *easting -= 360.0;
-	while (*easting < -180.0)
-	    *easting += 360.0;
+	    return G_lon_scan(buf, easting);
 
 	return 1;
     }
@@ -109,7 +101,7 @@ int G_scan_resolution(const char *buf, double *res, int projection)
 {
     if (projection == PROJECTION_LL) {
 	if (G_llres_scan(buf, res))
-	    return 1;
+	    return (*res > 0.0);
     }
 
     return (scan_double(buf, res) && *res > 0.0);

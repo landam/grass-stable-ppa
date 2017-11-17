@@ -78,6 +78,7 @@ STDOUT = subprocess.STDOUT
 
 
 raise_on_error = False  # raise exception instead of calling fatal()
+_capture_stderr = False  # capture stderr of subprocesses if possible
 
 
 def call(*args, **kwargs):
@@ -263,7 +264,7 @@ def get_real_command(cmd):
 
 
 def make_command(prog, flags=b"", overwrite=False, quiet=False, verbose=False,
-                 errors=None, **options):
+                 superquiet=False, errors=None, **options):
     """Return a list of strings suitable for use as the args parameter to
     Popen() or call(). Example:
 
@@ -288,6 +289,8 @@ def make_command(prog, flags=b"", overwrite=False, quiet=False, verbose=False,
         args.append(b"--q")
     if verbose:
         args.append(b"--v")
+    if superquiet:
+        args.append(b"--qq")
     if flags:
         flags = _make_val(flags)
         if b'-' in flags:
@@ -329,7 +332,7 @@ def handle_errors(returncode, result, args, kwargs):
                                 returncode=returncode)
 
 def start_command(prog, flags=b"", overwrite=False, quiet=False,
-                  verbose=False, **kwargs):
+                  verbose=False, superquiet=False, **kwargs):
     """Returns a Popen object with the command created by make_command.
     Accepts any of the arguments which Popen() accepts apart from "args"
     and "shell".
@@ -405,8 +408,16 @@ def run_command(*args, **kwargs):
 
     :raises: ``CalledModuleError`` when module returns non-zero return code
     """
+    if _capture_stderr and 'stderr' not in kwargs.keys():
+        kwargs['stderr'] = PIPE
     ps = start_command(*args, **kwargs)
-    returncode = ps.wait()
+    if _capture_stderr:
+        stdout, stderr = ps.communicate()
+        returncode = ps.poll()
+        if returncode:
+            sys.stderr.write(stderr)
+    else:
+        returncode = ps.wait()
     return handle_errors(returncode, returncode, args, kwargs)
 
 
@@ -455,9 +466,13 @@ def read_command(*args, **kwargs):
 
     :return: stdout
     """
+    if _capture_stderr and 'stderr' not in kwargs.keys():
+        kwargs['stderr'] = PIPE
     process = pipe_command(*args, **kwargs)
-    stdout, unused = process.communicate()
+    stdout, stderr = process.communicate()
     returncode = process.poll()
+    if _capture_stderr and returncode:
+        sys.stderr.write(stderr)
     return handle_errors(returncode, stdout, args, kwargs)
 
 
@@ -526,14 +541,18 @@ def write_command(*args, **kwargs):
     """
     # TODO: should we delete it from kwargs?
     stdin = kwargs['stdin']
+    if _capture_stderr and 'stderr' not in kwargs.keys():
+        kwargs['stderr'] = PIPE
     process = feed_command(*args, **kwargs)
-    process.communicate(stdin)
+    unused, stderr = process.communicate(stdin)
     returncode = process.poll()
+    if _capture_stderr and returncode:
+        sys.stderr.write(stderr)
     return handle_errors(returncode, returncode, args, kwargs)
 
 
 def exec_command(prog, flags="", overwrite=False, quiet=False, verbose=False,
-                 env=None, **kwargs):
+                 superquiet=False, env=None, **kwargs):
     """Interface to os.execvpe(), but with the make_command() interface.
 
     :param str prog: GRASS module
@@ -668,6 +687,46 @@ def get_raise_on_error():
     global raise_on_error
     return raise_on_error
 
+
+# TODO: solve also warnings (not printed now)
+def set_capture_stderr(capture=True):
+    """Enable capturing standard error output of modules and print it.
+
+    By default, standard error output (stderr) of child processes shows
+    in the same place as output of the parent process. This may not
+    always be the same place as ``sys.stderr`` is written.
+    After calling this function, functions in the ``grass.script``
+    package will capture the stderr of child processes and pass it
+    to ``sys.stderr`` if there is an error.
+
+    .. note::
+
+        This is advantages for interactive shells such as the one in GUI
+        and interactive notebooks such as Jupyer Notebook.
+
+    The capturing can be applied only in certain cases, for example
+    in case of run_command() it is applied because run_command() nor
+    its callers do not handle the streams, however feed_command()
+    cannot do capturing because its callers handle the streams.
+
+    The previous state is returned. Passing ``False`` disables the
+    capturing.
+
+    .. versionadded:: 7.4
+    """
+    global _capture_stderr
+    tmp = _capture_stderr
+    _capture_stderr = capture
+    return tmp
+
+def get_capture_stderr():
+    """Return True if stderr is captured, False otherwise.
+
+    See set_capture_stderr().
+    """
+    global _capture_stderr
+    return _capture_stderr
+
 # interface to g.parser
 
 
@@ -709,7 +768,7 @@ def parser():
     "flags" are Python booleans.
 
     Overview table of parser standard options:
-    https://grass.osgeo.org/grass72/manuals/parser_standard_options.html
+    https://grass.osgeo.org/grass74/manuals/parser_standard_options.html
     """
     if not os.getenv("GISBASE"):
         print("You must be in GRASS GIS to run this program.", file=sys.stderr)
@@ -940,7 +999,7 @@ def compare_key_value_text_files(filename_a, filename_b, sep=":",
 # interface to g.gisenv
 
 
-def gisenv():
+def gisenv(env=None):
     """Returns the output from running g.gisenv (with no arguments), as a
     dictionary. Example:
 
@@ -948,9 +1007,10 @@ def gisenv():
     >>> print(env['GISDBASE'])  # doctest: +SKIP
     /opt/grass-data
 
+    :param env run with different environment
     :return: list of GRASS variables
     """
-    s = read_command("g.gisenv", flags='n')
+    s = read_command("g.gisenv", flags='n', env=env)
     return parse_key_val(s)
 
 # interface to g.region
@@ -970,12 +1030,13 @@ def locn_is_latlong():
         return False
 
 
-def region(region3d=False, complete=False):
+def region(region3d=False, complete=False, env=None):
     """Returns the output from running "g.region -gu", as a
     dictionary. Example:
 
     :param bool region3d: True to get 3D region
     :param bool complete:
+    :param env env
 
     >>> curent_region = region()
     >>> # obtain n, s, e and w values
@@ -993,7 +1054,7 @@ def region(region3d=False, complete=False):
     if complete:
         flgs += 'cep'
 
-    s = read_command("g.region", flags=flgs)
+    s = read_command("g.region", flags=flgs, env=env)
     reg = parse_key_val(s, val_type=float)
     for k in ['projection', 'zone', 'rows',  'cols',  'cells',
               'rows3', 'cols3', 'cells3', 'depths']:
@@ -1004,7 +1065,7 @@ def region(region3d=False, complete=False):
     return reg
 
 
-def region_env(region3d=False, **kwargs):
+def region_env(region3d=False, flags=None, env=None, **kwargs):
     """Returns region settings as a string which can used as
     GRASS_REGION environmental variable.
 
@@ -1015,6 +1076,8 @@ def region_env(region3d=False, **kwargs):
     temporary region used for raster-based computation.
 
     :param bool region3d: True to get 3D region
+    :param string flags: for example 'a'
+    :param env: different environment than current
     :param kwargs: g.region's parameters like 'raster', 'vector' or 'region'
 
     ::
@@ -1027,9 +1090,9 @@ def region_env(region3d=False, **kwargs):
     :return: empty string on error
     """
     # read proj/zone from WIND file
-    env = gisenv()
-    windfile = os.path.join(env['GISDBASE'], env['LOCATION_NAME'],
-                            env['MAPSET'], "WIND")
+    gis_env = gisenv(env)
+    windfile = os.path.join(gis_env['GISDBASE'], gis_env['LOCATION_NAME'],
+                            gis_env['MAPSET'], "WIND")
     fd = open(windfile, "r")
     grass_region = ''
     for line in fd.readlines():
@@ -1050,8 +1113,10 @@ def region_env(region3d=False, **kwargs):
     flgs = 'ug'
     if region3d:
         flgs += '3'
+    if flags:
+        flgs += flags
 
-    s = read_command('g.region', flags=flgs, **kwargs)
+    s = read_command('g.region', flags=flgs, env=env, **kwargs)
     if not s:
         return ''
     reg = parse_key_val(s)
@@ -1539,7 +1604,7 @@ def debug_level(force=False):
         except ValueError as e:
             _debug_level = 0
             sys.stderr.write(_("WARNING: Ignoring unsupported debug level (must be >=0 and <=5). {0}\n").format(e))
-            
+
     return _debug_level
 
 
@@ -1568,6 +1633,21 @@ def legal_name(s):
         return False
 
     return True
+
+
+def create_environment(gisdbase, location, mapset):
+    """Creates environment to be passed in run_command for example.
+    Returns tuple with temporary file path and the environment. The user
+    of this function is responsile for deleting the file."""
+    tmp_gisrc_file = tempfile()
+    with open(tmp_gisrc_file, 'w') as f:
+        f.write('MAPSET: {mapset}\n'.format(mapset=mapset))
+        f.write('GISDBASE: {g}\n'.format(g=gisdbase))
+        f.write('LOCATION_NAME: {l}\n'.format(l=location))
+        f.write('GUI: text\n')
+    env = os.environ.copy()
+    env['GISRC'] = tmp_gisrc_file
+    return tmp_gisrc_file, env
 
 
 if __name__ == '__main__':

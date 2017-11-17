@@ -28,7 +28,6 @@ if __name__ == '__main__':
 
 from core.utils import _
 from core.gcmd import EncodeString, GError
-from core.giface import StandaloneGrassInterface
 from gui_core.pystc import PyStc
 from core import globalvar
 from core.menutree import MenuTreeModelBuilder
@@ -410,8 +409,8 @@ class PyEditController(object):
         Used for example to check if content should be saved before closing.
         The content is not valuable for example if it already saved in a file.
         """
-        Debug.msg(2, "pyedit IsContentValuable? empty={}, modified={}",
-                  self.IsEmpty(), self.IsModified())
+        Debug.msg(2, "pyedit IsContentValuable? empty=%s, modified=%s" % (
+                  self.IsEmpty(), self.IsModified()))
         return not self.IsEmpty() and self.IsModified()
 
     def SetScriptTemplate(self, event):
@@ -605,7 +604,7 @@ class PyEditFrame(wx.Frame):
         self.panel.SetText(script_template())
 
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(item=self.panel, proportion=1,
+        sizer.Add(self.panel, proportion=1,
                   flag=wx.EXPAND)
         sizer.Fit(self)
         sizer.SetSizeHints(self)
@@ -683,6 +682,8 @@ class PyEditFrame(wx.Frame):
 
 def main():
     """Test application (potentially useful as g.gui.pyedit)"""
+    from core.giface import StandaloneGrassInterface
+
     app = wx.App()
     giface = StandaloneGrassInterface()
     simple_editor = PyEditFrame(parent=None, giface=giface)

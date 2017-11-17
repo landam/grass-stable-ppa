@@ -51,8 +51,20 @@ for details.
     LexToken(FLOAT,2.45,1,42)
 
 """
+from __future__ import print_function
 
-from .temporal_raster_base_algebra import *
+try:
+    import ply.lex as lex
+    import ply.yacc as yacc
+except:
+    pass
+
+# i18N
+import gettext
+from .temporal_raster_base_algebra import TemporalRasterBaseAlgebraParser,\
+    TemporalRasterAlgebraLexer
+import grass.pygrass.modules as pymod
+from .space_time_datasets import RasterDataset
 
 ###############################################################################
 
@@ -66,7 +78,10 @@ class TemporalRasterAlgebraParser(TemporalRasterBaseAlgebraParser):
                                                  spatial=spatial, register_null=register_null,
                                                  dry_run=dry_run, nprocs=nprocs)
 
-        self.m_mapcalc = pymod.Module('r.mapcalc')
+        if spatial is True:
+            self.m_mapcalc = pymod.Module('r.mapcalc', region="union", run_=False)
+        else:
+            self.m_mapcalc = pymod.Module('r.mapcalc')
         self.m_mremove = pymod.Module('g.remove')
 
     def parse(self, expression, basename = None, overwrite=False):

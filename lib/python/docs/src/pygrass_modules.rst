@@ -214,5 +214,8 @@ parallel. See
 :class:`~pygrass.modules.interface.module.ParallelModuleQueue` class
 for details.
 
-   
+Multiple GRASS modules can be joined into one object by
+:class:`~pygrass.modules.interface.module.MultiModule`.
+
+    
 .. _Popen: http://docs.python.org/library/subprocess.html#Popen

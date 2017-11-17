@@ -336,6 +336,8 @@ int main(int argc, char *argv[])
 	    make_table = FALSE;
 	}
 
+	coltype2 = NULL;
+
 	if (make_table) {
 	    Fi = Vect_default_field_info(&Map, 1, NULL, GV_1TABLE);
 	    driver =
