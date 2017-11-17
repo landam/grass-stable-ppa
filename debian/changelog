@@ -1,7 +1,7 @@
 grass (7.4.0~rc1-1) UNRELEASED; urgency=medium
 
   * New upstream release candidate.
-  * Update spelling-errors.patch to fix additional typo.
+  * Update spelling-errors.patch to fix additional typos.
   * Add lintian override for package-installs-java-bytecode false positive.
   * Bump Standards-Version to 4.1.1, no changes.
   * Override dh_gencontrol to set GRASS ABI dependency with substvars.
