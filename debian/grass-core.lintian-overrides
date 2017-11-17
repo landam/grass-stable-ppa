@@ -8,6 +8,8 @@ grass-core: manpage-has-bad-whatis-entry *
 # Build uses -D_FORTIFY_SOURCE=2, but hardening-check reports:
 #  Fortify Source functions: no, only unprotected functions found!
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/i.gensig
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/i.segment
+grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r3.in.ascii
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r3.in.bin
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.grow.distance
 grass-core: hardening-no-fortify-functions usr/lib/grass*/bin/r.in.ascii
