@@ -46,10 +46,26 @@ except IOError:
 from grass.script.core import get_commands
 
 
+def CheckWxPhoenix():
+    if 'phoenix' in wx.version():
+        return True
+    return False
+
+
 def CheckWxVersion(version):
     """Check wx version"""
     ver = wx.__version__
-    if map(int, ver.split('.')) < version:
+    try:
+        split_ver = ver.split('.')
+        parsed_version = list(map(int, split_ver))
+    except ValueError:
+        # wxPython 4.0.0aX
+        for i, c in enumerate(split_ver[-1]):
+            if not c.isdigit():
+                break
+        parsed_version = list(map(int, split_ver[:-1])) + [int(split_ver[-1][:i])]
+
+    if parsed_version < version:
         return False
 
     return True
@@ -66,9 +82,12 @@ def CheckForWx(forceVersion=os.getenv('GRASS_WXVERSION', None)):
     minVersion = [2, 8, 10, 1]
     try:
         try:
+            # Note that Phoenix doesn't have wxversion anymore
             import wxversion
         except ImportError as e:
-            raise ImportError(e)
+            # if there is no wx raises ImportError
+            import wx
+            return
         if forceVersion:
             wxversion.select(forceVersion)
         wxversion.ensureMinimal(str(minVersion[0]) + '.' + str(minVersion[1]))
@@ -82,6 +101,8 @@ def CheckForWx(forceVersion=os.getenv('GRASS_WXVERSION', None)):
 
     except ImportError as e:
         print >> sys.stderr, 'ERROR: wxGUI requires wxPython. %s' % str(e)
+        print >> sys.stderr, ('You can still use GRASS GIS modules in'
+                              ' the command line or in Python.')
         sys.exit(1)
     except (ValueError, wxversion.VersionError) as e:
         print >> sys.stderr, 'ERROR: wxGUI requires wxPython >= %d.%d.%d.%d. ' % tuple(
@@ -94,7 +115,16 @@ def CheckForWx(forceVersion=os.getenv('GRASS_WXVERSION', None)):
 if not os.getenv("GRASS_WXBUNDLED"):
     CheckForWx()
 import wx
-import wx.lib.flatnotebook as FN
+
+if CheckWxPhoenix():
+    try:
+        import agw.flatnotebook as FN
+    except ImportError: # if it's not there locally, try the wxPython lib.
+        import wx.lib.agw.flatnotebook as FN
+else:
+    import wx.lib.flatnotebook as FN
+
+
 
 """
 Query layer (generated for example by selecting item in the Attribute Table Manager)
@@ -216,6 +246,7 @@ toolbarSize = (24, 24)
 """@Check version of wxPython, use agwStyle for 2.8.11+"""
 hasAgw = CheckWxVersion([2, 8, 11, 0])
 wxPython3 = CheckWxVersion([3, 0, 0, 0])
+wxPythonPhoenix = CheckWxPhoenix()
 
 gtk3 = True if 'gtk3' in wx.PlatformInfo else False
 

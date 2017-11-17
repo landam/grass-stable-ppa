@@ -56,6 +56,23 @@ r.what map=boundary_county_500m points=comm_colleges
 ...
 </pre></div>
 
+<h3>Input coordinates given as a vector points map with cats</h3>
+
+Coordinates can be read from existing vector points map by
+specifying <b>points</b> option. Other features than points or
+centroids are ignored. Using the <b>v</b> flag you can get also
+the cat for each feature. Example: query North Carolina county
+number for each community college:
+
+<div class="code"><pre>
+g.region raster=boundary_county_500m -p
+r.what map=boundary_county_500m points=comm_colleges -v
+
+1|145096.859150|154534.264884||39
+2|616341.437150|146049.750884||51
+...
+</pre></div>
+
 
 <h3>Input coordinates given as a vector points map, output into CSV file</h3>
 
@@ -176,4 +193,4 @@ Michael Shapiro, U.S. Army Construction Engineering Research Laboratory<br>
 Vector point input added by Martin Landa, Czech Technical University in Prague, Czech Republic
 
 <p>
-<i>Last changed: $Date: 2016-03-08 09:06:33 +0100 (Tue, 08 Mar 2016) $</i>
+<i>Last changed: $Date: 2017-05-16 16:04:44 +0200 (Tue, 16 May 2017) $</i>

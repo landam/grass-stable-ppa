@@ -449,7 +449,7 @@ int init_vars(int argc, char *argv[])
     G_debug(1, "heap memory %.2f MB", heap_mem);
     /* columns per segment */
     /* larger is faster */
-    seg_cols = seg_rows * seg_rows;
+    seg_cols = seg_rows * seg_rows * seg_rows;
     num_cseg_total = do_points / seg_cols;
     if (do_points % seg_cols > 0)
 	num_cseg_total++;

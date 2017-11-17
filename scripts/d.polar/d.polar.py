@@ -52,6 +52,15 @@ import shutil
 from grass.script.utils import try_remove, basename
 from grass.script import core as gcore
 
+# i18N
+import gettext
+gettext.install('grassmods', os.path.join(os.getenv("GISBASE"), 'locale'))
+
+
+def raster_map_required(name):
+    if not gcore.find_file(name, 'cell')['file']:
+        gcore.fatal(_("Raster map <%s> not found") % name)
+
 
 def cleanup():
     try_remove(tmp)
@@ -417,6 +426,8 @@ def main():
     if xgraph and not gcore.find_program('xgraph'):
         gcore.fatal(
             _("xgraph required, please install first (www.xgraph.org)"))
+
+    raster_map_required(map)
 
     #################################
     # this file contains everything:

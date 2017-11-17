@@ -42,9 +42,23 @@ for details.
 
 """
 from __future__ import print_function
+
+try:
+    import ply.lex as lex
+    import ply.yacc as yacc
+except:
+    pass
+
 import grass.pygrass.modules as pygrass
-from .temporal_operator import *
-from .temporal_algebra import *
+
+import copy
+from .temporal_algebra import TemporalAlgebraLexer, TemporalAlgebraParser, GlobalTemporalVar
+from .core import init_dbif, get_current_mapset
+from .abstract_dataset import AbstractDatasetComparisonKeyStartTime
+from .open_stds import open_new_stds
+from spatio_temporal_relationships import SpatioTemporalTopologyBuilder
+from .space_time_datasets import VectorDataset
+
 
 ##############################################################################
 
@@ -148,10 +162,10 @@ class TemporalVectorAlgebraParser(TemporalAlgebraParser):
 
     ######################### Temporal functions ##############################
 
-    def get_temporal_topo_list(self, maplistA, maplistB = None, topolist = ["EQUAL"],
-                               assign_val = False, count_map = False, compare_bool = False,
-                               compare_cmd = False,  compop = None, aggregate = None,
-                               new = False,  convert = False,  overlay_cmd = False):
+    def build_spatio_temporal_topology_list(self, maplistA, maplistB = None, topolist = ["EQUAL"],
+                                            assign_val = False, count_map = False, compare_bool = False,
+                                            compare_cmd = False, compop = None, aggregate = None,
+                                            new = False, convert = False, overlay_cmd = False):
         """Build temporal topology for two space time data sets, copy map objects
           for given relation into map list.
 
@@ -526,8 +540,8 @@ class TemporalVectorAlgebraParser(TemporalAlgebraParser):
             temporal = 'l'
             function = t[2]
             # Build command list for related maps.
-            complist = self.get_temporal_topo_list(maplistA, maplistB, topolist = relations,
-                                                                    compop = function, overlay_cmd = True)
+            complist = self.build_spatio_temporal_topology_list(maplistA, maplistB, topolist = relations,
+                                                                compop = function, overlay_cmd = True)
             # Set temporal extent based on topological relationships.
             resultlist = self.set_temporal_extent_list(complist, topolist = relations,
                                 temporal = temporal)
@@ -549,8 +563,8 @@ class TemporalVectorAlgebraParser(TemporalAlgebraParser):
             maplistB = self.check_stds(t[3])
             relations, temporal, function,  aggregate = self.eval_toperator(t[2],  optype = 'overlay')
             # Build command list for related maps.
-            complist = self.get_temporal_topo_list(maplistA, maplistB, topolist = relations,
-                                                                    compop = function, overlay_cmd = True)
+            complist = self.build_spatio_temporal_topology_list(maplistA, maplistB, topolist = relations,
+                                                                compop = function, overlay_cmd = True)
             # Set temporal extent based on topological relationships.
             resultlist = self.set_temporal_extent_list(complist, topolist = relations,
                                 temporal = temporal)

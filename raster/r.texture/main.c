@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
     RASTER_MAP_TYPE out_data_type;
     struct GModule *module;
     struct Option *opt_input, *opt_output, *opt_size, *opt_dist, *opt_measure;
-    struct Flag *flag_ind, *flag_all;
+    struct Flag *flag_ind, *flag_all, *flag_null;
     struct History history;
     char p[1024];
 
@@ -149,11 +149,18 @@ int main(int argc, char *argv[])
 
     flag_ind = G_define_flag();
     flag_ind->key = 's';
-    flag_ind->description = _("Separate output for each angle (0, 45, 90, 135)");
+    flag_ind->label = _("Separate output for each angle (0, 45, 90, 135)");
+    flag_ind->description = _("Angles are counterclockwise from east: "
+                              "0 is East to West, 45 is North-East to South-West");
 
     flag_all = G_define_flag();
     flag_all->key = 'a';
     flag_all->description = _("Calculate all textural measurements");
+
+    flag_null = G_define_flag();
+    flag_null->key = 'n';
+    flag_null->label = _("Allow NULL cells in a moving window");
+    flag_null->description = _("This will also avoid cropping along edges of the current region");
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
@@ -311,10 +318,21 @@ int main(int argc, char *argv[])
      ***************************************************************************************************/
 
     offset = size / 2;
-    first_row = first_col = offset;
-    last_row = nrows - offset;
-    last_col = ncols - offset;
+
+    if (!flag_null->answer) {
+	first_row = first_col = offset;
+	last_row = nrows - offset;
+	last_col = ncols - offset;
+    }
+    else {
+	/* no cropping at window margins */
+	first_row = first_col = 0;
+	last_row = nrows;
+	last_col = ncols;
+    }
+
     Rast_set_f_null_value(fbuf[0], ncols);
+
     for (row = 0; row < first_row; row++) {
 	for (i = 0; i < n_outputs; i++) {
 	    Rast_put_row(outfd[i], fbuf[0], out_data_type);
@@ -335,7 +353,7 @@ int main(int argc, char *argv[])
 	/*process the data */
 	for (col = first_col; col < last_col; col++) {
 
-	    if (!set_vars(data, row, col, size, offset, dist)) {
+	    if (!set_vars(data, row, col, size, offset, dist, flag_null->answer)) {
 		for (i = 0; i < n_outputs; i++)
 		    Rast_set_f_null_value(&(fbuf[i][col]), 1);
 		continue;

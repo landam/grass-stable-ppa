@@ -73,13 +73,14 @@ int I_write_ref_points(FILE * fd, struct Ortho_Photo_Points *cp)
 
     fprintf(fd, "# %7s %15s %15s %15s %9s status\n", "", "image", "", "photo",
 	    "");
-    fprintf(fd, "# %15s %15s %15s %15s   (1=ok)\n", "east", "north", "x",
-	    "y");
+    fprintf(fd, "# %15s %15s %15s %15s  (1=ok)\n", "east", "north",
+            "x", "y");
     fprintf(fd, "#\n");
     for (i = 0; i < cp->count; i++)
 	if (cp->status[i] >= 0)
 	    fprintf(fd, "  %15f %15f %15f %15f %d\n",
-		    cp->e1[i], cp->n1[i], cp->e2[i], cp->n2[i],
+		    cp->e1[i], cp->n1[i],  
+		    cp->e2[i], cp->n2[i],  
 		    cp->status[i]);
 
     return 0;

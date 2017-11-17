@@ -151,7 +151,7 @@ def vector_history(map):
     run_command('v.support', map=map, cmdhist=os.environ['CMDLINE'])
 
 
-def vector_info_topo(map):
+def vector_info_topo(map, layer=1):
     """Return information about a vector map (interface to `v.info -t`).
     Example:
 
@@ -161,10 +161,11 @@ def vector_info_topo(map):
     'areas': 1832}
 
     :param str map: map name
+    :param int layer: layer number
 
     :return: parsed output
     """
-    s = read_command('v.info', flags='t', map=map)
+    s = read_command('v.info', flags='t', layer=layer, map=map)
     ret = parse_key_val(s, val_type=int)
     if 'map3d' in ret:
         ret['map3d'] = bool(ret['map3d'])
@@ -172,7 +173,7 @@ def vector_info_topo(map):
     return ret
 
 
-def vector_info(map):
+def vector_info(map, layer=1):
     """Return information about a vector map (interface to
     `v.info`). Example:
 
@@ -180,11 +181,12 @@ def vector_info(map):
     {'comment': '', 'projection': 'Lambert Conformal Conic' ... 'south': 10875.8272320917}
 
     :param str map: map name
+    :param int layer: layer number
 
     :return: parsed vector info
     """
 
-    s = read_command('v.info', flags='get', map=map)
+    s = read_command('v.info', flags='get', layer=layer, map=map)
 
     kv = parse_key_val(s)
     for k in ['north', 'south', 'east', 'west', 'top', 'bottom']:
@@ -217,7 +219,7 @@ def vector_db_select(map, layer=1, **kwargs):
     ['Zml']
 
     :param str map: map name
-    :param str layer: layer number
+    :param int layer: layer number
     :param kwargs: v.db.select options
 
     :return: dictionary ('columns' and 'values')
@@ -269,7 +271,7 @@ json = None
 orderedDict = None
 
 
-def vector_what(map, coord, distance=0.0, ttype=None, encoding=None, skip_attributes=False, layer=None):
+def vector_what(map, coord, distance=0.0, ttype=None, encoding=None, skip_attributes=False, layer=None, multiple=False):
     """Query vector map at given locations
 
     To query one vector map at one location
@@ -326,9 +328,10 @@ def vector_what(map, coord, distance=0.0, ttype=None, encoding=None, skip_attrib
     :param ttype: list of topology types (default of v.what are point, line,
                   area, face)
     :param encoding: attributes encoding
-    :param skip_attributes: True to skip querying attributes
+    :param skip_attributes: True to skip quering attributes
     :param layer: layer number or list of layers (one for each vector),
                   if None, all layers (-1) are used
+    :param multiple: find multiple features within threshold distance
 
     :return: parsed list
     """
@@ -360,12 +363,17 @@ def vector_what(map, coord, distance=0.0, ttype=None, encoding=None, skip_attrib
         for e, n in coord:
             coord_list.append('%f,%f' % (e, n))
 
-    cmdParams = dict(quiet      = True,
-                     flags      = 'j' if skip_attributes else 'aj',
-                     map        = ','.join(map_list),
-                     layer      = ','.join(layer_list),
-                     coordinates = ','.join(coord_list),
-                     distance   = float(distance))
+    flags = 'j'
+    if not skip_attributes:
+        flags += 'a'
+    if multiple:
+        flags += 'm'
+    cmdParams = dict(quiet=True,
+                     flags=flags,
+                     map=','.join(map_list),
+                     layer=','.join(layer_list),
+                     coordinates=','.join(coord_list),
+                     distance=float(distance))
     if ttype:
         cmdParams['type'] = ','.join(ttype)
 
@@ -406,14 +414,27 @@ def vector_what(map, coord, distance=0.0, ttype=None, encoding=None, skip_attrib
     except ValueError:
         raise ScriptError(_("v.what output is not valid JSON format:\n {ret}").format(ret=ret))
 
-    for vmap in result['Maps']:
-        cats = vmap.pop('Categories', None)
-        if cats:
-            for cat in cats:
-                tmp = vmap.copy()
-                tmp.update(cat)
-                data.append(tmp)
-        else:
-            data.append(vmap)
-
+    if multiple:
+        for vmap in result['Maps']:
+            features = vmap.pop('Features', None)
+            if features:
+                for feature in features:
+                    cats = feature.pop('Categories', None)
+                    if cats:
+                        for cat in cats:
+                            tmp = feature.copy()
+                            tmp.update(cat)
+                            tmp2 = vmap.copy()
+                            tmp2.update(tmp)
+                            data.append(tmp2)
+    else:
+        for vmap in result['Maps']:
+            cats = vmap.pop('Categories', None)
+            if cats:
+                for cat in cats:
+                    tmp = vmap.copy()
+                    tmp.update(cat)
+                    data.append(tmp)
+            else:
+                data.append(vmap)
     return data

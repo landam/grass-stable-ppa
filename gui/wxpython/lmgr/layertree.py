@@ -22,7 +22,7 @@ try:
     import wx.lib.agw.customtreectrl as CT
 except ImportError:
     import wx.lib.customtreectrl as CT
-import wx.lib.buttons as buttons
+
 try:
     import treemixin
 except ImportError:
@@ -47,6 +47,7 @@ from core.gcmd import GWarning, GError, RunCommand
 from icons.icon import MetaIcon
 from web_services.dialogs import SaveWMSLayerDialog
 from gui_core.widgets import MapValidator
+from gui_core.wrap import Menu, GenBitmapButton
 from lmgr.giface import LayerManagerGrassInterfaceForMapDisplay
 from core.giface import Notification
 
@@ -153,6 +154,8 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
         # if cursor points at layer checkbox (to cancel selection changes)
         self.hitCheckbox = False
         self.forceCheck = False              # force check layer if CheckItem is called
+        # forms default to centering on screen, this will put on lmgr
+        self.centreFromsOnParent = True
 
         try:
             ctstyle |= CT.TR_ALIGN_WINDOWS
@@ -199,7 +202,9 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
                                    lmgr=self.lmgr, page=self.treepg,
                                    Map=self.Map)
 
-        self.mapdisplay.SetTitleNumber(self.displayIndex + 1)
+        # here (with initial auto-generated names) we use just the
+        # number, not the whole name for simplicity
+        self.mapdisplay.SetTitleWithName(self.displayIndex + 1)
 
         # show new display
         if showMapDisplay is True:
@@ -408,6 +413,17 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
         """Skip event, otherwise causing error when layertree is empty"""
         event.Skip()
 
+    def OnLayerContextMenuButton(self, event):
+        """Contextual menu for item/layer when button pressed"""
+        # determine which tree item has the button
+        button = event.GetEventObject()
+        layer = self.FindItemByWindow(button)
+        if layer:
+            # select the layer in the same way as right click
+            if not self.IsSelected(layer):
+                self.DoSelectItem(layer, True, False)
+            self.OnLayerContextMenu(event)
+
     def OnLayerContextMenu(self, event):
         """Contextual menu for item/layer"""
         if not self.layer_selected:
@@ -433,7 +449,7 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
         # get current mapset
         currentMapset = grass.gisenv()['MAPSET']
 
-        self.popupMenu = wx.Menu()
+        self.popupMenu = Menu()
 
         numSelected = len(self.GetSelections())
 
@@ -449,7 +465,7 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
             id=self.popupID['remove'])
 
         if ltype != "command" and numSelected == 1:
-            self.popupMenu.Append(self.popupID['rename'], text=_("Rename"))
+            self.popupMenu.Append(self.popupID['rename'], _("Rename"))
             self.Bind(
                 wx.EVT_MENU,
                 self.OnRenameLayer,
@@ -570,8 +586,7 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
                 self.popupMenu.Enable(self.popupID['export'], False)
 
             self.popupMenu.Append(
-                self.popupID['export-pg'],
-                text=_("Export PostGIS"))
+                self.popupID['export-pg'], _("Export PostGIS"))
             self.Bind(
                 wx.EVT_MENU,
                 lambda x: self.lmgr.OnMenuCmd(
@@ -584,8 +599,7 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
                 self.popupMenu.Enable(self.popupID['export-pg'], False)
 
             self.popupMenu.Append(
-                self.popupID['export-attr'],
-                text=_("Export attribute table"))
+                self.popupID['export-attr'], _("Export attribute table"))
             self.Bind(
                 wx.EVT_MENU,
                 lambda x: self.lmgr.OnMenuCmd(
@@ -615,8 +629,7 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
                 self.layer_selected, key='maplayer').GetMapset()
             if lmapset != currentMapset:
                 self.popupMenu.Append(
-                    self.popupID['copy'],
-                    text=_("Make a copy in the current mapset"))
+                    self.popupID['copy'], _("Make a copy in the current mapset"))
                 self.Bind(wx.EVT_MENU, self.OnCopyMap, id=self.popupID['copy'])
 
             self.popupMenu.AppendSeparator()
@@ -677,8 +690,7 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
             #     self.popupMenu.Check(self.popupID['bgmap'], True)
 
             self.popupMenu.Append(
-                self.popupID['topo'],
-                text=_("Rebuild topology"))
+                self.popupID['topo'], _("Rebuild topology"))
             self.Bind(wx.EVT_MENU, self.OnTopology, id=self.popupID['topo'])
 
             # determine format
@@ -755,8 +767,7 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
                     self.layer_selected, key='maplayer').GetMapset()
                 if lmapset != currentMapset:
                     self.popupMenu.Append(
-                        self.popupID['copy'],
-                        text=_("Make a copy in the current mapset"))
+                        self.popupID['copy'], _("Make a copy in the current mapset"))
                     self.Bind(
                         wx.EVT_MENU,
                         self.OnCopyMap,
@@ -869,8 +880,7 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
         # web service layers (specific item)
         elif ltype and ltype == "wms":
             self.popupMenu.Append(
-                self.popupID['save_ws'],
-                text=_("Save web service layer"))
+                self.popupID['save_ws'], _("Save web service layer"))
             self.Bind(wx.EVT_MENU, self.OnSaveWs, id=self.popupID['save_ws'])
 
         self.PopupMenu(self.popupMenu)
@@ -1019,8 +1029,8 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
     def OnVectorColorTable(self, event):
         """Set color table for vector map"""
         name = self.GetLayerInfo(self.layer_selected, key='maplayer').GetName()
-        GUI(parent=self, centreOnParent=False).ParseCommand(['v.colors',
-                                                             'map=%s' % name])
+        GUI(parent=self, centreOnParent=self.centreFromsOnParent).ParseCommand(
+            ['v.colors', 'map=%s' % name])
 
     def OnCopyMap(self, event):
         """Copy selected map into current mapset"""
@@ -1339,10 +1349,10 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
             self.groupnode += 1
         else:
             btnbmp = LMIcons["layerOptions"].GetBitmap((16, 16))
-            ctrl = buttons.GenBitmapButton(
+            ctrl = GenBitmapButton(
                 self, id=wx.ID_ANY, bitmap=btnbmp, size=(24, 24))
-            ctrl.SetToolTipString(_("Click to edit layer settings"))
-            self.Bind(wx.EVT_BUTTON, self.OnLayerContextMenu, ctrl)
+            ctrl.SetToolTip(_("Click to edit layer settings"))
+            self.Bind(wx.EVT_BUTTON, self.OnLayerContextMenuButton, ctrl)
         # add layer to the layer tree
         if loadWorkspace:
             # when loading workspace, we always append
@@ -1535,7 +1545,8 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
 
         cmd = None
         if self.GetLayerInfo(layer, key='cmd'):
-            module = GUI(parent=self, show=show, centreOnParent=False)
+            module = GUI(parent=self, show=show,
+                         centreOnParent=self.centreFromsOnParent)
             module.ParseCommand(self.GetLayerInfo(layer, key='cmd'),
                                 completed=(self.GetOptData, layer, params))
             self.SetLayerInfo(layer, key='cmd', value=module.GetCmd())
@@ -1549,7 +1560,7 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
                 cmd += GetDisplayVectSettings()
 
         if cmd:
-            module = GUI(parent=self, centreOnParent=False)
+            module = GUI(parent=self, centreOnParent=self.centreFromsOnParent)
             module.ParseCommand(cmd,
                                 completed=(self.GetOptData, layer, params))
 
@@ -1887,10 +1898,10 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
         elif self.GetLayerInfo(dragItem, key='ctrl'):
             # recreate data layer
             btnbmp = LMIcons["layerOptions"].GetBitmap((16, 16))
-            newctrl = buttons.GenBitmapButton(
+            newctrl = GenBitmapButton(
                 self, id=wx.ID_ANY, bitmap=btnbmp, size=(24, 24))
-            newctrl.SetToolTipString(_("Click to edit layer settings"))
-            self.Bind(wx.EVT_BUTTON, self.OnLayerContextMenu, newctrl)
+            newctrl.SetToolTip(_("Click to edit layer settings"))
+            self.Bind(wx.EVT_BUTTON, self.OnLayerContextMenuButton, newctrl)
             data = self.GetPyData(dragItem)
 
         elif self.GetLayerInfo(dragItem, key='type') == 'group':
@@ -2173,6 +2184,21 @@ class LayerTree(treemixin.DragAndDrop, CT.CustomTreeCtrl):
 
             item = self.GetNextItem(item)
             i += 1
+
+        return None
+
+    def FindItemByWindow(self, window):
+        """Find item by window (button for context menu)
+
+        :return: window instance
+        :return: None not found
+        """
+        item = self.GetFirstChild(self.root)[0]
+        while item and item.IsOk():
+            if self.GetItemWindow(item) == window:
+                return item
+
+            item = self.GetNextItem(item)
 
         return None
 
