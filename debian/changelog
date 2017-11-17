@@ -1,4 +1,4 @@
-grass (7.4.0~rc1-1) UNRELEASED; urgency=medium
+grass (7.4.0~rc1-1~exp1) experimental; urgency=medium
 
   * New upstream release candidate.
   * Update spelling-errors.patch to fix additional typos.
@@ -14,7 +14,7 @@ grass (7.4.0~rc1-1) UNRELEASED; urgency=medium
   * Add lintian override for hardening-no-fortify-functions.
   * Drop unused lintian override for package-installs-java-bytecode.
 
- -- Bas Couwenberg <sebastic@debian.org>  Fri, 17 Nov 2017 10:16:57 +0100
+ -- Bas Couwenberg <sebastic@debian.org>  Fri, 17 Nov 2017 10:45:33 +0100
 
 grass (7.2.2-1) unstable; urgency=medium
 
