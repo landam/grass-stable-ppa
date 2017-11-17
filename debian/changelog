@@ -8,6 +8,7 @@ grass (7.2.2-2) UNRELEASED; urgency=medium
   * Strip trailing whitespace from changelog.
   * Drop explicit use of autotools_dev dh helper.
   * Update watch file to use HTTPS.
+  * Strip trailing whitespace from rules file.
 
  -- Bas Couwenberg <sebastic@debian.org>  Fri, 06 Oct 2017 11:16:50 +0200
 
