@@ -110,7 +110,7 @@ override_dh_auto_configure: templates
                     --with-wxwidgets=/usr/bin/wx-config \
                     --with-x
 
-# This target generates arch-dep stuff, unfortunately most doc requires working bins to 
+# This target generates arch-dep stuff, unfortunately most doc requires working bins to
 # be properly generated...
 override_dh_auto_build-arch: build-arch-stamp
 build-arch-stamp:
@@ -140,7 +140,7 @@ install-arch-stamp:
 	# delete python compiled bytecode files (maybe dh_python2 takes care of this for us?)
 	find debian/tmp/ -type f -name "*.pyc" -delete
 
-	# change section from 1 to .1grass 
+	# change section from 1 to .1grass
 	mv debian/tmp/usr/lib/$(BASE_NAME)/docs/man/man1/grass7.1 debian/$(BASE_NAME).1
 	for m in debian/tmp/usr/lib/$(BASE_NAME)/docs/man/man1/*.1; do \
 		n=`basename $$m .1`; mv $$m debian/tmp/usr/lib/$(BASE_NAME)/docs/man/man1/$$n.1grass; done

@@ -10,6 +10,7 @@ grass (7.4.0~rc1-1) UNRELEASED; urgency=medium
   * Update copyright years for copyright holders.
   * Drop explicit use of autotools_dev dh helper.
   * Update watch file to use HTTPS.
+  * Strip trailing whitespace from rules file.
 
  -- Bas Couwenberg <sebastic@debian.org>  Fri, 17 Nov 2017 10:16:57 +0100
 
