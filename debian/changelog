@@ -1,7 +1,6 @@
 grass (7.4.0~rc1-1) UNRELEASED; urgency=medium
 
   * New upstream release candidate.
-  * Add patch to only link to GEOS C library.
   * Update spelling-errors.patch to fix additional typo.
   * Add lintian override for package-installs-java-bytecode false positive.
   * Bump Standards-Version to 4.1.1, no changes.

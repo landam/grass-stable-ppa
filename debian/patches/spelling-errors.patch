@@ -17,7 +17,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
      }
 --- a/locale/po/grassmods_ar.po
 +++ b/locale/po/grassmods_ar.po
-@@ -5995,7 +5995,7 @@ msgstr "الخريطة الراستري�
+@@ -34944,7 +34944,7 @@ msgstr "الخريطة الراستري�
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -28,7 +28,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_cs.po
 +++ b/locale/po/grassmods_cs.po
-@@ -5634,7 +5634,7 @@ msgstr ""
+@@ -31280,7 +31280,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -39,7 +39,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_de.po
 +++ b/locale/po/grassmods_de.po
-@@ -5660,7 +5660,7 @@ msgstr ""
+@@ -31250,7 +31250,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -50,7 +50,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_el.po
 +++ b/locale/po/grassmods_el.po
-@@ -5574,7 +5574,7 @@ msgstr ""
+@@ -31117,7 +31117,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -61,7 +61,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_es.po
 +++ b/locale/po/grassmods_es.po
-@@ -5725,7 +5725,7 @@ msgstr ""
+@@ -31263,7 +31263,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -72,7 +72,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_fi.po
 +++ b/locale/po/grassmods_fi.po
-@@ -5554,7 +5554,7 @@ msgstr ""
+@@ -31091,7 +31091,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -83,7 +83,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_fr.po
 +++ b/locale/po/grassmods_fr.po
-@@ -5594,7 +5594,7 @@ msgstr ""
+@@ -31211,7 +31211,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -94,7 +94,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_it.po
 +++ b/locale/po/grassmods_it.po
-@@ -5612,7 +5612,7 @@ msgstr ""
+@@ -31201,7 +31201,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -105,7 +105,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_ja.po
 +++ b/locale/po/grassmods_ja.po
-@@ -5554,7 +5554,7 @@ msgstr ""
+@@ -31163,7 +31163,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -116,7 +116,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_ko.po
 +++ b/locale/po/grassmods_ko.po
-@@ -5535,7 +5535,7 @@ msgstr ""
+@@ -31997,7 +31997,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -127,7 +127,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_lv.po
 +++ b/locale/po/grassmods_lv.po
-@@ -5579,7 +5579,7 @@ msgstr ""
+@@ -32485,7 +32485,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -138,7 +138,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_pl.po
 +++ b/locale/po/grassmods_pl.po
-@@ -5610,7 +5610,7 @@ msgstr ""
+@@ -31235,7 +31235,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -149,7 +149,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_pt.po
 +++ b/locale/po/grassmods_pt.po
-@@ -5567,7 +5567,7 @@ msgstr ""
+@@ -31144,7 +31144,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -160,7 +160,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_ro.po
 +++ b/locale/po/grassmods_ro.po
-@@ -5592,7 +5592,7 @@ msgstr ""
+@@ -31165,7 +31165,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -171,7 +171,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_ru.po
 +++ b/locale/po/grassmods_ru.po
-@@ -5588,7 +5588,7 @@ msgstr ""
+@@ -31219,7 +31219,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -182,7 +182,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_sl.po
 +++ b/locale/po/grassmods_sl.po
-@@ -6021,7 +6021,7 @@ msgstr "Rastrski sloj začetnih točk"
+@@ -35209,7 +35209,7 @@ msgstr "Rastrski sloj začetnih točk"
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -193,7 +193,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_th.po
 +++ b/locale/po/grassmods_th.po
-@@ -5537,7 +5537,7 @@ msgstr ""
+@@ -31066,7 +31066,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -204,7 +204,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_tr.po
 +++ b/locale/po/grassmods_tr.po
-@@ -5563,7 +5563,7 @@ msgstr ""
+@@ -31140,7 +31140,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -215,7 +215,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_vi.po
 +++ b/locale/po/grassmods_vi.po
-@@ -5542,7 +5542,7 @@ msgstr ""
+@@ -31065,7 +31065,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -226,7 +226,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_zh.po
 +++ b/locale/po/grassmods_zh.po
-@@ -5537,7 +5537,7 @@ msgstr ""
+@@ -31075,7 +31075,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -268,7 +268,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
   *
 --- a/raster/r.terraflow/main.cpp
 +++ b/raster/r.terraflow/main.cpp
-@@ -115,7 +115,7 @@ parse_args(int argc, char *argv[]) {
+@@ -125,7 +125,7 @@ parse_args(int argc, char *argv[]) {
    d8cut->label = _("Routing using SFD (D8) direction");
    d8cut->description = 
      _("If flow accumulation is larger than this value it is routed using "
@@ -279,7 +279,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
    /* main memory */
 --- a/locale/po/grassmods_id_ID.po
 +++ b/locale/po/grassmods_id_ID.po
-@@ -18693,7 +18693,7 @@ msgstr ""
+@@ -17996,7 +17996,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -290,7 +290,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_ml.po
 +++ b/locale/po/grassmods_ml.po
-@@ -18757,7 +18757,7 @@ msgstr ""
+@@ -18060,7 +18060,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -301,7 +301,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_pt_BR.po
 +++ b/locale/po/grassmods_pt_BR.po
-@@ -5563,7 +5563,7 @@ msgstr ""
+@@ -31146,7 +31146,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -312,7 +312,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_si.po
 +++ b/locale/po/grassmods_si.po
-@@ -18757,7 +18757,7 @@ msgstr ""
+@@ -18060,7 +18060,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
@@ -323,7 +323,7 @@ Author: Bas Couwenberg <sebastic@debian.org>
  
 --- a/locale/po/grassmods_uk.po
 +++ b/locale/po/grassmods_uk.po
-@@ -18822,7 +18822,7 @@ msgstr ""
+@@ -18124,7 +18124,7 @@ msgstr ""
  #: ../vector/v.net.steiner/main.c:598
  #, c-format
  msgid ""
