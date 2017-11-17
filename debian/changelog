@@ -1,5 +1,6 @@
-grass (7.2.2-2) UNRELEASED; urgency=medium
+grass (7.4.0~rc1-1) UNRELEASED; urgency=medium
 
+  * New upstream release candidate.
   * Add patch to only link to GEOS C library.
   * Update spelling-errors.patch to fix additional typo.
   * Add lintian override for package-installs-java-bytecode false positive.
@@ -8,7 +9,7 @@ grass (7.2.2-2) UNRELEASED; urgency=medium
   * Update watch file for GRASS 7.4 releases.
   * Strip trailing whitespace from changelog.
 
- -- Bas Couwenberg <sebastic@debian.org>  Fri, 06 Oct 2017 11:16:50 +0200
+ -- Bas Couwenberg <sebastic@debian.org>  Fri, 17 Nov 2017 10:16:57 +0100
 
 grass (7.2.2-1) unstable; urgency=medium
 

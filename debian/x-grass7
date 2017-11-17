@@ -5,13 +5,13 @@
 
 if [ -n "$DISPLAY" ]; then
 	if [ -n "$(tty)" ]; then
-		exec /usr/bin/grass72 "$@"
+		exec /usr/bin/grass74 "$@"
 	else
-		exec x-terminal-emulator -e /bin/sh -c "/usr/bin/grass72 $@"
+		exec x-terminal-emulator -e /bin/sh -c "/usr/bin/grass74 $@"
 	fi
 else
 	if [ -n "$(tty)" ]; then
-		exec /usr/bin/grass72 "$@"
+		exec /usr/bin/grass74 "$@"
 	fi
 fi
 
