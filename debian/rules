@@ -41,7 +41,7 @@ templates:
 	done
 
 %:
-	dh $@ --with autotools_dev,python2 --parallel
+	dh $@ --with python2 --parallel
 
 override_dh_clean:
 	dh_clean build-arch-stamp install-arch-stamp debian/grass-gui.image-file-in-usr-lib.list
