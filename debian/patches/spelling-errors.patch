@@ -9,6 +9,7 @@ Description: Fix spelling errors.
  * neigbourhood -> neighbourhood
  * lenght       -> length
 Author: Bas Couwenberg <sebastic@debian.org>
+Forwarded: https://trac.osgeo.org/grass/ticket/3447
 
 --- a/vector/v.net.steiner/main.c
 +++ b/vector/v.net.steiner/main.c
