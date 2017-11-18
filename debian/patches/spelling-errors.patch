@@ -10,6 +10,7 @@ Description: Fix spelling errors.
  * lenght       -> length
 Author: Bas Couwenberg <sebastic@debian.org>
 Forwarded: https://trac.osgeo.org/grass/ticket/3447
+Applied-Upstream: https://trac.osgeo.org/grass/changeset/71760
 
 --- a/vector/v.net.steiner/main.c
 +++ b/vector/v.net.steiner/main.c
