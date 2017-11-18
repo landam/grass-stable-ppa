@@ -129,7 +129,7 @@ int main(int argc, char **argv)
     rgbcol_opt = G_define_standard_option(G_OPT_DB_COLUMN);
     rgbcol_opt->key = "rgb_column";
     rgbcol_opt->guisection = _("Colors");
-    rgbcol_opt->label = _("Colorize features according color definition column");
+    rgbcol_opt->label = _("Colorize features according to color definition column");
     rgbcol_opt->description = _("Color definition in R:G:B form");
     
     zcol_opt = G_define_standard_option(G_OPT_M_COLR);
@@ -330,6 +330,8 @@ int main(int argc, char **argv)
     legend_flag->label = _("Do not show this layer in vector legend");
     legend_flag->guisection = _("Legend");
 
+    G_option_exclusive(zcol_opt, rgbcol_opt, cats_acolors_flag, NULL);
+    
     /* Check command line */
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
@@ -417,19 +419,19 @@ int main(int argc, char **argv)
 
     G_verbose_message(_("Plotting..."));
 
-    if (level >= 2)
+    overlap = 1;
+    if (level >= 2 && window.proj != PROJECTION_LL) {
 	Vect_get_map_box(&Map, &box);
+	overlap = G_window_percentage_overlap(&window, box.N, box.S,
+					      box.E, box.W);
+	G_debug(1, "overlap = %f \n", overlap);
+    }
 
-    if (level >= 2 && (window.north < box.S || window.south > box.N ||
-		       window.east < box.W ||
-		       window.west > G_adjust_easting(box.E, &window))) {
+    if (overlap == 0) {
 	G_warning(_("The bounding box of the map is outside the current region, "
 		    "nothing drawn"));
     }
     else {
-	overlap = G_window_percentage_overlap(&window, box.N, box.S,
-					      box.E, box.W);
-	G_debug(1, "overlap = %f \n", overlap);
 	if (overlap < 1)
 	    Vect_set_constraint_region(&Map, window.north, window.south,
 				       window.east, window.west,

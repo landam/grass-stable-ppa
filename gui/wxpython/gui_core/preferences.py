@@ -50,7 +50,7 @@ from core.settings import UserSettings
 from gui_core.dialogs import SymbolDialog, DefaultFontDialog
 from gui_core.widgets import IntegerValidator, ColorTablesComboBox
 from core.debug import Debug
-from gui_core.wrap import GSpinCtrl as SpinCtrl
+from gui_core.wrap import SpinCtrl, Button
 
 
 class PreferencesBaseDialog(wx.Dialog):
@@ -80,25 +80,25 @@ class PreferencesBaseDialog(wx.Dialog):
         # create notebook pages
 
         # buttons
-        self.btnDefault = wx.Button(self, wx.ID_ANY, _("Set to default"))
-        self.btnSave = wx.Button(self, wx.ID_SAVE)
-        self.btnApply = wx.Button(self, wx.ID_APPLY)
-        self.btnCancel = wx.Button(self, wx.ID_CANCEL)
+        self.btnDefault = Button(self, wx.ID_ANY, _("Set to default"))
+        self.btnSave = Button(self, wx.ID_SAVE)
+        self.btnApply = Button(self, wx.ID_APPLY)
+        self.btnCancel = Button(self, wx.ID_CANCEL)
         self.btnSave.SetDefault()
 
         # bindigs
         self.btnDefault.Bind(wx.EVT_BUTTON, self.OnDefault)
-        self.btnDefault.SetToolTipString(_("Revert settings to default"))
+        self.btnDefault.SetToolTip(_("Revert settings to default"))
         self.btnApply.Bind(wx.EVT_BUTTON, self.OnApply)
-        self.btnApply.SetToolTipString(
+        self.btnApply.SetToolTip(
             _("Apply changes for the current session only and close"))
         self.btnApply.SetLabel(_("Save for this session only"))
         self.btnSave.Bind(wx.EVT_BUTTON, self.OnSave)
-        self.btnSave.SetToolTipString(
+        self.btnSave.SetToolTip(
             _("Apply and save changes to user settings file (default for next sessions)"))
         self.btnSave.SetDefault()
         self.btnCancel.Bind(wx.EVT_BUTTON, self.OnCancel)
-        self.btnCancel.SetToolTipString(_("Close dialog and ignore changes"))
+        self.btnCancel.SetToolTip(_("Close dialog and ignore changes"))
 
         self.Bind(wx.EVT_CLOSE, self.OnCloseWindow)
 
@@ -108,7 +108,7 @@ class PreferencesBaseDialog(wx.Dialog):
         """Layout window"""
         # sizers
         btnSizer = wx.BoxSizer(wx.HORIZONTAL)
-        btnSizer.Add(item=self.btnDefault, proportion=1,
+        btnSizer.Add(self.btnDefault, proportion=1,
                      flag=wx.ALL, border=5)
         btnStdSizer = wx.StdDialogButtonSizer()
         btnStdSizer.AddButton(self.btnCancel)
@@ -118,13 +118,13 @@ class PreferencesBaseDialog(wx.Dialog):
 
         mainSizer = wx.BoxSizer(wx.VERTICAL)
         mainSizer.Add(
-            item=self.notebook,
+            self.notebook,
             proportion=1,
             flag=wx.EXPAND | wx.ALL,
             border=5)
-        mainSizer.Add(item=btnSizer, proportion=0,
+        mainSizer.Add(btnSizer, proportion=0,
                       flag=wx.EXPAND, border=0)
-        mainSizer.Add(item=btnStdSizer, proportion=0,
+        mainSizer.Add(btnStdSizer, proportion=0,
                       flag=wx.EXPAND | wx.ALL | wx.ALIGN_RIGHT, border=5)
 
         self.SetSizer(mainSizer)
@@ -306,7 +306,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                 subkey='enabled'))
         self.winId['manager:askOnRemoveLayer:enabled'] = askOnRemoveLayer.GetId()
 
-        gridSizer.Add(item=askOnRemoveLayer,
+        gridSizer.Add(askOnRemoveLayer,
                       pos=(row, 0), span=(1, 2))
 
         row += 1
@@ -319,7 +319,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                 subkey='enabled'))
         self.winId['manager:askOnQuit:enabled'] = askOnQuit.GetId()
 
-        gridSizer.Add(item=askOnQuit,
+        gridSizer.Add(askOnQuit,
                       pos=(row, 0), span=(1, 2))
 
         row += 1
@@ -336,7 +336,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                 subkey='search'))
         self.winId['manager:hideTabs:search'] = hideSearch.GetId()
 
-        gridSizer.Add(item=hideSearch,
+        gridSizer.Add(hideSearch,
                       pos=(row, 0), span=(1, 2))
 
         row += 1
@@ -353,7 +353,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                 subkey='pyshell'))
         self.winId['manager:hideTabs:pyshell'] = hidePyShell.GetId()
 
-        gridSizer.Add(item=hidePyShell,
+        gridSizer.Add(hidePyShell,
                       pos=(row, 0), span=(1, 2))
 
         #
@@ -373,16 +373,16 @@ class PreferencesDialog(PreferencesBaseDialog):
         self.winId[
             'manager:copySelectedTextToClipboard:enabled'] = copySelectedTextToClipboard.GetId()
 
-        gridSizer.Add(item=copySelectedTextToClipboard,
+        gridSizer.Add(copySelectedTextToClipboard,
                       pos=(row, 0), span=(1, 2))
 
         gridSizer.AddGrowableCol(0)
         sizer.Add(
-            item=gridSizer,
+            gridSizer,
             proportion=1,
             flag=wx.ALL | wx.EXPAND,
             border=5)
-        border.Add(item=sizer, proportion=0, flag=wx.ALL | wx.EXPAND, border=3)
+        border.Add(sizer, proportion=0, flag=wx.ALL | wx.EXPAND, border=3)
 
         #
         # workspace
@@ -408,7 +408,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                     'enabled']))
         self.winId['general:workspace:posDisplay:enabled'] = posDisplay.GetId()
 
-        gridSizer.Add(item=posDisplay,
+        gridSizer.Add(posDisplay,
                       pos=(row, 0), span=(1, 2))
 
         row += 1
@@ -424,7 +424,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                     'enabled']))
         self.winId['general:workspace:posManager:enabled'] = posManager.GetId()
 
-        gridSizer.Add(item=posManager,
+        gridSizer.Add(posManager,
                       pos=(row, 0), span=(1, 2))
 
         row += 1
@@ -442,16 +442,16 @@ class PreferencesDialog(PreferencesBaseDialog):
                     "Map Display window(s) and use as default for next sessions.")))
         self.winId['general:defWindowPos:enabled'] = defaultPos.GetId()
 
-        gridSizer.Add(item=defaultPos,
+        gridSizer.Add(defaultPos,
                       pos=(row, 0), span=(1, 2))
 
         gridSizer.AddGrowableCol(0)
         sizer.Add(
-            item=gridSizer,
+            gridSizer,
             proportion=1,
             flag=wx.ALL | wx.EXPAND,
             border=5)
-        border.Add(item=sizer, proportion=0, flag=wx.ALL | wx.EXPAND, border=3)
+        border.Add(sizer, proportion=0, flag=wx.ALL | wx.EXPAND, border=3)
 
         #
         # region
@@ -513,21 +513,21 @@ class PreferencesDialog(PreferencesBaseDialog):
         # font settings
         #
         sizer.Add(
-            item=gridSizer,
+            gridSizer,
             proportion=1,
             flag=wx.ALL | wx.EXPAND,
             border=5)
-        border.Add(item=sizer, proportion=0, flag=wx.ALL | wx.EXPAND, border=3)
+        border.Add(sizer, proportion=0, flag=wx.ALL | wx.EXPAND, border=3)
 
         row = 0
-        gridSizer.Add(item=wx.StaticText(parent=panel, id=wx.ID_ANY,
-                                         label=_("Font for command output:")),
+        gridSizer.Add(wx.StaticText(parent=panel, id=wx.ID_ANY,
+                                    label=_("Font for command output:")),
                       flag=wx.ALIGN_LEFT |
                       wx.ALIGN_CENTER_VERTICAL,
                       pos=(row, 0))
         outfontButton = wx.Button(parent=panel, id=wx.ID_ANY,
                                   label=_("Set font"))
-        gridSizer.Add(item=outfontButton,
+        gridSizer.Add(outfontButton,
                       flag=wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL,
                       pos=(row, 1))
         gridSizer.AddGrowableCol(0)
@@ -544,15 +544,15 @@ class PreferencesDialog(PreferencesBaseDialog):
 
         gridSizer = wx.GridBagSizer(hgap=3, vgap=3)
         sizer.Add(
-            item=gridSizer,
+            gridSizer,
             proportion=1,
             flag=wx.ALL | wx.EXPAND,
             border=5)
-        border.Add(item=sizer, proportion=0, flag=wx.ALL | wx.EXPAND, border=3)
+        border.Add(sizer, proportion=0, flag=wx.ALL | wx.EXPAND, border=3)
 
         row = 0
         gridSizer.Add(
-            item=wx.StaticText(
+            wx.StaticText(
                 parent=panel,
                 id=wx.ID_ANY,
                 label=_("Choose language (requires to save and GRASS restart):")),
@@ -576,7 +576,7 @@ class PreferencesDialog(PreferencesBaseDialog):
             elementList.SetStringSelection('system')
         self.winId['language:locale:lc_all'] = elementList.GetId()
 
-        gridSizer.Add(item=elementList,
+        gridSizer.Add(elementList,
                       flag=wx.ALIGN_RIGHT |
                       wx.ALIGN_CENTER_VERTICAL,
                       pos=(row, 1))
@@ -597,8 +597,8 @@ class PreferencesDialog(PreferencesBaseDialog):
         # element list
         #
         row = 0
-        gridSizer.Add(item=wx.StaticText(parent=panel, id=wx.ID_ANY,
-                                         label=_("Element list:")),
+        gridSizer.Add(wx.StaticText(parent=panel, id=wx.ID_ANY,
+                                    label=_("Element list:")),
                       flag=wx.ALIGN_LEFT |
                       wx.ALIGN_CENTER_VERTICAL,
                       pos=(row, 0))
@@ -615,7 +615,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                 subkey='selection'))
         self.winId['appearance:elementListExpand:selection'] = elementList.GetId()
 
-        gridSizer.Add(item=elementList,
+        gridSizer.Add(elementList,
                       flag=wx.ALIGN_RIGHT |
                       wx.ALIGN_CENTER_VERTICAL,
                       pos=(row, 1))
@@ -625,7 +625,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         #
         row += 1
         gridSizer.Add(
-            item=wx.StaticText(
+            wx.StaticText(
                 parent=panel,
                 id=wx.ID_ANY,
                 label=_("Menu style (requires to save and GUI restart):")),
@@ -650,7 +650,7 @@ class PreferencesDialog(PreferencesBaseDialog):
 
         self.winId['appearance:menustyle:selection'] = menuItemText.GetId()
 
-        gridSizer.Add(item=menuItemText,
+        gridSizer.Add(menuItemText,
                       flag=wx.ALIGN_RIGHT,
                       pos=(row, 1))
 
@@ -660,7 +660,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         row += 1
 
         gridSizer.Add(
-            item=wx.StaticText(
+            wx.StaticText(
                 parent=panel,
                 id=wx.ID_ANY,
                 label=_("Height of map selection popup window (in pixels):")),
@@ -691,7 +691,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         self.winId[
             'appearance:gSelectPopupHeight:value'] = popupHeightSpin.GetId()
 
-        gridSizer.Add(item=popupHeightSpin,
+        gridSizer.Add(popupHeightSpin,
                       flag=wx.ALIGN_RIGHT,
                       pos=(row, 1))
 
@@ -700,7 +700,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         #
         row += 1
         gridSizer.Add(
-            item=wx.StaticText(
+            wx.StaticText(
                 parent=panel,
                 id=wx.ID_ANY,
                 label=_("Icon theme (requires GUI restart):")),
@@ -721,7 +721,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                 subkey='type'))
         self.winId['appearance:iconTheme:type'] = iconTheme.GetId()
 
-        gridSizer.Add(item=iconTheme,
+        gridSizer.Add(iconTheme,
                       flag=wx.ALIGN_RIGHT |
                       wx.ALIGN_CENTER_VERTICAL,
                       pos=(row, 1))
@@ -729,8 +729,8 @@ class PreferencesDialog(PreferencesBaseDialog):
         # command dialog style
         #
         row += 1
-        gridSizer.Add(item=wx.StaticText(parent=panel, id=wx.ID_ANY,
-                                         label=_("Module dialog style:")),
+        gridSizer.Add(wx.StaticText(parent=panel, id=wx.ID_ANY,
+                                    label=_("Module dialog style:")),
                       flag=wx.ALIGN_LEFT |
                       wx.ALIGN_CENTER_VERTICAL,
                       pos=(row, 0))
@@ -747,18 +747,18 @@ class PreferencesDialog(PreferencesBaseDialog):
                 subkey='selection'))
         self.winId['appearance:commandNotebook:selection'] = styleList.GetId()
 
-        gridSizer.Add(item=styleList,
+        gridSizer.Add(styleList,
                       flag=wx.ALIGN_RIGHT |
                       wx.ALIGN_CENTER_VERTICAL,
                       pos=(row, 1))
 
         gridSizer.AddGrowableCol(0)
         sizer.Add(
-            item=gridSizer,
+            gridSizer,
             proportion=1,
             flag=wx.ALL | wx.EXPAND,
             border=5)
-        border.Add(item=sizer, proportion=0, flag=wx.LEFT |
+        border.Add(sizer, proportion=0, flag=wx.LEFT |
                    wx.RIGHT | wx.BOTTOM | wx.EXPAND, border=3)
 
         panel.SetSizer(border)
@@ -794,7 +794,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         #
         row = 0
         gridSizer.Add(
-            item=wx.StaticText(
+            wx.StaticText(
                 parent=panel,
                 id=wx.ID_ANY,
                 label=_("Default font for GRASS displays:")),
@@ -804,18 +804,18 @@ class PreferencesDialog(PreferencesBaseDialog):
                 0))
         fontButton = wx.Button(parent=panel, id=wx.ID_ANY,
                                label=_("Set font"))
-        gridSizer.Add(item=fontButton,
+        gridSizer.Add(fontButton,
                       flag=wx.ALIGN_RIGHT |
                       wx.ALIGN_CENTER_VERTICAL,
                       pos=(row, 1))
 
         gridSizer.AddGrowableCol(0)
         sizer.Add(
-            item=gridSizer,
+            gridSizer,
             proportion=1,
             flag=wx.ALL | wx.EXPAND,
             border=5)
-        border.Add(item=sizer, proportion=0, flag=wx.ALL | wx.EXPAND, border=3)
+        border.Add(sizer, proportion=0, flag=wx.ALL | wx.EXPAND, border=3)
 
         #
         # display settings
@@ -833,8 +833,8 @@ class PreferencesDialog(PreferencesBaseDialog):
         # display driver
         #
         row = 0
-        gridSizer.Add(item=wx.StaticText(parent=panel, id=wx.ID_ANY,
-                                         label=_("Display driver:")),
+        gridSizer.Add(wx.StaticText(parent=panel, id=wx.ID_ANY,
+                                    label=_("Display driver:")),
                       flag=wx.ALIGN_LEFT |
                       wx.ALIGN_CENTER_VERTICAL,
                       pos=(row, 0))
@@ -851,7 +851,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                 subkey='type'))
         self.winId['display:driver:type'] = driver.GetId()
 
-        gridSizer.Add(item=driver,
+        gridSizer.Add(driver,
                       flag=wx.ALIGN_RIGHT,
                       pos=(row, 1))
 
@@ -859,8 +859,8 @@ class PreferencesDialog(PreferencesBaseDialog):
         # Statusbar mode
         #
         row += 1
-        gridSizer.Add(item=wx.StaticText(parent=panel, id=wx.ID_ANY,
-                                         label=_("Statusbar mode:")),
+        gridSizer.Add(wx.StaticText(parent=panel, id=wx.ID_ANY,
+                                    label=_("Statusbar mode:")),
                       flag=wx.ALIGN_LEFT |
                       wx.ALIGN_CENTER_VERTICAL,
                       pos=(row, 0))
@@ -879,7 +879,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                 subkey='selection'))
         self.winId['display:statusbarMode:selection'] = statusbarMode.GetId()
 
-        gridSizer.Add(item=statusbarMode,
+        gridSizer.Add(statusbarMode,
                       flag=wx.ALIGN_RIGHT,
                       pos=(row, 1))
 
@@ -887,8 +887,8 @@ class PreferencesDialog(PreferencesBaseDialog):
         # Background color
         #
         row += 1
-        gridSizer.Add(item=wx.StaticText(parent=panel, id=wx.ID_ANY,
-                                         label=_("Background color:")),
+        gridSizer.Add(wx.StaticText(parent=panel, id=wx.ID_ANY,
+                                    label=_("Background color:")),
                       flag=wx.ALIGN_LEFT |
                       wx.ALIGN_CENTER_VERTICAL,
                       pos=(row, 0))
@@ -903,7 +903,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         bgColor.SetName('GetColour')
         self.winId['display:bgcolor:color'] = bgColor.GetId()
 
-        gridSizer.Add(item=bgColor,
+        gridSizer.Add(bgColor,
                       flag=wx.ALIGN_RIGHT,
                       pos=(row, 1))
 
@@ -920,7 +920,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                 subkey='enabled'))
         self.winId['display:alignExtent:enabled'] = alignExtent.GetId()
 
-        gridSizer.Add(item=alignExtent,
+        gridSizer.Add(alignExtent,
                       pos=(row, 0), span=(1, 2))
 
         #
@@ -936,7 +936,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                 subkey='enabled'))
         self.winId['display:compResolution:enabled'] = compResolution.GetId()
 
-        gridSizer.Add(item=compResolution,
+        gridSizer.Add(compResolution,
                       pos=(row, 0), span=(1, 2))
 
         #
@@ -953,7 +953,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                 subkey='enabled'))
         self.winId['display:autoRendering:enabled'] = autoRendering.GetId()
 
-        gridSizer.Add(item=autoRendering,
+        gridSizer.Add(autoRendering,
                       pos=(row, 0), span=(1, 2))
 
         #
@@ -969,15 +969,15 @@ class PreferencesDialog(PreferencesBaseDialog):
                 subkey='enabled'))
         self.winId['display:autoZooming:enabled'] = autoZooming.GetId()
 
-        gridSizer.Add(item=autoZooming,
+        gridSizer.Add(autoZooming,
                       pos=(row, 0), span=(1, 2))
 
         #
         # mouse wheel zoom
         #
         row += 1
-        gridSizer.Add(item=wx.StaticText(parent=panel, id=wx.ID_ANY,
-                                         label=_("Mouse wheel action:")),
+        gridSizer.Add(wx.StaticText(parent=panel, id=wx.ID_ANY,
+                                    label=_("Mouse wheel action:")),
                       flag=wx.ALIGN_LEFT |
                       wx.ALIGN_CENTER_VERTICAL,
                       pos=(row, 0))
@@ -995,12 +995,12 @@ class PreferencesDialog(PreferencesBaseDialog):
                 key='mouseWheelZoom',
                 subkey='selection'))
         self.winId['display:mouseWheelZoom:selection'] = zoomAction.GetId()
-        gridSizer.Add(item=zoomAction,
+        gridSizer.Add(zoomAction,
                       flag=wx.ALIGN_RIGHT,
                       pos=(row, 1))
         row += 1
         gridSizer.Add(
-            item=wx.StaticText(
+            wx.StaticText(
                 parent=panel,
                 id=wx.ID_ANY,
                 label=_("Mouse scrolling direction:")),
@@ -1022,17 +1022,17 @@ class PreferencesDialog(PreferencesBaseDialog):
                 key='scrollDirection',
                 subkey='selection'))
         self.winId['display:scrollDirection:selection'] = scrollDir.GetId()
-        gridSizer.Add(item=scrollDir,
+        gridSizer.Add(scrollDir,
                       flag=wx.ALIGN_RIGHT,
                       pos=(row, 1))
 
         gridSizer.AddGrowableCol(0)
         sizer.Add(
-            item=gridSizer,
+            gridSizer,
             proportion=1,
             flag=wx.ALL | wx.EXPAND,
             border=5)
-        border.Add(item=sizer, proportion=0, flag=wx.LEFT |
+        border.Add(sizer, proportion=0, flag=wx.LEFT |
                    wx.RIGHT | wx.BOTTOM | wx.EXPAND, border=3)
 
         #
@@ -1050,7 +1050,7 @@ class PreferencesDialog(PreferencesBaseDialog):
             gridSizer = wx.GridBagSizer(hgap=3, vgap=3)
             row = 0
             gridSizer.Add(
-                item=wx.StaticText(
+                wx.StaticText(
                     parent=panel,
                     id=wx.ID_ANY,
                     label=_("3D view depth buffer (possible values are 16, 24, 32):")),
@@ -1069,19 +1069,19 @@ class PreferencesDialog(PreferencesBaseDialog):
                 validator=IntegerValidator(),
                 name='GetValue')
             self.winId['display:nvizDepthBuffer:value'] = textCtrl.GetId()
-            gridSizer.Add(item=textCtrl,
+            gridSizer.Add(textCtrl,
                           flag=wx.ALIGN_RIGHT |
                           wx.ALIGN_CENTER_VERTICAL,
                           pos=(row, 1))
 
             gridSizer.AddGrowableCol(0)
             sizer.Add(
-                item=gridSizer,
+                gridSizer,
                 proportion=1,
                 flag=wx.ALL | wx.EXPAND,
                 border=5)
             border.Add(
-                item=sizer,
+                sizer,
                 proportion=0,
                 flag=wx.ALL | wx.EXPAND,
                 border=3)
@@ -1127,7 +1127,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                 subkey='enabled'))
         self.winId['cmd:overwrite:enabled'] = overwrite.GetId()
 
-        gridSizer.Add(item=overwrite,
+        gridSizer.Add(overwrite,
                       pos=(row, 0), span=(1, 2))
         row += 1
         # close
@@ -1142,7 +1142,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                 subkey='enabled'))
         self.winId['cmd:closeDlg:enabled'] = close.GetId()
 
-        gridSizer.Add(item=close,
+        gridSizer.Add(close,
                       pos=(row, 0), span=(1, 2))
         row += 1
         # add layer
@@ -1156,7 +1156,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                 subkey='enabled'))
         self.winId['cmd:addNewLayer:enabled'] = add.GetId()
 
-        gridSizer.Add(item=add,
+        gridSizer.Add(add,
                       pos=(row, 0), span=(1, 2))
 
         row += 1
@@ -1170,13 +1170,13 @@ class PreferencesDialog(PreferencesBaseDialog):
                 key='interactiveInput',
                 subkey='enabled'))
         self.winId['cmd:interactiveInput:enabled'] = interactive.GetId()
-        gridSizer.Add(item=interactive,
+        gridSizer.Add(interactive,
                       pos=(row, 0), span=(1, 2))
 
         row += 1
         # verbosity
-        gridSizer.Add(item=wx.StaticText(parent=panel, id=wx.ID_ANY,
-                                         label=_("Verbosity level:")),
+        gridSizer.Add(wx.StaticText(parent=panel, id=wx.ID_ANY,
+                                    label=_("Verbosity level:")),
                       flag=wx.ALIGN_LEFT |
                       wx.ALIGN_CENTER_VERTICAL,
                       pos=(row, 0))
@@ -1193,16 +1193,16 @@ class PreferencesDialog(PreferencesBaseDialog):
                 subkey='selection'))
         self.winId['cmd:verbosity:selection'] = verbosity.GetId()
 
-        gridSizer.Add(item=verbosity,
+        gridSizer.Add(verbosity,
                       pos=(row, 1), flag=wx.ALIGN_RIGHT)
 
         gridSizer.AddGrowableCol(0)
         sizer.Add(
-            item=gridSizer,
+            gridSizer,
             proportion=1,
             flag=wx.ALL | wx.EXPAND,
             border=5)
-        border.Add(item=sizer, proportion=0, flag=wx.ALL | wx.EXPAND, border=3)
+        border.Add(sizer, proportion=0, flag=wx.ALL | wx.EXPAND, border=3)
 
         panel.SetSizer(border)
 
@@ -1241,7 +1241,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                 subkey='enabled'))
         self.winId['rasterLayer:opaque:enabled'] = rasterOpaque.GetId()
 
-        gridSizer.Add(item=rasterOpaque,
+        gridSizer.Add(rasterOpaque,
                       pos=(row, 0), span=(1, 2))
 
         # default color table
@@ -1257,7 +1257,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         self.winId['rasterLayer:colorTable:enabled'] = rasterCTCheck.GetId()
         rasterCTCheck.Bind(wx.EVT_CHECKBOX, self.OnCheckColorTable)
 
-        gridSizer.Add(item=rasterCTCheck, flag=wx.ALIGN_CENTER_VERTICAL,
+        gridSizer.Add(rasterCTCheck, flag=wx.ALIGN_CENTER_VERTICAL,
                       pos=(row, 0))
 
         rasterCTName = ColorTablesComboBox(
@@ -1274,16 +1274,16 @@ class PreferencesDialog(PreferencesBaseDialog):
         if not rasterCTCheck.IsChecked():
             rasterCTName.Enable(False)
 
-        gridSizer.Add(item=rasterCTName,
+        gridSizer.Add(rasterCTName,
                       pos=(row, 1))
 
         gridSizer.AddGrowableCol(0)
         sizer.Add(
-            item=gridSizer,
+            gridSizer,
             proportion=1,
             flag=wx.ALL | wx.EXPAND,
             border=5)
-        border.Add(item=sizer, proportion=0, flag=wx.LEFT |
+        border.Add(sizer, proportion=0, flag=wx.LEFT |
                    wx.RIGHT | wx.BOTTOM | wx.EXPAND, border=3)
 
         #
@@ -1298,8 +1298,8 @@ class PreferencesDialog(PreferencesBaseDialog):
 
         gridSizer = wx.FlexGridSizer(cols=7, hgap=10, vgap=3)
 
-        gridSizer.Add(item=wx.StaticText(parent=panel, id=wx.ID_ANY,
-                                         label=_("Display:")),
+        gridSizer.Add(wx.StaticText(parent=panel, id=wx.ID_ANY,
+                                    label=_("Display:")),
                       flag=wx.ALIGN_CENTER_VERTICAL)
 
         for type in ('point', 'line', 'centroid', 'boundary',
@@ -1311,10 +1311,10 @@ class PreferencesDialog(PreferencesBaseDialog):
             self.winId[
                 'vectorLayer:showType:%s:enabled' %
                 type] = chkbox.GetId()
-            gridSizer.Add(item=chkbox)
+            gridSizer.Add(chkbox)
 
         sizer.Add(
-            item=gridSizer,
+            gridSizer,
             proportion=0,
             flag=wx.ALL | wx.EXPAND,
             border=5)
@@ -1323,8 +1323,8 @@ class PreferencesDialog(PreferencesBaseDialog):
         gridSizer = wx.GridBagSizer(hgap=3, vgap=3)
 
         # feature color
-        gridSizer.Add(item=wx.StaticText(parent=panel, id=wx.ID_ANY,
-                                         label=_("Feature color:")),
+        gridSizer.Add(wx.StaticText(parent=panel, id=wx.ID_ANY,
+                                    label=_("Feature color:")),
                       flag=wx.ALIGN_CENTER_VERTICAL, pos=(row, 0))
         featureColor = csel.ColourSelect(
             parent=panel,
@@ -1337,7 +1337,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         featureColor.SetName('GetColour')
         self.winId['vectorLayer:featureColor:color'] = featureColor.GetId()
         gridSizer.Add(
-            item=featureColor,
+            featureColor,
             pos=(
                 row,
                 col + 2),
@@ -1355,7 +1355,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         self.winId[
             'vectorLayer:featureColor:transparent:enabled'] = transpFeature.GetId()
         gridSizer.Add(
-            item=transpFeature,
+            transpFeature,
             pos=(
                 row,
                 col + 1),
@@ -1363,8 +1363,8 @@ class PreferencesDialog(PreferencesBaseDialog):
 
         # area fill color
         row += 1
-        gridSizer.Add(item=wx.StaticText(parent=panel, id=wx.ID_ANY,
-                                         label=_("Area fill color:")),
+        gridSizer.Add(wx.StaticText(parent=panel, id=wx.ID_ANY,
+                                    label=_("Area fill color:")),
                       flag=wx.ALIGN_CENTER_VERTICAL, pos=(row, col))
         fillColor = csel.ColourSelect(
             parent=panel,
@@ -1376,7 +1376,7 @@ class PreferencesDialog(PreferencesBaseDialog):
             size=globalvar.DIALOG_COLOR_SIZE)
         fillColor.SetName('GetColour')
         self.winId['vectorLayer:areaFillColor:color'] = fillColor.GetId()
-        gridSizer.Add(item=fillColor, pos=(row, col + 2), flag=wx.ALIGN_RIGHT)
+        gridSizer.Add(fillColor, pos=(row, col + 2), flag=wx.ALIGN_RIGHT)
 
         transpArea = wx.CheckBox(parent=panel, id=wx.ID_ANY,
                                  label=_("Transparent"), name="IsChecked")
@@ -1390,13 +1390,13 @@ class PreferencesDialog(PreferencesBaseDialog):
         self.winId[
             'vectorLayer:areaFillColor:transparent:enabled'] = transpArea.GetId()
         gridSizer.Add(
-            item=transpArea, pos=(row, col + 1),
+            transpArea, pos=(row, col + 1),
             flag=wx.ALIGN_CENTER_VERTICAL)
 
         # line
         row += 1
-        gridSizer.Add(item=wx.StaticText(parent=panel, id=wx.ID_ANY,
-                                         label=_("Line width:")),
+        gridSizer.Add(wx.StaticText(parent=panel, id=wx.ID_ANY,
+                                    label=_("Line width:")),
                       flag=wx.ALIGN_CENTER_VERTICAL, pos=(row, col))
         hlWidth = SpinCtrl(
             parent=panel, id=wx.ID_ANY, size=(50, -1),
@@ -1405,15 +1405,15 @@ class PreferencesDialog(PreferencesBaseDialog):
             min=1, max=1e6, name="GetValue")
         self.winId['vectorLayer:line:width'] = hlWidth.GetId()
         gridSizer.Add(
-            item=hlWidth, pos=(row, col + 1),
+            hlWidth, pos=(row, col + 1),
             span=(1, 2),
             flag=wx.ALIGN_RIGHT)
 
         # symbol
         row = 0
         col = 4
-        gridSizer.Add(item=wx.StaticText(parent=panel, id=wx.ID_ANY,
-                                         label=_("Symbol size:")),
+        gridSizer.Add(wx.StaticText(parent=panel, id=wx.ID_ANY,
+                                    label=_("Symbol size:")),
                       flag=wx.ALIGN_CENTER_VERTICAL, pos=(row, col))
         ptSize = SpinCtrl(
             parent=panel, id=wx.ID_ANY, size=(50, -1),
@@ -1421,11 +1421,11 @@ class PreferencesDialog(PreferencesBaseDialog):
                 group='vectorLayer', key='point', subkey='size'),
             min=1, max=1e6, name="GetValue")
         self.winId['vectorLayer:point:size'] = ptSize.GetId()
-        gridSizer.Add(item=ptSize, pos=(row, col + 2), flag=wx.ALIGN_RIGHT)
+        gridSizer.Add(ptSize, pos=(row, col + 2), flag=wx.ALIGN_RIGHT)
 
         row += 1
-        gridSizer.Add(item=wx.StaticText(parent=panel, id=wx.ID_ANY,
-                                         label=_("Symbol:")),
+        gridSizer.Add(wx.StaticText(parent=panel, id=wx.ID_ANY,
+                                    label=_("Symbol:")),
                       flag=wx.ALIGN_CENTER_VERTICAL, pos=(row, col))
         symbolPath = self.settings.Get(
             group='vectorLayer', key='point', subkey='symbol')
@@ -1434,7 +1434,7 @@ class PreferencesDialog(PreferencesBaseDialog):
         symbolLabel.SetMinSize((150, -1))
         self.winId['vectorLayer:point:symbol'] = symbolLabel.GetId()
         gridSizer.Add(
-            item=symbolLabel,
+            symbolLabel,
             flag=wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT,
             pos=(
                 row,
@@ -1450,16 +1450,16 @@ class PreferencesDialog(PreferencesBaseDialog):
             bitmap=bitmap,
             name="symbolButton")
         bb.Bind(wx.EVT_BUTTON, self.OnSetSymbol)
-        gridSizer.Add(item=bb, pos=(row, col + 2))
+        gridSizer.Add(bb, pos=(row, col + 2))
 
         gridSizer.AddGrowableCol(0)
         gridSizer.AddGrowableCol(3)
         sizer.Add(
-            item=gridSizer,
+            gridSizer,
             proportion=1,
             flag=wx.ALL | wx.EXPAND,
             border=5)
-        border.Add(item=sizer, proportion=0, flag=wx.LEFT |
+        border.Add(sizer, proportion=0, flag=wx.LEFT |
                    wx.RIGHT | wx.BOTTOM | wx.EXPAND, border=3)
 
         panel.SetSizer(border)
@@ -1534,12 +1534,12 @@ class PreferencesDialog(PreferencesBaseDialog):
 
         flexSizer.Add(autoHighlight, proportion=1)
 
-        highlightSizer.Add(item=flexSizer,
+        highlightSizer.Add(flexSizer,
                            proportion=0,
                            flag=wx.ALL | wx.EXPAND,
                            border=5)
 
-        pageSizer.Add(item=highlightSizer,
+        pageSizer.Add(highlightSizer,
                       proportion=0,
                       flag=wx.ALL | wx.EXPAND,
                       border=5)
@@ -1606,12 +1606,12 @@ class PreferencesDialog(PreferencesBaseDialog):
 
         flexSizer.Add(askOnDeleteRec, proportion=0)
 
-        dataBrowserSizer.Add(item=flexSizer,
+        dataBrowserSizer.Add(flexSizer,
                              proportion=0,
                              flag=wx.ALL | wx.EXPAND,
                              border=5)
 
-        pageSizer.Add(item=dataBrowserSizer,
+        pageSizer.Add(dataBrowserSizer,
                       proportion=0,
                       flag=wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND,
                       border=3)
@@ -1643,12 +1643,12 @@ class PreferencesDialog(PreferencesBaseDialog):
             proportion=0,
             flag=wx.ALIGN_RIGHT | wx.FIXED_MINSIZE)
 
-        createTableSizer.Add(item=flexSizer,
+        createTableSizer.Add(flexSizer,
                              proportion=0,
                              flag=wx.ALL | wx.EXPAND,
                              border=5)
 
-        pageSizer.Add(item=createTableSizer,
+        pageSizer.Add(createTableSizer,
                       proportion=0,
                       flag=wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND,
                       border=3)
@@ -1687,7 +1687,7 @@ class PreferencesDialog(PreferencesBaseDialog):
                 "need to enable the Projection check box in "
                 "the drop-down\nmenu located at the bottom "
                 "of the Map Display window.\n"))
-        gridSizer.Add(item=note0,
+        gridSizer.Add(note0,
                       span=(1, 2),
                       pos=(row, 0))
 
@@ -1703,10 +1703,10 @@ class PreferencesDialog(PreferencesBaseDialog):
             group='projection', key='statusbar', subkey='epsg')))
         self.winId['projection:statusbar:epsg'] = epsgCode.GetId()
 
-        gridSizer.Add(item=label,
+        gridSizer.Add(label,
                       pos=(row, 0),
                       flag=wx.ALIGN_CENTER_VERTICAL)
-        gridSizer.Add(item=epsgCode,
+        gridSizer.Add(epsgCode,
                       pos=(row, 1), span=(1, 2))
 
         # proj
@@ -1719,10 +1719,10 @@ class PreferencesDialog(PreferencesBaseDialog):
                 400, -1))
         self.winId['projection:statusbar:proj4'] = projString.GetId()
 
-        gridSizer.Add(item=label,
+        gridSizer.Add(label,
                       pos=(row, 0),
                       flag=wx.ALIGN_CENTER_VERTICAL)
-        gridSizer.Add(item=projString,
+        gridSizer.Add(projString,
                       pos=(row, 1), span=(1, 2),
                       flag=wx.ALIGN_CENTER_VERTICAL)
 
@@ -1735,10 +1735,10 @@ class PreferencesDialog(PreferencesBaseDialog):
                 group='projection', key='statusbar', subkey='projFile'),
             name="GetValue", size=(400, -1))
         self.winId['projection:statusbar:projFile'] = projFile.GetId()
-        gridSizer.Add(item=label,
+        gridSizer.Add(label,
                       pos=(row, 0),
                       flag=wx.ALIGN_CENTER_VERTICAL)
-        gridSizer.Add(item=projFile,
+        gridSizer.Add(projFile,
                       pos=(row, 1),
                       flag=wx.ALIGN_CENTER_VERTICAL)
 
@@ -1748,24 +1748,24 @@ class PreferencesDialog(PreferencesBaseDialog):
             parent=panel, id=wx.ID_ANY, label=_(
                 "Load EPSG codes (be patient), enter EPSG code or "
                 "insert Proj.4 string directly."))
-        gridSizer.Add(item=note,
+        gridSizer.Add(note,
                       span=(1, 2),
                       pos=(row, 0))
 
         row += 1
         epsgLoad = wx.Button(parent=panel, id=wx.ID_ANY,
                              label=_("&Load EPSG codes"))
-        gridSizer.Add(item=epsgLoad,
+        gridSizer.Add(epsgLoad,
                       flag=wx.ALIGN_RIGHT,
                       pos=(row, 1))
 
         gridSizer.AddGrowableCol(1)
         sizer.Add(
-            item=gridSizer,
+            gridSizer,
             proportion=1,
             flag=wx.ALL | wx.EXPAND,
             border=5)
-        border.Add(item=sizer, proportion=0, flag=wx.ALL | wx.EXPAND, border=3)
+        border.Add(sizer, proportion=0, flag=wx.ALL | wx.EXPAND, border=3)
 
         #
         # format
@@ -1794,30 +1794,30 @@ class PreferencesDialog(PreferencesBaseDialog):
 
         # precision
         precision = SpinCtrl(parent=panel, id=wx.ID_ANY,
-                                min=0, max=12,
-                                name="GetValue")
+                             min=0, max=12,
+                             name="GetValue")
         precision.SetValue(int(self.settings.Get(
             group='projection', key='format', subkey='precision')))
         self.winId['projection:format:precision'] = precision.GetId()
 
-        gridSizer.Add(item=ll,
+        gridSizer.Add(ll,
                       pos=(row, 0))
-        gridSizer.Add(item=wx.StaticText(parent=panel, id=wx.ID_ANY,
-                                         label=_("Precision:")),
+        gridSizer.Add(wx.StaticText(parent=panel, id=wx.ID_ANY,
+                                    label=_("Precision:")),
                       flag=wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT | wx.LEFT,
                       border=20,
                       pos=(row, 1))
-        gridSizer.Add(item=precision,
+        gridSizer.Add(precision,
                       flag=wx.ALIGN_CENTER_VERTICAL,
                       pos=(row, 2))
 
         gridSizer.AddGrowableCol(2)
         sizer.Add(
-            item=gridSizer,
+            gridSizer,
             proportion=1,
             flag=wx.ALL | wx.EXPAND,
             border=5)
-        border.Add(item=sizer, proportion=0, flag=wx.LEFT |
+        border.Add(sizer, proportion=0, flag=wx.LEFT |
                    wx.RIGHT | wx.BOTTOM | wx.EXPAND, border=3)
 
         panel.SetSizer(border)
@@ -2099,13 +2099,13 @@ class MapsetAccess(wx.Dialog):
                 "    - You may only write to the current mapset.\n"
                 "    - You may only write to mapsets which you own."))
 
-        sizer.Add(item=label, proportion=0,
+        sizer.Add(label, proportion=0,
                   flag=wx.ALL, border=5)
 
         self.mapsetlb = CheckListMapset(parent=self)
         self.mapsetlb.LoadData()
 
-        sizer.Add(item=self.mapsetlb, proportion=1,
+        sizer.Add(self.mapsetlb, proportion=1,
                   flag=wx.ALL | wx.EXPAND, border=5)
 
         # check all accessible mapsets
@@ -2118,7 +2118,7 @@ class MapsetAccess(wx.Dialog):
         # dialog buttons
         line = wx.StaticLine(parent=self, id=wx.ID_ANY,
                              style=wx.LI_HORIZONTAL)
-        sizer.Add(item=line, proportion=0,
+        sizer.Add(line, proportion=0,
                   flag=wx.EXPAND | wx.ALIGN_CENTRE | wx.ALL, border=5)
 
         btnsizer = wx.StdDialogButtonSizer()
@@ -2130,7 +2130,7 @@ class MapsetAccess(wx.Dialog):
         btnsizer.AddButton(cancelbtn)
         btnsizer.Realize()
 
-        sizer.Add(item=btnsizer, proportion=0,
+        sizer.Add(btnsizer, proportion=0,
                   flag=wx.EXPAND | wx.ALIGN_RIGHT | wx.ALL, border=5)
 
         # do layout

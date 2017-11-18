@@ -3,7 +3,7 @@
 
    \brief GIS library - color management, named color to RGB triplet
 
-   (C) 2001-2014 by the GRASS Development Team
+   (C) 2001-2016 by the GRASS Development Team
 
    This program is free software under the 
    GNU General Public License (>=v2). 
@@ -124,6 +124,19 @@ int G_str_to_color(const char *str, int *red, int *grn, int *blu)
 	return 2;
 
     if (sscanf(buf, "%d%*[,:; ]%d%*[,:; ]%d", red, grn, blu) == 3) {
+	if (*red < 0 || *red > 255 ||
+	    *grn < 0 || *grn > 255 || *blu < 0 || *blu > 255)
+	    return 0;
+
+	return 1;
+    }
+
+    int hex;
+
+    if (sscanf(buf, "#%x", &hex) == 1) {
+	*red = (hex >> 16) & 0xFF;
+	*grn = (hex >> 8) & 0xFF;
+	*blu = hex & 0xFF;
 	if (*red < 0 || *red > 255 ||
 	    *grn < 0 || *grn > 255 || *blu < 0 || *blu > 255)
 	    return 0;

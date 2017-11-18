@@ -49,7 +49,7 @@ Build-Depends: autoconf2.13,
                python-wxgtk3.0,
                unixodbc-dev,
                zlib1g-dev
-Standards-Version: 4.0.0
+Standards-Version: 4.1.1
 Vcs-Browser: https://anonscm.debian.org/cgit/pkg-grass/grass.git
 Vcs-Git: https://anonscm.debian.org/git/pkg-grass/grass.git -b ubuntugis/xenial
 Homepage: http://grass.osgeo.org/
@@ -98,7 +98,7 @@ Suggests: grass-dev,
           python-rpy2,
           python-termcolor
 Breaks: grass (<< 6.4.2-1~)
-Provides: grass722
+Provides: ${grass:Provides}
 Replaces: grass (<< 6.4.2-1~)
 Description: GRASS GIS core components
  Commonly referred to as GRASS, this is a Geographic Information
@@ -123,8 +123,8 @@ Recommends:
 # gs needed for wxPsmap PDF export
             ghostscript,
 # PIL needed for wxPsmap preview
-            python-imaging,
-            python-matplotlib
+            python-matplotlib,
+            python-pil
 Breaks: grass (<< 6.4.2-1~)
 Replaces: grass (<< 6.4.2-1~)
 Description: GRASS GIS graphical user interfaces

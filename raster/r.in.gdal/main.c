@@ -29,16 +29,19 @@
 #include <grass/gprojects.h>
 #include <grass/glocale.h>
 
-#include "gdal.h"
-#include "ogr_srs_api.h"
+#include <gdal.h>
 
 #undef MIN
 #undef MAX
 #define MIN(a,b)      ((a) < (b) ? (a) : (b))
 #define MAX(a,b)      ((a) > (b) ? (a) : (b))
 
+void check_projection(struct Cell_head *cellhd, GDALDatasetH hDS,
+                      char *outloc, int create_only, int override,
+		      int check_only);
 static void ImportBand(GDALRasterBandH hBand, const char *output,
-		       struct Ref *group_ref);
+		       struct Ref *group_ref, int *rowmap, int *colmap,
+		       int col_offset);
 static void SetupReprojector(const char *pszSrcWKT, const char *pszDstLoc,
 			     struct pj_info *iproj, struct pj_info *oproj);
 static int dump_rat(GDALRasterBandH hBand, char *outrat, int nBand);
@@ -55,21 +58,20 @@ int main(int argc, char *argv[])
     char *input;
     char *output;
     char *title;
-    struct Cell_head cellhd, loc_wind, cur_wind;
+    struct Cell_head cellhd, cur_wind;
     struct Key_Value *proj_info = NULL, *proj_units = NULL;
-    struct Key_Value *loc_proj_info = NULL, *loc_proj_units = NULL;
     GDALDatasetH hDS;
     GDALDriverH hDriver;
     GDALRasterBandH hBand;
     double adfGeoTransform[6];
     int n_bands;
     int force_imagery = FALSE;
-    char error_msg[8096];
-    int projcomp_error = 0;
     int overwrite;
     int offset = 0;
     char *suffix;
     int num_digits = 0;
+    int croptoregion, *rowmapall, *colmapall, *rowmap, *colmap, col_offset;
+    int roff, coff;
 
     struct GModule *module;
     struct
@@ -79,7 +81,7 @@ int main(int argc, char *argv[])
 	              *rat;
     } parm;
     struct Flag *flag_o, *flag_e, *flag_k, *flag_f, *flag_l, *flag_c, *flag_p,
-        *flag_j;
+        *flag_j, *flag_a, *flag_r;
 
     /* -------------------------------------------------------------------- */
     /*      Initialize.                                                     */
@@ -112,7 +114,9 @@ int main(int argc, char *argv[])
     parm.memory->key = "memory";
     parm.memory->type = TYPE_INTEGER;
     parm.memory->required = NO;
+#if GDAL_VERSION_NUM < 1800
     parm.memory->options = "0-2047";
+#endif
     parm.memory->answer = "300";
     parm.memory->label = _("Maximum memory to be used (in MB)");
     parm.memory->description = _("Cache size for raster rows");
@@ -208,6 +212,11 @@ int main(int argc, char *argv[])
     flag_l->description =
 	_("Force Lat/Lon maps to fit into geographic coordinates (90N,S; 180E,W)");
 
+    flag_a = G_define_flag();
+    flag_a->key = 'a';
+    flag_a->label = _("Auto-adjustment for lat/lon");
+    flag_a->description = _("Attempt to fix small precision errors in resolution and extents");
+
     flag_k = G_define_flag();
     flag_k->key = 'k';
     flag_k->description =
@@ -220,13 +229,24 @@ int main(int argc, char *argv[])
 	_("Create the location specified by the \"location\" parameter and exit."
           " Do not import the raster file.");
 
+    flag_r = G_define_flag();
+    flag_r->key = 'r';
+    flag_r->description = _("Limit import to the current region");
+    flag_r->guisection = _("Region");
+
     flag_p = G_define_flag();
     flag_p->key = 'p';
     flag_p->description = _("Print number of bands and exit");
     flag_p->guisection = _("Print");
     flag_p->suppress_required = YES;
     G_option_requires(flag_p, parm.input, NULL);
-    
+
+    /* 1. list supported formats */
+    /* 2. print input bands */
+    /* 3. open input */
+    /* 4. check projection / create location */ 
+    /* 5. open output */
+
     /* The parser checks if the map already exists in current mapset, this is
      * wrong if location options is used, so we switch out the check and do it
      * in the module after the parser */
@@ -234,6 +254,46 @@ int main(int argc, char *argv[])
 
     if (G_parser(argc, argv))
 	exit(EXIT_FAILURE);
+
+    /* -------------------------------------------------------------------- */
+    /*      Fire up the engines.                                            */
+    /* -------------------------------------------------------------------- */
+    GDALAllRegister();
+
+    /* -------------------------------------------------------------------- */
+    /*      List supported formats and exit.                                */
+    /*         code from GDAL 1.2.5  gcore/gdal_misc.cpp                    */
+    /*         Copyright (c) 1999, Frank Warmerdam                          */
+    /* -------------------------------------------------------------------- */
+    if (flag_f->answer) {
+	int iDr;
+
+	G_message(_("Supported formats:"));
+	for (iDr = 0; iDr < GDALGetDriverCount(); iDr++) {
+	    const char *pszRWFlag;
+
+	    hDriver = GDALGetDriver(iDr);
+
+#ifdef GDAL_DCAP_RASTER
+            /* Starting with GDAL 2.0, vector drivers can also be returned */
+            /* Only keep raster drivers */
+            if (!GDALGetMetadataItem(hDriver, GDAL_DCAP_RASTER, NULL))
+                continue;
+#endif
+
+	    if (GDALGetMetadataItem(hDriver, GDAL_DCAP_CREATE, NULL))
+		pszRWFlag = "rw+";
+	    else if (GDALGetMetadataItem(hDriver, GDAL_DCAP_CREATECOPY, NULL))
+		pszRWFlag = "rw";
+	    else
+		pszRWFlag = "ro";
+
+	    fprintf(stdout, " %s (%s): %s\n",
+		    GDALGetDriverShortName(hDriver),
+		    pszRWFlag, GDALGetDriverLongName(hDriver));
+	}
+	exit(EXIT_SUCCESS);
+    }
 
     input = parm.input->answer;
 
@@ -261,61 +321,33 @@ int main(int argc, char *argv[])
     if (flag_l->answer && G_projection() != PROJECTION_LL)
 	G_fatal_error(_("The '-l' flag only works in Lat/Lon locations"));
 
-    if(num_digits < 0)
+    if (num_digits < 0)
         G_fatal_error(_("The number of digits for band numbering must be equal or greater than 0"));
 
     /* Allocate the suffix string */
-    if(num_digits > 0) {
+    if (num_digits > 0) {
         suffix = G_calloc( num_digits + 1, sizeof(char));
-    } else {
+    }
+    else {
         /* Band number length should not exceed 64 digits */
         suffix = G_calloc(65, sizeof(char));
     }
 
-
-    /* -------------------------------------------------------------------- */
-    /*      Fire up the engines.                                            */
-    /* -------------------------------------------------------------------- */
-    GDALAllRegister();
-    /* default GDAL memory cache size appears to be only 40 MiB, slowing down r.in.gdal */
-    if (parm.memory->answer && *parm.memory->answer) {
-	   /* TODO: GDALGetCacheMax() overflows at 2GiB, implement use of GDALSetCacheMax64() */
-           GDALSetCacheMax(atol(parm.memory->answer) * 1024 * 1024);
-           G_verbose_message(_("Using memory cache size: %.1f MiB"), GDALGetCacheMax()/1024.0/1024.0);
+    croptoregion = flag_r->answer;
+    if (flag_r->answer && parm.outloc->answer) {
+	G_warning(_("Disabling '-r' flag for new location"));
+	croptoregion = 0; 
     }
 
-    /* -------------------------------------------------------------------- */
-    /*      List supported formats and exit.                                */
-    /*         code from GDAL 1.2.5  gcore/gdal_misc.cpp                    */
-    /*         Copyright (c) 1999, Frank Warmerdam                          */
-    /* -------------------------------------------------------------------- */
-    if (flag_f->answer) {
-	int iDr;
-
-	G_message(_("Supported formats:"));
-	for (iDr = 0; iDr < GDALGetDriverCount(); iDr++) {
-	    GDALDriverH hDriver = GDALGetDriver(iDr);
-	    const char *pszRWFlag;
-
-#ifdef GDAL_DCAP_RASTER
-            /* Starting with GDAL 2.0, vector drivers can also be returned */
-            /* Only keep raster drivers */
-            if (!GDALGetMetadataItem(hDriver, GDAL_DCAP_RASTER, NULL))
-                continue;
+    /* default GDAL memory cache size appears to be only 40 MiB, slowing down r.in.gdal */
+    if (parm.memory->answer && *parm.memory->answer) {
+#if GDAL_VERSION_NUM >= 1800 && !defined _WIN32
+           GDALSetCacheMax64((GIntBig)atol(parm.memory->answer) * 1024 * 1024);
+           G_verbose_message(_("Using memory cache size: %.1f MiB"), GDALGetCacheMax64()/1024.0/1024.0);
+#else
+           GDALSetCacheMax(atol(parm.memory->answer) * 1024 * 1024);
+           G_verbose_message(_("Using memory cache size: %.1f MiB"), GDALGetCacheMax()/1024.0/1024.0);
 #endif
-
-	    if (GDALGetMetadataItem(hDriver, GDAL_DCAP_CREATE, NULL))
-		pszRWFlag = "rw+";
-	    else if (GDALGetMetadataItem(hDriver, GDAL_DCAP_CREATECOPY, NULL))
-		pszRWFlag = "rw";
-	    else
-		pszRWFlag = "ro";
-
-	    fprintf(stdout, " %s (%s): %s\n",
-		    GDALGetDriverShortName(hDriver),
-		    pszRWFlag, GDALGetDriverLongName(hDriver));
-	}
-	exit(EXIT_SUCCESS);
     }
 
     /* -------------------------------------------------------------------- */
@@ -337,6 +369,20 @@ int main(int argc, char *argv[])
 	G_warning(_("Input seems to be NOAA/AVHRR data which needs to be "
 	            "georeferenced with thin plate spline transformation "
 		    "(%s or %s)."), "i.rectify -t", "gdalwarp -tps");
+    }
+
+    /* does the driver support subdatasets? */
+    /* test for capability GDAL_DMD_SUBDATASETS */
+    
+    /* does the dataset include subdatasets? */
+    {
+	char **sds = GDALGetMetadata(hDS, "SUBDATASETS");
+
+	if (sds && *sds) {
+	    G_warning(_("Input contains subdatasets which may need to "
+	                "be imported separately"));
+	    /* list subdatasets? */
+	}
     }
 
     if (flag_p->answer) {
@@ -379,16 +425,22 @@ int main(int argc, char *argv[])
 	cellhd.ns_res = fabs(adfGeoTransform[5]);
 	cellhd.ns_res3 = fabs(adfGeoTransform[5]);
 	cellhd.south = cellhd.north - cellhd.ns_res * cellhd.rows;
+
 	cellhd.west = adfGeoTransform[0];
 	cellhd.ew_res = fabs(adfGeoTransform[1]);
 	cellhd.ew_res3 = fabs(adfGeoTransform[1]);
 	cellhd.east = cellhd.west + cellhd.cols * cellhd.ew_res;
+
 	cellhd.top = 1.;
 	cellhd.bottom = 0.;
 	cellhd.tb_res = 1.;
 	cellhd.depths = 1;
     }
     else {
+	if (croptoregion) {
+	    G_fatal_error(_("Unable to fetch the affine transformation coefficients. "
+			    "Flag -%c cannot be used in this case."), flag_r->key);
+	}
 	cellhd.north = cellhd.rows;
 	cellhd.south = 0.0;
 	cellhd.ns_res = 1.0;
@@ -420,173 +472,102 @@ int main(int argc, char *argv[])
 	    "with r.region before going any further."));
     }
 
-    /* -------------------------------------------------------------------- */
-    /*      Fetch the projection in GRASS form.                             */
-    /* -------------------------------------------------------------------- */
-    proj_info = NULL;
-    proj_units = NULL;
+    check_projection(&cellhd, hDS, parm.outloc->answer, flag_c->answer,
+                     flag_o->answer, flag_j->answer);
 
-    /* -------------------------------------------------------------------- */
-    /*      Do we need to create a new location?                            */
-    /* -------------------------------------------------------------------- */
-    if (parm.outloc->answer != NULL) {
-	/* Convert projection information non-interactively as we can't
-	 * assume the user has a terminal open */
-	if (GPJ_wkt_to_grass(&cellhd, &proj_info,
-			     &proj_units, GDALGetProjectionRef(hDS), 0) < 0) {
-	    G_fatal_error(_("Unable to convert input map projection to GRASS "
-			    "format; cannot create new location."));
-	}
-	else {
-	    if (0 != G_make_location(parm.outloc->answer, &cellhd,
-				     proj_info, proj_units)) {
-		G_fatal_error(_("Unable to create new location <%s>"),
-			      parm.outloc->answer);
-	    }
-	    G_message(_("Location <%s> created"), parm.outloc->answer);
-	}
-
-        /* If the c flag is set, clean up? and exit here */
-        if (flag_c->answer) {
-            exit(EXIT_SUCCESS);
-        }
+    if (GDALGetRasterCount(hDS) > 1) {
+	G_message(_("Importing %d raster bands..."),
+		  GDALGetRasterCount(hDS));
     }
-    else {
-	/* Projection only required for checking so convert non-interactively */
-	if (GPJ_wkt_to_grass(&cellhd, &proj_info,
-			     &proj_units, GDALGetProjectionRef(hDS), 0) < 0)
-	    G_warning(_("Unable to convert input raster map projection information to "
-		       "GRASS format for checking"));
-	else {
-            void (*msg_fn)(const char *, ...);
-
-	    /* -------------------------------------------------------------------- */
-	    /*      Does the projection of the current location match the           */
-	    /*      dataset?                                                        */
-	    /* -------------------------------------------------------------------- */
-	    G_get_default_window(&loc_wind);
-	    if (loc_wind.proj != PROJECTION_XY) {
-		loc_proj_info = G_get_projinfo();
-		loc_proj_units = G_get_projunits();
-	    }
-
-	    if (flag_o->answer) {
-		cellhd.proj = loc_wind.proj;
-		cellhd.zone = loc_wind.zone;
-		G_warning(_("Over-riding projection check"));
-	    }
-	    else if (loc_wind.proj != cellhd.proj
-		     || (projcomp_error = G_compare_projections(loc_proj_info,
-								loc_proj_units,
-								proj_info,
-								proj_units)) < 0) {
-		int i_value;
-
-		strcpy(error_msg,
-		       _("Projection of dataset does not"
-			 " appear to match current location.\n\n"));
-
-		/* TODO: output this info sorted by key: */
-		if (loc_proj_info != NULL) {
-		    strcat(error_msg, _("Location PROJ_INFO is:\n"));
-		    for (i_value = 0;
-			 loc_proj_info != NULL &&
-			 i_value < loc_proj_info->nitems; i_value++)
-			sprintf(error_msg + strlen(error_msg), "%s: %s\n",
-				loc_proj_info->key[i_value],
-				loc_proj_info->value[i_value]);
-		    strcat(error_msg, "\n");
-		}
-
-		if (proj_info != NULL) {
-		    strcat(error_msg, _("Dataset PROJ_INFO is:\n"));
-		    for (i_value = 0;
-			 proj_info != NULL && i_value < proj_info->nitems;
-			 i_value++)
-			sprintf(error_msg + strlen(error_msg), "%s: %s\n",
-				proj_info->key[i_value],
-				proj_info->value[i_value]);
-		    strcat(error_msg, "\nERROR: ");
-		    switch (projcomp_error) {
-		    case -1:
-			strcat(error_msg, "proj\n");
-			break;
-		    case -2:
-			strcat(error_msg, "units\n");
-			break;
-		    case -3:
-			strcat(error_msg, "datum\n");
-			break;
-		    case -4:
-			strcat(error_msg, "ellps\n");
-			break;
-		    case -5:
-			strcat(error_msg, "zone\n");
-			break;
-		    case -6:
-			strcat(error_msg, "south\n");
-			break;
-		    case -7:
-			strcat(error_msg, "x_0\n");
-			break;
-		    case -8:
-			strcat(error_msg, "y_0\n");
-			break;
-		    }
-		}
-		else {
-		    strcat(error_msg, _("Import dataset PROJ_INFO is:\n"));
-		    if (cellhd.proj == PROJECTION_XY)
-			sprintf(error_msg + strlen(error_msg),
-				"cellhd.proj = %d (unreferenced/unknown)\n",
-				cellhd.proj);
-		    else if (cellhd.proj == PROJECTION_LL)
-			sprintf(error_msg + strlen(error_msg),
-				"cellhd.proj = %d (lat/long)\n", cellhd.proj);
-		    else if (cellhd.proj == PROJECTION_UTM)
-			sprintf(error_msg + strlen(error_msg),
-				"cellhd.proj = %d (UTM), zone = %d\n",
-				cellhd.proj, cellhd.zone);
-		    else
-			sprintf(error_msg + strlen(error_msg),
-				"cellhd.proj = %d (unknown), zone = %d\n",
-				cellhd.proj, cellhd.zone);
-		}
-		strcat(error_msg,
-		       _("\nIn case of no significant differences in the projection definitions,"
-			 " use the -o flag to ignore them and use"
-			 " current location definition.\n"));
-		strcat(error_msg,
-		       _("Consider generating a new location from the input dataset using "
-			"the 'location' parameter.\n"));
-
-                if (flag_j->answer)
-                    msg_fn = G_message;
-                else
-                    msg_fn = G_fatal_error;
-                msg_fn(error_msg);
-                if (flag_j->answer)
-                    exit(EXIT_FAILURE);
-	    }
-	    else {
-                if (flag_j->answer)
-                    msg_fn = G_message;
-                else
-                    msg_fn = G_verbose_message;            
-                msg_fn(_("Projection of input dataset and current location "
-                         "appear to match"));
-                if (flag_j->answer)
-                    exit(EXIT_SUCCESS);
-	    }
-	}
-    }
-
-    G_message(_("Proceeding with import of %d raster bands..."),
-              GDALGetRasterCount(hDS));
 
     /* -------------------------------------------------------------------- */
     /*      Set the active window to match the available data.              */
     /* -------------------------------------------------------------------- */
+    if (flag_a->answer && cellhd.proj == PROJECTION_LL) {
+	G_adjust_Cell_head(&cellhd, 1, 1);
+	G_adjust_window_ll(&cellhd);
+    }
+
+    roff = coff = 0;
+    col_offset = 0;
+    if (croptoregion) {
+	int row, col, first, last;
+
+	Rast_get_window(&cur_wind);
+	Rast_align_window(&cur_wind, &cellhd);
+
+	rowmapall = G_malloc(sizeof(int) * cur_wind.rows);
+	colmapall = G_malloc(sizeof(int) * cur_wind.cols);
+
+	/* window mapping */
+	first = -1;
+	last = cur_wind.rows - 1;
+	for (row = 0; row < cur_wind.rows; row++) {
+	    /* get GDAL row for cur wind row */
+	    double north = Rast_row_to_northing(row + 0.5, &cur_wind);
+
+	    rowmapall[row] = Rast_northing_to_row(north, &cellhd);
+	    if (rowmapall[row] < 0 || rowmapall[row] >= cellhd.rows)
+		rowmapall[row] = -1;
+	    else {
+		if (first < 0)
+		    first = row;
+		last = row;
+	    }
+	}
+	if (first == -1)
+	    G_fatal_error(_("Input raster does not overlap current "
+			    "computational region. Nothing to import."));
+	rowmap = &rowmapall[first];
+	/* crop window */
+	if (first != 0 || last != cur_wind.rows - 1) {
+	    cur_wind.north -= first * cur_wind.ns_res;
+	    cur_wind.south += (cur_wind.rows - 1 - last) * cur_wind.ns_res;
+	    cur_wind.rows = last - first + 1;
+	}
+	roff = (cellhd.north - cur_wind.north + cellhd.ns_res / 2.) / cellhd.ns_res;
+
+	first = -1;
+	last = cur_wind.cols - 1;
+	for (col = 0; col < cur_wind.cols; col++) {
+	    /* get GDAL col for cur wind col */
+	    double east = Rast_col_to_easting(col + 0.5, &cur_wind);
+
+	    colmapall[col] = Rast_easting_to_col(east, &cellhd);
+	    if (colmapall[col] < 0 || colmapall[col] >= cellhd.cols)
+		colmapall[col] = -1;
+	    else {
+		if (first < 0)
+		    first = col;
+		last = col;
+	    }
+	}
+	if (first == -1)
+	    G_fatal_error(_("Input raster does not overlap current "
+			    "computational region. Nothing to import."));
+	col_offset = first;
+	colmap = &colmapall[first];
+	/* crop window */
+	if (first != 0 || last != cur_wind.cols - 1) {
+	    cur_wind.west += first * cur_wind.ew_res;
+	    cur_wind.east -= (cur_wind.cols - 1 - last) * cur_wind.ew_res;
+	    cur_wind.cols = last - first + 1;
+	}
+	coff = (cur_wind.west - cellhd.west + cellhd.ew_res / 2.) / cellhd.ew_res;
+
+	cellhd = cur_wind;
+    }
+    else {
+	int row, col;
+
+	rowmap = G_malloc(sizeof(int) * cellhd.rows);
+	colmap = G_malloc(sizeof(int) * cellhd.cols);
+
+	for (row = 0; row < cellhd.rows; row++)
+	    rowmap[row] = row;
+	for (col = 0; col < cellhd.cols; col++)
+	    colmap[col] = col;
+    }
     Rast_set_window(&cellhd);
 
     /* -------------------------------------------------------------------- */
@@ -616,7 +597,7 @@ int main(int argc, char *argv[])
 	    G_fatal_error(_("Selected band (%d) does not exist"), nBand);
 	}
 
-	ImportBand(hBand, output, NULL);
+	ImportBand(hBand, output, NULL, rowmap, colmap, col_offset);
 	if (parm.rat->answer)
 	    dump_rat(hBand, parm.rat->answer, nBand);
 
@@ -704,7 +685,7 @@ int main(int argc, char *argv[])
               }
             }
 
-	    ImportBand(hBand, szBandName, &ref);
+	    ImportBand(hBand, szBandName, &ref, rowmap, colmap, col_offset);
 
 	    if(map_names_file)
 	        fprintf(map_names_file, "%s\n", szBandName);
@@ -788,9 +769,9 @@ int main(int argc, char *argv[])
 	    nmin = nmax = pasGCPs[0].dfGCPY;
 
 	    for (iGCP = 0; iGCP < sPoints.count; iGCP++) {
-		sPoints.e1[iGCP] = pasGCPs[iGCP].dfGCPPixel;
+		sPoints.e1[iGCP] = pasGCPs[iGCP].dfGCPPixel + coff;
 		/* GDAL lines from N to S -> GRASS Y from S to N */
-		sPoints.n1[iGCP] = cellhd.rows - pasGCPs[iGCP].dfGCPLine;
+		sPoints.n1[iGCP] = cellhd.rows - pasGCPs[iGCP].dfGCPLine + roff;
 
 		sPoints.e2[iGCP] = pasGCPs[iGCP].dfGCPX;	/* target */
 		sPoints.n2[iGCP] = pasGCPs[iGCP].dfGCPY;
@@ -873,7 +854,7 @@ int main(int argc, char *argv[])
     /* -------------------------------------------------------------------- */
     /*      Extend current window based on dataset.                         */
     /* -------------------------------------------------------------------- */
-    if (flag_e->answer) {
+    if (flag_e->answer && !croptoregion) {
 	if (strcmp(G_mapset(), "PERMANENT") == 0)
 	    /* fixme: expand WIND and DEFAULT_WIND independently. (currently
 		WIND gets forgotten and DEFAULT_WIND is expanded for both) */
@@ -969,14 +950,17 @@ static void SetupReprojector(const char *pszSrcWKT, const char *pszDstLoc,
 /************************************************************************/
 
 static void ImportBand(GDALRasterBandH hBand, const char *output,
-		       struct Ref *group_ref)
+		       struct Ref *group_ref, int *rowmap, int *colmap,
+		       int col_offset)
 {
     RASTER_MAP_TYPE data_type;
     GDALDataType eGDT, eRawGDT;
     int row, nrows, ncols, complex;
+    int ncols_gdal, map_cols, use_cell_gdal;
     int cf, cfR, cfI, bNoDataEnabled;
     int indx;
     void *cell, *cellReal, *cellImg;
+    void *cell_gdal;
     void *bufComplex;
     double dfNoData;
     char outputReal[GNAME_MAX], outputImg[GNAME_MAX];
@@ -992,24 +976,22 @@ static void ImportBand(GDALRasterBandH hBand, const char *output,
     /*      Select a cell type for the new cell.                            */
     /* -------------------------------------------------------------------- */
     eRawGDT = GDALGetRasterDataType(hBand);
+    complex = FALSE;
 
     switch (eRawGDT) {
     case GDT_Float32:
 	data_type = FCELL_TYPE;
 	eGDT = GDT_Float32;
-	complex = FALSE;
 	break;
 
     case GDT_Float64:
 	data_type = DCELL_TYPE;
 	eGDT = GDT_Float64;
-	complex = FALSE;
 	break;
 
     case GDT_Byte:
 	data_type = CELL_TYPE;
 	eGDT = GDT_Int32;
-	complex = FALSE;
 	Rast_set_cell_format(0);
 	break;
 
@@ -1017,24 +999,50 @@ static void ImportBand(GDALRasterBandH hBand, const char *output,
     case GDT_UInt16:
 	data_type = CELL_TYPE;
 	eGDT = GDT_Int32;
-	complex = FALSE;
 	Rast_set_cell_format(1);
 	break;
+
+    /* TODO: complex */
 
     default:
 	data_type = CELL_TYPE;
 	eGDT = GDT_Int32;
-	complex = FALSE;
 	Rast_set_cell_format(3);
 	break;
+    }
+
+    ncols = Rast_window_cols();
+    ncols_gdal = GDALGetRasterBandXSize(hBand);
+    nrows = Rast_window_rows();
+
+    /* -------------------------------------------------------------------- */
+    /*      Do we have a null value?                                        */
+    /* -------------------------------------------------------------------- */
+    map_cols = 0;
+    use_cell_gdal = 1;
+
+    for (indx = col_offset; indx < ncols; indx++) {
+	if (indx > 0 && colmap[indx] != colmap[indx - 1] + 1) {
+	    map_cols = 1;
+	    use_cell_gdal = 0;
+	}
+	if (colmap[indx] < 0) {
+	    nullFlags = (char *)G_malloc(sizeof(char) * ncols);
+	    memset(nullFlags, 0, ncols);
+	    map_cols = 1;
+	    use_cell_gdal = 0;
+	    break;
+	}
+    }
+    dfNoData = GDALGetRasterNoDataValue(hBand, &bNoDataEnabled);
+    if (bNoDataEnabled && !nullFlags) {
+	nullFlags = (char *)G_malloc(sizeof(char) * ncols);
+	memset(nullFlags, 0, ncols);
     }
 
     /* -------------------------------------------------------------------- */
     /*      Create the new raster(s)                                          */
     /* -------------------------------------------------------------------- */
-    ncols = GDALGetRasterBandXSize(hBand);
-    nrows = GDALGetRasterBandYSize(hBand);
-
     if (complex) {
 	sprintf(outputReal, "%s.real", output);
 	cfR = Rast_open_new(outputReal, data_type);
@@ -1045,9 +1053,9 @@ static void ImportBand(GDALRasterBandH hBand, const char *output,
 	cellReal = Rast_allocate_buf(data_type);
 	cellImg = Rast_allocate_buf(data_type);
 	if (eGDT == GDT_Float64)
-	    bufComplex = (double *)G_malloc(sizeof(double) * ncols * 2);
+	    bufComplex = (double *)G_malloc(sizeof(double) * ncols_gdal * 2);
 	else
-	    bufComplex = (float *)G_malloc(sizeof(float) * ncols * 2);
+	    bufComplex = (float *)G_malloc(sizeof(float) * ncols_gdal * 2);
 
 	if (group_ref != NULL) {
 	    I_add_file_to_group_ref(outputReal, G_mapset(), group_ref);
@@ -1060,16 +1068,11 @@ static void ImportBand(GDALRasterBandH hBand, const char *output,
 	if (group_ref != NULL)
 	    I_add_file_to_group_ref((char *)output, G_mapset(), group_ref);
 
-	cell = Rast_allocate_buf(data_type);
-    }
-
-    /* -------------------------------------------------------------------- */
-    /*      Do we have a null value?                                        */
-    /* -------------------------------------------------------------------- */
-    dfNoData = GDALGetRasterNoDataValue(hBand, &bNoDataEnabled);
-    if (bNoDataEnabled) {
-	nullFlags = (char *)G_malloc(sizeof(char) * ncols);
-	memset(nullFlags, 0, ncols);
+	cell_gdal = G_malloc(Rast_cell_size(data_type) * ncols_gdal);
+	if (use_cell_gdal)
+	    cell = (char *)cell_gdal + Rast_cell_size(data_type) * col_offset;
+	else
+	    cell = Rast_allocate_buf(data_type);
     }
 
     /* -------------------------------------------------------------------- */
@@ -1077,114 +1080,210 @@ static void ImportBand(GDALRasterBandH hBand, const char *output,
     /*      We have to distinguish some cases due to the different          */
     /*      coordinate system orientation of GDAL and GRASS for xy data     */
     /* -------------------------------------------------------------------- */
-    if (!l1bdriver) {		/* no AVHRR */
-	for (row = 1; row <= nrows; row++) {
-	    if (complex) {	/* CEOS SAR et al.: import flipped to match GRASS coordinates */
-		GDALRasterIO(hBand, GF_Read, 0, row - 1, ncols, 1,
-			     bufComplex, ncols, 1, eGDT, 0, 0);
 
-		for (indx = ncols - 1; indx >= 0; indx--) {	/* CEOS: flip east-west during import - MN */
-		    if (eGDT == GDT_Int32) {
+    /* special cases first */
+    if (complex) {	/* CEOS SAR et al.: import flipped to match GRASS coordinates */
+	for (row = 0; row < nrows; row++) {
+	    if (rowmap[row] < 0)
+		G_fatal_error(_("Invalid row"));
+
+	    G_percent(row, nrows, 2);
+
+	    GDALRasterIO(hBand, GF_Read, 0, rowmap[row], ncols_gdal, 1,
+			 bufComplex, ncols_gdal, 1, eGDT, 0, 0);
+
+	    for (indx = ncols - 1; indx >= 0; indx--) {	/* CEOS: flip east-west during import - MN */
+		if (eGDT == GDT_Int32) {
+		    if (colmap[indx] < 0) {
+			Rast_set_c_null_value(&(((CELL *) cellReal)[ncols - indx]), 1);
+			Rast_set_c_null_value(&(((CELL *) cellImg)[ncols - indx]), 1);
+		    }
+		    else {
 			((CELL *) cellReal)[ncols - indx] =
-			    ((GInt32 *) bufComplex)[indx * 2];
+			    ((GInt32 *) bufComplex)[colmap[indx] * 2];
 			((CELL *) cellImg)[ncols - indx] =
-			    ((GInt32 *) bufComplex)[indx * 2 + 1];
+			    ((GInt32 *) bufComplex)[colmap[indx] * 2 + 1];
 		    }
-		    else if (eGDT == GDT_Float32) {
+		}
+		else if (eGDT == GDT_Float32) {
+		    if (colmap[indx] < 0) {
+			Rast_set_f_null_value(&(((FCELL *) cellReal)[ncols - indx]), 1);
+			Rast_set_f_null_value(&(((FCELL *) cellImg)[ncols - indx]), 1);
+		    }
+		    else {
 			((FCELL *)cellReal)[ncols - indx] =
-			    ((float *)bufComplex)[indx * 2];
+			    ((float *)bufComplex)[colmap[indx] * 2];
 			((FCELL *)cellImg)[ncols - indx] =
-			    ((float *)bufComplex)[indx * 2 + 1];
+			    ((float *)bufComplex)[colmap[indx] * 2 + 1];
 		    }
-		    else if (eGDT == GDT_Float64) {
+		}
+		else if (eGDT == GDT_Float64) {
+		    if (colmap[indx] < 0) {
+			Rast_set_d_null_value(&(((DCELL *) cellReal)[ncols - indx]), 1);
+			Rast_set_d_null_value(&(((DCELL *) cellImg)[ncols - indx]), 1);
+		    }
+		    else {
 			((DCELL *)cellReal)[ncols - indx] =
-			    ((double *)bufComplex)[indx * 2];
+			    ((double *)bufComplex)[colmap[indx] * 2];
 			((DCELL *)cellImg)[ncols - indx] =
-			    ((double *)bufComplex)[indx * 2 + 1];
+			    ((double *)bufComplex)[colmap[indx] * 2 + 1];
 		    }
 		}
-		Rast_put_row(cfR, cellReal, data_type);
-		Rast_put_row(cfI, cellImg, data_type);
-	    }			/* end of complex */
-	    else {		/* single band */
-		GDALRasterIO(hBand, GF_Read, 0, row - 1, ncols, 1,
-			     cell, ncols, 1, eGDT, 0, 0);
-
-		if (nullFlags != NULL) {
-		    memset(nullFlags, 0, ncols);
-
-		    if (eGDT == GDT_Int32) {
-			for (indx = 0; indx < ncols; indx++) {
-			    if (((CELL *) cell)[indx] == (GInt32) dfNoData) {
-				nullFlags[indx] = 1;
-			    }
-			}
-		    }
-		    else if (eGDT == GDT_Float32) {
-			for (indx = 0; indx < ncols; indx++) {
-			    if (((FCELL *)cell)[indx] == (float)dfNoData) {
-				nullFlags[indx] = 1;
-			    }
-			}
-		    }
-		    else if (eGDT == GDT_Float64) {
-			for (indx = 0; indx < ncols; indx++) {
-			    if (((DCELL *)cell)[indx] == dfNoData) {
-				nullFlags[indx] = 1;
-			    }
-			}
-		    }
-
-		    Rast_insert_null_values(cell, nullFlags, ncols, data_type);
-		}
-
-		Rast_put_row(cf, cell, data_type);
-	    }			/* end of not complex */
-
-	    G_percent(row - 1, nrows, 2);
-	}			/* for loop */
-    }				/* end of not AVHRR */
-    else {
+	    }
+	    Rast_put_row(cfR, cellReal, data_type);
+	    Rast_put_row(cfI, cellImg, data_type);
+	}
+    }				/* end of complex */
+    else if (l1bdriver) {		/* AVHRR */
 	/* AVHRR - read from south to north to match GCPs */
 	/* AVHRR - as for other formats, read from north to south to match GCPs 
 	 * MM 2013 with gdal 1.10 */
-	for (row = 1; row <= nrows; row++) {
-	    GDALRasterIO(hBand, GF_Read, 0, row - 1, ncols, 1,
-			 cell, ncols, 1, eGDT, 0, 0);
+	for (row = 0; row < nrows; row++) {
+	    if (rowmap[row] < 0)
+		G_fatal_error(_("Invalid row"));
+
+	    G_percent(row, nrows, 2);
+
+	    GDALRasterIO(hBand, GF_Read, 0, rowmap[row], ncols_gdal, 1,
+			 cell_gdal, ncols_gdal, 1, eGDT, 0, 0);
 
 	    if (nullFlags != NULL) {
 		memset(nullFlags, 0, ncols);
 
 		if (eGDT == GDT_Int32) {
 		    for (indx = 0; indx < ncols; indx++) {
-			if (((CELL *) cell)[indx] == (CELL) dfNoData) {
+			if (colmap[indx] < 0)
+			    nullFlags[indx] = 1;
+			else if (bNoDataEnabled && 
+			         ((CELL *) cell_gdal)[colmap[indx]] == (GInt32) dfNoData) {
 			    nullFlags[indx] = 1;
 			}
+			else
+			    ((CELL *)cell)[indx] = ((CELL *)cell_gdal)[colmap[indx]];
 		    }
 		}
 		else if (eGDT == GDT_Float32) {
 		    for (indx = 0; indx < ncols; indx++) {
-			if (((FCELL *)cell)[indx] == (FCELL)dfNoData) {
+			if (colmap[indx] < 0)
+			    nullFlags[indx] = 1;
+			else if (bNoDataEnabled && 
+			         ((FCELL *)cell_gdal)[colmap[indx]] == (float)dfNoData) {
 			    nullFlags[indx] = 1;
 			}
+			else
+			    ((FCELL *)cell)[indx] = ((FCELL *)cell_gdal)[colmap[indx]];
 		    }
 		}
 		else if (eGDT == GDT_Float64) {
 		    for (indx = 0; indx < ncols; indx++) {
-			if (((DCELL *)cell)[indx] == dfNoData) {
+			if (colmap[indx] < 0)
+			    nullFlags[indx] = 1;
+			else if (bNoDataEnabled && 
+			         ((DCELL *)cell_gdal)[colmap[indx]] == dfNoData) {
 			    nullFlags[indx] = 1;
 			}
+			else
+			    ((DCELL *)cell)[indx] = ((DCELL *)cell_gdal)[colmap[indx]];
 		    }
 		}
 
 		Rast_insert_null_values(cell, nullFlags, ncols, data_type);
 	    }
+	    else if (map_cols) {
+		if (eGDT == GDT_Int32) {
+		    for (indx = 0; indx < ncols; indx++) {
+			((CELL *)cell)[indx] = ((CELL *)cell_gdal)[colmap[indx]];
+		    }
+		}
+		else if (eGDT == GDT_Float32) {
+		    for (indx = 0; indx < ncols; indx++) {
+			((FCELL *)cell)[indx] = ((FCELL *)cell_gdal)[colmap[indx]];
+		    }
+		}
+		else if (eGDT == GDT_Float64) {
+		    for (indx = 0; indx < ncols; indx++) {
+			((DCELL *)cell)[indx] = ((DCELL *)cell_gdal)[colmap[indx]];
+		    }
+		}
+	    }
 
 	    Rast_put_row(cf, cell, data_type);
 	}
-
-	G_percent(row, nrows, 2);
     }				/* end AVHRR */
+    else {
+	/* default */
+	for (row = 0; row < nrows; row++) {
+	    if (rowmap[row] < 0)
+		G_fatal_error(_("Invalid row"));
+
+	    G_percent(row, nrows, 2);
+
+	    GDALRasterIO(hBand, GF_Read, 0, rowmap[row], ncols_gdal, 1,
+			 cell_gdal, ncols_gdal, 1, eGDT, 0, 0);
+
+	    if (nullFlags != NULL) {
+		memset(nullFlags, 0, ncols);
+
+		if (eGDT == GDT_Int32) {
+		    for (indx = 0; indx < ncols; indx++) {
+			if (colmap[indx] < 0)
+			    nullFlags[indx] = 1;
+			else if (bNoDataEnabled && 
+			         ((CELL *) cell_gdal)[colmap[indx]] == (GInt32) dfNoData) {
+			    nullFlags[indx] = 1;
+			}
+			else
+			    ((CELL *)cell)[indx] = ((CELL *)cell_gdal)[colmap[indx]];
+		    }
+		}
+		else if (eGDT == GDT_Float32) {
+		    for (indx = 0; indx < ncols; indx++) {
+			if (colmap[indx] < 0)
+			    nullFlags[indx] = 1;
+			else if (bNoDataEnabled && 
+			         ((FCELL *)cell_gdal)[colmap[indx]] == (float)dfNoData) {
+			    nullFlags[indx] = 1;
+			}
+			else
+			    ((FCELL *)cell)[indx] = ((FCELL *)cell_gdal)[colmap[indx]];
+		    }
+		}
+		else if (eGDT == GDT_Float64) {
+		    for (indx = 0; indx < ncols; indx++) {
+			if (colmap[indx] < 0)
+			    nullFlags[indx] = 1;
+			else if (bNoDataEnabled && 
+			         ((DCELL *)cell_gdal)[colmap[indx]] == dfNoData) {
+			    nullFlags[indx] = 1;
+			}
+			else
+			    ((DCELL *)cell)[indx] = ((DCELL *)cell_gdal)[colmap[indx]];
+		    }
+		}
+
+		Rast_insert_null_values(cell, nullFlags, ncols, data_type);
+	    }
+	    else if (map_cols) {
+		if (eGDT == GDT_Int32) {
+		    for (indx = 0; indx < ncols; indx++) {
+			((CELL *)cell)[indx] = ((CELL *)cell_gdal)[colmap[indx]];
+		    }
+		}
+		else if (eGDT == GDT_Float32) {
+		    for (indx = 0; indx < ncols; indx++) {
+			((FCELL *)cell)[indx] = ((FCELL *)cell_gdal)[colmap[indx]];
+		    }
+		}
+		else if (eGDT == GDT_Float64) {
+		    for (indx = 0; indx < ncols; indx++) {
+			((DCELL *)cell)[indx] = ((DCELL *)cell_gdal)[colmap[indx]];
+		    }
+		}
+	    }
+
+	    Rast_put_row(cf, cell, data_type);
+	}
+    }
     G_percent(1, 1, 1);
 
     /* -------------------------------------------------------------------- */
@@ -1214,7 +1313,9 @@ static void ImportBand(GDALRasterBandH hBand, const char *output,
 	Rast_command_history(&history);
 	Rast_write_history((char *)output, &history);
 
-	G_free(cell);
+	if (!use_cell_gdal)
+	    G_free(cell);
+	G_free(cell_gdal);
     }
 
     if (nullFlags != NULL)

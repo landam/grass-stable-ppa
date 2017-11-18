@@ -83,8 +83,8 @@ static int debug_level = -1;
 #if 0
 static int ident(double x1, double y1, double x2, double y2, double thresh);
 #endif
-static int cross_seg(int id, const struct RTree_Rect *rect, int *arg);
-static int find_cross(int id, const struct RTree_Rect *rect, int *arg);
+static int cross_seg(int id, const struct RTree_Rect *rect, void *arg);
+static int find_cross(int id, const struct RTree_Rect *rect, void *arg);
 
 #define D  ((ax2-ax1)*(by1-by2) - (ay2-ay1)*(bx1-bx2))
 #define D1 ((bx1-ax1)*(by1-by2) - (by1-ay1)*(bx1-bx2))
@@ -542,13 +542,13 @@ static int ident(double x1, double y1, double x2, double y2, double thresh)
 static struct line_pnts *APnts, *BPnts;
 
 /* break segments (called by rtree search) */
-static int cross_seg(int id, const struct RTree_Rect *rect, int *arg)
+static int cross_seg(int id, const struct RTree_Rect *rect, void *arg)
 {
     double x1, y1, z1, x2, y2, z2;
     int i, j, ret;
 
     /* !!! segment number for B lines is returned as +1 */
-    i = *arg;
+    i = *(int *)arg;
     j = id - 1;
     /* Note: -1 to make up for the +1 when data was inserted */
 
@@ -802,7 +802,7 @@ Vect_line_intersection(struct line_pnts *APoints,
 	box.T = rect.boundary[5] + rethresh;
 
 	if (Vect_box_overlap(&abbox, &box)) {
-	    j = RTreeSearch(MyRTree, &rect, (void *)cross_seg, &i);	/* A segment number from 0 */
+	    j = RTreeSearch(MyRTree, &rect, cross_seg, &i);	/* A segment number from 0 */
 	}
     }
 
@@ -1168,13 +1168,13 @@ static struct line_pnts *APnts, *BPnts, *IPnts;
 static int cross_found;		/* set by find_cross() */
 
 /* break segments (called by rtree search) */
-static int find_cross(int id, const struct RTree_Rect *rect, int *arg)
+static int find_cross(int id, const struct RTree_Rect *rect, void *arg)
 {
     double x1, y1, z1, x2, y2, z2;
     int i, j, ret;
 
     /* !!! segment number for B lines is returned as +1 */
-    i = *arg;
+    i = *(int *)arg;
     j = id - 1;
     /* Note: -1 to make up for the +1 when data was inserted */
 
@@ -1184,9 +1184,6 @@ static int find_cross(int id, const struct RTree_Rect *rect, int *arg)
 				    BPnts->z[j], BPnts->x[j + 1],
 				    BPnts->y[j + 1], BPnts->z[j + 1], &x1,
 				    &y1, &z1, &x2, &y2, &z2, 0);
-
-    if (!IPnts)
-	IPnts = Vect_new_line_struct();
 
     switch (ret) {
     case 0:
@@ -1248,6 +1245,7 @@ Vect_line_check_intersection(struct line_pnts *APoints,
 
     if (!IPnts)
 	IPnts = Vect_new_line_struct();
+    Vect_reset_line(IPnts);
 
     /* If one or both are point (Points->n_points == 1) */
     if (APoints->n_points == 1 && BPoints->n_points == 1) {
@@ -1381,7 +1379,7 @@ Vect_line_check_intersection(struct line_pnts *APoints,
 	    rect.boundary[5] = APoints->z[i];
 	}
 
-	RTreeSearch(MyRTree, &rect, (void *)find_cross, &i);	/* A segment number from 0 */
+	RTreeSearch(MyRTree, &rect, find_cross, &i);	/* A segment number from 0 */
 
 	if (cross_found) {
 	    break;

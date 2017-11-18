@@ -145,7 +145,7 @@ void G__wps_print_process_description(void)
     char *s, *top;
     const char *value = NULL;
     int i;
-    char *encoding;
+    const char *encoding;
     int new_prompt = 0;
     int store = 1;
     int status = 1;
@@ -578,7 +578,7 @@ static void wps_print_process_description_begin(int store, int status, const cha
     if(abstract)
     {
         fprintf(stdout,"\t\t<ows:Abstract>");
-        fprintf(stdout, "http://grass.osgeo.org/grass72/manuals/%s.html", identifier);
+        fprintf(stdout, "http://grass.osgeo.org/grass74/manuals/%s.html", identifier);
         fprintf(stdout, "</ows:Abstract>\n");
     }
 

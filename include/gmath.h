@@ -4,7 +4,7 @@
 
  * @Copyright David D.Gray <ddgray@armadce.demon.co.uk>
  * 27th. Sep. 2000
- * Last updated: $Id: gmath.h 71202 2017-06-21 14:08:39Z neteler $
+ * Last updated: $Id: gmath.h 71201 2017-06-21 14:07:39Z neteler $
  *
 
  * This file is part of GRASS GIS. It is free software. You can 
