@@ -58,11 +58,6 @@ import codecs
 
 from threading import Thread
 
-if not os.getenv("GISBASE"):
-    sys.write("We don't seem to be properly installed, or we are being run "
-              "outside GRASS. Expect glitches.\n")
-    gisbase = os.path.join(os.path.dirname(sys.argv[0]), os.path.pardir)
-
 import wx
 try:
     import wx.lib.agw.flatnotebook as FN
@@ -77,13 +72,19 @@ try:
 except ImportError:
     import elementtree.ElementTree as etree  # Python <= 2.4
 
+# needed when started from command line and for testing
+if __name__ == '__main__':
+    if os.getenv("GISBASE") is None:
+        # intentionally not translatable
+        sys.exit("Failed to start. GRASS GIS is not running"
+                 " or the installation is broken.")
+    from grass.script.setup import set_gui_path
+    set_gui_path()
+
 from grass.pydispatch.signal import Signal
 
 from grass.script import core as grass
 from grass.script import task as gtask
-
-from grass.script.setup import set_gui_path
-set_gui_path()
 
 from core import globalvar
 from gui_core.widgets import StaticWrapText, ScrolledPanel, ColorTablesComboBox, \
@@ -97,7 +98,8 @@ from core.settings import UserSettings
 from gui_core.widgets import FloatValidator, GNotebook, FormNotebook, FormListbook
 from core.giface import Notification
 from gui_core.widgets import LayersList
-from gui_core.wrap import GSpinCtrl as SpinCtrl
+from gui_core.wrap import BitmapFromImage, Button, StaticText, StaticBox, SpinCtrl
+from core.debug import Debug
 
 wxUpdateDialog, EVT_DIALOG_UPDATE = NewEvent()
 
@@ -499,13 +501,13 @@ class TaskFrame(wx.Frame):
 
         # GRASS logo
         self.logo = wx.StaticBitmap(
-            parent=self.panel,
-            bitmap=wx.Bitmap(
+            self.panel, -1,
+            wx.Bitmap(
                 name=os.path.join(
                     globalvar.IMGDIR,
                     'grass_form.png'),
                 type=wx.BITMAP_TYPE_PNG))
-        topsizer.Add(item=self.logo, proportion=0, border=3,
+        topsizer.Add(self.logo, proportion=0, border=3,
                      flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
 
         # add module description
@@ -516,10 +518,10 @@ class TaskFrame(wx.Frame):
 
         self.description = StaticWrapText(parent=self.panel,
                                           label=module_desc)
-        topsizer.Add(item=self.description, proportion=1, border=5,
+        topsizer.Add(self.description, proportion=1, border=5,
                      flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL | wx.EXPAND)
 
-        guisizer.Add(item=topsizer, proportion=0, flag=wx.EXPAND)
+        guisizer.Add(topsizer, proportion=0, flag=wx.EXPAND)
 
         self.panel.SetSizerAndFit(guisizer)
         self.Layout()
@@ -541,7 +543,7 @@ class TaskFrame(wx.Frame):
                 lambda message: self.SetStatusText(message))
 
         self.notebookpanel.OnUpdateValues = self.updateValuesHook
-        guisizer.Add(item=self.notebookpanel, proportion=1, flag=wx.EXPAND)
+        guisizer.Add(self.notebookpanel, proportion=1, flag=wx.EXPAND)
 
         # status bar
         status_text = _("Enter parameters for '") + self.task.name + "'"
@@ -556,13 +558,13 @@ class TaskFrame(wx.Frame):
         # cancel
         if sys.platform == 'darwin':
             # stock id automatically adds ctrl-c shortcut to close dialog
-            self.btn_cancel = wx.Button(parent=self.panel, label=_("Close"))
+            self.btn_cancel = Button(parent=self.panel, label=_("Close"))
         else:
-            self.btn_cancel = wx.Button(parent=self.panel, id=wx.ID_CLOSE)
-        self.btn_cancel.SetToolTipString(
+            self.btn_cancel = Button(parent=self.panel, id=wx.ID_CLOSE)
+        self.btn_cancel.SetToolTip(
             _("Close this window without executing the command (Ctrl+Q)"))
         btnsizer.Add(
-            item=self.btn_cancel,
+            self.btn_cancel,
             proportion=0,
             flag=wx.ALL | wx.ALIGN_CENTER,
             border=10)
@@ -574,14 +576,14 @@ class TaskFrame(wx.Frame):
         # TODO: bind Ctrl-t for tile windows here (trac #2004)
 
         if self.get_dcmd is not None:  # A callback has been set up
-            btn_apply = wx.Button(parent=self.panel, id=wx.ID_APPLY)
-            btn_ok = wx.Button(parent=self.panel, id=wx.ID_OK)
+            btn_apply = Button(parent=self.panel, id=wx.ID_APPLY)
+            btn_ok = Button(parent=self.panel, id=wx.ID_OK)
             btn_ok.SetDefault()
 
-            btnsizer.Add(item=btn_apply, proportion=0,
+            btnsizer.Add(btn_apply, proportion=0,
                          flag=wx.ALL | wx.ALIGN_CENTER,
                          border=10)
-            btnsizer.Add(item=btn_ok, proportion=0,
+            btnsizer.Add(btn_ok, proportion=0,
                          flag=wx.ALL | wx.ALIGN_CENTER,
                          border=10)
 
@@ -589,13 +591,13 @@ class TaskFrame(wx.Frame):
             btn_ok.Bind(wx.EVT_BUTTON, self.OnOK)
         else:  # We're standalone
             # run
-            self.btn_run = wx.Button(
+            self.btn_run = Button(
                 parent=self.panel, id=wx.ID_OK, label=_("&Run"))
-            self.btn_run.SetToolTipString(_("Run the command (Ctrl+R)"))
+            self.btn_run.SetToolTip(_("Run the command (Ctrl+R)"))
             self.btn_run.SetDefault()
             self.btn_run.SetForegroundColour(wx.Colour(35, 142, 35))
 
-            btnsizer.Add(item=self.btn_run, proportion=0,
+            btnsizer.Add(self.btn_run, proportion=0,
                          flag=wx.ALL | wx.ALIGN_CENTER,
                          border=10)
 
@@ -606,19 +608,19 @@ class TaskFrame(wx.Frame):
         # copy
         if sys.platform == 'darwin':
             # stock id automatically adds ctrl-c shortcut to copy command
-            self.btn_clipboard = wx.Button(parent=self.panel, label=_("Copy"))
+            self.btn_clipboard = Button(parent=self.panel, label=_("Copy"))
         else:
-            self.btn_clipboard = wx.Button(parent=self.panel, id=wx.ID_COPY)
-        self.btn_clipboard.SetToolTipString(
+            self.btn_clipboard = Button(parent=self.panel, id=wx.ID_COPY)
+        self.btn_clipboard.SetToolTip(
             _("Copy the current command string to the clipboard"))
-        btnsizer.Add(item=self.btn_clipboard, proportion=0,
+        btnsizer.Add(self.btn_clipboard, proportion=0,
                      flag=wx.ALL | wx.ALIGN_CENTER,
                      border=10)
         self.btn_clipboard.Bind(wx.EVT_BUTTON, self.OnCopy)
 
         # help
-        self.btn_help = wx.Button(parent=self.panel, id=wx.ID_HELP)
-        self.btn_help.SetToolTipString(
+        self.btn_help = Button(parent=self.panel, id=wx.ID_HELP)
+        self.btn_help.SetToolTip(
             _("Show manual page of the command (Ctrl+H)"))
         self.btn_help.Bind(wx.EVT_BUTTON, self.OnHelp)
         self.Bind(wx.EVT_MENU, self.OnHelp, id=wx.ID_HELP)
@@ -629,13 +631,13 @@ class TaskFrame(wx.Frame):
 
         # add help button
         btnsizer.Add(
-            item=self.btn_help,
+            self.btn_help,
             proportion=0,
             flag=wx.ALL | wx.ALIGN_CENTER,
             border=10)
 
         guisizer.Add(
-            item=btnsizer,
+            btnsizer,
             proportion=0,
             flag=wx.ALIGN_CENTER | wx.LEFT | wx.RIGHT,
             border=30)
@@ -665,7 +667,7 @@ class TaskFrame(wx.Frame):
                         group='cmd',
                         key='addNewLayer',
                         subkey='enabled'))
-                guisizer.Add(item=self.addbox, proportion=0,
+                guisizer.Add(self.addbox, proportion=0,
                              flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM,
                              border=5)
 
@@ -690,7 +692,7 @@ class TaskFrame(wx.Frame):
                 _(
                     "Close dialog when command is successfully finished. "
                     "Change this settings in Preferences dialog ('Command' tab)."))
-            guisizer.Add(item=self.closebox, proportion=0,
+            guisizer.Add(self.closebox, proportion=0,
                          flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM,
                          border=5)
         # bindings
@@ -725,13 +727,22 @@ class TaskFrame(wx.Frame):
         self.Layout()
 
         # keep initial window size limited for small screens
-        width, height = self.GetSizeTuple()
+        width, height = self.GetSize()
         self.SetSize(wx.Size(min(width, 650),
                              min(height, 500)))
 
         # fix goutput's pane size (required for Mac OSX)
         if self.goutput:
             self.goutput.SetSashPosition(int(self.GetSize()[1] * .75))
+
+    def MakeModal(self, modal=True):
+        if globalvar.wxPythonPhoenix:
+            if modal and not hasattr(self, '_disabler'):
+                self._disabler = wx.WindowDisabler(self)
+            if not modal and hasattr(self, '_disabler'):
+                del self._disabler
+        else:
+            super(TaskFrame, self).MakeModal(modal)
 
     def updateValuesHook(self, event=None):
         """Update status bar data"""
@@ -875,13 +886,16 @@ class TaskFrame(wx.Frame):
                 self.parent and \
                 self.parent.GetName() in ('LayerTree',
                                           'MapWindow'):
+            Debug.msg(1, "TaskFrame.OnCancel(): known parent")
             # display decorations and
             # pressing OK or cancel after setting layer properties
             if self.task.name in ['d.barscale', 'd.legend', 'd.northarrow', 'd.histogram', 'd.text', 'd.legend.vect'] \
                     or len(self.parent.GetLayerInfo(self.layer, key='cmd')) >= 1:
+                # TODO: do this through policy
                 self.Hide()
             # canceled layer with nothing set
             elif len(self.parent.GetLayerInfo(self.layer, key='cmd')) < 1:
+                # TODO: do this through callback or signal
                 try:
                     self.parent.Delete(self.layer)
                 except ValueError:
@@ -890,6 +904,7 @@ class TaskFrame(wx.Frame):
                     pass
                 self.Destroy()
         else:
+            Debug.msg(1, "TaskFrame.OnCancel(): no parent")
             # cancel for non-display commands
             self.Destroy()
 
@@ -1017,8 +1032,8 @@ class CmdPanel(wx.Panel):
                 title = text_beautify(f['description'])
                 tooltip = None
             title_sizer = wx.BoxSizer(wx.HORIZONTAL)
-            rtitle_txt = wx.StaticText(parent=which_panel,
-                                       label='(' + f['name'] + ')')
+            rtitle_txt = StaticText(parent=which_panel,
+                                    label='(' + f['name'] + ')')
             chk = wx.CheckBox(
                 parent=which_panel,
                 label=title,
@@ -1027,12 +1042,12 @@ class CmdPanel(wx.Panel):
             if tooltip:
                 chk.SetToolTipString(tooltip)
             chk.SetValue(f.get('value', False))
-            title_sizer.Add(item=chk, proportion=1,
+            title_sizer.Add(chk, proportion=1,
                             flag=wx.EXPAND)
-            title_sizer.Add(item=rtitle_txt, proportion=0,
+            title_sizer.Add(rtitle_txt, proportion=0,
                             flag=wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL)
             which_sizer.Add(
-                item=title_sizer,
+                title_sizer,
                 proportion=0,
                 flag=wx.EXPAND | wx.TOP | wx.LEFT | wx.RIGHT,
                 border=5)
@@ -1050,7 +1065,7 @@ class CmdPanel(wx.Panel):
                 else:
                     f['wxId'] = [parChk.GetId()]
                 parChk.Bind(wx.EVT_CHECKBOX, self.OnSetValue)
-                which_sizer.Add(item=parChk, proportion=0,
+                which_sizer.Add(parChk, proportion=0,
                                 flag=wx.LEFT, border=20)
 
             if f['name'] in ('verbose', 'quiet'):
@@ -1099,34 +1114,34 @@ class CmdPanel(wx.Panel):
                     p.get('multiple', False) and \
                     p.get('gisprompt', False) == False and \
                     p.get('type', '') == 'string':
-                title_txt = wx.StaticBox(parent=which_panel, id=wx.ID_ANY)
+                title_txt = StaticBox(parent=which_panel, id=wx.ID_ANY)
             else:
                 title_sizer = wx.BoxSizer(wx.HORIZONTAL)
-                title_txt = wx.StaticText(parent=which_panel)
+                title_txt = StaticText(parent=which_panel)
                 if p['key_desc']:
                     ltype = ','.join(p['key_desc'])
                 else:
                     ltype = p['type']
                 # red star for required options
                 if p.get('required', False):
-                    required_txt = wx.StaticText(parent=which_panel, label="*")
+                    required_txt = StaticText(parent=which_panel, label="*")
                     required_txt.SetForegroundColour(wx.RED)
-                    required_txt.SetToolTipString(_("This option is required"))
+                    required_txt.SetToolTip(_("This option is required"))
                 else:
-                    required_txt = wx.StaticText(parent=which_panel, label="")
-                rtitle_txt = wx.StaticText(
+                    required_txt = StaticText(parent=which_panel, label="")
+                rtitle_txt = StaticText(
                     parent=which_panel,
                     label='(' + p['name'] + '=' + ltype + ')')
-                title_sizer.Add(item=title_txt, proportion=0,
+                title_sizer.Add(title_txt, proportion=0,
                                 flag=wx.LEFT | wx.TOP | wx.EXPAND, border=5)
-                title_sizer.Add(item=required_txt, proportion=1,
+                title_sizer.Add(required_txt, proportion=1,
                                 flag=wx.EXPAND, border=0)
                 title_sizer.Add(
-                    item=rtitle_txt,
+                    rtitle_txt,
                     proportion=0,
                     flag=wx.ALIGN_RIGHT | wx.RIGHT | wx.TOP,
                     border=5)
-                which_sizer.Add(item=title_sizer, proportion=0,
+                which_sizer.Add(title_sizer, proportion=0,
                                 flag=wx.EXPAND)
             self.label_id.append(title_txt.GetId())
 
@@ -1149,7 +1164,7 @@ class CmdPanel(wx.Panel):
                     stSizer = wx.StaticBoxSizer(
                         box=title_txt, orient=wx.VERTICAL)
                     if valuelist_desc:
-                        hSizer = wx.FlexGridSizer(cols=1, vgap=1)
+                        hSizer = wx.FlexGridSizer(cols=1, vgap=1, hgap=1)
                     else:
                         hSizer = wx.FlexGridSizer(cols=6, vgap=1, hgap=1)
                     isEnabled = {}
@@ -1174,15 +1189,15 @@ class CmdPanel(wx.Panel):
                         p['wxId'].append(chkbox.GetId())
                         if val in isEnabled:
                             chkbox.SetValue(True)
-                        hSizer.Add(item=chkbox, proportion=0)
+                        hSizer.Add(chkbox, proportion=0)
                         chkbox.Bind(wx.EVT_CHECKBOX, self.OnUpdateSelection)
                         chkbox.Bind(wx.EVT_CHECKBOX, self.OnCheckBoxMulti)
                         idx += 1
 
-                    stSizer.Add(item=hSizer, proportion=0,
+                    stSizer.Add(hSizer, proportion=0,
                                 flag=wx.ADJUST_MINSIZE | wx.ALL, border=1)
                     which_sizer.Add(
-                        item=stSizer,
+                        stSizer,
                         proportion=0,
                         flag=wx.EXPAND | wx.TOP | wx.RIGHT | wx.LEFT,
                         border=5)
@@ -1224,7 +1239,7 @@ class CmdPanel(wx.Panel):
                             else:
                                 txt2.SetValue(value)
 
-                        which_sizer.Add(item=txt2, proportion=0,
+                        which_sizer.Add(txt2, proportion=0,
                                         flag=style, border=5)
 
                         p['wxId'] = [txt2.GetId(), ]
@@ -1241,7 +1256,7 @@ class CmdPanel(wx.Panel):
                                     value) + '.png')
                             bb = wx.BitmapButton(
                                 parent=which_panel, id=wx.ID_ANY, bitmap=bitmap)
-                            iconLabel = wx.StaticText(
+                            iconLabel = StaticText(
                                 parent=which_panel, id=wx.ID_ANY)
                             iconLabel.SetLabel(value)
                             p['value'] = value
@@ -1249,14 +1264,14 @@ class CmdPanel(wx.Panel):
                             bb.Bind(wx.EVT_BUTTON, self.OnSetSymbol)
                             this_sizer = wx.BoxSizer(wx.HORIZONTAL)
                             this_sizer.Add(
-                                item=bb, proportion=0, flag=wx.ADJUST_MINSIZE |
+                                bb, proportion=0, flag=wx.ADJUST_MINSIZE |
                                 wx.BOTTOM | wx.LEFT, border=5)
                             this_sizer.Add(
-                                item=iconLabel,
+                                iconLabel,
                                 proportion=0,
                                 flag=wx.ADJUST_MINSIZE | wx.BOTTOM | wx.LEFT | wx.ALIGN_CENTER_VERTICAL,
                                 border=5)
-                            which_sizer.Add(item=this_sizer, proportion=0,
+                            which_sizer.Add(this_sizer, proportion=0,
                                             flag=wx.ADJUST_MINSIZE, border=0)
                         else:
                             # list of values (combo)
@@ -1268,7 +1283,7 @@ class CmdPanel(wx.Panel):
                             if value:
                                 cb.SetValue(value)  # parameter previously set
                             which_sizer.Add(
-                                item=cb, proportion=0, flag=wx.ADJUST_MINSIZE |
+                                cb, proportion=0, flag=wx.ADJUST_MINSIZE |
                                 wx.BOTTOM | wx.LEFT, border=5)
                             p['wxId'] = [cb.GetId(), ]
                             cb.Bind(wx.EVT_COMBOBOX, self.OnSetValue)
@@ -1300,19 +1315,19 @@ class CmdPanel(wx.Panel):
                     win.Bind(wx.EVT_TEXT, self.OnSetValue)
                     style = wx.EXPAND | wx.BOTTOM | wx.LEFT | wx.RIGHT
                     if p.get('name', '') == 'font':
-                        font_btn = wx.Button(parent=which_panel, label=_("Select font"))
+                        font_btn = Button(parent=which_panel, label=_("Select font"))
                         font_btn.Bind(wx.EVT_BUTTON, self.OnSelectFont)
                         font_sizer = wx.BoxSizer(wx.HORIZONTAL)
-                        font_sizer.Add(item=win, proportion=1,
+                        font_sizer.Add(win, proportion=1,
                                        flag=style, border=5)
-                        font_sizer.Add(item=font_btn, proportion=0,
+                        font_sizer.Add(font_btn, proportion=0,
                                        flag=style, border=5)
                         
-                        which_sizer.Add(item=font_sizer, proportion=0,
+                        which_sizer.Add(font_sizer, proportion=0,
                                         flag=style, border=5)
                         p['wxId'].append(font_btn.GetId())
                     else:
-                        which_sizer.Add(item=win, proportion=0,
+                        which_sizer.Add(win, proportion=0,
                                         flag=style, border=5)
 
                 elif p.get('type', '') == 'integer':
@@ -1333,14 +1348,14 @@ class CmdPanel(wx.Panel):
                         win.Bind(wx.EVT_SPINCTRL, self.OnSetValue)
 
                     style = wx.BOTTOM | wx.LEFT | wx.RIGHT
-                    which_sizer.Add(item=win, proportion=0,
+                    which_sizer.Add(win, proportion=0,
                                     flag=style, border=5)
                 else:  # float
                     win = wx.TextCtrl(
                         parent=which_panel, value=p.get(
                             'default', ''), validator=FloatValidator())
                     style = wx.EXPAND | wx.BOTTOM | wx.LEFT | wx.RIGHT
-                    which_sizer.Add(item=win, proportion=0,
+                    which_sizer.Add(win, proportion=0,
                                     flag=style, border=5)
 
                     value = self._getValue(p)
@@ -1496,7 +1511,7 @@ class CmdPanel(wx.Panel):
                         #         p['wxId'].append(win.GetId())
                         # else:
                         which_sizer.Add(
-                            item=selection,
+                            selection,
                             proportion=0,
                             flag=wx.ADJUST_MINSIZE | wx.BOTTOM | wx.LEFT | wx.RIGHT | wx.TOP | wx.ALIGN_CENTER_VERTICAL,
                             border=5)
@@ -1505,7 +1520,7 @@ class CmdPanel(wx.Panel):
                         win.Bind(wx.EVT_TEXT, self.OnUpdateSelection)
                         win.Bind(wx.EVT_TEXT, self.OnSetValue)
                         which_sizer.Add(
-                            item=selection,
+                            selection,
                             proportion=0,
                             flag=wx.ADJUST_MINSIZE | wx.BOTTOM | wx.LEFT | wx.RIGHT | wx.TOP | wx.ALIGN_CENTER_VERTICAL,
                             border=5)
@@ -1536,19 +1551,19 @@ class CmdPanel(wx.Panel):
 
                             hSizer = wx.BoxSizer(wx.HORIZONTAL)
                             hSizer.Add(
-                                item=selection,
+                                selection,
                                 proportion=0,
                                 flag=wx.ADJUST_MINSIZE | wx.BOTTOM | wx.LEFT | wx.RIGHT | wx.TOP | wx.ALIGN_CENTER_VERTICAL,
                                 border=5)
                             hSizer.Add(
-                                item=bb,
+                                bb,
                                 proportion=0,
                                 flag=wx.EXPAND | wx.BOTTOM | wx.RIGHT | wx.TOP | wx.ALIGN_CENTER_VERTICAL,
                                 border=5)
                             which_sizer.Add(hSizer)
                         else:
                             which_sizer.Add(
-                                item=selection,
+                                selection,
                                 proportion=0,
                                 flag=wx.ADJUST_MINSIZE | wx.BOTTOM | wx.LEFT | wx.RIGHT | wx.TOP | wx.ALIGN_CENTER_VERTICAL,
                                 border=5)
@@ -1560,7 +1575,7 @@ class CmdPanel(wx.Panel):
                     selection.Bind(wx.EVT_TEXT, self.OnUpdateSelection)
                     selection.Bind(wx.EVT_TEXT, self.OnSetValue)
                     which_sizer.Add(
-                        item=selection,
+                        selection,
                         proportion=0,
                         flag=wx.ADJUST_MINSIZE | wx.BOTTOM | wx.LEFT | wx.RIGHT | wx.TOP | wx.ALIGN_CENTER_VERTICAL,
                         border=5)
@@ -1573,7 +1588,7 @@ class CmdPanel(wx.Panel):
                     selection.Bind(wx.EVT_TEXT, self.OnSetValue)
                     selection.Bind(wx.EVT_COMBOBOX, self.OnSetValue)
                     which_sizer.Add(
-                        item=selection,
+                        selection,
                         proportion=0,
                         flag=wx.ADJUST_MINSIZE | wx.BOTTOM | wx.LEFT | wx.RIGHT | wx.TOP | wx.ALIGN_CENTER_VERTICAL,
                         border=5)
@@ -1587,7 +1602,7 @@ class CmdPanel(wx.Panel):
                     win.Bind(wx.EVT_TEXT, self.OnSetValue)
                     win.Bind(wx.EVT_COMBOBOX, self.OnSetValue)
                     which_sizer.Add(
-                        item=win,
+                        win,
                         proportion=0,
                         flag=wx.ADJUST_MINSIZE | wx.BOTTOM | wx.LEFT | wx.RIGHT | wx.TOP | wx.ALIGN_CENTER_VERTICAL,
                         border=5)
@@ -1673,8 +1688,8 @@ class CmdPanel(wx.Panel):
                         elif prompt == 'location':
                             win = gselect.LocationSelect(parent=which_panel,
                                                          value=value)
-                            win.Bind(wx.EVT_COMBOBOX, self.OnUpdateSelection)
-                            win.Bind(wx.EVT_COMBOBOX, self.OnSetValue)
+                            win.Bind(wx.EVT_TEXT, self.OnUpdateSelection)
+                            win.Bind(wx.EVT_TEXT, self.OnSetValue)
 
                         elif prompt == 'mapset':
                             if p.get('age', 'old') == 'old':
@@ -1706,7 +1721,7 @@ class CmdPanel(wx.Panel):
                     flags = wx.BOTTOM | wx.LEFT | wx.RIGHT
                     if prompt == 'dbname':
                         flags |= wx.EXPAND
-                    which_sizer.Add(item=win, proportion=0,
+                    which_sizer.Add(win, proportion=0,
                                     flag=flags, border=5)
                 # color entry
                 elif prompt == 'color':
@@ -1734,7 +1749,7 @@ class CmdPanel(wx.Panel):
                     if p.get('multiple', False):
                         txt = wx.TextCtrl(parent=which_panel, id=wx.ID_ANY)
                         this_sizer.Add(
-                            item=txt,
+                            txt,
                             proportion=1,
                             flag=wx.ADJUST_MINSIZE | wx.LEFT | wx.TOP,
                             border=5)
@@ -1752,7 +1767,7 @@ class CmdPanel(wx.Panel):
                         colour=default_color, pos=wx.DefaultPosition,
                         size=(colorSize, 32))
                     this_sizer.Add(
-                        item=btn_colour,
+                        btn_colour,
                         proportion=0,
                         flag=wx.ADJUST_MINSIZE | wx.BOTTOM | wx.LEFT,
                         border=5)
@@ -1767,7 +1782,7 @@ class CmdPanel(wx.Panel):
                         else:
                             none_check.SetValue(False)
                         this_sizer.Add(
-                            item=none_check, proportion=0,
+                            none_check, proportion=0,
                             flag=wx.ADJUST_MINSIZE | wx.LEFT | wx.RIGHT | wx.TOP,
                             border=5)
                         which_sizer.Add(this_sizer)
@@ -1808,7 +1823,7 @@ class CmdPanel(wx.Panel):
                     value = self._getValue(p)
                     if value:
                         fbb.SetValue(value)  # parameter previously set
-                    which_sizer.Add(item=fbb, proportion=0,
+                    which_sizer.Add(fbb, proportion=0,
                                     flag=wx.EXPAND | wx.RIGHT, border=5)
 
                     # A file browse button is a combobox with two children:
@@ -1839,41 +1854,41 @@ class CmdPanel(wx.Panel):
 
                         ifbb.Bind(wx.EVT_TEXT, self.OnFileText)
 
-                        btnLoad = wx.Button(
+                        btnLoad = Button(
                             parent=which_panel, id=wx.ID_ANY, label=_("&Load"))
-                        btnLoad.SetToolTipString(
+                        btnLoad.SetToolTip(
                             _("Load and edit content of a file"))
                         btnLoad.Bind(wx.EVT_BUTTON, self.OnFileLoad)
-                        btnSave = wx.Button(
+                        btnSave = Button(
                             parent=which_panel, id=wx.ID_ANY, label=_("&Save as"))
-                        btnSave.SetToolTipString(
+                        btnSave.SetToolTip(
                             _("Save content to a file for further use"))
                         btnSave.Bind(wx.EVT_BUTTON, self.OnFileSave)
 
-                        fileContentLabel = wx.StaticText(
+                        fileContentLabel = StaticText(
                             parent=which_panel, id=wx.ID_ANY,
                             label=_('or enter values directly:'))
-                        fileContentLabel.SetToolTipString(
+                        fileContentLabel.SetToolTip(
                             _("Enter file content directly instead of specifying"
                               " a file."
                               " Temporary file will be automatically created."))
                         which_sizer.Add(
-                            item=fileContentLabel,
+                            fileContentLabel,
                             proportion=0,
                             flag=wx.EXPAND | wx.RIGHT | wx.LEFT | wx.BOTTOM,
                             border=5)
                         which_sizer.Add(
-                            item=ifbb,
+                            ifbb,
                             proportion=1,
                             flag=wx.EXPAND | wx.RIGHT | wx.LEFT,
                             border=5)
                         btnSizer = wx.BoxSizer(wx.HORIZONTAL)
-                        btnSizer.Add(item=btnLoad, proportion=0,
+                        btnSizer.Add(btnLoad, proportion=0,
                                      flag=wx.ALIGN_RIGHT | wx.RIGHT, border=10)
-                        btnSizer.Add(item=btnSave, proportion=0,
+                        btnSizer.Add(btnSave, proportion=0,
                                      flag=wx.ALIGN_RIGHT)
                         which_sizer.Add(
-                            item=btnSizer,
+                            btnSizer,
                             proportion=0,
                             flag=wx.ALIGN_RIGHT | wx.RIGHT | wx.TOP,
                             border=5)
@@ -1900,7 +1915,7 @@ class CmdPanel(wx.Panel):
                     value = self._getValue(p)
                     if value:
                         fbb.SetValue(value)  # parameter previously set
-                    which_sizer.Add(item=fbb, proportion=0,
+                    which_sizer.Add(fbb, proportion=0,
                                     flag=wx.EXPAND | wx.RIGHT, border=5)
 
                     # A file browse button is a combobox with two children:
@@ -1929,7 +1944,7 @@ class CmdPanel(wx.Panel):
                         win.Bind(wx.EVT_TEXT, self.OnSetValue)
 
                     which_sizer.Add(
-                        item=win,
+                        win,
                         proportion=0,
                         flag=wx.EXPAND | wx.BOTTOM | wx.LEFT | wx.RIGHT,
                         border=5)
@@ -1956,7 +1971,7 @@ class CmdPanel(wx.Panel):
                         win.Bind(wx.EVT_TEXT, self.OnSetValue)
 
                     which_sizer.Add(
-                        item=win,
+                        win,
                         proportion=0,
                         flag=wx.EXPAND | wx.BOTTOM | wx.LEFT | wx.RIGHT,
                         border=5)
@@ -1982,7 +1997,7 @@ class CmdPanel(wx.Panel):
                     if value:
                         cb.SetValue(value)  # parameter previously set
                     which_sizer.Add(
-                        item=cb,
+                        cb,
                         proportion=0,
                         flag=wx.ADJUST_MINSIZE | wx.BOTTOM | wx.LEFT,
                         border=5)
@@ -2006,7 +2021,7 @@ class CmdPanel(wx.Panel):
                     if value:
                         win.fileWidgets['browse'].GetChildren()[1].SetValue(
                             value)  # parameter previously set
-                    which_sizer.Add(item=win, proportion=0,
+                    which_sizer.Add(win, proportion=0,
                                     flag=wx.EXPAND)
 
                 elif prompt == 'datasource_layer':
@@ -2017,7 +2032,7 @@ class CmdPanel(wx.Panel):
                             _('Layer name'),
                             _('Feature type'),
                             _('Projection match')])
-                    which_sizer.Add(item=self.win1, proportion=0,
+                    which_sizer.Add(self.win1, proportion=0,
                                     flag=wx.EXPAND | wx.ALL, border=3)
                     porf = self.task.get_param(
                         'input', element='name', raiseError=False)
@@ -2055,7 +2070,7 @@ class CmdPanel(wx.Panel):
                 else:
                     p['wxId'] = [parChk.GetId()]
                 parChk.Bind(wx.EVT_CHECKBOX, self.OnSetValue)
-                which_sizer.Add(item=parChk, proportion=0,
+                which_sizer.Add(parChk, proportion=0,
                                 flag=wx.LEFT, border=20)
 
             if title_txt is not None:
@@ -2071,7 +2086,7 @@ class CmdPanel(wx.Panel):
                                 p['values_desc'][i] + os.linesep
                     tooltip.strip(os.linesep)
                 if tooltip:
-                    title_txt.SetToolTipString(tooltip)
+                    title_txt.SetToolTip(tooltip)
 
             if p == first_param:
                 if 'wxId' in p and len(p['wxId']) > 0:
@@ -2094,6 +2109,9 @@ class CmdPanel(wx.Panel):
         pLocation = None
         pMapset = None
         for p in self.task.params:
+            if self.task.blackList['enabled'] and self.task.get_name() in self.task.blackList['items'] and \
+               p.get('name', '') in self.task.blackList['items'][self.task.get_name()]['params']:
+                continue
             guidep = p.get('guidependency', '')
 
             if guidep:
@@ -2260,7 +2278,7 @@ class CmdPanel(wx.Panel):
 
         self.notebook.SetSelection(0)
 
-        panelsizer.Add(item=self.notebook, proportion=1, flag=wx.EXPAND)
+        panelsizer.Add(self.notebook, proportion=1, flag=wx.EXPAND)
         self.SetSizer(panelsizer)
         panelsizer.Fit(self.notebook)
 
@@ -2409,7 +2427,7 @@ class CmdPanel(wx.Panel):
             self.hsizer.Remove(winOgr)
 
             self.hsizer.Add(
-                item=winNative,
+                winNative,
                 flag=wx.ADJUST_MINSIZE | wx.BOTTOM | wx.LEFT | wx.RIGHT | wx.TOP | wx.ALIGN_TOP,
                 border=5)
             winNative.Show()
@@ -2421,16 +2439,16 @@ class CmdPanel(wx.Panel):
             winNative.Hide()
             self.hsizer.Remove(winNative)
 
-            sizer.Add(item=winOgr)
+            sizer.Add(winOgr)
             winOgr.Show()
             p['value'] = winOgr.GetDsn()
 
             self.hsizer.Add(
-                item=sizer,
+                sizer,
                 flag=wx.ADJUST_MINSIZE | wx.BOTTOM | wx.LEFT | wx.RIGHT | wx.TOP | wx.ALIGN_TOP,
                 border=5)
 
-        self.hsizer.Add(item=rbox,
+        self.hsizer.Add(rbox,
                         flag=wx.ADJUST_MINSIZE | wx.BOTTOM | wx.LEFT |
                         wx.RIGHT | wx.ALIGN_TOP,
                         border=5)
@@ -2754,7 +2772,7 @@ class CmdPanel(wx.Panel):
             image = wx.Image(
                 iconSectionDict[section]).Scale(
                 16, 16, wx.IMAGE_QUALITY_HIGH)
-            idx = imageList.Add(wx.BitmapFromImage(image))
+            idx = imageList.Add(BitmapFromImage(image))
             return idx
 
         return -1
@@ -2969,7 +2987,6 @@ if __name__ == "__main__":
 
     if sys.argv[1] != 'test':
         q = wx.LogNull()
-        from core.debug import Debug
         Debug.msg(1, "forms.py called using command: %s" % sys.argv[1])
         cmd = utils.split(sys.argv[1])
         task = gtask.grassTask(cmd[0])

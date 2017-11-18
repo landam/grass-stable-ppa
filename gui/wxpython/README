@@ -1,7 +1,7 @@
 GRASS GIS - wxPython Graphical User Interface (wxGUI)
 =====================================================
 
-$Date: 2016-07-07 19:26:08 +0200 (Thu, 07 Jul 2016) $
+$Date: 2017-11-12 20:37:57 +0100 (Sun, 12 Nov 2017) $
 
 1 - REQUIREMENTS
 
@@ -18,7 +18,7 @@ $Date: 2016-07-07 19:26:08 +0200 (Thu, 07 Jul 2016) $
 If you want to launch wxPython GUI automatically, start GRASS with
 `-gui` parameter
 
-$ grass72 -gui
+$ grass74 -gui
 
 
 3 - STARTUP FROM GRASS TERMINAL

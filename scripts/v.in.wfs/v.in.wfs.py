@@ -84,6 +84,10 @@ except ImportError:
     from urllib.request import urlopen
     from urllib.error import URLError, HTTPError
 
+# i18N
+import gettext
+gettext.install('grassmods', os.path.join(os.getenv("GISBASE"), 'locale'))
+
 
 def main():
     out = options['output']
@@ -101,12 +105,14 @@ def main():
     if options['maximum_features']:
         wfs_url += '&MAXFEATURES=' + options['maximum_features']
         if int(options['maximum_features']) < 1:
-            grass.fatal('Invalid maximum number of features')
+            # GTC Invalid WFS maximum features parameter
+            grass.fatal(_("Invalid maximum number of features"))
 
     if options['start_index']:
         wfs_url += '&STARTINDEX=' + options['start_index']
         if int(options['start_index']) < 1:
-            grass.fatal('Features begin with index "1"')
+            # GTC Invalid WFS start index parameter
+            grass.fatal(_('Features begin with index "1"'))
 
     if flags['r']:
         bbox = grass.read_command("g.region", flags='w').split('=')[1]
@@ -120,6 +126,7 @@ def main():
 
     grass.debug(wfs_url)
 
+    # GTC Downloading WFS features
     grass.message(_("Retrieving data..."))
     try:
         inf = urlopen(wfs_url)
@@ -143,7 +150,7 @@ def main():
     if flags['l']:
         import shutil
         if os.path.exists('wms_capabilities.xml'):
-            grass.fatal('A file called "wms_capabilities.xml" already exists here')
+            grass.fatal(_('A file called "wms_capabilities.xml" already exists here'))
         # os.move() might fail if the temp file is on another volume, so we copy instead
         shutil.copy(tmpxml, 'wms_capabilities.xml')
         try_remove(tmpxml)
@@ -152,7 +159,7 @@ def main():
     grass.message(_("Importing data..."))
     try:
         grass.run_command('v.in.ogr', flags='o', input=tmpxml, output=out)
-        grass.message(_("Vector points map <%s> imported from WFS.") % out)
+        grass.message(_("Vector map <%s> imported from WFS.") % out)
     except:
         grass.message(_("WFS import failed"))
     finally:

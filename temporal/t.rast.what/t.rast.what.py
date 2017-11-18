@@ -5,10 +5,10 @@
 # MODULE:       t.rast.what
 # AUTHOR(S):    Soeren Gebbert
 #
-# PURPOSE:      Sample a space time raster dataset at specific vector point 
-#               coordinates and write the output to stdout using different 
+# PURPOSE:      Sample a space time raster dataset at specific vector point
+#               coordinates and write the output to stdout using different
 #               layouts
-#               
+#
 # COPYRIGHT:    (C) 2015 by the GRASS Development Team
 #
 #               This program is free software under the GNU General Public
@@ -109,10 +109,16 @@
 ##% description: Output integer category values, not cell values
 ##%end
 
+#%flag
+#% key: v
+#% description: Show the category for vector points map
+#%end
+
 import sys
 import copy
 import grass.script as gscript
 
+import pdb
 
 ############################################################################
 
@@ -123,30 +129,34 @@ def main(options, flags):
 
     # Get the options
     points = options["points"]
-    coordinates = options["coordinates"] 
+    coordinates = options["coordinates"]
     strds = options["strds"]
     output = options["output"]
     where = options["where"]
     order = options["order"]
     layout = options["layout"]
     null_value = options["null_value"]
-    separator = options["separator"]
-    
+    separator = gscript.separator(options["separator"])
+
     nprocs = int(options["nprocs"])
     write_header = flags["n"]
     use_stdin = flags["i"]
+    vcat = flags["v"]
 
     #output_cat_label = flags["f"]
     #output_color = flags["r"]
     #output_cat = flags["i"]
-    
+
     overwrite = gscript.overwrite()
-    
-    if coordinates and points: 
+
+    if coordinates and points:
         gscript.fatal(_("Options coordinates and points are mutually exclusive"))
 
-    if not coordinates and not points and not use_stdin: 
+    if not coordinates and not points and not use_stdin:
         gscript.fatal(_("Please specify the coordinates, the points option or use the 'i' flag to pipe coordinate positions to t.rast.what from stdin, to provide the sampling coordinates"))
+
+    if vcat and not points:
+        gscript.fatal(_("Flag 'v' required option 'points'"))
 
     if use_stdin:
         coordinates_stdin = str(sys.__stdin__.read())
@@ -166,24 +176,11 @@ def main(options, flags):
     dbif.connect()
 
     sp = tgis.open_old_stds(strds, "strds", dbif)
-    maps = sp.get_registered_maps_as_objects(where=where, order=order, 
+    maps = sp.get_registered_maps_as_objects(where=where, order=order,
                                              dbif=dbif)
     dbif.close()
-
     if not maps:
         gscript.fatal(_("Space time raster dataset <%s> is empty") % sp.get_id())
-
-    # Setup separator
-    if separator == "pipe":
-        separator = "|"
-    if separator == "comma":
-        separator = ","
-    if separator == "space":
-        separator = " "
-    if separator == "tab":
-        separator = "\t"
-    if separator == "newline":
-        separator = "\n"
 
     # Setup flags are disabled due to test issues
     flags = ""
@@ -193,31 +190,36 @@ def main(options, flags):
     #    flags += "r"
     #if output_cat is True:
     #    flags += "i"
+    if vcat is True:
+        flags += "v"
 
     # Configure the r.what module
-    if points: 
-        r_what = pymod.Module("r.what", map="dummy", 
-                                        output="dummy", run_=False, 
-                                        separator=separator, points=points, 
-                                        overwrite=overwrite, flags=flags, 
-                                        quiet=True) 
-    elif coordinates: 
+    if points:
+        r_what = pymod.Module("r.what", map="dummy",
+                              output="dummy", run_=False,
+                              separator=separator, points=points,
+                              overwrite=overwrite, flags=flags,
+                              null_value=null_value,
+                              quiet=True)
+    elif coordinates:
         # Create a list of values
         coord_list = coordinates.split(",")
-        r_what = pymod.Module("r.what", map="dummy", 
-                                        output="dummy", run_=False, 
-                                        separator=separator,  
-                                        coordinates=coord_list, 
-                                        overwrite=overwrite, flags=flags, 
-                                        quiet=True)
+        r_what = pymod.Module("r.what", map="dummy",
+                              output="dummy", run_=False,
+                              separator=separator,
+                              coordinates=coord_list,
+                              overwrite=overwrite, flags=flags,
+                              null_value=null_value,
+                              quiet=True)
     elif use_stdin:
-        r_what = pymod.Module("r.what", map="dummy", 
-                                        output="dummy", run_=False, 
-                                        separator=separator,  
-                                        stdin_=coordinates_stdin, 
-                                        overwrite=overwrite, flags=flags, 
-                                        quiet=True)
-    else: 
+        r_what = pymod.Module("r.what", map="dummy",
+                              output="dummy", run_=False,
+                              separator=separator,
+                              stdin_=coordinates_stdin,
+                              overwrite=overwrite, flags=flags,
+                              null_value=null_value,
+                              quiet=True)
+    else:
         gscript.error(_("Please specify points or coordinates"))
 
     if len(maps) < nprocs:
@@ -226,7 +228,7 @@ def main(options, flags):
     # The module queue for parallel execution
     process_queue = pymod.ParallelModuleQueue(int(nprocs))
     num_maps = len(maps)
-    
+
     # 400 Maps is the absolute maximum in r.what
     # We need to determie the number of maps that can be processed
     # in parallel
@@ -253,12 +255,12 @@ def main(options, flags):
     count = 0
     for loop in range(num_loops):
         file_name = gscript.tempfile() + "_%i"%(loop)
-        count = process_loop(nprocs, maps, file_name, count, maps_per_process, 
-                             remaining_maps_per_loop, output_files, 
+        count = process_loop(nprocs, maps, file_name, count, maps_per_process,
+                             remaining_maps_per_loop, output_files,
                              output_time_list, r_what, process_queue)
-    
+
     process_queue.wait()
-    
+
     gscript.verbose("Number of raster map layers remaining for sampling %i"%(remaining_maps))
     if remaining_maps > 0:
         # Use a single process if less then 100 maps
@@ -274,43 +276,45 @@ def main(options, flags):
         else:
             maps_per_process = int(remaining_maps / nprocs)
             remaining_maps_per_loop = remaining_maps % nprocs
-            
+
             file_name = "out_remain"
-            process_loop(nprocs, maps, file_name, count, maps_per_process, 
-                         remaining_maps_per_loop, output_files, 
+            process_loop(nprocs, maps, file_name, count, maps_per_process,
+                         remaining_maps_per_loop, output_files,
                          output_time_list, r_what, process_queue)
 
     # Wait for unfinished processes
     process_queue.wait()
-    
+
     # Out the output files in the correct order together
     if layout == "row":
         one_point_per_row_output(separator, output_files, output_time_list,
-                                 output, write_header, site_input)
+                                 output, write_header, site_input, vcat)
     elif layout == "col":
         one_point_per_col_output(separator, output_files, output_time_list,
-                                 output, write_header, site_input)
+                                 output, write_header, site_input, vcat)
     else:
         one_point_per_timerow_output(separator, output_files, output_time_list,
-                                     output, write_header, site_input)
+                                     output, write_header, site_input, vcat)
 
 ############################################################################
 
 def one_point_per_row_output(separator, output_files, output_time_list,
-                             output, write_header, site_input):
+                             output, write_header, site_input, vcat):
     """Write one point per row
        output is of type: x,y,start,end,value
     """
     # open the output file for writing
     out_file = open(output, 'w') if output != "-" else sys.stdout
-    
+
     if write_header is True:
+        out_str = ""
+        if vcat:
+            out_str += "cat{sep}"
         if site_input:
-            out_file.write("x%(sep)sy%(sep)ssite%(sep)sstart%(sep)send%(sep)svalue\n"\
-                       %({"sep":separator}))
+            out_str += "x{sep}y{sep}site{sep}start{sep}end{sep}value\n"
         else:
-            out_file.write("x%(sep)sy%(sep)sstart%(sep)send%(sep)svalue\n"\
-                       %({"sep":separator}))
+            out_str += "x{sep}y{sep}start{sep}end{sep}value\n"
+        out_file.write(out_str.format(sep=separator))
 
     for count in range(len(output_files)):
         file_name = output_files[count]
@@ -319,15 +323,28 @@ def one_point_per_row_output(separator, output_files, output_time_list,
         in_file = open(file_name, "r")
         for line in in_file:
             line = line.split(separator)
-            x = line[0]
-            y = line[1]
-            if site_input:
-                site = line[2]
+            if vcat:
+                cat = line[0]
+                x = line[1]
+                y = line[2]
+                values = line[4:]
+                if site_input:
+                    site = line[3]
+                    values = line[5:]
 
-            # We ignore the site name
-            values = line[3:]
+            else:
+                x = line[0]
+                y = line[1]
+                if site_input:
+                    site = line[2]
+                values = line[3:]
+
             for i in range(len(values)):
                 start, end = map_list[i].get_temporal_extent_as_tuple()
+                if vcat:
+                    cat_str = "{ca}{sep}".format(ca=cat, sep=separator)
+                else:
+                    cat_str = ""
                 if site_input:
                     coor_string = "%(x)10.10f%(sep)s%(y)10.10f%(sep)s%(site_name)s%(sep)s"\
                                %({"x":float(x),"y":float(y),"site_name":str(site),"sep":separator})
@@ -338,26 +355,26 @@ def one_point_per_row_output(separator, output_files, output_time_list,
                                %({"start":str(start), "end":str(end),
                                   "val":(values[i].strip()),"sep":separator})
 
-                out_file.write(coor_string + time_string)
-        
+                out_file.write(cat_str + coor_string + time_string)
+
         in_file.close()
-    
+
     if out_file is not sys.stdout:
         out_file.close()
-        
+
 ############################################################################
 
 def one_point_per_col_output(separator, output_files, output_time_list,
-                             output, write_header, site_input):
+                             output, write_header, site_input, vcat):
     """Write one point per col
-       output is of type: 
+       output is of type:
        start,end,point_1 value,point_2 value,...,point_n value
-       
+
        Each row represents a single raster map, hence a single time stamp
     """
     # open the output file for writing
     out_file = open(output, 'w') if output != "-" else sys.stdout
-        
+
     first = True
     for count in range(len(output_files)):
         file_name = output_files[count]
@@ -365,47 +382,56 @@ def one_point_per_col_output(separator, output_files, output_time_list,
         map_list = output_time_list[count]
         in_file = open(file_name, "r")
         lines = in_file.readlines()
-        
+
         matrix = []
         for line in lines:
             matrix.append(line.split(separator))
-            
+
         num_cols = len(matrix[0])
-        
+
         if first is True:
             if write_header is True:
-                out_file.write("start%(sep)send"%({"sep":separator}))
-                if site_input:
-                    for row in matrix:
+                out_str = "start%(sep)send"%({"sep":separator})
+                for row in matrix:
+                    if vcat:
+                        cat = row[0]
+                        x = row[1]
+                        y = row[2]
+                        out_str += "{sep}{cat}{sep}{x:10.10f};" \
+                                  "{y:10.10f}".format(cat=cat, x=float(x),
+                                                           y=float(y),
+                                                           sep=separator)
+                        if site_input:
+                            site = row[3]
+                            out_str += "{sep}{site}".format(sep=separator,
+                                                            site=site)
+                    else:
                         x = row[0]
                         y = row[1]
-                        site = row[2]
-                        out_file.write("%(sep)s%(x)10.10f;%(y)10.10f;%(site_name)s"\
-                                   %({"sep":separator,
-                                      "x":float(x), 
-                                      "y":float(y),
-                                      "site_name":str(site)}))
-                else:
-                    for row in matrix:
-                        x = row[0]
-                        y = row[1]
-                        out_file.write("%(sep)s%(x)10.10f;%(y)10.10f"\
-                                   %({"sep":separator,
-                                      "x":float(x), 
-                                      "y":float(y)}))
+                        out_str += "{sep}{x:10.10f};" \
+                                   "{y:10.10f}".format(x=float(x), y=float(y),
+                                                       sep=separator)
+                        if site_input:
+                            site = row[2]
+                            out_str += "{sep}{site}".format(sep=separator,
+                                                            site=site)
 
-                out_file.write("\n")
+            out_file.write(out_str + "\n")
 
         first = False
 
-        for col in range(num_cols - 3):
+        if vcat:
+            ncol = 4
+        else:
+            ncol = 3
+        for col in range(num_cols - ncol):
             start, end = output_time_list[count][col].get_temporal_extent_as_tuple()
             time_string = "%(start)s%(sep)s%(end)s"\
                                %({"start":str(start), "end":str(end),
                                   "sep":separator})
             out_file.write(time_string)
             for row in range(len(matrix)):
-                value = matrix[row][col + 3]
+                value = matrix[row][col + ncol]
                 out_file.write("%(sep)s%(value)s"\
                                    %({"sep":separator,
                                       "value":value.strip()}))
@@ -418,10 +444,10 @@ def one_point_per_col_output(separator, output_files, output_time_list,
 ############################################################################
 
 def one_point_per_timerow_output(separator, output_files, output_time_list,
-                             output, write_header, site_input):
-    """Use the original layout of the r.what output and print instead of 
+                             output, write_header, site_input, vcat):
+    """Use the original layout of the r.what output and print instead of
        the raster names, the time stamps as header
-       
+
        One point per line for all time stamps:
         x|y|1991-01-01 00:00:00;1991-01-02 00:00:00|1991-01-02 00:00:00;1991-01-03 00:00:00|1991-01-03 00:00:00;1991-01-04 00:00:00|1991-01-04 00:00:00;1991-01-05 00:00:00
         3730731.49590371|5642483.51236521|6|8|7|7
@@ -441,10 +467,14 @@ def one_point_per_timerow_output(separator, output_files, output_time_list,
 
         if write_header:
             if first is True:
-                if site_input:
-                    header = "x%(sep)sy%(sep)ssite"%({"sep":separator})
+                if vcat:
+                    header = "cat{sep}".format(sep=separator)
                 else:
-                    header = "x%(sep)sy"%({"sep":separator})
+                    header = ""
+                if site_input:
+                    header += "x%(sep)sy%(sep)ssite"%({"sep":separator})
+                else:
+                    header += "x%(sep)sy"%({"sep":separator})
             for map in map_list:
                 start, end = map.get_temporal_extent_as_tuple()
                 time_string = "%(sep)s%(start)s;%(end)s"\
@@ -458,7 +488,9 @@ def one_point_per_timerow_output(separator, output_files, output_time_list,
             cols = lines[i].split(separator)
 
             if first is True:
-                if site_input:
+                if vcat and site_input:
+                    matrix.append(cols[:4])
+                elif vcat or site_input:
                     matrix.append(cols[:3])
                 else:
                     matrix.append(cols[:2])
@@ -476,21 +508,21 @@ def one_point_per_timerow_output(separator, output_files, output_time_list,
         first = True
         for col in row:
             value = col.strip()
-            
+
             if first is False:
                 out_file.write("%s"%(separator))
             out_file.write(value)
-            
+
             first = False
 
         out_file.write("\n")
     if out_file is not sys.stdout:
         out_file.close()
- 
+
 ############################################################################
 
-def process_loop(nprocs, maps, file_name, count, maps_per_process, 
-                 remaining_maps_per_loop, output_files, 
+def process_loop(nprocs, maps, file_name, count, maps_per_process,
+                 remaining_maps_per_loop, output_files,
                  output_time_list, r_what, process_queue):
     """Call r.what in parallel subprocesses"""
     first = True
@@ -504,7 +536,7 @@ def process_loop(nprocs, maps, file_name, count, maps_per_process,
         # Temporary output file
         final_file_name = file_name + "_%i"%(process)
         output_files.append(final_file_name)
-        
+
         map_names = []
         map_list = []
         for i in range(num):
@@ -516,7 +548,7 @@ def process_loop(nprocs, maps, file_name, count, maps_per_process,
         output_time_list.append(map_list)
 
         gscript.verbose(_("Process maps %(samp_start)i to %(samp_end)i (of %(total)i)"\
-                                  %({"samp_start":count-len(map_names)+1, 
+                                  %({"samp_start":count-len(map_names)+1,
                                   "samp_end":count, "total":len(maps)})))
         mod = copy.deepcopy(r_what)
         mod(map=map_names, output=final_file_name)
@@ -524,7 +556,7 @@ def process_loop(nprocs, maps, file_name, count, maps_per_process,
         process_queue.put(mod)
 
     return count
-    
+
 ############################################################################
 
 if __name__ == "__main__":

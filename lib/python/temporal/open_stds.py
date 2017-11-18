@@ -17,8 +17,11 @@ for details.
 
 :authors: Soeren Gebbert
 """
-
-from .factory import *
+# i18N
+import gettext
+from .core import init_dbif, get_current_mapset, get_tgis_message_interface
+from .factory import dataset_factory
+from .abstract_map_dataset import AbstractMapDataset
 
 ###############################################################################
 
@@ -46,7 +49,7 @@ def open_old_stds(name, type, dbif=None):
 
     # Check if the dataset name contains the mapset as well
     if name.find("@") < 0:
-        id = name + "@" + mapset
+        id = name.decode("utf-8") + "@" + mapset.decode("utf-8")
     else:
         id = name
 

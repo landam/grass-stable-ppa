@@ -32,7 +32,9 @@ void parse_args(int argc, char **argv,
     options->layer->required = NO;
     options->layer->key_desc = "name";
     options->layer->gisprompt = "old,datasource_layer,datasource_layer";
-        
+
+    options->where = G_define_standard_option(G_OPT_DB_WHERE);
+
     options->output = G_define_standard_option(G_OPT_V_OUTPUT);
     options->output->required = NO;
     options->output->description = _("Name for output GRASS vector map (default: input layer)");
@@ -43,6 +45,11 @@ void parse_args(int argc, char **argv,
 	_("Override projection check (use current location's projection)");
     flags->override->description =
 	_("Assume that the dataset has the same projection as the current location");
+
+    flags->proj = G_define_flag();
+    flags->proj->key = 'j';
+    flags->proj->description =
+	_("Perform projection check only and exit");
 
     flags->format = G_define_flag();
     flags->format->key = 'f';

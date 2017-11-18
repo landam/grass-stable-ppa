@@ -31,7 +31,6 @@ for details.
 #import traceback
 import os
 import sys
-
 import grass.script as gscript
 # i18N
 import gettext
@@ -40,7 +39,6 @@ gettext.install('grasslibs', os.path.join(os.getenv("GISBASE"), 'locale'))
 if sys.version_info.major == 3:
     long = int
 
-from datetime import datetime
 from .c_libraries_interface import *
 from grass.pygrass import messages
 # Import all supported database backends
@@ -57,6 +55,7 @@ except:
     pass
 
 import atexit
+from datetime import datetime
 
 ###############################################################################
 
@@ -456,7 +455,7 @@ def get_available_temporal_mapsets():
     for mapset in mapsets:
         driver = c_library_interface.get_driver_name(mapset)
         database = c_library_interface.get_database_name(mapset)
-        
+
         message_interface.debug(1, "get_available_temporal_mapsets: "\
                                    "\n  mapset %s\n  driver %s\n  database %s"%(mapset,
                                    driver, database))
@@ -610,6 +609,12 @@ def init(raise_fatal_error=False):
         driver_string = ciface.get_driver_name()
         database_string = ciface.get_database_name()
         tgis_backend = driver_string
+        try:
+            import sqlite3
+        except ImportError:
+            msgr.error("Unable to locate the sqlite SQL Python interface"
+                       " module sqlite3.")
+            raise
         dbmi = sqlite3
 
     tgis_database_string = database_string
@@ -1063,14 +1068,14 @@ class DBConnection(object):
         if dbstring is None:
             global tgis_database_string
             self.dbstring = tgis_database_string
-        
+
         self.dbstring = dbstring
 
         self.msgr = get_tgis_message_interface()
         self.msgr.debug(1, "DBConnection constructor:"\
                            "\n  backend: %s"\
                            "\n  dbstring: %s"%(backend, self.dbstring))
-                           #"\n  traceback:%s"%(backend, self.dbstring, 
+                           #"\n  traceback:%s"%(backend, self.dbstring,
                            #str("  \n".join(traceback.format_stack()))))
 
     def __del__(self):
@@ -1209,12 +1214,15 @@ class DBConnection(object):
                     elif isinstance(args[count], float):
                         statement = "%s%f%s" % (statement[0:pos], args[count],
                                                 statement[pos + 1:])
+                    elif isinstance(args[count], datetime):
+                        statement = "%s\'%s\'%s" % (statement[0:pos], str(args[count]),
+                                                statement[pos + 1:])
                     else:
                         # Default is a string, this works for datetime
                         # objects too
                         statement = "%s\'%s\'%s" % (statement[0:pos],
                                                     str(args[count]),
-                                                    statement[pos + 1:])
+                                                    str(statement[pos + 1:]))
                     count += 1
 
                 return statement

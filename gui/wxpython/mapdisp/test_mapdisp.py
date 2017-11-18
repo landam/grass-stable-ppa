@@ -55,6 +55,9 @@ import wx
 
 import grass.script as grass
 
+from grass.script.setup import set_gui_path
+set_gui_path()
+
 from core.utils import _
 from core.settings import UserSettings
 from core.globalvar import CheckWxVersion
@@ -104,7 +107,7 @@ class TextShower(object):
             id=wx.ID_ANY,
             label="No text set yet")
         self._cs.Add(
-            item=self._cl,
+            self._cl,
             proportion=1,
             flag=wx.EXPAND | wx.ALL,
             border=5)
@@ -153,7 +156,7 @@ class Tester(object):
         copyOfInitMap(map_, width, height)
         window = BufferedMapWindow(parent=panel, giface=giface, Map=map_,
                                    properties=mapWindowProperties)
-        sizer.Add(item=window, proportion=1, flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(window, proportion=1, flag=wx.EXPAND | wx.ALL, border=5)
         panel.SetSizer(sizer)
         panel.Layout()
         self.frame.Show()
@@ -188,16 +191,11 @@ class Tester(object):
 
         giface.mapWindow = window
 
-        sizer.Add(item=window, proportion=1, flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(window, proportion=1, flag=wx.EXPAND | wx.ALL, border=5)
         panel.SetSizer(sizer)
         panel.Layout()
 
         window.ZoomToWind()
-
-        from mapdisp.frame import MeasureController
-        self.measureController = MeasureController(giface)
-        self.measureController.StartMeasurement()
-        self._listenToAllMapWindowSignals(window)
 
         self.frame.Show()
 
@@ -218,7 +216,7 @@ class Tester(object):
 
         giface.mapWindow = window
 
-        sizer.Add(item=window, proportion=1, flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(window, proportion=1, flag=wx.EXPAND | wx.ALL, border=5)
         panel.SetSizer(sizer)
         panel.Layout()
 
@@ -249,7 +247,7 @@ class Tester(object):
 
         giface.mapWindow = window
 
-        sizer.Add(item=window, proportion=1, flag=wx.EXPAND | wx.ALL, border=5)
+        sizer.Add(window, proportion=1, flag=wx.EXPAND | wx.ALL, border=5)
         panel.SetSizer(sizer)
         panel.Layout()
 

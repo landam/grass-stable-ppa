@@ -91,6 +91,14 @@ int main(int argc, char *argv[])
     Values[i].i2 = -1;
     Values[i].d1 = 0.0;
     Values[i].d2 = 0.0;
+    Values[i].d3 = 0.0;
+    Values[i].d4 = 0.0;
+    if (options.option == O_BBOX) {
+	Values[i].d1 = -PORT_DOUBLE_MAX;
+	Values[i].d2 = PORT_DOUBLE_MAX;
+	Values[i].d3 = -PORT_DOUBLE_MAX;
+	Values[i].d4 = PORT_DOUBLE_MAX;
+    }
     Values[i].qcat = NULL;
     Values[i].nqcats = 0;
     Values[i].aqcats = 0;
@@ -116,6 +124,14 @@ int main(int argc, char *argv[])
 	    Values[i].i2 = -1;
 	    Values[i].d1 = 0.0;
 	    Values[i].d2 = 0.0;
+	    Values[i].d3 = 0.0;
+	    Values[i].d4 = 0.0;
+	    if (options.option == O_BBOX) {
+		Values[i].d1 = -PORT_DOUBLE_MAX;
+		Values[i].d2 = PORT_DOUBLE_MAX;
+		Values[i].d3 = -PORT_DOUBLE_MAX;
+		Values[i].d4 = PORT_DOUBLE_MAX;
+	    }
 	    Values[i].qcat = NULL;
 	    Values[i].nqcats = 0;
 	    Values[i].aqcats = 0;
@@ -132,7 +148,8 @@ int main(int argc, char *argv[])
 	query(&Map);
     }
     else if ((options.option == O_AREA) || (options.option == O_COMPACT) ||
-	     (options.option == O_PERIMETER) || (options.option == O_FD)) {
+	     (options.option == O_PERIMETER) || (options.option == O_FD) || 
+	     (options.option == O_BBOX)) {
 	read_areas(&Map);
     }
     else {

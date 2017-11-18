@@ -85,12 +85,17 @@ int main(int argc, char *argv[])
 
     module->label =
 	_("Exports a vector map layer to any of the supported OGR vector formats.");
-    module->description = _("By default a vector map layer is exported to Esri Shapefile format.");
+    module->description = _("By default a vector map layer is exported to OGC GeoPackage format.");
     module->overwrite = TRUE;
     
     /* parse & read options */
     parse_args(argc, argv, &options, &flags);
-    
+
+    if (flags.list->answer) {
+	list_formats();
+	exit(EXIT_SUCCESS);
+    }
+
     /* check for weird options */
     if (G_strncasecmp(options.dsn->answer, "PG:", 3) == 0 &&
         strcmp(options.format->answer, "PostgreSQL") != 0)
@@ -193,10 +198,6 @@ int main(int argc, char *argv[])
 
     if (!options.layer->answer) {
 	char xname[GNAME_MAX], xmapset[GMAPSET_MAX];
-
-	if (flags.append->answer)
-	    G_fatal_error(_("Appending to OGR layer requires option '%s'"),
-	                  options.layer->key);
 
 	if (G_name_is_fully_qualified(options.input->answer, xname, xmapset))
 	    options.layer->answer = G_store(xname);

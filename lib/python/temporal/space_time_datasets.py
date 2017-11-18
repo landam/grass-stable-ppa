@@ -8,10 +8,25 @@ for details.
 
 :authors: Soeren Gebbert
 """
+# i18N
+import gettext
 import getpass
-from .abstract_map_dataset import *
-from .abstract_space_time_dataset import *
+from datetime import datetime
+from .core import get_current_mapset
+from .abstract_map_dataset import AbstractMapDataset
+from .abstract_space_time_dataset import AbstractSpaceTimeDataset
+from .base import Raster3DBase, RasterBase, VectorBase, STR3DSBase, STVDSBase, STRDSBase,\
+    VectorSTDSRegister, Raster3DSTDSRegister, RasterSTDSRegister
+from .metadata import Raster3DMetadata, RasterMetadata, VectorMetadata, STRDSMetadata,\
+    STR3DSMetadata, STVDSMetadata
+from .spatial_extent import RasterSpatialExtent, Raster3DSpatialExtent, VectorSpatialExtent,\
+    STRDSSpatialExtent, STR3DSSpatialExtent, STVDSSpatialExtent
+from .temporal_extent import RasterAbsoluteTime, RasterRelativeTime, Raster3DAbsoluteTime, \
+    Raster3DRelativeTime, VectorAbsoluteTime, VectorRelativeTime, STRDSAbsoluteTime,\
+    STRDSRelativeTime, STR3DSAbsoluteTime, STR3DSRelativeTime, STVDSAbsoluteTime, STVDSRelativeTime
 import grass.script.array as garray
+from .core import init
+from datetime import datetime
 
 ###############################################################################
 
@@ -27,6 +42,7 @@ class RasterDataset(AbstractMapDataset):
         .. code-block:: python
 
             >>> import grass.script as grass
+            >>> import grass.temporal as tgis
             >>> init()
             >>> grass.use_temp_region()
             >>> grass.run_command("g.region", n=80.0, s=0.0, e=120.0, w=0.0,
@@ -38,7 +54,7 @@ class RasterDataset(AbstractMapDataset):
             >>> grass.run_command("r.timestamp", map="strds_map_test_case",
             ...                   date="15 jan 1999", quiet=True)
             0
-            >>> mapset = get_current_mapset()
+            >>> mapset = tgis.get_current_mapset()
             >>> name = "strds_map_test_case"
             >>> identifier = "%s@%s" % (name, mapset)
             >>> rmap = RasterDataset(identifier)
@@ -82,6 +98,10 @@ class RasterDataset(AbstractMapDataset):
             (2, None)
             >>> rmap.get_relative_time_unit()
             'years'
+            >>> rmap.is_in_db()
+            False
+            >>> rmap.is_stds()
+            False
 
             >>> newmap = rmap.get_new_instance("new@PERMANENT")
             >>> isinstance(newmap, RasterDataset)
@@ -99,7 +119,7 @@ class RasterDataset(AbstractMapDataset):
             >>> rmap.get_temporal_extent_as_tuple()
             (datetime.datetime(2001, 1, 1, 0, 0), datetime.datetime(2012, 1, 1, 0, 0))
             >>> rmap.get_name()
-            u'strds_map_test_case'
+            'strds_map_test_case'
             >>> rmap.get_mapset() == mapset
             True
             >>> rmap.get_temporal_type()
@@ -205,7 +225,7 @@ class RasterDataset(AbstractMapDataset):
         self.stds_register = RasterSTDSRegister(ident=ident)
 
     def has_grass_timestamp(self):
-        """Check if a grass file bsased time stamp exists for this map.
+        """Check if a grass file based time stamp exists for this map.
 
            :return: True if success, False on error
         """
@@ -411,6 +431,10 @@ class Raster3DDataset(AbstractMapDataset):
             (2, None)
             >>> r3map.get_relative_time_unit()
             'years'
+            >>> r3map.is_in_db()
+            False
+            >>> r3map.is_stds()
+            False
 
             >>> newmap = r3map.get_new_instance("new@PERMANENT")
             >>> isinstance(newmap, Raster3DDataset)
@@ -428,7 +452,7 @@ class Raster3DDataset(AbstractMapDataset):
             >>> r3map.get_temporal_extent_as_tuple()
             (datetime.datetime(2001, 1, 1, 0, 0), datetime.datetime(2012, 1, 1, 0, 0))
             >>> r3map.get_name()
-            u'str3ds_map_test_case'
+            'str3ds_map_test_case'
             >>> r3map.get_mapset() == mapset
             True
             >>> r3map.get_temporal_type()
@@ -752,6 +776,10 @@ class VectorDataset(AbstractMapDataset):
             (2, None)
             >>> vmap.get_relative_time_unit()
             'years'
+            >>> vmap.is_in_db()
+            False
+            >>> vmap.is_stds()
+            False
 
             >>> newmap = vmap.get_new_instance("new@PERMANENT")
             >>> isinstance(newmap, VectorDataset)
@@ -769,7 +797,7 @@ class VectorDataset(AbstractMapDataset):
             >>> vmap.get_temporal_extent_as_tuple()
             (datetime.datetime(2001, 1, 1, 0, 0), datetime.datetime(2012, 1, 1, 0, 0))
             >>> vmap.get_name()
-            u'stvds_map_test_case'
+            'stvds_map_test_case'
             >>> vmap.get_mapset() == mapset
             True
             >>> vmap.get_temporal_type()
@@ -990,6 +1018,34 @@ class VectorDataset(AbstractMapDataset):
 
 class SpaceTimeRasterDataset(AbstractSpaceTimeDataset):
     """Space time raster dataset class
+
+        .. code-block:: python
+
+            >>> import grass.temporal as tgis
+            >>> tgis.init()
+            >>> mapset = tgis.get_current_mapset()
+            >>> strds = tgis.SpaceTimeRasterDataset("old@%s"%mapset)
+            >>> strds.is_in_db()
+            False
+            >>> strds.is_stds()
+            True
+            >>> strds.get_type()
+            'strds'
+            >>> newstrds = strds.get_new_instance("newstrds@%s"%mapset)
+            >>> isinstance(newstrds, SpaceTimeRasterDataset)
+            True
+            >>> newmap = strds.get_new_map_instance("newmap@%s"%mapset)
+            >>> isinstance(newmap, RasterDataset)
+            True
+            >>> strds.reset("new@%s"%mapset)
+            >>> strds.is_in_db()
+            False
+            >>> strds.reset(None)
+            >>> strds.is_in_db()
+            False
+            >>> strds.get_id()
+
+        ...
     """
     def __init__(self, ident):
         AbstractSpaceTimeDataset.__init__(self, ident)
@@ -1070,6 +1126,34 @@ class SpaceTimeRasterDataset(AbstractSpaceTimeDataset):
 
 class SpaceTimeRaster3DDataset(AbstractSpaceTimeDataset):
     """Space time raster3d dataset class
+
+        .. code-block:: python
+
+            >>> import grass.temporal as tgis
+            >>> tgis.init()
+            >>> mapset = tgis.get_current_mapset()
+            >>> str3ds = tgis.SpaceTimeRaster3DDataset("old@%s"%mapset)
+            >>> str3ds.is_in_db()
+            False
+            >>> str3ds.is_stds()
+            True
+            >>> str3ds.get_type()
+            'str3ds'
+            >>> newstrds = str3ds.get_new_instance("newstrds@%s"%mapset)
+            >>> isinstance(newstrds, SpaceTimeRaster3DDataset)
+            True
+            >>> newmap = str3ds.get_new_map_instance("newmap@%s"%mapset)
+            >>> isinstance(newmap, Raster3DDataset)
+            True
+            >>> str3ds.reset("new@%s"%mapset)
+            >>> str3ds.is_in_db()
+            False
+            >>> str3ds.reset(None)
+            >>> str3ds.is_in_db()
+            False
+            >>> str3ds.get_id()
+
+        ...
     """
 
     def __init__(self, ident):
@@ -1169,6 +1253,34 @@ class SpaceTimeRaster3DDataset(AbstractSpaceTimeDataset):
 
 class SpaceTimeVectorDataset(AbstractSpaceTimeDataset):
     """Space time vector dataset class
+
+        .. code-block:: python
+
+            >>> import grass.temporal as tgis
+            >>> tgis.init()
+            >>> mapset = tgis.get_current_mapset()
+            >>> stvds = tgis.SpaceTimeVectorDataset("old@%s"%mapset)
+            >>> stvds.is_in_db()
+            False
+            >>> stvds.is_stds()
+            True
+            >>> stvds.get_type()
+            'stvds'
+            >>> newstvds = stvds.get_new_instance("newstvds@%s"%mapset)
+            >>> isinstance(newstvds, SpaceTimeVectorDataset)
+            True
+            >>> newmap = stvds.get_new_map_instance("newmap@%s"%mapset)
+            >>> isinstance(newmap, VectorDataset)
+            True
+            >>> stvds.reset("new@%s"%mapset)
+            >>> stvds.is_in_db()
+            False
+            >>> stvds.reset(None)
+            >>> stvds.is_in_db()
+            False
+            >>> stvds.get_id()
+
+        ...
     """
 
     def __init__(self, ident):

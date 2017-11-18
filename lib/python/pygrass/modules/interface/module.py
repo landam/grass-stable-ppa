@@ -2,12 +2,12 @@
 from __future__ import (nested_scopes, generators, division, absolute_import,
                         with_statement, print_function, unicode_literals)
 import sys
-from multiprocessing import cpu_count
+from multiprocessing import cpu_count, Process, Queue
 import time
 from xml.etree.ElementTree import fromstring
 
 from grass.exceptions import CalledModuleError, GrassError, ParameterError
-from grass.script.core import Popen, PIPE
+from grass.script.core import Popen, PIPE, use_temp_region, del_temp_region
 from .docstring import docstring_property
 from .parameter import Parameter
 from .flag import Flag
@@ -27,10 +27,11 @@ def _get_bash(self, *args, **kargs):
 
 
 class ParallelModuleQueue(object):
-    """This class is designed to run an arbitrary number of pygrass Module
+    """This class is designed to run an arbitrary number of pygrass Module or MultiModule
     processes in parallel.
 
-    Objects of type grass.pygrass.modules.Module can be put into the
+    Objects of type grass.pygrass.modules.Module or
+    grass.pygrass.modules.MultiModule can be put into the
     queue using put() method. When the queue is full with the maximum
     number of parallel processes it will wait for all processes to finish,
     sets the stdout and stderr of the Module object and removes it
@@ -41,6 +42,10 @@ class ParallelModuleQueue(object):
 
     This class will raise a GrassError in case a Module process exits
     with a return code other than 0.
+
+    Processes that were run asynchronously with the MultiModule class
+    will not raise a GrassError in case of failure. This must be manually checked
+    by accessing finished modules by calling get_finished_modules().
 
     Usage:
 
@@ -60,6 +65,7 @@ class ParallelModuleQueue(object):
     ...     m = new_mapcalc(expression="test_pygrass_%i = %i"%(i, i))
     ...     queue.put(m)
     >>> queue.wait()
+    >>> mapcalc_list = queue.get_finished_modules()
     >>> queue.get_num_run_procs()
     0
     >>> queue.get_max_num_procs()
@@ -82,12 +88,41 @@ class ParallelModuleQueue(object):
     ...     m = new_mapcalc(expression="test_pygrass_%i = %i"%(i, i))
     ...     queue.put(m)
     >>> queue.wait()
+    >>> mapcalc_list = queue.get_finished_modules()
     >>> queue.get_num_run_procs()
     0
     >>> queue.get_max_num_procs()
     8
     >>> for mapcalc in mapcalc_list:
     ...     print(mapcalc.popen.returncode)
+    0
+    0
+    0
+    0
+    0
+
+    Check MultiModule approach with three by two processes running in a background process
+
+    >>> gregion = Module("g.region", flags="p", run_=False)
+    >>> queue = ParallelModuleQueue(nprocs=3)
+    >>> proc_list = []
+    >>> for i in xrange(3):
+    ...     new_gregion = copy.deepcopy(gregion)
+    ...     proc_list.append(new_gregion)
+    ...     new_mapcalc = copy.deepcopy(mapcalc)
+    ...     m = new_mapcalc(expression="test_pygrass_%i = %i"%(i, i))
+    ...     proc_list.append(new_mapcalc)
+    ...     mm = MultiModule(module_list=[new_gregion, new_mapcalc], sync=False, set_temp_region=True)
+    ...     queue.put(mm)
+    >>> queue.wait()
+    >>> proc_list = queue.get_finished_modules()
+    >>> queue.get_num_run_procs()
+    0
+    >>> queue.get_max_num_procs()
+    3
+    >>> for proc in proc_list:
+    ...     print(proc.popen.returncode)
+    0
     0
     0
     0
@@ -123,6 +158,7 @@ class ParallelModuleQueue(object):
     >>> queue.get_num_run_procs()
     4
     >>> queue.wait()
+    >>> mapcalc_list = queue.get_finished_modules()
     >>> queue.get_num_run_procs()
     0
     >>> queue.get_max_num_procs()
@@ -163,6 +199,7 @@ class ParallelModuleQueue(object):
     >>> queue.get_num_run_procs()
     1
     >>> queue.wait()
+    >>> mapcalc_list = queue.get_finished_modules()
     >>> queue.get_num_run_procs()
     0
     >>> queue.get_max_num_procs()
@@ -187,16 +224,17 @@ class ParallelModuleQueue(object):
         self._num_procs = nprocs
         self._list = nprocs * [None]
         self._proc_count = 0
+        self._finished_modules = []  # Store all processed modules in a list
 
     def put(self, module):
-        """Put the next Module object in the queue
+        """Put the next Module or MultiModule object in the queue
 
         To run the Module objects in parallel the run\_ and finish\_ options
         of the Module must be set to False.
 
-        :param module: a preconfigured Module object with run\_ and finish\_
-                       set to False
-        :type module: Module object
+        :param module: a preconfigured Module or MultiModule object that were configured
+                       with run\_ and finish\_ set to False,
+        :type module: Module or MultiModule object
         """
         self._list[self._proc_count] = module
         # Force that finish is False, otherwise the execution
@@ -209,11 +247,11 @@ class ParallelModuleQueue(object):
             self.wait()
 
     def get(self, num):
-        """Get a Module object from the queue
+        """Get a Module object or list of Module objects from the queue
 
         :param num: the number of the object in queue
         :type num: int
-        :returns: the Module object or None if num is not in the queue
+        :returns: the Module object or list of Module objects or None if num is not in the queue
         """
         if num < self._num_procs:
             return self._list[num]
@@ -245,21 +283,29 @@ class ParallelModuleQueue(object):
         self._num_procs = int(nprocs)
         self.wait()
 
+    def get_finished_modules(self):
+        """Return all finished processes that were run by this queue
+
+        :return: A list of Module objects
+        """
+        return self._finished_modules
+
     def wait(self):
         """Wait for all Module processes that are in the list to finish
         and set the modules stdout and stderr output options
+
+        :return: A list of modules that were run
         """
         for proc in self._list:
             if proc:
-                stdout, stderr = proc.popen.communicate(input=proc.stdin)
-                proc.outputs['stdout'].value = stdout if stdout else ''
-                proc.outputs['stderr'].value = stderr if stderr else ''
-
-                if proc.popen.returncode != 0:
-                    GrassError(("Error running module %s") % (proc.name))
+                if isinstance(proc, Module):
+                    self._finished_modules.extend([proc.wait(),])
+                else:
+                    self._finished_modules.extend(proc.wait())
 
         self._list = self._num_procs * [None]
         self._proc_count = 0
+
 
 
 class Module(object):
@@ -322,12 +368,26 @@ class Module(object):
     >>> mapcalc.popen.returncode
     0
 
+    >>> mapcalc = Module("r.mapcalc", expression="test_a = 1",
+    ...                  overwrite=True, run_=False, finish_=False)
+    >>> mapcalc.run()
+    Module('r.mapcalc')
+    >>> p = mapcalc.wait()
+    >>> p.popen.returncode
+    0
+    >>> mapcalc.run()
+    Module('r.mapcalc')
+    >>> p = mapcalc.wait()
+    >>> p.popen.returncode
+    0
+
     >>> colors = Module("r.colors", map="test_a", rules="-",
     ...                 run_=False, stdout_=PIPE,
     ...                 stderr_=PIPE, stdin_="1 red")
     >>> colors.run()
     Module('r.colors')
-    >>> colors.popen.returncode
+    >>> p = mapcalc.wait()
+    >>> p.popen.returncode
     0
     >>> colors.inputs["stdin"].value
     u'1 red'
@@ -524,6 +584,8 @@ class Module(object):
         self.outputs['stderr'] = Parameter(diz=diz)
         self.popen = None
         self.time = None
+        self.start_time = None            # This variable will be set in the run() function
+        self._finished = False            # This variable is set True if wait() was successfully called
 
         if args or kargs:
             self.__call__(*args, **kargs)
@@ -682,39 +744,266 @@ class Module(object):
 
     def run(self):
         """Run the module
-
-        :param node:
-        :type node:
-
         This function will wait for the process to terminate in case
         finish_==True and sets up stdout and stderr. If finish_==False this
-        function will return after starting the process. Use
-        self.popen.communicate() of self.popen.wait() to wait for the process
-        termination. The handling of stdout and stderr must then be done
-        outside of this function.
+        function will return after starting the process. Use wait() to wait for
+        the started process
+
+        :return: A reference to this object
         """
         G_debug(1, self.get_bash())
+        self._finished = False
         if self.inputs['stdin'].value:
             self.stdin = self.inputs['stdin'].value
             self.stdin_ = PIPE
 
         cmd = self.make_cmd()
-        start = time.time()
+        self.start_time = time.time()
         self.popen = Popen(cmd,
                            stdin=self.stdin_,
                            stdout=self.stdout_,
                            stderr=self.stderr_,
                            env=self.env_)
-        if self.finish_:
+
+        if self.finish_ is True:
+            self.wait()
+
+        return self
+
+    def wait(self):
+        """Wait for the module to finish. Call this method if
+        the run() call was performed with self.false_ = False.
+
+        :return: A reference to this object
+        """
+        if self._finished is False:
             stdout, stderr = self.popen.communicate(input=self.stdin)
             self.outputs['stdout'].value = stdout if stdout else ''
             self.outputs['stderr'].value = stderr if stderr else ''
-            self.time = time.time() - start
+            self.time = time.time() - self.start_time
+
+            self._finished = True
+
             if self.popen.poll():
                 raise CalledModuleError(returncode=self.popen.returncode,
                                         code=self.get_bash(),
                                         module=self.name, errors=stderr)
+
         return self
+
+
+class MultiModule(object):
+    """This class is designed to run a list of modules in serial in the provided order
+    within a temporary region environment.
+
+    Module can be run in serial synchronously or asynchronously.
+
+    - Synchronously:  When calling run() all modules will run in serial order
+                      until they are finished, The run() method will return until all modules finished.
+                      The modules objects can be accessed by calling get_modules() to check their return
+                      values.
+    - Asynchronously: When calling run() all modules will run in serial order in a background process.
+                      Method run() will return after starting the modules without waiting for them to finish.
+                      The user must call the wait() method to wait for the modules to finish.
+                      Asynchronously called module can be optionally run in a temporary region
+                      environment, hence invokeing g.region will not alter the current
+                      region or the region of other MultiModule runs.
+
+                      Note:
+
+                          Modules run in asynchronous mode can only be accessed via the wait() method.
+                          The wait() method will return all finished module objects as list.
+
+    Objects of this class can be passed to the ParallelModuleQueue to run serial stacks
+    of modules in parallel. This is meaningful if region settings must be applied
+    to each parallel module run.
+
+    >>> from grass.pygrass.modules import Module
+    >>> from grass.pygrass.modules import MultiModule
+    >>> from multiprocessing import Process
+    >>> import copy
+
+    Synchronous module run
+
+    >>> region_1 = Module("g.region", run_=False)
+    >>> region_1.flags.p = True
+    >>> region_2 = copy.deepcopy(region_1)
+    >>> region_2.flags.p = True
+    >>> mm = MultiModule(module_list=[region_1, region_2])
+    >>> mm.run()
+    >>> m_list = mm.get_modules()
+    >>> m_list[0].popen.returncode
+    0
+    >>> m_list[1].popen.returncode
+    0
+
+    Asynchronous module run, setting finish = False
+
+    >>> region_1 = Module("g.region", run_=False)
+    >>> region_1.flags.p = True
+    >>> region_2 = copy.deepcopy(region_1)
+    >>> region_2.flags.p = True
+    >>> region_3 = copy.deepcopy(region_1)
+    >>> region_3.flags.p = True
+    >>> region_4 = copy.deepcopy(region_1)
+    >>> region_4.flags.p = True
+    >>> region_5 = copy.deepcopy(region_1)
+    >>> region_5.flags.p = True
+    >>> mm = MultiModule(module_list=[region_1, region_2, region_3, region_4, region_5],
+    ...                  sync=False)
+    >>> t = mm.run()
+    >>> isinstance(t, Process)
+    True
+    >>> m_list = mm.wait()
+    >>> m_list[0].popen.returncode
+    0
+    >>> m_list[1].popen.returncode
+    0
+    >>> m_list[2].popen.returncode
+    0
+    >>> m_list[3].popen.returncode
+    0
+    >>> m_list[4].popen.returncode
+    0
+
+    Asynchronous module run, setting finish = False and using temporary region
+
+    >>> mm = MultiModule(module_list=[region_1, region_2, region_3, region_4, region_5],
+    ...                  sync=False, set_temp_region=True)
+    >>> str(mm)
+    'g.region -p ; g.region -p ; g.region -p ; g.region -p ; g.region -p'
+    >>> t = mm.run()
+    >>> isinstance(t, Process)
+    True
+    >>> m_list = mm.wait()
+    >>> m_list[0].popen.returncode
+    0
+    >>> m_list[1].popen.returncode
+    0
+    >>> m_list[2].popen.returncode
+    0
+    >>> m_list[3].popen.returncode
+    0
+    >>> m_list[4].popen.returncode
+    0
+
+    """
+
+    def __init__(self, module_list, sync=True, set_temp_region=False):
+        """Constructor of the multi module class
+
+        :param module_list: A list of pre-configured Module objects that should be run
+        :param sync: If set True the run() method will wait for all processes to finish -> synchronously run.
+                     If set False, the run() method will return after starting the processes -> asynchronously run.
+                     The wait() method must be called to finish the modules.
+        :param set_temp_region: Set a temporary region in which the modules should be run, hence
+                                region settings in the process list will not affect the current
+                                computation region.
+
+                                Note:
+
+                                    This flag is only available in asynchronous mode!
+        :return:
+        """
+        self.module_list = module_list
+        self.set_temp_region = set_temp_region
+        self.finish_ = sync      # We use the same variable name a Module
+        self.p = None
+        self.q = Queue()
+
+    def __str__(self):
+        """Return the command string that can be executed in a shell"""
+        return ' ; '.join(str(string) for string in self.module_list)
+
+    def get_modules(self):
+        """Return the list of modules that have been run in synchronous mode
+
+        Note: Asynchronously run module can only be accessed via the wait() method.
+
+        :return: The list of modules
+        """
+        return self.module_list
+
+    def run(self):
+        """Start the modules in the list. If self.finished_ is set True
+        this method will return after all processes finished.
+
+        If self.finish_ is set False, this method will return
+        after the process list was started for execution.
+        In a background process, the processes in the list will
+        be run one after the another.
+
+        :return: None in case of self.finish_ is True,
+                 otherwise a multiprocessing.Process object that invokes the modules
+        """
+
+        if self.finish_ is True:
+            for module in self.module_list:
+                module.finish_ = True
+                module.run()
+            return None
+        else:
+            if self.set_temp_region is True:
+                self.p = Process(target=run_modules_in_temp_region,
+                                 args=[self.module_list, self.q])
+            else:
+                self.p = Process(target=run_modules,
+                                 args=[self.module_list, self.q])
+            self.p.start()
+
+            return self.p
+
+    def wait(self):
+        """Wait for all processes to finish. Call this method
+        in asynchronous mode, hence if finished was set False.
+
+        :return: The process list with finished processes to check their return states
+        """
+        if self.p:
+            proc_list = self.q.get()
+            self.p.join()
+
+            return proc_list
+
+
+def run_modules_in_temp_region(module_list, q):
+    """Run the modules in a temporary region environment
+
+    This function is the argument for multiprocessing.Process class
+    in the MultiModule asynchronous execution.
+
+    :param module_list: The list of modules to run in serial
+    :param q: The process queue to put the finished process list
+    """
+    use_temp_region()
+    try:
+        for proc in module_list:
+            proc.run()
+            proc.wait()
+    except:
+        raise
+    finally:
+        q.put(module_list)
+        del_temp_region()
+
+
+def run_modules(module_list, q):
+    """Run the modules
+
+    This function is the argument for multiprocessing.Process class
+    in the MultiModule asynchronous execution.
+
+    :param module_list: The list of modules to run in serial
+    :param q: The process queue to put the finished process list
+    """
+    try:
+        for proc in module_list:
+            proc.run()
+            proc.wait()
+    except:
+        raise
+    finally:
+        q.put(module_list)
 
 ###############################################################################
 

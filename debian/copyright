@@ -5,17 +5,19 @@ Source: http://grass.osgeo.org/
 
 Files: *
 Copyright:   1989-2017, GRASS Development Team
+             1992-2017, Helena Mitasova
              2003-2017, Glynn Clements
+             2011-2017, Markus Metz
+             2011-2017, Vaclav Petras
+ 2012, 2014-2015, 2017, Luca Delucchi
                   2017, Maris Nartiss
              2003-2016, Markus Neteler
-       2013, 2015-2016, Vaclav Petras
+             2012-2016, Anna Petrasova
              2014-2016, Tereza Fiedlerova
                   2016, Adam Laza
+                  2016, Zofie Cimburova
              2006-2015, Martin Landa
-             2011-2015, Markus Metz
-       2012, 2014-2015, Luca Delucchi
              2014-2015, Matej Krejci
-                  2015, Anna Petrasova
                   2015, Jachym Ceppicky
                   2015, pietro
                   2015, Stephanie Wendel
@@ -36,7 +38,6 @@ Copyright:   1989-2017, GRASS Development Team
              2006-2009, Cedric Shoc
                   2009, Gabor Grothendieck
              2007-2008, Martin Schroeder
-             1992-2006, Helena Mitasova
              2005-2006, Politecnico di Milano
              2004-2005, GDF Hannover
              2002-2003, University of Sannio (BN) - Italy

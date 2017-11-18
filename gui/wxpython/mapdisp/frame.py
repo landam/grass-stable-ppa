@@ -30,11 +30,9 @@ from core import globalvar
 import wx
 import wx.aui
 
-from core.render import Map
 from mapdisp.toolbars import MapToolbar, NvizIcons
 from mapdisp.gprint import PrintOptions
 from core.gcmd import GError, GMessage, RunCommand
-from dbmgr.dialogs import DisplayAttributesDialog
 from core.utils import ListOfCatsToRange, GetLayerNameFromCmd, _
 from gui_core.dialogs import GetImageHandlers, ImageSizeDialog
 from core.debug import Debug
@@ -45,16 +43,11 @@ from gui_core.query import QueryDialog, PrepareQueryResults
 from mapwin.buffered import BufferedMapWindow
 from mapwin.decorations import LegendController, BarscaleController, \
     ArrowController, DtextController, LegendVectController
-from modules.histogram import HistogramFrame
-from wxplot.histogram import HistogramPlotFrame
-from wxplot.profile import ProfileFrame
-from wxplot.scatter import ScatterFrame
 from mapwin.analysis import ProfileController, MeasureDistanceController, \
     MeasureAreaController
 from gui_core.forms import GUI
 from core.giface import Notification
 from gui_core.vselect import VectorSelectBase, VectorSelectHighlighter
-
 from mapdisp import statusbar as sb
 
 import grass.script as grass
@@ -250,18 +243,20 @@ class MapFrame(SingleMapFrame):
     def GetMapWindow(self):
         return self.MapWindow
 
-    def SetTitleNumber(self, displayId=1):
-        """Set map display title"""
-        try:
-            grassVersion = grass.version()['version']
-        except KeyError:
-            sys.stderr.write(_("Unable to get GRASS version\n"))
-            grassVersion = "?"
+    def SetTitleWithName(self, name):
+        """Set map display title its name
 
+        This function should be used when there are multiple map
+        displays.
+
+        Sets also other dynamically determined parts of the title
+        specific for GRASS GIS map display,
+        while the standard (inherited) ``SetTitle()`` function sets the
+        raw title and doesn't add or modify anything.
+        """
         gisenv = grass.gisenv()
-        title = _("GRASS GIS %(version)s Map Display: %(id)s - Location: %(loc)s@%(mapset)s") % {
-            'version': grassVersion,
-            'id': str(displayId),
+        title = _("GRASS GIS Map Display: %(name)s - %(loc)s/%(mapset)s") % {
+            'name': str(name),
             'loc': gisenv["LOCATION_NAME"],
             'mapset': gisenv["MAPSET"]}
 
@@ -853,8 +848,10 @@ class MapFrame(SingleMapFrame):
         elif self.page:
             pgnum = self.layerbook.GetPageIndex(self.page)
             if pgnum > -1:
-                self.layerbook.DeletePage(pgnum)
+                self.layerbook.RemovePage(pgnum)
         Debug.msg(2, "MapFrame.OnCloseWindow(): function ends")
+        self._mgr.UnInit()
+        self.Destroy()
 
     def Query(self, x, y):
         """Query selected layers.
@@ -957,7 +954,7 @@ class MapFrame(SingleMapFrame):
             try:
                 vectQuery = grass.vector_what(
                     map=vect, coord=(east, north),
-                    distance=qdist, encoding=encoding)
+                    distance=qdist, encoding=encoding, multiple=True)
             except grass.ScriptError:
                 GError(
                     parent=self, message=_(
@@ -1136,6 +1133,8 @@ class MapFrame(SingleMapFrame):
 
     def Profile(self, rasters=None):
         """Launch profile tool"""
+        from wxplot.profile import ProfileFrame
+
         self.profileController = ProfileController(
             self._giface, mapWindow=self.GetMapWindow())
         win = ProfileFrame(parent=self, rasterList=rasters,
@@ -1155,6 +1154,7 @@ class MapFrame(SingleMapFrame):
             if layer.maplayer.GetType() == 'raster':
                 raster.append(layer.maplayer.GetName())
 
+        from wxplot.histogram import HistogramPlotFrame
         win = HistogramPlotFrame(parent=self, rasterList=raster)
         win.CentreOnParent()
         win.Show()
@@ -1168,6 +1168,7 @@ class MapFrame(SingleMapFrame):
             if layer.maplayer.GetType() == 'raster':
                 raster.append(layer.maplayer.GetName())
 
+        from wxplot.scatter import ScatterFrame
         win = ScatterFrame(parent=self, rasterList=raster)
 
         win.CentreOnParent()
@@ -1179,6 +1180,7 @@ class MapFrame(SingleMapFrame):
     def OnHistogram(self, event):
         """Init histogram display canvas and tools
         """
+        from modules.histogram import HistogramFrame
         win = HistogramFrame(self, giface=self._giface)
 
         win.CentreOnParent()

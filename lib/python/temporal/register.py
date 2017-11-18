@@ -16,9 +16,15 @@ for details.
 
 :authors: Soeren Gebbert
 """
-
-from .open_stds import *
+# i18N
+import gettext
+from datetime import datetime
 import grass.script as gscript
+from .core import get_tgis_message_interface, init_dbif, get_current_mapset
+from .open_stds import open_old_stds
+from .abstract_map_dataset import AbstractMapDataset
+from .factory import dataset_factory
+from .datetime_math import check_datetime_string, increment_datetime_by_string, string_to_datetime
 
 ###############################################################################
 
@@ -26,7 +32,7 @@ import grass.script as gscript
 def register_maps_in_space_time_dataset(
     type, name, maps=None, file=None, start=None,
     end=None, unit=None, increment=None, dbif=None,
-        interval=False, fs="|", update_cmd_list=True):
+    interval=False, fs="|", update_cmd_list=True):
     """Use this method to register maps in space time datasets.
 
        Additionally a start time string and an increment string can be
@@ -450,7 +456,7 @@ def assign_valid_time_to_map(ttype, map, start, end, unit, increment=None,
 ##############################################################################
 
 def register_map_object_list(type,  map_list, output_stds,
-                             delete_empty, unit, dbif=None):
+                             delete_empty=False, unit=None, dbif=None):
     """Register a list of AbstractMapDataset objects in the temporal database
        and optional in a space time dataset.
 
@@ -477,10 +483,15 @@ def register_map_object_list(type,  map_list, output_stds,
         # In case of a empty map continue, do not register empty maps
 
         if delete_empty:
-            if map_layer.metadata.get_min() is None and \
-               map_layer.metadata.get_max() is None:
-                empty_maps.append(map_layer)
-                continue
+            if type in ["raster", "raster_3d", "rast", "rast3d"]:
+                if map_layer.metadata.get_min() is None and \
+                   map_layer.metadata.get_max() is None:
+                    empty_maps.append(map_layer)
+                    continue
+            if type == "vector":
+                if map_layer.metadata.get_number_of_primitives() == 0:
+                    empty_maps.append(map_layer)
+                    continue
 
         start,  end = map_layer.get_temporal_extent_as_tuple()
         id = map_layer.get_id()
@@ -501,11 +512,9 @@ def register_map_object_list(type,  map_list, output_stds,
     g_remove = pymod.Module("g.remove", flags='f', quiet=True,
                             run_=False, finish_=True)
 
-    # Remove empty maps
+    # Remove empty maps and unregister them from the temporal database
     if len(empty_maps) > 0:
         for map in empty_maps:
-            if map.is_in_db(dbif):
-                map.delete(dbif)
             mod = copy.deepcopy(g_remove)
             if map.get_name():
                 if map.get_type() == "raster":
@@ -515,6 +524,8 @@ def register_map_object_list(type,  map_list, output_stds,
                 if map.get_type() == "vector":
                     mod(type='vector', name=map.get_name())
                 mod.run()
+            if map.is_in_db(dbif):
+                map.delete(dbif)
 
     if connected:
         dbif.close()
