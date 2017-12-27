@@ -10,6 +10,7 @@ grass (7.2.2-2) UNRELEASED; urgency=medium
   * Update watch file to use HTTPS.
   * Strip trailing whitespace from rules file.
   * Drop unused lintian override for package-installs-java-bytecode.
+  * Add overrides for dependency-on-python-version-marked-for-end-of-life.
 
  -- Bas Couwenberg <sebastic@debian.org>  Fri, 06 Oct 2017 11:16:50 +0200
 
