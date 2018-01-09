@@ -4,6 +4,7 @@ grass (7.4.0~rc2-1) UNRELEASED; urgency=medium
   * Add overrides for dependency-on-python-version-marked-for-end-of-life.
   * Bump Standards-Version to 4.1.2, no changes.
   * Update copyright years for copyright holders.
+  * Drop patches applied upstream.
 
  -- Bas Couwenberg <sebastic@debian.org>  Tue, 09 Jan 2018 07:48:15 +0100
 
