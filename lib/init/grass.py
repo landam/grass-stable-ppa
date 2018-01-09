@@ -18,7 +18,7 @@
 #               command line options for setting the GISDBASE, LOCATION,
 #               and/or MAPSET. Finally it starts GRASS with the appropriate
 #               user interface and cleans up after it is finished.
-# COPYRIGHT:    (C) 2000-2017 by the GRASS Development Team
+# COPYRIGHT:    (C) 2000-2018 by the GRASS Development Team
 #
 #               This program is free software under the GNU General
 #               Public License (>=v2). Read the file COPYING that
@@ -1570,9 +1570,10 @@ PROMPT_COMMAND=grass_prompt\n""" % (_("2D and 3D raster MASKs present"),
                                     _("Raster MASK present"),
                                     _("3D raster MASK present")))
 
-    # read environmental variables
+    # read other settings (aliases, ...) since environmental variables
+    # have been already set by load_env(), see #3462
     for env_file in [os.path.join(userhome, ".grass.bashrc"),
-                      grass_env_file]:
+                     grass_env_file]:
         if not os.access(env_file, os.R_OK):
             continue
         for line in readfile(env_file).splitlines():
