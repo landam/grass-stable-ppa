@@ -3,6 +3,7 @@ Description: Fix spelling errors.
  * aditionally -> additionally
 Author: Bas Couwenberg <sebastic@debian.org>
 Forwarded: https://trac.osgeo.org/grass/ticket/3476
+Applied-Upstream: https://trac.osgeo.org/grass/changeset/72063
 
 --- a/imagery/i.ortho.photo/i.ortho.photo/i.ortho.photo.html
 +++ b/imagery/i.ortho.photo/i.ortho.photo/i.ortho.photo.html
