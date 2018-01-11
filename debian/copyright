@@ -4,10 +4,11 @@ Upstream-Contact: GRASS Development Team <grass-dev@lists.osgeo.org>
 Source: http://grass.osgeo.org/
 
 Files: *
-Copyright:   1989-2017, GRASS Development Team
+Copyright:   1989-2018, GRASS Development Team
              1992-2017, Helena Mitasova
              2003-2017, Glynn Clements
              2011-2017, Markus Metz
+             2011-2017, Soeren Gebbert
              2011-2017, Vaclav Petras
  2012, 2014-2015, 2017, Luca Delucchi
                   2017, Maris Nartiss
@@ -25,7 +26,6 @@ Copyright:   1989-2017, GRASS Development Team
              2003-2014, Per Henrik Johansen
              2006-2014, Hamish Bowman
              2007-2014, Lars Ahlzen
-             2011-2014, Soeren Gebbert
              2011-2013, Anna Kratochvilova
                   2013, GKX Associates Inc.
        2009-2010, 2012, Daniel Bundala
