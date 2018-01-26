@@ -7,6 +7,6 @@ usr/lib/grass@VERSION@/fonts
 usr/lib/grass@VERSION@/lib
 usr/lib/grass@VERSION@/locale
 usr/lib/grass@VERSION@/scripts
-usr/share/appdata
 usr/share/applications
+usr/share/metainfo
 usr/share/icons/hicolor
