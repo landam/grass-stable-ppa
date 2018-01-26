@@ -18,6 +18,22 @@ two formats, because <b>some modules</b> working correctly with GRASS native
 data, <b>can produce wrong results</b> with input vector maps created
 by <em>v.external</em>.
 
+<p>
+<b>Limitations:</b>
+<p>
+Due to these data model differences <em>v.external</em> does not work
+with all data formats. In general, for all formats that do not have a
+key column (e.g. SHAPE file), attributes are not accessible, and attributes
+would get lost when modifying the geometries. Therefore it is generally
+not safe to link vector data with <em>v.external</em>. In many cases it
+does not make sense to use <em>v.external</em> linked data with simple
+features, instead vector data should be imported with <em>v.import</em>
+or <em>v.in.ogr</em> to get true topology support. Importantly, point
+cloud data which do not have topology, can be linked with <em>v.external</em>
+as long as there are no attributes attached to these point cloud data, or
+if the format of the point cloud data has a key column that allows linking
+vector geometries to attributes.
+
 <p>See <em><a href="v.db.connect.html">v.db.connect</a></em> for an
 example of maintaining attributes in external DBMS in also writable
 mode.
@@ -93,6 +109,19 @@ v.external input=CITXCATD.DDF output=cities
 v.external input=input/2000/56015/ layer=CompleteChain,PIP output=t56015_all
 </pre></div>
 
+<h3>Linking subset of features</h3>
+
+By <b>where</b> option only subset of features can be linked. In the
+example below only one feature (in this case a vector tile) will be
+linked as a new GRASS vector map.
+
+<div class="code"><pre>
+v.external in="PG:dbname=tiles" layer=wrs2_descending where="pr=191026" 
+...
+Number of areas: 1
+...
+</pre></div>
+
 <h2>REFERENCES</h2>
 
 <a href="http://www.gdal.org/ogr__api_8h.html">OGR vector library C
@@ -127,4 +156,4 @@ PostGIS support by Martin Landa, GeoForAll (OSGeoREL) Lab, Czech
 Technical University in Prague, Czech Republic
 
 <p>
-<i>Last changed: $Date: 2017-01-17 21:31:26 +0100 (Tue, 17 Jan 2017) $</i>
+<i>Last changed: $Date: 2017-11-18 09:57:44 +0100 (Sat, 18 Nov 2017) $</i>

@@ -134,6 +134,7 @@ int path(struct Map_info *In, struct Map_info *Out, char *filename,
 	}
 
 	G_chop(buf);
+
 	sp = SP_OK;
 
 	ret =
@@ -141,10 +142,10 @@ int path(struct Map_info *In, struct Map_info *Out, char *filename,
 		   dummy);
 	if (ret == 5) {
 	    input_mode = INPUT_MODE_COOR;
-	     if (fx == tx && fy == ty) {
-		 G_warning(_("From and to are identical (id %d)"), id);
-		 continue;
-	     }
+	    if (fx == tx && fy == ty) {
+		G_warning(_("From and to are identical (id %d)"), id);
+		continue;
+	    }
 	}
 	else {
 	    ret = sscanf(buf, "%d %d %d %s", &id, &fcat, &tcat, dummy);

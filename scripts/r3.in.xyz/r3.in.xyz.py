@@ -26,6 +26,10 @@
 #% keyword: import
 #% keyword: voxel
 #% keyword: LIDAR
+#% keyword: statistics
+#% keyword: conversion
+#% keyword: aggregation
+#% keyword: binning
 #%End
 #%Flag
 #% key: s
@@ -169,6 +173,10 @@ import os
 import atexit
 from grass.script import core as grass
 from grass.exceptions import CalledModuleError
+
+# i18N
+import gettext
+gettext.install('grassmods', os.path.join(os.getenv("GISBASE"), 'locale'))
 
 
 def cleanup():

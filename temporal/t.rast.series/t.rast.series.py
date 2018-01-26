@@ -6,12 +6,18 @@
 # AUTHOR(S):	Soeren Gebbert
 #
 # PURPOSE:	Perform different aggregation algorithms from r.series on all or a
-#          selected subset of raster maps in a space time raster dataset
-# COPYRIGHT:	(C) 2011-2014 by the GRASS Development Team
+#           selected subset of raster maps in a space time raster dataset
+# COPYRIGHT:	(C) 2011-2017 by the GRASS Development Team
 #
-#		This program is free software under the GNU General Public
-#		License (version 2). Read the file COPYING that comes with GRASS
-#		for details.
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
 #############################################################################
 
@@ -35,6 +41,15 @@
 #% multiple: no
 #% options: average,count,median,mode,minimum,min_raster,maximum,max_raster,stddev,range,sum,variance,diversity,slope,offset,detcoeff,quart1,quart3,perc90,quantile,skewness,kurtosis
 #% answer: average
+#%end
+
+#%option
+#% key: quantile
+#% type: double
+#% description: Quantile to calculate for method=quantile
+#% required: no
+#% multiple: no
+#% options: 0.0-1.0
 #%end
 
 #%option
@@ -78,6 +93,7 @@ def main():
     input = options["input"]
     output = options["output"]
     method = options["method"]
+    quantile = options["quantile"]
     order = options["order"]
     where = options["where"]
     add_time = flags["t"]
@@ -111,7 +127,7 @@ def main():
         try:
             grass.run_command("r.series", flags=flag, file=filename,
                               output=output, overwrite=grass.overwrite(),
-                              method=method)
+                              method=method, quantile=quantile)
         except CalledModuleError:
             grass.fatal(_("%s failed. Check above error messages.") % 'r.series')
 

@@ -43,7 +43,7 @@ fi
 export OSGEO4W_ROOT_MSYS="/c/OSGeo4W${OSGEO4W_POSTFIX}"
 export OSGEO4W_ROOT="C:\\\OSGeo4W${OSGEO4W_POSTFIX}"
 
-export PATH=/usr/bin:/mingw${MINGW_POSTFIX}/bin/:$OSGEO4W_ROOT_MSYS/bin:$PWD/mswindows/osgeo4w/lib
+export PATH=/usr/bin:/mingw${MINGW_POSTFIX}/bin/:$OSGEO4W_ROOT_MSYS/bin:$PWD/mswindows/osgeo4w/lib:$PWD/mswindows/osgeo4w
 
 T0=$(date +%s) 
 LT=$T0 
@@ -123,6 +123,7 @@ dll_to_a $OSGEO4W_ROOT_MSYS/bin/liblas_c.dll    mswindows/osgeo4w/lib/liblas_c
 dll_to_a $OSGEO4W_ROOT_MSYS/bin/geos_c.dll      mswindows/osgeo4w/lib/libgeos_c
 dll_to_a $OSGEO4W_ROOT_MSYS/bin/libtiff.dll     mswindows/osgeo4w/lib/libtiff
 dll_to_a $OSGEO4W_ROOT_MSYS/bin/libpq.dll       mswindows/osgeo4w/lib/libpq
+dll_to_a $OSGEO4W_ROOT_MSYS/bin/libmysql.dll       mswindows/osgeo4w/lib/libmysqlclient
 dll_to_a $OSGEO4W_ROOT_MSYS/bin/sqlite3.dll     mswindows/osgeo4w/lib/libsqlite3
 dll_to_a $OSGEO4W_ROOT_MSYS/bin/cairo.dll       mswindows/osgeo4w/lib/libcairo
 dll_to_a $OSGEO4W_ROOT_MSYS/bin/libfftw3-3.dll  mswindows/osgeo4w/lib/libfftw3
@@ -154,11 +155,13 @@ if ! [ -f mswindows/osgeo4w/configure-stamp ]; then
 
 	if [ "$MINGW_POSTFIX" = "64" ]; then
 	    conf_host=x86_64-w64-mingw32
-            # see https://trac.osgeo.org/osgeo4w/ticket/539#ticket
-            # LAS support only enabled on 64bit
-            conf_opts="--with-liblas=$PWD/mswindows/osgeo4w/liblas-config"
+            # https://trac.osgeo.org/osgeo4w/ticket/550
+            # LAS support hopefully only temporarily disabled on 64bit
+            conf_opts=
 	else
 	    conf_host=i386-w64-mingw32
+            # https://trac.osgeo.org/osgeo4w/ticket/539
+            #  LAS support hopefully only temporarily disabled on 32bit
             conf_opts=
 	fi
 	
@@ -189,7 +192,8 @@ if ! [ -f mswindows/osgeo4w/configure-stamp ]; then
                 --with-postgres \
 	        --with-opengl=windows \
                 --with-bzlib $conf_opts
-	
+# see #3047
+#	        --with-mysql 
 	touch mswindows/osgeo4w/configure-stamp
 fi
 

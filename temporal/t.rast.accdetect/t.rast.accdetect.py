@@ -6,11 +6,17 @@
 # AUTHOR(S):    Soeren Gebbert
 #
 # PURPOSE:      Detect accumulation pattern in temporally accumulated space time raster datasets created by t.rast.accumulate.
-# COPYRIGHT:    (C) 2013 - 2014 by the GRASS Development Team
+# COPYRIGHT:    (C) 2013-2017  by the GRASS Development Team
 #
-#               This program is free software under the GNU General Public
-#               License (version 2). Read the file COPYING that comes with GRASS
-#               for details.
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
 #############################################################################
 
@@ -330,12 +336,13 @@ def main():
                 if input_strds.get_temporal_type() == 'absolute' and time_suffix == 'gran':
                     suffix = tgis.create_suffix_from_datetime(map.temporal_extent.get_start_time(),
                                                               input_strds.get_granularity())
-                    indicator_map_name = "{ba}_{su}".format(ba=base, su=suffix)
+                    indicator_map_name = "{ba}_indicator_{su}".format(ba=base, su=suffix)
                 elif input_strds.get_temporal_type() == 'absolute' and time_suffix == 'time':
                     suffix = tgis.create_time_suffix(map)
-                    indicator_map_name = "{ba}_{su}".format(ba=base, su=suffix)
+                    indicator_map_name = "{ba}_indicator_{su}".format(ba=base, su=suffix)
                 else:
-                    indicator_map_name = tgis.create_numeric_suffic(base, indi_count, time_suffix)
+                    indicator_map_name = tgis.create_numeric_suffic(base + "_indicator",
+                                                                    indi_count, time_suffix)
                 indicator_map_id = dummy.build_id(indicator_map_name, mapset)
                 indicator_map = input_strds.get_new_map_instance(indicator_map_id)
 

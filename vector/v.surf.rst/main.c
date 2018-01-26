@@ -11,6 +11,8 @@
  *               modified by Mitasova in November 1999 (dmax, timestamp update)
  *               dnorm independent tension - -t flag
  *               cross-validation -v flag by Jaro Hofierka 2004
+ *               Stanislav Zubal, Michal Lacko 2015 (OpenMP version)
+ *               Anna Petrasova (OpenMP version GRASS integration)
  *
  * PURPOSE:      Surface interpolation from vector point data by splines
  * COPYRIGHT:    (C) 2003-2009, 2013 by the GRASS Development Team
@@ -21,6 +23,9 @@
  *
  *****************************************************************************/
 
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -120,6 +125,7 @@ int main(int argc, char *argv[])
     struct multtree *tree;
     int open_check, with_z;
     char buf[1024];
+    int threads;
 
     struct GModule *module;
     struct
@@ -127,7 +133,7 @@ int main(int argc, char *argv[])
 	struct Option *input, *field, *zcol, *wheresql, *scol, *elev, *slope,
 	    *aspect, *pcurv, *tcurv, *mcurv, *treefile, *overfile, *maskmap,
 	    *dmin, *dmax, *zmult, *fi, *rsm, *segmax, *npmin, *cvdev, *devi,
-	    *theta, *scalex;
+	    *theta, *scalex, *threads;
     } parm;
     struct
     {
@@ -245,6 +251,15 @@ int main(int argc, char *argv[])
     parm.overfile->description =
 	_("Name for output vector map showing overlapping windows");
     parm.overfile->guisection = _("Outputs");
+
+    parm.threads = G_define_option();
+    parm.threads->key = "nprocs";
+    parm.threads->type = TYPE_INTEGER;
+    parm.threads->answer = NUM_THREADS;
+    parm.threads->required = NO;
+    parm.threads->description =
+	_("Number of threads for parallel computing");
+    parm.threads->guisection = _("Parameters");
 
     parm.maskmap = G_define_standard_option(G_OPT_R_INPUT);
     parm.maskmap->key = "mask";
@@ -382,6 +397,24 @@ int main(int argc, char *argv[])
     mcurv = parm.mcurv->answer;
     treefile = parm.treefile->answer;
     overfile = parm.overfile->answer;
+
+    sscanf(parm.threads->answer, "%d", &threads);
+    if (threads < 1)
+    {
+      G_warning(_("<%d> is not valid number of threads. Number of threads will be set on <%d>"),
+      threads, abs(threads));
+      threads = abs(threads);
+    }
+    if (parm.devi->answer && threads > 1) {
+        G_warning(_("Parallel computation disabled when deviation output is required"));
+        threads = 1;
+    }
+#if defined(_OPENMP)
+    omp_set_num_threads(threads);
+#else
+    if (threads > 1)
+        G_warning(_("GRASS GIS is not compiled with OpenMP support, parallel computation is disabled."));
+#endif
 
     if (devi) {
 	if (Vect_legal_filename(devi) == -1)
@@ -679,6 +712,16 @@ int main(int argc, char *argv[])
     }
 
     ertot = 0.;
+#if defined(_OPENMP)
+    G_message(_("Processing segments in parallel..."));    
+    if (IL_interp_segments_2d_parallel(&params, info, info->root, bitmask,
+                                       zmin, zmax, &zminac, &zmaxac, &gmin, &gmax,
+                                       &c1min, &c1max, &c2min, &c2max, &ertot, totsegm,
+                                       n_cols, dnorm, threads) < 0) {
+	clean();
+	G_fatal_error(_("Interp_segmets failed"));
+    }
+#else
     G_message(_("Processing segments..."));    
     if (IL_interp_segments_2d(&params, info, info->root, bitmask,
 			      zmin, zmax, &zminac, &zmaxac, &gmin, &gmax,
@@ -687,7 +730,7 @@ int main(int argc, char *argv[])
 	clean();
 	G_fatal_error(_("Interp_segmets failed"));
     }
-
+#endif
     G_free_vector(az);
     if (cond1) {
 	G_free_vector(adx);

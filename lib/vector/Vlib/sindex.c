@@ -44,7 +44,7 @@ Vect_select_lines_by_box(struct Map_info *Map, const struct bound_box *Box,
 	    Box->E, Box->W, Box->T, Box->B);
     plus = &(Map->plus);
 
-    list->n_values = 0;
+    Vect_reset_boxlist(list);
 
     ntypes = mtype = 0;
     /* count the number of different primitives in Map */
@@ -146,9 +146,8 @@ Vect_select_areas_by_box(struct Map_info *Map, const struct bound_box * Box,
     /* avoid loop when not debugging */
     if (debug_level > 2) {
 	for (i = 0; i < list->n_values; i++) {
-	    G_debug(3, "  area = %d pointer to area structure = %lx",
-		    list->id[i],
-		    (unsigned long)Map->plus.Area[list->id[i]]);
+	    G_debug(3, "  area = %d pointer to area structure = %p",
+		    list->id[i], (void *)Map->plus.Area[list->id[i]]);
 	}
     }
 
@@ -203,7 +202,7 @@ Vect_select_nodes_by_box(struct Map_info *Map, const struct bound_box * Box,
 
     plus = &(Map->plus);
 
-    list->n_values = 0;
+    Vect_reset_list(list);
 
     dig_select_nodes(plus, Box, list);
     G_debug(3, "  %d nodes selected", list->n_values);
@@ -238,7 +237,7 @@ Vect_select_lines_by_polygon(struct Map_info *Map, struct line_pnts *Polygon,
     /* TODO: this function was not tested with isles */
     G_debug(3, "Vect_select_lines_by_polygon() nisles = %d", nisles);
 
-    List->n_values = 0;
+    Vect_reset_list(List);
     if (!LPoints)
 	LPoints = Vect_new_line_struct();
     if (!LocList) {
@@ -279,14 +278,14 @@ Vect_select_lines_by_polygon(struct Map_info *Map, struct line_pnts *Polygon,
 	    }
 	}
 	if (intersect) {
-	    G_ilist_add(List, line);
+	    Vect_list_append(List, line);
 	    continue;
 	}
 
 	/* Check intersections of the line with area/isles boundary */
 	/* Outer boundary */
 	if (Vect_line_check_intersection(LPoints, Polygon, 0)) {
-	    G_ilist_add(List, line);
+	    Vect_list_append(List, line);
 	    continue;
 	}
 
@@ -298,7 +297,7 @@ Vect_select_lines_by_polygon(struct Map_info *Map, struct line_pnts *Polygon,
 	    }
 	}
 	if (intersect) {
-	    G_ilist_add(List, line);
+	    Vect_list_append(List, line);
 	}
     }
 
@@ -312,8 +311,6 @@ Vect_select_lines_by_polygon(struct Map_info *Map, struct line_pnts *Polygon,
    \brief Select areas by Polygon with optional isles. 
 
    Polygons should be closed, i.e. first and last points must be identical.
-
-   Warning : values in list may be duplicate!
 
    \param Map vector map
    \param Polygon outer ring
@@ -334,7 +331,7 @@ Vect_select_areas_by_polygon(struct Map_info *Map, struct line_pnts *Polygon,
     /* TODO: this function was not tested with isles */
     G_debug(3, "Vect_select_areas_by_polygon() nisles = %d", nisles);
 
-    List->n_values = 0;
+    Vect_reset_list(List);
     if (!BoundList)
 	BoundList = Vect_new_list();
 
@@ -352,23 +349,23 @@ Vect_select_areas_by_polygon(struct Map_info *Map, struct line_pnts *Polygon,
 	G_debug(4, "boundary = %d left = %d right = %d", line, left, right);
 
 	if (left > 0) {
-	    G_ilist_add(List, left);
+	    Vect_list_append(List, left);
 	}
 	else if (left < 0) {	/* island */
 	    area = Vect_get_isle_area(Map, abs(left));
 	    G_debug(4, "  left island -> area = %d", area);
 	    if (area > 0)
-		G_ilist_add(List, area);
+		Vect_list_append(List, area);
 	}
 
 	if (right > 0) {
-	    G_ilist_add(List, right);
+	    Vect_list_append(List, right);
 	}
 	else if (right < 0) {	/* island */
 	    area = Vect_get_isle_area(Map, abs(right));
 	    G_debug(4, "  right island -> area = %d", area);
 	    if (area > 0)
-		G_ilist_add(List, area);
+		Vect_list_append(List, area);
 	}
     }
 
@@ -376,7 +373,7 @@ Vect_select_areas_by_polygon(struct Map_info *Map, struct line_pnts *Polygon,
      * we find the area by one polygon point and add it to the list */
     area = Vect_find_area(Map, Polygon->x[0], Polygon->y[0]);
     if (area > 0)
-	G_ilist_add(List, area);
+	Vect_list_append(List, area);
 
     G_debug(3, "  %d areas selected by polygon", List->n_values);
 

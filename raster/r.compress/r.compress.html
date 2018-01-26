@@ -93,6 +93,8 @@ Important: the NULL file compression must be explicitly turned on with
 <tt>export GRASS_COMPRESS_NULLS=1</tt> - such raster maps can then only 
 be opened with GRASS GIS 7.2.0 or later. NULL file compression can be 
 managed with <b>r.null -z</b>.
+The NULL file compression is using the LZ4 method as being the best compromise
+between speed and compression rate.
 
 <h3>COMPRESSION ALGORITHM DETAILS</h3>
 <!-- keep in sync with raster/rasterintro.html -->
@@ -250,4 +252,4 @@ James Westervelt and Michael Shapiro, U.S. Army Construction Engineering Researc
 <p>
 Markus Metz
 
-<p><i>Last changed: $Date: 2017-08-31 17:54:39 +0200 (Thu, 31 Aug 2017) $</i>
+<p><i>Last changed: $Date: 2017-12-06 13:43:03 +0100 (Wed, 06 Dec 2017) $</i>

@@ -19,7 +19,7 @@ For other (scientific) references, see
 A BibTeX entry for LaTeX users is:
 
 @Manual{GRASS_GIS_software,
-  title = {Geographic Resources Analysis Support System (GRASS) Software},
+  title = {Geographic Resources Analysis Support System (GRASS) Software, Version 7.2},
   author = {{GRASS Development Team}},
   organization = {Open Source Geospatial Foundation},
   address = {USA},

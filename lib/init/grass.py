@@ -18,7 +18,7 @@
 #               command line options for setting the GISDBASE, LOCATION,
 #               and/or MAPSET. Finally it starts GRASS with the appropriate
 #               user interface and cleans up after it is finished.
-# COPYRIGHT:    (C) 2000-2017 by the GRASS Development Team
+# COPYRIGHT:    (C) 2000-2018 by the GRASS Development Team
 #
 #               This program is free software under the GNU General
 #               Public License (>=v2). Read the file COPYING that
@@ -343,7 +343,7 @@ Geographic Resources Analysis Support System (GRASS GIS).
     gui=_("use $DEFAULT_GUI graphical user interface"),
     gui_detail=_("and set as default"),
     config=_("print GRASS configuration parameters"),
-    config_detail=_("options: arch,build,compiler,path,revision"),
+    config_detail=_("options: arch,build,compiler,path,revision,version"),
     params=_("Parameters"),
     gisdbase=_("initial GRASS GIS database directory"),
     gisdbase_detail=_("directory containing Locations"),
@@ -804,9 +804,15 @@ def create_location(gisdbase, location, geostring):
         fatal(err.value.strip('"').strip("'").replace('\\n', os.linesep))
 
 
+# TODO: distinguish between valid for getting maps and usable as current
+# https://lists.osgeo.org/pipermail/grass-dev/2016-September/082317.html
 # interface created according to the current usage
 def is_mapset_valid(full_mapset):
     """Return True if GRASS Mapset is valid"""
+    # WIND is created from DEFAULT_WIND by `g.region -d` and functions
+    # or modules which create a new mapset. Most modules will fail if
+    # WIND doesn't exist (assuming that neither GRASS_REGION nor
+    # WIND_OVERRIDE environmental variables are set).
     return os.access(os.path.join(full_mapset, "WIND"), os.R_OK)
 
 
@@ -816,6 +822,10 @@ def is_location_valid(gisdbase, location):
     :param gisdbase: Path to GRASS GIS database directory
     :param location: name of a Location
     """
+    # DEFAULT_WIND file should not be required until you do something
+    # that actually uses them. The check is just a heuristic; a directory
+    # containing a PERMANENT/DEFAULT_WIND file is probably a GRASS
+    # location, while a directory lacking it probably isn't.
     return os.access(os.path.join(gisdbase, location,
                                   "PERMANENT", "DEFAULT_WIND"), os.F_OK)
 
@@ -844,9 +854,15 @@ def get_mapset_invalid_reason(gisdbase, location, mapset):
         return _("<%s> is not a valid GRASS Location"
                  " because PERMANENT Mapset does not have a DEFAULT_WIND file"
                  " (default computational region)") % full_location
-    else:
+    elif mapset not in os.listdir(full_location):
         return _("Mapset <{mapset}> doesn't exist in GRASS Location <{loc}>. "
                  "A new mapset can be created by '-c' switch.").format(
+                     mapset=mapset, loc=location)
+    elif not os.path.isdir(os.path.join(full_location, mapset)):
+        return _("<%s> is not a GRASS Mapset"
+                 " because it is not a directory") % mapset
+    else:
+        return _("Mapset <{mapset}> is invalid for an unknown reason").format(
                      mapset=mapset, loc=location)
 
 
@@ -859,7 +875,7 @@ def set_mapset(gisrc, arg, geofile=None, create_new=False):
     l = None
 
     if arg == '-':
-        # TODO: repair or remove behavior env vars + `grass72 -` (see doc)
+        # TODO: repair or remove behavior env vars + `grass74 -` (see doc)
         # this is broken for some time (before refactoring, e.g. r65235)
         # is some code is added, it should be a separate function, probably
         # called here
@@ -1357,10 +1373,10 @@ def run_batch_job(batch_job):
     :param batch_job: executable and parameters in a list or a string
     """
     batch_job_string = batch_job
-    if not isinstance(batch_job, basestring):
+    if not isinstance(batch_job, string_types):
         batch_job_string = ' '.join(batch_job)
     message(_("Executing <%s> ...") % batch_job_string)
-    if isinstance(batch_job, basestring):
+    if isinstance(batch_job, string_types):
         proc = Popen(batch_job, shell=True)
     else:
         try:
@@ -1554,9 +1570,10 @@ PROMPT_COMMAND=grass_prompt\n""" % (_("2D and 3D raster MASKs present"),
                                     _("Raster MASK present"),
                                     _("3D raster MASK present")))
 
-    # read environmental variables
+    # read other settings (aliases, ...) since environmental variables
+    # have been already set by load_env(), see #3462
     for env_file in [os.path.join(userhome, ".grass.bashrc"),
-                      grass_env_file]:
+                     grass_env_file]:
         if not os.access(env_file, os.R_OK):
             continue
         for line in readfile(env_file).splitlines():
@@ -1626,7 +1643,7 @@ def print_params():
 
     params = sys.argv[2:]
     if not params:
-        params = ['arch', 'build', 'compiler', 'path', 'revision']
+        params = ['arch', 'build', 'compiler', 'path', 'revision', 'version']
 
     for arg in params:
         if arg == 'path':
@@ -1650,6 +1667,8 @@ def print_params():
             val = grep('#define GIS_H_VERSION', linesrev)
             filerev.close()
             sys.stdout.write("%s\n" % val[0].split(':')[1].rstrip('$"\n').strip())
+        elif arg == 'version':
+			sys.stdout.write("%s\n" % grass_version)
         else:
             message(_("Parameter <%s> not supported") % arg)
 

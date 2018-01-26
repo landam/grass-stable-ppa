@@ -62,16 +62,20 @@
     <handler>OnRunScript</handler>
     <description>Launches script file.</description>
   </wxgui-item>
+  <wxgui-item name="PyEdit">
+    <label>Simple Python Editor</label>
+    <handler>OnSimpleEditor</handler>
+    <description>Launches Simple Python Editor.</description>
+  </wxgui-item>
   <wxgui-item name="CloseGUI">
     <label>Close GUI</label>
     <handler>OnCloseWindow</handler>
-    <description>Quit wxGUI session.</description>
-    <shortcut>Ctrl+W</shortcut>
+    <description>Close graphical user interface.</description>
   </wxgui-item>
   <wxgui-item name="Quit">
     <label>Quit GRASS GIS</label>
     <handler>OnCloseWindowOrExit</handler>
-    <description>Quit wxGUI session and exit GRASS shell.</description>
+    <description>Close GUI and exit GRASS GIS shell.</description>
     <shortcut>Ctrl+Q</shortcut>
     <wx-id>ID_EXIT</wx-id>
   </wxgui-item>
@@ -195,6 +199,12 @@
     <handler>OnNewDisplay</handler>
     <description>Open new map display window</description>
   </wxgui-item>
+  <wxgui-item name="RenderAllMapDisplays">
+    <label>Render all map displays</label>
+    <handler>OnRenderAllMapDisplays</handler>
+    <description>Re-render maps in all open map display windows</description>
+    <shortcut>Ctrl+R</shortcut>
+  </wxgui-item>
   <wxgui-item name="CloseCurrentMapDisplayWindow">
     <label>Close current map display window</label>
     <handler>OnDisplayClose</handler>
@@ -206,17 +216,17 @@
     <handler>OnDisplayCloseAll</handler>
     <description>Close all open map display windows</description>
   </wxgui-item>
-  <wxgui-item name="CommonFormatsImport">
-    <label>Common formats import</label>
+  <wxgui-item name="CommonRasterFormats">
+    <label>Simplified raster import with reprojection</label>
     <handler>OnImportGdalLayers</handler>
-    <related-module>r.in.gdal</related-module>
+    <related-module>r.import</related-module>
     <description>Imports raster data into a GRASS raster map using GDAL library.</description>
     <keywords>raster,import</keywords>
   </wxgui-item>
-  <wxgui-item name="CommonImportFormats">
-    <label>Common import formats</label>
+  <wxgui-item name="CommonVectorFormats">
+    <label>Simplified vector import with reprojection</label>
     <handler>OnImportOgrLayers</handler>
-    <related-module>v.in.ogr</related-module>
+    <related-module>v.import</related-module>
     <description>Imports vector data into a GRASS vector map using OGR library.</description>
     <keywords>vector,import</keywords>
   </wxgui-item>
@@ -248,10 +258,22 @@
     <description>Defines vector output format utilizing OGR library.</description>
     <keywords>vector,export,output,external,OGR,PostGIS</keywords>
   </wxgui-item>
-  <wxgui-item name="DisplayRegion">
-    <label>Display region</label>
+  <wxgui-item name="ShowRegion">
+    <label>Show current region</label>
     <command>g.region -p</command>
-    <description>Manages the boundary definitions for the geographic region.</description>
+    <description>Shows the extent and resolution of the computational region.</description>
+    <keywords>general,settings</keywords>
+  </wxgui-item>
+  <wxgui-item name="ShowRegionLL">
+    <label>Show region using latitude and longitude</label>
+    <command>g.region -pl</command>
+    <description>Shows the extent and resolution of the computational region.</description>
+    <keywords>general,settings</keywords>
+  </wxgui-item>
+  <wxgui-item name="ShowRegionExtent">
+    <label>Show current region extent in Map Display</label>
+    <handler>OnShowRegionExtent</handler>
+    <description>Shows the extent of the computational region in Map Display.</description>
     <keywords>general,settings</keywords>
   </wxgui-item>
   <wxgui-item name="MapsetAccess">
@@ -372,5 +394,16 @@
     <description>Generates spectral signatures by allowing the user to outline training areas.</description>
     <keywords>general,gui,imagery,classification,signatures</keywords>
   </wxgui-item>
+  <wxgui-item name="ManagingGCPsfor3DCorrection">
+    <label>Managing GCPs for 3D correction</label>
+    <command>g.gui.image2target</command>
+    <description>Georectifies a map and allows managing GCP for 3D correction.</description>
+    <keywords>general,gui,imagery,GCP,georectification,orthophoto</keywords>
+  </wxgui-item>
+  <wxgui-item name="CorrectsScanningDistortions">
+    <label>Corrects scanning distortions</label>
+    <command>g.gui.photo2image</command>
+    <description>Corrects scanning distortions of a scanned aerial photo.</description>
+    <keywords>general,gui,imagery,georectification,orthophoto</keywords>
+  </wxgui-item>
 </wxgui-items>
-
