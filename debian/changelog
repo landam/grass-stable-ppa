@@ -3,6 +3,7 @@ grass (7.4.0-1) UNRELEASED; urgency=medium
   * New upstream release.
   * Don't install AppStream metadata in legacy location.
   * Update copyright-format URL to use HTTPS.
+  * Drop spelling-errors.patch, applied upstream.
 
  -- Bas Couwenberg <sebastic@debian.org>  Fri, 26 Jan 2018 11:29:33 +0100
 
