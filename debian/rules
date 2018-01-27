@@ -174,8 +174,8 @@ install-arch-stamp:
 	mv debian/tmp/usr/lib/$(BASE_NAME)/share/applications/grass.desktop debian/tmp/usr/share/applications/$(BASE_NAME).desktop
 
 	# install AppStream metadata
-	mkdir -p debian/tmp/usr/share/appdata
-	mv debian/tmp/usr/lib/$(BASE_NAME)/share/appdata/grass.appdata.xml debian/tmp/usr/share/appdata/$(BASE_NAME).appdata.xml
+	mkdir -p debian/tmp/usr/share/metainfo
+	mv debian/tmp/usr/lib/$(BASE_NAME)/share/appdata/grass.appdata.xml debian/tmp/usr/share/metainfo/org.osgeo.grass.appdata.xml
 
 	# install grass wrapper scripts
 	install -m 755 debian/x-grass7 debian/tmp/usr/bin/x-$(BASE_NAME)
