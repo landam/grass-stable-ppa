@@ -1,3 +1,36 @@
+grass (7.4.0-1~xenial1) xenial; urgency=medium
+
+  * Rebuild for xenial.
+
+ -- Martin Landa <landa.martin@gmail.com>  Sat, 27 Jan 2018 00:26:43 +0100
+
+grass (7.4.0-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Don't install AppStream metadata in legacy location.
+  * Update copyright-format URL to use HTTPS.
+  * Drop spelling-errors.patch, applied upstream.
+  * Add patch to fix spelling errors.
+  * Move from experimental to unstable.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Fri, 26 Jan 2018 11:31:40 +0100
+
+grass (7.2.2-2) unstable; urgency=medium
+
+  * Add patch to only link to GEOS C library.
+  * Update spelling-errors.patch to fix additional typo.
+  * Add lintian override for package-installs-java-bytecode false positive.
+  * Bump Standards-Version to 4.1.2, no changes.
+  * Override dh_gencontrol to set GRASS ABI dependency with substvars.
+  * Strip trailing whitespace from changelog.
+  * Drop explicit use of autotools_dev dh helper.
+  * Update watch file to use HTTPS.
+  * Strip trailing whitespace from rules file.
+  * Drop unused lintian override for package-installs-java-bytecode.
+  * Add overrides for dependency-on-python-version-marked-for-end-of-life.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Wed, 27 Dec 2017 23:13:43 +0100
+
 grass (7.4.0~rc2-1~exp1~xenial1) xenial; urgency=medium
 
   * Rebuild for xenial.
@@ -26,7 +59,7 @@ grass (7.4.0~rc1-1~exp1) experimental; urgency=medium
   * New upstream release candidate.
   * Update spelling-errors.patch to fix additional typos.
   * Add lintian override for package-installs-java-bytecode false positive.
-  * Bump Standards-Version to 4.1.1, no changes.
+  * Bump Standards-Version to 4.1.2, no changes.
   * Override dh_gencontrol to set GRASS ABI dependency with substvars.
   * Update watch file for GRASS 7.4 releases.
   * Strip trailing whitespace from changelog.
