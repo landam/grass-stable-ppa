@@ -1,3 +1,9 @@
+grass (7.4.0-1~artful2) artful; urgency=medium
+
+  * Rebuild for artful.
+
+ -- Martin Landa <landa.martin@gmail.com>  Sun, 28 Jan 2018 17:12:52 +0100
+
 grass (7.4.0-1~artful1) artful; urgency=medium
 
   * Rebuild for artful.
